@@ -87,6 +87,420 @@ These are real mistakes made in previous audits of this codebase. They are docum
 
 **Rule:** After running lint in Phase 1, check `git log` for any dependency bumps (Dependabot/Renovate) that occurred AFTER the last lint fix commit. If a lint tool was upgraded, the new rules may surface new warnings. Report this as a regression, not an original issue.
 
+### Pitfall 8: Service-Layer Security Blind Spot (v4 addition)
+
+**What happened:** The audit checked `webhookService.ts` and confirmed it had SSRF protection via `isWebhookUrlSafe()`. But `workflowEngine.ts` ALSO made outbound HTTP calls via raw `axios()` with user-supplied URLs — completely bypassing the SSRF protection. The audit declared "SSRF protected" after finding ONE correct implementation, not checking ALL outbound call sites.
+
+Similarly, `getVendorById` correctly filtered by `organizationId`, so the audit declared vendor risk "multi-tenant safe." But `createVendorAssessment` and `completeVendorAssessment` in the SAME file had no org check. The audit checked one function and extrapolated to the whole service.
+
+**Rule — Exhaustive Service-Layer Security Trace (MANDATORY Phase 6.1):**
+1. **ALL outbound HTTP calls:** `grep -rn "axios\|fetch(\|got(\|request(\|http\.\|https\." server/src/ --include="*.ts" | grep -v node_modules | grep -v test` — verify EVERY call site has SSRF/URL validation, not just the "main" one.
+2. **ALL write operations must check organizationId:** For EVERY `.create()`, `.update()`, `.delete()`, `.upsert()` in service files, verify the entity being modified belongs to the caller's organization. Check the FULL service file, not just one function.
+3. **ALL credential storage patterns:** Search for ALL token/key storage (not just JWT/passwords): `grep -rn "bearerToken\|apiKey\|secretKey\|accessToken\|serviceToken" server/src/ --include="*.ts"` — verify each is hashed or encrypted.
+4. **Cross-entity consistency:** When a function (like search indexing) processes multiple entity types, verify ALL entity types have the same security controls (e.g., orgId filter). One missing filter among 5 entities = cross-tenant data leak.
+
+### Pitfall 9: Coverage Existence vs. Coverage Completeness (v4 addition)
+
+**What happened:** The audit found that input validation middleware (Joi) was used in the codebase and reported "validation present." But only 35 of 67 route files (52%) actually had it. The audit confirmed the EXISTENCE of a security control but never measured its COVERAGE.
+
+Same pattern for rate limiting: the audit found `apiLimiter` middleware and reported "rate limiting present." But 3 route groups (billing, SSO, SCIM) were mounted without it.
+
+**Rule — Coverage Measurement (MANDATORY):**
+For every security control that should be universal, measure coverage as a percentage:
+1. **Input validation:** Count route files WITH validation / total route files with POST/PUT/PATCH. Report exact %.
+2. **Rate limiting:** List ALL route mounts in `index.ts`/`app.ts`. Mark which have rate limiting. Report gaps.
+3. **Error handler coverage:** List all error types the global handler catches (SyntaxError, AppError, etc.). Check for missing types (MulterError, PrismaClientKnownRequestError, etc.).
+4. **Auth middleware:** Count protected endpoints / total endpoints. Any unprotected non-public endpoint = CRITICAL.
+
+A control that exists at 52% coverage is NOT "present" — it's "partially implemented."
+
+### Pitfall 10: Business Logic Correctness Not Verified (v4 addition)
+
+**What happened:** The compliance history endpoint was confirmed to "exist and return data." But the averaging algorithm was mathematically wrong — it divided by total count across metric types instead of per-type count. The audit verified the route WORKS but not that it computes CORRECTLY.
+
+Similarly, the workflow engine's `add_tag` action returned `status: 'success'` but never wrote to the database. The audit confirmed the action "runs" but not that it "does what it claims."
+
+**Rule — Business Logic Validation (Phase 5 enhancement):**
+1. For every calculation/aggregation endpoint, trace the algorithm and verify mathematical correctness. Especially: averaging (per-group vs. global), rounding, division-by-zero guards, floating-point currency.
+2. For every action/handler that claims to perform an operation (create, update, delete, send, tag, notify), verify the actual DB write / API call / side effect EXISTS in the code. A handler that logs "success" without performing the operation = PRODUCTION_GAP.
+3. For every CRUD service, verify that all advertised operations actually persist changes. `status: 'success'` is not evidence of persistence — the Prisma/DB call is.
+
+### Pitfall 11: Default/Fallback Security Not Checked (v4 addition)
+
+**What happened:** The CORS middleware was confirmed present with origin checking. But when `CORS_ORIGIN` env var was UNSET, `allowed.length === 0` fell through to "allow ALL origins" — the exact opposite of the intended default. The audit tested the happy path (env var set) but not the fallback (env var missing).
+
+**Rule — Default-Value Security Audit (Phase 6 enhancement):**
+For every security-sensitive config value:
+1. What is the DEFAULT when the env var is unset?
+2. Is the default SECURE or PERMISSIVE?
+3. Security controls MUST fail-closed (deny by default), not fail-open (allow by default).
+Check: CORS origins, JWT secrets, rate limit thresholds, SSL mode, cookie flags, CSRF enforcement.
+
+### Pitfall 12: Error Propagation Path Incomplete (v4 addition)
+
+**What happened:** The audit found the global error handler and confirmed it catches AppError, SyntaxError (400), and entity-too-large (413). But routes that catch errors internally and return `res.status(500).json(...)` BYPASS the global handler — meaning Sentry doesn't capture them, security event logging doesn't fire, and error format is inconsistent.
+
+Also, services throwing `new Error()` instead of `new AppError()` cause the global handler to return 500 for what should be 400/404/409.
+
+**Rule — Error Propagation Completeness (Phase 5 enhancement):**
+1. `grep -rn "res.status(500)\|res.status(400)\|res.status(404)" server/src/routes/ --include="*.ts"` — Any route that manually sends error responses instead of calling `next(error)` or throwing AppError is bypassing centralized error handling. Flag it.
+2. `grep -rn "throw new Error(" server/src/services/ --include="*.ts" | grep -v AppError | grep -v test` — Any service throwing bare `Error` instead of `AppError` causes incorrect HTTP status codes.
+3. Check the global error handler for missing error types: Multer errors, Prisma known errors (P2002, P2025), JWT errors, validation errors.
+
+### Pitfall 13: Frontend↔Backend Contract Precision (v4 addition)
+
+**What happened:** The audit matched frontend API paths to backend routes but missed: (a) a frontend call to `GET /billing/compare/:tier` that had no backend route, (b) a frontend using `PATCH` where backend expected `PUT`, (c) a frontend calling `/demo/stats` where backend was `/demo/requests/stats`.
+
+**Rule — Precise Contract Verification (Phase 4/7 enhancement):**
+The scan-runner cross-references paths, but the audit MUST also verify:
+1. **HTTP method match:** Frontend sends PATCH, backend has PUT → mismatch.
+2. **Path parameter match:** Frontend calls `/billing/compare/${tier}`, backend has no `/compare/:tier` route.
+3. **Response shape match:** Frontend expects `{ data: [...] }`, backend sends raw array.
+Run: Extract ALL `fetchAPI<T>('/path')` and `api.*.method()` calls from the frontend API service and cross-reference against ALL registered backend routes — matching method, path, AND parameter shapes.
+
+### Pitfall 14: Silent Catch Blocks Incomplete Scan (v4 addition)
+
+**What happened:** The scan-runner finds `.catch(() => {})` patterns, but the audit only flagged SOME of them (NIS2, USPrivacy) and missed others (SBOMManager, ACOSDashboard). When the scan produces a list, EVERY item on the list must be classified.
+
+**Rule:** Process the ENTIRE output of every scan category. If `/tmp/audit_E1.txt` has 15 matches, all 15 must appear in the report as classified findings. Missing even one is an audit completeness failure.
+
+### Pitfall 15: User-Supplied Regex / Dynamic Code Execution (v4 addition)
+
+**What happened:** The workflow engine accepted user-supplied regex patterns via `new RegExp(userInput)` without complexity limits. A malicious pattern can cause ReDoS (Regular Expression Denial of Service) and block the event loop.
+
+**Rule — Dynamic Code Execution Audit (Phase 6 enhancement):**
+Search for: `new RegExp(`, `eval(`, `Function(`, `vm.runIn`, `child_process.exec` with user-controllable inputs. Each is a potential injection or DoS vector. Verify input is sanitized, sandboxed, or uses a safe alternative (e.g., `re2` for regex).
+
+### Pitfall 16: Deep Subdirectory Services Skipped (v5 addition)
+
+**What happened:** `server/src/services/advanced/regulatoryIntelligenceFabricService.ts` (~2700 lines) contained 2 SSRF gaps and 1 multi-tenant write gap. The audit processed `server/src/services/` but the file was so large that agents only sampled it. Files in subdirectories (`advanced/`, `integrations/`, `workers/`) were statistically processed rather than exhaustively read.
+
+**Rule — No File Size Exemptions:**
+1. Every service file MUST be read in full, regardless of size. If a file exceeds 2000 lines, read it in chunks (offset+limit).
+2. `server/src/services/advanced/` and similar subdirectories MUST be processed with the same rigor as top-level services.
+3. For L7 (write operations) and F7 (outbound calls), the grep output already captures all matches including subdirectories. But the agent MUST read context for EVERY match — not "representatively sample" from large files.
+
+### Pitfall 17: Fix Effectiveness Not Verified (v5 addition)
+
+**What happened:** A previous audit flagged ReDoS in the workflow engine. A fix was applied adding `safeRegexTest()` with a 200-character length guard. The next audit found the fix was INSUFFICIENT — a 21-character pattern like `(a+)+$` causes catastrophic backtracking. Length guards do not prevent ReDoS.
+
+**Rule — Fix Verification:**
+When a finding from a previous audit is marked "FIXED," the current audit MUST verify the fix is EFFECTIVE, not just PRESENT:
+1. Read the fix code
+2. Ask: "Does this fix ACTUALLY prevent the attack?" (not just "Does code exist at this location?")
+3. For ReDoS fixes: Length alone is insufficient. Check for `re2`, timeout wrappers, or complexity analysis.
+4. For SSRF fixes: URL validation alone is insufficient if it doesn't check private IPs, localhost, metadata endpoints.
+5. For multi-tenant fixes: A pre-check lookup is insufficient if the DELETE/UPDATE query itself doesn't include orgId (defense-in-depth).
+
+### Pitfall 18: Database Migration Status Not Verified (v5 addition)
+
+**What happened:** SCIM bearer token code was changed to hash tokens with SHA-256 before comparison. But a comment in the code said "Requires migration to store SHA-256 hashed tokens." If the migration hasn't been applied, ALL SCIM auth silently fails because `SHA256(plaintext) != plaintext`.
+
+**Rule — Migration Verification:**
+When code changes require a corresponding database migration:
+1. Check if a migration file exists (e.g., in `server/prisma/migrations/`)
+2. If the migration is referenced but doesn't exist → HIGH finding (code/DB mismatch)
+3. If the migration exists, check its date — was it created AFTER the code change?
+4. If code says "requires migration" in a comment → the migration hasn't been applied → flag as HIGH
+
+### Pitfall 19: Runtime Compatibility Gaps (v5 addition)
+
+**What happened:** `Dockerfile` set `NODE_OPTIONS="--force-fips"` but the base image was Alpine Linux, whose OpenSSL is NOT FIPS-certified. Node.js throws on startup. Static analysis sees "FIPS enabled" and marks it as compliant, but the container won't actually start.
+
+**Rule — Runtime Compatibility Checks:**
+For deployment-critical configurations, verify the RUNTIME can support them:
+1. `--force-fips` → Verify OpenSSL in the base image supports FIPS mode
+2. TLS certs → Verify cert paths exist in the container
+3. Native modules → Verify they compile on the target architecture
+4. If a Dockerfile exists, read it fully and cross-reference Node.js flags with the base image capabilities
+
+### Pitfall 20: DEV_FALLBACK vs PARTIALLY_WIRED Reclassification (v5 addition)
+
+**What happened:** 3 components (ESGReportingModule, EnvironmentalLifecycle, PostMarketSurveillance) were classified as DEV_FALLBACK because they had `useEffect` + API calls. But deeper analysis showed the API calls only fetched 2 of 5 state arrays — the other 3 DEMO_ arrays were never replaced. The `useEffect` exists but doesn't cover all the static data.
+
+**Rule — Exhaustive State Array Verification:**
+For every component classified as DEV_FALLBACK or WIRED_WITH_FALLBACK:
+1. List ALL `const DEMO_*` / `const DEFAULT_*` arrays in the component
+2. List ALL `useEffect` / `useQuery` calls and what state they update via `setXxx()`
+3. If `useEffect` sets 2 of 5 state variables but 3 remain at their DEMO_ values forever → PARTIALLY_WIRED, not DEV_FALLBACK
+4. The test is: "After the component mounts and all API calls complete, does ANY DEMO_/DEFAULT_ data remain visible to the user?" If yes → PARTIALLY_WIRED.
+
+### Pitfall 21: Domain-Specific Config Defaults (v5 addition)
+
+**What happened:** The v4 default-value security check covered CORS, JWT, rate limits, SSL, and cookies. But MQTT_BROKER_URL defaulted to `mqtt://localhost:1883` (plaintext, unauthenticated) — a domain-specific protocol not in the generic checklist.
+
+**Rule — Exhaustive Config Default Audit:**
+Check EVERY `process.env.XXX || 'default'` and `??` fallback in config files. Not just common web configs — also:
+- Message brokers: MQTT, AMQP, Kafka URLs (protocol = plaintext?)
+- Search engines: Elasticsearch, Meilisearch URLs
+- Cache: Redis URLs (no auth?)
+- External APIs: Any URL default that isn't localhost
+- Encryption: Key lengths (minimum must match algorithm requirement, e.g., AES-256 → 32 bytes)
+- CI/CD: Action version references (do they exist?)
+
+### Pitfall 22: Service File Enumeration Incomplete (v6 addition)
+
+**What happened:** The L7 scan found 140 write operations across 15 services. The audit read ~5 "main" services in depth but only spot-checked the other 10. Result: 12 multi-tenant gaps in 5 services (personnelService, issueManagementService, policyLibraryService, questionnaireService, trustCenterService) were missed.
+
+**Rule — EVERY Service File Must Be Individually Read:**
+1. `find server/src/services -name "*.ts" -not -name "*.test.*" -not -name "*.spec.*" | sort` — enumerate ALL service files
+2. For EACH service file, read it in full (chunked if >500 lines)
+3. For EACH write operation in the service, verify organizationId filtering
+4. Do NOT stop after reading the "main" 5 services. Integration services (`services/integrations/`), advanced services (`services/advanced/`), and utility services ALL need the same treatment.
+
+### Pitfall 23: Docker Ecosystem Incomplete (v6 addition)
+
+**What happened:** The audit read the root `Dockerfile` but not: OPA Dockerfile (`server/docker/opa/Dockerfile`), docker-compose security files, or nginx configuration in production compose. Result: OPA runs as root, Grafana has default password, nginx:alpine is unpinned.
+
+**Rule — ALL Dockerfiles and Compose Files:**
+```bash
+find . -name "Dockerfile*" -o -name "docker-compose*" | grep -v node_modules | sort
+```
+Read EVERY file. Check: non-root user, image pinning, default passwords, secrets management, health checks.
+
+### Pitfall 24: Cross-File Version Consistency (v6 addition)
+
+**What happened:** CI uses Node 20 but Dockerfile uses Node 22. Tests pass in CI against a different runtime than production. Also: no `engines` field in package.json to enforce the version.
+
+**Rule — Version Consistency Checks:**
+- CI Node version (`.github/workflows/*.yml`) MUST match Dockerfile Node version
+- `package.json` SHOULD have an `engines` field
+- Base image versions in Dockerfile SHOULD be pinned to patch level (not just `node:22-alpine`)
+
+### Pitfall 25: Error Path Runtime Testing (v6 addition)
+
+**What happened:** Red team tested auth rejection (401), SSRF payloads, SQL injection — all standard attack vectors. But the CORS middleware itself had a bug: when it throws an error, the response bypasses Helmet, leaking X-Powered-By and stack traces. This was only discoverable by triggering the error PATH of middleware.
+
+**Rule — Error Path Testing:**
+When the server is running, test not just normal requests and auth rejection, but also:
+- What happens when CORS itself errors (invalid Origin header format)
+- What happens when body parser errors (malformed content-type)
+- What happens when rate limiter errors
+- What happens when middleware throws (not just request handlers)
+Each middleware error path must return secure responses (no stack traces, no server info).
+
+### Pitfall 26: Package.json Production Readiness (v6 addition)
+
+**What happened:** `@sentry/node` was in `devDependencies` instead of `dependencies`. In production (`npm install --production`), Sentry won't be installed — meaning zero error tracking. Also: no `engines` field means wrong Node version can be used silently.
+
+**Rule — Package.json Audit:**
+```bash
+# Check for production-critical packages in devDependencies
+grep -A1000 '"devDependencies"' package.json | grep -i "sentry\|datadog\|newrelic\|winston\|pino\|helmet\|cors\|express\|prisma"
+```
+Production-critical packages in devDeps = HIGH finding. Also check: `engines` field, `scripts.start`, `scripts.build`.
+
+### Pitfall 27: Agent Fatigue — Sampling Despite Anti-Sampling Rules (v7 addition)
+
+**What happened in v6:** The anti-sampling rule (Pitfall 6) existed since v3 and was explicitly stated in the prompt. Despite this, the v6 audit checked only 15 components in the Feature Completeness table. The codebase has 100+ components. The agent "got tired" and sampled.
+
+**Why instructions alone don't work:** Rules in text form are suggestions that the agent can rationalize away under context pressure. The agent will think "I've checked the important ones" and stop. This happened in v3, v4, v5, AND v6 — adding more text about "check everything" did not change behavior.
+
+**v7 Fix — Machine-Verifiable Completion Gates:**
+The scan-runner now outputs hard counts. The report MUST include these exact numbers and the agent must demonstrate it processed them all:
+
+1. **Component Gate**: Scan-runner outputs total component count to `/tmp/audit_component_count.txt`. Report MUST state: "Checked N of M components" where N == M. If N < M, the report is INCOMPLETE.
+2. **F7 Gate**: Scan-runner outputs F7 match count. Report MUST classify every match (FALSE_POSITIVE, DEV_FALLBACK, or PRODUCTION_GAP) with evidence. "Review needed" is NOT a valid classification.
+3. **Service File Gate**: Scan-runner outputs total service file count. Report MUST state: "Read N of M service files" where N == M.
+4. **Report Section Gate**: The report MUST contain sections numbered exactly 3.5, 3.6, 3.7. A `grep -c "### 3.5\|### 3.6\|### 3.7"` on the report must return 3.
+
+**Rule — If you cannot process all items due to context limits:**
+- State explicitly: "INCOMPLETE — processed X of Y items. Remaining items need a follow-up scan."
+- Do NOT silently truncate by presenting a sample as if it were the full set.
+- Do NOT downgrade real findings to "Non-Blocking" to avoid listing them as gaps.
+
+### Pitfall 28: Unprocessed Scan Output — "Review needed" Is Not a Classification (v7 addition)
+
+**What happened:** F7 (SSRF) returned 97 matches. The report listed them as "Review needed" instead of classifying each one. This means the agent ran the scan but never actually did the analysis the scan was supposed to feed into.
+
+**Rule:** Every scan output file MUST be fully processed. For each line in each `/tmp/audit_*.txt` file:
+- Read the file referenced in the match
+- Classify per classification-guide.md
+- Record the classification with evidence
+If a scan category has >50 matches, group by file and classify per-file (not per-line), but still read every unique file.
+
+### Pitfall 29: Finding Rationalization — Downgrading Real Gaps (v7 addition)
+
+**What happened:** `vendorRiskService.createVendorReview` has a real multi-tenant isolation gap (no org check on vendorId before creating a review). The v6 report moved this to "Non-Blocking, Low severity" with the rationale "read-only vendor lookup, not a write operation on foreign data." But it IS a write operation — `.create()` is always a write. The agent rationalized away a real finding.
+
+**Rule:** A multi-tenant write operation without organizationId verification is ALWAYS at least HIGH severity. Do not downgrade based on speculative reasoning about "what the data represents." The severity is determined by the OPERATION TYPE (create/update/delete), not by the agent's guess about data sensitivity.
+
+### Pitfall 30: L7 Volume Overwhelm — No Triage Algorithm (v9 addition)
+
+**What happened:** L7 returned 682 write operations across 89 service files. The prompt said "check every one" but the agent sampled. The monitoringService.ts had 5 HIGH multi-tenant gaps hidden among 682 operations because the agent checked high-volume files first and stopped.
+
+**Rule — L7 Triage by Inconsistency:**
+1. Group L7 by file. For each file, count orgId-scoped writes vs unscoped writes.
+2. **Priority 1:** Files where SOME writes have orgId but others don't (inconsistency = bug).
+3. **Priority 2:** Files with ZERO orgId references (entire service unscoped).
+4. **Priority 3:** Files where ALL writes have orgId (verify correctness).
+The agent MUST process all Priority 1 and 2 files. Priority 3 can be sampled if context is limited.
+
+### Pitfall 31: Silent Lint Pass — Missing Config (v9 addition)
+
+**What happened:** The server had no `eslint.config.js`. ESLint 9 flat config silently ignores all files when config is absent, reporting "0 errors." The audit treated this as a pass.
+
+**Rule:** Before running any linter, verify the config file EXISTS for each sub-project directory. A missing config is a MEDIUM finding, not a clean bill of health.
+
+### Pitfall 32: Docker Compose Fail-Open Defaults (v9 addition)
+
+**What happened:** `docker-compose.security.yml` used `${ELASTICSEARCH_PASSWORD:-changeme}` (fail-open). The audit also missed `REDIS_PASSWORD:-localredis123`, `JWT_SECRET:-dev-jwt-secret...`, `ENCRYPTION_KEY:-dev-32-char...` in the dev compose services. The prompt checked for "default passwords" but didn't distinguish Bash `:-` (fail-open) from `:?` (fail-closed) syntax.
+
+**Rule:** Scan ALL compose files for `:-` on security-sensitive variables (password, secret, key, token, admin, credential). These MUST use `:?` (fail-closed). Empty defaults `:-` on optional API keys (Stripe, SendGrid) are acceptable.
+
+### Pitfall 33: CI Pipeline :latest Not Scanned (v9 addition)
+
+**What happened:** R3 caught `:latest` in Dockerfiles and compose files but missed it in `.github/workflows/ci.yml` where `:latest` was being pushed to production ECR.
+
+**Rule:** R3 MUST also scan CI workflow files (`*.yml` in `.github/workflows/`). Any `:latest` in `docker push`, `docker tag`, or registry operations = MEDIUM finding.
+
+### Pitfall 34: Security Wrapper Bypass — Partial Call-Site Coverage (v9 addition)
+
+**What happened:** `safeRegexTest()` existed at workflowEngine.ts:43 and was used at line 205, but line 743 bypassed it with raw `new RegExp(trigger.conditionValue)`. The prompt found the safe function and stopped checking for bypasses.
+
+**Rule — Security Function Completeness:** When a safe wrapper is found, grep for ALL instances of the unsafe pattern it replaces. Every instance not routed through the wrapper = PRODUCTION_GAP. Existence of a safe function is not evidence all call sites use it.
+
+### Pitfall 35: In-Memory State Not Impact-Classified (v9 addition)
+
+**What happened:** O3 returned 103 in-memory state matches. The agent couldn't distinguish security sessions (CRITICAL if lost) from WebRTC connections (ephemeral by nature). All 103 were treated equally.
+
+**Rule:** Classify O3 matches by impact: CRITICAL (security sessions, job queues), HIGH (user data caches), MEDIUM (ML weights, computed caches), LOW (connections, rate counters). Only CRITICAL/HIGH are findings.
+
+### Pitfall 36: Startup Env Validation Not Deep-Checked (v9 addition)
+
+**What happened:** P9 returned 1 match for env validation. The audit noted "WARN — minimal" but didn't verify which critical vars were actually validated. All 4 critical vars (DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, ENCRYPTION_KEY) were validated, but without checking, the audit couldn't confirm this.
+
+**Rule:** If P9 < 5, explicitly verify validation exists for DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, ENCRYPTION_KEY. Each must throw/exit at startup when missing.
+
+### Pitfall 37: Cross-Compose Variable Inconsistency (v9 addition)
+
+**What happened:** `REDIS_PASSWORD` used `:-localredis123` (fail-open) in one compose service but `:?` (fail-closed) in another. The audit checked each compose file independently, missing the inconsistency.
+
+**Rule:** For each security-sensitive env var, check ALL compose files. If the same var uses both `:-` and `:?` across files, flag the inconsistency. Dev-profile defaults with weak credentials should be explicitly documented.
+
+### Pitfall 38: Scan-Runner Shell Crash — Glob Expansion Under set -e (v10 addition)
+
+**What happened:** The v9 scan-runner crashed at T3 (lint config check) because `ls "$dir"/eslint.config.* "$dir"/.eslintrc*` fails when no glob matches exist. Under `set -euo pipefail`, this non-zero exit kills the entire script. T3-T8 all failed to run, and the scan-runner exited with code 1.
+
+**Rule — Shell Compatibility:** Never use `ls GLOB` to check file existence in scan-runner scripts. Use `find DIR -maxdepth 1 -name "PATTERN"` instead. All new scan steps must be tested under `set -euo pipefail` with no matching files to verify they don't crash.
+
+### Pitfall 39: CI Quality Gate Bypass in Secondary Workflows (v10 addition)
+
+**What happened:** The v9 prompt's T2 and T9 scans checked `.github/workflows/ci.yml` for `:latest` tags and `continue-on-error`. But the codebase had separate `mobile.yml` and `dependency-scan.yml` workflows containing 5 `continue-on-error: true` instances that were never scanned. Test failures in mobile CI and dependency scans were silently ignored.
+
+**Rule — ALL CI Workflows:** `find .github/workflows/ -name "*.yml"` — scan ALL workflow files, not just the main one. Projects with mobile apps, scheduled scans, or environment-specific deploys have multiple workflows with independent quality gates.
+
+### Pitfall 40: Peer Dependency Gaps Causing CI-Only Failures (v10 addition)
+
+**What happened:** `graphology-types` was an unmet peer dependency of `graphology-layout-forceatlas2`. This caused 41 TypeScript errors in CI (where `npm ci` is strict) but not locally (where `npm install` is lenient). The audit ran `tsc --noEmit` locally and saw 0 errors, missing the CI failure entirely.
+
+**Rule — Peer Dependency Check:** After Phase 1 tsc, run `npm ls --all 2>&1 | grep -i "UNMET PEER"` for each sub-project. Any unmet peer dep = MEDIUM finding. This catches the class of bug where code compiles locally but fails in CI.
+
+### Pitfall 41: Credential Encryption-at-Rest Not Verified (v11 addition)
+
+**What happened:** F8 found 288 credential patterns. The audit confirmed passwords use PBKDF2, SCIM tokens use SHA-256, webhook secrets use HMAC. But OAuth integration tokens (GitHub, Slack, Jira access_tokens) are stored in plaintext in the `integration` table. The app has `ENCRYPTION_KEY` and `byokService` but integration tokens bypass encryption entirely. Claude Code missed this; Claude Desktop found it.
+
+**Rule:** For EVERY credential type stored in DB, verify encryption is applied before the `.create()`/`.update()` call. "Credential patterns exist" ≠ "credentials are encrypted." Trace the data path from receipt to storage.
+
+### Pitfall 42: SSRF Function Parameters vs Default URLs (v11 addition)
+
+**What happened:** F7 classified `patValidationService.ts` as FALSE_POSITIVE because the file uses hardcoded provider URLs (github.com, stripe.com). But the `validateToken()` function accepts an optional `baseUrl?: string` parameter that overrides the default URL. An attacker calling the API with `baseUrl: "http://169.254.169.254"` can hit the cloud metadata endpoint. 11 provider methods accept this parameter.
+
+**Rule:** F7 classification must check function PARAMETERS, not just default URLs. If a function has a `url`/`baseUrl`/`endpoint` parameter, trace whether the caller validates it with `isUrlSafe()`.
+
+### Pitfall 43: Parent-Child Entity Multi-Tenant Chain (v11 addition)
+
+**What happened:** L7 triage found monitoringService gaps (direct orgId missing). But soxService's `createSOXTestResult(controlId)` was marked safe because the function has `organizationId` as a parameter. However, `organizationId` is OPTIONAL and `controlId` is NOT verified to belong to the caller's org. The parent entity (SOXControl → Organization) chain is not checked.
+
+**Rule:** For child entity writes, orgId on the child is insufficient — verify the PARENT entity's org. `create({ controlId })` without `where: { id: controlId, organizationId }` lookup first = HIGH gap.
+
+### Pitfall 44: Infrastructure Config Files Not Scanned (v11 addition)
+
+**What happened:** T1 scans `docker-compose*` files for `:-changeme`. But `logstash/pipeline/logstash.conf:52` has `password => "${ELASTICSEARCH_PASSWORD:-changeme}"` — same vulnerability, different file type. Non-compose infrastructure configs (logstash, nginx, prometheus) are invisible to T1.
+
+**Rule:** Extend default-password scanning beyond compose files to ALL infrastructure config files: `find . -path "*/logstash/*" -o -path "*/nginx/*" -o -path "*/grafana/*" | xargs grep "changeme\|default.*password"`.
+
+### Pitfall 45: L10 Scope Too Narrow — Controllers Not Scanned (v11 addition)
+
+**What happened:** L10 found 29 manual error responses in `server/src/routes/`. But `server/src/controllers/` has 247 `res.status()` calls — 8x more. Controllers are where most request handling happens in this codebase. The entire controller layer was invisible to L10.
+
+**Rule:** L10 MUST scan BOTH `routes/` AND `controllers/`. Any `res.status(N).json(...)` in a catch block without `logger.error()` = bypass of Sentry/global handler.
+
+### Pitfall 46: Claiming Complete When Incomplete (v11 addition)
+
+**What happened:** Claude Code's Section 3.8 claimed "L7 682 processed: N==M" and "F7 97 classified: N==M." Cursor's Section 3.8 honestly stated "L7: INCOMPLETE" and "F7: INCOMPLETE." Cursor scored itself lower (80.35%) because of this honesty. Claude Code scored higher (90.9%) partly by not acknowledging gaps.
+
+**Rule:** If parallel agents process L7/F7, the main agent must verify the agent actually read every match — not just trust the agent's claim. If verification is impossible, mark as INCOMPLETE. A lower honest score is better than a higher dishonest one.
+
+### Pitfall 47: Cross-Tool Disagreement as Bug Signal (v12 addition)
+
+**What happened:** Claude Code reported "0 console.log in server production code." Claude Desktop found 10 instances with file:line evidence. Claude Code scored 97.95% by missing findings other tools caught.
+
+**Rule — Cross-Audit Reconciliation:**
+When multiple audit reports exist for the same codebase, build the UNION of all findings. Any finding flagged by ANY tool is a candidate until verified against current code. The report with MORE specific evidence (file:line) is more likely correct than the one claiming zero issues. Include a reconciliation table in Section 0.
+
+### Pitfall 48: Node Version CI↔Docker Inconsistency (v12 addition)
+
+**What happened:** CI workflows tested on Node 22, but the production Dockerfile built on Node 25. Code was tested on a different major runtime version than production. Node 25 may introduce behavioral differences not caught by CI. The v6 rule "Cross-File Version Consistency" existed but no T-scan grep enforced it.
+
+**Rule — T16 Mandatory Scan:**
+Run T16 after the scan-runner. Compare `node-version` in CI workflows vs `FROM node:XX` in Dockerfiles vs `engines` in package.json. Major version mismatch = HIGH finding.
+
+### Pitfall 49: "Already Audited" Service False Confidence (v12 addition)
+
+**What happened:** vendorRiskService was declared "safe" in a previous audit based on READ functions (`getVendorById` had org filtering). But `createVendorReview` — a WRITE function in the same file — had no org check. The previous audit's "safe" classification caused the current audit to skip the file.
+
+**Rule:** Previous audit safe-status does NOT exempt a service from current L7 triage. The L7 triage algorithm (v9) must be applied fresh every audit. Priority 1 files (mixed org checks) are the highest signal, regardless of previous classifications.
+
+### Pitfall 50: Auth-Critical Endpoints Lack Validation (v12 addition)
+
+**What happened:** Input validation coverage was measured at 93% (63/68 route files). But `forgot-password` and `reset-password` in auth.ts had no `validateBody()`. These auth-critical endpoints were hidden in the 7% gap, treated as equivalent to low-risk admin routes.
+
+**Rule — T19 Auth Endpoint Validation:**
+These specific endpoints MUST be individually verified: `login`, `register`, `forgot-password`, `reset-password`, `change-password`. Missing validation on auth endpoints = MEDIUM, regardless of overall coverage percentage.
+
+### Pitfall 51: Dev Compose Literal Security Values (v12 addition)
+
+**What happened:** T1 scans for `:-` fail-open syntax in compose files. But `docker-compose.yml` had `JWT_SECRET=dev-jwt-secret-minimum-32-characters-long` and `ENCRYPTION_KEY=dev-encryption-key-32chars!!` as literal environment values (not `${VAR:-default}` syntax). T1 missed them because they don't use `:-`.
+
+**Rule — T18 Literal Value Scan:**
+Scan compose files for literal `=` assignments of security keys that don't use `${...}` variable substitution. Literal hardcoded secrets in dev compose = LOW if dev-only profile, MEDIUM if no profile separation.
+
+### Pitfall 52: tsc OOM in CI (v12 addition)
+
+**What happened:** `tsc --noEmit` required `NODE_OPTIONS=--max-old-space-size=8192` to complete without OOM on the 1M+ LOC codebase. CI workflows didn't set this. The audit ran tsc locally with sufficient memory and reported "0 errors" without noting the memory requirement.
+
+**Rule — T21 Memory Requirements:**
+If the build process requires NODE_OPTIONS or memory flags, verify CI workflows also set them. Document the requirement in the report. Missing NODE_OPTIONS in CI when locally required = MEDIUM.
+
+### Pitfall 53: Console.log Server-Only Audit Gap (v12 addition)
+
+**What happened:** G1 scans all source files for `console.*` and returned ~30 matches. The audit classified all 30 as "scripts/tests" (FALSE_POSITIVE). But 10 of those were actually in `server/src/` production code — they were misclassified because G1 mixes server, frontend, scripts, and CLI output together.
+
+**Rule — T17 Server-Only Scan:**
+Run a separate `grep` specifically on `server/src/` (excluding test/scripts/CLI) for `console.*`. This produces a focused list that can't be accidentally dismissed as "scripts/tests." Each hit must be individually classified.
+
+### Pitfall 54: Fixable Vulnerabilities Not Acted On (v12 addition)
+
+**What happened:** `npm audit` reported `brace-expansion` (moderate) as fixable via `npm audit fix`. The audit reported the vulnerability but didn't run the fix. The next audit found the same vulnerability still present.
+
+**Rule — T20 Fixable Vuln Action:**
+For each fixable vulnerability: run `npm audit fix` or document why it can't be fixed (e.g., breaking change, peer dep conflict). Reporting without acting is an audit gap. The report must state the action taken.
+
+### Pitfall 55: SSO/SCIM Error Responses Need Security Logging (v12 addition)
+
+**What happened:** L10 found 29 manual error responses in routes. But SSO routes had 14 inline `res.status()` responses, and SCIM had ~5 more. These are security-sensitive auth flows where error responses bypass Sentry, meaning failed auth attempts, SAML validation errors, and SCIM token failures are invisible to security monitoring.
+
+**Rule — T22 SSO/SCIM Error Audit:**
+SSO and SCIM routes must be audited separately from generic L10. Every catch block must include `logger.error()` with security context (IP, session, provider). Inline error responses in auth flows bypassing Sentry = HIGH.
+
+### Pitfall 56: ReDoS Wrapper Effectiveness Not Verified (v12 addition)
+
+**What happened:** T4 verified that `safeRegexTest()` was used at all `new RegExp()` call sites. But `safeRegexTest` only had a 200-character length guard — no `re2`, no timeout. A 21-character pattern `(a+)+$` causes catastrophic backtracking despite passing the length check. T4 was satisfied (all call sites use the wrapper), but the wrapper itself is broken.
+
+**Rule — T25 Wrapper Implementation Check:**
+When T4 confirms all call sites use the safe wrapper, T25 must verify the wrapper IMPLEMENTATION is effective. Length-only guards are INSUFFICIENT (Pitfall 17). The wrapper must use `re2`, a timeout, or complexity analysis. If the wrapper is insufficient, ALL call sites using it are STILL VULNERABLE = MEDIUM.
+
 ## Audit Domains & Phases
 
 | Domain | Phases | What It Covers |
@@ -177,6 +591,24 @@ The scan-runner.sh v2 saves baselines to `.claude/audit-baseline/` and computes 
 4. **Scoring constraint**: Score MUST improve if more findings resolved than introduced. If score decreases despite net improvement, there is a classification error — recheck all changed items.
 
 **If no baseline exists** (first scan), skip and note "First scan — no baseline" in the report.
+
+**Phase 0.1.1: Fix Effectiveness Verification (v5 — Pitfall 17)**
+For every finding marked "FIXED" from a previous audit:
+1. Read the fix code
+2. Ask: "Does this fix ACTUALLY prevent the attack, or is it just a partial mitigation?"
+3. Examples of insufficient fixes:
+   - ReDoS: Length guard (200 chars) does NOT prevent catastrophic backtracking — need `re2` or timeout
+   - SSRF: URL format validation does NOT prevent `http://169.254.169.254` — need private IP blocking
+   - Multi-tenant: Pre-check lookup is NOT defense-in-depth if the DELETE query itself is unguarded
+4. If a fix is present but insufficient → classify as NEW finding with note "Fix present but ineffective"
+
+**Phase 0.1.2: Migration Status Verification (v5 — Pitfall 18)**
+For every code change that references a required database migration:
+```bash
+# Find "requires migration" comments
+grep -rn "requires migration\|needs migration\|migration required\|run migration" server/src/ --include="*.ts" | grep -v node_modules | grep -v test
+```
+If code logic depends on a migration that may not have been applied → HIGH finding.
 
 ---
 
@@ -486,6 +918,26 @@ For critical business rules discovered in 4B-4C, synthesize property-based tests
 - Check edge cases: zero values, negative numbers, empty strings, null inputs, boundaries
 - Verify calculations match requirements (rounding, precision, currency)
 
+**5A.1: Algorithm Correctness Verification (v4 — Pitfall 10 fix)**
+For every computation/aggregation endpoint, trace the algorithm:
+```bash
+# Find all averaging, summing, counting logic
+grep -rn "/ count\|/ total\|\.length\|\.reduce\|average\|Math\.round\|toFixed" server/src/ --include="*.ts" | grep -v node_modules | grep -v test
+```
+- Verify denominators match numerators (per-group counts, not global counts)
+- Verify division-by-zero guards exist
+- Verify floating-point currency uses integer cents, not dollars
+
+**5A.2: Action Implementation Verification (v4 — Pitfall 10 fix)**
+For every handler/action that claims to perform an operation:
+```bash
+# Find all action handlers, workflow steps, command handlers
+grep -rn "case '\|action.*==\|actionType\|handler\[" server/src/ --include="*.ts" | grep -v node_modules | grep -v test
+```
+- For EACH action: Does the code body contain an actual DB write (`prisma.*.create/update/delete`), API call, or side effect?
+- A handler that returns `{ status: 'success' }` without performing the claimed operation = PRODUCTION_GAP (no-op handler)
+- A handler that logs "completed" but writes nothing = PRODUCTION_GAP
+
 **5B: State Management Audit**
 - Frontend: All stateful interactions managed (loading, error, success, empty, stale)
 - Backend: Server state consistent (session management, cache invalidation, race conditions)
@@ -497,10 +949,36 @@ For critical business rules discovered in 4B-4C, synthesize property-based tests
 - DB: NOT NULL, UNIQUE, CHECK, FOREIGN KEY constraints enforced
 - Cross-layer consistency: Frontend rules match API rules match DB constraints
 
+**5C.1: Validation Coverage Measurement (v4 — Pitfall 9 fix)**
+Do NOT just confirm validation exists. MEASURE coverage:
+```bash
+# Count route files with validation middleware
+TOTAL_ROUTE_FILES=$(find server/src/routes -name "*.ts" | wc -l)
+VALIDATED_FILES=$(grep -rl "validateBody\|validateQuery\|validate(\|schema\|zod\|joi" server/src/routes/ --include="*.ts" | wc -l)
+echo "Validation coverage: $VALIDATED_FILES / $TOTAL_ROUTE_FILES route files"
+```
+- Report the exact percentage. Anything below 80% for routes accepting request bodies = MEDIUM finding.
+- Prioritize validation gaps by data sensitivity (credentials, permissions, financial data first).
+
 **5D: Error Propagation & User Feedback**
 - DB failure → API error response → UI error message (full chain works)
 - Error messages user-friendly (not raw stack traces)
 - All async operations have timeout handling
+
+**5D.0: Error Propagation Completeness (v4 — Pitfall 12 fix)**
+```bash
+# Find routes that manually send error responses (bypass global error handler)
+grep -rn "res\.status(500)\|res\.status(400)\|res\.status(404)" server/src/routes/ --include="*.ts" | grep -v test > /tmp/audit_manual_error_responses.txt
+
+# Find services throwing bare Error instead of AppError
+grep -rn "throw new Error(" server/src/services/ --include="*.ts" | grep -v AppError | grep -v test > /tmp/audit_bare_errors.txt
+
+# Check global error handler for missing error types
+# Must handle: SyntaxError, AppError, MulterError, PrismaClientKnownRequestError, JWT errors
+```
+- Routes that `catch` and send `res.status(500).json(...)` bypass Sentry, security logging, and consistent error format → flag as MEDIUM.
+- Services throwing `new Error()` instead of `AppError` → global handler returns 500 for what should be 400/404/409 → flag as MEDIUM.
+- Missing error types in global handler → flag as LOW.
 - Retry mechanisms for transient failures
 
 **5D.1: Runtime Input Validation Testing** *(requires Boot Gate pass)*
@@ -587,11 +1065,40 @@ Each failing test is classified:
 - Frontend route guards: Unauthorized users can't access admin pages via URL
 - Horizontal privilege escalation: Can user A access user B's data by changing an ID?
 
+**6B.1: Exhaustive Multi-Tenant Write Operation Trace (v4+v6 — Pitfalls 8, 22 fix — MANDATORY)**
+Do NOT sample one function per service. Do NOT check only "main" services. Check EVERY service file, EVERY write operation:
+```bash
+# Find ALL Prisma write operations in service files
+grep -rn "\.create(\|\.update(\|\.delete(\|\.upsert(\|\.updateMany(\|\.deleteMany(" server/src/services/ --include="*.ts" | grep -v node_modules | grep -v test > /tmp/audit_all_writes.txt
+echo "Total write operations: $(wc -l < /tmp/audit_all_writes.txt)"
+```
+For EACH write operation found:
+1. Read the surrounding function
+2. Check if `organizationId` is used in the `where` clause (for updates/deletes) or verified via a prior lookup (for creates)
+3. If a write operates on entity X and X belongs to an organization, but the query uses `{ id: entityId }` alone without org filtering → **HIGH severity multi-tenant isolation gap**
+4. Cross-reference: When one function in a service has org checks and another doesn't → higher confidence it's a bug, not intentional
+
+**6B.2: Cross-Entity Consistency Check (v4 — Pitfall 8 fix)**
+When a function processes multiple entity types (e.g., search indexing, bulk operations, migration):
+```bash
+# Find functions that query multiple Prisma models
+grep -rn "prisma\.\w\+\.\(findMany\|findFirst\|count\)" server/src/ --include="*.ts" | grep -v test > /tmp/audit_reads.txt
+```
+For each function that queries 3+ different models, verify ALL models have the same security filters (organizationId, userId). One missing filter among N entities = cross-tenant data leak.
+
 **6C: Data Protection**
 - Passwords hashed with bcrypt/argon2 (not MD5/SHA1)
 - HTTPS enforced, API calls use TLS
 - PII minimized, data retention considered
 - Secrets in code: Hardcoded API keys, tokens, passwords, connection strings
+
+**6C.1: Credential Storage Completeness (v4 — Pitfall 8 fix)**
+Do NOT only check JWT/password storage. Check ALL credential types:
+```bash
+# Find all token/key/secret storage patterns
+grep -rn "bearerToken\|apiKey\|secretKey\|accessToken\|serviceToken\|webhookSecret\|signingKey" server/src/ --include="*.ts" | grep -v node_modules | grep -v test | grep -v "\.d\.ts"
+```
+For each: Is the credential hashed before storage? If stored in plaintext, is it compared in constant-time? API keys and service tokens MUST be hashed (not just passwords).
 
 **6D: Input Security (OWASP Top 10)**
 - SQL injection: Raw string concatenation in queries
@@ -601,6 +1108,49 @@ Each failing test is classified:
 - Mass assignment: Request bodies filtered to allowed fields
 - Rate limiting on auth endpoints and public APIs
 - Security headers: helmet/CSP/X-Frame-Options/HSTS/X-Content-Type-Options
+
+**6D.1: Exhaustive Outbound HTTP Call SSRF Trace (v4 — Pitfall 8 fix — MANDATORY)**
+Do NOT check only the "webhook service." Check EVERY outbound HTTP call:
+```bash
+# Find ALL outbound HTTP calls in server code
+grep -rn "axios(\|axios\.\|fetch(\|got(\|request(\|http\.get\|https\.get\|http\.request\|https\.request" server/src/ --include="*.ts" | grep -v node_modules | grep -v test > /tmp/audit_outbound_http.txt
+echo "Total outbound HTTP calls: $(wc -l < /tmp/audit_outbound_http.txt)"
+```
+For EACH outbound call:
+1. Is the URL user-controllable? (comes from config, DB, or request params)
+2. If yes, is there SSRF validation (`isWebhookUrlSafe`, URL allowlist, internal IP blocking)?
+3. If a dedicated safe-fetch utility exists in the codebase but THIS call bypasses it → HIGH SSRF gap
+
+**6D.2: Rate Limit Coverage Measurement (v4 — Pitfall 9 fix)**
+```bash
+# Find all route mounts in app/index file
+grep -rn "app\.use\|router\.use" server/src/index.ts --include="*.ts" | grep -i "api\|route"
+# Cross-reference with rate limiter middleware
+grep -rn "apiLimiter\|rateLimiter\|rateLimit" server/src/index.ts --include="*.ts"
+```
+List ALL route groups and mark which have rate limiting. Any missing = finding. Calculate coverage percentage.
+
+**6D.3: Exhaustive Default-Value Security Audit (v4+v5 — Pitfalls 11, 21 fix)**
+For EVERY config value with a fallback default, verify the default is SECURE:
+```bash
+# Find ALL config defaults — not just "common" ones
+grep -rn "process\.env\.\w\+.*||\|process\.env\.\w\+.*??\|process\.env\.\w\+.*:" server/src/config/ --include="*.ts" | grep -v test > /tmp/audit_config_defaults.txt
+```
+Check EVERY default, including domain-specific protocols:
+- **Web security:** CORS origins, JWT secret, rate limits, SSL mode, cookie flags, CSRF → MUST fail-closed
+- **Message brokers:** MQTT, AMQP, Kafka URLs → Default must not be plaintext/unauthenticated
+- **Databases:** Connection URLs → Default must not skip SSL
+- **Search/Cache:** Elasticsearch, Redis URLs → Check auth defaults
+- **Encryption:** Key lengths → Minimum must match algorithm requirement (AES-256 → 32 bytes, not 16)
+- **External APIs:** Any URL default that bypasses TLS
+- **CI/CD:** GitHub Action versions → Must reference existing versions
+
+**6D.4: Dynamic Code Execution / ReDoS Audit (v4 — Pitfall 15 fix)**
+```bash
+# Find user-controllable dynamic code execution
+grep -rn "new RegExp(\|eval(\|Function(\|vm\.run\|child_process\.\(exec\|spawn\)" server/src/ --include="*.ts" | grep -v node_modules | grep -v test
+```
+For each: Is the input user-controllable? If yes → verify sandboxing, input validation, or safe alternative (e.g., `re2` for regex, `safeEval` for expressions).
 
 **6E: Dependency Security**
 - Known CVEs in dependencies
@@ -759,6 +1309,22 @@ FIX: [exact code patch]
 - Proper HTTP status codes (not 200 for everything)
 - Content-Type headers set correctly
 
+**7A.1: Precise Frontend↔Backend Contract Verification (v4 — Pitfall 13 fix — MANDATORY)**
+Do NOT just match paths. Verify method, path, AND params:
+```bash
+# Extract ALL API calls from frontend service file with method + path
+grep -rn "fetchAPI\|api\.\w\+\.\w\+" services/api.ts --include="*.ts" | head -200 > /tmp/audit_frontend_contracts.txt
+
+# Extract ALL backend route registrations with method + path
+grep -rn "router\.\(get\|post\|put\|patch\|delete\)(" server/src/routes/ --include="*.ts" | grep -v test > /tmp/audit_backend_contracts.txt
+```
+For each frontend API call:
+1. Does a backend route exist at that EXACT path?
+2. Does the HTTP method match (frontend PATCH vs backend PUT = mismatch)?
+3. Do path parameters match (frontend `/compare/${tier}` vs backend no `:tier` route)?
+4. Does the response shape match what the frontend expects?
+Report mismatches as MEDIUM severity.
+
 **7B: Error handling** — Verify what happens when:
 - Invalid JSON body sent
 - Required fields missing
@@ -892,6 +1458,53 @@ Any 500 on bad input is a **HIGH** finding — the server should never crash on 
 - HEALTHCHECK directive
 - **Trivy/Grype scanning** in CI — critical/high CVEs block push
 - **IMAGE_TAG** from git SHA or semver (never `:latest` in prod)
+
+**8G.1: Runtime Compatibility Verification (v5 — Pitfall 19)**
+Read the Dockerfile fully and cross-reference:
+- `--force-fips` → Does the base image's OpenSSL support FIPS mode? (Alpine: NO. Ubuntu/RHEL with certified module: YES)
+- `NODE_OPTIONS` → Are all flags compatible with the Node.js version in the image?
+- Native modules → Do they compile on the target architecture (arm64 vs x86_64)?
+- TLS certs → Do cert paths referenced in env vars exist in the container?
+
+**8G.2: CI Action Version Verification (v5 — Pitfall 21)**
+```bash
+# Check GitHub Actions versions referenced
+grep -rn "uses:.*@v" .github/workflows/ | grep -oP '@v\d+' | sort -u
+```
+Verify referenced action versions actually exist. Pinned major versions (v4) are safer than bleeding edge (v6+).
+
+**8G.3: ALL Dockerfiles and Compose Files (v6 — Pitfall 23 — MANDATORY)**
+```bash
+find . -name "Dockerfile*" -o -name "docker-compose*" | grep -v node_modules | sort
+```
+Read EVERY file found. For each Dockerfile: non-root USER, pinned base image, no default passwords. For each docker-compose: no hardcoded credentials (Grafana admin password, Redis password, etc.), service images pinned.
+
+**8G.4: Cross-File Version Consistency (v6 — Pitfall 24)**
+```bash
+# CI Node version
+grep -rn "node-version" .github/workflows/ | head -5
+# Dockerfile Node version
+grep "FROM node" Dockerfile | head -3
+# package.json engines
+grep -A2 '"engines"' package.json server/package.json 2>/dev/null
+```
+CI Node version MUST match Dockerfile Node version. `engines` field SHOULD exist.
+
+**8G.5: Package.json Production Readiness (v6 — Pitfall 26)**
+```bash
+# Check for production-critical packages in devDependencies
+grep -A200 '"devDependencies"' server/package.json | grep -i "sentry\|datadog\|winston\|pino\|helmet\|cors\|prisma\|express"
+```
+Production-critical packages in devDependencies = HIGH finding (won't install with `--production`).
+
+**8G.6: Error Path Runtime Testing (v6 — Pitfall 25)** *(requires Boot Gate pass)*
+```bash
+# Test CORS error path
+curl -s -I -H "Origin: %%%invalid%%%" http://localhost:3001/api/health | grep -i "x-powered-by\|server:"
+# Test body parser error path
+curl -s -H "Content-Type: application/json" -d "not{json" http://localhost:3001/api/auth/login 2>/dev/null | grep -i "stack\|at /"
+```
+If middleware error responses leak X-Powered-By, stack traces, or server info → MEDIUM finding.
 
 **8H: Mobile Deployment** (if applicable)
 - Platform secure token storage (Keychain, EncryptedSharedPreferences)

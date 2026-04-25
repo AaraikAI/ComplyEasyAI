@@ -173,6 +173,51 @@ Components operating entirely on local state with zero backend connectivity:
 | INTENTIONAL_STATIC | [N] | [%] |
 | **Total components** | **[N]** | **100%** |
 
+**Completion Gate:** Checked [N] of [M] components (from `/tmp/audit_component_count.txt`). N MUST equal M.
+
+### 3.8 Completion Gate Verification (v7 addition — MANDATORY)
+
+This section proves the audit was exhaustive, not sampled. Values come from scan-runner output.
+
+| Gate | Scan-Runner Count | Report Processed | Complete? |
+|------|:-----------------:|:----------------:|:---------:|
+| Components classified | [from /tmp/audit_component_count.txt] | [N] | ✅ N==M / ❌ N<M |
+| Service files read | [from /tmp/audit_service_count.txt] | [N] | ✅ N==M / ❌ N<M |
+| F7 SSRF files classified | [from /tmp/audit_F7_file_count.txt] | [N] | ✅ N==M / ❌ N<M |
+| L7 write ops verified | [from /tmp/audit_L7.txt line count] | [N] | ✅ N==M / ❌ N<M |
+| Docker files audited | [from /tmp/audit_all_docker.txt] | [N] | ✅ N==M / ❌ N<M |
+| Report has §3.5, §3.6, §3.7 | 3 | [grep count] | ✅ / ❌ |
+| T1 compose fail-open classified | [from /tmp/audit_T1.txt] | [N] | ✅ N==M / ❌ N<M |
+| T4 security wrapper bypasses classified | [from /tmp/audit_T4.txt] | [N] | ✅ N==M / ❌ N<M |
+| T7 cross-compose inconsistencies classified | [from /tmp/audit_T7.txt] | [N] | ✅ N==M / ❌ N<M |
+| L7 triage: Priority 1+2 files processed | [mixed-org + zero-org files] | [N] | ✅ N==M / ❌ N<M |
+| **v10:** T9 CI continue-on-error classified | [from /tmp/audit_T9.txt] | [N] | ✅ N==M / ❌ N<M |
+| **v10:** T10 peer deps checked | [from /tmp/audit_T10.txt] | [N] | ✅ 0 unmet / ❌ N unmet |
+| **v10:** Scan-runner exit code | 0 | [actual] | ✅ 0 / ❌ non-zero (manual T-scans needed) |
+
+### v12 Enforcement Gates (MANDATORY — report is INVALID if any gate fails)
+
+| Gate | Scan ID | Requirement | Failure = |
+|------|---------|-------------|-----------|
+| Gate 6: Node Version | T16 | CI vs Docker vs package.json version comparison must appear in report | HIGH finding if mismatch |
+| Gate 7: Server Console | T17 | Server-only console count must be reported. If >0, each classified | Missed LOW findings |
+| Gate 8: Dev Compose | T18 | Literal hardcoded security values in compose must be listed | Missed LOW/MEDIUM findings |
+| Gate 9: Auth Validation | T19 | login/register/forgot-password/reset-password/change-password individually verified | Missed MEDIUM findings |
+| Gate 10: Fixable Vulns | T20 | Each fixable vuln: action taken or reason documented | Audit gap |
+| Gate 11: SSO/SCIM Errors | T22 | SSO/SCIM catch blocks audited for security logging | Missed HIGH findings |
+| Gate 12: ReDoS Effectiveness | T25 | Safe wrapper implementation verified (re2/timeout, not just length) | Missed MEDIUM findings |
+| Gate 13: Cross-Audit | T23 | If previous reports exist, reconciliation table in Section 0 | Audit failure |
+| Gate 14: L7 Honesty | — | If <100% L7 classified, state "INCOMPLETE X of Y" with priority breakdown | False completeness claim |
+| Gate 15: F7 Honesty | — | If <100% F7 classified, state file-level vs call-site-level scope | False completeness claim |
+
+**Section 0 must include cross-audit reconciliation table (if previous reports exist):**
+
+| Finding | Claude Code | Claude Desktop | Cursor | Current Status |
+|---------|-------------|---------------|--------|----------------|
+| (each unique finding from union of all reports) | FOUND/MISSED | FOUND/MISSED | FOUND/MISSED | FIXED/STILL_OPEN/DISAGREEMENT |
+
+**If ANY gate shows ❌, the audit is INCOMPLETE. State what remains and why.**
+
 ---
 
 ## SECTION 4: APPLICATION LOGIC ISSUES
@@ -423,6 +468,8 @@ For every `PRODUCTION_GAP`, Claude Code MUST generate an executable patch. Each 
 | Deployment Hardening | 15% | [X]% | [X]% |
 | **OVERALL** | **100%** | | **[X]%** |
 
+**Security score MUST use strict formula (v11):** `security = max(0, 100 - H*10 - M*3)` where H = HIGH severity security findings and M = MEDIUM severity security findings. This formula intentionally yields 0% when accumulated security debt is severe. Do NOT artificially inflate by under-counting HIGH findings or reclassifying them as MEDIUM.
+
 ### Summary Metrics
 
 | Metric | Value |
@@ -496,3 +543,25 @@ Before delivering the report, verify:
 - [ ] Every classification includes file-read evidence (see classification-guide.md v2)
 - [ ] Delta summary (Section 0) is complete if this is a re-audit
 - [ ] Score formula calculations are shown with actual numbers so user can verify arithmetic
+- [ ] **v7: Section 3.8 Completion Gate table is present and ALL gates show ✅**
+- [ ] **v7: No scan category listed as "Review needed" — every match is classified**
+- [ ] **v7: Component count in report == scan-runner component count (no sampling)**
+- [ ] **v7: Service file count in report == scan-runner service count (no skipping)**
+- [ ] **v7: No multi-tenant write gaps downgraded below HIGH without explicit justification**
+- [ ] **v9: T1 compose fail-open defaults — every match classified, security vars with :- flagged as HIGH**
+- [ ] **v9: T4 security wrapper bypasses — every raw unsafe pattern outside safe functions classified**
+- [ ] **v9: T7 cross-compose inconsistencies — same var using both :- and :? flagged**
+- [ ] **v9: L7 triage — Priority 1 (mixed org-check files) and Priority 2 (zero org-check files) fully processed**
+- [ ] **v9: Lint config existence verified per sub-project before running lint**
+- [ ] **v9: In-memory state (T8) classified by criticality — CRITICAL/HIGH as findings, MEDIUM/LOW informational**
+- [ ] **v12: Section 3.8 includes v12 Enforcement Gates (Gates 6-15) — all must show pass or documented exception**
+- [ ] **v12: T16 Node version cross-consistency comparison (CI vs Docker vs package.json) present in report**
+- [ ] **v12: T17 Server-only console count reported and each instance classified**
+- [ ] **v12: T18 Literal hardcoded security values in dev compose listed**
+- [ ] **v12: T19 Auth-critical endpoints (login/register/forgot/reset/change-password) individually validated**
+- [ ] **v12: T20 Each fixable vuln has action taken or documented reason for deferral**
+- [ ] **v12: T22 SSO/SCIM catch blocks audited for security logging**
+- [ ] **v12: T25 Safe regex wrapper implementation verified (re2/timeout, not just length guard)**
+- [ ] **v12: Cross-audit reconciliation table in Section 0 if previous reports exist**
+- [ ] **v12: L7/F7 honesty gates — incomplete classification explicitly declared, not hidden**
+- [ ] **v12: Security score uses strict formula: max(0, 100 - H*10 - M*3)**
