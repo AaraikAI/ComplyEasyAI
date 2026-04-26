@@ -721,18 +721,21 @@ describe('SecurityController', () => {
     });
 
     describe('generateComplianceReport()', () => {
-      it('should throw error if framework missing', async () => {
+      it('should default to SOC2 framework when not provided', async () => {
         mockRequest.body = {
           options: { format: 'pdf' },
         };
+        const mockReport = { id: 'report-1', framework: 'SOC2', score: 90 };
+        (mockGenerateComplianceReport as any).mockResolvedValue(mockReport);
 
-        await expect(
-          securityController.generateComplianceReport(
-            mockRequest as Request,
-            mockResponse as Response,
-            mockNext
-          )
-        ).rejects.toThrow();
+        await securityController.generateComplianceReport(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockGenerateComplianceReport).toHaveBeenCalledWith('org-123', 'SOC2');
+        expect(mockResponse.json).toHaveBeenCalledWith(mockReport);
       });
     });
 
