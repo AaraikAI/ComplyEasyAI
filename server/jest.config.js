@@ -59,6 +59,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^uuid$': '<rootDir>/src/__tests__/mocks/uuid.ts',
+    '^isomorphic-dompurify$': '<rootDir>/src/__tests__/mocks/isomorphic-dompurify.ts',
   },
   reporters: [
     'default',
