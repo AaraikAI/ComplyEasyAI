@@ -62,6 +62,8 @@ FROM base AS backend-build
 WORKDIR /app/server
 COPY --from=backend-deps /app/server/node_modules ./node_modules
 COPY server/ ./
+# Regenerate Prisma client in this stage (COPY server/ may overwrite generated/ dir)
+RUN npx prisma generate
 RUN npm run build
 
 # ---------------------------------------------------------------------------
