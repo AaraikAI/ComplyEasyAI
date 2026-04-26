@@ -432,25 +432,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # API image: print table to logs first so failures are visible, then enforce gate
-      - name: Scan API image with Trivy (table)
-        uses: aquasecurity/trivy-action@0.35.0
-        with:
-          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}'
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
-          exit-code: '0'
-
-      - name: Scan API image with Trivy (sarif gate)
+      # API image:
+      # 1) SARIF for GitHub Security tab (no gate — logs all severities)
+      # 2) Table-format gate that fails only on fixable CRITICAL vulns
+      - name: Scan API image with Trivy (SARIF for Security tab)
         uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-api-results.sarif'
-          severity: 'CRITICAL'
-          ignore-unfixed: true
-          exit-code: '1'
+          exit-code: '0'
 
       - name: Upload API scan results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
@@ -459,25 +450,23 @@ jobs:
           sarif_file: 'trivy-api-results.sarif'
           category: 'container-api'
 
-      # Web image: same pattern
-      - name: Scan Web image with Trivy (table)
+      - name: Scan API image with Trivy (CRITICAL gate)
         uses: aquasecurity/trivy-action@0.35.0
         with:
-          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:${{ github.sha }}'
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}'
           format: 'table'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
           ignore-unfixed: true
-          exit-code: '0'
+          exit-code: '1'
 
-      - name: Scan Web image with Trivy (sarif gate)
+      # Web image: same pattern
+      - name: Scan Web image with Trivy (SARIF for Security tab)
         uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-web-results.sarif'
-          severity: 'CRITICAL'
-          ignore-unfixed: true
-          exit-code: '1'
+          exit-code: '0'
 
       - name: Upload Web scan results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
@@ -485,6 +474,15 @@ jobs:
         with:
           sarif_file: 'trivy-web-results.sarif'
           category: 'container-web'
+
+      - name: Scan Web image with Trivy (CRITICAL gate)
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:${{ github.sha }}'
+          format: 'table'
+          severity: 'CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
 
   # ============================================
   # CONTAINER IMAGE SIGNING (Cosign)
