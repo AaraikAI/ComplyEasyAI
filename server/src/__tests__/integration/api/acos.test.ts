@@ -623,20 +623,20 @@ describe('aCOS Routes Integration', () => {
         const response = await request(app)
           .post('/api/acos/control-loops')
           .send({
+            name: 'Test Control Loop',
             controlId: 'ctrl-123',
-            triggerType: 'Schedule',
-            triggerConfig: { cron: '0 0 * * *' },
+            schedule: { cron: '0 0 * * *' },
           })
           .expect(200);
 
         expect(response.body).toHaveProperty('id');
       });
 
-      it('should require controlId', async () => {
+      it('should require name', async () => {
         const response = await request(app)
           .post('/api/acos/control-loops')
           .send({
-            triggerType: 'Schedule',
+            controlId: 'ctrl-123',
           })
           .expect(400);
 
@@ -694,7 +694,7 @@ describe('aCOS Routes Integration', () => {
         const response = await request(app)
           .post('/api/acos/agentic/estimate-blast-radius')
           .send({
-            actionType: 'UpdateControl',
+            action: 'UpdateControl',
             targetId: 'ctrl-123',
           })
           .expect(200);
@@ -708,7 +708,7 @@ describe('aCOS Routes Integration', () => {
         const response = await request(app)
           .post('/api/acos/agentic/execute-action')
           .send({
-            actionType: 'UpdateControl',
+            action: 'UpdateControl',
             targetId: 'ctrl-123',
             parameters: {},
           })
@@ -842,7 +842,7 @@ describe('aCOS Routes Integration', () => {
       it('should add a regulatory feed', async () => {
         const response = await request(app)
           .post('/api/acos/rif/feeds')
-          .send({ url: 'https://example.com/feed', type: 'RSS' })
+          .send({ name: 'Test Feed', url: 'https://example.com/feed', type: 'RSS' })
           .expect(200);
 
         expect(response.body).toHaveProperty('feedId');
@@ -914,7 +914,7 @@ describe('aCOS Routes Integration', () => {
       it('should compare scenarios', async () => {
         const response = await request(app)
           .post('/api/acos/digital-twin/compare-scenarios')
-          .send({ scenarios: ['scenario-1', 'scenario-2'] })
+          .send({ scenarioIds: ['scenario-1', 'scenario-2'] })
           .expect(200);
 
         expect(response.body).toHaveProperty('comparison');
@@ -941,7 +941,7 @@ describe('aCOS Routes Integration', () => {
       it('should run red team simulation', async () => {
         const response = await request(app)
           .post('/api/acos/red-team/simulate')
-          .send({ attackVector: 'SocialEngineering' })
+          .send({ attackVectors: ['SocialEngineering'] })
           .expect(200);
 
         expect(response.body).toHaveProperty('findings');
@@ -952,7 +952,7 @@ describe('aCOS Routes Integration', () => {
       it('should handle automated scan request', async () => {
         const response = await request(app)
           .post('/api/acos/red-team/automated-scan')
-          .send({ options: { scope: 'full' } });
+          .send({ scope: 'full' });
 
         expect([200, 500]).toContain(response.status);
       });
@@ -997,7 +997,7 @@ describe('aCOS Routes Integration', () => {
       it('should contribute to federation', async () => {
         const response = await request(app)
           .post('/api/acos/swarm/contribute')
-          .send({ data: 'anonymized_insights' })
+          .send({ data: { insights: 'anonymized_insights' } })
           .expect(200);
 
         expect(response.body).toHaveProperty('contributed');
@@ -1034,8 +1034,9 @@ describe('aCOS Routes Integration', () => {
         const response = await request(app)
           .post('/api/acos/physical-ai/register-device')
           .send({
-            deviceType: 'IoT',
-            serialNumber: 'SN12345',
+            name: 'Edge Device 1',
+            type: 'IoT',
+            metadata: { serialNumber: 'SN12345' },
           })
           .expect(200);
 
@@ -1115,7 +1116,7 @@ describe('aCOS Routes Integration', () => {
       it('should add annotation to session', async () => {
         const response = await request(app)
           .post('/api/acos/vr/sessions/vr-123/annotations')
-          .send({ text: 'Review this control', position: { x: 0, y: 0, z: 0 } })
+          .send({ content: 'Review this control', position: { x: 0, y: 0, z: 0 } })
           .expect(200);
 
         expect(response.body).toHaveProperty('annotationId');
@@ -1126,7 +1127,7 @@ describe('aCOS Routes Integration', () => {
       it('should create training scenario', async () => {
         const response = await request(app)
           .post('/api/acos/vr/training/scenarios')
-          .send({ name: 'SOC2 Training', difficulty: 'Intermediate' })
+          .send({ name: 'SOC2 Training', type: 'Intermediate' })
           .expect(200);
 
         expect(response.body).toHaveProperty('scenarioId');
@@ -1225,7 +1226,7 @@ describe('aCOS Routes Integration', () => {
       it('should submit swarm task', async () => {
         const response = await request(app)
           .post('/api/acos/swarm-tasks')
-          .send({ taskType: 'Compliance Check', priority: 'High' })
+          .send({ type: 'Compliance Check', priority: 'High' })
           .expect(200);
 
         expect(response.body).toHaveProperty('taskId');
@@ -1308,7 +1309,7 @@ describe('aCOS Routes Integration', () => {
       it('should generate homomorphic keys', async () => {
         const response = await request(app)
           .post('/api/acos/homomorphic/keys/generate')
-          .send({ scheme: 'CKKS', securityLevel: 128 });
+          .send({ keySize: 2048, parameters: { scheme: 'CKKS' } });
 
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('publicKey');
@@ -1319,7 +1320,7 @@ describe('aCOS Routes Integration', () => {
       it('should encrypt data', async () => {
         const response = await request(app)
           .post('/api/acos/homomorphic/encrypt')
-          .send({ data: [1.0, 2.0, 3.0], publicKey: 'pk-123', scheme: 'CKKS' });
+          .send({ data: [1.0, 2.0, 3.0], keyId: 'pk-123' });
 
         expect([200, 500]).toContain(response.status);
       });
@@ -1387,7 +1388,7 @@ describe('aCOS Routes Integration', () => {
       it('should calculate debt from gap analysis', async () => {
         const response = await request(app)
           .post('/api/acos/compliance-debts/calculate-from-gap')
-          .send({ gapAnalysisId: 'gap-123' })
+          .send({ frameworkId: 'fw-123' })
           .expect(200);
 
         expect(response.body).toHaveProperty('debtScore');
@@ -1425,8 +1426,8 @@ describe('aCOS Routes Integration', () => {
         const response = await request(app)
           .post('/api/acos/change-impacts/forecast')
           .send({
-            changeType: 'Regulatory',
-            affectedFrameworks: ['SOC2', 'ISO27001'],
+            changeDescription: 'Regulatory change impacting frameworks',
+            scope: 'SOC2,ISO27001',
           })
           .expect(200);
 

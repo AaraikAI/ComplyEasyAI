@@ -283,7 +283,8 @@ describe('Privacy Routes Integration', () => {
           .post('/api/privacy/consent')
           .send({
             dataSubjectId: 'user-456',
-            purpose: 'Marketing',
+            consentType: 'Marketing',
+            purpose: 'Email marketing communications',
             consentGiven: true,
           })
           .expect(201);
@@ -341,8 +342,8 @@ describe('Privacy Routes Integration', () => {
         const response = await request(app)
           .put('/api/privacy/consent/preferences/user-456')
           .send({
-            marketing: false,
-            analytics: true,
+            preferences: { marketing: false, analytics: true },
+            marketingOptOut: true,
           })
           .expect(200);
 
@@ -381,7 +382,6 @@ describe('Privacy Routes Integration', () => {
             name: 'Customer Data Retention',
             dataCategory: 'Personal Data',
             retentionPeriod: 36,
-            retentionUnit: 'months',
             legalBasis: 'Contract',
           })
           .expect(201);

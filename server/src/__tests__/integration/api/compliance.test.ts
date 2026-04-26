@@ -233,8 +233,7 @@ describe('DORA Routes Integration', () => {
       const response = await request(app)
         .post('/api/dora/risk-assessments')
         .send({
-          name: 'Q1 ICT Risk Assessment',
-          assessmentDate: new Date().toISOString(),
+          title: 'Q1 ICT Risk Assessment',
           scope: 'All ICT systems',
         })
         .expect(201);
@@ -326,7 +325,7 @@ describe('SOX Routes Integration', () => {
           name: 'Revenue Recognition Control',
           controlId: 'SOX-001',
           category: 'Financial Reporting',
-          controlType: 'Detective',
+          type: 'Detective',
         })
         .expect(201);
 
@@ -370,8 +369,8 @@ describe('Auditor Routes Integration', () => {
       const response = await request(app)
         .post('/api/auditor/engagements')
         .send({
-          name: 'SOC 2 Type II Audit',
-          auditType: 'SOC 2',
+          title: 'SOC 2 Type II Audit',
+          type: 'SOC 2',
           startDate: new Date().toISOString(),
           endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
         })

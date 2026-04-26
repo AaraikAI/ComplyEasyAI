@@ -184,9 +184,9 @@ describe('MDM Routes Integration', () => {
           .post('/api/mdm/devices')
           .send({
             deviceName: "John's iPhone",
-            deviceType: 'Mobile',
             platform: 'iOS',
             osVersion: '17.0',
+            model: 'iPhone 15',
           })
           .expect(201);
 
@@ -255,9 +255,10 @@ describe('MDM Routes Integration', () => {
           .post('/api/mdm/policies')
           .send({
             name: 'Corporate Security Policy',
-            policyType: 'Security',
-            platform: ['iOS', 'Android'],
-            rules: [],
+            description: 'Standard corporate security policy',
+            platform: 'iOS',
+            settings: { passcodeRequired: true },
+            enforced: true,
           })
           .expect(201);
 

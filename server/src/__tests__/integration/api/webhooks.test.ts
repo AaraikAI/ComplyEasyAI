@@ -200,6 +200,10 @@ beforeAll(async () => {
 
   const webhookRoutes = (await import('../../../routes/webhooks')).default;
   app.use('/api/webhooks', webhookRoutes);
+
+  // Error handler so AppError responses are returned as JSON for assertions
+  const { errorHandler } = await import('../../../middleware/errorHandler');
+  app.use(errorHandler);
 });
 
 beforeEach(() => {
@@ -290,9 +294,25 @@ describe('Webhook Routes Integration', () => {
   describe('Incoming Webhooks', () => {
     describe('POST /api/webhooks/incoming/:organizationId/:action', () => {
       it('should receive incoming webhook', async () => {
+        const webhookSecret = 'whsec_test_incoming_secret';
+        prismaMock.webhook.findFirst.mockResolvedValue({
+          id: 'webhook-incoming',
+          secret: webhookSecret,
+          organizationId: 'org-123',
+          enabled: true,
+        } as any);
+
+        const payload = { event: 'sync.requested', data: { value: 'test' } };
+        const rawBody = JSON.stringify(payload);
+        const signature = crypto
+          .createHmac('sha256', webhookSecret)
+          .update(rawBody)
+          .digest('hex');
+
         const response = await request(app)
           .post('/api/webhooks/incoming/org-123/sync-data')
-          .send({ data: 'test' })
+          .set('x-webhook-signature', signature)
+          .send(payload)
           .expect(200);
 
         expect(response.body).toHaveProperty('received', true);
@@ -349,7 +369,7 @@ describe('Webhook Routes Integration', () => {
           .patch('/api/webhooks/webhook-123')
           .send({
             events: ['policy.created', 'policy.updated'],
-            active: false,
+            enabled: false,
           })
           .expect(200);
 
