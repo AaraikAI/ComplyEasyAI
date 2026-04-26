@@ -48,6 +48,10 @@ COPY contexts/ ./contexts/
 COPY constants/ ./constants/
 COPY services/ ./services/
 COPY hooks/ ./hooks/
+COPY styles/ ./styles/
+COPY routes/ ./routes/
+COPY i18n/ ./i18n/
+COPY public/ ./public/
 RUN npm run build
 
 # ---------------------------------------------------------------------------
