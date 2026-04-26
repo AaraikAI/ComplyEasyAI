@@ -32,9 +32,10 @@ RUN npm ci
 FROM base AS backend-deps
 WORKDIR /app/server
 COPY server/package.json server/package-lock.json ./
-RUN npm ci
+# Copy files needed by postinstall (prisma generate + patch-express-types) BEFORE npm ci
 COPY server/prisma ./prisma
-RUN npx prisma generate
+COPY server/scripts ./scripts
+RUN npm ci
 
 # ---------------------------------------------------------------------------
 # Stage 4: Build frontend (Vite → static assets)
