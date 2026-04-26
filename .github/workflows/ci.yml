@@ -375,7 +375,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api
           tags: |
             type=ref,event=branch
-            type=sha,prefix=
+            type=sha,prefix=,format=long
 
       - name: Build & push API
         uses: docker/build-push-action@v7
@@ -396,7 +396,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web
           tags: |
             type=ref,event=branch
-            type=sha,prefix=
+            type=sha,prefix=,format=long
 
       - name: Build & push Web
         uses: docker/build-push-action@v7
