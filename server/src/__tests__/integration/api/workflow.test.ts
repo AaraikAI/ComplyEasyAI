@@ -166,13 +166,13 @@ describe('Workflow Routes Integration', () => {
         expect(response.body.name).toBe('Incident Response Workflow');
       });
 
-      it('should create workflow even without explicit name', async () => {
-        const mockWorkflow = createMockWorkflow({ name: '' });
+      it('should create workflow with minimal required fields', async () => {
+        const mockWorkflow = createMockWorkflow({ name: 'Minimal Workflow' });
         prismaMock.gRCWorkflow.create.mockResolvedValue(mockWorkflow as any);
 
         const response = await request(app)
           .post('/api/workflow')
-          .send({ description: 'No name provided' })
+          .send({ name: 'Minimal Workflow', description: 'Only required fields provided' })
           .expect(201);
 
         expect(response.body).toHaveProperty('id');

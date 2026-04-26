@@ -271,7 +271,6 @@ describe('Frameworks API', () => {
         .post('/api/frameworks/fw-1/controls')
         .send({
           name: 'Access Control',
-          controlId: 'CC6.1',
           description: 'Access control requirements',
         })
         .expect(201);

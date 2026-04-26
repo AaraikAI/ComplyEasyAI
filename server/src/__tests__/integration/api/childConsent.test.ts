@@ -120,6 +120,10 @@ beforeEach(async () => {
 
   const privacyRoutes = (await import('../../../routes/privacy')).default;
   app.use('/api/privacy', privacyRoutes);
+
+  // Add error handler so AppError responses are properly serialized
+  const { errorHandler } = await import('../../../middleware/errorHandler');
+  app.use(errorHandler);
 });
 
 // ===========================================================================

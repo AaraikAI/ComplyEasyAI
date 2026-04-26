@@ -163,8 +163,7 @@ describe('Onboarding Routes Integration', () => {
           .post('/api/onboarding/event')
           .send({
             eventType: 'step_viewed',
-            stepId: 'team',
-            metadata: { source: 'dashboard' },
+            eventData: { stepId: 'team', source: 'dashboard' },
           })
           .expect(200);
 
@@ -202,14 +201,14 @@ describe('Onboarding Routes Integration', () => {
         const response = await request(app)
           .put('/api/onboarding/preferences')
           .send({
-            showTips: true,
-            emailReminders: false,
-            skipIntro: true,
+            showHints: true,
+            reducedMotion: false,
+            theme: 'dark',
           })
           .expect(200);
 
         expect(response.body).toHaveProperty('updated', true);
-        expect(response.body.preferences).toHaveProperty('showTips', true);
+        expect(response.body.preferences).toHaveProperty('showHints', true);
       });
     });
   });
@@ -223,7 +222,7 @@ describe('Onboarding Routes Integration', () => {
         const response = await request(app)
           .post('/api/onboarding/skip-flow')
           .send({
-            reason: 'Already familiar with the product',
+            flow: 'tier_tour',
           })
           .expect(200);
 
@@ -275,11 +274,8 @@ describe('Onboarding Routes Integration', () => {
         const response = await request(app)
           .put('/api/onboarding/checklist')
           .send({
-            items: [
-              { id: 'item-1', completed: true },
-              { id: 'item-2', completed: true },
-              { id: 'item-3', completed: true },
-            ],
+            itemId: 'item-1',
+            completed: true,
           })
           .expect(200);
 

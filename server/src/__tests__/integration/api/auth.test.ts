@@ -219,9 +219,15 @@ describe('Auth API', () => {
         .send({ token: 'valid-token' });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('accessToken');
-      expect(response.body).toHaveProperty('refreshToken');
+      // Tokens are now set as httpOnly cookies (security hardening), not returned in JSON body.
+      // Response body contains user info and twoFactorRequired flag.
       expect(response.body).toHaveProperty('user');
+      expect(response.body).toHaveProperty('twoFactorRequired', false);
+      // Verify auth cookies are set in the response
+      const cookies = response.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      const cookieStr = Array.isArray(cookies) ? cookies.join(';') : String(cookies);
+      expect(cookieStr).toMatch(/access_token|refresh_token/);
     });
 
     it('should reject expired magic link', async () => {

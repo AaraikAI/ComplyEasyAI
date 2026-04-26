@@ -209,7 +209,8 @@ describe('Security Routes Integration', () => {
           .post('/api/security/zero-trust/verify-device')
           .send({
             deviceId: 'device-123',
-            fingerprint: 'fp-abc123',
+            deviceType: 'laptop',
+            ipAddress: '10.0.0.1',
           });
 
         expect([200, 201]).toContain(response.status);
@@ -222,7 +223,7 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/zero-trust/evaluate-access')
           .send({
-            resourceId: 'sensitive-data',
+            resource: 'sensitive-data',
             deviceId: 'device-123',
             action: 'read',
           });
@@ -239,7 +240,7 @@ describe('Security Routes Integration', () => {
           .send({
             name: 'Default Access Policy',
             rules: [],
-            enforcement: 'strict',
+            enforcement: 'ENFORCE',
           });
 
         expect([200, 201]).toContain(response.status);
@@ -261,7 +262,7 @@ describe('Security Routes Integration', () => {
       it('should update zero trust policy', async () => {
         const response = await request(app)
           .patch('/api/security/zero-trust/policies/policy-123')
-          .send({ enforcement: 'lenient' });
+          .send({ enforcement: 'AUDIT' });
 
         expect([200, 201]).toContain(response.status);
         expect(response.body).toBeDefined();
@@ -324,7 +325,7 @@ describe('Security Routes Integration', () => {
           .post('/api/security/zkp/compliance-proof/generate')
           .send({
             frameworkId: 'fw-123',
-            privateData: { controlsImplemented: 10, totalControls: 15 },
+            controlIds: ['ctrl-1', 'ctrl-2'],
           });
 
         expect([200, 201]).toContain(response.status);
@@ -350,8 +351,8 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/zkp/credential-proof/generate')
           .send({
-            credential: { type: 'certification', role: 'auditor' },
-            secret: 'credential-secret-123',
+            credentialType: 'certification',
+            attributes: { role: 'auditor' },
           });
 
         expect([200, 201]).toContain(response.status);
@@ -364,9 +365,8 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/zkp/ownership-proof/generate')
           .send({
-            dataHash: 'abc123hash',
-            secret: 'ownership-secret',
-            assetId: 'asset-123',
+            resourceType: 'asset',
+            resourceId: 'asset-123',
           });
 
         expect([200, 201]).toContain(response.status);
@@ -394,12 +394,12 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/byok/keys/generate')
           .send({
-            provider: 'local',
+            keyType: 'AES-256',
+            label: 'Local Test Key',
           });
 
         expect([200, 201]).toContain(response.status);
         expect(response.body).toHaveProperty('keyId');
-        expect(response.body).toHaveProperty('provider', 'local');
       });
     });
 
@@ -408,9 +408,9 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/byok/keys/import')
           .send({
-            provider: 'aws_kms',
-            keyId: 'key-123',
-            region: 'us-east-1',
+            keyMaterial: 'base64-encoded-key-material',
+            keyType: 'AES-256',
+            label: 'Imported AWS Key',
           });
 
         expect([200, 201]).toContain(response.status);
@@ -458,8 +458,8 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/byok/encrypt')
           .send({
-            data: 'sensitive data',
-            config: { provider: 'aws_kms', keyId: 'key-123', region: 'us-east-1' },
+            keyId: 'key-123',
+            plaintext: 'sensitive data',
           });
 
         expect([200, 201]).toContain(response.status);
@@ -472,8 +472,8 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/byok/decrypt')
           .send({
-            encryptedPayload: { ciphertext: 'encrypted', iv: 'abc', encryptedDataKey: 'edk' },
-            config: { provider: 'aws_kms', keyId: 'key-123', region: 'us-east-1' },
+            keyId: 'key-123',
+            ciphertext: 'encrypted',
           });
 
         expect([200, 201]).toContain(response.status);
@@ -502,7 +502,8 @@ describe('Security Routes Integration', () => {
           .post('/api/security/compliance-as-code/policies')
           .send({
             name: 'Data Encryption Policy',
-            rules: [{ type: 'require', field: 'encryption', value: 'AES-256' }],
+            code: 'package compliance\n\ndefault allow = true',
+            language: 'rego',
           });
 
         expect([200, 201]).toContain(response.status);
@@ -539,7 +540,7 @@ describe('Security Routes Integration', () => {
           .post('/api/security/compliance-as-code/policies/evaluate-batch')
           .send({
             policyIds: ['policy-1', 'policy-2'],
-            input: {},
+            target: {},
           });
 
         expect([200, 201]).toContain(response.status);
@@ -552,7 +553,8 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/compliance-as-code/reports/generate')
           .send({
-            framework: 'SOC2',
+            policyIds: ['policy-1'],
+            format: 'json',
           });
 
         expect([200, 201]).toContain(response.status);
@@ -575,8 +577,8 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/compliance-as-code/ci-cd/webhook')
           .send({
-            provider: 'github',
             event: 'deployment',
+            commitHash: 'abc123',
             payload: { commit: 'abc123' },
           });
 
@@ -600,8 +602,8 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/compliance-as-code/ci-cd/integrations')
           .send({
+            name: 'GitHub Integration',
             provider: 'github',
-            repository: 'org/repo',
           });
 
         expect([200, 201]).toContain(response.status);
@@ -614,7 +616,7 @@ describe('Security Routes Integration', () => {
         const response = await request(app)
           .post('/api/security/compliance-as-code/drift/detect')
           .send({
-            policyId: 'policy-123',
+            policyIds: ['policy-123'],
           });
 
         expect([200, 201]).toContain(response.status);

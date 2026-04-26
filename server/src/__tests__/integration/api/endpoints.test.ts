@@ -215,8 +215,12 @@ describe('API Endpoints Integration Tests', () => {
         .send({ token })
         .expect(200);
 
-      expect(response.body).toHaveProperty('accessToken');
-      expect(response.body).toHaveProperty('refreshToken');
+      // Tokens are now set as httpOnly cookies for security (not in JSON body)
+      expect(response.body).toHaveProperty('user');
+      expect(response.body).toHaveProperty('twoFactorRequired', false);
+      const setCookieHeader = response.headers['set-cookie'];
+      expect(Array.isArray(setCookieHeader) ? setCookieHeader.join('\n') : setCookieHeader).toMatch(/access_token=/);
+      expect(Array.isArray(setCookieHeader) ? setCookieHeader.join('\n') : setCookieHeader).toMatch(/refresh_token=/);
     });
   });
 
