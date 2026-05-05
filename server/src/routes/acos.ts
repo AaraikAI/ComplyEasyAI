@@ -107,10 +107,13 @@ router.post('/rif/feeds', authorize('admin'), validateBody(addFeedSchema), async
 router.delete('/rif/feeds/:feedId', authorize('admin'), asyncHandler(acosController.removeFeed));
 router.get('/rif/feeds/dashboard', asyncHandler(acosController.getFeedStatusDashboard));
 
-// Temporal Graph Networks (Growth+)
-router.get('/tgn/predict-risks', ...requireAcosFeature('acosTemporalGraphs'), asyncHandler(acosController.predictFutureRisks));
+// Temporal Graph Networks — trajectory + early-warnings (Growth+, gated by acosTemporalGraphs)
 router.get('/tgn/frameworks/:frameworkId/trajectory', ...requireAcosFeature('acosTemporalGraphs'), asyncHandler(acosController.predictComplianceTrajectory));
 router.get('/tgn/early-warnings', ...requireAcosFeature('acosTemporalGraphs'), asyncHandler(acosController.getEarlyWarnings));
+
+// Risk Prediction routes (Visionary, gated by acosRiskPrediction)
+router.get('/tgn/predict-risks', ...requireAcosFeature('acosRiskPrediction'), asyncHandler(acosController.predictFutureRisks));
+router.post('/tgn/refresh-risk-predictions', ...requireAcosFeature('acosRiskPrediction'), asyncHandler(acosController.refreshRiskPredictions));
 
 // Compliance Digital Twin (Growth+)
 router.post('/digital-twin/simulate', ...requireAcosFeature('acosDigitalTwin'), authorize('admin', 'editor'), validateBody(runSimulationSchema), asyncHandler(acosController.runSimulation));

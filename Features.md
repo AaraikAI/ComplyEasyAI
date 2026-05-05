@@ -1,7 +1,7 @@
 # ComplyEasy AI - Complete Feature List
 
-**Last Updated:** March 10, 2026
-**Version:** 3.0.0 Enterprise Edition
+**Last Updated:** April 2, 2026
+**Version:** 3.1.0 Enterprise Edition (Audit-Aligned)
 **Total Features:** 531+ Production-Ready Features
 
 ---
@@ -10,45 +10,47 @@
 
 ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform with **531+ features** across **33 major categories**. This document provides a complete inventory of all features, their implementation status, and cross-references with technical documentation.
 
+**Audit alignment (v16):** The platform remains feature-complete at inventory level, but production hardening is still in progress for a small set of cross-cutting security/operational concerns (see "Implementation Status Summary" and "Audit-Tracked Gaps" below).
+
 ### Feature Overview by Category
 
 | Category | Feature Count | Status |
 |----------|--------------|---------|
-| Core Compliance Management | 25 | ✅ 100% Implemented |
-| AI-Powered Features | 30 | ✅ 100% Implemented |
-| EU Regulations Compliance | 35 | ✅ 100% Implemented |
-| Advanced Security Features | 40 | ✅ 100% Implemented |
-| Enterprise Features | 25 | ✅ 100% Implemented |
-| Risk Management | 15 | ✅ 100% Implemented |
-| Advanced AI Services | 25 | ✅ 100% Implemented |
-| Regulatory Intelligence & Monitoring | 15 | ✅ 100% Implemented |
-| Multimodal & IoT Features | 20 | ✅ 100% Implemented |
-| ML & Advanced Analytics | 15 | ✅ 100% Implemented |
-| VR & Collaboration | 10 | ✅ 100% Implemented |
-| Reporting & Analytics | 20 | ✅ 100% Implemented |
-| Billing & Subscriptions | 15 | ✅ 100% Implemented |
-| Authentication & Security | 20 | ✅ 100% Implemented |
-| Notifications & Communication | 15 | ✅ 100% Implemented |
-| Trust Center & Public Features | 10 | ✅ 100% Implemented |
-| Questionnaires & Assessments | 10 | ✅ 100% Implemented |
-| Policy Library & Management | 8 | ✅ 100% Implemented |
-| Goals & Objectives | 5 | ✅ 100% Implemented |
-| Webhooks & API | 10 | ✅ 100% Implemented |
-| **Infrastructure & DevOps** | **14** | ✅ 100% Implemented |
-| **Resilience & Chaos Engineering** | **10** | ✅ 100% Implemented |
-| URL-Based Routing & Navigation | 9 | ✅ 100% Implemented |
-| Real-Time Communications & WebSocket | 4 | ✅ 100% Implemented |
-| Compliance Calendar & Incident Management | 9 | ✅ 100% Implemented |
-| SSO/SAML/OIDC & SCIM Provisioning | 8 | ✅ 100% Implemented |
-| Advanced RBAC & Exception Management | 7 | ✅ 100% Implemented |
-| Certification & Regulatory Change Management | 7 | ✅ 100% Implemented |
-| AI Evidence Collection & Audit Prep | 8 | ✅ 100% Implemented |
-| Automated Control Testing & Workflow Engine | 9 | ✅ 100% Implemented |
-| Executive Reporting & Analytics | 12 | ✅ 100% Implemented |
-| GRC Maturity, Asset Management & BIA | 12 | ✅ 100% Implemented |
-| Platform Experience & Accessibility | 26 | ✅ 100% Implemented |
+| Core Compliance Management | 25 | ✅ Implemented (with hardening follow-ups) |
+| AI-Powered Features | 30 | ✅ Implemented (with hardening follow-ups) |
+| EU Regulations Compliance | 35 | ✅ Implemented (with hardening follow-ups) |
+| Advanced Security Features | 40 | ✅ Implemented (with hardening follow-ups) |
+| Enterprise Features | 25 | ✅ Implemented (with hardening follow-ups) |
+| Risk Management | 15 | ✅ Implemented (with hardening follow-ups) |
+| Advanced AI Services | 25 | ✅ Implemented (with hardening follow-ups) |
+| Regulatory Intelligence & Monitoring | 15 | ✅ Implemented (with hardening follow-ups) |
+| Multimodal & IoT Features | 20 | ✅ Implemented (with hardening follow-ups) |
+| ML & Advanced Analytics | 15 | ✅ Implemented (with hardening follow-ups) |
+| VR & Collaboration | 10 | ✅ Implemented (with hardening follow-ups) |
+| Reporting & Analytics | 20 | ✅ Implemented (with hardening follow-ups) |
+| Billing & Subscriptions | 15 | ✅ Implemented (with hardening follow-ups) |
+| Authentication & Security | 20 | ✅ Implemented (with hardening follow-ups) |
+| Notifications & Communication | 15 | ✅ Implemented (with hardening follow-ups) |
+| Trust Center & Public Features | 10 | ✅ Implemented (with hardening follow-ups) |
+| Questionnaires & Assessments | 10 | ✅ Implemented (with hardening follow-ups) |
+| Policy Library & Management | 8 | ✅ Implemented (with hardening follow-ups) |
+| Goals & Objectives | 5 | ✅ Implemented (with hardening follow-ups) |
+| Webhooks & API | 10 | ✅ Implemented (with hardening follow-ups) |
+| **Infrastructure & DevOps** | **14** | ⚠️ Implemented (security hardening open items) |
+| **Resilience & Chaos Engineering** | **10** | ⚠️ Implemented (security hardening open items) |
+| URL-Based Routing & Navigation | 9 | ✅ Implemented (with hardening follow-ups) |
+| Real-Time Communications & WebSocket | 4 | ✅ Implemented (with hardening follow-ups) |
+| Compliance Calendar & Incident Management | 9 | ✅ Implemented (with hardening follow-ups) |
+| SSO/SAML/OIDC & SCIM Provisioning | 8 | ✅ Implemented (with hardening follow-ups) |
+| Advanced RBAC & Exception Management | 7 | ✅ Implemented (with hardening follow-ups) |
+| Certification & Regulatory Change Management | 7 | ✅ Implemented (with hardening follow-ups) |
+| AI Evidence Collection & Audit Prep | 8 | ✅ Implemented (with hardening follow-ups) |
+| Automated Control Testing & Workflow Engine | 9 | ⚠️ Implemented (tenant-isolation hardening open) |
+| Executive Reporting & Analytics | 12 | ⚠️ Implemented (StatusPage data-source hardening open) |
+| GRC Maturity, Asset Management & BIA | 12 | ✅ Implemented (with hardening follow-ups) |
+| Platform Experience & Accessibility | 26 | ✅ Implemented (with hardening follow-ups) |
 
-**Overall Implementation Status:** ✅ 100% Complete (531/531 features fully implemented)
+**Overall Implementation Status:** ✅ Feature-Complete (531/531 feature inventory implemented) + ⚠️ Production hardening items open (see audit-tracked gaps).
 
 ---
 
@@ -1223,11 +1225,23 @@ ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform wi
 
 | Status | Count | Percentage | Description |
 |--------|-------|------------|-------------|
-| ✅ Fully Implemented | 531 | 100% | Production-ready with complete backend, API, and frontend |
-| ⚠️ Partially Implemented | 0 | 0% | N/A |
+| ✅ Feature Inventory Implemented | 531 | 100% | Feature-level capabilities exist across backend, API, and frontend |
+| ⚠️ Production Hardening In Progress | 7 audit-priority items | N/A | Cross-cutting security/operational hardening from latest readiness audit |
 | ❌ Not Implemented | 0 | 0% | N/A |
 
-### All Previous Gaps - Now Resolved
+### Audit-Tracked Gaps (from `PRODUCTION_READINESS_REPORT.md`, v16)
+
+These are not missing feature entries; they are production hardening findings on existing features/infrastructure:
+
+1. ⚠️ **Infrastructure default secret fallback** (`logstash.conf` uses `:-changeme`)  
+2. ⚠️ **PAT validation SSRF risk** (`baseUrl` override paths in `patValidationService.ts` without URL-safety validation)  
+3. ⚠️ **SOX parent-child tenant verification gap** (`createSOXTestResult` control ownership chain check)  
+4. ⚠️ **Integration token encryption-at-rest gap** (selected `integration.accessToken` write paths)  
+5. ⚠️ **Controller inline error-response drift risk** (high count of `res.status(...)` in controllers)  
+6. ⚠️ **Operational status page data source** (`StatusPage.tsx` relies on static operational arrays)  
+7. ⚠️ **Rate limiting coverage debt** (3 mounts uncovered in reconciled report)
+
+### Previously Closed Feature Gaps (retained)
 
 All previously identified gaps have been fully implemented:
 
@@ -1339,9 +1353,17 @@ Authorization: Bearer <JWT_TOKEN>
 ```
 
 ### Feature Access by Tier
-- **Starter:** Features 1-200 (Core + Basic AI)
-- **Professional:** Features 1-400 (+ Advanced AI + Enterprise)
-- **Enterprise:** All 531 features
+
+Canonical tier names and per-tier **boolean feature flags** (`TierFeatures`) live in `server/src/config/tiers.ts` (`TIERS`, `TIER_ORDER`, `hasFeature()`). Tiers are cumulative left-to-right:
+
+| Tier | Summary |
+|------|---------|
+| **Foundation** | Core platform (auth, 2FA, frameworks, risk, audit logging, dashboard, team), basic AI (`aiPolicyGeneration`, `aiGapAnalysis`), and `continuousMonitoring` (basic). No “Full AI” suite, enterprise feature-module flags, aCOS flags, or Visionary-only capabilities. |
+| **Essentials** | Everything in Foundation plus the six Full AI features, enterprise features (personnel, vendor risk, policy library, trust center, multi-workspace, advanced reporting, issue management), `governanceManager`, `breachManagement`, and `prioritySupport`. |
+| **Growth** | Everything in Essentials plus all aCOS flags from `acosGoals` through `customFrameworks`, growth module flags (`esgReporting`, `sbomManager`, `processMapper`, `productLifecycle`), `slaGuarantee`, `whiteGloveOnboarding`, and `customFrameworksAddOn`. |
+| **Visionary** | All `TierFeatures` keys enabled (advanced aCOS, EU/AI governance keys, product/regulatory modules, support/SLA flags, and add-on availability flags). |
+
+For a machine-generated matrix of every `keyof TierFeatures` by tier, import `TIERS` and `TIER_ORDER` from `server/src/config/tiers.ts` in a small script (see project tooling).
 
 ### Key API Endpoints
 - Frameworks: `/api/frameworks/*`
@@ -1381,7 +1403,7 @@ All phases have been completed as of February 2026:
 7. ✅ **BYOK UI** - Key management interface
 8. ✅ **Compliance-as-Code UI** - Policy management interface
 
-### Phase 4: Production Hardening (February 2026) - ✅ COMPLETED
+### Phase 4: Production Hardening (February 2026) - ✅ COMPLETED (core scope)
 9. ✅ **AWS SDK v3 Migration** - Migrated from deprecated v2
 10. ✅ **Chaos Engineering** - Full resilience testing framework
 11. ✅ **Falco Runtime Security** - Container security monitoring
@@ -1389,7 +1411,15 @@ All phases have been completed as of February 2026:
 13. ✅ **OpenAPI Documentation** - 95% endpoint coverage (180+ endpoints)
 14. ✅ **Correlation ID Tracing** - Distributed request tracing
 
-**Status:** All 420+ features are production-ready with 98/100 production readiness score
+### Phase 5: Audit-Driven Hardening (April 2026) - 🔄 IN PROGRESS
+15. 🔄 **Credential Encryption-at-Rest Normalization** - Ensure all integration token write paths are encrypted
+16. 🔄 **SSRF Parameter Safety Enforcement** - Validate all URL/baseUrl overrides before outbound calls
+17. 🔄 **Tenant-Isolation Parent/Child Chain Verification** - Enforce org ownership on SOX child writes
+18. 🔄 **Infrastructure Default Secret Elimination** - Remove weak fallback defaults in infra configs
+19. 🔄 **Controller Error-Handling Consolidation** - Reduce inline status responses in favor of centralized handling
+20. 🔄 **Operational Status Data Wiring** - Replace static status arrays with live health/incident APIs
+
+**Status:** Feature inventory is complete; production hardening follow-ups are in progress per latest audit.
 
 ---
 
@@ -1408,21 +1438,13 @@ All phases have been completed as of February 2026:
 - Review quarterly for accuracy
 
 ### Disclaimer
-Implementation percentages are based on code analysis as of February 25, 2026. Some features marked as "implemented" may require additional testing, configuration, or third-party service setup for full production use.
+Implementation percentages are based on code analysis and production-readiness audits. Features marked as "implemented" can still require additional hardening, configuration, and runtime verification before release.
 
 ### Production Readiness Score
-As of February 25, 2026, the platform has achieved a **98/100 production readiness score** based on:
-- ✅ 0 critical security vulnerabilities
-- ✅ 0 high severity vulnerabilities
-- ✅ 95% OpenAPI documentation coverage (180+ endpoints)
-- ✅ Comprehensive chaos engineering tests
-- ✅ Runtime security monitoring (Falco)
-- ✅ Automated secret rotation (AWS Secrets Manager)
-- ✅ Circuit breaker pattern for external services
-- ✅ Distributed tracing with correlation IDs
+Use `PRODUCTION_READINESS_REPORT.md` as the source of truth for current readiness scoring and completion gates. Scores evolve as hardening findings are resolved and re-audited.
 
 ---
 
-**Document Version:** 3.0
-**Last Updated:** March 10, 2026
+**Document Version:** 3.1
+**Last Updated:** April 2, 2026
 **Maintained By:** ComplyEasy AI Development Team
