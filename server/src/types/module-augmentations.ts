@@ -6,6 +6,10 @@
 export {};
 
 // Augment @tensorflow/tfjs with members missing from current type definitions.
+// @tensorflow/tfjs-core@4.22 lists `dist/index.d.ts` in its package.json `types`
+// field but the file is not present in the published tarball, so the upstream
+// re-export from @tensorflow/tfjs is empty. The runtime API still works; we
+// declare the subset that this codebase actually uses.
 declare module '@tensorflow/tfjs' {
   export interface LayersModel {
     predict(inputs: any): any;
@@ -18,6 +22,67 @@ declare module '@tensorflow/tfjs' {
     summary(): void;
     layers: any[];
   }
+
+  // Tensor + value type aliases. We declare the readback methods explicitly so
+  // chained calls like Array.from(tensor.dataSync()) infer number[] instead of
+  // unknown[], while leaving the rest of the surface as any for ergonomics.
+  export interface Tensor {
+    shape: number[];
+    rank: number;
+    size: number;
+    dtype: string;
+    dataSync(): Float32Array;
+    data(): Promise<Float32Array>;
+    arraySync(): any;
+    array(): Promise<any>;
+    dispose(): void;
+    print(): void;
+    [key: string]: any;
+  }
+  export type Tensor1D = Tensor;
+  export type Tensor2D = Tensor;
+  export type Tensor3D = Tensor;
+  export type Tensor4D = Tensor;
+  export type Scalar = Tensor;
+  export type Variable = Tensor;
+  export type Optimizer = any;
+
+  // Tensor + math ops. Returning Tensor (not any) lets downstream chained calls
+  // like Array.from(result.dataSync()) infer number[] instead of unknown[].
+  export const tensor: (...args: any[]) => Tensor;
+  export const tensor1d: (...args: any[]) => Tensor;
+  export const tensor2d: (...args: any[]) => Tensor;
+  export const tensor3d: (...args: any[]) => Tensor;
+  export const tensor4d: (...args: any[]) => Tensor;
+  export const variable: (...args: any[]) => Variable;
+  export const zeros: (...args: any[]) => Tensor;
+  export const ones: (...args: any[]) => Tensor;
+  export const eye: (...args: any[]) => Tensor;
+  export const diag: (...args: any[]) => Tensor;
+  export const oneHot: (...args: any[]) => Tensor;
+  export const randomUniform: (...args: any[]) => Tensor;
+  export const randomNormal: (...args: any[]) => Tensor;
+  export const add: (a: Tensor | number, b: Tensor | number) => Tensor;
+  export const sub: (a: Tensor | number, b: Tensor | number) => Tensor;
+  export const mul: (a: Tensor | number, b: Tensor | number) => Tensor;
+  export const div: (a: Tensor | number, b: Tensor | number) => Tensor;
+  export const neg: (a: Tensor) => Tensor;
+  export const log: (a: Tensor) => Tensor;
+  export const matMul: (a: Tensor, b: Tensor, ...rest: any[]) => Tensor;
+  export const mean: (...args: any[]) => Tensor;
+  export const sum: (...args: any[]) => Tensor;
+  export const norm: (...args: any[]) => Tensor;
+  export const greater: (...args: any[]) => Tensor;
+  export const where: (...args: any[]) => Tensor;
+  export const dropout: (...args: any[]) => Tensor;
+  export const relu: (...args: any[]) => Tensor;
+  export const softmax: (...args: any[]) => Tensor;
+  export const tidy: <T>(fn: () => T) => T;
+
+  // Engine + backend management
+  export const engine: any;
+  export const setBackend: (backend: string) => Promise<boolean>;
+  export const ready: () => Promise<void>;
 
   export function sequential(config?: any): LayersModel;
   export function loadLayersModel(path: string): Promise<LayersModel>;
@@ -38,6 +103,20 @@ declare module '@tensorflow/tfjs' {
     function l2(config?: any): any;
     function l1(config?: any): any;
     function l1l2(config?: any): any;
+  }
+
+  export namespace train {
+    function adam(learningRate?: number, beta1?: number, beta2?: number, epsilon?: number): any;
+    function sgd(learningRate: number): any;
+    function rmsprop(learningRate?: number): any;
+    function adagrad(learningRate?: number): any;
+  }
+
+  export namespace losses {
+    function meanSquaredError(labels: any, predictions: any): any;
+    function softmaxCrossEntropy(labels: any, predictions: any): any;
+    function sigmoidCrossEntropy(labels: any, predictions: any): any;
+    function absoluteDifference(labels: any, predictions: any): any;
   }
 
   export interface TrainingLogs {

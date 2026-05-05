@@ -12,6 +12,7 @@ import { AppError, errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter, authLimiter, ssoLimiter, scimLimiter } from './middleware/rateLimiter';
 import { authenticate } from './middleware/auth';
 import websocketService from './services/websocketService';
+import realTimeComplianceService from './services/realTimeComplianceService';
 import swaggerSpec from './config/swagger';
 import monitoring, { initializeSentry, initializeAPM } from './config/monitoring';
 import { monitoringMiddleware, errorTrackingMiddleware } from './middleware/monitoring';
@@ -106,6 +107,7 @@ import anonymizationRoutes from './routes/anonymization';
 
 // Compliance History Routes
 import complianceRoutes from './routes/compliance';
+import realTimeComplianceRoutes from './routes/realTimeCompliance';
 
 // Enhancement Module Routes
 import incidentRoutes from './routes/incidents';
@@ -617,6 +619,7 @@ app.use('/api/reports', apiLimiter, reportRoutes);
 app.use('/api/bulk', apiLimiter, bulkRoutes);
 app.use('/api/ticketing', apiLimiter, ticketingRoutes);
 app.use('/api/compliance', apiLimiter, complianceRoutes);
+app.use('/api/realtime', apiLimiter, realTimeComplianceRoutes);
 
 // GraphQL endpoint (authenticated + rate limited)
 app.post('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());
@@ -643,6 +646,18 @@ const httpServer = createServer(app);
 
 // Initialize WebSocket
 websocketService.initialize(httpServer);
+
+// Initialize real-time compliance orchestration (scheduler + WS bridge)
+(async () => {
+  try {
+    await realTimeComplianceService.initialize({
+      schedulerIntervalMs: process.env.NODE_ENV === 'test' ? 0 : 60_000,
+    });
+    logger.info('✓ Real-time compliance service initialized');
+  } catch (error) {
+    logger.error('Real-time compliance service initialization failed', error);
+  }
+})();
 
 // Initialize Job Queue
 (async () => {
@@ -801,6 +816,13 @@ const gracefulShutdown = async (signal: string) => {
         }
       } catch (error) {
         logger.warn('Session management shutdown error', error);
+      }
+
+      // Shutdown real-time compliance scheduler
+      try {
+        await realTimeComplianceService.shutdown();
+      } catch (error) {
+        logger.warn('Real-time compliance shutdown error', error);
       }
 
       // Shutdown job queue

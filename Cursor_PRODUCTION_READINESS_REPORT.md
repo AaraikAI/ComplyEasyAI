@@ -245,34 +245,10 @@ bash '/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/.claude/skills/productions-r
 
 ---
 
-## SECTION 12: CROSS-AUDIT RESOLUTION (v12)
+## SECTION 12: Consistency Note
 
-**Date:** 2026-04-02
+This document contains a point-in-time Cursor v11 analysis. For canonical and reconciled readiness status, use:
 
-All findings from this Cursor audit have been resolved in the v12 fix pass, cross-referenced with the primary report (`PRODUCTION_READINESS_REPORT.md`):
+- `PRODUCTION_READINESS_REPORT.md` (v16, final reconciled)
 
-| Cursor Finding | Severity | Resolution |
-|---------------|----------|------------|
-| H1 — logstash changeme | High | FIXED — `:?Set ELASTICSEARCH_PASSWORD in .env` |
-| H2 — patValidationService SSRF | High | FIXED — `isUrlSafe()` via `validateBaseUrl()` in all 22 methods |
-| H3 — SOX parent-child org | High | FIXED — parent control org verified before create; `control: { organizationId }` in update/delete |
-| M1 — OAuth tokens plaintext | Medium | ALREADY FIXED — AES-256-GCM encryption via Prisma middleware |
-| M2 — CI dependency-scan bypass | Medium | FIXED — documented with justification comments |
-| M3 — Controller error pattern | Medium | VERIFIED — all controllers have `logger.error()` in catch blocks |
-| T15 — StatusPage static | Medium | FIXED — wired to `/api/health` with DEV_FALLBACK |
-| L1-L4 | Low | Tracked as tech debt |
-
-**Updated verdict:** PRODUCTION READY (see primary report v12 scorecard).
-
-### v14 Update (2026-04-02)
-
-All 4 remaining findings from the v13 Cursor agent audit have been resolved:
-
-| v13 Finding | Severity | Resolution |
-|-------------|----------|------------|
-| Gap #1 — forgot-password/reset-password no validateBody | Medium | FIXED — Joi schemas (`forgotPasswordSchema`, `resetPasswordSchema`) added to `authSchemas.ts`; `validateBody()` middleware added to both routes |
-| Gap #2 — ReDoS wrapper insufficient (no re2) | Medium | FIXED — `re2` package installed; `new RE2()` replaces `new RegExp()` in both `zeroTrustService.ts` and `workflowEngine.ts` |
-| Gap #3 — Rate limit gaps (webhook + docs) | Low | FIXED — `apiLimiter` added to `/api/billing/webhook` and `/api/docs` mounts |
-| Gap #4 — ESLint 1260 warnings | Low | Tracked as tech debt |
-
-**Final verdict:** PRODUCTION READY — 98.26% (see primary report v14 scorecard).
+Historical v12/v14 appendices and “PRODUCTION READY — 98.26%” legacy verdict text were superseded by the reconciled v16 report and are intentionally retired here to keep cross-document language consistent.
