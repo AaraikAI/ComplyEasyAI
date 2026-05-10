@@ -256,6 +256,8 @@ const WorkflowAutomationRules: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -278,9 +280,12 @@ const WorkflowAutomationRules: React.FC = () => {
       setLoading(true);
       const data = await api.workflows.list();
       setWorkflows(Array.isArray(data) ? data : data?.workflows || data?.data || []);
+      setServerReachable(true);
+      setLoadError(null);
     } catch (err: any) {
-      console.error('Failed to load workflows:', err);
-      // Use demo data on failure
+      // Server unreachable: surface fixtures so the screen isn't empty.
+      setServerReachable(false);
+      setLoadError('Unable to connect to server. Showing reference fixtures.');
       setWorkflows(DEMO_WORKFLOWS);
     } finally {
       setLoading(false);
@@ -386,32 +391,37 @@ const WorkflowAutomationRules: React.FC = () => {
         await api.workflows.create(payload);
       }
       setShowModal(false);
+      setLoadError(null);
       await loadWorkflows();
     } catch (err: any) {
-      console.error('Failed to save workflow:', err);
+      setLoadError('Failed to save workflow. Please retry.');
     } finally {
       setSaving(false);
     }
   }, [form, editingId, loadWorkflows]);
 
   const toggleWorkflow = useCallback(async (id: string, enabled: boolean) => {
+    // Optimistic toggle so the switch animates immediately.
+    setWorkflows(prev => prev.map(w => w.id === id ? { ...w, enabled: !enabled, status: !enabled ? 'Active' : 'Paused' } : w));
+    if (!serverReachable) return;
     try {
       await api.workflows.update(id, { enabled: !enabled, status: !enabled ? 'Active' : 'Paused' });
-      setWorkflows(prev => prev.map(w => w.id === id ? { ...w, enabled: !enabled, status: !enabled ? 'Active' : 'Paused' } : w));
     } catch (err: any) {
-      console.error('Failed to toggle workflow:', err);
+      setLoadError('Failed to toggle workflow on server. Local change retained.');
     }
-  }, []);
+  }, [serverReachable]);
 
   const deleteWorkflow = useCallback(async (id: string) => {
+    // Optimistic removal so the row vanishes immediately.
+    setWorkflows(prev => prev.filter(w => w.id !== id));
+    setDeleteTarget(null);
+    if (!serverReachable) return;
     try {
       await api.workflows.delete(id);
-      setWorkflows(prev => prev.filter(w => w.id !== id));
-      setDeleteTarget(null);
     } catch (err: any) {
-      console.error('Failed to delete workflow:', err);
+      setLoadError('Failed to delete workflow on server. It may reappear on reload.');
     }
-  }, []);
+  }, [serverReachable]);
 
   const runWorkflow = useCallback(async (id: string) => {
     try {
@@ -419,7 +429,7 @@ const WorkflowAutomationRules: React.FC = () => {
       await loadWorkflows();
       await loadExecutions();
     } catch (err: any) {
-      console.error('Failed to run workflow:', err);
+      setLoadError('Failed to run workflow. Please retry.');
     }
   }, [loadWorkflows, loadExecutions]);
 
@@ -758,6 +768,14 @@ const WorkflowAutomationRules: React.FC = () => {
           <Plus className="w-4 h-4" /> {t('workflow.createWorkflow')}
         </button>
       </div>
+
+      {loadError && (
+        <div className="mb-4 flex items-center gap-2 bg-amber-500/10 border border-amber-500/40 rounded-lg px-3 py-2">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <span className="text-sm text-amber-300 flex-1">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="text-amber-300 hover:text-amber-100"><X className="w-3 h-3" /></button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

@@ -288,10 +288,11 @@ const renderScoreBar = (score: number, max: number = 100, color?: string) => (
 export const EcodesignDashboard: React.FC = () => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
-  const [products, setProducts] = useState<EcoProduct[]>(DEFAULT_PRODUCTS);
-  const [passports, setPassports] = useState<DigitalProductPassport[]>(DEFAULT_PASSPORTS);
-  const [lcas, setLcas] = useState<LifecycleAssessment[]>(DEFAULT_LCAS);
-  const [requirements, setRequirements] = useState<ComplianceRequirement[]>(DEFAULT_REQUIREMENTS);
+  const [products, setProducts] = useState<EcoProduct[]>([]);
+  const [passports, setPassports] = useState<DigitalProductPassport[]>([]);
+  const [lcas, setLcas] = useState<LifecycleAssessment[]>([]);
+  const [requirements, setRequirements] = useState<ComplianceRequirement[]>([]);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -317,15 +318,26 @@ export const EcodesignDashboard: React.FC = () => {
     (async () => {
       try {
         const saved = await api.regulationData.getAll('ecodesign');
+        setServerReachable(true);
         if (saved && typeof saved === 'object') {
-          if (saved.products) setProducts(saved.products);
-          if (saved.passports) setPassports(saved.passports);
-          if (saved.lcas) setLcas(saved.lcas);
-          if (saved.requirements) setRequirements(saved.requirements);
+          setProducts(Array.isArray(saved.products) ? saved.products : DEFAULT_PRODUCTS);
+          setPassports(Array.isArray(saved.passports) ? saved.passports : DEFAULT_PASSPORTS);
+          setLcas(Array.isArray(saved.lcas) ? saved.lcas : DEFAULT_LCAS);
+          setRequirements(Array.isArray(saved.requirements) ? saved.requirements : DEFAULT_REQUIREMENTS);
+        } else {
+          setProducts(DEFAULT_PRODUCTS);
+          setPassports(DEFAULT_PASSPORTS);
+          setLcas(DEFAULT_LCAS);
+          setRequirements(DEFAULT_REQUIREMENTS);
         }
       } catch (err: any) {
-        console.error('Failed to load Ecodesign data:', err);
-        setLoadError('Using default template data.');
+        // Server unreachable — fall back to template data so the UI is usable.
+        setServerReachable(false);
+        setProducts(DEFAULT_PRODUCTS);
+        setPassports(DEFAULT_PASSPORTS);
+        setLcas(DEFAULT_LCAS);
+        setRequirements(DEFAULT_REQUIREMENTS);
+        setLoadError('Unable to connect to server. Using template data.');
       } finally {
         setIsLoading(false);
       }
@@ -335,14 +347,24 @@ export const EcodesignDashboard: React.FC = () => {
   // ── Debounced auto-save ──
   useEffect(() => {
     if (isLoading) return;
+    if (!serverReachable) return;
     const timer = setTimeout(() => {
-      api.regulationData.save('ecodesign', 'products', products).catch(console.error);
-      api.regulationData.save('ecodesign', 'passports', passports).catch(console.error);
-      api.regulationData.save('ecodesign', 'lcas', lcas).catch(console.error);
-      api.regulationData.save('ecodesign', 'requirements', requirements).catch(console.error);
+      Promise.allSettled([
+        api.regulationData.save('ecodesign', 'products', products),
+        api.regulationData.save('ecodesign', 'passports', passports),
+        api.regulationData.save('ecodesign', 'lcas', lcas),
+        api.regulationData.save('ecodesign', 'requirements', requirements),
+      ]).then(results => {
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+          setLoadError('Some changes failed to sync to the server.');
+        } else if (loadError) {
+          setLoadError(null);
+        }
+      });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [products, passports, lcas, requirements, isLoading]);
+  }, [products, passports, lcas, requirements, isLoading, serverReachable, loadError]);
 
   // ── Computed ──
 

@@ -7,6 +7,7 @@ import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import twoFactorService from '../services/twoFactorService';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 /**
  * Setup 2FA - Generate secret and QR code
@@ -30,10 +31,8 @@ export const setupTwoFactor: RequestHandler = async (req: Request, res: Response
     });
   } catch (error: any) {
     logger.error('Error in setupTwoFactor controller', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to setup two-factor authentication',
-    });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to setup two-factor authentication', 500);
   }
 };
 
@@ -47,21 +46,13 @@ export const verifyAndEnable: RequestHandler = async (req: Request, res: Respons
     const { token } = req.body;
 
     if (!token) {
-      res.status(400).json({
-        success: false,
-        error: 'Token is required',
-      });
-      return;
+      throw new AppError('Token is required', 400);
     }
 
     const verified = await twoFactorService.verifyAndEnableTwoFactor(userId, token);
 
     if (!verified) {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid verification code',
-      });
-      return;
+      throw new AppError('Invalid verification code', 400);
     }
 
     res.json({
@@ -70,10 +61,8 @@ export const verifyAndEnable: RequestHandler = async (req: Request, res: Respons
     });
   } catch (error: any) {
     logger.error('Error in verifyAndEnable controller', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to enable two-factor authentication',
-    });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to enable two-factor authentication', 500);
   }
 };
 
@@ -85,21 +74,13 @@ export const verifyToken: RequestHandler = async (req: Request, res: Response): 
     const { userId, token } = req.body;
 
     if (!userId || !token) {
-      res.status(400).json({
-        success: false,
-        error: 'User ID and token are required',
-      });
-      return;
+      throw new AppError('User ID and token are required', 400);
     }
 
     const verified = await twoFactorService.verifyTwoFactorToken(userId, token);
 
     if (!verified) {
-      res.status(401).json({
-        success: false,
-        error: 'Invalid authentication code',
-      });
-      return;
+      throw new AppError('Invalid authentication code', 401);
     }
 
     res.json({
@@ -108,10 +89,8 @@ export const verifyToken: RequestHandler = async (req: Request, res: Response): 
     });
   } catch (error: any) {
     logger.error('Error in verifyToken controller', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to verify token',
-    });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to verify token', 500);
   }
 };
 
@@ -123,21 +102,13 @@ export const verifyBackupCode: RequestHandler = async (req: Request, res: Respon
     const { userId, code } = req.body;
 
     if (!userId || !code) {
-      res.status(400).json({
-        success: false,
-        error: 'User ID and backup code are required',
-      });
-      return;
+      throw new AppError('User ID and backup code are required', 400);
     }
 
     const verified = await twoFactorService.verifyBackupCode(userId, code);
 
     if (!verified) {
-      res.status(401).json({
-        success: false,
-        error: 'Invalid backup code',
-      });
-      return;
+      throw new AppError('Invalid backup code', 401);
     }
 
     res.json({
@@ -146,10 +117,8 @@ export const verifyBackupCode: RequestHandler = async (req: Request, res: Respon
     });
   } catch (error: any) {
     logger.error('Error in verifyBackupCode controller', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to verify backup code',
-    });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to verify backup code', 500);
   }
 };
 
@@ -163,21 +132,13 @@ export const disableTwoFactor: RequestHandler = async (req: Request, res: Respon
     const { token } = req.body;
 
     if (!token) {
-      res.status(400).json({
-        success: false,
-        error: 'Token or backup code is required to disable 2FA',
-      });
-      return;
+      throw new AppError('Token or backup code is required to disable 2FA', 400);
     }
 
     const disabled = await twoFactorService.disableTwoFactor(userId, token);
 
     if (!disabled) {
-      res.status(401).json({
-        success: false,
-        error: 'Invalid token or backup code',
-      });
-      return;
+      throw new AppError('Invalid token or backup code', 401);
     }
 
     res.json({
@@ -186,10 +147,8 @@ export const disableTwoFactor: RequestHandler = async (req: Request, res: Respon
     });
   } catch (error: any) {
     logger.error('Error in disableTwoFactor controller', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to disable two-factor authentication',
-    });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to disable two-factor authentication', 500);
   }
 };
 
@@ -203,21 +162,13 @@ export const regenerateBackupCodes: RequestHandler = async (req: Request, res: R
     const { token } = req.body;
 
     if (!token) {
-      res.status(400).json({
-        success: false,
-        error: 'Token is required to regenerate backup codes',
-      });
-      return;
+      throw new AppError('Token is required to regenerate backup codes', 400);
     }
 
     const backupCodes = await twoFactorService.regenerateBackupCodes(userId, token);
 
     if (!backupCodes) {
-      res.status(401).json({
-        success: false,
-        error: 'Invalid token',
-      });
-      return;
+      throw new AppError('Invalid token', 401);
     }
 
     res.json({
@@ -229,10 +180,8 @@ export const regenerateBackupCodes: RequestHandler = async (req: Request, res: R
     });
   } catch (error: any) {
     logger.error('Error in regenerateBackupCodes controller', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to regenerate backup codes',
-    });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to regenerate backup codes', 500);
   }
 };
 
@@ -258,9 +207,7 @@ export const getTwoFactorStatus: RequestHandler = async (req: Request, res: Resp
     });
   } catch (error: any) {
     logger.error('Error in getTwoFactorStatus controller', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get 2FA status',
-    });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to get 2FA status', 500);
   }
 };

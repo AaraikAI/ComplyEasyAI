@@ -39,7 +39,7 @@ export const listGovernanceBodies: RequestHandler = async (req, res) => {
 
 export const createGovernanceBody: RequestHandler = async (req, res) => {
   const { name, type, charter, meetingFrequency, members } = req.body;
-  if (!name || !type) { res.status(400).json({ error: 'name and type are required' }); return; }
+  if (!name || !type) throw new AppError('name and type are required', 400);
   const body = await prisma.governanceBody.create({
     data: { organizationId: getOrgId(req), name, type, charter, meetingFrequency, members, status: 'active' },
     include: { meetings: true, decisions: true, escalationPaths: true },
@@ -65,7 +65,7 @@ export const deleteGovernanceBody: RequestHandler = async (req, res) => {
 // --- Governance Meetings ---
 export const createMeeting: RequestHandler = async (req, res) => {
   const { governanceBodyId, title, date, duration, agenda, attendees } = req.body;
-  if (!governanceBodyId || !title || !date) { res.status(400).json({ error: 'governanceBodyId, title, and date are required' }); return; }
+  if (!governanceBodyId || !title || !date) throw new AppError('governanceBodyId, title, and date are required', 400);
   const meeting = await prisma.governanceMeeting.create({
     data: { governanceBodyId, title, date: new Date(date), duration, agenda, attendees, status: 'scheduled' },
   });
@@ -87,7 +87,7 @@ export const deleteMeeting: RequestHandler = async (req, res) => {
 // --- Governance Decisions ---
 export const createDecision: RequestHandler = async (req, res) => {
   const { governanceBodyId, title, description, decisionType } = req.body;
-  if (!governanceBodyId || !title || !decisionType) { res.status(400).json({ error: 'governanceBodyId, title, and decisionType are required' }); return; }
+  if (!governanceBodyId || !title || !decisionType) throw new AppError('governanceBodyId, title, and decisionType are required', 400);
   const decision = await prisma.governanceDecision.create({
     data: { governanceBodyId, title, description, decisionType, status: 'proposed', ...req.body },
   });
@@ -105,7 +105,7 @@ export const updateDecision: RequestHandler = async (req, res) => {
 // --- Escalation Paths ---
 export const createEscalationPath: RequestHandler = async (req, res) => {
   const { governanceBodyId, name, triggerCriteria, levels } = req.body;
-  if (!governanceBodyId || !name) { res.status(400).json({ error: 'governanceBodyId and name are required' }); return; }
+  if (!governanceBodyId || !name) throw new AppError('governanceBodyId and name are required', 400);
   const path = await prisma.escalationPath.create({
     data: { governanceBodyId, name, triggerCriteria: triggerCriteria || [], levels: levels || [] },
   });
@@ -131,7 +131,7 @@ export const getDPOProfile: RequestHandler = async (req, res) => {
 export const upsertDPOProfile: RequestHandler = async (req, res) => {
   const orgId = getOrgId(req);
   const { name, email, phone, certifications, appointmentDate, registeredWithDPA, dpaRegistrationRef, tasks, activityLog } = req.body;
-  if (!name || !email) { res.status(400).json({ error: 'name and email are required' }); return; }
+  if (!name || !email) throw new AppError('name and email are required', 400);
   const profile = await prisma.dPOProfile.upsert({
     where: { organizationId: orgId },
     create: { organizationId: orgId, name, email, phone, certifications, appointmentDate: appointmentDate ? new Date(appointmentDate) : undefined, registeredWithDPA, dpaRegistrationRef, tasks, activityLog },
@@ -156,7 +156,7 @@ export const listBreachIncidents: RequestHandler = async (req, res) => {
 export const createBreachIncident: RequestHandler = async (req, res) => {
   const { title, breachType, severity, discoveryDate, description, discoveryMethod } = req.body;
   if (!title || !breachType || !severity || !discoveryDate) {
-    res.status(400).json({ error: 'title, breachType, severity, and discoveryDate are required' }); return;
+    throw new AppError('title, breachType, severity, and discoveryDate are required', 400);
   }
   const { affectedRecords, affectedDataTypes, affectedJurisdictions } = req.body;
   const incident = await prisma.breachIncident.create({
@@ -175,7 +175,7 @@ export const getBreachIncident: RequestHandler = async (req, res) => {
     where: { id: req.params.id, organizationId: getOrgId(req) },
     include: { notifications: true },
   });
-  if (!incident) { res.status(404).json({ error: 'Breach incident not found' }); return; }
+  if (!incident) throw new AppError('Breach incident not found', 404);
   res.json(incident);
 };
 
@@ -199,7 +199,7 @@ export const deleteBreachIncident: RequestHandler = async (req, res) => {
 // --- Breach Notifications ---
 export const createBreachNotification: RequestHandler = async (req, res) => {
   const { breachId, recipientType, jurisdiction, authority, content, dueDate } = req.body;
-  if (!breachId || !recipientType) { res.status(400).json({ error: 'breachId and recipientType are required' }); return; }
+  if (!breachId || !recipientType) throw new AppError('breachId and recipientType are required', 400);
   const notification = await prisma.breachNotification.create({
     data: { breachId, recipientType, jurisdiction, authority, content, dueDate: dueDate ? new Date(dueDate) : undefined, status: 'draft' },
   });
@@ -226,7 +226,7 @@ export const listBreachTemplates: RequestHandler = async (req, res) => {
 export const createBreachTemplate: RequestHandler = async (req, res) => {
   const { name, jurisdiction, recipientType, subject, body, variables } = req.body;
   if (!name || !jurisdiction || !recipientType || !body) {
-    res.status(400).json({ error: 'name, jurisdiction, recipientType, and body are required' }); return;
+    throw new AppError('name, jurisdiction, recipientType, and body are required', 400);
   }
   const template = await prisma.breachTemplate.create({
     data: { organizationId: getOrgId(req), name, jurisdiction, recipientType, subject, body, variables },
@@ -256,7 +256,7 @@ export const listRegulatoryContacts: RequestHandler = async (req, res) => {
 export const createRegulatoryContact: RequestHandler = async (req, res) => {
   const { name, authority, jurisdiction } = req.body;
   if (!name || !authority || !jurisdiction) {
-    res.status(400).json({ error: 'name, authority, and jurisdiction are required' }); return;
+    throw new AppError('name, authority, and jurisdiction are required', 400);
   }
   const contact = await prisma.regulatoryContact.create({
     data: { organizationId: getOrgId(req), ...req.body },
@@ -293,7 +293,7 @@ export const listCEProducts: RequestHandler = async (req, res) => {
 
 export const createCEProduct: RequestHandler = async (req, res) => {
   const { name, category } = req.body;
-  if (!name || !category) { res.status(400).json({ error: 'name and category are required' }); return; }
+  if (!name || !category) throw new AppError('name and category are required', 400);
   const product = await prisma.cEProduct.create({
     data: { organizationId: getOrgId(req), ...req.body },
   });
@@ -304,7 +304,7 @@ export const getCEProduct: RequestHandler = async (req, res) => {
   const product = await prisma.cEProduct.findFirst({
     where: { id: req.params.id, organizationId: getOrgId(req) },
   });
-  if (!product) { res.status(404).json({ error: 'CE product not found' }); return; }
+  if (!product) throw new AppError('CE product not found', 404);
   res.json(product);
 };
 
@@ -464,7 +464,7 @@ export const listDPPs: RequestHandler = async (req, res) => {
 
 export const createDPP: RequestHandler = async (req, res) => {
   const { productName } = req.body;
-  if (!productName) { res.status(400).json({ error: 'productName is required' }); return; }
+  if (!productName) throw new AppError('productName is required', 400);
   const passport = await prisma.digitalProductPassport.create({
     data: { organizationId: getOrgId(req), ...req.body },
   });
@@ -475,7 +475,7 @@ export const getDPP: RequestHandler = async (req, res) => {
   const passport = await prisma.digitalProductPassport.findFirst({
     where: { id: req.params.id, organizationId: getOrgId(req) },
   });
-  if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+  if (!passport) throw new AppError('Digital Product Passport not found', 404);
 
   // Map JSON fields to the sub-resource keys the frontend expects
   const result: Record<string, any> = { ...passport };
@@ -517,7 +517,7 @@ export const getDPPMaterials: RequestHandler = async (req, res) => {
       where: { id: req.params.id, organizationId: getOrgId(req) },
       select: { materialComposition: true },
     });
-    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    if (!passport) throw new AppError('Digital Product Passport not found', 404);
     const materials = Array.isArray(passport.materialComposition) ? passport.materialComposition : [];
     res.json(materials);
   } catch (error) {
@@ -536,7 +536,7 @@ export const getDPPCarbon: RequestHandler = async (req, res) => {
       where: { id: req.params.id, organizationId: getOrgId(req) },
       select: { carbonFootprint: true },
     });
-    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    if (!passport) throw new AppError('Digital Product Passport not found', 404);
     const cf = passport.carbonFootprint as any;
     let stages: any[] = [];
     if (Array.isArray(cf)) stages = cf;
@@ -558,7 +558,7 @@ export const getDPPSupplyChain: RequestHandler = async (req, res) => {
       where: { id: req.params.id, organizationId: getOrgId(req) },
       select: { supplyChain: true },
     });
-    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    if (!passport) throw new AppError('Digital Product Passport not found', 404);
     const chain = Array.isArray(passport.supplyChain) ? passport.supplyChain : [];
     res.json(chain);
   } catch (error) {
@@ -577,7 +577,7 @@ export const getDPPSustainability: RequestHandler = async (req, res) => {
       where: { id: req.params.id, organizationId: getOrgId(req) },
       select: { circularityMetrics: true, recyclabilityScore: true, repairabilityScore: true, durabilityRating: true, energyClass: true },
     });
-    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    if (!passport) throw new AppError('Digital Product Passport not found', 404);
     const metrics = (passport.circularityMetrics as any) || {};
     res.json({
       ...metrics,
@@ -601,7 +601,7 @@ export const getDPPCertifications: RequestHandler = async (req, res) => {
       where: { id: req.params.id, organizationId: getOrgId(req) },
       select: { complianceStatus: true, passportVersion: true, publicUrl: true, qrCodeData: true },
     });
-    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    if (!passport) throw new AppError('Digital Product Passport not found', 404);
     res.json(passport);
   } catch (error) {
     logger.error('Error fetching DPP certifications:', error);
@@ -626,14 +626,14 @@ export const getESGMetric: RequestHandler = async (req, res) => {
   const metric = await prisma.eSGMetric.findFirst({
     where: { id: req.params.id, organizationId: getOrgId(req) },
   });
-  if (!metric) { res.status(404).json({ error: 'ESG metric not found' }); return; }
+  if (!metric) throw new AppError('ESG metric not found', 404);
   res.json(metric);
 };
 
 export const createESGMetric: RequestHandler = async (req, res) => {
   const { category, subcategory, name, value, unit } = req.body;
   if (!category || !subcategory || !name || value === undefined || !unit) {
-    res.status(400).json({ error: 'category, subcategory, name, value, and unit are required' }); return;
+    throw new AppError('category, subcategory, name, value, and unit are required', 400);
   }
   const metric = await prisma.eSGMetric.create({
     data: { organizationId: getOrgId(req), ...req.body },
@@ -661,7 +661,7 @@ export const listMaterialityAssessments: RequestHandler = async (req, res) => {
 
 export const createMaterialityAssessment: RequestHandler = async (req, res) => {
   const { topic } = req.body;
-  if (!topic) { res.status(400).json({ error: 'topic is required' }); return; }
+  if (!topic) throw new AppError('topic is required', 400);
   const assessment = await prisma.materialityAssessment.create({
     data: { organizationId: getOrgId(req), ...req.body },
   });
@@ -677,13 +677,95 @@ export const getMaterialityAssessment: RequestHandler = async (req, res) => {
   const assessment = await prisma.materialityAssessment.findFirst({
     where: { id: req.params.id, organizationId: getOrgId(req) },
   });
-  if (!assessment) { res.status(404).json({ error: 'Materiality assessment not found' }); return; }
+  if (!assessment) throw new AppError('Materiality assessment not found', 404);
   res.json(assessment);
 };
 
 export const deleteMaterialityAssessment: RequestHandler = async (req, res) => {
   await prisma.materialityAssessment.delete({ where: { id: req.params.id } });
   res.json({ success: true });
+};
+
+// Generates a synthetic ESG report by aggregating metrics + materiality for the
+// requested period. Reports are not persisted as a separate row — they're
+// computed on demand from authoritative metric data and returned for download.
+export const generateESGReport: RequestHandler = async (req, res) => {
+  const orgId = getOrgId(req);
+  const type = (req.body?.type as string) || 'annual';
+  const periodStart = req.body?.periodStart as string | undefined;
+  const periodEnd = req.body?.periodEnd as string | undefined;
+
+  const metrics = await prisma.eSGMetric.findMany({ where: { organizationId: orgId } });
+  const materiality = await prisma.materialityAssessment.findMany({ where: { organizationId: orgId } });
+
+  const totals = {
+    metricsCount: metrics.length,
+    verifiedMetrics: metrics.filter(m => m.verified).length,
+    materialTopics: materiality.filter(m => m.isMaterial).length,
+    environmental: metrics.filter(m => m.category === 'environmental').length,
+    social: metrics.filter(m => m.category === 'social').length,
+    governance: metrics.filter(m => m.category === 'governance').length,
+  };
+
+  const report = {
+    id: `RPT-${Date.now()}`,
+    organizationId: orgId,
+    type,
+    periodStart: periodStart || new Date(new Date().getFullYear(), 0, 1).toISOString(),
+    periodEnd: periodEnd || new Date(new Date().getFullYear(), 11, 31).toISOString(),
+    generatedAt: new Date().toISOString(),
+    title: `${type.charAt(0).toUpperCase() + type.slice(1)} ESG Report`,
+    framework: 'ESRS / GRI',
+    summary: totals,
+    metrics: metrics.map(m => ({
+      id: m.id,
+      category: m.category,
+      subcategory: m.subcategory,
+      name: m.name,
+      value: m.value,
+      unit: m.unit,
+      esrsStandard: m.esrsStandard,
+      reportingPeriod: m.reportingPeriod,
+      verified: m.verified,
+    })),
+    materiality: materiality.map(mt => ({
+      id: mt.id,
+      topic: mt.topic,
+      esrsStandard: mt.esrsStandard,
+      isMaterial: mt.isMaterial,
+      financialImpact: mt.financialImpact,
+      impactOnSociety: mt.impactOnSociety,
+    })),
+  };
+
+  res.status(201).json(report);
+};
+
+// Returns recently generated reports (currently a synthetic listing built from
+// the most recent metrics; surfaces the same shape generateESGReport returns
+// so the UI can render either source identically).
+export const listESGReports: RequestHandler = async (req, res) => {
+  const orgId = getOrgId(req);
+  const recent = await prisma.eSGMetric.findMany({
+    where: { organizationId: orgId },
+    orderBy: { updatedAt: 'desc' },
+    take: 1,
+  });
+  if (recent.length === 0) {
+    res.json([]);
+    return;
+  }
+  const year = new Date(recent[0].updatedAt).getFullYear();
+  res.json([
+    {
+      id: `RPT-${year}-annual`,
+      organizationId: orgId,
+      type: 'annual',
+      title: `${year} Annual ESG Report`,
+      generatedAt: recent[0].updatedAt,
+      framework: 'ESRS / GRI',
+    },
+  ]);
 };
 
 // ============================================================================
@@ -702,7 +784,7 @@ export const listSBOMEntries: RequestHandler = async (req, res) => {
 export const createSBOMEntry: RequestHandler = async (req, res) => {
   const { componentName, componentVersion } = req.body;
   if (!componentName || !componentVersion) {
-    res.status(400).json({ error: 'componentName and componentVersion are required' }); return;
+    throw new AppError('componentName and componentVersion are required', 400);
   }
   const entry = await prisma.sBOMEntry.create({
     data: { organizationId: getOrgId(req), ...req.body },
@@ -722,7 +804,7 @@ export const deleteSBOMEntry: RequestHandler = async (req, res) => {
 
 export const bulkCreateSBOMEntries: RequestHandler = async (req, res) => {
   const { entries } = req.body;
-  if (!entries || !Array.isArray(entries)) { res.status(400).json({ error: 'entries array is required' }); return; }
+  if (!entries || !Array.isArray(entries)) throw new AppError('entries array is required', 400);
   const orgId = getOrgId(req);
   const result = await prisma.sBOMEntry.createMany({
     data: entries.map((e: any) => ({ ...e, organizationId: orgId })),
@@ -741,7 +823,7 @@ export const listSBOMRepositories: RequestHandler = async (req, res) => {
 
 export const createSBOMRepository: RequestHandler = async (req, res) => {
   const { name } = req.body;
-  if (!name) { res.status(400).json({ error: 'name is required' }); return; }
+  if (!name) throw new AppError('name is required', 400);
   const repo = await prisma.sBOMRepository.create({
     data: { organizationId: getOrgId(req), ...req.body },
   });
@@ -839,7 +921,7 @@ export const listSurveillancePlans: RequestHandler = async (req, res) => {
 export const createSurveillancePlan: RequestHandler = async (req, res) => {
   const { productName, planType, frequency } = req.body;
   if (!productName || !planType || !frequency) {
-    res.status(400).json({ error: 'productName, planType, and frequency are required' }); return;
+    throw new AppError('productName, planType, and frequency are required', 400);
   }
   const plan = await prisma.surveillancePlan.create({
     data: { organizationId: getOrgId(req), ...req.body, nextReviewDate: req.body.nextReviewDate ? new Date(req.body.nextReviewDate) : undefined },
@@ -868,7 +950,7 @@ export const deleteSurveillancePlan: RequestHandler = async (req, res) => {
 export const createSurveillanceIncident: RequestHandler = async (req, res) => {
   const { planId, type, severity, title, reportedDate } = req.body;
   if (!planId || !type || !severity || !title || !reportedDate) {
-    res.status(400).json({ error: 'planId, type, severity, title, and reportedDate are required' }); return;
+    throw new AppError('planId, type, severity, title, and reportedDate are required', 400);
   }
   const incident = await prisma.surveillanceIncident.create({
     data: { ...req.body, reportedDate: new Date(reportedDate) },
@@ -900,7 +982,7 @@ export const listProductRecalls: RequestHandler = async (req, res) => {
 export const createProductRecall: RequestHandler = async (req, res) => {
   const { productName, recallType, reason } = req.body;
   if (!productName || !recallType || !reason) {
-    res.status(400).json({ error: 'productName, recallType, and reason are required' }); return;
+    throw new AppError('productName, recallType, and reason are required', 400);
   }
   const recall = await prisma.productRecall.create({
     data: {
@@ -934,7 +1016,7 @@ export const listProductDecommissions: RequestHandler = async (req, res) => {
 
 export const createProductDecommission: RequestHandler = async (req, res) => {
   const { productName } = req.body;
-  if (!productName) { res.status(400).json({ error: 'productName is required' }); return; }
+  if (!productName) throw new AppError('productName is required', 400);
   const product = await prisma.productDecommission.create({
     data: {
       organizationId: getOrgId(req), ...req.body,
@@ -976,7 +1058,7 @@ export const listLifecycleAssessments: RequestHandler = async (req, res) => {
 
 export const createLifecycleAssessment: RequestHandler = async (req, res) => {
   const { productName } = req.body;
-  if (!productName) { res.status(400).json({ error: 'productName is required' }); return; }
+  if (!productName) throw new AppError('productName is required', 400);
   const assessment = await prisma.lifecycleAssessment.create({
     data: { organizationId: getOrgId(req), ...req.body },
   });
@@ -987,7 +1069,7 @@ export const getLifecycleAssessment: RequestHandler = async (req, res) => {
   const assessment = await prisma.lifecycleAssessment.findFirst({
     where: { id: req.params.id, organizationId: getOrgId(req) },
   });
-  if (!assessment) { res.status(404).json({ error: 'Assessment not found' }); return; }
+  if (!assessment) throw new AppError('Assessment not found', 404);
   res.json(assessment);
 };
 
@@ -1017,7 +1099,7 @@ export const listProductLifecycles: RequestHandler = async (req, res) => {
 
 export const createProductLifecycle: RequestHandler = async (req, res) => {
   const { productName } = req.body;
-  if (!productName) { res.status(400).json({ error: 'productName is required' }); return; }
+  if (!productName) throw new AppError('productName is required', 400);
   const product = await prisma.productLifecycle.create({
     data: {
       organizationId: getOrgId(req), ...req.body,
@@ -1032,7 +1114,7 @@ export const getProductLifecycle: RequestHandler = async (req, res) => {
   const product = await prisma.productLifecycle.findFirst({
     where: { id: req.params.id, organizationId: getOrgId(req) },
   });
-  if (!product) { res.status(404).json({ error: 'Product not found' }); return; }
+  if (!product) throw new AppError('Product not found', 404);
   res.json(product);
 };
 
@@ -1064,7 +1146,7 @@ export const listProcessMaps: RequestHandler = async (req, res) => {
 
 export const createProcessMap: RequestHandler = async (req, res) => {
   const { name, nodes, edges } = req.body;
-  if (!name || !nodes || !edges) { res.status(400).json({ error: 'name, nodes, and edges are required' }); return; }
+  if (!name || !nodes || !edges) throw new AppError('name, nodes, and edges are required', 400);
   const map = await prisma.processMap.create({
     data: { organizationId: getOrgId(req), ...req.body },
   });
@@ -1075,7 +1157,7 @@ export const getProcessMap: RequestHandler = async (req, res) => {
   const map = await prisma.processMap.findFirst({
     where: { id: req.params.id, organizationId: getOrgId(req) },
   });
-  if (!map) { res.status(404).json({ error: 'Process map not found' }); return; }
+  if (!map) throw new AppError('Process map not found', 404);
   res.json(map);
 };
 

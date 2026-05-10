@@ -450,23 +450,108 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
     })();
   }, []);
 
+  /* ---- API persistence helpers ---- */
+  // Locally-generated ids start with a recognized prefix and have not yet been persisted.
+  const isLocalId = (id: string) => /^(esc|cm|step|trig|task|gov|com)-/.test(id);
+
+  const persistDpo = useCallback(async (next: DPOProfile) => {
+    try {
+      await api.modules.governance.upsertDPO({
+        name: next.name,
+        email: next.email,
+        phone: next.phone,
+        appointmentDate: next.appointmentDate,
+        certifications: next.certifications,
+        tasks: next.tasks,
+        activityLog: next.activityLog,
+      });
+    } catch {
+      setLoadError('Server failed to save DPO change. Local state retained.');
+    }
+  }, []);
+
+  const persistCommittee = useCallback(async (committee: Committee) => {
+    try {
+      const payload = {
+        name: committee.type,
+        charter: committee.charter,
+        meetingFrequency: committee.meetingFrequency,
+        members: committee.members,
+        status: committee.status?.toLowerCase(),
+      };
+      if (isLocalId(committee.id)) {
+        const created = await api.modules.governance.createBody({ ...payload, name: committee.type });
+        if (created?.id) {
+          setCommittees(prev => prev.map(c => c.id === committee.id ? { ...c, id: created.id } : c));
+          if (selectedCommitteeId === committee.id) setSelectedCommitteeId(created.id);
+        }
+      } else {
+        await api.modules.governance.updateBody(committee.id, payload);
+      }
+    } catch {
+      setLoadError('Server failed to save committee change. Local state retained.');
+    }
+  }, [selectedCommitteeId]);
+
+  const persistEscalation = useCallback(async (path: EscalationPath, opts?: { create?: boolean }) => {
+    try {
+      const payload = {
+        name: path.name,
+        levels: path.steps,
+        triggerCriteria: path.triggers,
+        status: path.status?.toLowerCase(),
+      };
+      if (opts?.create || isLocalId(path.id)) {
+        const created = await api.modules.governance.createEscalationPath(payload);
+        if (created?.id) {
+          setEscalationPaths(prev => prev.map(e => e.id === path.id ? { ...e, id: created.id } : e));
+          if (selectedEscalationId === path.id) setSelectedEscalationId(created.id);
+        }
+      } else {
+        await api.modules.governance.updateEscalationPath(path.id, payload);
+      }
+    } catch {
+      setLoadError('Server failed to save escalation path. Local state retained.');
+    }
+  }, [selectedEscalationId]);
+
   /* ---- DPO callbacks ---- */
   const addDPOTask = useCallback(() => {
     if (!newTask.title.trim()) return;
     const task: DPOTask = { id: uid('task'), ...newTask, status: 'Open' };
-    setDpo(prev => ({ ...prev, tasks: [...prev.tasks, task] }));
+    setDpo(prev => {
+      const next = { ...prev, tasks: [...prev.tasks, task] };
+      void persistDpo(next);
+      return next;
+    });
     setNewTask({ title: '', description: '', dueDate: '', priority: 'Medium', category: 'Advisory' });
     setShowAddTask(false);
-  }, [newTask]);
+  }, [newTask, persistDpo]);
 
   const updateTaskStatus = useCallback((taskId: string, status: DPOTask['status']) => {
-    setDpo(prev => ({ ...prev, tasks: prev.tasks.map(tk => tk.id === taskId ? { ...tk, status } : tk) }));
-  }, []);
+    setDpo(prev => {
+      const next = { ...prev, tasks: prev.tasks.map(tk => tk.id === taskId ? { ...tk, status } : tk) };
+      void persistDpo(next);
+      return next;
+    });
+  }, [persistDpo]);
 
   /* ---- Committee callbacks ---- */
-  const updateCommittee = useCallback((updater: (c: Committee) => Committee) => {
-    setCommittees(prev => prev.map(c => c.id === selectedCommitteeId ? updater(c) : c));
-  }, [selectedCommitteeId]);
+  const updateCommittee = useCallback((updater: (c: Committee) => Committee, persist = true) => {
+    setCommittees(prev => {
+      let touched: Committee | null = null;
+      const next = prev.map(c => {
+        if (c.id === selectedCommitteeId) {
+          const u = updater(c);
+          touched = u;
+          return u;
+        }
+        return c;
+      });
+      if (persist && touched) void persistCommittee(touched);
+      return next;
+    });
+  }, [selectedCommitteeId, persistCommittee]);
 
   const addCommitteeMember = useCallback(() => {
     if (!newMember.name.trim() || !selectedCommitteeId) return;
@@ -488,11 +573,35 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
     setSelectedEscalationId(path.id);
     setNewPath({ name: '', scenario: 'Custom', description: '' });
     setShowAddPath(false);
-  }, [newPath]);
+    void persistEscalation(path, { create: true });
+  }, [newPath, persistEscalation]);
 
-  const updateEscalation = useCallback((updater: (e: EscalationPath) => EscalationPath) => {
-    setEscalationPaths(prev => prev.map(e => e.id === selectedEscalationId ? updater(e) : e));
+  const removeEscalationPath = useCallback(async (pathId: string) => {
+    setEscalationPaths(prev => prev.filter(e => e.id !== pathId));
+    if (selectedEscalationId === pathId) setSelectedEscalationId(null);
+    if (isLocalId(pathId)) return;
+    try {
+      await api.modules.governance.deleteEscalationPath(pathId);
+    } catch {
+      setLoadError('Failed to delete escalation path on server. It may reappear on reload.');
+    }
   }, [selectedEscalationId]);
+
+  const updateEscalation = useCallback((updater: (e: EscalationPath) => EscalationPath, persist = true) => {
+    setEscalationPaths(prev => {
+      let touched: EscalationPath | null = null;
+      const next = prev.map(e => {
+        if (e.id === selectedEscalationId) {
+          const u = updater(e);
+          touched = u;
+          return u;
+        }
+        return e;
+      });
+      if (persist && touched) void persistEscalation(touched);
+      return next;
+    });
+  }, [selectedEscalationId, persistEscalation]);
 
   const addEscalationStep = useCallback(() => {
     if (!newStep.title.trim()) return;
@@ -995,8 +1104,20 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {escalationPaths.map(path => (
-              <div key={path.id} onClick={() => setSelectedEscalationId(path.id)} className="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-400 hover:shadow-md transition-all cursor-pointer">
-                <div className="flex items-start justify-between mb-2">
+              <div key={path.id} onClick={() => setSelectedEscalationId(path.id)} className="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-400 hover:shadow-md transition-all cursor-pointer relative group">
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    if (window.confirm(`Delete escalation path "${path.name}"?`)) {
+                      void removeEscalationPath(path.id);
+                    }
+                  }}
+                  className="absolute top-3 right-3 p-1.5 rounded-full bg-white border border-gray-200 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 transition-opacity"
+                  aria-label={`Delete ${path.name}`}
+                >
+                  <Trash2 size={12} />
+                </button>
+                <div className="flex items-start justify-between mb-2 pr-7">
                   <h4 className="font-semibold text-gray-900">{path.name}</h4>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(path.status)}`}>{path.status}</span>
                 </div>

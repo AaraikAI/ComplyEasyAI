@@ -243,30 +243,39 @@ const renderScoreBar = (score: number, max: number = 100) => (
 export const NIS2Dashboard: React.FC = () => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  // Server is the source of truth. DEFAULT_* values are reference fixtures used only when
+  // the API is unreachable so empty arrays don't get masked by static data.
   const [entity, setEntity] = useState<NIS2Entity>(DEFAULT_ENTITY);
-  const [measures, setMeasures] = useState<SecurityMeasure[]>(DEFAULT_MEASURES);
-  const [incidents, setIncidents] = useState<SecurityIncident[]>(DEFAULT_INCIDENTS);
-  const [suppliers, setSuppliers] = useState<SupplyChainAssessment[]>(DEFAULT_SUPPLIERS);
-  const [bcps, setBcps] = useState<BusinessContinuityPlan[]>(DEFAULT_BCP);
+  const [measures, setMeasures] = useState<SecurityMeasure[]>([]);
+  const [incidents, setIncidents] = useState<SecurityIncident[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplyChainAssessment[]>([]);
+  const [bcps, setBcps] = useState<BusinessContinuityPlan[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
-  // Load data from backend, fall back to defaults for new orgs
+  // Load data from backend, fall back to defaults when the server is unreachable
   useEffect(() => {
     (async () => {
       try {
         const saved = await api.regulationData.getAll('nis2');
         if (saved && typeof saved === 'object') {
           if (saved.entity) setEntity(saved.entity);
-          if (saved.measures) setMeasures(saved.measures);
-          if (saved.incidents) setIncidents(saved.incidents);
-          if (saved.suppliers) setSuppliers(saved.suppliers);
-          if (saved.bcps) setBcps(saved.bcps);
+          setMeasures(Array.isArray(saved.measures) ? saved.measures : []);
+          setIncidents(Array.isArray(saved.incidents) ? saved.incidents : []);
+          setSuppliers(Array.isArray(saved.suppliers) ? saved.suppliers : []);
+          setBcps(Array.isArray(saved.bcps) ? saved.bcps : []);
         }
+        setServerReachable(true);
       } catch (err: any) {
-        console.error('Failed to load NIS2 data:', err);
-        setLoadError('Using default template data. Save changes to persist your NIS2 configuration.');
+        setServerReachable(false);
+        setLoadError('Unable to connect to server. Showing reference template data.');
+        setEntity(DEFAULT_ENTITY);
+        setMeasures(DEFAULT_MEASURES);
+        setIncidents(DEFAULT_INCIDENTS);
+        setSuppliers(DEFAULT_SUPPLIERS);
+        setBcps(DEFAULT_BCP);
       } finally {
         setIsLoading(false);
       }
@@ -275,26 +284,20 @@ export const NIS2Dashboard: React.FC = () => {
 
   // Auto-save when data changes (debounced)
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !serverReachable) return;
     const timer = setTimeout(() => {
-      api.regulationData.save('nis2', 'entity', entity).catch((err: unknown) => {
-        setLoadError('Failed to save changes. Please retry.');
-      });
-      api.regulationData.save('nis2', 'measures', measures).catch((err: unknown) => {
-        setLoadError('Failed to save changes. Please retry.');
-      });
-      api.regulationData.save('nis2', 'incidents', incidents).catch((err: unknown) => {
-        setLoadError('Failed to save changes. Please retry.');
-      });
-      api.regulationData.save('nis2', 'suppliers', suppliers).catch((err: unknown) => {
-        setLoadError('Failed to save changes. Please retry.');
-      });
-      api.regulationData.save('nis2', 'bcps', bcps).catch((err: unknown) => {
+      Promise.all([
+        api.regulationData.save('nis2', 'entity', entity),
+        api.regulationData.save('nis2', 'measures', measures),
+        api.regulationData.save('nis2', 'incidents', incidents),
+        api.regulationData.save('nis2', 'suppliers', suppliers),
+        api.regulationData.save('nis2', 'bcps', bcps),
+      ]).catch(() => {
         setLoadError('Failed to save changes. Please retry.');
       });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [entity, measures, incidents, suppliers, bcps, isLoading]);
+  }, [entity, measures, incidents, suppliers, bcps, isLoading, serverReachable]);
 
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -835,6 +838,14 @@ export const NIS2Dashboard: React.FC = () => {
           ))}
         </nav>
       </div>
+
+      {loadError && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+          <span className="text-sm text-amber-700 flex-1">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="text-amber-500 hover:text-amber-700"><X className="w-3 h-3" /></button>
+        </div>
+      )}
 
       {activeTab === 'overview' && renderOverview()}
       {activeTab === 'classification' && renderClassification()}

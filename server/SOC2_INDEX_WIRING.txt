@@ -1,0 +1,35 @@
+// ============================================================================
+// SOC 2 Workflow — Wiring instructions for server/src/index.ts
+// ----------------------------------------------------------------------------
+// Two lines to add. The codebase already has matching ISO 27001 and HIPAA
+// imports/mounts adjacent — paste these next to those entries to keep the
+// workflow modules grouped together.
+// ============================================================================
+
+// 1) Import line — paste alongside the existing iso27001/hipaa imports
+//    (currently around line 111-112 of server/src/index.ts):
+
+import soc2Routes from './routes/soc2';
+
+
+// 2) Mount line — paste alongside the existing iso27001/hipaa mounts
+//    (currently around line 625-626 of server/src/index.ts):
+
+app.use('/api/soc2', apiLimiter, soc2Routes);
+
+
+// ============================================================================
+// Recommended placement — after pasting, the relevant blocks should look like:
+// ============================================================================
+//
+//   // Imports section:
+//   import iso27001Routes from './routes/iso27001';
+//   import hipaaRoutes from './routes/hipaa';
+//   import soc2Routes from './routes/soc2';
+//
+//   // Mounts section:
+//   app.use('/api/iso27001', apiLimiter, iso27001Routes);
+//   app.use('/api/hipaa', apiLimiter, hipaaRoutes);
+//   app.use('/api/soc2', apiLimiter, soc2Routes);
+//
+// ============================================================================

@@ -29,11 +29,8 @@ class AIRMFController {
       res.status(201).json(aiSystem);
     } catch (error: any) {
       logger.error('Create AI system error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to create AI system' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to create AI system', 500);
     }
   };
 
@@ -53,11 +50,8 @@ class AIRMFController {
       res.json(aiSystems);
     } catch (error: any) {
       logger.error('Get AI systems error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to fetch AI systems' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to fetch AI systems', 500);
     }
   };
 
@@ -72,11 +66,8 @@ class AIRMFController {
       res.json(aiSystem);
     } catch (error: any) {
       logger.error('Get AI system error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to fetch AI system' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to fetch AI system', 500);
     }
   };
 
@@ -99,11 +90,8 @@ class AIRMFController {
       res.json(aiSystem);
     } catch (error: any) {
       logger.error('Update AI system error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to update AI system' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update AI system', 500);
     }
   };
 
@@ -125,11 +113,8 @@ class AIRMFController {
       res.json({ success: true });
     } catch (error: any) {
       logger.error('Delete AI system error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to delete AI system' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to delete AI system', 500);
     }
   };
 
@@ -157,11 +142,8 @@ class AIRMFController {
       res.json(coreFunction);
     } catch (error: any) {
       logger.error('Update core function error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to update core function' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update core function', 500);
     }
   };
 
@@ -188,11 +170,8 @@ class AIRMFController {
       res.json(category);
     } catch (error: any) {
       logger.error('Update category error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to update category' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update category', 500);
     }
   };
 
@@ -215,11 +194,8 @@ class AIRMFController {
       res.json(subcategory);
     } catch (error: any) {
       logger.error('Update subcategory error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to update subcategory' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update subcategory', 500);
     }
   };
 
@@ -247,11 +223,8 @@ class AIRMFController {
       res.json(trustworthiness);
     } catch (error: any) {
       logger.error('Update trustworthiness characteristic error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to update trustworthiness characteristic' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update trustworthiness characteristic', 500);
     }
   };
 
@@ -279,11 +252,8 @@ class AIRMFController {
       res.json(lifecycleStage);
     } catch (error: any) {
       logger.error('Update lifecycle stage error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to update lifecycle stage' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update lifecycle stage', 500);
     }
   };
 
@@ -302,11 +272,8 @@ class AIRMFController {
       res.status(201).json(actor);
     } catch (error: any) {
       logger.error('Add actor error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to add actor' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to add actor', 500);
     }
   };
 
@@ -321,11 +288,8 @@ class AIRMFController {
       res.json({ success: true });
     } catch (error: any) {
       logger.error('Remove actor error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to remove actor' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to remove actor', 500);
     }
   };
 
@@ -352,11 +316,8 @@ class AIRMFController {
       res.status(201).json(assessment);
     } catch (error: any) {
       logger.error('Create assessment error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to create assessment' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to create assessment', 500);
     }
   };
 
@@ -371,11 +332,8 @@ class AIRMFController {
       res.json(assessments);
     } catch (error: any) {
       logger.error('Get assessments error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to fetch assessments' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to fetch assessments', 500);
     }
   };
 
@@ -397,11 +355,8 @@ class AIRMFController {
       res.json({ success: true });
     } catch (error: any) {
       logger.error('Delete assessment error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to delete assessment' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to delete assessment', 500);
     }
   };
 
@@ -420,11 +375,8 @@ class AIRMFController {
       res.status(201).json(profile);
     } catch (error: any) {
       logger.error('Create profile error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to create profile' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to create profile', 500);
     }
   };
 
@@ -451,11 +403,8 @@ class AIRMFController {
       res.status(201).json(riskActivity);
     } catch (error: any) {
       logger.error('Create risk activity error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to create risk activity' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to create risk activity', 500);
     }
   };
 
@@ -478,11 +427,8 @@ class AIRMFController {
       res.json(riskActivity);
     } catch (error: any) {
       logger.error('Update risk activity error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to update risk activity' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update risk activity', 500);
     }
   };
 
@@ -501,11 +447,8 @@ class AIRMFController {
       res.json({ score });
     } catch (error: any) {
       logger.error('Calculate trustworthiness score error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to calculate trustworthiness score' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to calculate trustworthiness score', 500);
     }
   };
 
@@ -519,14 +462,10 @@ class AIRMFController {
       res.json(dashboardData);
     } catch (error: any) {
       logger.error('Get dashboard data error:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Failed to fetch dashboard data' });
-      }
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to fetch dashboard data', 500);
     }
   };
 }
 
 export default new AIRMFController();
-

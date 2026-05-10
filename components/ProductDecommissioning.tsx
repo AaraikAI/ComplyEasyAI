@@ -272,42 +272,65 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
-  // State variables backed by DEMO data as initial/fallback values
-  const [products, setProducts] = useState<Product[]>(DEMO_PRODUCTS);
-  const [workflowTasks, setWorkflowTasks] = useState<WorkflowTask[]>(DEMO_WORKFLOW_TASKS);
-  const [dataPlans, setDataPlans] = useState<DataMigrationPlan[]>(DEMO_DATA_PLANS);
-  const [notifications, setNotifications] = useState<CustomerNotification[]>(DEMO_NOTIFICATIONS);
+  // Server is the source of truth. DEMO_* arrays are reference fixtures used only when
+  // the API is unreachable so empty arrays don't get masked by static data.
+  const [products, setProducts] = useState<Product[]>([]);
+  const [workflowTasks, setWorkflowTasks] = useState<WorkflowTask[]>([]);
+  const [dataPlans, setDataPlans] = useState<DataMigrationPlan[]>([]);
+  const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
 
   const loadData = useCallback(async (showRefresh = false) => {
     if (showRefresh) setIsRefreshing(true); else setIsLoading(true);
     try {
-      const [productsData, tasksData, plansData, notifsData] = await Promise.all([
-        api.modules.decommission.listProducts().catch(() => null),
-        api.modules.decommission.listWorkflowTasks().catch(() => null),
-        api.modules.decommission.listDataPlans().catch(() => null),
-        api.modules.decommission.listNotifications().catch(() => null),
+      const results = await Promise.allSettled([
+        api.modules.decommission.listProducts(),
+        api.modules.decommission.listWorkflowTasks(),
+        api.modules.decommission.listDataPlans(),
+        api.modules.decommission.listNotifications(),
       ]);
-      if (productsData) {
+
+      const allRejected = results.every(r => r.status === 'rejected');
+      if (allRejected) {
+        setServerReachable(false);
+        setLoadError('Unable to connect to server. Showing reference fixtures.');
+        setProducts(DEMO_PRODUCTS);
+        setWorkflowTasks(DEMO_WORKFLOW_TASKS);
+        setDataPlans(DEMO_DATA_PLANS);
+        setNotifications(DEMO_NOTIFICATIONS);
+        return;
+      }
+
+      const [productsRes, tasksRes, plansRes, notifsRes] = results;
+      if (productsRes.status === 'fulfilled') {
+        const productsData = productsRes.value;
         if (Array.isArray(productsData)) {
-          setProducts(productsData.length > 0 ? productsData : DEMO_PRODUCTS);
+          setProducts(productsData);
+        } else if (productsData && (productsData as any).products) {
+          setProducts((productsData as any).products);
         } else {
-          const d = productsData as any;
-          if (d.products) setProducts(d.products);
+          setProducts([]);
         }
       }
-      if (tasksData && Array.isArray(tasksData) && tasksData.length > 0) {
-        setWorkflowTasks(tasksData);
+      if (tasksRes.status === 'fulfilled' && Array.isArray(tasksRes.value)) {
+        setWorkflowTasks(tasksRes.value);
       }
-      if (plansData && Array.isArray(plansData) && plansData.length > 0) {
-        setDataPlans(plansData);
+      if (plansRes.status === 'fulfilled' && Array.isArray(plansRes.value)) {
+        setDataPlans(plansRes.value);
       }
-      if (notifsData && Array.isArray(notifsData) && notifsData.length > 0) {
-        setNotifications(notifsData);
+      if (notifsRes.status === 'fulfilled' && Array.isArray(notifsRes.value)) {
+        setNotifications(notifsRes.value);
       }
+      setServerReachable(true);
       setLoadError(null);
     } catch (err: any) {
-      setLoadError('Unable to connect to server. Showing default data.');
+      setServerReachable(false);
+      setLoadError('Unable to connect to server. Showing reference fixtures.');
+      setProducts(DEMO_PRODUCTS);
+      setWorkflowTasks(DEMO_WORKFLOW_TASKS);
+      setDataPlans(DEMO_DATA_PLANS);
+      setNotifications(DEMO_NOTIFICATIONS);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -317,32 +340,46 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleDeleteProduct = useCallback(async (id: string) => {
+    // Optimistic removal so the UI stays responsive.
+    setProducts(prev => prev.filter(p => p.id !== id));
+    if (!serverReachable) return;
     try {
       await api.modules.decommission.deleteProduct(id);
-      setProducts(prev => prev.filter(p => p.id !== id));
     } catch {
-      setLoadError('Failed to delete product. Please try again.');
+      setLoadError('Failed to delete product on server. It may reappear on reload.');
     }
-  }, []);
+  }, [serverReachable]);
 
   const handleUpdateProduct = useCallback(async (id: string, data: Partial<Product>) => {
+    // Optimistic merge first so editing feels instant.
+    setProducts(prev => prev.map(p => (p.id === id ? { ...p, ...data } : p)));
+    if (!serverReachable) return;
     try {
       const updated = await api.modules.decommission.updateProduct(id, data);
-      setProducts(prev => prev.map(p => (p.id === id ? { ...p, ...data, ...(updated ?? {}) } : p)));
+      if (updated) setProducts(prev => prev.map(p => (p.id === id ? { ...p, ...data, ...updated } : p)));
     } catch {
-      setLoadError('Failed to update product. Please try again.');
+      setLoadError('Failed to update product on server. Local edit retained.');
     }
-  }, []);
+  }, [serverReachable]);
 
   const handleCreateProduct = useCallback(async (data: Omit<Product, 'id'>) => {
+    // Optimistic insert with a local id; the id is upgraded to the server-generated one
+    // once the create call resolves.
+    const localId = `prod-local-${Date.now()}`;
+    const optimistic = { ...data, id: localId } as Product;
+    setProducts(prev => [...prev, optimistic]);
+    if (!serverReachable) return;
     try {
       const created = await api.modules.decommission.createProduct(data);
-      if (created) setProducts(prev => [...prev, created]);
-      await loadData(true);
+      if (created && (created as any).id) {
+        const realId = (created as any).id;
+        setProducts(prev => prev.map(p => (p.id === localId ? { ...p, ...created, id: realId } : p)));
+      }
     } catch {
-      setLoadError('Failed to create product. Please try again.');
+      setLoadError('Failed to create product on server. Local entry retained.');
     }
-  }, [loadData]);
+  }, [serverReachable]);
+
 
   const filteredProducts = useMemo(() =>
     products.filter(p =>

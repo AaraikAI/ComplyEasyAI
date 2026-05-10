@@ -1,0 +1,14 @@
+// ============================================================================
+// NIST CSF 2.0 — server/src/index.ts wiring
+// ----------------------------------------------------------------------------
+// Two changes:
+//   1. Add the route import alongside the other route imports.
+//   2. Mount the router under /api/nist-csf with apiLimiter, alongside the
+//      other /api/* mounts.
+// ============================================================================
+
+// ── 1. Import (place near the other framework route imports) ──────────────
+import nistCsfRoutes from './routes/nistCsf';
+
+// ── 2. Mount (place alongside hipaaRoutes / iso27001Routes mounts) ────────
+app.use('/api/nist-csf', apiLimiter, nistCsfRoutes);

@@ -9,6 +9,7 @@ import { Response } from 'express';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AuthRequest } from '../middleware/auth';
+import { AppError } from '../middleware/errorHandler';
 
 class OnboardingController {
   /**
@@ -47,7 +48,8 @@ class OnboardingController {
       });
     } catch (error: any) {
       logger.error('Failed to get onboarding progress:', error);
-      res.status(500).json({ error: 'Failed to get onboarding progress' });
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to get onboarding progress', 500);
     }
   }
 
@@ -127,7 +129,8 @@ class OnboardingController {
       res.json({ progress });
     } catch (error: any) {
       logger.error('Failed to update onboarding progress:', error);
-      res.status(500).json({ error: 'Failed to update onboarding progress' });
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update onboarding progress', 500);
     }
   }
 
@@ -141,8 +144,7 @@ class OnboardingController {
       const { eventType, flowName, stepIndex, metadata } = req.body;
 
       if (!eventType) {
-        res.status(400).json({ error: 'eventType is required' });
-        return;
+        throw new AppError('eventType is required', 400);
       }
 
       const event = await prisma.onboardingEvent.create({
@@ -159,7 +161,8 @@ class OnboardingController {
       res.status(201).json({ event });
     } catch (error: any) {
       logger.error('Failed to track onboarding event:', error);
-      res.status(500).json({ error: 'Failed to track onboarding event' });
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to track onboarding event', 500);
     }
   }
 
@@ -175,8 +178,7 @@ class OnboardingController {
       const { milestone } = req.body;
 
       if (!milestone) {
-        res.status(400).json({ error: 'milestone is required' });
-        return;
+        throw new AppError('milestone is required', 400);
       }
 
       const milestoneFieldMap: Record<string, string> = {
@@ -194,8 +196,7 @@ class OnboardingController {
 
       const field = milestoneFieldMap[milestone];
       if (!field) {
-        res.status(400).json({ error: `Invalid milestone: ${milestone}` });
-        return;
+        throw new AppError(`Invalid milestone: ${milestone}`, 400);
       }
 
       const updateData: Record<string, any> = {
@@ -256,7 +257,8 @@ class OnboardingController {
       res.json({ progress });
     } catch (error: any) {
       logger.error('Failed to complete milestone:', error);
-      res.status(500).json({ error: 'Failed to complete milestone' });
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to complete milestone', 500);
     }
   }
 
@@ -290,7 +292,8 @@ class OnboardingController {
       res.json({ progress });
     } catch (error: any) {
       logger.error('Failed to update onboarding preferences:', error);
-      res.status(500).json({ error: 'Failed to update onboarding preferences' });
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update onboarding preferences', 500);
     }
   }
 
@@ -306,8 +309,7 @@ class OnboardingController {
       const { flowName } = req.body;
 
       if (!flowName) {
-        res.status(400).json({ error: 'flowName is required' });
-        return;
+        throw new AppError('flowName is required', 400);
       }
 
       // Get current progress
@@ -349,7 +351,8 @@ class OnboardingController {
       res.json({ progress });
     } catch (error: any) {
       logger.error('Failed to skip flow:', error);
-      res.status(500).json({ error: 'Failed to skip flow' });
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to skip flow', 500);
     }
   }
 
@@ -397,7 +400,8 @@ class OnboardingController {
       res.json({ progress });
     } catch (error: any) {
       logger.error('Failed to reset onboarding:', error);
-      res.status(500).json({ error: 'Failed to reset onboarding' });
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to reset onboarding', 500);
     }
   }
 
@@ -419,7 +423,8 @@ class OnboardingController {
       res.json({ checklist });
     } catch (error: any) {
       logger.error('Failed to get onboarding checklist:', error);
-      res.status(500).json({ error: 'Failed to get onboarding checklist' });
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to get onboarding checklist', 500);
     }
   }
 
@@ -492,7 +497,8 @@ class OnboardingController {
       res.json({ checklist });
     } catch (error: any) {
       logger.error('Failed to update onboarding checklist:', error);
-      res.status(500).json({ error: 'Failed to update onboarding checklist' });
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update onboarding checklist', 500);
     }
   }
 }

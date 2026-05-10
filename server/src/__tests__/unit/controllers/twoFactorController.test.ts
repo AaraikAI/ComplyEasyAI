@@ -3,10 +3,16 @@
  *
  * Comprehensive tests for 2FA setup, verification, management,
  * backup codes, and error handling.
+ *
+ * Error responses are produced by throwing AppError; the global error handler
+ * (server/src/middleware/errorHandler.ts) translates them into HTTP responses.
+ * These tests therefore assert thrown AppError shape (statusCode + message)
+ * rather than mocked res.status / res.json calls for error paths.
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { Request, Response, NextFunction } from 'express';
+import { AppError } from '../../../middleware/errorHandler';
 
 const mockSetupTwoFactor = jest.fn<() => Promise<{ secret: string; qrCodeUrl: string; backupCodes: string[] }>>();
 const mockVerifyAndEnableTwoFactor = jest.fn<() => Promise<boolean>>();
@@ -41,6 +47,21 @@ jest.mock('../../../config/logger', () => ({
 }));
 
 import * as twoFactorController from '../../../controllers/twoFactorController';
+
+/**
+ * Invokes a controller and captures the thrown error. Returns the error so
+ * tests can assert AppError statusCode + message in one place.
+ */
+async function captureThrown(
+  fn: () => Promise<unknown>
+): Promise<AppError> {
+  try {
+    await fn();
+  } catch (err) {
+    return err as AppError;
+  }
+  throw new Error('Expected controller to throw, but it resolved.');
+}
 
 describe('TwoFactorController', () => {
   let mockRequest: Partial<Request>;
@@ -115,22 +136,21 @@ describe('TwoFactorController', () => {
       expect(mockSetupTwoFactor).toHaveBeenCalledWith('user-123', 'test@example.com');
     });
 
-    it('should handle service errors', async () => {
+    it('should propagate service errors as AppError(500)', async () => {
       mockSetupTwoFactor.mockRejectedValue(new Error('Database error') as never);
 
-      await twoFactorController.setupTwoFactor(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.setupTwoFactor(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.any(String),
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toMatch(/Database error|Failed to setup/);
+      expect(mockResponse.json).not.toHaveBeenCalled();
     });
   });
 
@@ -156,54 +176,54 @@ describe('TwoFactorController', () => {
       );
     });
 
-    it('should reject invalid token', async () => {
+    it('should reject invalid token with AppError(400)', async () => {
       mockRequest.body = { token: '000000' };
       mockVerifyAndEnableTwoFactor.mockResolvedValue(false as never);
 
-      await twoFactorController.verifyAndEnable(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyAndEnable(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Invalid verification code',
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('Invalid verification code');
+      expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
     it('should require token in request body', async () => {
       mockRequest.body = {};
 
-      await twoFactorController.verifyAndEnable(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyAndEnable(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Token is required',
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('Token is required');
     });
 
-    it('should handle service errors', async () => {
+    it('should propagate service errors as AppError(500)', async () => {
       mockRequest.body = { token: '123456' };
       mockVerifyAndEnableTwoFactor.mockRejectedValue(new Error('Service error') as never);
 
-      await twoFactorController.verifyAndEnable(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyAndEnable(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
     });
   });
 
@@ -229,58 +249,53 @@ describe('TwoFactorController', () => {
       );
     });
 
-    it('should reject invalid token', async () => {
+    it('should reject invalid token with AppError(401)', async () => {
       mockRequest.body = { userId: 'user-123', token: '000000' };
       mockVerifyTwoFactorToken.mockResolvedValue(false as never);
 
-      await twoFactorController.verifyToken(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyToken(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Invalid authentication code',
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(401);
+      expect(err.message).toBe('Invalid authentication code');
     });
 
     it('should require userId in request body', async () => {
       mockRequest.body = { token: '123456' };
 
-      await twoFactorController.verifyToken(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyToken(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'User ID and token are required',
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('User ID and token are required');
     });
 
     it('should require token in request body', async () => {
       mockRequest.body = { userId: 'user-123' };
 
-      await twoFactorController.verifyToken(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyToken(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'User ID and token are required',
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('User ID and token are required');
     });
   });
 
@@ -306,52 +321,52 @@ describe('TwoFactorController', () => {
       );
     });
 
-    it('should reject invalid backup code', async () => {
+    it('should reject invalid backup code with AppError(401)', async () => {
       mockRequest.body = { userId: 'user-123', code: 'INVALID-CODE' };
       mockVerifyBackupCode.mockResolvedValue(false as never);
 
-      await twoFactorController.verifyBackupCode(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyBackupCode(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Invalid backup code',
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(401);
+      expect(err.message).toBe('Invalid backup code');
     });
 
     it('should require userId and code', async () => {
       mockRequest.body = {};
 
-      await twoFactorController.verifyBackupCode(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyBackupCode(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'User ID and backup code are required',
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('User ID and backup code are required');
     });
 
     it('should require code even when userId provided', async () => {
       mockRequest.body = { userId: 'user-123' };
 
-      await twoFactorController.verifyBackupCode(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyBackupCode(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
     });
   });
 
@@ -377,53 +392,53 @@ describe('TwoFactorController', () => {
       );
     });
 
-    it('should reject invalid token when disabling', async () => {
+    it('should reject invalid token when disabling with AppError(401)', async () => {
       mockRequest.body = { token: '000000' };
       mockDisableTwoFactor.mockResolvedValue(false as never);
 
-      await twoFactorController.disableTwoFactor(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.disableTwoFactor(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Invalid token or backup code',
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(401);
+      expect(err.message).toBe('Invalid token or backup code');
     });
 
     it('should require token to disable 2FA', async () => {
       mockRequest.body = {};
 
-      await twoFactorController.disableTwoFactor(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.disableTwoFactor(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.stringContaining('required'),
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toMatch(/required/);
     });
 
-    it('should handle service errors', async () => {
+    it('should propagate service errors as AppError(500)', async () => {
       mockRequest.body = { token: '123456' };
       mockDisableTwoFactor.mockRejectedValue(new Error('Service error') as never);
 
-      await twoFactorController.disableTwoFactor(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.disableTwoFactor(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
     });
   });
 
@@ -453,40 +468,37 @@ describe('TwoFactorController', () => {
       );
     });
 
-    it('should reject invalid token when regenerating', async () => {
+    it('should reject invalid token when regenerating with AppError(401)', async () => {
       mockRequest.body = { token: '000000' };
       mockRegenerateBackupCodes.mockResolvedValue(null as never);
 
-      await twoFactorController.regenerateBackupCodes(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.regenerateBackupCodes(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Invalid token',
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(401);
+      expect(err.message).toBe('Invalid token');
     });
 
     it('should require token to regenerate codes', async () => {
       mockRequest.body = {};
 
-      await twoFactorController.regenerateBackupCodes(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.regenerateBackupCodes(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.stringContaining('required'),
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toMatch(/required/);
     });
 
     it('should use authenticated user ID', async () => {
@@ -560,22 +572,20 @@ describe('TwoFactorController', () => {
       expect(mockGetRemainingBackupCodesCount).not.toHaveBeenCalled();
     });
 
-    it('should handle service errors', async () => {
+    it('should propagate service errors as AppError(500)', async () => {
       mockIsTwoFactorEnabled.mockRejectedValue(new Error('Service error') as never);
 
-      await twoFactorController.getTwoFactorStatus(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.getTwoFactorStatus(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.any(String),
-        })
-      );
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(mockResponse.json).not.toHaveBeenCalled();
     });
   });
 
@@ -583,74 +593,89 @@ describe('TwoFactorController', () => {
   // Edge Cases and Error Handling
   // ===========================================================================
   describe('Edge Cases', () => {
-    it('should handle empty token string', async () => {
+    it('should reject empty token string with AppError(400)', async () => {
       mockRequest.body = { token: '' };
 
-      await twoFactorController.verifyAndEnable(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyAndEnable(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
     });
 
-    it('should handle whitespace-only token', async () => {
+    it('should reject whitespace-only token with AppError(400)', async () => {
       mockRequest.body = { token: '   ' };
       mockVerifyAndEnableTwoFactor.mockResolvedValue(false as never);
 
-      await twoFactorController.verifyAndEnable(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyAndEnable(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
     });
 
-    it('should handle network timeouts gracefully', async () => {
+    it('should propagate network timeouts as AppError(500)', async () => {
       mockRequest.body = { token: '123456' };
       mockVerifyAndEnableTwoFactor.mockRejectedValue(new Error('TIMEOUT') as never);
 
-      await twoFactorController.verifyAndEnable(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyAndEnable(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
     });
 
-    it('should handle database connection errors', async () => {
+    it('should propagate database connection errors as AppError(500)', async () => {
       mockSetupTwoFactor.mockRejectedValue(new Error('Connection refused') as never);
 
-      await twoFactorController.setupTwoFactor(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.setupTwoFactor(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
     });
 
-    it('should handle missing user context', async () => {
+    it('should propagate missing-user errors as AppError(500)', async () => {
       mockRequest.user = undefined as any;
       mockIsTwoFactorEnabled.mockRejectedValue(new Error('User not found') as never);
 
-      await twoFactorController.getTwoFactorStatus(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.getTwoFactorStatus(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
     });
 
     it('should handle concurrent requests gracefully', async () => {
       mockRequest.body = { token: '123456' };
       mockVerifyAndEnableTwoFactor.mockResolvedValue(true as never);
 
-      // Simulate concurrent requests
+      // Concurrent successful verifications — both should resolve without throwing
       const promises = [
         twoFactorController.verifyAndEnable(mockRequest as Request, mockResponse as Response, mockNext),
         twoFactorController.verifyAndEnable(mockRequest as Request, mockResponse as Response, mockNext),
@@ -658,7 +683,6 @@ describe('TwoFactorController', () => {
 
       await Promise.all(promises);
 
-      // Both should complete without errors
       expect(mockVerifyAndEnableTwoFactor).toHaveBeenCalledTimes(2);
     });
   });
@@ -686,34 +710,37 @@ describe('TwoFactorController', () => {
       expect(jsonCall.data.secret).toBeDefined();
     });
 
-    it('should use proper status codes for auth failures', async () => {
+    it('should use 401 for auth failures, not 400', async () => {
       mockRequest.body = { userId: 'user-123', token: 'invalid' };
       mockVerifyTwoFactorToken.mockResolvedValue(false as never);
 
-      await twoFactorController.verifyToken(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyToken(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      // Should return 401 Unauthorized, not 400 Bad Request
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(401);
     });
 
     it('should not reveal if user exists during verification', async () => {
       mockRequest.body = { userId: 'nonexistent-user', token: '123456' };
       mockVerifyTwoFactorToken.mockResolvedValue(false as never);
 
-      await twoFactorController.verifyToken(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
+      const err = await captureThrown(() =>
+        twoFactorController.verifyToken(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
       );
 
-      // Error message should be generic
-      const jsonCall = (mockResponse.json as jest.Mock<any>).mock.calls[0][0];
-      expect(jsonCall.error).toBe('Invalid authentication code');
-      expect(jsonCall.error).not.toContain('user');
+      // Generic error message; no user-existence leak
+      expect(err.message).toBe('Invalid authentication code');
+      expect(err.message.toLowerCase()).not.toContain('user');
     });
   });
 });

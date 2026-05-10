@@ -108,6 +108,11 @@ import anonymizationRoutes from './routes/anonymization';
 // Compliance History Routes
 import complianceRoutes from './routes/compliance';
 import realTimeComplianceRoutes from './routes/realTimeCompliance';
+import iso27001Routes from './routes/iso27001';
+import hipaaRoutes from './routes/hipaa';
+import pciDssRoutes from './routes/pciDss';
+import soc2Routes from './routes/soc2';
+import nistCsfRoutes from './routes/nistCsf';
 
 // Enhancement Module Routes
 import incidentRoutes from './routes/incidents';
@@ -390,12 +395,12 @@ app.use('/api/docs', apiLimiter, swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // CSRF token endpoint (must be before other /api routes; GET is skipped by csrfProtection)
-app.get('/api/csrf-token', (req: Request, res: Response) => {
+app.get('/api/csrf-token', apiLimiter, (req: Request, res: Response) => {
   generateCsrfToken(req, res);
 });
 
 // OpenAPI spec endpoint
-app.get('/api/docs.json', (req: Request, res: Response) => {
+app.get('/api/docs.json', apiLimiter, (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
@@ -512,7 +517,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/2fa', authLimiter, twoFactorRoutes);
 app.use('/api/risks', apiLimiter, risksRoutes);
 app.use('/api/frameworks', apiLimiter, frameworksRoutes);
-app.use('/api/ai', aiRoutes); // Has its own rate limiter
+app.use('/api/ai', apiLimiter, aiRoutes); // Mount-level apiLimiter + internal AI-specific limiter
 app.use('/api/billing', apiLimiter, billingRoutes);
 app.use('/api/integrations', apiLimiter, integrationsRoutes);
 app.use('/api/eu-regulations', apiLimiter, euRegulationsRoutes);
@@ -620,6 +625,11 @@ app.use('/api/bulk', apiLimiter, bulkRoutes);
 app.use('/api/ticketing', apiLimiter, ticketingRoutes);
 app.use('/api/compliance', apiLimiter, complianceRoutes);
 app.use('/api/realtime', apiLimiter, realTimeComplianceRoutes);
+app.use('/api/iso27001', apiLimiter, iso27001Routes);
+app.use('/api/hipaa', apiLimiter, hipaaRoutes);
+app.use('/api/pci-dss', apiLimiter, pciDssRoutes);
+app.use('/api/soc2', apiLimiter, soc2Routes);
+app.use('/api/nist-csf', apiLimiter, nistCsfRoutes);
 
 // GraphQL endpoint (authenticated + rate limited)
 app.post('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());

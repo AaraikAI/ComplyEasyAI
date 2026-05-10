@@ -362,12 +362,14 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
   const { t } = useI18n();
   type TabId = 'overview' | 'plans' | 'incidents' | 'capa' | 'recalls' | 'reports';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [plans, setPlans] = useState<SurveillancePlan[]>(DEMO_PLANS);
-  const [incidents, setIncidents] = useState<Incident[]>(DEMO_INCIDENTS);
-  const [capas, setCapas] = useState<CAPA[]>(DEMO_CAPAS);
-  const [recalls, setRecalls] = useState<ProductRecall[]>(DEMO_RECALLS);
-  const [nonConformities, setNonConformities] = useState<NonConformity[]>(DEMO_NON_CONFORMITIES);
-  const [reports, setReports] = useState<SurveillanceReport[]>(DEMO_REPORTS);
+  // Server is the source of truth. DEMO_* arrays are reference fixtures used only when
+  // the API is unreachable so empty arrays don't get masked by static data.
+  const [plans, setPlans] = useState<SurveillancePlan[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [capas, setCapas] = useState<CAPA[]>([]);
+  const [recalls, setRecalls] = useState<ProductRecall[]>([]);
+  const [nonConformities, setNonConformities] = useState<NonConformity[]>([]);
+  const [reports, setReports] = useState<SurveillanceReport[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -378,6 +380,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
   const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
@@ -410,25 +413,51 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
     else setIsSyncing(true);
 
     try {
-      const [plansData, recallsData, incidentsData, capasData, ncData, reportsData] = await Promise.all([
-        api.modules.surveillance.listPlans().catch(() => []),
-        api.modules.surveillance.listRecalls().catch(() => []),
-        api.modules.surveillance.listIncidents().catch(() => []),
-        api.modules.surveillance.listCapas().catch(() => []),
-        api.modules.surveillance.listNonConformities().catch(() => []),
-        api.modules.surveillance.listReports().catch(() => []),
+      // Probe the server first; a single rejected probe means the API is unreachable and
+      // we should fall back to fixtures rather than show an empty dashboard.
+      const results = await Promise.allSettled([
+        api.modules.surveillance.listPlans(),
+        api.modules.surveillance.listRecalls(),
+        api.modules.surveillance.listIncidents(),
+        api.modules.surveillance.listCapas(),
+        api.modules.surveillance.listNonConformities(),
+        api.modules.surveillance.listReports(),
       ]);
 
-      if (Array.isArray(plansData) && plansData.length > 0) setPlans(plansData);
-      if (Array.isArray(recallsData) && recallsData.length > 0) setRecalls(recallsData);
-      if (Array.isArray(incidentsData) && incidentsData.length > 0) setIncidents(incidentsData);
-      if (Array.isArray(capasData) && capasData.length > 0) setCapas(capasData);
-      if (Array.isArray(ncData) && ncData.length > 0) setNonConformities(ncData);
-      if (Array.isArray(reportsData) && reportsData.length > 0) setReports(reportsData);
+      const allRejected = results.every(r => r.status === 'rejected');
+      if (allRejected) {
+        setServerReachable(false);
+        setPlans(DEMO_PLANS);
+        setRecalls(DEMO_RECALLS);
+        setIncidents(DEMO_INCIDENTS);
+        setCapas(DEMO_CAPAS);
+        setNonConformities(DEMO_NON_CONFORMITIES);
+        setReports(DEMO_REPORTS);
+        setLoadError('Unable to connect to server. Showing reference fixtures.');
+        return;
+      }
 
+      const [plansData, recallsData, incidentsData, capasData, ncData, reportsData] = results.map(r =>
+        r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : []
+      );
+
+      setPlans(plansData);
+      setRecalls(recallsData);
+      setIncidents(incidentsData);
+      setCapas(capasData);
+      setNonConformities(ncData);
+      setReports(reportsData);
+      setServerReachable(true);
       setLoadError(null);
     } catch (err: any) {
-      setLoadError('Unable to connect to server. Showing local data.');
+      setServerReachable(false);
+      setLoadError('Unable to connect to server. Showing reference fixtures.');
+      setPlans(DEMO_PLANS);
+      setRecalls(DEMO_RECALLS);
+      setIncidents(DEMO_INCIDENTS);
+      setCapas(DEMO_CAPAS);
+      setNonConformities(DEMO_NON_CONFORMITIES);
+      setReports(DEMO_REPORTS);
     } finally {
       setIsLoading(false);
       setIsSyncing(false);
@@ -1277,7 +1306,10 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
         author: 'Current User',
       };
 
-      // Try generating via the AI report endpoint if available
+      // Optimistic insert — keeps the UI responsive while the report persists round-trips.
+      setReports(prev => [newReport, ...prev]);
+
+      // Try generating via the AI report endpoint when available.
       try {
         await api.ai.generateReport(
           'pms-surveillance',
@@ -1285,10 +1317,29 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           JSON.stringify({ reportType: reportForm.reportType, period: periodLabel, sections: reportForm.sections }),
         );
       } catch {
-        // AI generation is optional; we still create the report entry
+        // AI generation is optional; persistence below still records the report row.
       }
 
-      setReports(prev => [newReport, ...prev]);
+      // Persist the report row so it survives reloads.
+      if (serverReachable) {
+        try {
+          const created = await api.modules.surveillance.createReport({
+            title: newReport.title,
+            reportType: newReport.reportType,
+            period: newReport.period,
+            status: newReport.status,
+            author: newReport.author,
+            sections: reportForm.sections,
+          });
+          if (created && (created as any).id) {
+            const persistedId = (created as any).id;
+            setReports(prev => prev.map(r => r.id === newReport.id ? { ...r, id: persistedId } : r));
+          }
+        } catch {
+          setLoadError('Report saved locally; failed to persist to server.');
+        }
+      }
+
       setReportForm({ reportType: 'annual', productId: 'all', periodStart: '2025-01-01', periodEnd: '2025-12-31', sections: ['Surveillance Plan Summary', 'Incident & Complaint Analysis', 'CAPA Status Review', 'Non-Conformity Summary', 'Risk Assessment Update', 'Conclusions & Recommendations'] });
       setShowReportModal(false);
     } catch (err: any) {
@@ -1296,7 +1347,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
     } finally {
       setIsGeneratingReport(false);
     }
-  }, [reportForm, plans]);
+  }, [reportForm, plans, serverReachable]);
 
   const allSections = ['Surveillance Plan Summary', 'Incident & Complaint Analysis', 'CAPA Status Review', 'Non-Conformity Summary', 'Risk Assessment Update', 'Conclusions & Recommendations'];
 

@@ -323,6 +323,28 @@ const DEMO_SHARING: DataSharingRecord[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Empty product sentinel — used when no products are loaded yet.
+// ---------------------------------------------------------------------------
+const EMPTY_DPP_PRODUCT: DPPProduct = {
+  id: '',
+  name: '',
+  gtin: '',
+  batchNumber: '',
+  category: '',
+  manufacturer: '',
+  countryOfOrigin: '',
+  passportStatus: 'draft',
+  recyclabilityScore: 0,
+  repairabilityScore: 0,
+  carbonFootprintTotal: 0,
+  ecodesignCompliant: false,
+  lastUpdated: '',
+  createdAt: '',
+  passportVersion: '1.0',
+  qrCodeGenerated: false,
+};
+
+// ---------------------------------------------------------------------------
 // Helper Components
 // ---------------------------------------------------------------------------
 const Badge: React.FC<{ text: string; className: string }> = ({ text, className }) => (
@@ -400,13 +422,14 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
   const { t } = useI18n();
   type TabId = 'overview' | 'products' | 'materials' | 'carbon' | 'supply_chain';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [products, setProducts] = useState<DPPProduct[]>(DEMO_PRODUCTS);
-  const [materials, setMaterials] = useState<MaterialComposition[]>(DEMO_MATERIALS);
-  const [carbonData, setCarbonData] = useState<CarbonFootprint[]>(DEMO_CARBON);
-  const [supplyChain, setSupplyChain] = useState<SupplyChainNode[]>(DEMO_SUPPLY_CHAIN);
-  const [versions, setVersions] = useState<PassportVersion[]>(DEMO_VERSIONS);
-  const [sharingRecords, setSharingRecords] = useState<DataSharingRecord[]>(DEMO_SHARING);
-  const [selectedProduct, setSelectedProduct] = useState<DPPProduct>(DEMO_PRODUCTS[0]);
+  const [products, setProducts] = useState<DPPProduct[]>([]);
+  const [materials, setMaterials] = useState<MaterialComposition[]>([]);
+  const [carbonData, setCarbonData] = useState<CarbonFootprint[]>([]);
+  const [supplyChain, setSupplyChain] = useState<SupplyChainNode[]>([]);
+  const [versions, setVersions] = useState<PassportVersion[]>([]);
+  const [sharingRecords, setSharingRecords] = useState<DataSharingRecord[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<DPPProduct>(EMPTY_DPP_PRODUCT);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -463,44 +486,63 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
     else setIsLoading(true);
     try {
       const passports = await api.modules.dpp.listPassports();
-      if (passports && passports.length > 0) {
-        const mapped = passports.map(normaliseProduct);
-        setProducts(mapped);
+      setServerReachable(true);
+      const mapped = Array.isArray(passports) ? passports.map(normaliseProduct) : [];
+      setProducts(mapped);
+
+      if (mapped.length > 0) {
         setSelectedProduct(prev => {
-          const match = mapped.find(p => p.id === prev.id);
+          const match = mapped.find(p => p.id === prev?.id);
           return match || mapped[0];
         });
 
-        // Fetch detail sub-resources for all products in parallel
+        // Fetch detail sub-resources for the first product
         const detailProductId = mapped[0].id;
-        const [materialsRes, carbonRes, supplyChainRes, detailRes] = await Promise.all([
+        const [materialsRes, carbonRes, supplyChainRes, detailRes] = await Promise.allSettled([
           api.modules.dpp.getMaterials(detailProductId),
           api.modules.dpp.getCarbon(detailProductId),
           api.modules.dpp.getSupplyChain(detailProductId),
           api.modules.dpp.getPassport(detailProductId),
         ]);
 
-        if (Array.isArray(materialsRes) && materialsRes.length > 0) {
-          setMaterials(materialsRes);
+        if (materialsRes.status === 'fulfilled' && Array.isArray(materialsRes.value)) {
+          setMaterials(materialsRes.value);
         }
-        if (Array.isArray(carbonRes) && carbonRes.length > 0) {
-          setCarbonData(carbonRes);
+        if (carbonRes.status === 'fulfilled' && Array.isArray(carbonRes.value)) {
+          setCarbonData(carbonRes.value);
         }
-        if (Array.isArray(supplyChainRes) && supplyChainRes.length > 0) {
-          setSupplyChain(supplyChainRes);
+        if (supplyChainRes.status === 'fulfilled' && Array.isArray(supplyChainRes.value)) {
+          setSupplyChain(supplyChainRes.value);
         }
         // Versions and sharing may be embedded in the detail response
-        if (detailRes) {
-          if (Array.isArray(detailRes.versions) && detailRes.versions.length > 0) {
-            setVersions(detailRes.versions);
+        if (detailRes.status === 'fulfilled' && detailRes.value) {
+          if (Array.isArray(detailRes.value.versions)) {
+            setVersions(detailRes.value.versions);
           }
-          if (Array.isArray(detailRes.sharingRecords) && detailRes.sharingRecords.length > 0) {
-            setSharingRecords(detailRes.sharingRecords);
+          if (Array.isArray(detailRes.value.sharingRecords)) {
+            setSharingRecords(detailRes.value.sharingRecords);
           }
         }
+      } else {
+        // Server reachable but empty — show empty state, no fallback.
+        setSelectedProduct(EMPTY_DPP_PRODUCT);
+        setMaterials([]);
+        setCarbonData([]);
+        setSupplyChain([]);
+        setVersions([]);
+        setSharingRecords([]);
       }
       setLoadError(null);
     } catch (_err: any) {
+      // Server unreachable — fall back to local sample data so the UI is usable.
+      setServerReachable(false);
+      setProducts(DEMO_PRODUCTS);
+      setSelectedProduct(DEMO_PRODUCTS[0]);
+      setMaterials(DEMO_MATERIALS);
+      setCarbonData(DEMO_CARBON);
+      setSupplyChain(DEMO_SUPPLY_CHAIN);
+      setVersions(DEMO_VERSIONS);
+      setSharingRecords(DEMO_SHARING);
       setLoadError('Unable to connect to server. Showing local data.');
     } finally {
       setIsLoading(false);
@@ -512,29 +554,29 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
 
   // Fetch detail sub-resources when the selected product changes
   const loadProductDetail = useCallback(async (productId: string) => {
+    if (!productId) return;
     try {
-      const [materialsRes, carbonRes, supplyChainRes] = await Promise.all([
+      const [materialsRes, carbonRes, supplyChainRes] = await Promise.allSettled([
         api.modules.dpp.getMaterials(productId),
         api.modules.dpp.getCarbon(productId),
         api.modules.dpp.getSupplyChain(productId),
       ]);
-      if (Array.isArray(materialsRes) && materialsRes.length > 0) {
+      if (materialsRes.status === 'fulfilled' && Array.isArray(materialsRes.value)) {
         setMaterials(prev => {
-          // Merge: keep materials for other products, replace for this product
           const otherMats = prev.filter(m => m.productId !== productId);
-          return [...otherMats, ...materialsRes];
+          return [...otherMats, ...materialsRes.value];
         });
       }
-      if (Array.isArray(carbonRes) && carbonRes.length > 0) {
+      if (carbonRes.status === 'fulfilled' && Array.isArray(carbonRes.value)) {
         setCarbonData(prev => {
           const otherCarbon = prev.filter(c => c.productId !== productId);
-          return [...otherCarbon, ...carbonRes];
+          return [...otherCarbon, ...carbonRes.value];
         });
       }
-      if (Array.isArray(supplyChainRes) && supplyChainRes.length > 0) {
+      if (supplyChainRes.status === 'fulfilled' && Array.isArray(supplyChainRes.value)) {
         setSupplyChain(prev => {
           const otherChain = prev.filter(s => s.productId !== productId);
-          return [...otherChain, ...supplyChainRes];
+          return [...otherChain, ...supplyChainRes.value];
         });
       }
     } catch {
@@ -544,57 +586,100 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
 
   // ----- handleCreatePassport -----
   const handleCreatePassport = useCallback(async () => {
+    if (!createForm.name) return;
+
+    // Optimistic local product with provisional id
+    const optimisticId = `dpp-local-${Date.now()}`;
+    const optimistic: DPPProduct = {
+      id: optimisticId,
+      name: createForm.name,
+      gtin: createForm.gtin,
+      batchNumber: createForm.batchNumber,
+      category: createForm.category,
+      manufacturer: createForm.manufacturer,
+      countryOfOrigin: createForm.countryOfOrigin,
+      passportStatus: 'draft',
+      recyclabilityScore: 0,
+      repairabilityScore: 0,
+      carbonFootprintTotal: 0,
+      ecodesignCompliant: false,
+      lastUpdated: new Date().toISOString().slice(0, 10),
+      createdAt: new Date().toISOString().slice(0, 10),
+      passportVersion: '1.0',
+      qrCodeGenerated: false,
+    };
+    setProducts(prev => [...prev, optimistic]);
+    setShowCreateModal(false);
+    setCreateForm({ name: '', gtin: '', category: PRODUCT_CATEGORIES[0], countryOfOrigin: '', manufacturer: '', batchNumber: '' });
+
     setIsCreating(true);
     try {
-      const result = await api.modules.dpp.createPassport(createForm);
+      const result = await api.modules.dpp.createPassport({
+        name: optimistic.name,
+        gtin: optimistic.gtin,
+        category: optimistic.category,
+        manufacturer: optimistic.manufacturer,
+        countryOfOrigin: optimistic.countryOfOrigin,
+        batchNumber: optimistic.batchNumber,
+      });
       if (result && result.id) {
-        const newProduct = normaliseProduct(result);
-        setProducts(prev => [...prev, newProduct]);
-      } else {
-        // refetch to pick up new data
-        await loadData();
+        const persisted = normaliseProduct(result);
+        setProducts(prev => prev.map(p => p.id === optimisticId ? persisted : p));
       }
-      setShowCreateModal(false);
-      setCreateForm({ name: '', gtin: '', category: PRODUCT_CATEGORIES[0], countryOfOrigin: '', manufacturer: '', batchNumber: '' });
     } catch (_err: any) {
-      // If API fails, still close modal – user sees the error banner on next sync
-      setLoadError('Failed to create passport on server.');
+      // Keep optimistic entry in the list and surface a banner.
+      setLoadError('Passport saved locally but failed to sync to server.');
     } finally {
       setIsCreating(false);
     }
-  }, [createForm, loadData]);
+  }, [createForm]);
 
   // ----- handleDeletePassport -----
   const handleDeletePassport = useCallback(async (id: string) => {
+    const previous = products;
+    // Optimistic removal
+    setProducts(prev => prev.filter(p => p.id !== id));
+    if (selectedProduct?.id === id) {
+      const remaining = previous.filter(p => p.id !== id);
+      setSelectedProduct(remaining[0] || EMPTY_DPP_PRODUCT);
+    }
+
+    // If this was an optimistic-only id (never reached the server), don't call the API.
+    if (id.startsWith('dpp-local-')) return;
+
     try {
       await api.modules.dpp.deletePassport(id);
-      setProducts(prev => prev.filter(p => p.id !== id));
     } catch (_err: any) {
-      setLoadError('Failed to delete passport on server.');
+      // Restore on failure
+      setProducts(previous);
+      setLoadError('Failed to delete passport on server. Change reverted.');
     }
-  }, []);
+  }, [products, selectedProduct]);
 
   // ----- handleGrantAccess (share modal) -----
   const handleGrantAccess = useCallback(async () => {
+    if (!selectedProduct?.id) return;
     setIsSharing(true);
+
+    // Optimistic local update first
+    const newRecord: DataSharingRecord = {
+      id: `share-${Date.now()}`,
+      partyName: shareForm.partyName,
+      partyType: shareForm.partyType,
+      accessLevel: shareForm.accessLevel,
+      grantedDate: new Date().toISOString().slice(0, 10),
+      status: 'active',
+    };
+    setSharingRecords(prev => [...prev, newRecord]);
+    setShowShareModal(false);
+    setShareForm({ partyName: '', partyType: 'regulator', accessLevel: 'full' });
+
     try {
       await api.modules.dpp.updatePassport(selectedProduct.id, {
         sharing: shareForm,
       });
-      // Optimistic local update
-      const newRecord: DataSharingRecord = {
-        id: `share-${Date.now()}`,
-        partyName: shareForm.partyName,
-        partyType: shareForm.partyType,
-        accessLevel: shareForm.accessLevel,
-        grantedDate: new Date().toISOString().slice(0, 10),
-        status: 'active',
-      };
-      setSharingRecords(prev => [...prev, newRecord]);
-      setShowShareModal(false);
-      setShareForm({ partyName: '', partyType: 'regulator', accessLevel: 'full' });
     } catch (_err: any) {
-      setLoadError('Failed to grant access on server.');
+      setLoadError('Sharing record saved locally but failed to sync to server.');
     } finally {
       setIsSharing(false);
     }
@@ -619,8 +704,9 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
   const overviewStats = useMemo(() => {
     const total = products.length;
     const active = products.filter(p => p.passportStatus === 'active').length;
-    const avgRecyclability = Math.round(products.reduce((s, p) => s + p.recyclabilityScore, 0) / total);
-    const avgRepairability = Math.round(products.reduce((s, p) => s + p.repairabilityScore, 0) / total);
+    const safeDivisor = total > 0 ? total : 1;
+    const avgRecyclability = total > 0 ? Math.round(products.reduce((s, p) => s + p.recyclabilityScore, 0) / safeDivisor) : 0;
+    const avgRepairability = total > 0 ? Math.round(products.reduce((s, p) => s + p.repairabilityScore, 0) / safeDivisor) : 0;
     const totalCarbon = Math.round(products.reduce((s, p) => s + p.carbonFootprintTotal, 0) * 10) / 10;
     const ecoCompliant = products.filter(p => p.ecodesignCompliant).length;
     return { total, active, avgRecyclability, avgRepairability, totalCarbon, ecoCompliant };

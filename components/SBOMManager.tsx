@@ -9,7 +9,7 @@ import {
   Activity, Zap, Lock, Unlock, AlertOctagon, Bell, BookOpen, Archive,
   Server, Code, Box, Layers, Link, Tag, Hash, Info, Settings,
   TrendingUp, TrendingDown, Minus, GitMerge, FolderTree, Bug,
-  Scale, Database, Cpu, X, Sparkles, Brain,
+  Scale, Database, Cpu, X, Sparkles, Brain, UploadCloud,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -223,12 +223,14 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // State variables backed by DEMO data as fallback
-  const [components, setComponents] = useState<SBOMComponent[]>(DEMO_COMPONENTS);
-  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(DEMO_VULNERABILITIES);
-  const [licenses, setLicenses] = useState<LicenseInfo[]>(DEMO_LICENSES);
-  const [repositories, setRepositories] = useState<Repository[]>(DEMO_REPOSITORIES);
-  const [reports, setReports] = useState<SBOMReport[]>(DEMO_REPORTS);
+  // Server is source of truth. DEMO_* arrays are reference fixtures used only when the API
+  // is unreachable, so empty arrays don't get masked by static data.
+  const [components, setComponents] = useState<SBOMComponent[]>([]);
+  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
+  const [licenses, setLicenses] = useState<LicenseInfo[]>([]);
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [reports, setReports] = useState<SBOMReport[]>([]);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -240,32 +242,25 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
         api.modules.sbom.listLicenses(),
       ]);
 
-      // Map SBOM entries into components, vulnerabilities, and reports
-      if (Array.isArray(entries) && entries.length > 0) {
-        const comps: SBOMComponent[] = entries.filter((e: any) => e.type === 'component' || e.purl).length > 0
-          ? entries.filter((e: any) => e.type === 'component' || e.purl) as SBOMComponent[]
-          : (entries as any).components ?? DEMO_COMPONENTS;
-        const vulns: Vulnerability[] = (entries as any).vulnerabilities ?? entries.filter((e: any) => e.cveId).length > 0
-          ? entries.filter((e: any) => e.cveId) as Vulnerability[]
-          : DEMO_VULNERABILITIES;
-        const rpts: SBOMReport[] = (entries as any).reports ?? entries.filter((e: any) => e.complianceStatus).length > 0
-          ? entries.filter((e: any) => e.complianceStatus) as SBOMReport[]
-          : DEMO_REPORTS;
-        setComponents(comps.length > 0 ? comps : DEMO_COMPONENTS);
-        setVulnerabilities(vulns.length > 0 ? vulns : DEMO_VULNERABILITIES);
-        setReports(rpts.length > 0 ? rpts : DEMO_REPORTS);
-      }
+      const entryArr = Array.isArray(entries) ? entries : [];
+      const comps = entryArr.filter((e: any) => e.type === 'component' || e.purl) as SBOMComponent[];
+      const vulns = entryArr.filter((e: any) => e.cveId) as Vulnerability[];
+      const rpts = entryArr.filter((e: any) => e.complianceStatus) as SBOMReport[];
 
-      // License data from dedicated aggregation endpoint
-      if (Array.isArray(licenseData) && licenseData.length > 0) {
-        setLicenses(licenseData as LicenseInfo[]);
-      }
-
-      if (Array.isArray(repos) && repos.length > 0) {
-        setRepositories(repos as Repository[]);
-      }
+      setComponents(comps);
+      setVulnerabilities(vulns);
+      setReports(rpts);
+      setLicenses(Array.isArray(licenseData) ? (licenseData as LicenseInfo[]) : []);
+      setRepositories(Array.isArray(repos) ? (repos as Repository[]) : []);
+      setServerReachable(true);
     } catch (err: any) {
-      setLoadError('Unable to connect to server. Showing reference data.');
+      setLoadError('Unable to connect to server. Showing reference fixtures.');
+      setServerReachable(false);
+      setComponents(DEMO_COMPONENTS);
+      setVulnerabilities(DEMO_VULNERABILITIES);
+      setReports(DEMO_REPORTS);
+      setLicenses(DEMO_LICENSES);
+      setRepositories(DEMO_REPOSITORIES);
     } finally {
       setIsLoading(false);
     }
@@ -337,7 +332,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
     URL.revokeObjectURL(url);
   }, [buildReportData]);
 
-  const generateReport = useCallback(() => {
+  const generateReport = useCallback(async () => {
     const newReport: SBOMReport = {
       id: `RPT-${Date.now()}`,
       name: `${selectedFormat} Report ${new Date().toISOString().split('T')[0]}`,
@@ -350,21 +345,91 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
       complianceStatus: criticalVulns === 0 && licenseIssues === 0 ? 'compliant' : licenseIssues > 0 ? 'partial' : 'non_compliant',
       craCompliant: criticalVulns === 0 && highVulns === 0,
     };
+    if (serverReachable) {
+      try {
+        const created = await api.modules.sbom.createEntry({
+          type: 'report',
+          name: newReport.name,
+          format: newReport.format,
+          version: newReport.version,
+          componentCount: newReport.componentCount,
+          vulnerabilityCount: newReport.vulnerabilityCount,
+          licenseCount: newReport.licenseCount,
+          complianceStatus: newReport.complianceStatus,
+          craCompliant: newReport.craCompliant,
+          generatedDate: newReport.generatedDate,
+        });
+        if (created && (created as any).id) newReport.id = (created as any).id;
+      } catch {
+        setLoadError('Report saved locally; failed to persist to server.');
+      }
+    }
     setReports(prev => [newReport, ...prev]);
-  }, [selectedFormat, components, vulnerabilities, licenses, criticalVulns, highVulns, licenseIssues]);
+  }, [selectedFormat, components, vulnerabilities, licenses, criticalVulns, highVulns, licenseIssues, serverReachable]);
 
   // --- CRUD handlers wired to backend API ---
+  // The vulnerability list and the SBOM entry list share the same backend table; the row
+  // identifier on a Vulnerability is the same id stored server-side. Optimistic update
+  // keeps the UI responsive while the patch round-trips.
   const updateVulnStatus = useCallback(async (vulnId: string, newStatus: Vulnerability['status']) => {
+    setVulnerabilities(prev => prev.map(v => v.id === vulnId ? { ...v, status: newStatus } : v));
+    setSelectedVuln(prev => prev && prev.id === vulnId ? { ...prev, status: newStatus } : prev);
+    if (!serverReachable) return;
     try {
       await api.modules.sbom.updateEntry(vulnId, { status: newStatus });
-      setVulnerabilities(prev => prev.map(v => v.id === vulnId ? { ...v, status: newStatus } : v));
-      setSelectedVuln(prev => prev && prev.id === vulnId ? { ...prev, status: newStatus } : prev);
     } catch {
-      // Optimistic update even on failure so the UI stays responsive with demo data
-      setVulnerabilities(prev => prev.map(v => v.id === vulnId ? { ...v, status: newStatus } : v));
-      setSelectedVuln(prev => prev && prev.id === vulnId ? { ...prev, status: newStatus } : prev);
+      setLoadError('Vulnerability status saved locally; failed to persist to server.');
     }
-  }, []);
+  }, [serverReachable]);
+
+  const addComponent = useCallback(async (data: Partial<SBOMComponent>) => {
+    if (!serverReachable) {
+      const local: SBOMComponent = {
+        id: `C${Date.now()}`,
+        name: data.name ?? 'New component',
+        version: data.version ?? '0.0.1',
+        latestVersion: data.latestVersion ?? data.version ?? '0.0.1',
+        type: (data.type as SBOMComponent['type']) ?? 'library',
+        license: data.license ?? 'unknown',
+        licenseRisk: data.licenseRisk ?? 'None',
+        supplier: data.supplier ?? 'unknown',
+        purl: data.purl ?? '',
+        cpe: data.cpe ?? '',
+        directDependency: data.directDependency ?? true,
+        dependencyDepth: data.dependencyDepth ?? 0,
+        vulnerabilities: 0,
+        criticalVulns: 0,
+        highVulns: 0,
+        lastUpdated: new Date().toISOString(),
+        size: data.size ?? '',
+        hash: data.hash ?? '',
+        ...data,
+      } as SBOMComponent;
+      setComponents(prev => [...prev, local]);
+      return;
+    }
+    try {
+      const created = await api.modules.sbom.createEntry({ ...data, type: data.type ?? 'library' });
+      if (created && (created as any).id) {
+        setComponents(prev => [...prev, created as SBOMComponent]);
+      }
+    } catch {
+      setLoadError('Failed to add component on server.');
+    }
+  }, [serverReachable]);
+
+  const importComponents = useCallback(async (entries: Partial<SBOMComponent>[]) => {
+    if (!serverReachable) {
+      setComponents(prev => [...prev, ...entries.map(e => ({ ...e, id: `C${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) as SBOMComponent[]]);
+      return;
+    }
+    try {
+      await api.modules.sbom.bulkCreateEntries(entries);
+      await loadData();
+    } catch {
+      setLoadError('Failed to import components on server.');
+    }
+  }, [serverReachable, loadData]);
 
   const deleteRepository = useCallback(async (repoId: string) => {
     try {
@@ -561,6 +626,45 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
           <option value="framework">Framework</option>
           <option value="application">Application</option>
         </select>
+        <button
+          onClick={() => {
+            const name = window.prompt('Component name (e.g. lodash):');
+            if (!name) return;
+            const version = window.prompt('Version (e.g. 4.17.21):') ?? '0.0.0';
+            const supplier = window.prompt('Supplier:') ?? 'unknown';
+            const license = window.prompt('License (SPDX id):') ?? 'unknown';
+            void addComponent({ name, version, latestVersion: version, supplier, license, type: 'library', purl: `pkg:npm/${name}@${version}` });
+          }}
+          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1"
+        >
+          <Plus className="w-4 h-4" />Add Component
+        </button>
+        <label className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm inline-flex items-center gap-1 cursor-pointer">
+          <UploadCloud className="w-4 h-4" />Import SBOM
+          <input
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={async e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                const text = await file.text();
+                const parsed = JSON.parse(text);
+                const items: Partial<SBOMComponent>[] = Array.isArray(parsed?.components) ? parsed.components : Array.isArray(parsed) ? parsed : [];
+                if (items.length === 0) {
+                  setLoadError('No components found in import file.');
+                  return;
+                }
+                await importComponents(items);
+              } catch {
+                setLoadError('Failed to parse SBOM import file.');
+              } finally {
+                e.target.value = '';
+              }
+            }}
+          />
+        </label>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">

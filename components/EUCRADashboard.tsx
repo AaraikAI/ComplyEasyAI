@@ -369,13 +369,16 @@ const formatDate = (d: string | null): string => {
 export const EUCRADashboard: React.FC = () => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
-  const [products, setProducts] = useState<CRAProduct[]>(DEFAULT_PRODUCTS);
-  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(DEFAULT_VULNERABILITIES);
-  const [updates, setUpdates] = useState<SecurityUpdate[]>(DEFAULT_UPDATES);
-  const [timeline, setTimeline] = useState<ComplianceTimelineEvent[]>(DEFAULT_TIMELINE);
+  // Server is the source of truth. DEFAULT_* arrays are reference fixtures used only when
+  // the API is unreachable so empty arrays don't get masked by static data.
+  const [products, setProducts] = useState<CRAProduct[]>([]);
+  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
+  const [updates, setUpdates] = useState<SecurityUpdate[]>([]);
+  const [timeline, setTimeline] = useState<ComplianceTimelineEvent[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | 'all'>('all');
@@ -388,14 +391,19 @@ export const EUCRADashboard: React.FC = () => {
       try {
         const saved = await api.regulationData.getAll('eu-cra');
         if (saved && typeof saved === 'object') {
-          if (saved.products) setProducts(saved.products);
-          if (saved.vulnerabilities) setVulnerabilities(saved.vulnerabilities);
-          if (saved.updates) setUpdates(saved.updates);
-          if (saved.timeline) setTimeline(saved.timeline);
+          setProducts(Array.isArray(saved.products) ? saved.products : []);
+          setVulnerabilities(Array.isArray(saved.vulnerabilities) ? saved.vulnerabilities : []);
+          setUpdates(Array.isArray(saved.updates) ? saved.updates : []);
+          setTimeline(Array.isArray(saved.timeline) ? saved.timeline : []);
         }
+        setServerReachable(true);
       } catch (err: any) {
-        console.error('Failed to load EU CRA data:', err);
-        setLoadError('Using default template data.');
+        setServerReachable(false);
+        setLoadError('Unable to connect to server. Showing reference template data.');
+        setProducts(DEFAULT_PRODUCTS);
+        setVulnerabilities(DEFAULT_VULNERABILITIES);
+        setUpdates(DEFAULT_UPDATES);
+        setTimeline(DEFAULT_TIMELINE);
       } finally {
         setIsLoading(false);
       }
@@ -404,15 +412,19 @@ export const EUCRADashboard: React.FC = () => {
 
   // ── Debounced auto-save ──
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !serverReachable) return;
     const timer = setTimeout(() => {
-      api.regulationData.save('eu-cra', 'products', products).catch(console.error);
-      api.regulationData.save('eu-cra', 'vulnerabilities', vulnerabilities).catch(console.error);
-      api.regulationData.save('eu-cra', 'updates', updates).catch(console.error);
-      api.regulationData.save('eu-cra', 'timeline', timeline).catch(console.error);
+      Promise.all([
+        api.regulationData.save('eu-cra', 'products', products),
+        api.regulationData.save('eu-cra', 'vulnerabilities', vulnerabilities),
+        api.regulationData.save('eu-cra', 'updates', updates),
+        api.regulationData.save('eu-cra', 'timeline', timeline),
+      ]).catch(() => {
+        setLoadError('Failed to save changes. Please retry.');
+      });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [products, vulnerabilities, updates, timeline, isLoading]);
+  }, [products, vulnerabilities, updates, timeline, isLoading, serverReachable]);
 
   const [showProductModal, setShowProductModal] = useState(false);
   const [showVulnModal, setShowVulnModal] = useState(false);
@@ -1194,6 +1206,14 @@ export const EUCRADashboard: React.FC = () => {
           ))}
         </nav>
       </div>
+
+      {loadError && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+          <span className="text-sm text-amber-700 flex-1">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="text-amber-500 hover:text-amber-700"><X className="w-3 h-3" /></button>
+        </div>
+      )}
 
       {/* Tab Content */}
       {activeTab === 'overview' && renderOverview()}

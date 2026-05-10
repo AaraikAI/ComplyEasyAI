@@ -1,0 +1,14 @@
+// ============================================================================
+// PASTE-READY index.ts wiring for the PCI-DSS workflow module
+// ============================================================================
+
+// ── Step 1: Add the import line (group it with the other route imports near
+//           line 112, immediately after `import hipaaRoutes from './routes/hipaa';`):
+
+import pciDssRoutes from './routes/pciDss';
+
+
+// ── Step 2: Add the mount line (group it with the other route mounts near
+//           line 626, immediately after `app.use('/api/hipaa', apiLimiter, hipaaRoutes);`):
+
+app.use('/api/pci-dss', apiLimiter, pciDssRoutes);
