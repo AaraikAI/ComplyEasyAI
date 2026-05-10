@@ -338,9 +338,10 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
     setIsLoading(true);
     setLoadError(null);
     try {
-      const [apiMetrics, apiMateriality] = await Promise.all([
+      const [apiMetrics, apiMateriality, apiReports] = await Promise.all([
         api.modules.esg.listMetrics(),
         api.modules.esg.listMateriality(),
+        api.modules.esg.listReports().catch(() => [] as any[]),
       ]);
 
       // --- Metrics ---
@@ -402,16 +403,16 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
         })));
       }
 
-      // --- Reports (derived from metrics response when available) ---
-      if ((apiMetrics as any)?.reports && (apiMetrics as any).reports.length > 0) {
-        setReports((apiMetrics as any).reports.map((r: any) => ({
+      // --- Reports (live from /modules/esg/reports) ---
+      if (Array.isArray(apiReports) && apiReports.length > 0) {
+        setReports(apiReports.map((r: any) => ({
           id: r.id,
           title: r.title || '',
-          reportingPeriod: r.reportingPeriod || '',
+          reportingPeriod: r.reportingPeriod || (r.periodStart && r.periodEnd ? `${String(r.periodStart).slice(0, 10)} – ${String(r.periodEnd).slice(0, 10)}` : ''),
           type: r.type || 'annual',
           status: r.status || 'draft',
-          csrdCompliant: r.csrdCompliant ?? false,
-          createdAt: r.createdAt || '',
+          csrdCompliant: r.csrdCompliant ?? (r.framework?.toString().includes('ESRS') ?? false),
+          createdAt: r.generatedAt || r.createdAt || '',
           author: r.author || '',
           pages: r.pages,
         })));
@@ -1002,8 +1003,7 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   const handleGenerateReport = useCallback(async () => {
     setIsGeneratingReport(true);
     try {
-      const newReport = await api.modules.esg.createMetric({
-        _action: 'generate_report',
+      const newReport = await api.modules.esg.generateReport({
         type: reportFormType,
         periodStart: reportFormStart,
         periodEnd: reportFormEnd,
@@ -1012,14 +1012,12 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
         setReports(prev => [newReport as ESGReport, ...prev]);
       }
       setShowReportModal(false);
-      // Refresh all data to pick up the new report
-      await loadData();
     } catch (err: any) {
       setLoadError('Failed to generate report. Please try again.');
     } finally {
       setIsGeneratingReport(false);
     }
-  }, [reportFormType, reportFormStart, reportFormEnd, loadData]);
+  }, [reportFormType, reportFormStart, reportFormEnd]);
 
   // ---------------------------------------------------------------------------
   // Metric CRUD handlers
@@ -1077,6 +1075,15 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
       }
     } catch (err: any) {
       setLoadError('Failed to update materiality topic.');
+    }
+  }, []);
+
+  const handleDeleteMateriality = useCallback(async (id: string) => {
+    try {
+      await api.modules.esg.deleteMateriality(id);
+      setMaterialityTopics(prev => prev.filter(mt => mt.id !== id));
+    } catch (err: any) {
+      setLoadError('Failed to delete materiality topic.');
     }
   }, []);
 

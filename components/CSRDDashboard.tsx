@@ -230,11 +230,12 @@ const formatDate = (d: string): string => new Date(d).toLocaleDateString('en-GB'
 export const CSRDDashboard: React.FC = () => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
-  const [topics, setTopics] = useState<MaterialityTopic[]>(DEFAULT_MATERIALITY_TOPICS);
+  const [topics, setTopics] = useState<MaterialityTopic[]>([]);
   const [envMetrics, setEnvMetrics] = useState<EnvironmentalMetrics>(DEFAULT_ENVIRONMENTAL);
   const [socialMetrics, setSocialMetrics] = useState<SocialMetrics>(DEFAULT_SOCIAL);
   const [govMetrics, setGovMetrics] = useState<GovernanceMetrics>(DEFAULT_GOVERNANCE);
-  const [reports, setReports] = useState<SustainabilityReport[]>(DEFAULT_REPORTS);
+  const [reports, setReports] = useState<SustainabilityReport[]>([]);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'environmental' | 'social' | 'governance'>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -252,16 +253,29 @@ export const CSRDDashboard: React.FC = () => {
     (async () => {
       try {
         const saved = await api.regulationData.getAll('csrd');
+        setServerReachable(true);
         if (saved && typeof saved === 'object') {
-          if (saved.topics) setTopics(saved.topics);
+          setTopics(Array.isArray(saved.topics) ? saved.topics : DEFAULT_MATERIALITY_TOPICS);
           if (saved.environmental) setEnvMetrics(saved.environmental);
           if (saved.social) setSocialMetrics(saved.social);
           if (saved.governance) setGovMetrics(saved.governance);
-          if (saved.reports) setReports(saved.reports);
+          setReports(Array.isArray(saved.reports) ? saved.reports : DEFAULT_REPORTS);
+          // First-time setup: server has no data yet — seed with template defaults so the user sees a populated dashboard.
+          if (!saved.topics) setTopics(DEFAULT_MATERIALITY_TOPICS);
+          if (!saved.reports) setReports(DEFAULT_REPORTS);
+        } else {
+          setTopics(DEFAULT_MATERIALITY_TOPICS);
+          setReports(DEFAULT_REPORTS);
         }
       } catch (err: any) {
-        console.error('Failed to load CSRD data:', err);
-        setLoadError('Using default template data.');
+        // Server unreachable — fall back to local template data.
+        setServerReachable(false);
+        setTopics(DEFAULT_MATERIALITY_TOPICS);
+        setEnvMetrics(DEFAULT_ENVIRONMENTAL);
+        setSocialMetrics(DEFAULT_SOCIAL);
+        setGovMetrics(DEFAULT_GOVERNANCE);
+        setReports(DEFAULT_REPORTS);
+        setLoadError('Unable to connect to server. Using template data.');
       } finally {
         setIsLoading(false);
       }
@@ -272,15 +286,25 @@ export const CSRDDashboard: React.FC = () => {
 
   useEffect(() => {
     if (isLoading) return;
+    if (!serverReachable) return;
     const timer = setTimeout(() => {
-      api.regulationData.save('csrd', 'topics', topics);
-      api.regulationData.save('csrd', 'environmental', envMetrics);
-      api.regulationData.save('csrd', 'social', socialMetrics);
-      api.regulationData.save('csrd', 'governance', govMetrics);
-      api.regulationData.save('csrd', 'reports', reports);
+      Promise.allSettled([
+        api.regulationData.save('csrd', 'topics', topics),
+        api.regulationData.save('csrd', 'environmental', envMetrics),
+        api.regulationData.save('csrd', 'social', socialMetrics),
+        api.regulationData.save('csrd', 'governance', govMetrics),
+        api.regulationData.save('csrd', 'reports', reports),
+      ]).then(results => {
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+          setLoadError('Some changes failed to sync to the server.');
+        } else if (loadError) {
+          setLoadError(null);
+        }
+      });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [topics, envMetrics, socialMetrics, govMetrics, reports, isLoading]);
+  }, [topics, envMetrics, socialMetrics, govMetrics, reports, isLoading, serverReachable, loadError]);
 
   // ── Computed ──
 

@@ -2283,6 +2283,10 @@ export const api = {
       listMateriality: async () => fetchAPI<any[]>('/modules/esg/materiality'),
       createMateriality: async (data: any) => fetchAPI<any>('/modules/esg/materiality', { method: 'POST', body: JSON.stringify(data) }),
       updateMateriality: async (id: string, data: any) => fetchAPI<any>(`/modules/esg/materiality/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteMateriality: async (id: string) => fetchAPI<any>(`/modules/esg/materiality/${id}`, { method: 'DELETE' }),
+      listReports: async () => fetchAPI<any[]>('/modules/esg/reports'),
+      generateReport: async (data: { type: 'annual' | 'interim' | 'thematic'; periodStart?: string; periodEnd?: string }) =>
+        fetchAPI<any>('/modules/esg/reports', { method: 'POST', body: JSON.stringify(data) }),
     },
 
     // --- SBOM Manager ---

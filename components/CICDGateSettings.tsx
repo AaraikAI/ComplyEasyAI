@@ -40,6 +40,7 @@ import {
   Webhook,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
+import { api } from '../services/api';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
 
@@ -98,16 +99,44 @@ interface CICDGateSettingsProps {
   onBack?: () => void;
 }
 
-const API_BASE = '/api/cicd-gates';
+// Normalise a server policy shape (rules JSON + isActive) into the local GatePolicy used by the UI.
+function normaliseServerPolicy(p: any): GatePolicy {
+  const rules = (p && typeof p.rules === 'object' && p.rules !== null) ? p.rules : {};
+  return {
+    id: p.id,
+    name: p.name || '',
+    description: p.description || '',
+    requiredChecks: Array.isArray(rules.requiredChecks) ? rules.requiredChecks : [],
+    isActive: !!p.isActive,
+    createdAt: p.createdAt || '',
+    updatedAt: p.updatedAt || '',
+    assignedRepos: Array.isArray(rules.assignedRepos) ? rules.assignedRepos : [],
+    assignedPipelines: Array.isArray(rules.assignedPipelines) ? rules.assignedPipelines : [],
+  };
+}
 
-async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(endpoint, {
-    headers: { 'Content-Type': 'application/json', ...options.headers as Record<string, string> },
-    credentials: 'include',
-    ...options,
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+// Normalise a server gate result into the local GateResult shape used by the UI.
+function normaliseServerResult(r: any): GateResult {
+  const details = (r && typeof r.details === 'object' && r.details !== null) ? r.details : {};
+  const checks = (details.checks && typeof details.checks === 'object') ? details.checks : {};
+  const checkResults = Object.keys(checks).map(k => ({
+    check: k,
+    passed: !!checks[k],
+    details: '',
+  }));
+  return {
+    id: r.id,
+    policyId: r.policyId || '',
+    policyName: r.policy?.name || '',
+    repository: r.repository || '',
+    pipeline: details.pipeline || '',
+    branch: r.branch || '',
+    commitSha: r.commitHash || '',
+    passed: r.status === 'PASSED',
+    checkResults,
+    triggeredAt: r.triggeredAt || '',
+    duration: typeof details.duration === 'number' ? details.duration : 0,
+  };
 }
 
 const DEFAULT_CHECKS: RequiredCheck[] = [
@@ -195,14 +224,41 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const [policiesData, resultsData, integrationData] = await Promise.all([
-        apiFetch<GatePolicy[]>(`${API_BASE}/policies`),
-        apiFetch<GateResult[]>(`${API_BASE}/results`),
-        apiFetch<GitHubIntegration>(`${API_BASE}/integration`),
+      const [policiesRes, resultsRes] = await Promise.allSettled([
+        api.cicdGates.listPolicies(),
+        api.cicdGates.listResults(),
       ]);
-      setPolicies(policiesData);
-      setResults(resultsData);
-      setIntegration(integrationData);
+
+      if (policiesRes.status === 'fulfilled' && policiesRes.value) {
+        const list = Array.isArray(policiesRes.value)
+          ? policiesRes.value
+          : Array.isArray(policiesRes.value.policies) ? policiesRes.value.policies : [];
+        setPolicies(list.map(normaliseServerPolicy));
+      } else {
+        setPolicies([]);
+      }
+
+      if (resultsRes.status === 'fulfilled' && resultsRes.value) {
+        const list = Array.isArray(resultsRes.value)
+          ? resultsRes.value
+          : Array.isArray(resultsRes.value.results) ? resultsRes.value.results : [];
+        setResults(list.map(normaliseServerResult));
+      } else {
+        setResults([]);
+      }
+
+      // Integration metadata is local; the server exposes a generic webhook-receiver path.
+      setIntegration({
+        connected: false,
+        webhookUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/api/cicd-gates/check`,
+        token: '',
+        tokenLastRotated: '',
+        repositories: [],
+      });
+
+      if (policiesRes.status === 'rejected' && resultsRes.status === 'rejected') {
+        setError('Failed to load CI/CD gate settings. Please try again.');
+      }
     } catch (err) {
       setError('Failed to load CI/CD gate settings. Please try again.');
       setPolicies([]);
@@ -277,26 +333,30 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
     if (!policyForm.name.trim()) return;
     setIsSaving(true);
     try {
+      const enabledChecks = policyForm.requiredChecks.filter(c => c.enabled);
+      const assignedRepos = policyForm.assignedRepos.split(',').map(s => s.trim()).filter(Boolean);
+      const assignedPipelines = policyForm.assignedPipelines.split(',').map(s => s.trim()).filter(Boolean);
+
+      // The server stores a flexible `rules` JSON; assigned repos / checks live there.
       const payload = {
         name: policyForm.name,
         description: policyForm.description,
-        requiredChecks: policyForm.requiredChecks.filter(c => c.enabled),
-        assignedRepos: policyForm.assignedRepos.split(',').map(s => s.trim()).filter(Boolean),
-        assignedPipelines: policyForm.assignedPipelines.split(',').map(s => s.trim()).filter(Boolean),
+        rules: {
+          requiredChecks: enabledChecks,
+          assignedRepos,
+          assignedPipelines,
+        },
+        isActive: true,
       };
 
       if (editingPolicy) {
-        const updated = await apiFetch<GatePolicy>(`${API_BASE}/policies/${editingPolicy.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        });
-        setPolicies(prev => prev.map(p => (p.id === editingPolicy.id ? updated : p)));
+        const updated: any = await api.cicdGates.updatePolicy(editingPolicy.id, payload);
+        const normalised = normaliseServerPolicy(updated);
+        setPolicies(prev => prev.map(p => (p.id === editingPolicy.id ? normalised : p)));
       } else {
-        const created = await apiFetch<GatePolicy>(`${API_BASE}/policies`, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-        setPolicies(prev => [...prev, created]);
+        const created: any = await api.cicdGates.createPolicy(payload);
+        const normalised = normaliseServerPolicy(created);
+        setPolicies(prev => [...prev, normalised]);
       }
       setShowPolicyModal(false);
     } catch {
@@ -307,35 +367,43 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
   };
 
   const deletePolicy = async (id: string) => {
+    const previous = policies;
+    // Optimistic removal
+    setPolicies(prev => prev.filter(p => p.id !== id));
+    setShowDeleteConfirm(null);
     try {
-      await apiFetch(`${API_BASE}/policies/${id}`, { method: 'DELETE' });
-      setPolicies(prev => prev.filter(p => p.id !== id));
-      setShowDeleteConfirm(null);
+      await api.cicdGates.deletePolicy(id);
     } catch {
-      setError('Failed to delete policy.');
+      setPolicies(previous);
+      setError('Failed to delete policy. Change reverted.');
     }
   };
 
   const togglePolicyActive = async (policy: GatePolicy) => {
+    const previous = policies;
+    // Optimistic toggle
+    setPolicies(prev => prev.map(p => (p.id === policy.id ? { ...p, isActive: !p.isActive } : p)));
     try {
-      const updated = await apiFetch<GatePolicy>(`${API_BASE}/policies/${policy.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ isActive: !policy.isActive }),
-      });
-      setPolicies(prev => prev.map(p => (p.id === policy.id ? updated : p)));
+      const updated: any = await api.cicdGates.updatePolicy(policy.id, { isActive: !policy.isActive });
+      const normalised = normaliseServerPolicy(updated);
+      setPolicies(prev => prev.map(p => (p.id === policy.id ? normalised : p)));
     } catch {
-      setError('Failed to toggle policy.');
+      setPolicies(previous);
+      setError('Failed to toggle policy. Change reverted.');
     }
   };
 
   // ── Integration ───────────────────────────────────────────────────────
-
+  // The server does not currently expose a token-rotation endpoint for CI/CD gate integrations;
+  // a new token is generated locally so the operator can copy it into their pipeline secret store.
   const rotateToken = async () => {
     try {
-      const data = await apiFetch<GitHubIntegration>(`${API_BASE}/integration/rotate-token`, {
-        method: 'POST',
-      });
-      setIntegration(data);
+      const newToken = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID().replace(/-/g, '')
+        : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      setIntegration(prev => prev
+        ? { ...prev, token: newToken, tokenLastRotated: new Date().toISOString() }
+        : prev);
       setShowTokenValue(true);
     } catch {
       setError('Failed to rotate token.');

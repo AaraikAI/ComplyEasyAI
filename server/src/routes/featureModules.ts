@@ -157,6 +157,9 @@ router.get('/esg/materiality/:id', requireFeature('esgReporting'), asyncHandler(
 router.patch('/esg/materiality/:id', requireFeature('esgReporting'), authorize('admin', 'editor'), validateBody(updateMaterialityAssessmentSchema), asyncHandler(fm.updateMaterialityAssessment));
 router.delete('/esg/materiality/:id', requireFeature('esgReporting'), authorize('admin'), asyncHandler(fm.deleteMaterialityAssessment));
 
+router.post('/esg/reports', requireFeature('esgReporting'), authorize('admin', 'editor'), asyncHandler(fm.generateESGReport));
+router.get('/esg/reports', requireFeature('esgReporting'), asyncHandler(fm.listESGReports));
+
 // ============================================================================
 // SBOM MANAGER (Growth+)
 // ============================================================================

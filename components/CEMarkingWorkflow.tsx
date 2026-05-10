@@ -445,12 +445,13 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
   const { t } = useI18n();
   type TabId = 'overview' | 'products' | 'assessment' | 'documentation' | 'notified_bodies';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [products, setProducts] = useState<CEProduct[]>(DEMO_PRODUCTS);
-  const [notifiedBodies, setNotifiedBodies] = useState<NotifiedBody[]>(DEMO_NOTIFIED_BODIES);
-  const [requirements, setRequirements] = useState<EssentialRequirement[]>(DEMO_REQUIREMENTS);
-  const [documents, setDocuments] = useState<TechnicalDocument[]>(DEMO_DOCUMENTS);
-  const [riskItems, setRiskItems] = useState<RiskAssessmentItem[]>(DEMO_RISK_ITEMS);
-  const [surveillanceChecks, setSurveillanceChecks] = useState<SurveillanceCheck[]>(DEMO_SURVEILLANCE_CHECKS);
+  const [products, setProducts] = useState<CEProduct[]>([]);
+  const [notifiedBodies, setNotifiedBodies] = useState<NotifiedBody[]>([]);
+  const [requirements, setRequirements] = useState<EssentialRequirement[]>([]);
+  const [documents, setDocuments] = useState<TechnicalDocument[]>([]);
+  const [riskItems, setRiskItems] = useState<RiskAssessmentItem[]>([]);
+  const [surveillanceChecks, setSurveillanceChecks] = useState<SurveillanceCheck[]>([]);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
   const [selectedProduct, setSelectedProduct] = useState<CEProduct | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddProductModal, setShowAddProductModal] = useState(false);
@@ -490,8 +491,23 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
           api.modules.ceMarking.listSurveillanceChecks(),
         ]);
 
+      // If the primary products call failed, server is unreachable; fall back to local data.
+      if (productsRes.status === 'rejected') {
+        setServerReachable(false);
+        setProducts(DEMO_PRODUCTS);
+        setNotifiedBodies(DEMO_NOTIFIED_BODIES);
+        setRequirements(DEMO_REQUIREMENTS);
+        setDocuments(DEMO_DOCUMENTS);
+        setRiskItems(DEMO_RISK_ITEMS);
+        setSurveillanceChecks(DEMO_SURVEILLANCE_CHECKS);
+        setLoadError('Unable to connect to server. Showing local data.');
+        return;
+      }
+
+      setServerReachable(true);
+
       // --- Products ---
-      if (productsRes.status === 'fulfilled' && Array.isArray(productsRes.value) && productsRes.value.length > 0) {
+      if (productsRes.status === 'fulfilled' && Array.isArray(productsRes.value)) {
         setProducts(productsRes.value.map((p: any) => ({
           id: p.id,
           name: p.name || '',
@@ -509,38 +525,39 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
           marketDate: p.marketDate,
         })));
       }
-      // fallback: keep DEMO_PRODUCTS already in state
 
       // --- Notified Bodies ---
-      if (notifiedBodiesRes.status === 'fulfilled' && Array.isArray(notifiedBodiesRes.value) && notifiedBodiesRes.value.length > 0) {
+      if (notifiedBodiesRes.status === 'fulfilled' && Array.isArray(notifiedBodiesRes.value)) {
         setNotifiedBodies(notifiedBodiesRes.value);
       }
 
       // --- Essential Requirements ---
-      if (requirementsRes.status === 'fulfilled' && Array.isArray(requirementsRes.value) && requirementsRes.value.length > 0) {
+      if (requirementsRes.status === 'fulfilled' && Array.isArray(requirementsRes.value)) {
         setRequirements(requirementsRes.value);
       }
 
       // --- Documents ---
-      if (documentsRes.status === 'fulfilled' && Array.isArray(documentsRes.value) && documentsRes.value.length > 0) {
+      if (documentsRes.status === 'fulfilled' && Array.isArray(documentsRes.value)) {
         setDocuments(documentsRes.value);
       }
 
       // --- Risk Items ---
-      if (riskItemsRes.status === 'fulfilled' && Array.isArray(riskItemsRes.value) && riskItemsRes.value.length > 0) {
+      if (riskItemsRes.status === 'fulfilled' && Array.isArray(riskItemsRes.value)) {
         setRiskItems(riskItemsRes.value);
       }
 
       // --- Surveillance Checks ---
-      if (surveillanceRes.status === 'fulfilled' && Array.isArray(surveillanceRes.value) && surveillanceRes.value.length > 0) {
+      if (surveillanceRes.status === 'fulfilled' && Array.isArray(surveillanceRes.value)) {
         setSurveillanceChecks(surveillanceRes.value);
       }
-
-      // If the primary products call failed, warn the user
-      if (productsRes.status === 'rejected') {
-        setLoadError('Unable to connect to server. Showing local data.');
-      }
     } catch (err: any) {
+      setServerReachable(false);
+      setProducts(DEMO_PRODUCTS);
+      setNotifiedBodies(DEMO_NOTIFIED_BODIES);
+      setRequirements(DEMO_REQUIREMENTS);
+      setDocuments(DEMO_DOCUMENTS);
+      setRiskItems(DEMO_RISK_ITEMS);
+      setSurveillanceChecks(DEMO_SURVEILLANCE_CHECKS);
       setLoadError('Unable to connect to server. Showing local data.');
     } finally {
       setIsLoading(false);

@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { api } from '../services/api';
 import {
   Target,
   Plus,
@@ -79,9 +80,6 @@ interface AIRecommendation {
 }
 
 // ── Constants ───────────────────────────────────────────────────────────────
-
-const API_BASE = (import.meta as ImportMeta & { env: Record<string, string> }).env.VITE_API_URL || 'http://localhost:3001/api';
-const apiUrl = API_BASE.endsWith('/api') ? API_BASE : API_BASE.replace(/\/?$/, '') + '/api';
 
 const MATURITY_LEVELS: Record<MaturityLevel, { label: string; color: string; bgClass: string; description: string }> = {
   1: { label: 'Initial', color: '#ef4444', bgClass: 'bg-red-500', description: 'Ad hoc processes, reactive approach, no formal documentation' },
@@ -170,10 +168,6 @@ const DEFAULT_QUESTIONS: Question[] = [
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function getAuthHeaders(): Record<string, string> {
-  return { 'Content-Type': 'application/json' };
-}
-
 // SVG Radar chart helpers
 function polarToCartesian(cx: number, cy: number, radius: number, angleDeg: number): { x: number; y: number } {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
@@ -213,12 +207,10 @@ const MaturityAssessment: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${apiUrl}/maturity/assessments`, { headers: getAuthHeaders(), credentials: 'include' });
-      if (!res.ok) throw new Error(`Failed to fetch assessments: ${res.status}`);
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : data.assessments || [];
+      const data = await api.maturity.listAssessments();
+      const list = Array.isArray(data) ? data : (data && (data as any).assessments) || [];
       setAssessments(list);
-      // Load latest assessment answers if available
+      // Load latest assessment answers if available so the wizard resumes from saved state.
       if (list.length > 0) {
         const latest = list[list.length - 1];
         if (latest.answers) {
@@ -241,11 +233,11 @@ const MaturityAssessment: React.FC = () => {
     setSaving(true);
     try {
       const answers = questions.filter(q => q.answer !== null).map(q => ({ questionId: q.id, answer: q.answer }));
-      const res = await fetch(`${apiUrl}/maturity/assessments`, {
-        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify({ answers, domainScores: domainScores.map(ds => ({ domain: ds.domain, score: ds.currentScore, target: ds.targetScore })), overallScore }),
+      await api.maturity.createAssessment({
+        answers,
+        domainScores: domainScores.map(ds => ({ domain: ds.domain, score: ds.currentScore, target: ds.targetScore })),
+        overallScore,
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
       await fetchAssessments();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
@@ -257,15 +249,26 @@ const MaturityAssessment: React.FC = () => {
   const fetchRecommendations = async () => {
     setLoadingRecs(true);
     try {
-      const res = await fetch(`${apiUrl}/maturity/assessments/recommendations`, {
-        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify({ domainScores, overallScore }),
-      });
-      if (!res.ok) throw new Error(`Failed: ${res.status}`);
-      const data = await res.json();
-      setRecommendations(Array.isArray(data) ? data : data.recommendations || []);
+      // Server-side recommendations require a persisted assessment id; use the most recent.
+      const latest = assessments[assessments.length - 1];
+      if (latest?.id) {
+        const data = await api.maturity.generateRecommendations(latest.id);
+        const list = Array.isArray(data) ? data : (data && (data as any).recommendations) || [];
+        if (list.length > 0) {
+          setRecommendations(list.map((r: any) => ({
+            domain: r.domain,
+            priority: (r.priority || 'medium').toLowerCase(),
+            title: r.recommendation || r.title || `Improve ${r.domain}`,
+            description: r.recommendation || r.description || '',
+            effort: r.estimatedEffort || r.effort || '1-3 months',
+            impact: r.priority === 'CRITICAL' || r.priority === 'HIGH' ? 'High' : 'Medium',
+          })));
+          return;
+        }
+      }
+      throw new Error('No persisted assessment to score');
     } catch (err) {
-      // Generate client-side recommendations as fallback
+      // Derive client-side recommendations when no persisted assessment exists yet.
       const recs: AIRecommendation[] = domainScores.filter(ds => ds.currentScore < ds.targetScore).flatMap(ds => {
         const gap = ds.targetScore - ds.currentScore;
         const nextLevel = (Math.min(ds.currentScore + 1, 5)) as MaturityLevel;

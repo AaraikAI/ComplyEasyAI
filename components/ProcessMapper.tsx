@@ -421,6 +421,18 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setNewProcess({ name: '', description: '', category: 'Business Operations', owner: '' });
   }, [newProcess]);
 
+  const removeProcess = useCallback(async (id: string) => {
+    const isLocalOnly = id.startsWith('proc-');
+    setProcesses(prev => prev.filter(p => p.id !== id));
+    if (selectedProcessId === id) setSelectedProcessId(null);
+    if (isLocalOnly) return;
+    try {
+      await api.modules.processMaps.delete(id);
+    } catch (err) {
+      setLoadError('Failed to delete process map on the server. It will reappear on reload.');
+    }
+  }, [selectedProcessId]);
+
   const aiGenerateProcess = useCallback(async () => {
     if (!newProcess.name.trim() && !newProcess.description.trim()) return;
     setIsAiGenerating(true);
@@ -641,8 +653,21 @@ ${edgesDi}
         {/* Process cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredProcesses.map(p => (
-            <div key={p.id} onClick={() => setSelectedProcessId(p.id)} className="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-400 hover:shadow-md transition-all cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
+            <div key={p.id} onClick={() => setSelectedProcessId(p.id)} className="bg-white rounded-xl border border-gray-200 p-5 hover:border-brand-400 hover:shadow-md transition-all cursor-pointer relative group">
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  if (window.confirm(`Delete process map "${p.name}"? This cannot be undone.`)) {
+                    void removeProcess(p.id);
+                  }
+                }}
+                className="absolute top-3 right-3 p-1.5 rounded-full bg-white border border-gray-200 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 transition-opacity"
+                title="Delete process map"
+                aria-label={`Delete ${p.name}`}
+              >
+                <Trash2 size={14} />
+              </button>
+              <div className="flex justify-between items-start mb-2 pr-8">
                 <h3 className="font-semibold text-gray-900 text-lg">{p.name}</h3>
                 {statusBadge(p.status)}
               </div>

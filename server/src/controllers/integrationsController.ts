@@ -7,6 +7,7 @@ import { Request, Response, RequestHandler } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 import { Prisma } from '../generated/prisma/client';
 
 // Import integration services
@@ -151,7 +152,8 @@ export const authorizeGoogle: RequestHandler = async (req: Request, res: Respons
     res.json({ authUrl, existingWindow: false });
   } catch (error) {
     logger.error('Error generating Google auth URL', error);
-    res.status(500).json({ error: 'Failed to initiate Google authorization' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to initiate Google authorization', 500);
   }
 };
 
@@ -165,15 +167,13 @@ export const callbackGoogle: RequestHandler = async (req: Request, res: Response
       const { code, state } = req.query;
 
       if (!code || !state) {
-        res.status(400).json({ error: 'Missing authorization code or state' });
-        return;
+        throw new AppError('Missing authorization code or state', 400);
       }
 
       const organizationId = await verifyState(state as string, 'google');
 
       if (!organizationId) {
-        res.status(400).json({ error: 'Invalid or expired state parameter' });
-        return;
+        throw new AppError('Invalid or expired state parameter', 400);
       }
 
       // Clean up active window
@@ -264,14 +264,14 @@ export const syncGoogleData: RequestHandler = async (req: Request, res: Response
         result = await googleService.listDriveFiles(organizationId);
         break;
       default:
-        res.status(400).json({ error: 'Invalid sync type' });
-        return;
+        throw new AppError('Invalid sync type', 400);
     }
 
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing Google data', error);
-    res.status(500).json({ error: error.message || 'Failed to sync Google data' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to sync Google data', 500);
   }
 };
 
@@ -283,7 +283,8 @@ export const disconnectGoogle: RequestHandler = async (req: Request, res: Respon
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting Google', error);
-    res.status(500).json({ error: 'Failed to disconnect Google integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to disconnect Google integration', 500);
   }
 };
 
@@ -301,7 +302,8 @@ export const authorizeGitHub: RequestHandler = async (req: Request, res: Respons
     res.json({ authUrl });
   } catch (error) {
     logger.error('Error generating GitHub auth URL', error);
-    res.status(500).json({ error: 'Failed to initiate GitHub authorization' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to initiate GitHub authorization', 500);
   }
 };
 
@@ -310,15 +312,13 @@ export const callbackGitHub: RequestHandler = async (req: Request, res: Response
     const { code, state } = req.query;
 
     if (!code || !state) {
-      res.status(400).json({ error: 'Missing authorization code or state' });
-      return;
+      throw new AppError('Missing authorization code or state', 400);
     }
 
     const organizationId = await verifyState(state as string, 'github');
 
     if (!organizationId) {
-      res.status(400).json({ error: 'Invalid or expired state parameter' });
-      return;
+      throw new AppError('Invalid or expired state parameter', 400);
     }
 
     // Exchange code for access token
@@ -351,15 +351,13 @@ export const syncGitHubData: RequestHandler = async (req: Request, res: Response
         break;
       case 'commits':
         if (!owner || !repo) {
-          res.status(400).json({ error: 'Owner and repo required for commits' });
-          return;
+          throw new AppError('Owner and repo required for commits', 400);
         }
         result = await githubService.getRepositoryCommits(organizationId, owner, repo);
         break;
       case 'security':
         if (!owner || !repo) {
-          res.status(400).json({ error: 'Owner and repo required for security alerts' });
-          return;
+          throw new AppError('Owner and repo required for security alerts', 400);
         }
         result = await githubService.getSecurityAlerts(organizationId, owner, repo);
         break;
@@ -367,14 +365,14 @@ export const syncGitHubData: RequestHandler = async (req: Request, res: Response
         result = await githubService.scanRepositoriesForCompliance(organizationId);
         break;
       default:
-        res.status(400).json({ error: 'Invalid sync type' });
-        return;
+        throw new AppError('Invalid sync type', 400);
     }
 
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing GitHub data', error);
-    res.status(500).json({ error: error.message || 'Failed to sync GitHub data' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to sync GitHub data', 500);
   }
 };
 
@@ -386,7 +384,8 @@ export const disconnectGitHub: RequestHandler = async (req: Request, res: Respon
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting GitHub', error);
-    res.status(500).json({ error: 'Failed to disconnect GitHub integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to disconnect GitHub integration', 500);
   }
 };
 
@@ -404,7 +403,8 @@ export const authorizeSlack: RequestHandler = async (req: Request, res: Response
     res.json({ authUrl });
   } catch (error) {
     logger.error('Error generating Slack auth URL', error);
-    res.status(500).json({ error: 'Failed to initiate Slack authorization' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to initiate Slack authorization', 500);
   }
 };
 
@@ -413,15 +413,13 @@ export const callbackSlack: RequestHandler = async (req: Request, res: Response)
     const { code, state } = req.query;
 
     if (!code || !state) {
-      res.status(400).json({ error: 'Missing authorization code or state' });
-      return;
+      throw new AppError('Missing authorization code or state', 400);
     }
 
     const organizationId = await verifyState(state as string, 'slack');
 
     if (!organizationId) {
-      res.status(400).json({ error: 'Invalid or expired state parameter' });
-      return;
+      throw new AppError('Invalid or expired state parameter', 400);
     }
 
     // Exchange code for tokens
@@ -454,20 +452,19 @@ export const syncSlackData: RequestHandler = async (req: Request, res: Response)
         break;
       case 'history':
         if (!channelId) {
-          res.status(400).json({ error: 'Channel ID required' });
-          return;
+          throw new AppError('Channel ID required', 400);
         }
         result = await slackService.getChannelHistory(organizationId, channelId);
         break;
       default:
-        res.status(400).json({ error: 'Invalid sync type' });
-        return;
+        throw new AppError('Invalid sync type', 400);
     }
 
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing Slack data', error);
-    res.status(500).json({ error: error.message || 'Failed to sync Slack data' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to sync Slack data', 500);
   }
 };
 
@@ -478,15 +475,15 @@ export const postSlackMessage: RequestHandler = async (req: Request, res: Respon
     const { channelId, text, blocks } = req.body;
 
     if (!channelId || !text) {
-      res.status(400).json({ error: 'Channel ID and text are required' });
-      return;
+      throw new AppError('Channel ID and text are required', 400);
     }
 
     const result = await slackService.postMessage(organizationId, channelId, text, blocks);
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error posting Slack message', error);
-    res.status(500).json({ error: error.message || 'Failed to post message' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to post message', 500);
   }
 };
 
@@ -498,7 +495,8 @@ export const disconnectSlack: RequestHandler = async (req: Request, res: Respons
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting Slack', error);
-    res.status(500).json({ error: 'Failed to disconnect Slack integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to disconnect Slack integration', 500);
   }
 };
 
@@ -516,7 +514,8 @@ export const authorizeJira: RequestHandler = async (req: Request, res: Response)
     res.json({ authUrl });
   } catch (error) {
     logger.error('Error generating Jira auth URL', error);
-    res.status(500).json({ error: 'Failed to initiate Jira authorization' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to initiate Jira authorization', 500);
   }
 };
 
@@ -525,15 +524,13 @@ export const callbackJira: RequestHandler = async (req: Request, res: Response):
     const { code, state } = req.query;
 
     if (!code || !state) {
-      res.status(400).json({ error: 'Missing authorization code or state' });
-      return;
+      throw new AppError('Missing authorization code or state', 400);
     }
 
     const organizationId = await verifyState(state as string, 'jira');
 
     if (!organizationId) {
-      res.status(400).json({ error: 'Invalid or expired state parameter' });
-      return;
+      throw new AppError('Invalid or expired state parameter', 400);
     }
 
     // Exchange code for tokens
@@ -588,14 +585,14 @@ export const syncJiraData: RequestHandler = async (req: Request, res: Response):
         result = await jiraService.getAuditLogs(organizationId);
         break;
       default:
-        res.status(400).json({ error: 'Invalid sync type' });
-        return;
+        throw new AppError('Invalid sync type', 400);
     }
 
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing Jira data', error);
-    res.status(500).json({ error: error.message || 'Failed to sync Jira data' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to sync Jira data', 500);
   }
 };
 
@@ -606,8 +603,7 @@ export const createJiraIssue: RequestHandler = async (req: Request, res: Respons
     const { projectKey, summary, description, issueType, priority } = req.body;
 
     if (!projectKey || !summary || !description || !issueType) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
+      throw new AppError('Missing required fields', 400);
     }
 
     const result = await jiraService.createIssue(organizationId, projectKey, {
@@ -620,7 +616,8 @@ export const createJiraIssue: RequestHandler = async (req: Request, res: Respons
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error creating Jira issue', error);
-    res.status(500).json({ error: error.message || 'Failed to create issue' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to create issue', 500);
   }
 };
 
@@ -632,7 +629,8 @@ export const disconnectJira: RequestHandler = async (req: Request, res: Response
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting Jira', error);
-    res.status(500).json({ error: 'Failed to disconnect Jira integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to disconnect Jira integration', 500);
   }
 };
 
@@ -647,8 +645,7 @@ export const connectAWS: RequestHandler = async (req: Request, res: Response): P
     const { accessKeyId, secretAccessKey, region, sessionToken } = req.body;
 
     if (!accessKeyId || !secretAccessKey || !region) {
-      res.status(400).json({ error: 'Missing required AWS credentials' });
-      return;
+      throw new AppError('Missing required AWS credentials', 400);
     }
 
     // Validate credentials
@@ -660,8 +657,7 @@ export const connectAWS: RequestHandler = async (req: Request, res: Response): P
     });
 
     if (!validation.valid) {
-      res.status(400).json({ error: validation.error || 'Invalid AWS credentials' });
-      return;
+      throw new AppError(validation.error || 'Invalid AWS credentials', 400);
     }
 
     // Save integration
@@ -674,7 +670,8 @@ export const connectAWS: RequestHandler = async (req: Request, res: Response): P
     res.json({ success: true, accountId: validation.accountId });
   } catch (error: any) {
     logger.error('Error connecting AWS', error);
-    res.status(500).json({ error: error.message || 'Failed to connect AWS' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to connect AWS', 500);
   }
 };
 
@@ -706,14 +703,14 @@ export const syncAWSData: RequestHandler = async (req: Request, res: Response): 
         result = await awsService.runComplianceScan(organizationId);
         break;
       default:
-        res.status(400).json({ error: 'Invalid sync type' });
-        return;
+        throw new AppError('Invalid sync type', 400);
     }
 
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing AWS data', error);
-    res.status(500).json({ error: error.message || 'Failed to sync AWS data' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to sync AWS data', 500);
   }
 };
 
@@ -725,7 +722,8 @@ export const disconnectAWS: RequestHandler = async (req: Request, res: Response)
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting AWS', error);
-    res.status(500).json({ error: 'Failed to disconnect AWS integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to disconnect AWS integration', 500);
   }
 };
 
@@ -755,7 +753,8 @@ export const listIntegrations: RequestHandler = async (req: Request, res: Respon
     res.json({ integrations });
   } catch (error) {
     logger.error('Error listing integrations', error);
-    res.status(500).json({ error: 'Failed to list integrations' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to list integrations', 500);
   }
 };
 
@@ -785,14 +784,14 @@ export const getIntegrationStatus: RequestHandler = async (req: Request, res: Re
     });
 
     if (!integration) {
-      res.status(404).json({ error: 'Integration not found' });
-      return;
+      throw new AppError('Integration not found', 404);
     }
 
     res.json({ integration });
   } catch (error) {
     logger.error('Error getting integration status', error);
-    res.status(500).json({ error: 'Failed to get integration status' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to get integration status', 500);
   }
 };
 
@@ -807,8 +806,7 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
     const { subscriptionId, clientId, clientSecret, tenantId } = req.body;
 
     if (!subscriptionId || !clientId || !clientSecret || !tenantId) {
-      res.status(400).json({ error: 'All Azure credentials are required' });
-      return;
+      throw new AppError('All Azure credentials are required', 400);
     }
 
     // Validate Azure credentials by acquiring an access token from Azure AD
@@ -828,8 +826,7 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
 
       azureAccessToken = tokenResponse.data.access_token;
       if (!azureAccessToken) {
-        res.status(400).json({ error: 'Azure credential validation failed: no access token returned' });
-        return;
+        throw new AppError('Azure credential validation failed: no access token returned', 400);
       }
 
       // Verify subscription access with the management API
@@ -842,19 +839,18 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
       );
 
       if (!subResponse.data || !subResponse.data.subscriptionId) {
-        res.status(400).json({ error: 'Azure credentials valid but subscription not accessible' });
-        return;
+        throw new AppError('Azure credentials valid but subscription not accessible', 400);
       }
 
       logger.info(`Azure credentials validated for tenant ${tenantId}, subscription ${subscriptionId}`);
     } catch (validationError: any) {
+      if (validationError instanceof AppError) throw validationError;
       const errorMsg = validationError?.response?.data?.error_description
         || validationError?.response?.data?.error?.message
         || validationError?.message
         || 'Invalid Azure credentials';
       logger.error('Azure credential validation failed', errorMsg);
-      res.status(400).json({ error: `Azure credential validation failed: ${errorMsg}` });
-      return;
+      throw new AppError(`Azure credential validation failed: ${errorMsg}`, 400);
     }
 
     await prisma.integration.upsert({
@@ -902,7 +898,8 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
     res.json({ message: 'Azure integration connected successfully' });
   } catch (error) {
     logger.error('Error connecting Azure', error);
-    res.status(500).json({ error: 'Failed to connect Azure integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to connect Azure integration', 500);
   }
 };
 
@@ -922,8 +919,7 @@ export const syncAzureData: RequestHandler = async (req: Request, res: Response)
     });
 
     if (!integration || !integration.connected) {
-      res.status(404).json({ error: 'Azure integration not found or not connected' });
-      return;
+      throw new AppError('Azure integration not found or not connected', 404);
     }
 
     let result;
@@ -954,14 +950,14 @@ export const syncAzureData: RequestHandler = async (req: Request, res: Response)
         result = await azureService.runComplianceScan(organizationId);
         break;
       default:
-        res.status(400).json({ error: 'Invalid sync type. Valid types: resources, resource-groups, security-recommendations, security-alerts, policy-compliance, users, subscription, compliance-scan' });
-        return;
+        throw new AppError('Invalid sync type. Valid types: resources, resource-groups, security-recommendations, security-alerts, policy-compliance, users, subscription, compliance-scan', 400);
     }
 
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing Azure data', error);
-    res.status(500).json({ error: error.message || 'Failed to sync Azure data' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to sync Azure data', 500);
   }
 };
 
@@ -997,7 +993,8 @@ export const disconnectAzure: RequestHandler = async (req: Request, res: Respons
     res.json({ message: 'Azure integration disconnected successfully' });
   } catch (error) {
     logger.error('Error disconnecting Azure', error);
-    res.status(500).json({ error: 'Failed to disconnect Azure integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to disconnect Azure integration', 500);
   }
 };
 
@@ -1024,8 +1021,7 @@ export const runAzureFullSync: RequestHandler = async (req: Request, res: Respon
     });
 
     if (!integration || !integration.connected) {
-      res.status(404).json({ error: 'Azure integration not connected' });
-      return;
+      throw new AppError('Azure integration not connected', 404);
     }
 
     const result = await azureSyncService.runFullSync(organizationId, authReq.user!.id);
@@ -1044,7 +1040,8 @@ export const runAzureFullSync: RequestHandler = async (req: Request, res: Respon
     });
   } catch (error: any) {
     logger.error('Error running Azure full sync', error);
-    res.status(500).json({ error: error.message || 'Failed to run Azure sync' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to run Azure sync', 500);
   }
 };
 
@@ -1058,7 +1055,8 @@ export const getAzureSyncStatus: RequestHandler = async (req: Request, res: Resp
     res.json(status);
   } catch (error: any) {
     logger.error('Error getting Azure sync status', error);
-    res.status(500).json({ error: error.message || 'Failed to get sync status' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to get sync status', 500);
   }
 };
 
@@ -1077,7 +1075,8 @@ export const getAzureSyncHistory: RequestHandler = async (req: Request, res: Res
     res.json(history);
   } catch (error: any) {
     logger.error('Error getting Azure sync history', error);
-    res.status(500).json({ error: error.message || 'Failed to get sync history' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to get sync history', 500);
   }
 };
 
@@ -1104,7 +1103,8 @@ export const getAzureSyncedResources: RequestHandler = async (req: Request, res:
     res.json({ resources, total });
   } catch (error: any) {
     logger.error('Error getting Azure synced resources', error);
-    res.status(500).json({ error: error.message || 'Failed to get synced resources' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to get synced resources', 500);
   }
 };
 
@@ -1131,7 +1131,8 @@ export const getAzureSyncedSecurityFindings: RequestHandler = async (req: Reques
     res.json({ findings, total });
   } catch (error: any) {
     logger.error('Error getting Azure synced security findings', error);
-    res.status(500).json({ error: error.message || 'Failed to get synced findings' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to get synced findings', 500);
   }
 };
 
@@ -1158,7 +1159,8 @@ export const getAzureSyncedSecurityAlerts: RequestHandler = async (req: Request,
     res.json({ alerts, total });
   } catch (error: any) {
     logger.error('Error getting Azure synced security alerts', error);
-    res.status(500).json({ error: error.message || 'Failed to get synced alerts' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to get synced alerts', 500);
   }
 };
 
@@ -1185,7 +1187,8 @@ export const getAzureSyncedUsers: RequestHandler = async (req: Request, res: Res
     res.json({ users, total });
   } catch (error: any) {
     logger.error('Error getting Azure synced users', error);
-    res.status(500).json({ error: error.message || 'Failed to get synced users' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to get synced users', 500);
   }
 };
 
@@ -1211,7 +1214,8 @@ export const getAzureSyncedPolicies: RequestHandler = async (req: Request, res: 
     res.json({ policies, total });
   } catch (error: any) {
     logger.error('Error getting Azure synced policies', error);
-    res.status(500).json({ error: error.message || 'Failed to get synced policies' });
+    if (error instanceof AppError) throw error;
+    throw new AppError(error.message || 'Failed to get synced policies', 500);
   }
 };
 
@@ -1227,8 +1231,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
     const { type, ...credentials } = req.body;
 
     if (!type) {
-      res.status(400).json({ error: 'Connection type is required' });
-      return;
+      throw new AppError('Connection type is required', 400);
     }
 
     // Map provider name to display name
@@ -1287,8 +1290,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
     
     if (type === 'api-key') {
       if (!credentials.apiKey) {
-        res.status(400).json({ error: 'API key is required' });
-        return;
+        throw new AppError('API key is required', 400);
       }
 
       // Validate API key for providers that require validation
@@ -1320,11 +1322,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
           );
 
           if (!validation.valid) {
-            res.status(400).json({ 
-              error: validation.error || 'Invalid API key',
-              details: 'Please verify your API key is correct and has the required permissions'
-            });
-            return;
+            throw new AppError(`${validation.error || 'Invalid API key'}. Please verify your API key is correct and has the required permissions`, 400);
           }
 
           logger.info(`API key validated successfully for ${provider}`, {
@@ -1332,6 +1330,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
             userInfo: validation.userInfo,
           });
         } catch (validationError: any) {
+          if (validationError instanceof AppError) throw validationError;
           // Extract error message safely to avoid circular JSON errors
           let errorMessage = 'Failed to validate API key';
           if (validationError?.message) {
@@ -1341,21 +1340,16 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
           } else if (validationError?.response?.statusText) {
             errorMessage = `HTTP ${validationError.response.status}: ${validationError.response.statusText}`;
           }
-          
+
           logger.error(`API key validation failed for ${provider}:`, { message: errorMessage, status: validationError?.response?.status });
-          res.status(400).json({ 
-            error: errorMessage,
-            details: 'Please check your API key and try again'
-          });
-          return;
+          throw new AppError(`${errorMessage}. Please check your API key and try again`, 400);
         }
       }
 
       config = { apiKey: credentials.apiKey, baseUrl: credentials.baseUrl };
     } else if (type === 'api-key-secret') {
       if (!credentials.apiKey || !credentials.apiSecret) {
-        res.status(400).json({ error: 'API key and secret are required' });
-        return;
+        throw new AppError('API key and secret are required', 400);
       }
 
       // Validate API key and secret for providers that require validation
@@ -1374,11 +1368,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
             );
 
             if (!validation.valid) {
-              res.status(400).json({ 
-                error: validation.error || 'Invalid Twilio credentials',
-                details: 'Please verify your Account SID and Auth Token are correct'
-              });
-              return;
+              throw new AppError(`${validation.error || 'Invalid Twilio credentials'}. Please verify your Account SID and Auth Token are correct`, 400);
             }
           } else {
             // SendGrid uses API key for validation
@@ -1389,11 +1379,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
             );
 
             if (!validation.valid) {
-              res.status(400).json({ 
-                error: validation.error || 'Invalid API key',
-                details: 'Please verify your API key is correct and has the required permissions'
-              });
-              return;
+              throw new AppError(`${validation.error || 'Invalid API key'}. Please verify your API key is correct and has the required permissions`, 400);
             }
           }
 
@@ -1401,12 +1387,9 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
             organizationId,
           });
         } catch (validationError: any) {
+          if (validationError instanceof AppError) throw validationError;
           logger.error(`API key validation failed for ${provider}:`, validationError);
-          res.status(400).json({ 
-            error: validationError.message || 'Failed to validate credentials',
-            details: 'Please check your credentials and try again'
-          });
-          return;
+          throw new AppError(`${validationError.message || 'Failed to validate credentials'}. Please check your credentials and try again`, 400);
         }
       }
 
@@ -1417,8 +1400,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
       };
     } else if (type === 'username-password') {
       if (!credentials.username || !credentials.password) {
-        res.status(400).json({ error: 'Username and password are required' });
-        return;
+        throw new AppError('Username and password are required', 400);
       }
       config = { 
         username: credentials.username,
@@ -1428,8 +1410,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
       };
     } else if (type === 'pat') {
       if (!credentials.token) {
-        res.status(400).json({ error: 'Personal access token is required' });
-        return;
+        throw new AppError('Personal access token is required', 400);
       }
 
       // Validate PAT token before saving
@@ -1455,11 +1436,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
         );
 
         if (!validation.valid) {
-          res.status(400).json({ 
-            error: validation.error || 'Invalid personal access token',
-            details: 'Please verify your token is correct and has the required permissions'
-          });
-          return;
+          throw new AppError(`${validation.error || 'Invalid personal access token'}. Please verify your token is correct and has the required permissions`, 400);
         }
 
         logger.info(`PAT validated successfully for ${provider}`, {
@@ -1467,6 +1444,7 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
           userInfo: validation.userInfo,
         });
       } catch (validationError: any) {
+        if (validationError instanceof AppError) throw validationError;
         // Extract error message safely to avoid circular JSON errors
         let errorMessage = 'Failed to validate token';
         if (validationError?.message) {
@@ -1476,25 +1454,19 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
         } else if (validationError?.response?.statusText) {
           errorMessage = `HTTP ${validationError.response.status}: ${validationError.response.statusText}`;
         }
-        
+
         logger.error(`PAT validation failed for ${provider}:`, { message: errorMessage, status: validationError?.response?.status });
-        res.status(400).json({ 
-          error: errorMessage,
-          details: 'Please check your token and try again'
-        });
-        return;
+        throw new AppError(`${errorMessage}. Please check your token and try again`, 400);
       }
 
       config = { token: credentials.token, baseUrl: credentials.baseUrl };
     } else if (type === 'service-account') {
       if (!credentials.serviceAccountJson) {
-        res.status(400).json({ error: 'Service account JSON is required' });
-        return;
+        throw new AppError('Service account JSON is required', 400);
       }
       config = { serviceAccountJson: credentials.serviceAccountJson };
     } else {
-      res.status(400).json({ error: `Unsupported connection type: ${type}` });
-      return;
+      throw new AppError(`Unsupported connection type: ${type}`, 400);
     }
 
     // Determine category
@@ -1586,7 +1558,8 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
     res.json({ message: `${displayName} integration connected successfully` });
   } catch (error) {
     logger.error('Error connecting provider', error);
-    res.status(500).json({ error: 'Failed to connect integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to connect integration', 500);
   }
 };
 
@@ -1600,20 +1573,19 @@ export const authorizeProvider: RequestHandler = async (req: Request, res: Respo
     
     if (supportedOAuthProviders.includes(provider)) {
       // This should not be reached if specific routes are set up correctly
-      res.status(404).json({ error: `Authorization endpoint not found for ${provider}` });
-      return;
+      throw new AppError(`Authorization endpoint not found for ${provider}`, 404);
     }
-    
+
     // For providers that don't support OAuth, they should use PAT/API key connections
     // Redirect to connect endpoint instead
-    res.status(400).json({ 
-      error: `${provider} does not support OAuth. Please use API key or PAT connection instead.`,
-      useConnect: true,
-      supportedAuthTypes: ['pat', 'api-key', 'api-key-secret']
-    });
+    throw new AppError(
+      `${provider} does not support OAuth. Please use API key or PAT connection instead. Supported auth types: pat, api-key, api-key-secret`,
+      400
+    );
   } catch (error) {
     logger.error('Error in generic authorize', error);
-    res.status(500).json({ error: 'Failed to initiate authorization' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to initiate authorization', 500);
   }
 };
 
@@ -1635,8 +1607,7 @@ export const syncProvider: RequestHandler = async (req: Request, res: Response):
     });
 
     if (!integration) {
-      res.status(404).json({ error: 'Integration not found or not connected' });
-      return;
+      throw new AppError('Integration not found or not connected', 404);
     }
 
     // ── Real API sync via integration registry ──────────────────────────
@@ -1724,7 +1695,8 @@ export const syncProvider: RequestHandler = async (req: Request, res: Response):
     logger.info(`Integration synced: ${provider} for organization ${organizationId}`);
   } catch (error) {
     logger.error('Error syncing provider', error);
-    res.status(500).json({ error: 'Failed to sync integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to sync integration', 500);
   }
 };
 
@@ -1744,8 +1716,7 @@ export const testProviderConnection: RequestHandler = async (req: Request, res: 
     });
 
     if (!integration) {
-      res.status(404).json({ error: 'Integration not found or not connected' });
-      return;
+      throw new AppError('Integration not found or not connected', 404);
     }
 
     const integrationRegistry = (await import('../services/integrations/providers/integrationRegistry')).default;
@@ -1786,7 +1757,8 @@ export const testProviderConnection: RequestHandler = async (req: Request, res: 
     res.json(result);
   } catch (error) {
     logger.error('Error testing provider connection', error);
-    res.status(500).json({ error: 'Failed to test provider connection' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to test provider connection', 500);
   }
 };
 
@@ -1802,8 +1774,7 @@ export const collectProviderEvidence: RequestHandler = async (req: Request, res:
     });
 
     if (!integration) {
-      res.status(404).json({ error: 'Integration not found or not connected' });
-      return;
+      throw new AppError('Integration not found or not connected', 404);
     }
 
     const integrationRegistry = (await import('../services/integrations/providers/integrationRegistry')).default;
@@ -1850,7 +1821,8 @@ export const collectProviderEvidence: RequestHandler = async (req: Request, res:
     });
   } catch (error) {
     logger.error('Error collecting provider evidence', error);
-    res.status(500).json({ error: 'Failed to collect evidence' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to collect evidence', 500);
   }
 };
 
@@ -1925,7 +1897,8 @@ export const testAllConnections: RequestHandler = async (req: Request, res: Resp
     });
   } catch (error) {
     logger.error('Error bulk testing connections', error);
-    res.status(500).json({ error: 'Failed to test connections' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to test connections', 500);
   }
 };
 
@@ -1952,7 +1925,8 @@ export const getRegistryStats: RequestHandler = async (req: Request, res: Respon
     });
   } catch (error) {
     logger.error('Error getting registry stats', error);
-    res.status(500).json({ error: 'Failed to get registry stats' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to get registry stats', 500);
   }
 };
 
@@ -1972,8 +1946,7 @@ export const disconnectProvider: RequestHandler = async (req: Request, res: Resp
     });
 
     if (!integration) {
-      res.status(404).json({ error: 'Integration not found' });
-      return;
+      throw new AppError('Integration not found', 404);
     }
 
     // Disconnect the integration
@@ -2002,6 +1975,7 @@ export const disconnectProvider: RequestHandler = async (req: Request, res: Resp
     logger.info(`Integration disconnected: ${provider} for organization ${organizationId}`);
   } catch (error) {
     logger.error('Error disconnecting provider', error);
-    res.status(500).json({ error: 'Failed to disconnect integration' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to disconnect integration', 500);
   }
 };

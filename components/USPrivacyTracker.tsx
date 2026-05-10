@@ -323,27 +323,35 @@ const formatDate = (d: string): string => new Date(d).toLocaleDateString('en-US'
 export const USPrivacyTracker: React.FC = () => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  // Server is the source of truth. The DEFAULT_STATE_LAWS catalog is kept as a starting
+  // template for new orgs; gaps and tasks load from the server first and only fall back
+  // to fixtures when the API is unreachable.
   const [laws, setLaws] = useState<StatePrivacyLaw[]>(DEFAULT_STATE_LAWS);
-  const [gaps, setGaps] = useState<ComplianceGap[]>(DEFAULT_GAPS);
-  const [tasks, setTasks] = useState<ComplianceTask[]>(DEFAULT_TASKS);
+  const [gaps, setGaps] = useState<ComplianceGap[]>([]);
+  const [tasks, setTasks] = useState<ComplianceTask[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<LawStatus | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
-  // Load data from backend, fall back to defaults for new orgs
+  // Load data from backend; fall back to fixtures when the server is unreachable
   useEffect(() => {
     (async () => {
       try {
         const saved = await api.regulationData.getAll('us-privacy');
         if (saved && typeof saved === 'object') {
-          if (saved.laws) setLaws(saved.laws);
-          if (saved.gaps) setGaps(saved.gaps);
-          if (saved.tasks) setTasks(saved.tasks);
+          if (Array.isArray(saved.laws) && saved.laws.length > 0) setLaws(saved.laws);
+          setGaps(Array.isArray(saved.gaps) ? saved.gaps : []);
+          setTasks(Array.isArray(saved.tasks) ? saved.tasks : []);
         }
+        setServerReachable(true);
       } catch (err: any) {
-        console.error('Failed to load US Privacy data:', err);
-        setLoadError('Using default template data.');
+        setServerReachable(false);
+        setLoadError('Unable to connect to server. Showing reference template data.');
+        setLaws(DEFAULT_STATE_LAWS);
+        setGaps(DEFAULT_GAPS);
+        setTasks(DEFAULT_TASKS);
       } finally {
         setIsLoading(false);
       }
@@ -352,20 +360,18 @@ export const USPrivacyTracker: React.FC = () => {
 
   // Auto-save when data changes (debounced)
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !serverReachable) return;
     const timer = setTimeout(() => {
-      api.regulationData.save('us-privacy', 'laws', laws).catch((err: unknown) => {
-        setLoadError('Failed to save changes. Please retry.');
-      });
-      api.regulationData.save('us-privacy', 'gaps', gaps).catch((err: unknown) => {
-        setLoadError('Failed to save changes. Please retry.');
-      });
-      api.regulationData.save('us-privacy', 'tasks', tasks).catch((err: unknown) => {
+      Promise.all([
+        api.regulationData.save('us-privacy', 'laws', laws),
+        api.regulationData.save('us-privacy', 'gaps', gaps),
+        api.regulationData.save('us-privacy', 'tasks', tasks),
+      ]).catch(() => {
         setLoadError('Failed to save changes. Please retry.');
       });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [laws, gaps, tasks, isLoading]);
+  }, [laws, gaps, tasks, isLoading, serverReachable]);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [selectedLaw, setSelectedLaw] = useState<StatePrivacyLaw | null>(null);
@@ -777,6 +783,14 @@ export const USPrivacyTracker: React.FC = () => {
           ))}
         </nav>
       </div>
+
+      {loadError && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+          <span className="text-sm text-amber-700 flex-1">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="text-amber-500 hover:text-amber-700"><X className="w-3 h-3" /></button>
+        </div>
+      )}
 
       {activeTab === 'overview' && renderOverview()}
       {activeTab === 'map' && renderMap()}

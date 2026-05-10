@@ -315,14 +315,15 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // --- Data state (initialised from DEMO constants as fallback) ---
-  const [products, setProducts] = useState<Product[]>(DEMO_PRODUCTS);
+  // --- Data state (server-first; DEMO_* used only when server is unreachable) ---
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product>(DEMO_PRODUCTS[0]);
-  const [stages, setStages] = useState<LifecycleStageData[]>(DEMO_STAGES);
-  const [impactCategories, setImpactCategories] = useState<ImpactCategoryData[]>(DEMO_IMPACT_CATEGORIES);
-  const [improvements, setImprovements] = useState<Improvement[]>(DEMO_IMPROVEMENTS);
-  const [reports, setReports] = useState<LCAReport[]>(DEMO_REPORTS);
+  const [stages, setStages] = useState<LifecycleStageData[]>([]);
+  const [impactCategories, setImpactCategories] = useState<ImpactCategoryData[]>([]);
+  const [improvements, setImprovements] = useState<Improvement[]>([]);
+  const [reports, setReports] = useState<LCAReport[]>([]);
   const [circularMetrics, setCircularMetrics] = useState<CircularMetrics>(DEMO_CIRCULAR);
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
   // --- Load data from backend (falls back to DEMO data on error) ---
   const loadData = useCallback(async (opts?: { silent?: boolean }) => {
@@ -331,15 +332,21 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
 
     try {
       const data = await api.modules.lifecycle.listAssessments();
+      setServerReachable(true);
+
       if (data && typeof data === 'object') {
         // The API may return a flat list or a structured object — normalise both.
         const d: any = Array.isArray(data) ? (data as any)[0] ?? {} : data;
 
-        if (Array.isArray(d.products) && d.products.length > 0) {
+        if (Array.isArray(d.products)) {
           setProducts(d.products);
-          setSelectedProduct((prev: Product) => d.products.find((p: Product) => p.id === prev.id) || d.products[0]);
+          if (d.products.length > 0) {
+            setSelectedProduct((prev: Product) =>
+              d.products.find((p: Product) => p.id === prev.id) || d.products[0]
+            );
+          }
         }
-        if (Array.isArray(d.stages) && d.stages.length > 0) {
+        if (Array.isArray(d.stages)) {
           // Re-attach React icons (API cannot serialise JSX)
           const iconMap: Record<LifecycleStage, React.ReactNode> = {
             raw_materials: <Mountain className="w-5 h-5" />,
@@ -350,7 +357,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
           };
           setStages(d.stages.map((s: any) => ({ ...s, icon: iconMap[s.stage as LifecycleStage] ?? s.icon })));
         }
-        if (Array.isArray(d.impactCategories) && d.impactCategories.length > 0) {
+        if (Array.isArray(d.impactCategories)) {
           const catIconMap: Record<ImpactCategory, React.ReactNode> = {
             climate_change: <Thermometer className="w-5 h-5" />,
             ozone_depletion: <Sun className="w-5 h-5" />,
@@ -360,13 +367,22 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
           };
           setImpactCategories(d.impactCategories.map((c: any) => ({ ...c, icon: catIconMap[c.category as ImpactCategory] ?? c.icon })));
         }
-        if (Array.isArray(d.improvements) && d.improvements.length > 0) setImprovements(d.improvements);
-        if (Array.isArray(d.reports) && d.reports.length > 0) setReports(d.reports);
+        if (Array.isArray(d.improvements)) setImprovements(d.improvements);
+        if (Array.isArray(d.reports)) setReports(d.reports);
         if (d.circularMetrics && typeof d.circularMetrics === 'object') setCircularMetrics(d.circularMetrics);
       }
       setLoadError(null);
     } catch (err: any) {
-      setLoadError('Unable to connect to server. Showing demo data.');
+      // Server unreachable — populate from DEMO_* so the UI is usable.
+      setServerReachable(false);
+      setProducts(DEMO_PRODUCTS);
+      setSelectedProduct(DEMO_PRODUCTS[0]);
+      setStages(DEMO_STAGES);
+      setImpactCategories(DEMO_IMPACT_CATEGORIES);
+      setImprovements(DEMO_IMPROVEMENTS);
+      setReports(DEMO_REPORTS);
+      setCircularMetrics(DEMO_CIRCULAR);
+      setLoadError('Unable to connect to server. Showing local data.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -392,17 +408,20 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
 
   // --- API action helpers ---
   const handleUpdateImprovement = useCallback(async (id: string, updates: Partial<Improvement>) => {
+    // Optimistic local update
+    const previous = improvements;
+    setImprovements(prev => prev.map(imp => imp.id === id ? { ...imp, ...updates } : imp));
     setIsSaving(true);
     try {
       await api.modules.lifecycle.updateAssessment(id, { type: 'improvement', ...updates });
-      // Optimistically update local state
-      setImprovements(prev => prev.map(imp => imp.id === id ? { ...imp, ...updates } : imp));
     } catch {
-      // Silently fall back — state remains as-is
+      // Revert and surface the error
+      setImprovements(previous);
+      setLoadError('Failed to update improvement on server. Change reverted.');
     } finally {
       setIsSaving(false);
     }
-  }, []);
+  }, [improvements]);
 
   const handleCreateAssessment = useCallback(async (payload: any) => {
     setIsSaving(true);
@@ -411,6 +430,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
       if (created) await loadData({ silent: true });
       return created;
     } catch {
+      setLoadError('Failed to create assessment on server.');
       return null;
     } finally {
       setIsSaving(false);
@@ -423,7 +443,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
       await api.modules.lifecycle.deleteAssessment(id);
       await loadData({ silent: true });
     } catch {
-      // keep current state on failure
+      setLoadError('Failed to delete assessment on server.');
     } finally {
       setIsSaving(false);
     }

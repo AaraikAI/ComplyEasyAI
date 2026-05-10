@@ -1,0 +1,198 @@
+// ============================================================================
+// SOC 2 Workflow Module — Prisma Models
+// ----------------------------------------------------------------------------
+// Paste the six models below into server/prisma/schema.prisma at the bottom of
+// the file (alongside the existing ISO 27001 / HIPAA workflow models). After
+// pasting, also add the six back-relations to the Organization model (snippet
+// at the bottom of this file) and run `npx prisma generate`.
+// ============================================================================
+
+// ============================================================================
+// SOC 2 Workflow Module
+// ----------------------------------------------------------------------------
+// Supports both Type I (point-in-time design effectiveness) and Type II
+// (operating effectiveness over a period) audit lifecycles per the AICPA
+// Trust Services Criteria (TSC 2017 with 2022 points of focus). Common
+// Criteria (CC1-CC9) are required; Availability, Processing Integrity,
+// Confidentiality, and Privacy categories are optional and selected per
+// engagement via `trustServicesIncluded`.
+// ============================================================================
+
+model SOC2Engagement {
+  id                       String                       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId           String
+  engagementYear           Int
+  engagementType           String                       // TypeI, TypeII
+  trustServicesIncluded    Json                         // array of: Security, Availability, ProcessingIntegrity, Confidentiality, Privacy
+  auditPeriodStart         DateTime?                    // Type II: start of operating-effectiveness period
+  auditPeriodEnd           DateTime?                    // Type II: end of operating-effectiveness period
+  asOfDate                 DateTime?                    // Type I: point-in-time as-of date
+  cpaFirm                  String?
+  leadAuditor              String?
+  status                   String                       @default("Planning")  // Planning, Fieldwork, Reporting, Issued
+  reportType               String?                      // Unqualified, Qualified, Adverse, DisclaimerOfOpinion
+  reportIssuedAt           DateTime?
+  reportUrl                String?
+  scopeBoundaries          Json?                        // structured: included / excluded systems
+  subserviceOrganizations  Json?                        // array of carved-out third parties (sub-service orgs)
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @default(now()) @updatedAt
+  organization             Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  controls                 SOC2Control[]
+  exceptions               SOC2Exception[]
+  cuecs                    SOC2CUEC[]
+  managementAssertions     SOC2ManagementAssertion[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([engagementYear])
+  @@index([engagementType])
+}
+
+model SOC2Control {
+  id                    String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  engagementId          String
+  criteriaCategory      String                // Security, Availability, ProcessingIntegrity, Confidentiality, Privacy
+  criteriaRef           String                // CC1.1, A1.1, PI1.1, C1.1, P1.1, etc.
+  criteriaTitle         String
+  controlActivity       String                // the actual control description
+  controlObjective      String?
+  controlOwner          String?
+  controlFrequency      String                @default("Continuous")  // Continuous, Daily, Weekly, Monthly, Quarterly, Annually, AdHoc
+  controlType           String                @default("Preventive")  // Preventive, Detective, Corrective
+  automationLevel       String                @default("Manual")      // Manual, Hybrid, Automated
+  riskRating            String                @default("Medium")      // Low, Medium, High
+  implementationStatus  String                @default("NotImplemented") // NotImplemented, Designed, Implemented, Operating
+  lastTestedAt          DateTime?
+  nextTestDate          DateTime?
+  designStatus          String                @default("NotTested")   // Effective, Ineffective, NotTested
+  operatingStatus       String                @default("NotTested")   // Effective, Ineffective, NotTested, InsufficientEvidence
+  evidenceRefs          Json?                 // array of evidence ids / file urls
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @default(now()) @updatedAt
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  engagement            SOC2Engagement        @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  evidenceSamples       SOC2EvidenceSample[]
+  exceptions            SOC2Exception[]
+
+  @@unique([engagementId, criteriaRef])
+  @@index([organizationId])
+  @@index([engagementId])
+  @@index([criteriaCategory])
+  @@index([implementationStatus])
+  @@index([nextTestDate])
+}
+
+model SOC2EvidenceSample {
+  id                    String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  controlId             String
+  samplingPeriodStart   DateTime
+  samplingPeriodEnd     DateTime
+  populationSize        Int
+  sampleSize            Int             // computed via AICPA sampling guidelines
+  samplingMethod        String          @default("Random")  // Random, Haphazard, Statistical, Judgmental
+  evidenceType          String          // LogReview, AccessReview, ChangeRecord, IncidentTicket, PolicyAck, TrainingRecord, BackupTest, VulnScan, PenTest
+  evidenceUrl           String?
+  evidenceSha256        String?
+  exceptionsFound       Int             @default(0)
+  collectedBy           String?
+  collectedAt           DateTime?
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  status                String          @default("Pending")  // Pending, Collected, Reviewed, Approved, Rejected
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @default(now()) @updatedAt
+  organization          Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  control               SOC2Control     @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  exceptions            SOC2Exception[]
+
+  @@index([organizationId])
+  @@index([controlId])
+  @@index([status])
+  @@index([samplingPeriodEnd])
+}
+
+model SOC2Exception {
+  id                       String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId           String
+  engagementId             String
+  controlId                String
+  sampleId                 String?
+  exceptionType            String                // DesignDeficiency, OperatingDeficiency, SignificantDeficiency, MaterialWeakness
+  description              String
+  identifiedAt             DateTime              @default(now())
+  identifiedBy             String
+  populationImpact         String?
+  rootCause                String?
+  remediation              String?
+  remediationOwner         String?
+  remediationDueDate       DateTime?
+  remediationCompletedAt   DateTime?
+  managementResponse       String?
+  status                   String                @default("Open")  // Open, Remediated, Accepted, Closed
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @default(now()) @updatedAt
+  organization             Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  engagement               SOC2Engagement        @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  control                  SOC2Control           @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  sample                   SOC2EvidenceSample?   @relation(fields: [sampleId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([engagementId])
+  @@index([controlId])
+  @@index([status])
+  @@index([exceptionType])
+}
+
+model SOC2CUEC {
+  id                  String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId      String
+  engagementId        String
+  criteriaCategory    String          // which TSC category this CUEC supports
+  controlDescription  String          // what the user entity (customer) must do
+  userResponsibility  String          // explicit description of the customer's responsibility
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @default(now()) @updatedAt
+  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  engagement          SOC2Engagement  @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([engagementId])
+  @@index([criteriaCategory])
+}
+
+model SOC2ManagementAssertion {
+  id                    String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  engagementId          String
+  assertionType         String          // DescriptionOfSystem, DesignOfControls, OperatingEffectiveness
+  assertionText         String
+  signedByOfficerName   String
+  signedByOfficerTitle  String
+  signedAt              DateTime
+  documentUrl           String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @default(now()) @updatedAt
+  organization          Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  engagement            SOC2Engagement  @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([engagementId])
+  @@index([assertionType])
+}
+
+// ============================================================================
+// Organization back-relations
+// ----------------------------------------------------------------------------
+// Add the following six lines to the existing `model Organization { ... }`
+// block (typically grouped with the other workflow back-relations):
+// ============================================================================
+
+  soc2Engagements             SOC2Engagement[]
+  soc2Controls                SOC2Control[]
+  soc2EvidenceSamples         SOC2EvidenceSample[]
+  soc2Exceptions              SOC2Exception[]
+  soc2Cuecs                   SOC2CUEC[]
+  soc2ManagementAssertions    SOC2ManagementAssertion[]

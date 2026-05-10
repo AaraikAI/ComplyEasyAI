@@ -1,0 +1,237 @@
+// ============================================================================
+// PASTE-READY Prisma Models for PCI-DSS v4.0 Workflow Module
+//
+// SECTION 1 — Append these 7 model definitions to schema.prisma (e.g. after
+//             the HIPAA module, around line 6738).
+//
+// SECTION 2 — Add the listed back-relations into the existing Organization
+//             model in schema.prisma so the relation graph compiles.
+// ============================================================================
+
+
+// ┌──────────────────────────────────────────────────────────────────────┐
+// │ SECTION 1 — Model definitions                                         │
+// └──────────────────────────────────────────────────────────────────────┘
+
+// ============================================================================
+// PCI-DSS v4.0 Workflow Module
+// ----------------------------------------------------------------------------
+// Cardholder Data Environment (CDE) inventory + scoping, per-requirement
+// implementation tracking, evidence collection (PCI-scoped), QSA findings,
+// Compensating Control Worksheets (Appendix B), and ROC/AOC artifacts.
+// ============================================================================
+
+model PCIScope {
+  id                      String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId          String
+  name                    String              // e.g. "Acme E-Commerce CDE 2026"
+  scopeStatement          String              // narrative scope boundary statement
+  saqType                 String              // A, A-EP, B, B-IP, C-VT, C, D-Merchant, D-SP, P2PE
+  segmentationDescription String?             // network segmentation evidence narrative
+  cdeBoundaries           Json?               // structured CDE boundary description
+  connectedSystemsCount   Int                 @default(0)
+  networkDiagramRef       String?             // path / artifact id for the network diagram
+  dataFlowDiagramRef      String?             // path / artifact id for the cardholder data-flow diagram
+  status                  String              @default("Draft") // Draft, Active, UnderReview, Archived
+  assessmentYear          Int
+  qsaCompany              String?
+  qsaContactName          String?
+  qsaContactEmail         String?
+  leadAssessor            String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @default(now()) @updatedAt
+  organization            Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requirements            PCIRequirement[]
+  evidence                PCIEvidence[]
+  qsaFindings             QSAFinding[]
+  rocs                    PCIROC[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([saqType])
+  @@index([assessmentYear])
+}
+
+model PCIRequirement {
+  id                          String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId              String
+  scopeId                     String
+  requirementRef              String              // e.g. "1.2.1", "8.3.6"
+  title                       String
+  description                 String
+  controlOwner                String?
+  implementationStatus        String              @default("NotImplemented") // NotImplemented, PartiallyImplemented, Implemented, InPlace, InPlaceWithCCW, NotApplicable
+  applicability               String              @default("Applicable")     // Applicable, NotApplicable
+  notApplicableJustification  String?
+  compensatingControlRef      String?             // optional pointer to a CCW id or external ref
+  lastTestedAt                DateTime?
+  testingMethod               String?             // Observation, Documentation, Interview, SystemConfig
+  testingNotes                String?
+  evidenceRefs                Json?               // array of evidence ids / file urls
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @default(now()) @updatedAt
+  organization                Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scope                       PCIScope            @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  evidence                    PCIEvidence[]
+  qsaFindings                 QSAFinding[]
+  ccws                        CompensatingControlWorksheet[]
+
+  @@unique([scopeId, requirementRef])
+  @@index([organizationId])
+  @@index([scopeId])
+  @@index([implementationStatus])
+  @@index([applicability])
+}
+
+model PCIEvidence {
+  id              String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  scopeId         String
+  requirementId   String
+  evidenceType    String           // ConfigScreenshot, LogSample, PolicyDoc, ScanReport, InterviewRecord, PenTestReport, ASVScan
+  title           String
+  description     String?
+  fileUrl         String?
+  fileSha256      String?
+  collectedBy     String
+  collectedAt     DateTime         @default(now())
+  validUntil      DateTime?
+  retentionUntil  DateTime?
+  status          String           @default("Collected") // Pending, Collected, Reviewed, Approved, Rejected
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  qsaApproval     String           @default("Pending")   // Pending, Approved, RequiresMore
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now()) @updatedAt
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scope           PCIScope         @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  requirement     PCIRequirement   @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([scopeId])
+  @@index([requirementId])
+  @@index([status])
+  @@index([evidenceType])
+  @@index([qsaApproval])
+}
+
+model QSAFinding {
+  id                      String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId          String
+  scopeId                 String
+  requirementId           String?
+  findingType             String           // Gap, Observation, CompensatingControl, Recommendation
+  severity                String           // Critical, High, Medium, Low
+  title                   String
+  description             String
+  qsaName                 String
+  identifiedAt            DateTime         @default(now())
+  status                  String           @default("Open") // Open, InRemediation, AwaitingValidation, Closed, Accepted
+  remediationOwner        String?
+  remediationDueDate      DateTime?
+  remediationCompletedAt  DateTime?
+  remediationEvidence     Json?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @default(now()) @updatedAt
+  organization            Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scope                   PCIScope         @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  requirement             PCIRequirement?  @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([scopeId])
+  @@index([requirementId])
+  @@index([severity])
+  @@index([status])
+  @@index([remediationDueDate])
+}
+
+model CompensatingControlWorksheet {
+  id                              String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId                  String
+  requirementId                   String
+  originalRequirement             String           // text of the original PCI requirement
+  constraint                      String           // why the original requirement cannot be met
+  objective                       String           // objective the original requirement accomplishes
+  identifiedRisk                  String           // risk introduced by not meeting the original requirement
+  definitionOfCompensatingControl String           // detailed definition of the compensating control
+  validationOfControl             String           // how the compensating control will be validated
+  maintenance                     String           // ongoing maintenance / monitoring obligations
+  status                          String           @default("Draft") // Draft, Approved, Rejected
+  approvedBy                      String?
+  approvedAt                      DateTime?
+  createdAt                       DateTime         @default(now())
+  updatedAt                       DateTime         @default(now()) @updatedAt
+  organization                    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requirement                     PCIRequirement   @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([requirementId])
+  @@index([status])
+}
+
+model PCIROC {
+  id                   String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId       String
+  scopeId              String
+  version              String         // e.g. "v1", "2026-Q2"
+  status               String         @default("Draft") // Draft, InReview, Final
+  coveragePeriodStart  DateTime
+  coveragePeriodEnd    DateTime
+  qsaCompany           String
+  leadAssessor         String
+  executiveSummary     String?
+  scopeDescription     String?
+  networkSegmentation  String?
+  samplingMethodology  String?
+  findingsCount        Int            @default(0)
+  finalizedAt          DateTime?
+  documentUrl          String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @default(now()) @updatedAt
+  organization         Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scope                PCIScope       @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  aocs                 PCIAOC[]
+
+  @@index([organizationId])
+  @@index([scopeId])
+  @@index([status])
+}
+
+model PCIAOC {
+  id                      String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId          String
+  rocId                   String
+  attestationType         String         // Compliant, NonCompliant, CompliantWithLegalException
+  merchantLevel           Int?           // 1, 2, 3, 4 (mutually exclusive with serviceProviderLevel)
+  serviceProviderLevel    Int?           // 1, 2
+  assessmentEndDate       DateTime
+  signedByMerchantOfficer String
+  signedByQSA             String
+  documentUrl             String?
+  validUntil              DateTime?
+  createdAt               DateTime       @default(now())
+  organization            Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  roc                     PCIROC         @relation(fields: [rocId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([rocId])
+  @@index([attestationType])
+  @@index([assessmentEndDate])
+}
+
+
+// ┌──────────────────────────────────────────────────────────────────────┐
+// │ SECTION 2 — Organization back-relations                              │
+// │                                                                      │
+// │ Add the following 7 lines inside the existing Organization model,    │
+// │ next to the other compliance back-relations (e.g. iso27001Assessments│
+// │ phiRecords, etc.):                                                   │
+// └──────────────────────────────────────────────────────────────────────┘
+
+  pciScopes               PCIScope[]
+  pciRequirements         PCIRequirement[]
+  pciEvidence             PCIEvidence[]
+  qsaFindings             QSAFinding[]
+  ccws                    CompensatingControlWorksheet[]
+  pciRocs                 PCIROC[]
+  pciAocs                 PCIAOC[]

@@ -401,15 +401,17 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
           setBreachHistory(incidents.map((inc: any) => ({
             id: inc.id,
             title: inc.title || inc.description || 'Untitled Incident',
-            type: inc.type || 'data_breach',
-            severity: inc.severity || 'Medium',
-            discoveryDate: inc.discoveredAt || inc.createdAt || '',
-            status: inc.status || 'active',
-            recordsAffected: inc.recordsAffected || 0,
-            jurisdictions: inc.jurisdictions || [],
-            notificationsSent: inc.notificationsSent || 0,
+            type: inc.breachType || inc.type || 'data_breach',
+            severity: (inc.severity ? (inc.severity.charAt(0).toUpperCase() + inc.severity.slice(1).toLowerCase()) : 'Medium') as BreachRecord['severity'],
+            discoveryDate: (inc.discoveryDate || inc.discoveredAt || inc.createdAt || '').toString().slice(0, 10),
+            status: (inc.status || 'active') as BreachRecord['status'],
+            recordsAffected: inc.affectedRecords ?? inc.recordsAffected ?? 0,
+            jurisdictions: Array.isArray(inc.affectedJurisdictions)
+              ? inc.affectedJurisdictions
+              : Array.isArray(inc.jurisdictions) ? inc.jurisdictions : [],
+            notificationsSent: Array.isArray(inc.notifications) ? inc.notifications.filter((n: any) => n.sentAt || n.status === 'sent').length : (inc.notificationsSent || 0),
             lessonsLearned: inc.lessonsLearned || '',
-            riskScore: inc.riskScore || 0,
+            riskScore: inc.impactAssessment?.riskScore ?? inc.riskScore ?? 0,
           })));
         }
         if (apiTemplates && apiTemplates.length > 0) {
@@ -512,16 +514,66 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
     }, 2000);
   }, [detectedJurisdictions, classification, impact, templates]);
 
-  const addSubmission = useCallback((jurisdiction: string) => {
+  // Persists a notification submission against the active breach incident. If no
+  // breach record exists yet (the wizard wasn't opened on an existing incident),
+  // an incident row is created first so the notification has a parent FK.
+  const [activeBreachId, setActiveBreachId] = useState<string | null>(null);
+  const ensureBreachIncident = useCallback(async (): Promise<string | null> => {
+    if (activeBreachId) return activeBreachId;
+    try {
+      const created = await api.modules.breach.createIncident({
+        title: classification.description?.slice(0, 80) || `Breach ${classification.discoveryDate}`,
+        breachType: classification.type,
+        severity: (impact.recordsAffected > 10000 ? 'critical' : impact.recordsAffected > 1000 ? 'high' : 'medium'),
+        status: 'investigating',
+        discoveryDate: new Date(classification.discoveryDate + 'T00:00:00').toISOString(),
+        description: classification.description,
+        affectedRecords: impact.recordsAffected,
+        affectedDataTypes: impact.dataTypesAffected,
+        affectedJurisdictions: impact.geographicScope,
+        impactAssessment: { riskScore: riskResult.score, factors: riskResult.factors },
+      });
+      if (created?.id) {
+        setActiveBreachId(created.id);
+        return created.id;
+      }
+    } catch {
+      setLoadError('Failed to persist breach incident; submission saved locally.');
+    }
+    return null;
+  }, [activeBreachId, classification, impact, riskResult]);
+
+  const addSubmission = useCallback(async (jurisdiction: string) => {
+    const authority = detectedJurisdictions.find(j => j.jurisdiction === jurisdiction.split(' - ')[0])?.authority || 'Unknown';
+    const refNumber = `REF-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
     const newSub: SubmissionRecord = {
       id: `SUB-${Date.now()}`, jurisdiction,
-      authority: detectedJurisdictions.find(j => j.jurisdiction === jurisdiction.split(' - ')[0])?.authority || 'Unknown',
+      authority,
       sentDate: new Date().toISOString(), method: 'Online Portal',
-      status: 'sent', referenceNumber: `REF-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
+      status: 'sent', referenceNumber: refNumber,
       responseDate: null, responseNotes: '',
     };
     setSubmissions(prev => [...prev, newSub]);
-  }, [detectedJurisdictions]);
+
+    const breachId = await ensureBreachIncident();
+    if (!breachId) return;
+    try {
+      const created = await api.modules.breach.createNotification({
+        breachId,
+        recipientType: 'dpa',
+        jurisdiction: jurisdiction.split(' - ')[0],
+        authority,
+        sentAt: newSub.sentDate,
+        status: 'sent',
+        acknowledgement: { referenceNumber: refNumber },
+      });
+      if (created?.id) {
+        setSubmissions(prev => prev.map(s => s.id === newSub.id ? { ...s, id: created.id } : s));
+      }
+    } catch {
+      setLoadError('Submission recorded locally; failed to persist notification on server.');
+    }
+  }, [detectedJurisdictions, ensureBreachIncident]);
 
   // Filtered data
   const filteredHistory = useMemo(() =>

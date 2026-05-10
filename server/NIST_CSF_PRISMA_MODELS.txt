@@ -1,0 +1,131 @@
+// ============================================================================
+// NIST Cybersecurity Framework (CSF) v2.0 Workflow Module
+// ----------------------------------------------------------------------------
+// Append the four models below to server/prisma/schema.prisma. Then add the
+// four back-relations into the Organization model (see end of file).
+//
+// CSF 2.0 introduces a sixth "Govern" Function (joining Identify, Protect,
+// Detect, Respond, Recover) and Implementation Tiers 1..4 (Partial, Risk
+// Informed, Repeatable, Adaptive). A Profile aligns Subcategories with the
+// org's mission/risk/budget; comparing a Current Profile to a Target Profile
+// produces the gap-driven action plan.
+// ============================================================================
+
+model NistCsfProfile {
+  id                    String                          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  profileType           String                          // Current, Target
+  profileYear           Int
+  businessContext       Json?                           // mission, sector, geographies, scope
+  missionObjectives     String?
+  riskTolerance         String                          @default("Moderate") // Low, Moderate, High
+  regulatoryDrivers     Json?                           // array of frameworks driving the profile (e.g. ["HIPAA","PCI-DSS"])
+  targetCompletionDate  DateTime?
+  status                String                          @default("Draft") // Draft, Active, Archived
+  ownerId               String?
+  createdAt             DateTime                        @default(now())
+  updatedAt             DateTime                        @default(now()) @updatedAt
+  organization          Organization                    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subcategoryAssessments NistCsfSubcategoryAssessment[]
+  gapAnalyses           NistCsfGapAnalysis[]
+  actionItems           NistCsfActionItem[]
+
+  @@index([organizationId])
+  @@index([profileType])
+  @@index([status])
+  @@index([profileYear])
+}
+
+model NistCsfSubcategoryAssessment {
+  id                    String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  profileId             String
+  function              String              // Govern, Identify, Protect, Detect, Respond, Recover
+  category              String              // e.g. GV.OC, ID.AM
+  subcategoryRef        String              // e.g. GV.OC-01
+  subcategoryTitle      String
+  currentTier           Int?                // 1..4 (Partial → Adaptive)
+  targetTier            Int?                // 1..4
+  priority              String              @default("Moderate") // Low, Moderate, High, Critical
+  implementationStatus  String              @default("NotImplemented") // NotImplemented, PartiallyImplemented, Implemented, Optimized
+  informativeReferences Json?               // { iso27001: [...], nist80053: [...], cis: [...] }
+  evidenceRefs          Json?
+  notes                 String?
+  lastAssessedAt        DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @default(now()) @updatedAt
+  organization          Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  profile               NistCsfProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  actionItems           NistCsfActionItem[]
+
+  @@unique([profileId, subcategoryRef])
+  @@index([organizationId])
+  @@index([profileId])
+  @@index([function])
+  @@index([category])
+  @@index([priority])
+}
+
+model NistCsfGapAnalysis {
+  id                String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId    String
+  profileId         String          // primary join key — the Target profile this gap analysis was generated for
+  currentProfileId  String
+  targetProfileId   String
+  function          String          // one of the six CSF Functions, or "Total"
+  gapCount          Int             @default(0)
+  criticalGapCount  Int             @default(0)
+  summary           Json?           // { currentAvgTier, targetAvgTier, deltaTier, subcategories: [...] }
+  generatedAt       DateTime        @default(now())
+  generatedBy       String?
+  createdAt         DateTime        @default(now())
+  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  profile           NistCsfProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([profileId])
+  @@index([currentProfileId])
+  @@index([targetProfileId])
+  @@index([function])
+  @@index([generatedAt])
+}
+
+model NistCsfActionItem {
+  id                       String                         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId           String
+  profileId                String
+  subcategoryAssessmentId  String?
+  title                    String
+  description              String?
+  priority                 String                         @default("Moderate") // Low, Moderate, High, Critical
+  assignedTo               String?
+  status                   String                         @default("Open")     // Open, InProgress, Blocked, Completed, Cancelled
+  dueDate                  DateTime?
+  completedAt              DateTime?
+  dependencies             Json?                          // array of action item ids this depends on
+  estimatedEffort          String?                        // '1 quarter', '2 sprints', etc.
+  estimatedCost            Float?
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @default(now()) @updatedAt
+  organization             Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  profile                  NistCsfProfile                 @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  subcategoryAssessment    NistCsfSubcategoryAssessment?  @relation(fields: [subcategoryAssessmentId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([profileId])
+  @@index([subcategoryAssessmentId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+// ============================================================================
+// Add the following four back-relations inside the existing `model Organization`
+// block (anywhere in its relation list):
+// ============================================================================
+
+  nistCsfProfiles                NistCsfProfile[]
+  nistCsfSubcategoryAssessments  NistCsfSubcategoryAssessment[]
+  nistCsfGapAnalyses             NistCsfGapAnalysis[]
+  nistCsfActionItems             NistCsfActionItem[]
