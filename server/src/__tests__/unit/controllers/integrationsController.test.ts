@@ -101,26 +101,29 @@ describe('IntegrationsController', () => {
   });
 
   describe('callbackGoogle()', () => {
-    it('should handle Google OAuth callback with invalid state', async () => {
+    it('should redirect with error status when state is invalid', async () => {
       mockRequest.query = {
         code: 'test-code',
         state: 'test-state-uuid',
       };
 
-      // The internal oauthStates map is not populated, so verifyState returns null
+      // The internal oauthStates map is not populated, so verifyState returns null.
+      // The controller throws AppError('Invalid or expired state parameter', 400);
+      // its catch block treats messages containing "Invalid" as non-retryable and
+      // redirects the user back to the frontend instead of sending JSON.
       await integrationsController.callbackGoogle(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
       );
 
-      // Should return 400 for invalid/expired state
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'Invalid or expired state parameter',
-        })
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('integration=google&status=error')
       );
+      expect(mockResponse.redirect).toHaveBeenCalledWith(
+        expect.stringContaining(encodeURIComponent('Invalid or expired state parameter'))
+      );
+      expect(mockResponse.json).not.toHaveBeenCalled();
     });
   });
 

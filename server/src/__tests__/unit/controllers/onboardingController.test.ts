@@ -22,6 +22,19 @@ jest.mock('../../../config/database', () => ({
 }));
 
 import { onboardingController } from '../../../controllers/onboardingController';
+import { AppError } from '../../../middleware/errorHandler';
+
+/**
+ * Invokes a controller and captures the thrown error.
+ */
+async function captureThrown(fn: () => Promise<unknown>): Promise<AppError> {
+  try {
+    await fn();
+  } catch (err) {
+    return err as AppError;
+  }
+  throw new Error('Expected controller to throw, but it resolved.');
+}
 
 describe('OnboardingController', () => {
   let mockReq: any;
@@ -102,17 +115,19 @@ describe('OnboardingController', () => {
       });
     });
 
-    it('should return 500 on error', async () => {
+    it('should wrap errors as AppError(500)', async () => {
       (prismaMock.onboardingProgress.upsert as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
 
-      await onboardingController.getProgress(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.getProgress(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to get onboarding progress',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to get onboarding progress');
+      expect(mockRes.json).not.toHaveBeenCalled();
     });
   });
 
@@ -194,18 +209,19 @@ describe('OnboardingController', () => {
       expect(prismaMock.organization.update).not.toHaveBeenCalled();
     });
 
-    it('should return 500 on error', async () => {
+    it('should wrap errors as AppError(500)', async () => {
       mockReq.body = { currentStep: 1 };
       (prismaMock.onboardingProgress.upsert as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
 
-      await onboardingController.updateProgress(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.updateProgress(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to update onboarding progress',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update onboarding progress');
     });
   });
 
@@ -264,27 +280,31 @@ describe('OnboardingController', () => {
       });
     });
 
-    it('should return 400 when eventType is missing', async () => {
+    it('should throw AppError(400) when eventType is missing', async () => {
       mockReq.body = { flowName: 'welcome' };
 
-      await onboardingController.trackEvent(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.trackEvent(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'eventType is required' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('eventType is required');
     });
 
-    it('should return 500 on error', async () => {
+    it('should wrap errors as AppError(500)', async () => {
       mockReq.body = { eventType: 'test' };
       (prismaMock.onboardingEvent.create as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
 
-      await onboardingController.trackEvent(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.trackEvent(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to track onboarding event',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to track onboarding event');
     });
   });
 
@@ -370,38 +390,43 @@ describe('OnboardingController', () => {
       expect(prismaMock.onboardingChecklist.upsert).not.toHaveBeenCalled();
     });
 
-    it('should return 400 when milestone is missing', async () => {
+    it('should throw AppError(400) when milestone is missing', async () => {
       mockReq.body = {};
 
-      await onboardingController.completeMilestone(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.completeMilestone(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'milestone is required' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('milestone is required');
     });
 
-    it('should return 400 for invalid milestone name', async () => {
+    it('should throw AppError(400) for invalid milestone name', async () => {
       mockReq.body = { milestone: 'nonexistent_milestone' };
 
-      await onboardingController.completeMilestone(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.completeMilestone(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Invalid milestone: nonexistent_milestone',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('Invalid milestone: nonexistent_milestone');
     });
 
-    it('should return 500 on error', async () => {
+    it('should wrap errors as AppError(500)', async () => {
       mockReq.body = { milestone: 'welcome' };
       (prismaMock.onboardingProgress.upsert as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
 
-      await onboardingController.completeMilestone(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.completeMilestone(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to complete milestone',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to complete milestone');
     });
   });
 
@@ -471,18 +496,19 @@ describe('OnboardingController', () => {
       );
     });
 
-    it('should return 500 on error', async () => {
+    it('should wrap errors as AppError(500)', async () => {
       mockReq.body = { showHints: true };
       (prismaMock.onboardingProgress.upsert as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
 
-      await onboardingController.updatePreferences(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.updatePreferences(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to update onboarding preferences',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update onboarding preferences');
     });
   });
 
@@ -575,25 +601,31 @@ describe('OnboardingController', () => {
       );
     });
 
-    it('should return 400 when flowName is missing', async () => {
+    it('should throw AppError(400) when flowName is missing', async () => {
       mockReq.body = {};
 
-      await onboardingController.skipFlow(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.skipFlow(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'flowName is required' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('flowName is required');
     });
 
-    it('should return 500 on error', async () => {
+    it('should wrap errors as AppError(500)', async () => {
       mockReq.body = { flowName: 'test' };
       (prismaMock.onboardingProgress.findUnique as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
 
-      await onboardingController.skipFlow(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.skipFlow(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to skip flow' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to skip flow');
     });
   });
 
@@ -637,15 +669,18 @@ describe('OnboardingController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ progress: freshProgress });
     });
 
-    it('should return 500 on error', async () => {
+    it('should wrap errors as AppError(500)', async () => {
       (prismaMock.onboardingProgress.deleteMany as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
 
-      await onboardingController.resetProgress(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.resetProgress(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to reset onboarding' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to reset onboarding');
     });
   });
 
@@ -674,17 +709,18 @@ describe('OnboardingController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ checklist });
     });
 
-    it('should return 500 on error', async () => {
+    it('should wrap errors as AppError(500)', async () => {
       (prismaMock.onboardingChecklist.upsert as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
 
-      await onboardingController.getChecklist(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.getChecklist(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to get onboarding checklist',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to get onboarding checklist');
     });
   });
 
@@ -802,18 +838,19 @@ describe('OnboardingController', () => {
       expect(prismaMock.onboardingChecklist.update).not.toHaveBeenCalled();
     });
 
-    it('should return 500 on error', async () => {
+    it('should wrap errors as AppError(500)', async () => {
       mockReq.body = { profileCompleted: true };
       (prismaMock.onboardingChecklist.upsert as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
 
-      await onboardingController.updateChecklist(mockReq, mockRes);
+      const err = await captureThrown(() =>
+        onboardingController.updateChecklist(mockReq, mockRes) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to update onboarding checklist',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update onboarding checklist');
     });
   });
 });

@@ -99,19 +99,26 @@ interface CICDGateSettingsProps {
   onBack?: () => void;
 }
 
-// Normalise a server policy shape (rules JSON + isActive) into the local GatePolicy used by the UI.
+// Normalise a server policy shape into the local GatePolicy used by the UI.
+// Accepts either: (a) rules-nested form { rules: { requiredChecks, assignedRepos, ... }, isActive, ... }
+// or (b) flat form { requiredChecks, assignedRepos, ..., isActive, ... }. The
+// flat form is what older test fixtures and some legacy responses use.
 function normaliseServerPolicy(p: any): GatePolicy {
   const rules = (p && typeof p.rules === 'object' && p.rules !== null) ? p.rules : {};
+  const pickArray = (key: string) =>
+    Array.isArray(rules[key]) ? rules[key]
+      : Array.isArray(p?.[key]) ? p[key]
+      : [];
   return {
     id: p.id,
     name: p.name || '',
     description: p.description || '',
-    requiredChecks: Array.isArray(rules.requiredChecks) ? rules.requiredChecks : [],
+    requiredChecks: pickArray('requiredChecks'),
     isActive: !!p.isActive,
     createdAt: p.createdAt || '',
     updatedAt: p.updatedAt || '',
-    assignedRepos: Array.isArray(rules.assignedRepos) ? rules.assignedRepos : [],
-    assignedPipelines: Array.isArray(rules.assignedPipelines) ? rules.assignedPipelines : [],
+    assignedRepos: pickArray('assignedRepos'),
+    assignedPipelines: pickArray('assignedPipelines'),
   };
 }
 

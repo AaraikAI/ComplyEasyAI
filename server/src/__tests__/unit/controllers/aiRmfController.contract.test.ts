@@ -51,6 +51,18 @@ jest.mock('../../../services/aiRmfService', () => ({
 import aiRmfController from '../../../controllers/aiRmfController';
 import { AppError } from '../../../middleware/errorHandler';
 
+/**
+ * Invokes a controller and captures the thrown error.
+ */
+async function captureThrown(fn: () => Promise<unknown>): Promise<AppError> {
+  try {
+    await fn();
+  } catch (err) {
+    return err as AppError;
+  }
+  throw new Error('Expected controller to throw, but it resolved.');
+}
+
 describe('AIRMFController Contract Tests', () => {
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
@@ -124,26 +136,28 @@ describe('AIRMFController Contract Tests', () => {
       );
     });
 
-    it('should handle AppError from service', async () => {
+    it('should propagate AppError from service', async () => {
       mockAiRmfService.createAISystem.mockRejectedValueOnce(new AppError('Duplicate name', 400) as never);
 
-      await aiRmfController.createAISystem(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({ error: 'Duplicate name' })
+      const err = await captureThrown(() =>
+        aiRmfController.createAISystem(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
       );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('Duplicate name');
     });
 
-    it('should return 500 for unknown errors', async () => {
+    it('should wrap unknown errors as AppError(500)', async () => {
       mockAiRmfService.createAISystem.mockRejectedValueOnce(new Error('DB error') as never);
 
-      await aiRmfController.createAISystem(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({ error: 'Failed to create AI system' })
+      const err = await captureThrown(() =>
+        aiRmfController.createAISystem(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
       );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to create AI system');
     });
   });
 
