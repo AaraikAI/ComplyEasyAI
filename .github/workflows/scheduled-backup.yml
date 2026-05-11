@@ -22,24 +22,50 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Install PostgreSQL client
+      - name: Install PostgreSQL 17 client
         run: |
+          # Supabase runs Postgres 17.x. pg_dump from older versions refuses to
+          # dump newer servers, producing empty output. Install the matching
+          # major from the PostgreSQL APT repo.
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
+          sudo apt-get install -y -qq curl ca-certificates gnupg lsb-release
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
 
       - name: Create database backup
+        shell: bash
         run: |
+          set -euo pipefail
           BACKUP_TS=$(date -u +%Y%m%d_%H%M%S)
-          DAY_OF_WEEK=$(date -u +%A)
           BACKUP_KEY="backups/scheduled/${BACKUP_TS}.sql.gz"
           echo "BACKUP_KEY=${BACKUP_KEY}" >> "$GITHUB_ENV"
           echo "BACKUP_TS=${BACKUP_TS}" >> "$GITHUB_ENV"
           echo "Creating scheduled backup: ${BACKUP_KEY}"
-          pg_dump "$DATABASE_URL" --no-owner --no-acl | gzip > /tmp/backup.sql.gz
+
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::SUPABASE_DATABASE_URL secret is empty"
+            exit 1
+          fi
+
+          # `set -o pipefail` makes a pg_dump failure abort the gzip pipe.
+          /usr/lib/postgresql/17/bin/pg_dump \
+            "$DATABASE_URL" \
+            --no-owner --no-acl --format=plain \
+            --exclude-schema='auth' --exclude-schema='storage' \
+            --exclude-schema='realtime' --exclude-schema='supabase_migrations' \
+            | gzip > /tmp/backup.sql.gz
+
           BACKUP_SIZE=$(stat -c%s /tmp/backup.sql.gz)
           echo "BACKUP_SIZE=${BACKUP_SIZE}" >> "$GITHUB_ENV"
-          if [ "$BACKUP_SIZE" -lt 100 ]; then
+          if [ "$BACKUP_SIZE" -lt 1024 ]; then
             echo "::error::Backup too small (${BACKUP_SIZE} bytes), likely empty or failed"
+            # Surface first 200 bytes of the gunzipped dump for debugging
+            gunzip -c /tmp/backup.sql.gz | head -c 200 || true
             exit 1
           fi
           echo "Backup size: ${BACKUP_SIZE} bytes"

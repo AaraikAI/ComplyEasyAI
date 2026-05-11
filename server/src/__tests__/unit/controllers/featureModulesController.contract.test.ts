@@ -31,6 +31,19 @@ import {
   createDecision,
   updateDecision,
 } from '../../../controllers/featureModulesController';
+import { AppError } from '../../../middleware/errorHandler';
+
+/**
+ * Invokes a controller and captures the thrown error.
+ */
+async function captureThrown(fn: () => Promise<unknown>): Promise<AppError> {
+  try {
+    await fn();
+  } catch (err) {
+    return err as AppError;
+  }
+  throw new Error('Expected controller to throw, but it resolved.');
+}
 
 describe('FeatureModulesController Contract Tests', () => {
   let mockReq: Partial<Request>;
@@ -108,23 +121,27 @@ describe('FeatureModulesController Contract Tests', () => {
       );
     });
 
-    it('should return 400 when name is missing', async () => {
+    it('should throw AppError(400) when name is missing', async () => {
       mockReq.body = { type: 'Committee' };
 
-      await createGovernanceBody(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({ error: expect.any(String) })
+      const err = await captureThrown(() =>
+        createGovernanceBody(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
       );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('name and type are required');
     });
 
-    it('should return 400 when type is missing', async () => {
+    it('should throw AppError(400) when type is missing', async () => {
       mockReq.body = { name: 'Audit Committee' };
 
-      await createGovernanceBody(mockReq as Request, mockRes as Response, mockNext);
+      const err = await captureThrown(() =>
+        createGovernanceBody(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
     });
   });
 
@@ -191,12 +208,16 @@ describe('FeatureModulesController Contract Tests', () => {
       );
     });
 
-    it('should return 400 for missing required fields', async () => {
+    it('should throw AppError(400) for missing required fields', async () => {
       mockReq.body = { title: 'Q1 Review' }; // missing governanceBodyId and date
 
-      await createMeeting(mockReq as Request, mockRes as Response, mockNext);
+      const err = await captureThrown(() =>
+        createMeeting(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('governanceBodyId, title, and date are required');
     });
   });
 
@@ -245,12 +266,16 @@ describe('FeatureModulesController Contract Tests', () => {
       expect(mockRes.status).toHaveBeenCalledWith(201);
     });
 
-    it('should return 400 for missing required fields', async () => {
+    it('should throw AppError(400) for missing required fields', async () => {
       mockReq.body = { title: 'Approve Policy' }; // missing governanceBodyId and decisionType
 
-      await createDecision(mockReq as Request, mockRes as Response, mockNext);
+      const err = await captureThrown(() =>
+        createDecision(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('governanceBodyId, title, and decisionType are required');
     });
   });
 

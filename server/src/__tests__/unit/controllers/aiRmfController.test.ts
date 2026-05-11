@@ -1,5 +1,9 @@
 /**
  * AI RMF Controller Unit Tests
+ *
+ * Error responses are produced by throwing AppError; the global error handler
+ * translates them to HTTP responses. Tests assert AppError shape rather than
+ * mocked res.status / res.json for error paths.
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
@@ -66,6 +70,19 @@ jest.mock('../../../config/logger', () => ({
 import aiRmfController from '../../../controllers/aiRmfController';
 import { AppError } from '../../../middleware/errorHandler';
 
+/**
+ * Invokes a controller and captures the thrown error. Returns the error so
+ * tests can assert AppError statusCode + message in one place.
+ */
+async function captureThrown(fn: () => Promise<unknown>): Promise<AppError> {
+  try {
+    await fn();
+  } catch (err) {
+    return err as AppError;
+  }
+  throw new Error('Expected controller to throw, but it resolved.');
+}
+
 describe('AIRMFController', () => {
   let mockReq: any;
   let mockRes: any;
@@ -106,22 +123,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(created);
     });
 
-    it('should return AppError status when service throws AppError', async () => {
+    it('should propagate AppError thrown by the service', async () => {
       mockCreateAISystem.mockRejectedValue(new AppError('Validation failed', 400));
 
-      await aiRmfController.createAISystem(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.createAISystem(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Validation failed' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('Validation failed');
+      expect(mockRes.json).not.toHaveBeenCalled();
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockCreateAISystem.mockRejectedValue(new Error('DB down'));
 
-      await aiRmfController.createAISystem(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.createAISystem(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to create AI system' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to create AI system');
+      expect(mockRes.json).not.toHaveBeenCalled();
     });
   });
 
@@ -160,22 +185,28 @@ describe('AIRMFController', () => {
       expect(mockGetAISystems).toHaveBeenCalledWith('org-1', { status: 'active' });
     });
 
-    it('should return AppError status when service throws AppError', async () => {
+    it('should propagate AppError thrown by the service', async () => {
       mockGetAISystems.mockRejectedValue(new AppError('Forbidden', 403));
 
-      await aiRmfController.getAISystems(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.getAISystems(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(403);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Forbidden' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(403);
+      expect(err.message).toBe('Forbidden');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockGetAISystems.mockRejectedValue(new Error('timeout'));
 
-      await aiRmfController.getAISystems(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.getAISystems(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to fetch AI systems' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to fetch AI systems');
     });
   });
 
@@ -191,24 +222,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(system);
     });
 
-    it('should return AppError status when system not found', async () => {
+    it('should propagate AppError(404) when system not found', async () => {
       mockReq.params = { id: 'nonexistent' };
       mockGetAISystemById.mockRejectedValue(new AppError('AI system not found', 404));
 
-      await aiRmfController.getAISystemById(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.getAISystemById(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'AI system not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('AI system not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { id: 'ai-1' };
       mockGetAISystemById.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.getAISystemById(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.getAISystemById(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to fetch AI system' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to fetch AI system');
     });
   });
 
@@ -227,24 +264,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(updated);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { id: 'ai-1' };
       mockUpdateAISystem.mockRejectedValue(new AppError('Not found', 404));
 
-      await aiRmfController.updateAISystem(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateAISystem(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('Not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { id: 'ai-1' };
       mockUpdateAISystem.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.updateAISystem(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateAISystem(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to update AI system' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update AI system');
     });
   });
 
@@ -261,24 +304,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ success: true });
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { id: 'ai-1' };
       mockDeleteAISystem.mockRejectedValue(new AppError('Cannot delete', 409));
 
-      await aiRmfController.deleteAISystem(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.deleteAISystem(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(409);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Cannot delete' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(409);
+      expect(err.message).toBe('Cannot delete');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { id: 'ai-1' };
       mockDeleteAISystem.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.deleteAISystem(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.deleteAISystem(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to delete AI system' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to delete AI system');
     });
   });
 
@@ -301,24 +350,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { aiSystemId: 'ai-1', functionName: 'govern' };
       mockUpdateCoreFunction.mockRejectedValue(new AppError('Invalid function', 400));
 
-      await aiRmfController.updateCoreFunction(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateCoreFunction(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid function' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('Invalid function');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { aiSystemId: 'ai-1', functionName: 'govern' };
       mockUpdateCoreFunction.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.updateCoreFunction(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateCoreFunction(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to update core function' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update core function');
     });
   });
 
@@ -341,24 +396,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { categoryId: 'cat-1' };
       mockUpdateCategory.mockRejectedValue(new AppError('Category not found', 404));
 
-      await aiRmfController.updateCategory(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateCategory(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Category not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('Category not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { categoryId: 'cat-1' };
       mockUpdateCategory.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.updateCategory(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateCategory(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to update category' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update category');
     });
   });
 
@@ -377,24 +438,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { subcategoryId: 'sub-1' };
       mockUpdateSubcategory.mockRejectedValue(new AppError('Not found', 404));
 
-      await aiRmfController.updateSubcategory(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateSubcategory(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('Not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { subcategoryId: 'sub-1' };
       mockUpdateSubcategory.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.updateSubcategory(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateSubcategory(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to update subcategory' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update subcategory');
     });
   });
 
@@ -417,28 +484,32 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { aiSystemId: 'ai-1', characteristic: 'fairness' };
       mockUpdateTrustworthinessCharacteristic.mockRejectedValue(
         new AppError('Invalid characteristic', 400)
       );
 
-      await aiRmfController.updateTrustworthinessCharacteristic(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateTrustworthinessCharacteristic(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid characteristic' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('Invalid characteristic');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { aiSystemId: 'ai-1', characteristic: 'fairness' };
       mockUpdateTrustworthinessCharacteristic.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.updateTrustworthinessCharacteristic(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateTrustworthinessCharacteristic(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to update trustworthiness characteristic',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update trustworthiness characteristic');
     });
   });
 
@@ -461,24 +532,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { aiSystemId: 'ai-1', stage: 'invalid' };
       mockUpdateLifecycleStage.mockRejectedValue(new AppError('Invalid stage', 400));
 
-      await aiRmfController.updateLifecycleStage(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateLifecycleStage(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid stage' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('Invalid stage');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { aiSystemId: 'ai-1', stage: 'deployment' };
       mockUpdateLifecycleStage.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.updateLifecycleStage(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateLifecycleStage(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to update lifecycle stage' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update lifecycle stage');
     });
   });
 
@@ -502,24 +579,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockAddActor.mockRejectedValue(new AppError('AI system not found', 404));
 
-      await aiRmfController.addActor(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.addActor(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'AI system not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('AI system not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockAddActor.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.addActor(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.addActor(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to add actor' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to add actor');
     });
   });
 
@@ -534,24 +617,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ success: true });
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { actorId: 'act-1' };
       mockRemoveActor.mockRejectedValue(new AppError('Actor not found', 404));
 
-      await aiRmfController.removeActor(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.removeActor(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Actor not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('Actor not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { actorId: 'act-1' };
       mockRemoveActor.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.removeActor(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.removeActor(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to remove actor' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to remove actor');
     });
   });
 
@@ -576,24 +665,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockCreateAssessment.mockRejectedValue(new AppError('System not found', 404));
 
-      await aiRmfController.createAssessment(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.createAssessment(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'System not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('System not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockCreateAssessment.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.createAssessment(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.createAssessment(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to create assessment' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to create assessment');
     });
   });
 
@@ -609,24 +704,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(assessments);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockGetAssessments.mockRejectedValue(new AppError('Not found', 404));
 
-      await aiRmfController.getAssessments(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.getAssessments(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('Not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockGetAssessments.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.getAssessments(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.getAssessments(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to fetch assessments' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to fetch assessments');
     });
   });
 
@@ -643,24 +744,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ success: true });
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { assessmentId: 'assess-1' };
       mockDeleteAssessment.mockRejectedValue(new AppError('Assessment not found', 404));
 
-      await aiRmfController.deleteAssessment(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.deleteAssessment(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Assessment not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('Assessment not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { assessmentId: 'assess-1' };
       mockDeleteAssessment.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.deleteAssessment(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.deleteAssessment(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to delete assessment' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to delete assessment');
     });
   });
 
@@ -684,24 +791,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockCreateProfile.mockRejectedValue(new AppError('AI system not found', 404));
 
-      await aiRmfController.createProfile(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.createProfile(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'AI system not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('AI system not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockCreateProfile.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.createProfile(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.createProfile(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to create profile' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to create profile');
     });
   });
 
@@ -726,24 +839,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockCreateRiskActivity.mockRejectedValue(new AppError('Invalid data', 400));
 
-      await aiRmfController.createRiskActivity(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.createRiskActivity(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid data' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toBe('Invalid data');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockCreateRiskActivity.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.createRiskActivity(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.createRiskActivity(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to create risk activity' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to create risk activity');
     });
   });
 
@@ -762,24 +881,30 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(result);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { riskActivityId: 'ra-1' };
       mockUpdateRiskActivity.mockRejectedValue(new AppError('Activity not found', 404));
 
-      await aiRmfController.updateRiskActivity(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateRiskActivity(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Activity not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('Activity not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { riskActivityId: 'ra-1' };
       mockUpdateRiskActivity.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.updateRiskActivity(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.updateRiskActivity(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to update risk activity' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to update risk activity');
     });
   });
 
@@ -798,28 +923,32 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ score: 87.5 });
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockCalculateTrustworthinessScore.mockRejectedValue(
         new AppError('System not found', 404)
       );
 
-      await aiRmfController.calculateTrustworthinessScore(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.calculateTrustworthinessScore(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'System not found' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toBe('System not found');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockReq.params = { aiSystemId: 'ai-1' };
       mockCalculateTrustworthinessScore.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.calculateTrustworthinessScore(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.calculateTrustworthinessScore(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to calculate trustworthiness score',
-      });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to calculate trustworthiness score');
     });
   });
 
@@ -834,22 +963,28 @@ describe('AIRMFController', () => {
       expect(mockRes.json).toHaveBeenCalledWith(dashboardData);
     });
 
-    it('should return AppError status on service error', async () => {
+    it('should propagate AppError from the service', async () => {
       mockGetDashboardData.mockRejectedValue(new AppError('Forbidden', 403));
 
-      await aiRmfController.getDashboardData(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.getDashboardData(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(403);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Forbidden' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(403);
+      expect(err.message).toBe('Forbidden');
     });
 
-    it('should return 500 on generic error', async () => {
+    it('should wrap generic errors as AppError(500)', async () => {
       mockGetDashboardData.mockRejectedValue(new Error('fail'));
 
-      await aiRmfController.getDashboardData(mockReq, mockRes, mockNext);
+      const err = await captureThrown(() =>
+        aiRmfController.getDashboardData(mockReq, mockRes, mockNext) as Promise<unknown>
+      );
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to fetch dashboard data' });
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(500);
+      expect(err.message).toBe('Failed to fetch dashboard data');
     });
   });
 });
