@@ -1,399 +1,145 @@
-# ComplyEasy AI Backend Server
+# ComplyEasyAI Backend
 
-Production-ready backend API for ComplyEasy AI compliance automation platform.
+Express 5 + Prisma 7 + PostgreSQL 17. Handles 14 compliance frameworks via 89 domain-specific services, exposes 70 mounted `/api/*` routes, all `apiLimiter`-protected.
 
-## Features Implemented
+See the [root README](../README.md) for product context. This file documents the backend specifically.
 
-✅ **Authentication & Security**
-- Magic link passwordless authentication
-- JWT access tokens with refresh token support
-- Role-based access control (admin/editor/viewer)
-- Rate limiting and DDoS protection
-- Helmet.js security headers
-- CORS configuration
+---
 
-✅ **Database & Persistence**
-- PostgreSQL with Prisma ORM
-- Comprehensive data models for all entities
-- Database migrations support
-- Connection pooling
-
-✅ **AI Integration**
-- Gemini AI backend proxy (secure API key management)
-- PII redaction (AI Air Gap)
-- Rate limiting for AI endpoints
-- All 8 AI tools implemented
-
-✅ **Payment Processing**
-- Stripe integration for subscriptions
-- Webhook handling for payment events
-- Customer portal support
-- Plan management (Basic/Pro/Enterprise)
-
-✅ **Email Service**
-- SendGrid integration
-- Magic link emails
-- Welcome emails
-- Password reset emails
-
-✅ **File Management**
-- AWS S3 file uploads
-- File validation and virus scanning placeholder
-- Secure file access with signed URLs
-- File type restrictions
-
-✅ **API Endpoints**
-- RESTful API design
-- Comprehensive error handling
-- Request/response logging
-- Health check endpoint
-
-## Tech Stack
-
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: JWT (jsonwebtoken)
-- **AI**: Google Gemini AI
-- **Payments**: Stripe
-- **Email**: SendGrid
-- **Storage**: AWS S3
-- **Security**: Helmet, CORS, bcrypt, rate-limit-express
-
-## Prerequisites
-
-- Node.js 18+ and npm
-- PostgreSQL 14+
-- Gemini API key
-- SendGrid API key (for emails)
-- Stripe account (for payments)
-- AWS account (for file uploads)
-
-## Installation
-
-### 1. Install Dependencies
+## Quick start
 
 ```bash
-cd server
 npm install
+cp .env.example .env             # edit, then:
+npx prisma generate
+npx prisma migrate dev           # local
+npm run dev                      # http://localhost:8000
 ```
 
-### 2. Environment Configuration
+Required env vars (validated at boot — startup crashes on missing):
 
-Copy the example environment file and configure:
+- `DATABASE_URL` — PostgreSQL connection
+- `JWT_SECRET`, `JWT_REFRESH_SECRET` — 32+ char hex
+- `ENCRYPTION_KEY` — 32 bytes hex (AES-256-GCM)
+- `SENDGRID_API_KEY` — must start with `SG.`
+- `STRIPE_SECRET_KEY` (production), `STRIPE_WEBHOOK_SECRET`
+- `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` — at least one for AI features
+
+See `.env.example` for the full surface.
+
+## Layout
+
+```
+src/
+  config/              env, logger, database, redis
+  controllers/         HTTP handlers — errors via `throw new AppError`
+  middleware/          auth, rate-limit, validate, CSRF, error-handler
+  routes/              70 route modules, mounted in index.ts
+  services/            89 domain services (HIPAA, PCI-DSS, SOC 2, NIST CSF,
+                       ISO 27001, ESG, SBOM, vendor risk, integrations, etc.)
+  validators/          Joi schemas
+  utils/               logger, errors, AuditLogger, crypto helpers
+  __tests__/           unit + integration tests (Jest)
+prisma/
+  schema.prisma        source of truth (~7200 lines, ~250 models)
+  migrations/          ordered SQL migrations
+scripts/               setup-oauth, validate-env, patch-express-types, etc.
+contracts/             Solidity audit-log immutability contracts (optional)
+```
+
+## What's implemented
+
+**Authentication**
+- JWT in httpOnly cookies (Secure + SameSite=Strict + refresh-token rotation)
+- PBKDF2-SHA256, 600k iterations (OWASP 2023+)
+- SAML 2.0 SSO with `xml-crypto` signature verification
+- SCIM 2.0 user provisioning with dedicated rate limiter
+- TOTP/WebAuthn 2FA (full unit-tested controller surface)
+- Magic-link passwordless option
+
+**Multi-tenant**
+- Organization-scoped queries at the service layer (verified across 89 files in v11 audit)
+- Parent-child entity scope enforced on writes
+- PostgreSQL RLS enabled on 25 compliance-workflow tables (defense-in-depth against the Supabase auto-exposed REST API; app uses direct Prisma connection)
+
+**Compliance workflow services (14 frameworks)**
+- `hipaaService` — PHI inventory, BAA tracking, 45 CFR §164.402(2) four-factor breach analysis
+- `iso27001Service` — Assessment, SoA, Risk Treatment, Corrective Actions
+- `pciDssService` — Scope/CDE, requirements, evidence, QSA findings, CCW, ROC, AOC
+- `soc2Service` — Type I/II engagements, controls, AICPA sampling, exceptions, CUECs
+- `nistCsfService` — Profiles (Current/Target), 84 subcategories, gap analysis, action items
+- `aiRmfService` — NIST AI RMF actors/assessments
+- `doraService`, `euRegulationsService` — DORA, NIS2, EU AI Act, GDPR, CSRD/ESRS
+
+**Cross-cutting**
+- SSRF protection via `isUrlSafe()` (private-IP block + DNS rebind defense)
+- ReDoS protection via `safeRegexTest` (re2-backed, linear-time)
+- AES-256-GCM at-rest encryption for OAuth tokens, integration secrets, webhook secrets
+- 70/70 mounted routes have rate limiting (auth/SSO/SCIM have mode-specific limiters)
+- Centralized error handler routes `AppError` → Sentry + Winston with consistent envelope
+- Webhook signature verification (HMAC) on Stripe + outbound integrations
+
+**Integrations** (`services/integrations/`)
+- AWS, Azure, GCP cloud inventory + posture
+- Okta, Azure AD SCIM provisioning
+- GitHub, Snyk, Trivy SBOM + vuln ingestion
+- Slack/MS Teams notifications
+- Jira/Linear ticketing sync
+- Stripe billing + subscription tiers
+
+**Observability**
+- Winston JSON → Elasticsearch transport
+- Sentry conditional on `SENTRY_ENABLED`
+- Audit log (`AuditLogger`) for every state-changing service call
+- WebSocket broadcast (`realTimeComplianceService`) for live compliance events
+
+## Quality
 
 ```bash
-cp .env.example .env
+npm run typecheck     # tsc --noEmit (must be clean)
+npm test              # Jest unit + integration
+npm run lint          # ESLint (0 errors required)
+npm audit             # 5 documented upstream-only vulns (see ../SECURITY.md)
 ```
 
-Edit `.env` with your actual credentials:
+CI gate runs all four on every PR.
 
-```env
-# Database
-DATABASE_URL="postgresql://username:password@localhost:5432/complyeasy_db"
+## Adding a new framework workflow service
 
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-min-32-chars
-JWT_REFRESH_SECRET=your-refresh-secret-min-32-chars
+Follow the canonical pattern (e.g. `pciDssService.ts`):
 
-# Gemini AI
-GEMINI_API_KEY=your-gemini-api-key
+1. **Prisma models** — add to `prisma/schema.prisma`, scoped by `organizationId`, with `@@index([organizationId])` and `ON DELETE CASCADE`.
+2. **SQL migration** — create `prisma/migrations/<name>_workflow.sql` with `CREATE TABLE IF NOT EXISTS`.
+3. **Service** — `services/<name>Service.ts`. Every method takes `organizationId`, filters the actual Prisma query by it (not just precheck), uses `AppError` + `logger`, wraps multi-step writes in `prisma.$transaction`, calls `AuditLogger.log` after meaningful writes.
+4. **Validators** — `validators/<name>Schemas.ts` (Joi).
+5. **Routes** — `routes/<name>.ts`, `authenticate` + `authAsyncHandler` + body/query validation.
+6. **Wire** — import + mount in `src/index.ts` with `apiLimiter`.
+7. **Migrate** — `npx prisma migrate deploy` (or apply via Supabase MCP for hosted DB).
+8. **Enable RLS** on new tables if Supabase-hosted.
 
-# SendGrid
-SENDGRID_API_KEY=your-sendgrid-api-key
-SENDGRID_FROM_EMAIL=noreply@yourdomain.com
-
-# Stripe
-STRIPE_SECRET_KEY=sk_live_your-stripe-key
-STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
-STRIPE_BASIC_PRICE_ID=price_xxx
-STRIPE_PRO_PRICE_ID=price_xxx
-STRIPE_ENTERPRISE_PRICE_ID=price_xxx
-
-# AWS S3
-AWS_ACCESS_KEY_ID=your-aws-access-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret
-AWS_REGION=us-east-1
-AWS_S3_BUCKET=your-bucket-name
-```
-
-### 3. Database Setup
+## Useful scripts
 
 ```bash
-# Generate Prisma Client
-npm run prisma:generate
-
-# Run database migrations
-npm run prisma:migrate
-
-# (Optional) Open Prisma Studio to view/edit data
-npm run prisma:studio
+npm run db:seed                  # seed reference framework catalog
+npm run setup:oauth              # interactive OAuth app creation
+npm run validate:env             # check env contract before deploy
+npm run test:e2e                 # integration tests
+npm run test:performance         # k6 / artillery profiles
 ```
 
-### 4. Start the Server
-
-**Development:**
-```bash
-npm run dev
-```
-
-**Production:**
-```bash
-npm run build
-npm start
-```
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/magic-link` - Request magic link
-- `POST /api/auth/verify` - Verify magic link token
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/refresh` - Refresh access token
-- `POST /api/auth/logout` - Logout
-
-### Risks
-- `GET /api/risks` - List all risks
-- `GET /api/risks/:id` - Get risk by ID
-- `POST /api/risks` - Create new risk
-- `PATCH /api/risks/:id` - Update risk
-- `DELETE /api/risks/:id` - Delete risk
-- `POST /api/risks/prioritize` - AI risk prioritization
-- `POST /api/risks/:id/remediation` - Generate remediation plan
-- `POST /api/risks/scan` - Run automated risk scan
-
-### Frameworks
-- `GET /api/frameworks` - List frameworks
-- `GET /api/frameworks/:id` - Get framework details
-- `POST /api/frameworks` - Create framework
-- `PATCH /api/frameworks/:id` - Update framework
-- `DELETE /api/frameworks/:id` - Delete framework
-
-### AI Tools
-- `POST /api/ai/report` - Generate compliance report
-- `POST /api/ai/policy` - Generate policy document
-- `POST /api/ai/contract` - Analyze contract
-- `POST /api/ai/gap-analysis` - Perform gap analysis
-- `POST /api/ai/rfp` - Generate RFP response
-- `POST /api/ai/phishing` - Generate phishing simulation
-- `POST /api/ai/vendor-score` - Score vendor risk
-- `POST /api/ai/data-map` - Generate GDPR data map
-- `POST /api/ai/bcp` - Generate business continuity plan
-- `POST /api/ai/chat` - Chat with compliance bot
-
-### Billing
-- `POST /api/billing/checkout` - Create Stripe checkout session
-- `POST /api/billing/portal` - Create billing portal session
-- `GET /api/billing/subscription` - Get subscription status
-- `POST /api/billing/webhook` - Stripe webhook handler (public)
-
-### Integrations
-- `GET /api/integrations` - List all integrations
-- `GET /api/integrations/:provider` - Get integration status
-
-#### Google Workspace
-- `GET /api/integrations/google/authorize` - Start OAuth flow
-- `GET /api/integrations/google/callback` - OAuth callback (public)
-- `POST /api/integrations/google/sync` - Sync data (users/groups/audit/drive)
-- `DELETE /api/integrations/google` - Disconnect integration
-
-#### GitHub
-- `GET /api/integrations/github/authorize` - Start OAuth flow
-- `GET /api/integrations/github/callback` - OAuth callback (public)
-- `POST /api/integrations/github/sync` - Sync data (repositories/commits/security/compliance)
-- `DELETE /api/integrations/github` - Disconnect integration
-
-#### Slack
-- `GET /api/integrations/slack/authorize` - Start OAuth flow
-- `GET /api/integrations/slack/callback` - OAuth callback (public)
-- `POST /api/integrations/slack/sync` - Sync data (channels/users/history)
-- `POST /api/integrations/slack/message` - Post message to channel
-- `DELETE /api/integrations/slack` - Disconnect integration
-
-#### Jira
-- `GET /api/integrations/jira/authorize` - Start OAuth flow
-- `GET /api/integrations/jira/callback` - OAuth callback (public)
-- `POST /api/integrations/jira/sync` - Sync data (projects/issues/compliance/audit)
-- `POST /api/integrations/jira/issue` - Create issue
-- `DELETE /api/integrations/jira` - Disconnect integration
-
-#### AWS
-- `POST /api/integrations/aws/connect` - Connect with IAM credentials
-- `POST /api/integrations/aws/sync` - Sync data (cloudtrail/s3/iam/config/security-hub/compliance-scan)
-- `DELETE /api/integrations/aws` - Disconnect integration
-
-### Two-Factor Authentication
-- `POST /api/2fa/setup` - Generate 2FA secret and QR code (authenticated)
-- `POST /api/2fa/verify-enable` - Verify token and enable 2FA (authenticated)
-- `POST /api/2fa/verify` - Verify 2FA token during login (public)
-- `POST /api/2fa/verify-backup` - Verify backup code during login (public)
-- `POST /api/2fa/disable` - Disable 2FA (authenticated)
-- `POST /api/2fa/regenerate-codes` - Regenerate backup codes (authenticated)
-- `GET /api/2fa/status` - Get 2FA status (authenticated)
-
-### Real-Time WebSocket
-- WebSocket endpoint: `ws://localhost:5000/ws`
-- Authentication: Pass JWT token in `auth.token` during connection
-- Events: `risk:updated`, `framework:updated`, `ai:task:status`, `integration:sync`, `audit:log`, `notification`
-
-### Health
-- `GET /health` - Health check endpoint (includes WebSocket status)
-
-## Security Features
-
-### Implemented
-1. **JWT Authentication** - Secure token-based auth
-2. **Rate Limiting** - Prevent abuse (100 req/15min general, 10 req/min AI)
-3. **CORS** - Configurable cross-origin resource sharing
-4. **Helmet.js** - Security headers
-5. **PII Redaction** - AI Air Gap for sensitive data
-6. **Password Hashing** - bcrypt with salt rounds
-7. **SQL Injection Protection** - Prisma ORM parameterized queries
-8. **Input Validation** - Request validation middleware
-9. **Error Handling** - Sanitized error messages in production
-
-### Not Yet Implemented
-- OAuth 2.0 for integrations (AWS, GitHub, Google)
-- Two-factor authentication
-- IP whitelisting
-- Advanced DDoS protection
+See `scripts/README.md` for the full list.
 
 ## Deployment
 
-### Option 1: Docker
+Container builds via `Dockerfile`. Production runs on AWS ECS Fargate with:
+- RDS PostgreSQL 17 (PITR, encrypted, 35-day backups)
+- S3 evidence bucket (KMS, versioned)
+- ALB + WAF + CloudFront
+- Secrets Manager for runtime secrets
 
-```bash
-# Build image
-docker build -t complyeasy-api .
+See `../docs/DEPLOYMENT_RUNBOOK.md` if present, or contact `ops@aaraik.ai`.
 
-# Run container
-docker run -p 5000:5000 --env-file .env complyeasy-api
-```
+## Reporting issues
 
-### Option 2: PM2 (Process Manager)
-
-```bash
-# Install PM2
-npm install -g pm2
-
-# Start server
-pm2 start dist/index.js --name complyeasy-api
-
-# Monitor
-pm2 monit
-
-# Logs
-pm2 logs complyeasy-api
-```
-
-### Option 3: Cloud Platforms
-
-**Heroku:**
-```bash
-heroku create complyeasy-api
-heroku addons:create heroku-postgresql:hobby-dev
-git push heroku main
-```
-
-**AWS (Elastic Beanstalk):**
-```bash
-eb init -p node.js complyeasy-api
-eb create complyeasy-production
-eb deploy
-```
-
-**Vercel/Railway:**
-- Connect GitHub repository
-- Set environment variables in dashboard
-- Deploy automatically on push
-
-## Database Migrations
-
-```bash
-# Create new migration
-npx prisma migrate dev --name description_of_changes
-
-# Apply migrations to production
-npx prisma migrate deploy
-
-# Reset database (WARNING: deletes all data)
-npx prisma migrate reset
-```
-
-## Monitoring & Logs
-
-Logs are written to:
-- Console (all logs)
-- `logs/error.log` (errors only)
-- `logs/combined.log` (all logs)
-
-Consider integrating:
-- **Sentry** - Error tracking
-- **DataDog** - Application performance monitoring
-- **LogRocket** - Session replay
-- **CloudWatch** - AWS logging
-
-## Testing
-
-```bash
-# Run tests (when implemented)
-npm test
-
-# Run with coverage
-npm run test:coverage
-```
-
-## Troubleshooting
-
-### Database Connection Issues
-```bash
-# Check PostgreSQL is running
-psql -U postgres
-
-# Test connection string
-npx prisma db pull
-```
-
-### Stripe Webhook Failures
-```bash
-# Use Stripe CLI for local testing
-stripe listen --forward-to localhost:5000/api/billing/webhook
-```
-
-### Email Not Sending
-- Verify SendGrid API key
-- Check sender verification in SendGrid dashboard
-- Review SendGrid activity logs
-
-## Production Checklist
-
-- [ ] Set strong JWT secrets (min 32 characters)
-- [ ] Configure production database
-- [ ] Set up database backups
-- [ ] Enable HTTPS/SSL
-- [ ] Configure production CORS origins
-- [ ] Set up monitoring (Sentry, DataDog)
-- [ ] Configure log rotation
-- [ ] Set up CI/CD pipeline
-- [ ] Enable database connection pooling
-- [ ] Configure CDN for static assets
-- [ ] Set up rate limiting
-- [ ] Enable database query logging
-- [ ] Configure Stripe webhook endpoint
-- [ ] Set up email domain authentication (SPF/DKIM)
-- [ ] Enable AWS S3 bucket encryption
-- [ ] Configure backup strategy
-- [ ] Set up staging environment
-- [ ] Load testing
-- [ ] Security audit
-
-## Support
-
-For issues or questions:
-- Open an issue on GitHub
-- Email: support@complyeasy.ai
-- Documentation: https://docs.complyeasy.ai
-
-## License
-
-Proprietary - All rights reserved
+- Security: `security@aaraik.ai` (see `../SECURITY.md`)
+- Bugs / features: GitHub Issues on `AaraikAI/ComplyEasyAI`

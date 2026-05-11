@@ -1,170 +1,125 @@
 # Server Scripts
 
-This directory contains utility scripts for server setup and maintenance.
+Utility scripts for setup, validation, and maintenance. All scripts are TypeScript, invoked via `ts-node`. See the [backend README](../README.md) for product context.
 
-## Available Scripts
+## Scripts
 
-### OAuth Setup Wizard
-
-Interactive CLI tool to guide you through creating OAuth apps for all integrated services.
+### `setupOAuth.ts` — OAuth app provisioning wizard
 
 ```bash
 npm run setup:oauth
 ```
 
-**What it does:**
-- Provides step-by-step instructions for creating OAuth apps
-- Guides you through Google, GitHub, Slack, and Jira OAuth setup
-- Automatically updates your `.env` file with OAuth credentials
-- Validates callback URLs
+Interactive CLI that walks through creating OAuth apps with Google, GitHub, Slack, and Jira, then writes the client IDs / secrets / callback URLs into `server/.env` (preserves existing variables).
 
-**When to use:**
-- First-time setup of OAuth integrations
-- Adding new OAuth providers
-- Updating OAuth credentials
+**Use when:** first-time setup, adding a new provider, rotating OAuth credentials.
 
-### Environment Validation
-
-Validates all required environment variables and OAuth credentials.
+### `validateEnv.ts` — Environment contract validator
 
 ```bash
 npm run validate:env
 ```
 
-**What it does:**
-- Checks all required environment variables
-- Validates format of URLs, emails, and API keys
-- Identifies missing or invalid credentials
-- Provides recommendations for fixing issues
+Hard-fails (exit code 1) if any required env var is missing or malformed. Runs in CI before deploy so a broken config never reaches production. Critical vars cause a startup crash if missing — this script surfaces the same failure modes earlier.
 
-**When to use:**
-- Before starting the server for the first time
-- After updating environment variables
-- Troubleshooting configuration issues
-- CI/CD pipeline validation
+Validation rules:
+- **URLs:** valid `http(s)://`
+- **Emails:** RFC 5322 surface
+- **JWT secrets:** ≥32 hex chars
+- **`ENCRYPTION_KEY`:** 32 bytes hex (AES-256 requirement)
+- **`SENDGRID_API_KEY`:** must start with `SG.`
+- **API keys:** provider-specific format check
+- **`DATABASE_URL`:** must start with `postgresql://`
 
-## Usage Examples
+**Exit codes:** `0` = all valid, `1` = missing or invalid.
 
-### First-Time Setup
+### `patch-express-types.js` — Express 5 type patch
 
 ```bash
-# 1. Copy example environment file
+npm run postinstall   # runs automatically
+```
+
+Augments `@types/express-serve-static-core` to match Express 5's runtime contract. Load-bearing — without it, the codebase produces ~700 TypeScript errors. See `../../FOUNDER_NARRATIVE.md` §5.1 for the why.
+
+**Do not delete.** This is the canonical solution after we tried (and reverted) several alternatives.
+
+### Database utilities
+
+```bash
+npm run db:seed              # seed reference framework catalog (SOC 2 / ISO 27001 / HIPAA / etc. controls)
+npm run prisma:generate      # regenerate Prisma client after schema edits
+npm run prisma:migrate       # run pending migrations against the configured DATABASE_URL
+npm run prisma:studio        # open Prisma Studio (dev-only)
+```
+
+For Supabase-hosted DBs, prefer applying migrations via the Supabase MCP `apply_migration` tool (registers in the `supabase_migrations.schema_migrations` table). See `../prisma/migrations/MIGRATION_ROLLBACK.md` for rollback procedure.
+
+### Test helpers
+
+```bash
+npm run test:performance     # k6 / artillery load profiles
+npm run test:integration     # integration suite (DB required)
+```
+
+## Typical first-time setup
+
+```bash
+# 1. Configure secrets
 cp .env.example .env
 
-# 2. Run OAuth setup wizard
+# 2. Provision OAuth apps (or skip if not using integrations yet)
 npm run setup:oauth
 
-# 3. Edit .env to add other required credentials
-nano .env
-
-# 4. Validate environment
+# 3. Validate
 npm run validate:env
 
-# 5. Generate Prisma client and run migrations
+# 4. Generate Prisma client + apply migrations
 npm run prisma:generate
 npm run prisma:migrate
 
-# 6. Start the server
+# 5. Boot
 npm run dev
 ```
 
-### Production Deployment
+## CI integration
 
-```bash
-# Validate before deployment
-npm run validate:env
-
-# Should exit with code 0 if all OK
-# Exit code 1 means configuration issues
-```
-
-### CI/CD Integration
-
-Add to your CI/CD pipeline:
+`.github/workflows/ci.yml` runs `validate:env` before the build step, with secrets injected from GitHub repository secrets:
 
 ```yaml
-# Example GitHub Actions
-- name: Validate Environment
+- name: Validate environment
   run: npm run validate:env
   env:
     DATABASE_URL: ${{ secrets.DATABASE_URL }}
     JWT_SECRET: ${{ secrets.JWT_SECRET }}
-    # ... other secrets
+    JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+    ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+    SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+    STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
 ```
-
-## Script Details
-
-### setupOAuth.ts
-
-**Features:**
-- Color-coded terminal output
-- Interactive prompts
-- Automatic `.env` file updates
-- Preserves existing environment variables
-- Provides next steps after setup
-
-**Requirements:**
-- Node.js with TypeScript support
-- `inquirer` and `chalk` packages
-- Write access to `.env` file
-
-### validateEnv.ts
-
-**Validation Rules:**
-- **URLs**: Must be valid HTTP/HTTPS URLs
-- **Emails**: Must be valid email format
-- **JWT Secrets**: Must be at least 32 characters
-- **API Keys**: Provider-specific format validation
-- **Database URL**: Must start with `postgresql://`
-
-**Exit Codes:**
-- `0`: All required variables are valid
-- `1`: Missing or invalid variables detected
 
 ## Troubleshooting
 
-### OAuth Setup Issues
+| Symptom | Likely cause |
+|---------|-------------|
+| `validate:env` fails but vars are set | trailing whitespace / quotes in `.env` (vars shouldn't be quoted) |
+| OAuth callbacks redirect to `error=` | callback URL in provider console doesn't exactly match `server/.env` |
+| `Cannot find module` from a script | run `npm install` |
+| Postinstall script fails | check `node_modules/@types/express-serve-static-core/index.d.ts` was written — see `patch-express-types.js` |
+| `ENCRYPTION_KEY must be 32 bytes` | hex-encode 32 bytes: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 
-**Problem**: Script can't write to `.env` file
-**Solution**: Check file permissions: `chmod 644 .env`
+## Security notes
 
-**Problem**: OAuth apps not working after setup
-**Solution**: Verify callback URLs match exactly in provider console
+- **Never commit `.env`** — covered by root `.gitignore`. The `validate:env` script does NOT write secrets to logs.
+- **Rotate secrets quarterly** in production. AWS Secrets Manager versions automatically.
+- **Use different secrets per environment** — dev / staging / prod must not share any sensitive value.
+- **CI uses ephemeral env** — never write secrets to artifacts. The build runs in a sandboxed runner.
 
-### Environment Validation Issues
+## Modifying scripts
 
-**Problem**: Validation fails but variables are set
-**Solution**: Check for:
-- Trailing/leading whitespace
-- Quotes in `.env` file (shouldn't be quoted)
-- Special characters not properly escaped
+Scripts run directly via `ts-node` — no compile step. Test edits with:
 
-**Problem**: "Cannot find module" error
-**Solution**: Run `npm install` to install dependencies
+```bash
+npx ts-node scripts/<name>.ts
+```
 
-## Security Notes
-
-- **Never commit `.env` files** to version control
-- **Rotate secrets regularly** in production
-- **Use different secrets** for each environment
-- **Encrypt secrets** in CI/CD pipelines
-- **Limit access** to production credentials
-
-## Development Notes
-
-These scripts use:
-- **TypeScript**: Run with `ts-node`
-- **Chalk**: Terminal string styling
-- **Inquirer**: Interactive prompts
-- **Dotenv**: Environment variable loading
-
-To modify scripts:
-1. Edit the `.ts` files in this directory
-2. Test changes: `npx ts-node scripts/scriptName.ts`
-3. No compilation needed - scripts run directly
-
-## Additional Resources
-
-- [OAuth 2.0 Guide](../DEPLOYMENT.md#oauth-integrations)
-- [Environment Setup](../README.md#environment-setup)
-- [Production Checklist](../DEPLOYMENT.md#production-checklist)
+Dependencies are: `chalk` (terminal styling), `inquirer` (prompts), `dotenv` (env loader). Stay minimal — scripts must not grow into a framework.

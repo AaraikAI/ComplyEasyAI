@@ -87,6 +87,7 @@ const BrandingSettings = lazy(() => import('./components/BrandingSettings'));
 const TicketingIntegrations = lazy(() => import('./components/TicketingIntegrations'));
 const AccessibilitySettings = lazy(() => import('./components/AccessibilitySettings'));
 const OfflineBanner = lazy(() => import('./components/OfflineBanner'));
+const NPSSurvey = lazy(() => import('./components/NPSSurvey'));
 const UpdateAvailableBanner = lazy(() => import('./components/UpdateAvailableBanner'));
 const DPIAWorkflow = lazy(() => import('./components/DPIAWorkflow'));
 const RoPAManagement = lazy(() => import('./components/RoPAManagement'));
@@ -406,6 +407,7 @@ const MainApp: React.FC = () => {
         <OfflineBanner />
         <UpdateAvailableBanner isUpdateAvailable={swUpdateAvailable} registration={swRegistration} />
         <CookieConsentBanner />
+        <NPSSurvey />
       </Suspense>
     </OnboardingProvider>
   );
