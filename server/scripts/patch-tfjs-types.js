@@ -41,6 +41,14 @@ export {};
 `;
 
 function writeIfChanged(target, content) {
+  // Some Docker stages run `npm ci` before src/ is COPYed (only server/prisma
+  // and server/scripts are present). Bail gracefully in that case — the build
+  // stage re-runs this script after the full server/ copy.
+  const targetDir = path.dirname(target);
+  if (!fs.existsSync(targetDir)) {
+    console.log(`[patch-tfjs-types] Target directory missing (${targetDir}); skipping. Build stage will re-run.`);
+    return false;
+  }
   let prev = '';
   try { prev = fs.readFileSync(target, 'utf8'); } catch { /* missing */ }
   if (prev === content) {

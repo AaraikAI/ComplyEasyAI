@@ -62,7 +62,11 @@ FROM base AS backend-build
 WORKDIR /app/server
 COPY --from=backend-deps /app/server/node_modules ./node_modules
 COPY server/ ./
-# Regenerate Prisma client in this stage (COPY server/ may overwrite generated/ dir)
+# Re-run the TFJS type augmentation patch now that src/ is present (the
+# initial `npm ci` in the deps stage couldn't run it because src/types/
+# didn't exist there). Then regenerate Prisma client (COPY server/ may
+# overwrite generated/ dir) and build.
+RUN node scripts/patch-tfjs-types.js
 RUN npx prisma generate
 RUN npm run build
 
