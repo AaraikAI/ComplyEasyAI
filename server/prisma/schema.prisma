@@ -220,6 +220,9 @@ model Organization {
   nistCsfSubcategoryAssessments  NistCsfSubcategoryAssessment[]
   nistCsfGapAnalyses             NistCsfGapAnalysis[]
   nistCsfActionItems             NistCsfActionItem[]
+  // NPS survey relations
+  npsResponses                   NPSResponse[]
+  npsInvitations                 NPSInvitation[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -289,6 +292,8 @@ model User {
   livenessChallenges       LivenessChallenge[]
   securityTrainingRecords  SecurityTrainingRecord[]
   customUserRoles          UserRole[]
+  npsResponses             NPSResponse[]
+  npsInvitations           NPSInvitation[]
 
   @@index([email])
   @@index([organizationId])
@@ -7235,4 +7240,63 @@ model NistCsfActionItem {
   @@index([status])
   @@index([priority])
   @@index([dueDate])
+}
+
+// ============================================================================
+// NPS Survey Module
+// ----------------------------------------------------------------------------
+// Net Promoter Score collection. NPSInvitation tracks when an invitation was
+// queued / sent / responded; NPSResponse captures the 0-10 score plus an
+// optional free-text comment. Both are organization-scoped.
+// ============================================================================
+
+model NPSInvitation {
+  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  userId          String
+  trigger         String       // post_30d_active, post_onboarding, post_audit_complete, manual
+  scheduledFor    DateTime     @default(now())
+  sentAt          DateTime?
+  respondedAt     DateTime?
+  dismissedAt     DateTime?
+  snoozedUntil    DateTime?    // user-requested snooze; suppresses until this timestamp
+  emailMessageId  String?      // SendGrid x-message-id for delivery audit
+  status          String       @default("Scheduled") // Scheduled, Sent, Responded, Dismissed, Snoozed, Expired
+  expiresAt       DateTime     // hard cutoff — after this, do not show in UI
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses       NPSResponse[]
+
+  @@unique([userId, trigger, scheduledFor])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([expiresAt])
+}
+
+model NPSResponse {
+  id              String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  userId          String
+  invitationId    String?
+  score           Int             // 0-10
+  category        String          // Detractor (0-6), Passive (7-8), Promoter (9-10)
+  comment         String?         @db.Text
+  source          String          @default("in_app") // in_app, email, api
+  userAgent       String?
+  ipHash          String?         // SHA-256 of IP for anomaly detection only — not raw IP
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @default(now()) @updatedAt
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation      NPSInvitation?  @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([invitationId])
+  @@index([category])
+  @@index([createdAt])
 }

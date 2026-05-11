@@ -113,6 +113,7 @@ import hipaaRoutes from './routes/hipaa';
 import pciDssRoutes from './routes/pciDss';
 import soc2Routes from './routes/soc2';
 import nistCsfRoutes from './routes/nistCsf';
+import npsRoutes from './routes/nps';
 
 // Enhancement Module Routes
 import incidentRoutes from './routes/incidents';
@@ -630,6 +631,7 @@ app.use('/api/hipaa', apiLimiter, hipaaRoutes);
 app.use('/api/pci-dss', apiLimiter, pciDssRoutes);
 app.use('/api/soc2', apiLimiter, soc2Routes);
 app.use('/api/nist-csf', apiLimiter, nistCsfRoutes);
+app.use('/api/nps', apiLimiter, npsRoutes);
 
 // GraphQL endpoint (authenticated + rate limited)
 app.post('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());

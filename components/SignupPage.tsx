@@ -733,22 +733,6 @@ export const SignupPage: React.FC = () => {
               })}
             </div>
 
-            {/* Testimonial */}
-            <div className="mt-12 bg-white/10 backdrop-blur rounded-2xl p-6">
-              <p className="text-brand-100 italic mb-4">
-                "ComplyEasyAI helped us achieve SOC 2 Type II in just 45 days. 
-                The AI-powered evidence collection saved us hundreds of hours."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold">
-                  JD
-                </div>
-                <div>
-                  <div className="font-semibold">Jane Doe</div>
-                  <div className="text-sm text-brand-200">CTO, TechStartup Inc.</div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

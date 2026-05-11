@@ -3200,6 +3200,27 @@ export const api = {
   },
 
   // (workflows already defined above — see "Workflow Builder" section)
+
+  nps: {
+    getActive: async () => fetchAPI<any>('/nps/active'),
+    submitResponse: async (data: { invitationId?: string; score: number; comment?: string; source?: 'in_app' | 'email' | 'api' }) =>
+      fetchAPI<any>('/nps/responses', { method: 'POST', body: JSON.stringify(data) }),
+    dismissInvitation: async (id: string) =>
+      fetchAPI<any>(`/nps/invitations/${encodeURIComponent(id)}/dismiss`, { method: 'POST' }),
+    snoozeInvitation: async (id: string, untilDays: number) =>
+      fetchAPI<any>(`/nps/invitations/${encodeURIComponent(id)}/snooze`, { method: 'POST', body: JSON.stringify({ untilDays }) }),
+    listResponses: async (params?: { category?: string; since?: string; until?: string; take?: number; skip?: number }) => {
+      const query = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
+      return fetchAPI<any[]>(`/nps/responses${query}`);
+    },
+    getStats: async (params?: { periodStart?: string; periodEnd?: string }) => {
+      const query = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
+      return fetchAPI<any>(`/nps/stats${query}`);
+    },
+    scheduleInvitation: async (data: { userId: string; trigger: string; scheduledFor?: string; ttlDays?: number; cooldownDays?: number }) =>
+      fetchAPI<any>('/nps/invitations', { method: 'POST', body: JSON.stringify(data) }),
+    processDueInvitations: async () => fetchAPI<any>('/nps/invitations/process-due', { method: 'POST' }),
+  },
 };
 
 // Export helper functions
