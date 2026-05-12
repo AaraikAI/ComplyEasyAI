@@ -281,6 +281,7 @@ jobs:
           SENDGRID_API_KEY: SG.test-key
           SENDGRID_FROM_EMAIL: test@test.com
           CLIENT_URL: http://localhost:4173
+          CORS_ORIGIN: http://localhost:4173
 
       - name: Run Playwright tests
         run: npx playwright test --project=chromium
