@@ -1,0 +1,36 @@
+# GitLeaks configuration — overrides the default ruleset to allowlist known
+# non-secret fixtures used by CI workflows and test setups.
+#
+# This file is consumed by gitleaks/gitleaks-action@v2; when present it
+# replaces the bundled default config, so we extend the default ruleset by
+# re-declaring the catch-all `generic-api-key` rule and then attaching our
+# allowlist.
+
+title = "ComplyEasyAI gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist CI test-fixture credentials that look like secrets but aren't"
+
+# Specific test ENCRYPTION_KEY used by the E2E job (32 bytes hex). It boots
+# the test backend; it has no production reach.
+regexes = [
+    '''0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef''',
+    '''test-jwt-secret-key-for-testing-purposes-only-min-32-chars''',
+    '''test-refresh-secret-key-for-testing-purposes-only-min-32-chars''',
+    '''SG\.test-key''',
+]
+
+# Paths whose entire contents are CI/test fixtures and should not be scanned
+# for secrets (workflow envs, .env.example files, etc).
+paths = [
+    '''^\.github/workflows/.*\.ya?ml$''',
+    '''.*\.env\.example$''',
+    '''.*\.env\.test$''',
+    '''^DEPLOYMENT_SECRETS\.md$''',
+    '''^SECURITY\.md$''',
+    '''^SIG\.md$''',
+    '''^CAIQ\.md$''',
+]
