@@ -1,14 +1,14 @@
 # ComplyEasy AI - Complete Feature List
 
-**Last Updated:** April 2, 2026
-**Version:** 3.1.0 Enterprise Edition (Audit-Aligned)
-**Total Features:** 531+ Production-Ready Features
+**Last Updated:** May 17, 2026
+**Version:** 3.2.0 Enterprise Edition (Audit-Aligned)
+**Total Features:** 552+ Production-Ready Features
 
 ---
 
 ## 📊 Executive Summary
 
-ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform with **531+ features** across **33 major categories**. This document provides a complete inventory of all features, their implementation status, and cross-references with technical documentation.
+ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform with **552+ features** across **33 major categories**. This document provides a complete inventory of all features, their implementation status, and cross-references with technical documentation.
 
 **Audit alignment (v16):** The platform remains feature-complete at inventory level, but production hardening is still in progress for a small set of cross-cutting security/operational concerns (see "Implementation Status Summary" and "Audit-Tracked Gaps" below).
 
@@ -19,7 +19,7 @@ ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform wi
 | Core Compliance Management | 25 | ✅ Implemented (with hardening follow-ups) |
 | AI-Powered Features | 30 | ✅ Implemented (with hardening follow-ups) |
 | EU Regulations Compliance | 35 | ✅ Implemented (with hardening follow-ups) |
-| Advanced Security Features | 40 | ✅ Implemented (with hardening follow-ups) |
+| Advanced Security Features | 61 | ✅ Implemented (with hardening follow-ups) |
 | Enterprise Features | 25 | ✅ Implemented (with hardening follow-ups) |
 | Risk Management | 15 | ✅ Implemented (with hardening follow-ups) |
 | Advanced AI Services | 25 | ✅ Implemented (with hardening follow-ups) |
@@ -217,7 +217,7 @@ ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform wi
 
 ---
 
-## 4. ADVANCED SECURITY FEATURES (40 Features)
+## 4. ADVANCED SECURITY FEATURES (61 Features)
 
 ### Zero Trust Security
 **Service:** `server/src/services/advanced/zeroTrustService.ts`
@@ -288,6 +288,65 @@ ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform wi
 135. ✅ **Audit Trail Immutability** - Immutable audit trail on blockchain
 136. ✅ **Transaction Verification** - Verify blockchain transactions
 137. ✅ **Hardhat Integration** - Hardhat development environment
+
+#### Evidence Detail UI & Deep-Link Routing
+**Component:** `components/AIFeatures/EvidenceDetailPanel.tsx`, `components/hubs/EvidenceHub.tsx`
+**Route:** `/evidence/:evidenceId` (clean) + `/evidence?tab=detail&evidenceId=<id>` (legacy)
+**Status:** ✅ 100% Implemented
+
+532. ✅ **Evidence Detail Panel** - Three-sub-tab panel (Overview / Provenance / Actions) per `evidenceId`, with deepfake score, hash, confidence, status badges, and copy-to-clipboard
+533. ✅ **Provenance Timeline** - Chain-of-custody, attestations, and blockchain anchors rendered as a vertical timeline with explorer links via `utils/blockchain.ts:getBlockchainExplorerUrl`
+534. ✅ **Clean Evidence Deep-Link** - `/evidence/:evidenceId` React Router path (route added in `App.tsx`); EvidenceHub auto-defaults to the Detail tab when the path-segment id is present
+
+#### Evidence Truth API Endpoints
+**Routes:** `server/src/routes/acos.ts:84–108`
+**Status:** ✅ 100% Implemented
+
+535. ✅ **POST `/api/acos/evidence/:evidenceId/analyze-and-anchor`** - Single-call analysis + blockchain anchor (multipart file, optional `network` ∈ ethereum/polygon/hyperledger, `skipBlockchain`)
+536. ✅ **POST `/api/acos/evidence/:evidenceId/verify-integrity`** - Re-hash + match against stored analysis + on-chain anchor; returns `integrityVerified`, `hashMatch`, `blockchainVerified`, `analysisConsistent`
+537. ✅ **GET `/api/acos/evidence/:evidenceId/provenance`** - Full provenance report (custody log, analyses, anchors, attestations, integrity score) backed by first-class `EvidenceAttestation` rows
+538. ✅ **GET `/api/acos/evidence/anchor-sla`** - Admin endpoint exposing live P50/P95/P99 anchor latency + `withinTarget` flags against published SLO (P50 ≤ 15s, P95 ≤ 60s)
+
+#### Per-User RSA Signing & Multi-Party Attestation
+**Service:** `evidenceTruthLayerService.getOrCreateUserSigningKey()`, `createMultiPartyAttestation()`
+**Models:** `EvidenceAttestation`, `UserSigningKey` (`server/prisma/schema.prisma`)
+**Migration:** `20260516_evidence_attestation_user_signing_keys`
+**Status:** ✅ 100% Implemented
+
+539. ✅ **Per-User RSA-2048 Signing Keys** - `UserSigningKey` Prisma model; lazy-generated on first attestation; private key AES-256-GCM encrypted at rest via `encryptField` (`utils/credentialEncryption.ts`)
+540. ✅ **First-Class `EvidenceAttestation` Model** - Replaces audit-log-only signature storage with FK-cascaded rows (one per signer) carrying signature, publicKey, algorithm, signedPayload, evidenceHash, signedAt
+541. ✅ **Real Multi-Party Digital Signatures** - `POST /api/acos/evidence/multi-party-attestation` now signs canonical payload `${hash}:${userId}:${role}:${timestamp}` per party with each user's own RSA-2048 key (was previously a SHA-256 digest masquerading as a signature)
+
+#### Multipart Validation & Tier Gating
+**Middleware:** `server/src/middleware/validate.ts`, `server/src/middleware/tierMiddleware.ts`
+**Schemas:** `server/src/validators/acosSchemas.ts`
+**Status:** ✅ 100% Implemented
+
+542. ✅ **Multipart-Aware Joi Validation** - `validateMultipartBody(schema, { jsonFields })` middleware decodes string JSON fields after multer parsing; `validateParams(schema)` validates path params (e.g., `evidenceIdParamSchema`)
+543. ✅ **Tier Gating on All 14 `/api/acos/evidence/*` Routes** - Every evidence endpoint (reads + writes) now uniformly requires `requireAcosFeature('acosEvidenceTruth')`
+
+#### BullMQ Retry Queue & S3 Blob Store
+**Worker:** `server/src/workers/blockchainAnchorWorker.ts`, registered at server boot via `server/src/workers/index.ts`
+**Blob store:** `server/src/services/queue/anchorBlobStore.ts`
+**Status:** ✅ 100% Implemented
+
+544. ✅ **`BLOCKCHAIN_ANCHOR` BullMQ Queue** - Added to `QUEUE_NAMES`; worker re-attempts failed anchors with 5 attempts, exponential 5s backoff (5s/10s/20s/40s/80s), 2-minute per-attempt timeout, 30-day failed-job retention
+545. ✅ **S3-Backed Retry Payloads** - `putAnchorBlob`/`getAnchorBlob`/`deleteAnchorBlob` (`@aws-sdk/client-s3` v3) with `ServerSideEncryption: AES256` and `Tagging: purpose=anchor-retry`; falls back to inline base64 when S3 is unconfigured
+546. ✅ **S3 Lifecycle Policy** - `infrastructure/s3/anchor-retries-lifecycle.json` (tag-based, 7-day expiry on `purpose=anchor-retry`) + `apply-anchor-lifecycle.sh` to install via AWS CLI
+547. ✅ **Permanent-Failure Audit Trail** - On final retry exhaustion, worker writes `evidence_truth_layer.anchor_failed_permanently` AuditLog row (with attempts + error message) so the integrity story is preserved even when the chain is unreachable
+
+#### Prometheus Metrics & SLA Observability
+**Module:** `server/src/services/monitoring/metrics.ts` (prom-client), `server/src/services/monitoring/anchorSLA.ts`
+**Endpoint:** `GET /metrics` (no auth — restrict via network ACL)
+**Alerts:** `infrastructure/monitoring/alert_rules.yml`
+**SLA Doc:** `docs/SLA.md`
+**Status:** ✅ 100% Implemented
+
+548. ✅ **Prometheus `/metrics` Endpoint** - prom-client registry exposing default process metrics (CPU/mem/GC/event loop lag) plus business histograms/counters; scraped by `infrastructure/monitoring/prometheus.yml` at `api:3001/metrics`
+549. ✅ **Bounded-Cardinality HTTP Histogram** - `http_request_duration_seconds` labels use the matched Express route TEMPLATE (e.g. `/api/acos/evidence/:evidenceId/analyze`), never the raw URL; unmatched routes collapse to a single `unmatched` bucket
+550. ✅ **Anchor Histograms & Counters** - `anchor_duration_seconds` (network × result), `anchor_attempts_total`, `anchor_retries_enqueued_total`, `anchor_permanent_failures_total`, `evidence_attestations_created_total`, `user_signing_keys_generated_total` — all cardinality-bounded
+551. ✅ **Anchor SLA Recorder + Endpoint** - In-process ring buffer (1000 samples) feeds `GET /api/acos/evidence/anchor-sla` with `{ p50, p95, p99, sampleCount, totalRecorded, target, withinTarget }`; targets published in `docs/SLA.md` (P50 ≤ 15s, P95 ≤ 60s)
+552. ✅ **Anchor SLO Alert Rules** - Prometheus alerts: `AnchorP95LatencyBreach` (P95 > 60s for 10m), `AnchorPermanentFailures` (any permanent failure in 1h, severity critical, `compliance: true`), `AnchorRetryEnqueueRate` (sustained > 0.1/s) — wired in `alert_rules.yml`
 
 ---
 
@@ -1445,6 +1504,6 @@ Use `PRODUCTION_READINESS_REPORT.md` as the source of truth for current readines
 
 ---
 
-**Document Version:** 3.1
-**Last Updated:** April 2, 2026
+**Document Version:** 3.2
+**Last Updated:** May 17, 2026
 **Maintained By:** ComplyEasy AI Development Team
