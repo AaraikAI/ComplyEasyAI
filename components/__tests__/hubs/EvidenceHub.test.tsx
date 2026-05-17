@@ -10,6 +10,7 @@ vi.mock('../../AIFeatures/EvidenceCompletenessChecker', () => ({
   EvidenceCompletenessChecker: (props: any) => <div data-testid="evidence-checker">EvidenceCompletenessChecker</div>,
 }));
 vi.mock('../../ExceptionManagement', () => ({ default: () => <div data-testid="exception-management">ExceptionManagement</div> }));
+vi.mock('../../AIFeatures/EvidenceDetailPanel', () => ({ default: () => <div data-testid="evidence-detail-panel">EvidenceDetailPanel</div> }));
 
 vi.mock('lucide-react', async () => {
   const actual = await vi.importActual('lucide-react');
@@ -18,6 +19,7 @@ vi.mock('lucide-react', async () => {
     ScanSearch: (props: any) => <svg data-testid="icon-scan-search" {...props} />,
     Sparkles: (props: any) => <svg data-testid="icon-sparkles" {...props} />,
     FileWarning: (props: any) => <svg data-testid="icon-file-warning" {...props} />,
+    ShieldCheck: (props: any) => <svg data-testid="icon-shield-check" {...props} />,
   };
 });
 
@@ -45,12 +47,13 @@ describe('EvidenceHub', () => {
     renderWithRouter();
     expect(screen.getByText('Evidence Collection')).toBeInTheDocument();
     expect(screen.getByText('Completeness Checker')).toBeInTheDocument();
+    expect(screen.getByText('Evidence Detail')).toBeInTheDocument();
     expect(screen.getByText('Exceptions')).toBeInTheDocument();
   });
 
   it('all tabs are clickable buttons', () => {
     renderWithRouter();
-    ['Evidence Collection', 'Completeness Checker', 'Exceptions'].forEach(label => {
+    ['Evidence Collection', 'Completeness Checker', 'Evidence Detail', 'Exceptions'].forEach(label => {
       const button = screen.getByText(label).closest('button');
       expect(button).toBeInTheDocument();
       expect(button).not.toBeDisabled();
@@ -105,10 +108,10 @@ describe('EvidenceHub', () => {
     expect(nav).toBeInTheDocument();
   });
 
-  it('renders exactly 3 tab buttons', () => {
+  it('renders exactly 4 tab buttons', () => {
     renderWithRouter();
     const nav = screen.getByRole('navigation', { name: 'Tabs' });
     const buttons = nav.querySelectorAll('button');
-    expect(buttons).toHaveLength(3);
+    expect(buttons).toHaveLength(4);
   });
 });
