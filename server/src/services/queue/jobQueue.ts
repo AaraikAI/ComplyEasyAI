@@ -103,6 +103,8 @@ export const QUEUE_NAMES = {
   MONITORING: 'monitoring',
   /** Cleanup jobs (expired tokens, old logs) */
   CLEANUP: 'cleanup',
+  /** Blockchain anchor retries (evidence hash → on-chain) */
+  BLOCKCHAIN_ANCHOR: 'blockchain-anchor',
 } as const;
 
 export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];

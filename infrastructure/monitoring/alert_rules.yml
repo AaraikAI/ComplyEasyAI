@@ -92,6 +92,38 @@ groups:
           summary: "Circuit breaker open"
           description: "Circuit breaker for {{ $labels.service }} is open"
 
+      # ───────── Evidence Truth Layer: blockchain anchor SLOs ─────────
+      - alert: AnchorP95LatencyBreach
+        expr: histogram_quantile(0.95, rate(anchor_duration_seconds_bucket[10m])) > 60
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Anchor P95 latency exceeds 60s target"
+          description: "Anchor P95 is {{ $value }}s (target: ≤60s). Single-attempt latency only — retry tail excluded."
+
+      - alert: AnchorPermanentFailures
+        expr: sum(increase(anchor_permanent_failures_total[1h])) > 0
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+          compliance: true
+        annotations:
+          summary: "Blockchain anchor permanently failed"
+          description: "{{ $value }} anchor job(s) reached max retries in the last hour — integrity trail at risk."
+
+      - alert: AnchorRetryEnqueueRate
+        expr: sum(rate(anchor_retries_enqueued_total[10m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Elevated anchor retry enqueue rate"
+          description: "{{ $value }} retries/s being enqueued — RPC or contract may be degraded."
+
   # ============================================================================
   # DATABASE ALERTS
   # ============================================================================

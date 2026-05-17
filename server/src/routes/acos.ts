@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
-import { validateBody } from '../middleware/validate';
+import { validateBody, validateMultipartBody, validateParams } from '../middleware/validate';
 import {
   createGoalSchema,
   updateGoalSchema,
@@ -12,6 +12,11 @@ import {
   rollbackMultipleSchema,
   chainOfCustodySchema,
   bulkAnalyzeEvidenceSchema,
+  evidenceIdParamSchema,
+  analyzeAndAnchorSchema,
+  verifyFileHashSchema,
+  verifyEvidenceSignatureSchema,
+  multiPartyAttestationSchema,
   addFeedSchema,
   resolveConflictSchema,
   runSimulationSchema,
@@ -80,19 +85,27 @@ router.post('/agentic/execute-action', ...requireAcosFeature('acosAgenticActions
 router.post('/agentic/rollback/:actionId', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), asyncHandler(acosController.rollbackAction));
 router.post('/agentic/rollback-multiple', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), validateBody(rollbackMultipleSchema), asyncHandler(acosController.rollbackMultipleActions));
 
-// Evidence Truth Layer (Growth+)
-router.post('/evidence/:evidenceId/analyze', ...requireAcosFeature('acosEvidenceTruth'), upload.single('file'), asyncHandler(acosController.analyzeEvidence));
-router.get('/evidence/:evidenceId/analysis', asyncHandler(acosController.getEvidenceAnalysis));
-router.post('/evidence/:evidenceId/reanalyze', upload.single('file'), authorize('admin', 'editor'), asyncHandler(acosController.reanalyzeEvidence));
-router.get('/evidence/:evidenceId/analysis/history', asyncHandler(acosController.getAnalysisHistory));
-router.post('/evidence/bulk-analyze', authorize('admin', 'editor'), validateBody(bulkAnalyzeEvidenceSchema), asyncHandler(acosController.bulkAnalyzeEvidence));
-router.get('/evidence/:evidenceId/analysis/export', asyncHandler(acosController.exportAnalysisReport));
-router.post('/evidence/verify-hash', upload.single('file'), asyncHandler(acosController.verifyFileHash));
-router.post('/evidence/sign', upload.single('file'), authorize('admin', 'editor'), asyncHandler(acosController.signEvidence));
-router.post('/evidence/verify-signature', upload.single('file'), asyncHandler(acosController.verifyEvidenceSignature));
-router.post('/evidence/timestamp', upload.single('file'), authorize('admin', 'editor'), asyncHandler(acosController.timestampEvidence));
-router.post('/evidence/chain-of-custody', authorize('admin', 'editor'), validateBody(chainOfCustodySchema), asyncHandler(acosController.createChainOfCustody));
-router.post('/evidence/multi-party-attestation', upload.single('file'), authorize('admin', 'editor'), asyncHandler(acosController.createMultiPartyAttestation));
+// Evidence Truth Layer (Growth+ — all routes gated by acosEvidenceTruth)
+// Static path: /anchor-sla must precede /:evidenceId routes so Express does not consume "anchor-sla" as an evidenceId.
+router.get('/evidence/anchor-sla', ...requireAcosFeature('acosEvidenceTruth'), authorize('admin'), asyncHandler(acosController.getAnchorSLA));
+
+router.post('/evidence/bulk-analyze', ...requireAcosFeature('acosEvidenceTruth'), authorize('admin', 'editor'), validateBody(bulkAnalyzeEvidenceSchema), asyncHandler(acosController.bulkAnalyzeEvidence));
+router.post('/evidence/verify-hash', ...requireAcosFeature('acosEvidenceTruth'), upload.single('file'), validateMultipartBody(verifyFileHashSchema), asyncHandler(acosController.verifyFileHash));
+router.post('/evidence/sign', ...requireAcosFeature('acosEvidenceTruth'), upload.single('file'), authorize('admin', 'editor'), asyncHandler(acosController.signEvidence));
+router.post('/evidence/verify-signature', ...requireAcosFeature('acosEvidenceTruth'), upload.single('file'), validateMultipartBody(verifyEvidenceSignatureSchema), asyncHandler(acosController.verifyEvidenceSignature));
+router.post('/evidence/timestamp', ...requireAcosFeature('acosEvidenceTruth'), upload.single('file'), authorize('admin', 'editor'), asyncHandler(acosController.timestampEvidence));
+router.post('/evidence/chain-of-custody', ...requireAcosFeature('acosEvidenceTruth'), authorize('admin', 'editor'), validateBody(chainOfCustodySchema), asyncHandler(acosController.createChainOfCustody));
+router.post('/evidence/multi-party-attestation', ...requireAcosFeature('acosEvidenceTruth'), upload.single('file'), authorize('admin', 'editor'), validateMultipartBody(multiPartyAttestationSchema, { jsonFields: ['parties'] }), asyncHandler(acosController.createMultiPartyAttestation));
+
+router.post('/evidence/:evidenceId/analyze', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), upload.single('file'), asyncHandler(acosController.analyzeEvidence));
+router.get('/evidence/:evidenceId/analysis', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), asyncHandler(acosController.getEvidenceAnalysis));
+router.post('/evidence/:evidenceId/reanalyze', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), upload.single('file'), authorize('admin', 'editor'), asyncHandler(acosController.reanalyzeEvidence));
+router.get('/evidence/:evidenceId/analysis/history', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), asyncHandler(acosController.getAnalysisHistory));
+router.get('/evidence/:evidenceId/analysis/export', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), asyncHandler(acosController.exportAnalysisReport));
+
+router.post('/evidence/:evidenceId/analyze-and-anchor', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), authorize('admin', 'editor'), upload.single('file'), validateMultipartBody(analyzeAndAnchorSchema), asyncHandler(acosController.analyzeAndAnchor));
+router.post('/evidence/:evidenceId/verify-integrity', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), upload.single('file'), asyncHandler(acosController.verifyIntegrity));
+router.get('/evidence/:evidenceId/provenance', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), asyncHandler(acosController.getProvenance));
 
 // Regulatory Intelligence Fabric (Growth+)
 router.post('/rif/ingest-regulation', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), upload.single('file'), asyncHandler(acosController.ingestRegulation));
