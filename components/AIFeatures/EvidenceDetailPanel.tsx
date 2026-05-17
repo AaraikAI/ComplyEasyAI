@@ -243,13 +243,13 @@ export const EvidenceDetailPanel: React.FC<EvidenceDetailPanelProps> = ({ eviden
                 <div className="border border-gray-200 rounded p-3">
                   <div className="text-xs uppercase text-gray-500 mb-1">Overall Confidence</div>
                   <div className="text-2xl font-semibold text-gray-900">
-                    {analysis.overallConfidence != null ? `${Math.round(analysis.overallConfidence * 100)}%` : '—'}
+                    {typeof analysis.overallConfidence === 'number' ? `${Math.round(analysis.overallConfidence * 100)}%` : '—'}
                   </div>
                 </div>
                 <div className="border border-gray-200 rounded p-3">
                   <div className="text-xs uppercase text-gray-500 mb-1">Deepfake Score</div>
                   <div className="text-2xl font-semibold text-gray-900">
-                    {analysis.deepfakeScore != null ? analysis.deepfakeScore.toFixed(3) : '—'}
+                    {typeof analysis.deepfakeScore === 'number' ? analysis.deepfakeScore.toFixed(3) : '—'}
                   </div>
                 </div>
                 <div className="border border-gray-200 rounded p-3">
@@ -309,7 +309,7 @@ export const EvidenceDetailPanel: React.FC<EvidenceDetailPanelProps> = ({ eviden
                   {history.map((h, i) => (
                     <div key={i} className="flex items-center justify-between px-3 py-2 text-xs border-t border-gray-100 first:border-t-0">
                       <span className="text-gray-500">{h.createdAt ? new Date(h.createdAt).toLocaleString() : '—'}</span>
-                      <span className="text-gray-700">conf {h.overallConfidence != null ? `${Math.round(h.overallConfidence * 100)}%` : '—'}</span>
+                      <span className="text-gray-700">conf {typeof h.overallConfidence === 'number' ? `${Math.round(h.overallConfidence * 100)}%` : '—'}</span>
                       <StatusBadge status={h.verificationStatus} />
                     </div>
                   ))}
