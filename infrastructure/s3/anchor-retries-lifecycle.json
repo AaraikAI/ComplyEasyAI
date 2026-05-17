@@ -1,0 +1,20 @@
+{
+  "Rules": [
+    {
+      "ID": "AnchorRetriesExpiration",
+      "Status": "Enabled",
+      "Filter": {
+        "Tag": {
+          "Key": "purpose",
+          "Value": "anchor-retry"
+        }
+      },
+      "Expiration": {
+        "Days": 7
+      },
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 1
+      }
+    }
+  ]
+}

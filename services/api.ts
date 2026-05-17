@@ -1487,6 +1487,39 @@ export const api = {
         headers: {}, // Let browser set Content-Type with boundary
       });
     },
+    analyzeAndAnchor: async (
+      evidenceId: string,
+      file: File,
+      opts?: { network?: 'ethereum' | 'polygon' | 'hyperledger'; skipBlockchain?: boolean; controlId?: string; frameworkId?: string }
+    ) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (opts?.network) formData.append('network', opts.network);
+      if (opts?.skipBlockchain !== undefined) formData.append('skipBlockchain', String(opts.skipBlockchain));
+      if (opts?.controlId) formData.append('controlId', opts.controlId);
+      if (opts?.frameworkId) formData.append('frameworkId', opts.frameworkId);
+      return fetchAPI(`/acos/evidence/${evidenceId}/analyze-and-anchor`, {
+        method: 'POST',
+        body: formData,
+        headers: {},
+      });
+    },
+    verifyIntegrity: async (evidenceId: string, file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return fetchAPI(`/acos/evidence/${evidenceId}/verify-integrity`, {
+        method: 'POST',
+        body: formData,
+        headers: {},
+      });
+    },
+    getProvenance: async (evidenceId: string) =>
+      fetchAPI(`/acos/evidence/${evidenceId}/provenance`),
+    getEvidenceAnalysis: async (evidenceId: string) =>
+      fetchAPI(`/acos/evidence/${evidenceId}/analysis`),
+    getAnalysisHistory: async (evidenceId: string) =>
+      fetchAPI(`/acos/evidence/${evidenceId}/analysis/history`),
+    getAnchorSLA: async () => fetchAPI('/acos/evidence/anchor-sla'),
 
     // Regulatory Intelligence Fabric
     ingestRegulation: async (data: any) => fetchAPI('/acos/rif/ingest-regulation', { method: 'POST', body: JSON.stringify(data) }),

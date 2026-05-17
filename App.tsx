@@ -345,6 +345,7 @@ const MainApp: React.FC = () => {
 
             {/* ── Evidence & Exceptions (consolidated hub) ────────── */}
             <Route path="evidence" element={<EvidenceHub />} />
+            <Route path="evidence/:evidenceId" element={<EvidenceHub />} />
 
             {/* Privacy & Data - unchanged */}
             <Route path="privacy" element={<PrivacyManagementPlatform onBack={() => navigate(ROUTES.DASHBOARD)} />} />

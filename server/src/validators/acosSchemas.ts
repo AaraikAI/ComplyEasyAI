@@ -83,6 +83,40 @@ export const bulkAnalyzeEvidenceSchema = Joi.object({
   evidenceIds: Joi.array().items(Joi.string().max(200)).min(1).required(),
 }).unknown(false);
 
+export const evidenceIdParamSchema = Joi.object({
+  evidenceId: Joi.string().required().min(1).max(200),
+}).unknown(false);
+
+export const analyzeAndAnchorSchema = Joi.object({
+  network: Joi.string().valid('ethereum', 'polygon', 'hyperledger').default('polygon'),
+  skipBlockchain: Joi.boolean().default(false),
+  controlId: Joi.string().max(200).allow('', null).optional(),
+  frameworkId: Joi.string().max(200).allow('', null).optional(),
+}).unknown(false);
+
+export const verifyFileHashSchema = Joi.object({
+  storedHash: Joi.string().hex().length(64).required(),
+}).unknown(false);
+
+export const verifyEvidenceSignatureSchema = Joi.object({
+  signature: Joi.string().required().max(2000),
+  publicKey: Joi.string().required().max(8000),
+}).unknown(false);
+
+export const multiPartyAttestationSchema = Joi.object({
+  evidenceId: Joi.string().min(1).max(200).optional(),
+  parties: Joi.array()
+    .items(
+      Joi.object({
+        userId: Joi.string().required().min(1).max(200),
+        role: Joi.string().required().min(1).max(100),
+      }).unknown(false)
+    )
+    .min(2)
+    .max(20)
+    .required(),
+}).unknown(false);
+
 // ============================================================================
 // REGULATORY INTELLIGENCE (RIF)
 // ============================================================================

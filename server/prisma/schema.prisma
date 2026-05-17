@@ -54,6 +54,8 @@ model Organization {
   euAiActTransparencyReports EUAIActTransparencyReport[]
   edgeComplianceChecks       EdgeComplianceCheck[]
   evidenceAnalyses           EvidenceAnalysis[]
+  evidenceAttestations       EvidenceAttestation[]
+  userSigningKeys            UserSigningKey[]
   featureSubscriptions       FeatureSubscription[]
   federatedSwarmAggregations FederatedSwarmAggregation[]
   federatedSwarmPeers        FederatedSwarmPeer[]
@@ -294,6 +296,8 @@ model User {
   customUserRoles          UserRole[]
   npsResponses             NPSResponse[]
   npsInvitations           NPSInvitation[]
+  evidenceAttestations     EvidenceAttestation[]
+  userSigningKeys          UserSigningKey[]
 
   @@index([email])
   @@index([organizationId])
@@ -1010,6 +1014,45 @@ model EvidenceAnalysis {
   @@index([evidenceId])
   @@index([organizationId])
   @@index([verificationStatus])
+}
+
+model EvidenceAttestation {
+  id              String       @id @default(uuid())
+  evidenceId      String
+  organizationId  String
+  userId          String
+  role            String
+  signature       String       @db.Text
+  publicKey       String       @db.Text
+  algorithm       String       @default("SHA256-RSA")
+  signedPayload   String       @db.Text
+  evidenceHash    String
+  signedAt        DateTime     @default(now())
+  createdAt       DateTime     @default(now())
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([evidenceId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model UserSigningKey {
+  id                  String       @id @default(uuid())
+  userId              String
+  organizationId      String
+  publicKey           String       @db.Text
+  encryptedPrivateKey String       @db.Text
+  algorithm           String       @default("SHA256-RSA")
+  keyVersion          Int          @default(1)
+  active              Boolean      @default(true)
+  createdAt           DateTime     @default(now())
+  revokedAt           DateTime?
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, organizationId, active])
+  @@index([organizationId])
 }
 
 model RegulatoryFeed {

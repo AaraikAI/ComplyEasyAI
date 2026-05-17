@@ -853,44 +853,133 @@ class EvidenceTruthLayerService {
   }
 
   /**
-   * Multi-party attestation
+   * Per-user RSA-2048 signing key. Private key is AES-256-GCM encrypted at rest
+   * with the org-derived ENCRYPTION_KEY (see utils/credentialEncryption).
+   * Returns the active key for (userId, orgId); generates a new one on first use.
+   */
+  async getOrCreateUserSigningKey(
+    userId: string,
+    organizationId: string
+  ): Promise<{ publicKey: string; privateKey: string; keyId: string }> {
+    const existing = await prisma.userSigningKey.findFirst({
+      where: { userId, organizationId, active: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existing) {
+      const { decryptField } = await import('../../utils/credentialEncryption');
+      return {
+        publicKey: existing.publicKey,
+        privateKey: decryptField(existing.encryptedPrivateKey),
+        keyId: existing.id,
+      };
+    }
+
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    const { encryptField } = await import('../../utils/credentialEncryption');
+    const created = await prisma.userSigningKey.create({
+      data: {
+        userId,
+        organizationId,
+        publicKey,
+        encryptedPrivateKey: encryptField(privateKey),
+        algorithm: 'SHA256-RSA',
+        keyVersion: 1,
+        active: true,
+      },
+    });
+
+    try {
+      const { userSigningKeysGeneratedTotal } = await import('../monitoring/metrics');
+      userSigningKeysGeneratedTotal.inc();
+    } catch {
+      // metrics optional
+    }
+
+    logger.info(`[Evidence Truth Layer] Generated user signing key for user=${userId} org=${organizationId}`);
+    return { publicKey, privateKey, keyId: created.id };
+  }
+
+  /**
+   * Multi-party attestation — each party signs the canonical payload with their OWN
+   * RSA private key (lazily generated on first attestation). Persists each signature
+   * in a first-class EvidenceAttestation row and emits a parallel AuditLog entry.
    */
   async createMultiPartyAttestation(
     fileBuffer: Buffer,
     organizationId: string,
-    parties: Array<{ userId: string; role: string }>
-  ): Promise<Array<{ userId: string; signature: string; timestamp: Date }>> {
+    parties: Array<{ userId: string; role: string }>,
+    evidenceId?: string
+  ): Promise<Array<{ userId: string; role: string; signature: string; algorithm: string; publicKey: string; timestamp: Date; attestationId: string }>> {
     try {
       const hash = this.generateCryptographicHash(fileBuffer);
-      const attestations: Array<{ userId: string; signature: string; timestamp: Date }> = [];
+      const resolvedEvidenceId = evidenceId || `evhash-${hash.slice(0, 16)}`;
+      const attestations: Array<{ userId: string; role: string; signature: string; algorithm: string; publicKey: string; timestamp: Date; attestationId: string }> = [];
 
       for (const party of parties) {
-        // Each party signs the hash
         const timestamp = new Date();
         const signData = `${hash}:${party.userId}:${party.role}:${timestamp.toISOString()}`;
-        const signature = crypto.createHash('sha256').update(signData).digest('hex');
+        const userKey = await this.getOrCreateUserSigningKey(party.userId, organizationId);
+        const signer = crypto.createSign('SHA256');
+        signer.update(signData);
+        signer.end();
+        const signature = signer.sign(userKey.privateKey, 'base64');
+
+        const attestationRow = await prisma.evidenceAttestation.create({
+          data: {
+            evidenceId: resolvedEvidenceId,
+            organizationId,
+            userId: party.userId,
+            role: party.role,
+            signature,
+            publicKey: userKey.publicKey,
+            algorithm: 'SHA256-RSA',
+            signedPayload: signData,
+            evidenceHash: hash,
+            signedAt: timestamp,
+          },
+        });
 
         attestations.push({
           userId: party.userId,
+          role: party.role,
           signature,
+          algorithm: 'SHA256-RSA',
+          publicKey: userKey.publicKey,
           timestamp,
+          attestationId: attestationRow.id,
         });
 
-        // Store attestation
         await prisma.auditLog.create({
           data: {
             action: 'evidence_truth_layer.multi_party_attestation',
             details: JSON.stringify({
+              attestationId: attestationRow.id,
+              evidenceId: resolvedEvidenceId,
               userId: party.userId,
               role: party.role,
               signature,
+              algorithm: 'SHA256-RSA',
+              signedPayload: signData,
               timestamp,
             }),
             userId: party.userId,
             organizationId,
-            hash: signature,
+            hash,
           },
         });
+      }
+
+      try {
+        const { attestationsCreatedTotal } = await import('../monitoring/metrics');
+        attestationsCreatedTotal.labels('SHA256-RSA').inc(attestations.length);
+      } catch {
+        // metrics optional
       }
 
       return attestations;
@@ -2238,32 +2327,107 @@ class EvidenceTruthLayerService {
       }
 
       let blockchainAnchor: any = undefined;
+      const anchorMetadata = {
+        filename: metadata.filename,
+        mimeType: metadata.mimeType,
+        controlId: metadata.controlId,
+        frameworkId: metadata.frameworkId,
+      };
+      const network = options?.network || 'polygon';
+      const anchorStart = Date.now();
       try {
         const blockchainService = (await import('./blockchainService')).default;
         const anchorResult = await blockchainService.anchorEvidenceHash(
           organizationId,
           evidenceId,
           fileBuffer,
-          {
-            filename: metadata.filename,
-            mimeType: metadata.mimeType,
-            controlId: metadata.controlId,
-            frameworkId: metadata.frameworkId,
-          },
-          options?.network || 'polygon'
+          anchorMetadata,
+          network
         );
 
         blockchainAnchor = anchorResult;
+        const { recordAnchorDuration } = await import('../monitoring/anchorSLA');
+        recordAnchorDuration(Date.now() - anchorStart, network, 'success');
 
         logger.info(
           `[Evidence Truth Layer] Evidence analyzed and anchored: ${evidenceId}, ` +
           `confidence=${analysis.overallConfidence}, tx=${anchorResult.transactionHash}`
         );
       } catch (blockchainError) {
-        logger.warn(
-          `[Evidence Truth Layer] Blockchain anchoring failed for ${evidenceId} (analysis still valid)`,
-          blockchainError
-        );
+        const { recordAnchorDuration } = await import('../monitoring/anchorSLA');
+        recordAnchorDuration(Date.now() - anchorStart, network, 'failure');
+        try {
+          const { default: jobQueueService, QUEUE_NAMES } = await import('../queue/jobQueue');
+          const { putAnchorBlob, isAnchorBlobStoreAvailable } = await import('../queue/anchorBlobStore');
+
+          // Prefer S3-backed payload (smaller Redis footprint). Fall back to base64
+          // when S3 isn't configured (dev/local).
+          let payload: Record<string, unknown>;
+          if (isAnchorBlobStoreAvailable()) {
+            const blob = await putAnchorBlob(
+              organizationId,
+              evidenceId,
+              fileBuffer,
+              anchorMetadata.mimeType || 'application/octet-stream'
+            );
+            if (blob) {
+              payload = {
+                evidenceId,
+                organizationId,
+                s3Bucket: blob.s3Bucket,
+                s3Key: blob.s3Key,
+                metadata: anchorMetadata,
+                network,
+              };
+            } else {
+              payload = {
+                evidenceId,
+                organizationId,
+                fileBufferBase64: fileBuffer.toString('base64'),
+                metadata: anchorMetadata,
+                network,
+              };
+            }
+          } else {
+            payload = {
+              evidenceId,
+              organizationId,
+              fileBufferBase64: fileBuffer.toString('base64'),
+              metadata: anchorMetadata,
+              network,
+            };
+          }
+
+          await jobQueueService.addJob(
+            QUEUE_NAMES.BLOCKCHAIN_ANCHOR,
+            'retry-anchor',
+            payload,
+            {
+              attempts: 5,
+              backoff: { type: 'exponential', delay: 5000 },
+              timeout: 120_000,
+              removeOnComplete: 3_600_000,
+              removeOnFail: 2_592_000_000,
+            }
+          );
+
+          try {
+            const { anchorRetriesEnqueued } = await import('../monitoring/metrics');
+            anchorRetriesEnqueued.labels(network).inc();
+          } catch {
+            // metrics optional
+          }
+
+          logger.warn(
+            `[Evidence Truth Layer] Anchor failed for ${evidenceId}; enqueued for retry`,
+            blockchainError
+          );
+        } catch (enqueueError) {
+          logger.error(
+            `[Evidence Truth Layer] Anchor failed AND retry-enqueue failed for ${evidenceId}`,
+            { blockchainError, enqueueError }
+          );
+        }
       }
 
       return { ...analysis, blockchainAnchor };
@@ -2428,8 +2592,11 @@ class EvidenceTruthLayerService {
       timestamp: Date;
     }>;
     attestations: Array<{
+      attestationId?: string;
       userId: string;
       signature: string;
+      publicKey?: string;
+      algorithm?: string;
       timestamp: Date;
       role?: string;
     }>;
@@ -2492,25 +2659,21 @@ class EvidenceTruthLayerService {
         };
       });
 
-      // Get attestations
-      const attestationLogs = await prisma.auditLog.findMany({
-        where: {
-          organizationId,
-          action: 'evidence_truth_layer.multi_party_attestation',
-          details: { contains: evidenceId },
-        },
-        orderBy: { timestamp: 'desc' },
+      // Get attestations from the first-class EvidenceAttestation table.
+      const attestationRows = await prisma.evidenceAttestation.findMany({
+        where: { evidenceId, organizationId },
+        orderBy: { signedAt: 'desc' },
       });
 
-      const attestations = attestationLogs.map(log => {
-        const details = JSON.parse(log.details || '{}');
-        return {
-          userId: details.userId || log.userId || '',
-          signature: details.signature || '',
-          timestamp: log.timestamp,
-          role: details.role,
-        };
-      });
+      const attestations = attestationRows.map(row => ({
+        attestationId: row.id,
+        userId: row.userId,
+        signature: row.signature,
+        publicKey: row.publicKey,
+        algorithm: row.algorithm,
+        timestamp: row.signedAt,
+        role: row.role,
+      }));
 
       // Calculate integrity score
       let integrityScore = 0.5; // Base score

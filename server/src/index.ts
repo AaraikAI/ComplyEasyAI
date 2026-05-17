@@ -378,6 +378,33 @@ app.use('/api', csrfProtection);
 // Monitoring middleware (must be early in the stack)
 app.use(monitoringMiddleware);
 
+// Prometheus HTTP request histogram (best-effort; skips its own /metrics endpoint).
+// Route label is the matched Express route TEMPLATE (e.g. /api/acos/evidence/:evidenceId/analyze),
+// never the raw URL — keeps cardinality bounded regardless of path-parameter values.
+app.use((req: Request, res: Response, next) => {
+  if (req.path === '/metrics') return next();
+  const start = process.hrtime.bigint();
+  res.on('finish', () => {
+    void (async () => {
+      try {
+        const { httpRequestDuration, httpRequestsTotal } = await import('./services/monitoring/metrics');
+        const elapsedSec = Number(process.hrtime.bigint() - start) / 1e9;
+        // req.route is only populated after a route matches; without it the request
+        // was unmatched (404) — collapse all of those into a single bucket.
+        const routeTemplate = req.route?.path
+          ? `${req.baseUrl}${req.route.path}`
+          : 'unmatched';
+        const labels = { method: req.method, route: routeTemplate, status_code: String(res.statusCode) };
+        httpRequestDuration.labels(labels).observe(elapsedSec);
+        httpRequestsTotal.labels(labels).inc();
+      } catch {
+        // metrics optional
+      }
+    })();
+  });
+  next();
+});
+
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   logger.info(`${req.method} ${req.path} - ${req.ip}`);
@@ -415,11 +442,26 @@ app.get('/', (req: Request, res: Response) => {
     environment: config.server.env,
     endpoints: {
       health: '/health',
+      metrics: '/metrics',
       apiDocs: '/api/docs',
       apiSpec: '/api/docs.json',
     },
     message: 'ComplyEasy AI Enterprise Backend Server is running. Visit /api/docs for API documentation.',
   });
+});
+
+// Prometheus metrics endpoint. No auth — restrict via network ACL / firewall
+// (standard pattern for /metrics scrape endpoints).
+app.get('/metrics', async (_req: Request, res: Response) => {
+  try {
+    const { getMetricsExposition } = await import('./services/monitoring/metrics');
+    const { contentType, body } = await getMetricsExposition();
+    res.setHeader('Content-Type', contentType);
+    res.send(body);
+  } catch (error) {
+    logger.error('[Metrics] Failed to serve /metrics', error);
+    res.status(500).send('# metrics unavailable\n');
+  }
 });
 
 // Health check endpoint - comprehensive system status
@@ -671,11 +713,18 @@ websocketService.initialize(httpServer);
   }
 })();
 
-// Initialize Job Queue
+// Initialize Job Queue + register workers
 (async () => {
   try {
     await jobQueueService.initialize();
     logger.info('✓ Job queue service initialized');
+    try {
+      const { registerAllWorkers } = await import('./workers');
+      await registerAllWorkers();
+      logger.info('✓ Workers registered');
+    } catch (workerError) {
+      logger.warn('⚠️  Worker registration failed (jobs will not process until restart):', workerError);
+    }
   } catch (error) {
     logger.warn('⚠️  Job queue initialization failed (optional):', error);
   }

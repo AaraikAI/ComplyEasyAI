@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { ShieldCheck, Search, Filter, Download, Loader2, ArrowUpDown, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import crypto from 'crypto';
+import { getBlockchainExplorerUrl } from '../utils/blockchain';
 
 // Extended type for transformed audit logs with Date timestamp and additional blockchain properties
 interface TransformedAuditLog extends Omit<AuditLog, 'timestamp'> {
@@ -22,24 +23,6 @@ interface AuditApiResponse {
   limit?: number;
   offset?: number;
 }
-
-// Helper function to generate blockchain explorer URLs
-const getBlockchainExplorerUrl = (transactionHash: string, network: string): string | null => {
-  if (!transactionHash) return null;
-  
-  switch (network?.toLowerCase()) {
-    case 'ethereum':
-      return `https://etherscan.io/tx/${transactionHash}`;
-    case 'polygon':
-      return `https://polygonscan.com/tx/${transactionHash}`;
-    case 'hyperledger':
-      // Hyperledger doesn't have a public explorer, return null
-      return null;
-    default:
-      // Default to Polygon if network is not specified
-      return `https://polygonscan.com/tx/${transactionHash}`;
-  }
-};
 
 type SortField = 'timestamp' | 'user' | 'action' | 'hash';
 type SortOrder = 'asc' | 'desc';

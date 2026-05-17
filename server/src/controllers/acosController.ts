@@ -527,9 +527,9 @@ class ACOSController {
   createMultiPartyAttestation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { parties } = req.body;
+      const { parties, evidenceId } = req.body as { parties: Array<{ userId: string; role: string }>; evidenceId?: string };
       const file = req.file;
-      
+
       if (!file?.buffer || !Array.isArray(parties)) {
         throw new AppError('File and parties array are required', 400);
       }
@@ -537,13 +537,102 @@ class ACOSController {
       const attestations = await evidenceTruthLayerService.createMultiPartyAttestation(
         file.buffer,
         authReq.user!.organizationId,
-        parties
+        parties,
+        evidenceId
       );
       res.json(attestations);
     } catch (error) {
       logger.error('Create multi-party attestation error', error);
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to create multi-party attestation', 500);
+    }
+  };
+
+  analyzeAndAnchor: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { evidenceId } = req.params as Record<string, string>;
+      const file = req.file;
+
+      if (!file?.buffer) {
+        throw new AppError('File is required', 400);
+      }
+
+      const { network, skipBlockchain, controlId, frameworkId } = req.body as {
+        network?: 'ethereum' | 'polygon' | 'hyperledger';
+        skipBlockchain?: boolean;
+        controlId?: string;
+        frameworkId?: string;
+      };
+
+      const result = await evidenceTruthLayerService.analyzeAndAnchor(
+        evidenceId,
+        authReq.user!.organizationId,
+        file.buffer,
+        {
+          filename: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          controlId: controlId || undefined,
+          frameworkId: frameworkId || undefined,
+        },
+        { network, skipBlockchain }
+      );
+
+      res.json(result);
+    } catch (error) {
+      logger.error('Analyze and anchor error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to analyze and anchor evidence', 500);
+    }
+  };
+
+  verifyIntegrity: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { evidenceId } = req.params as Record<string, string>;
+      const file = req.file;
+
+      if (!file?.buffer) {
+        throw new AppError('File is required', 400);
+      }
+
+      const result = await evidenceTruthLayerService.verifyIntegrity(
+        evidenceId,
+        authReq.user!.organizationId,
+        file.buffer
+      );
+      res.json(result);
+    } catch (error) {
+      logger.error('Verify integrity error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to verify evidence integrity', 500);
+    }
+  };
+
+  getProvenance: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { evidenceId } = req.params as Record<string, string>;
+      const report = await evidenceTruthLayerService.getProvenanceReport(
+        evidenceId,
+        authReq.user!.organizationId
+      );
+      res.json(report);
+    } catch (error) {
+      logger.error('Get provenance report error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to get provenance report', 500);
+    }
+  };
+
+  getAnchorSLA: RequestHandler = async (_req: Request, res: Response): Promise<void> => {
+    try {
+      const { summarizeAnchorSLA } = await import('../services/monitoring/anchorSLA');
+      res.json(summarizeAnchorSLA());
+    } catch (error) {
+      logger.error('Get anchor SLA error', error);
+      throw new AppError('Failed to get anchor SLA', 500);
     }
   };
 
