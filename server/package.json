@@ -132,7 +132,7 @@
     "snarkjs": "^0.7.6",
     "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
-    "stripe": "~21.0.1",
+    "stripe": "~22.1.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "tesseract.js": "^7.0.0",
@@ -145,7 +145,7 @@
     "xml-crypto": "^6.1.2"
   },
   "devDependencies": {
-    "@jest/globals": "^29.7.0",
+    "@jest/globals": "^30.4.1",
     "@octokit/rest": "^22.0.1",
     "@slack/web-api": "^7.15.1",
     "@types/bcryptjs": "^3.0.0",
