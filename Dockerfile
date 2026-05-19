@@ -68,7 +68,15 @@ COPY server/ ./
 # overwrite generated/ dir) and build.
 RUN node scripts/patch-tfjs-types.js
 RUN npx prisma generate
-RUN npm run build
+# Capture tsc output so CI annotations surface the actual error (annotations are
+# limited to the last ~400 chars of output, so we tail tsc's emit to that tail).
+RUN set -o pipefail; npm run build 2>&1 | tee /tmp/tsc-build.log; ec=$?; \
+    if [ $ec -ne 0 ]; then \
+      echo "===== TSC BUILD FAILED (exit $ec) — tail of output: ====="; \
+      tail -c 3500 /tmp/tsc-build.log; \
+      echo "===== END TSC BUILD OUTPUT ====="; \
+    fi; \
+    exit $ec
 
 # ---------------------------------------------------------------------------
 # Stage 6 (default): Production backend image
