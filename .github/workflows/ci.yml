@@ -54,6 +54,50 @@ jobs:
         run: npx eslint .
 
   # ============================================
+  # DIAGNOSTIC: reproduce alpine docker build outside buildx
+  # ============================================
+  diagnose-alpine-build:
+    name: Diagnose Alpine TSC Build
+    runs-on: ubuntu-latest
+    needs: lint
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run npm run build inside node:22-alpine
+        run: |
+          set +e
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work/server \
+            node:22-alpine sh -c '
+              set +e
+              apk add --no-cache libc6-compat openssl >/dev/null 2>&1
+              echo "===== npm ci ====="
+              npm ci 2>&1 | tail -60
+              ec=$?
+              echo "===== npm ci exit=$ec ====="
+              [ $ec -ne 0 ] && exit $ec
+              echo "===== prisma generate ====="
+              npx prisma generate 2>&1 | tail -20
+              echo "===== node scripts/patch-tfjs-types.js ====="
+              node scripts/patch-tfjs-types.js 2>&1 | tail -10
+              echo "===== npm run build ====="
+              npm run build 2>&1
+              ec=$?
+              echo "===== npm run build exit=$ec ====="
+              exit $ec
+            ' 2>&1 | tee /tmp/alpine-build.log
+          echo "===== final exit codes ====="
+          tail -200 /tmp/alpine-build.log
+      - name: Upload diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: alpine-build-diagnostic
+          path: /tmp/alpine-build.log
+          if-no-files-found: warn
+
+  # ============================================
   # BACKEND UNIT TESTS
   # ============================================
   test-backend:
