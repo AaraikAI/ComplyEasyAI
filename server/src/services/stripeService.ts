@@ -27,9 +27,10 @@ import notificationService from './notificationService';
 
 // Stripe SDK requires a non-empty key at construction. When STRIPE_SECRET_KEY
 // is unset (CI / preview / dev without billing), supply an obviously-invalid
-// placeholder so the module loads — any actual API call will fail-fast with
-// a clear Stripe auth error rather than crashing server startup.
-const stripeSecretKey = config.stripe.secretKey || 'sk_test_placeholder_unconfigured';
+// non-Stripe-shaped placeholder so the module loads — any actual API call
+// will fail-fast with a clear Stripe auth error rather than crashing server
+// startup. Avoid sk_*-prefixed placeholders, since secret scanners flag them.
+const stripeSecretKey = config.stripe.secretKey || 'unconfigured-no-billing-key-set';
 const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2026-03-25.dahlia',
 });
