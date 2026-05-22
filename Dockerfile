@@ -53,6 +53,7 @@ COPY styles/ ./styles/
 COPY routes/ ./routes/
 COPY i18n/ ./i18n/
 COPY public/ ./public/
+COPY utils/ ./utils/
 RUN npm run build
 
 # ---------------------------------------------------------------------------
