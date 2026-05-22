@@ -25,9 +25,17 @@ import { TierName, TIERS, getTier, getTierIndex, BillingCycle } from '../config/
 import type { Plan, SubscriptionStatus, SubscriptionChangeType } from '../generated/prisma/client';
 import notificationService from './notificationService';
 
-const stripe = new Stripe(config.stripe.secretKey, {
+// Stripe SDK requires a non-empty key at construction. When STRIPE_SECRET_KEY
+// is unset (CI / preview / dev without billing), supply an obviously-invalid
+// placeholder so the module loads — any actual API call will fail-fast with
+// a clear Stripe auth error rather than crashing server startup.
+const stripeSecretKey = config.stripe.secretKey || 'sk_test_placeholder_unconfigured';
+const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2026-03-25.dahlia',
 });
+if (!config.stripe.secretKey) {
+  logger.warn('[Stripe] STRIPE_SECRET_KEY is not set — billing endpoints will reject all requests');
+}
 
 // ============================================================================
 // TYPES
