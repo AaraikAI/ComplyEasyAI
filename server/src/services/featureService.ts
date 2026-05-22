@@ -28,10 +28,11 @@ import { getTier } from '../config/tiers';
 import Stripe from 'stripe';
 import config from '../config';
 
-// Stripe SDK requires a non-empty key at construction; use a placeholder when
-// STRIPE_SECRET_KEY is unset so the module loads (any real API call will
-// fail fast with a Stripe auth error rather than crashing server startup).
-const stripe = new Stripe(config.stripe.secretKey || 'sk_test_placeholder_unconfigured', {
+// Stripe SDK requires a non-empty key at construction; use a non-sk-prefixed
+// placeholder when STRIPE_SECRET_KEY is unset so the module loads (any real
+// API call still fails fast with a Stripe auth error). The unusual prefix
+// avoids triggering secret scanners.
+const stripe = new Stripe(config.stripe.secretKey || 'unconfigured-no-billing-key-set', {
   apiVersion: '2026-03-25.dahlia',
 });
 
