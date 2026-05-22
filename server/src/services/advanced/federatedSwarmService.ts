@@ -1,16 +1,45 @@
 /**
  * Federated Swarm Intelligence Service
- * 
+ *
  * Features:
  * - Cross-tenant learning without data leakage
- * - Differential privacy
- * - Zero-knowledge proofs for aggregation
+ * - Rényi Differential Privacy (RDP) with cross-round budget accounting
+ * - Byzantine-robust aggregation on weight values (Krum, Multi-Krum, median, trimmed mean)
+ * - Bonawitz-style additive secret-sharing SMPC
+ * - SCAFFOLD aggregation strategy with control variates
  * - Swarm-based insights
  */
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { DEFAULT_ALPHAS } from './dp/rdpAccountant';
+import {
+  checkBudget,
+  commitSpend,
+  getCurrentSpend,
+  BudgetCheckInput,
+} from './dp/budgetLedger';
+import {
+  krum,
+  multiKrum,
+  coordinateMedian,
+  trimmedMean,
+  validateWeightVector,
+  ByzantineUpdate,
+} from './dp/byzantineRobust';
+import {
+  aggregateSCAFFOLD,
+  SCAFFOLDUpdate,
+} from './dp/scaffold';
+import {
+  expandMask,
+  generateSelfMaskSeed,
+  generatePairwiseSeeds,
+  maskContribution,
+  unmaskAggregation,
+} from './dp/secretSharing';
+import { randomBytes } from 'crypto';
 
 export interface SwarmInsight {
   id: string;
@@ -872,34 +901,70 @@ class FederatedSwarmService {
   }
 
   /**
-   * Filter out Byzantine (malicious/faulty) contributions
+   * Byzantine-robust filter operating on the actual numeric weight values
+   * of each contribution (not on metadata). Validates each contribution
+   * against the per-coordinate MAD of the rest of the cohort and rejects
+   * weight vectors with non-finite values, oversized magnitudes, or
+   * outlier coordinates above a configurable threshold.
+   *
+   * For aggregation-level Byzantine robustness, callers should additionally
+   * route the kept contributions through `byzantineRobustAggregate()`.
    */
   private filterByzantineContributions(contributions: any[]): any[] {
-    // Remove contributions that are statistical outliers
-    // This provides basic Byzantine fault tolerance
+    if (contributions.length === 0) return contributions;
 
-    if (contributions.length <= 2) {
-      return contributions; // Need at least 3 for outlier detection
+    // Extract numeric weight vectors. Contributions whose weights are
+    // non-array shapes (e.g. nested objects) are accepted only when no
+    // peer group exists to compare them with.
+    const peerVectors: number[][] = [];
+    for (const c of contributions) {
+      if (Array.isArray(c?.localWeights)) {
+        peerVectors.push(c.localWeights.filter((w: any) => typeof w === 'number'));
+      }
     }
+    if (peerVectors.length < 3) return contributions;
 
-    // Calculate median and MAD (Median Absolute Deviation) for each weight dimension
-    // For simplicity, use metadata as proxy for contribution quality
-    const dataSizes = contributions.map(c => 
-      (c.metadata.frameworkCount || 1) +
-      (c.metadata.controlCount || 1) +
-      (c.metadata.riskCount || 1)
-    );
+    const kept: any[] = [];
+    for (const c of contributions) {
+      const wv = Array.isArray(c?.localWeights)
+        ? c.localWeights.filter((w: any) => typeof w === 'number')
+        : null;
+      if (!wv) {
+        kept.push(c);
+        continue;
+      }
+      const peerGroup = peerVectors.filter((v) => v !== wv);
+      const { valid, reason } = validateWeightVector(wv, peerGroup, {
+        maxAbs: 100,
+        madThreshold: 6,
+      });
+      if (valid) {
+        kept.push(c);
+      } else {
+        logger.warn(`[FederatedSwarm] Byzantine filter rejected contribution: ${reason}`);
+      }
+    }
+    return kept;
+  }
 
-    const sorted = [...dataSizes].sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)];
-    const mad = sorted.map(s => Math.abs(s - median)).sort((a, b) => a - b)[Math.floor(sorted.length / 2)];
-
-    // Filter contributions within 3 MAD of median (3-sigma rule)
-    const threshold = median + 3 * mad;
-    return contributions.filter((c, i) => {
-      const size = dataSizes[i];
-      return size <= threshold && size >= median - 3 * mad;
-    });
+  /**
+   * Apply a Byzantine-robust aggregation rule to a set of weight updates.
+   * Defaults to Multi-Krum, which gives both Byzantine robustness AND
+   * benefit from averaging across honest peers.
+   */
+  private byzantineRobustAggregate(
+    updates: ByzantineUpdate[],
+    method: 'krum' | 'multi_krum' | 'median' | 'trimmed_mean',
+    assumedByzantines: number
+  ) {
+    switch (method) {
+      case 'krum': return krum(updates, assumedByzantines);
+      case 'median': return coordinateMedian(updates);
+      case 'trimmed_mean': return trimmedMean(updates, 0.2);
+      case 'multi_krum':
+      default:
+        return multiKrum(updates, assumedByzantines);
+    }
   }
 
   /**
@@ -1935,96 +2000,145 @@ class FederatedSwarmService {
   }
 
   /**
-   * Secure aggregation (cryptographic aggregation) - ENHANCED
-   * Production-ready: Implements secure multi-party computation with secret sharing
-   * Uses cryptographic masks and differential privacy
+   * Secure aggregation via Bonawitz-style additive secret-sharing.
+   *
+   * Each peer P_i derives pairwise pads p_{i,j} from per-pair shared seeds
+   * (delivered separately via the SecretShareCoordinator) and a self-mask
+   * b_i from a peer-local seed. The peer submits
+   *
+   *     y_i = x_i + b_i + sum_{j != i} sign(i, j) * p_{i, j}
+   *
+   * The server sums all y_i (pairwise pads cancel pairwise) and then
+   * subtracts the recovered self-masks of online peers (recovered from
+   * Shamir secret shares in the production handshake; the coordinator
+   * simulates this for in-cluster fallback).
+   *
+   * Calibrated Gaussian noise for (alpha, eps)-RDP is then added so the
+   * server learns the aggregate only up to a differentially-private bound.
    */
   private async secureAggregation(
     contributions: any[],
-    modelType: string
+    modelType: string,
+    options?: { privacyBudget?: number; targetDelta?: number; organizationId?: string }
   ): Promise<any> {
     try {
       if (contributions.length === 0) {
         return this.getDefaultModelWeights(modelType);
       }
 
-      // Step 1: Generate random masks for each contribution (secret sharing)
-      const crypto = require('crypto');
-      const masks: number[][] = [];
-      const maskedContributions: any[] = [];
-
+      // Extract numeric weight vectors. Non-numeric contributions are
+      // passed through as default model weights for the model type.
+      const numericContribs: Array<{ peerId: string; weights: number[] }> = [];
       for (let i = 0; i < contributions.length; i++) {
-        const contribution = contributions[i];
-        const masked: any = {};
-        const mask: number[] = [];
-
-        // Generate cryptographically secure random mask for each weight
-        for (const key in contribution) {
-          if (typeof contribution[key] === 'number') {
-            // Generate random mask using cryptographic RNG
-            const maskValue = (crypto.randomBytes(4).readUInt32BE(0) / 0xFFFFFFFF) - 0.5;
-            mask.push(maskValue);
-            masked[key] = contribution[key] + maskValue;
+        const c = contributions[i];
+        const peerId = c?.peerId || c?.organizationId || `peer_${i}`;
+        let weights: number[] | null = null;
+        if (Array.isArray(c)) {
+          weights = c.filter((v: any) => typeof v === 'number');
+        } else if (typeof c === 'object' && c !== null) {
+          if (Array.isArray(c.localWeights)) {
+            weights = c.localWeights.filter((v: any) => typeof v === 'number');
           } else {
-            masked[key] = contribution[key];
+            weights = Object.values(c).filter((v: any) => typeof v === 'number') as number[];
           }
         }
+        if (weights && weights.length > 0) numericContribs.push({ peerId, weights });
+      }
 
-        masks.push(mask);
+      if (numericContribs.length === 0) {
+        return this.getDefaultModelWeights(modelType);
+      }
+
+      const dim = Math.max(...numericContribs.map((c) => c.weights.length));
+      // Pad shorter vectors with zeros so all match dim
+      for (const c of numericContribs) {
+        while (c.weights.length < dim) c.weights.push(0);
+      }
+
+      // Coordinator-mediated pairwise seed exchange. In production, peers
+      // negotiate seeds via DH out-of-band; this server-side helper is the
+      // in-cluster fallback the SecretShareCoordinator delegates to.
+      const peerIds = numericContribs.map((c) => c.peerId);
+      const pairwiseSeeds = generatePairwiseSeeds(peerIds);
+      const selfMaskSeeds: Record<string, Buffer> = {};
+      for (const id of peerIds) selfMaskSeeds[id] = generateSelfMaskSeed();
+
+      // Each peer masks its contribution
+      const maskedContributions: number[][] = [];
+      for (const { peerId, weights } of numericContribs) {
+        const pairwiseSeedsForThisPeer = Object.entries(pairwiseSeeds[peerId]).map(
+          ([otherId, seed]) => ({ peerId: otherId, seed })
+        );
+        const masked = maskContribution(
+          peerId,
+          weights,
+          selfMaskSeeds[peerId],
+          pairwiseSeedsForThisPeer
+        );
         maskedContributions.push(masked);
       }
 
-      // Step 2: Aggregate masked values using federated averaging
-      const round = Math.floor(contributions.length / 10);
-      const aggregated = await this.federatedAveraging(maskedContributions, modelType, round);
-
-      // Step 3: Remove aggregate mask (masks sum to zero across participants)
-      // In distributed setting, each party shares negative mask with next party
-      const totalMask: Record<string, number> = {};
-      const keys = Object.keys(aggregated);
-
-      for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
-        const key = keys[keyIdx];
-        let maskSum = 0;
-        for (const mask of masks) {
-          if (keyIdx < mask.length) {
-            maskSum += mask[keyIdx];
-          }
-        }
-        totalMask[key] = maskSum / contributions.length;
+      // Server sums all masked contributions — pairwise pads cancel automatically
+      const maskedSum = new Array<number>(dim).fill(0);
+      for (const mc of maskedContributions) {
+        for (let d = 0; d < dim; d++) maskedSum[d] += mc[d];
       }
 
-      // Step 4: Apply differential privacy (Laplacian noise based on sensitivity)
-      const secureAggregated: any = {};
-      const sensitivity = 1.0 / contributions.length; // Sensitivity decreases with more participants
-      const epsilon = 0.1; // Privacy budget (lower = more private)
+      // Subtract recovered self-masks of online peers
+      const onlineSelfMaskSeeds = Object.values(selfMaskSeeds);
+      const unmasked = unmaskAggregation(maskedSum, onlineSelfMaskSeeds, []);
 
-      for (const key in aggregated) {
-        if (typeof aggregated[key] === 'number') {
-          // Remove mask average
-          const unmasked = aggregated[key] - (totalMask[key] || 0);
-          // Add calibrated Laplacian noise for differential privacy
-          const noise = this.generateLaplacianNoise(sensitivity / epsilon);
-          secureAggregated[key] = unmasked + noise;
-        } else {
-          secureAggregated[key] = aggregated[key];
-        }
+      // Add calibrated Gaussian noise for RDP
+      const sensitivity = 1.0 / numericContribs.length;
+      const targetDelta = options?.targetDelta ?? 1e-5;
+      const targetEpsilonPerStep = options?.privacyBudget ?? 1.0;
+      // Standard subsampled-Gaussian sigma calibration:
+      //   sigma = sqrt(2 * ln(1.25 / delta)) * sensitivity / epsilon
+      const sigma =
+        (sensitivity * Math.sqrt(2 * Math.log(1.25 / Math.max(targetDelta, 1e-12)))) /
+        Math.max(targetEpsilonPerStep, 1e-6);
+
+      const noiseSeed = randomBytes(32);
+      const gaussianNoise = this.boxMullerVector(noiseSeed, dim, sigma);
+      const dpAggregate = unmasked.map((v, d) => v / numericContribs.length + gaussianNoise[d]);
+
+      // Map back to the model's named-weight schema if necessary
+      const defaults = this.getDefaultModelWeights(modelType);
+      const keys = Object.keys(defaults);
+      if (keys.length > 0 && dim >= keys.length) {
+        const result: Record<string, number> = {};
+        keys.forEach((k, i) => {
+          result[k] = Math.max(-10, Math.min(10, dpAggregate[i]));
+        });
+        logger.debug(
+          `[FederatedSwarm] Bonawitz secure aggregation completed: ${numericContribs.length} peers, dim=${dim}, sigma=${sigma.toFixed(4)}`
+        );
+        return result;
       }
 
-      // Step 5: Validate aggregated values are within reasonable bounds
-      for (const key in secureAggregated) {
-        if (typeof secureAggregated[key] === 'number') {
-          // Clamp to prevent extreme values from noise
-          secureAggregated[key] = Math.max(-10, Math.min(10, secureAggregated[key]));
-        }
-      }
-
-      logger.debug(`[Federated Swarm] Secure aggregation completed with ${contributions.length} contributions`);
-      return secureAggregated;
+      logger.debug(
+        `[FederatedSwarm] Bonawitz secure aggregation completed: ${numericContribs.length} peers, dim=${dim}, sigma=${sigma.toFixed(4)}`
+      );
+      return dpAggregate.map((v) => Math.max(-10, Math.min(10, v)));
     } catch (error) {
-      logger.error('[Federated Swarm] Error in secure aggregation', error);
+      logger.error('[FederatedSwarm] Error in secure aggregation', error);
       return this.getDefaultModelWeights(modelType);
     }
+  }
+
+  /**
+   * Deterministic Gaussian vector via Box-Muller, seeded for reproducibility.
+   */
+  private boxMullerVector(seed: Buffer, dim: number, sigma: number): number[] {
+    // Expand seed into 2*dim uniform floats, then pair them via Box-Muller.
+    const uniformPairs = expandMask(seed, 2 * dim).map((v) => (v + 1) / 2);
+    const out = new Array<number>(dim);
+    for (let i = 0; i < dim; i++) {
+      const u1 = Math.max(uniformPairs[2 * i], 1e-12);
+      const u2 = uniformPairs[2 * i + 1];
+      out[i] = sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+    return out;
   }
 
   /**
@@ -2169,8 +2283,22 @@ class FederatedSwarmService {
   }
 
   /**
-   * Secure federated aggregation with differential privacy
-   * Aggregates model updates from peers while preserving privacy
+   * Secure federated aggregation with differential privacy.
+   *
+   * This implementation provides:
+   *   1. Pre-flight RDP budget check against the org's persistent budget
+   *      ledger. Refuses to release noise if the org would exceed its global
+   *      (epsilon, delta) ceiling.
+   *   2. Per-coordinate Byzantine robustness (Multi-Krum default; coordinate
+   *      median / trimmed mean available via `byzantineRule`).
+   *   3. Four aggregation strategies fully implemented:
+   *        - `fedavg`     — McMahan et al., 2017
+   *        - `fedprox`    — Li et al., 2018 (proximal term mu = 0.01)
+   *        - `scaffold`   — Karimireddy et al., 2020 (control variates persisted)
+   *        - `secure_aggregation` — Bonawitz et al., 2017 (Bonawitz-style SMPC
+   *                          via the secret-sharing module)
+   *   4. Calibrated Gaussian noise sized by RDP target.
+   *   5. Spend committed to the privacy budget ledger on success.
    */
   async secureAggregateModels(
     organizationId: string,
@@ -2180,24 +2308,54 @@ class FederatedSwarmService {
       clippingNorm?: number;
       minPeers?: number;
       aggregationStrategy?: 'fedavg' | 'fedprox' | 'scaffold' | 'secure_aggregation';
+      byzantineRule?: 'multi_krum' | 'krum' | 'median' | 'trimmed_mean';
+      assumedByzantines?: number;
+      epsilonBudget?: number;     // global cumulative epsilon ceiling for this org
+      targetDelta?: number;       // typically 1e-5
+      modelType?: 'risk_prediction' | 'control_effectiveness' | 'compliance_scoring';
     }
   ): Promise<{
     roundId: string;
     aggregatedModelHash: string;
     participatingPeers: number;
     convergenceMetric: number;
-    privacySpent: number;
-    privacyRemaining: number;
+    privacySpent: number;          // step epsilon for this round
+    privacyRemaining: number;      // budget - cumulative
+    cumulativeEpsilon: number;     // cumulative epsilon at target_delta
+    optimalAlpha: number;          // alpha that minimized cumulative epsilon
     modelImprovement: number;
-    status: 'success' | 'insufficient_peers' | 'convergence_failed';
+    rejectedPeers: string[];       // peers excluded as Byzantine
+    aggregationMethod: string;
+    status: 'success' | 'insufficient_peers' | 'convergence_failed' | 'budget_exceeded';
+    reason?: string;
   }> {
     try {
       const privacyBudget = options?.privacyBudget ?? 1.0;
       const clippingNorm = options?.clippingNorm ?? 1.0;
       const minPeers = options?.minPeers ?? 3;
       const strategy = options?.aggregationStrategy ?? 'fedavg';
+      const byzantineRule = options?.byzantineRule ?? 'multi_krum';
+      const targetDelta = options?.targetDelta ?? 1e-5;
+      const epsilonBudget = options?.epsilonBudget ?? 10.0;
+      const modelType = options?.modelType ?? 'risk_prediction';
 
-      // Get peer model updates for this round
+      const failResult = (status: 'insufficient_peers' | 'budget_exceeded' | 'convergence_failed', count: number, reason?: string) => ({
+        roundId,
+        aggregatedModelHash: '',
+        participatingPeers: count,
+        convergenceMetric: 0,
+        privacySpent: 0,
+        privacyRemaining: epsilonBudget,
+        cumulativeEpsilon: 0,
+        optimalAlpha: DEFAULT_ALPHAS[0],
+        modelImprovement: 0,
+        rejectedPeers: [],
+        aggregationMethod: strategy,
+        status,
+        reason,
+      });
+
+      // Load peer updates for this round
       const peerUpdates = await prisma.auditLog.findMany({
         where: {
           organizationId,
@@ -2208,145 +2366,212 @@ class FederatedSwarmService {
 
       if (peerUpdates.length < minPeers) {
         logger.warn(`[FederatedSwarm] Insufficient peers for round ${roundId}: ${peerUpdates.length}/${minPeers}`);
-        return {
-          roundId,
-          aggregatedModelHash: '',
-          participatingPeers: peerUpdates.length,
-          convergenceMetric: 0,
-          privacySpent: 0,
-          privacyRemaining: privacyBudget,
-          modelImprovement: 0,
-          status: 'insufficient_peers',
-        };
+        return failResult('insufficient_peers', peerUpdates.length, `Need ${minPeers}; got ${peerUpdates.length}`);
       }
 
-      // Parse model updates from peers
-      const modelUpdates: Array<{ peerId: string; weights: number[]; dataSize: number; loss: number }> = [];
-
+      // Parse and validate updates (weight-value Byzantine check is below)
+      const modelUpdates: Array<{ peerId: string; weights: number[]; dataSize: number; loss: number; deltaC?: number[] }> = [];
       for (const update of peerUpdates) {
         try {
           const details = JSON.parse(update.details || '{}');
-          if (details.weights && details.dataSize) {
+          if (Array.isArray(details.weights) && details.dataSize) {
             modelUpdates.push({
               peerId: details.peerId || update.id,
-              weights: details.weights,
+              weights: details.weights.filter((w: any) => typeof w === 'number'),
               dataSize: details.dataSize,
               loss: details.loss || 0,
+              deltaC: Array.isArray(details.deltaC) ? details.deltaC : undefined,
             });
           }
-        } catch {
-          // Skip malformed updates
+        } catch { /* skip malformed updates */ }
+      }
+
+      if (modelUpdates.length < minPeers) {
+        return failResult('insufficient_peers', modelUpdates.length, `${peerUpdates.length - modelUpdates.length} updates were malformed`);
+      }
+
+      // Normalize all weight vectors to the same dimension
+      const weightDimension = Math.max(...modelUpdates.map((u) => u.weights.length));
+      for (const u of modelUpdates) {
+        while (u.weights.length < weightDimension) u.weights.push(0);
+      }
+
+      // Gradient clipping (L2 norm)
+      for (const u of modelUpdates) {
+        let sq = 0;
+        for (const w of u.weights) sq += w * w;
+        const norm = Math.sqrt(sq);
+        if (norm > clippingNorm) {
+          const scale = clippingNorm / norm;
+          for (let i = 0; i < u.weights.length; i++) u.weights[i] *= scale;
         }
       }
 
-      // Apply differential privacy: clip gradients and add noise
-      const noisyUpdates = modelUpdates.map(update => {
-        const clippedWeights = update.weights.map(w => {
-          const norm = Math.abs(w);
-          return norm > clippingNorm ? (w / norm) * clippingNorm : w;
-        });
-
-        // Add Gaussian noise scaled by sensitivity/privacy budget (Gaussian mechanism)
-        const sensitivity = clippingNorm / modelUpdates.length;
-        const sigma = sensitivity * Math.sqrt(2 * Math.log(1.25 / 0.01)) / privacyBudget;
-
-        const noisyWeights = clippedWeights.map(w => {
-          // Box-Muller transform for Gaussian noise
-          const u1 = Math.random();
-          const u2 = Math.random();
-          const noise = sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-          return w + noise;
-        });
-
-        return { ...update, weights: noisyWeights };
-      });
-
-      // Aggregate based on strategy
-      let aggregatedWeights: number[];
-
-      if (strategy === 'fedavg') {
-        // Federated Averaging: weighted by dataset size
-        const totalDataSize = noisyUpdates.reduce((sum, u) => sum + u.dataSize, 0);
-        const weightDimension = noisyUpdates[0]?.weights.length || 0;
-        aggregatedWeights = new Array(weightDimension).fill(0);
-
-        for (const update of noisyUpdates) {
-          const peerWeight = update.dataSize / totalDataSize;
-          for (let i = 0; i < weightDimension; i++) {
-            aggregatedWeights[i] += (update.weights[i] || 0) * peerWeight;
-          }
+      // Weight-value Byzantine filter (per-coordinate MAD)
+      const peerGroup = modelUpdates.map((u) => u.weights);
+      const validUpdates: typeof modelUpdates = [];
+      const rejectedByValidation: string[] = [];
+      for (const u of modelUpdates) {
+        const others = peerGroup.filter((v) => v !== u.weights);
+        const { valid, reason } = validateWeightVector(u.weights, others, { maxAbs: 100, madThreshold: 6 });
+        if (valid) validUpdates.push(u);
+        else {
+          rejectedByValidation.push(u.peerId);
+          logger.warn(`[FederatedSwarm] Pre-aggregation validation rejected peer ${u.peerId}: ${reason}`);
         }
-      } else if (strategy === 'fedprox') {
-        // FedProx: adds proximal term to handle heterogeneous data
-        const mu = 0.01; // proximal term coefficient
-        const totalDataSize = noisyUpdates.reduce((sum, u) => sum + u.dataSize, 0);
-        const weightDimension = noisyUpdates[0]?.weights.length || 0;
-        aggregatedWeights = new Array(weightDimension).fill(0);
+      }
 
-        // Get previous global model weights (if available)
-        const prevModelLog = await prisma.auditLog.findFirst({
-          where: {
-            organizationId,
-            action: 'swarm.global_model',
-          },
-          orderBy: { timestamp: 'desc' },
+      if (validUpdates.length < minPeers) {
+        return failResult('insufficient_peers', validUpdates.length, `Validation rejected ${rejectedByValidation.length} of ${modelUpdates.length} updates`);
+      }
+
+      // Pre-flight RDP budget check (sigma calibrated for the noise we are about
+      // to add). Sensitivity for the Gaussian mechanism is `clippingNorm` since
+      // clipping ensures L2 sensitivity <= clippingNorm.
+      const sensitivity = clippingNorm / validUpdates.length;
+      const sigma = (sensitivity * Math.sqrt(2 * Math.log(1.25 / Math.max(targetDelta, 1e-12)))) /
+                    Math.max(privacyBudget, 1e-6);
+
+      const budgetInput: BudgetCheckInput = {
+        organizationId,
+        modelType,
+        roundId,
+        mechanism: 'gaussian',
+        sigma,
+        sensitivity,
+        epsilonBudget,
+        targetDelta,
+      };
+      const budgetCheck = await checkBudget(budgetInput);
+      if (!budgetCheck.allowed) {
+        logger.warn(`[FederatedSwarm] Privacy budget exceeded: ${budgetCheck.reason}`);
+        return failResult('budget_exceeded', validUpdates.length, budgetCheck.reason);
+      }
+
+      // Strategy-specific aggregation. SCAFFOLD requires loading prior control variates.
+      let aggregatedWeights: number[];
+      const aggregationMethod = `${strategy}+${byzantineRule}`;
+
+      if (strategy === 'scaffold') {
+        aggregatedWeights = await this.aggregateScaffoldStrategy({
+          organizationId,
+          modelType,
+          roundId,
+          validUpdates,
+          weightDimension,
         });
-        const prevWeights = prevModelLog
-          ? JSON.parse(prevModelLog.details || '{}').weights || new Array(weightDimension).fill(0)
-          : new Array(weightDimension).fill(0);
-
-        for (const update of noisyUpdates) {
-          const peerWeight = update.dataSize / totalDataSize;
-          for (let i = 0; i < weightDimension; i++) {
-            // FedProx adds mu/2 * ||w - w_global||^2 penalty
-            const proximalTerm = mu * ((update.weights[i] || 0) - (prevWeights[i] || 0));
-            aggregatedWeights[i] += ((update.weights[i] || 0) - proximalTerm) * peerWeight;
-          }
+      } else if (strategy === 'secure_aggregation') {
+        // Bonawitz-style SMPC then DP noise
+        const masked = await this.secureAggregation(
+          validUpdates.map((u) => ({ peerId: u.peerId, localWeights: u.weights })),
+          modelType,
+          { privacyBudget, targetDelta, organizationId }
+        );
+        if (Array.isArray(masked)) {
+          aggregatedWeights = masked.slice(0, weightDimension);
+          while (aggregatedWeights.length < weightDimension) aggregatedWeights.push(0);
+        } else if (masked && typeof masked === 'object') {
+          aggregatedWeights = Object.values(masked).filter((v) => typeof v === 'number') as number[];
+          while (aggregatedWeights.length < weightDimension) aggregatedWeights.push(0);
+        } else {
+          aggregatedWeights = new Array(weightDimension).fill(0);
         }
       } else {
-        // Default: simple average
-        const weightDimension = noisyUpdates[0]?.weights.length || 0;
-        aggregatedWeights = new Array(weightDimension).fill(0);
-        for (const update of noisyUpdates) {
+        // FedAvg / FedProx with Byzantine-robust post-filter on the aggregate
+        const byzantineInputs: ByzantineUpdate[] = validUpdates.map((u) => ({
+          peerId: u.peerId,
+          weights: u.weights,
+          dataSize: u.dataSize,
+        }));
+        const f = options?.assumedByzantines ?? Math.floor((byzantineInputs.length - 2) / 3);
+        const byzResult = this.byzantineRobustAggregate(byzantineInputs, byzantineRule, f);
+        // Add rejected-from-Byzantine to the rejected list
+        for (const r of byzResult.rejectedPeers) {
+          if (!rejectedByValidation.includes(r)) rejectedByValidation.push(r);
+        }
+
+        if (strategy === 'fedprox') {
+          // FedProx proximal term, applied on top of the Byzantine-robust aggregate
+          const mu = 0.01;
+          const prevModelLog = await prisma.auditLog.findFirst({
+            where: { organizationId, action: 'swarm.global_model' },
+            orderBy: { timestamp: 'desc' },
+          });
+          const prevWeights: number[] = prevModelLog
+            ? (JSON.parse(prevModelLog.details || '{}').weights || []).slice(0, weightDimension)
+            : new Array(weightDimension).fill(0);
+          while (prevWeights.length < weightDimension) prevWeights.push(0);
+
+          aggregatedWeights = byzResult.aggregatedWeights.map((w, i) => {
+            const proximal = mu * (w - (prevWeights[i] || 0));
+            return w - proximal;
+          });
+        } else {
+          // FedAvg => Byzantine-robust output IS the FedAvg result
+          aggregatedWeights = byzResult.aggregatedWeights;
+        }
+
+        // Re-weight by data size (FedAvg semantics) for the kept peers when
+        // using multi_krum/median (which average uniformly across the kept set).
+        // We blend with the dataSize-weighted average to retain FedAvg semantics
+        // for non-adversarial settings.
+        const keptIds = new Set(byzResult.selectedPeers);
+        const keptUpdates = validUpdates.filter((u) => keptIds.has(u.peerId));
+        const totalDataSize = keptUpdates.reduce((s, u) => s + u.dataSize, 0);
+        if (totalDataSize > 0 && keptUpdates.length > 0) {
+          const dataWeighted = new Array<number>(weightDimension).fill(0);
+          for (const u of keptUpdates) {
+            const peerWeight = u.dataSize / totalDataSize;
+            for (let i = 0; i < weightDimension; i++) {
+              dataWeighted[i] += (u.weights[i] || 0) * peerWeight;
+            }
+          }
+          // Convex combination: 50% Byzantine-robust, 50% data-weighted.
+          // This preserves Byzantine resistance while honoring dataset size.
           for (let i = 0; i < weightDimension; i++) {
-            aggregatedWeights[i] += (update.weights[i] || 0) / noisyUpdates.length;
+            aggregatedWeights[i] = 0.5 * aggregatedWeights[i] + 0.5 * dataWeighted[i];
           }
         }
       }
 
-      // Calculate convergence metric (cosine similarity with previous model)
+      // Add calibrated Gaussian DP noise to the aggregate
+      for (let i = 0; i < aggregatedWeights.length; i++) {
+        const u1 = Math.max(1e-12, Math.random());
+        const u2 = Math.random();
+        const z = sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        aggregatedWeights[i] += z;
+      }
+
+      // Convergence metric (cosine similarity with previous global model)
       let convergenceMetric = 0;
       const prevModelLog = await prisma.auditLog.findFirst({
         where: { organizationId, action: 'swarm.global_model' },
         orderBy: { timestamp: 'desc' },
       });
-
       if (prevModelLog) {
-        const prevWeights = JSON.parse(prevModelLog.details || '{}').weights || [];
+        const prevWeights: number[] = JSON.parse(prevModelLog.details || '{}').weights || [];
         if (prevWeights.length === aggregatedWeights.length && prevWeights.length > 0) {
-          let dotProduct = 0, normA = 0, normB = 0;
+          let dot = 0, nA = 0, nB = 0;
           for (let i = 0; i < aggregatedWeights.length; i++) {
-            dotProduct += aggregatedWeights[i] * (prevWeights[i] || 0);
-            normA += aggregatedWeights[i] * aggregatedWeights[i];
-            normB += (prevWeights[i] || 0) * (prevWeights[i] || 0);
+            dot += aggregatedWeights[i] * (prevWeights[i] || 0);
+            nA += aggregatedWeights[i] * aggregatedWeights[i];
+            nB += (prevWeights[i] || 0) * (prevWeights[i] || 0);
           }
-          const denominator = Math.sqrt(normA) * Math.sqrt(normB);
-          convergenceMetric = denominator > 0 ? dotProduct / denominator : 0;
+          const denom = Math.sqrt(nA) * Math.sqrt(nB);
+          convergenceMetric = denom > 0 ? dot / denom : 0;
         }
       }
 
-      // Calculate model improvement
-      const avgLoss = modelUpdates.reduce((sum, u) => sum + u.loss, 0) / modelUpdates.length;
+      const avgLoss = validUpdates.reduce((s, u) => s + u.loss, 0) / validUpdates.length;
       const modelImprovement = avgLoss > 0 ? Math.max(0, 1 - avgLoss) : 0;
 
-      // Privacy accounting
-      const privacySpent = privacyBudget * (1 / Math.sqrt(modelUpdates.length));
-
-      // Hash the aggregated model for integrity verification
+      // Hash for integrity verification
       const crypto = require('crypto');
       const modelHash = crypto.createHash('sha256').update(JSON.stringify(aggregatedWeights)).digest('hex');
 
-      // Store aggregated model
+      // Commit RDP spend AFTER successful aggregation
+      await commitSpend(budgetInput, budgetCheck);
+
       await prisma.auditLog.create({
         data: {
           action: 'swarm.global_model',
@@ -2354,37 +2579,191 @@ class FederatedSwarmService {
           hash: modelHash,
           details: JSON.stringify({
             roundId,
-            weights: aggregatedWeights.slice(0, 100), // Store first 100 weights for reference
+            weights: aggregatedWeights.slice(0, 100),
             weightDimension: aggregatedWeights.length,
-            participatingPeers: noisyUpdates.length,
+            participatingPeers: validUpdates.length,
+            rejectedPeers: rejectedByValidation,
             convergenceMetric,
             modelImprovement,
-            privacySpent,
+            privacySpent: budgetCheck.thisStepEpsilon,
+            cumulativeEpsilon: budgetCheck.epsilonAfter,
+            optimalAlpha: budgetCheck.optimalAlpha,
             strategy,
+            byzantineRule,
+            sigma,
+            sensitivity,
           }),
         },
       });
 
       logger.info(
-        `[FederatedSwarm] Secure aggregation complete for round ${roundId}: ` +
-        `${noisyUpdates.length} peers, convergence=${convergenceMetric.toFixed(4)}, ` +
-        `improvement=${modelImprovement.toFixed(4)}, privacy_spent=${privacySpent.toFixed(4)}`
+        `[FederatedSwarm] Aggregation complete for round ${roundId}: strategy=${strategy} byzantine=${byzantineRule} ` +
+        `peers=${validUpdates.length} rejected=${rejectedByValidation.length} ` +
+        `convergence=${convergenceMetric.toFixed(4)} improvement=${modelImprovement.toFixed(4)} ` +
+        `step_eps=${budgetCheck.thisStepEpsilon.toFixed(4)} cumulative_eps=${budgetCheck.epsilonAfter.toFixed(4)} ` +
+        `optimal_alpha=${budgetCheck.optimalAlpha}`
       );
 
       return {
         roundId,
         aggregatedModelHash: modelHash,
-        participatingPeers: noisyUpdates.length,
+        participatingPeers: validUpdates.length,
         convergenceMetric: Math.round(convergenceMetric * 10000) / 10000,
-        privacySpent: Math.round(privacySpent * 10000) / 10000,
-        privacyRemaining: Math.round((privacyBudget - privacySpent) * 10000) / 10000,
+        privacySpent: Math.round(budgetCheck.thisStepEpsilon * 10000) / 10000,
+        privacyRemaining: Math.round((epsilonBudget - budgetCheck.epsilonAfter) * 10000) / 10000,
+        cumulativeEpsilon: Math.round(budgetCheck.epsilonAfter * 10000) / 10000,
+        optimalAlpha: budgetCheck.optimalAlpha,
         modelImprovement: Math.round(modelImprovement * 10000) / 10000,
+        rejectedPeers: rejectedByValidation,
+        aggregationMethod,
         status: 'success',
       };
     } catch (error) {
       logger.error('[FederatedSwarm] Error in secure aggregation', error);
       throw error;
     }
+  }
+
+  /**
+   * SCAFFOLD aggregation: requires loading prior server-side global control
+   * variate `c` and per-peer `c_i` from persistent storage, then composing
+   * the new global model delta and updated control variates back out.
+   */
+  private async aggregateScaffoldStrategy(input: {
+    organizationId: string;
+    modelType: string;
+    roundId: string;
+    validUpdates: Array<{ peerId: string; weights: number[]; dataSize: number; loss: number; deltaC?: number[] }>;
+    weightDimension: number;
+  }): Promise<number[]> {
+    const { organizationId, modelType, roundId, validUpdates, weightDimension } = input;
+
+    // Prior server-side global control variate
+    const prevGlobalRecord = await prisma.sCAFFOLDControlVariate.findFirst({
+      where: { organizationId, modelType, scope: 'global' },
+      orderBy: { createdAt: 'desc' },
+    });
+    const prevGlobalC: number[] = prevGlobalRecord
+      ? (prevGlobalRecord.controlVariate as number[]).slice(0, weightDimension)
+      : new Array(weightDimension).fill(0);
+    while (prevGlobalC.length < weightDimension) prevGlobalC.push(0);
+
+    // Prior per-peer control variates
+    const peerIds = validUpdates.map((u) => u.peerId);
+    const prevPeerRecords = await prisma.sCAFFOLDControlVariate.findMany({
+      where: {
+        organizationId,
+        modelType,
+        scope: 'peer',
+        peerId: { in: peerIds },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    const prevPeerControlVariates: Record<string, number[]> = {};
+    for (const id of peerIds) prevPeerControlVariates[id] = new Array(weightDimension).fill(0);
+    for (const rec of prevPeerRecords) {
+      if (!rec.peerId) continue;
+      if (prevPeerControlVariates[rec.peerId][0] === 0) {
+        const cv = (rec.controlVariate as number[]).slice(0, weightDimension);
+        while (cv.length < weightDimension) cv.push(0);
+        prevPeerControlVariates[rec.peerId] = cv;
+      }
+    }
+
+    // Prior global model (so we can compute delta_x_i = w_i - w_global)
+    const prevModelLog = await prisma.auditLog.findFirst({
+      where: { organizationId, action: 'swarm.global_model' },
+      orderBy: { timestamp: 'desc' },
+    });
+    const prevGlobalWeights: number[] = prevModelLog
+      ? (JSON.parse(prevModelLog.details || '{}').weights || []).slice(0, weightDimension)
+      : new Array(weightDimension).fill(0);
+    while (prevGlobalWeights.length < weightDimension) prevGlobalWeights.push(0);
+
+    // Build SCAFFOLD updates. If the peer submitted deltaC, use it; else derive
+    // delta_c_i from server-side control variate update rule (Karimireddy 2020, Option II):
+    //   delta_c_i = -c_i + c_global + (w_global - w_i) / (K * eta_l)
+    // We approximate K*eta_l as 1 for first-round operation.
+    const scaffoldUpdates: SCAFFOLDUpdate[] = validUpdates.map((u) => {
+      const deltaX = u.weights.map((w, i) => w - prevGlobalWeights[i]);
+      const deltaC = u.deltaC && u.deltaC.length === weightDimension
+        ? u.deltaC
+        : deltaX.map((dx, i) => -prevPeerControlVariates[u.peerId][i] + prevGlobalC[i] + dx);
+      return { peerId: u.peerId, deltaX, deltaC, dataSize: u.dataSize };
+    });
+
+    const totalCohortSize = Math.max(scaffoldUpdates.length, peerIds.length);
+    const result = aggregateSCAFFOLD(
+      scaffoldUpdates,
+      prevGlobalC,
+      prevPeerControlVariates,
+      totalCohortSize,
+      1.0
+    );
+
+    // Persist updated global + per-peer control variates
+    await prisma.sCAFFOLDControlVariate.create({
+      data: {
+        organizationId,
+        modelType,
+        scope: 'global',
+        peerId: null,
+        roundId,
+        controlVariate: result.newGlobalControlVariate as any,
+        weightDimension,
+      },
+    });
+    for (const [peerId, cv] of Object.entries(result.newPeerControlVariates)) {
+      await prisma.sCAFFOLDControlVariate.upsert({
+        where: {
+          organizationId_modelType_scope_peerId_roundId: {
+            organizationId,
+            modelType,
+            scope: 'peer',
+            peerId,
+            roundId,
+          },
+        },
+        update: { controlVariate: cv as any, weightDimension },
+        create: {
+          organizationId,
+          modelType,
+          scope: 'peer',
+          peerId,
+          roundId,
+          controlVariate: cv as any,
+          weightDimension,
+        },
+      });
+    }
+
+    // Return new global model = prev_global + eta_g * delta_global
+    return prevGlobalWeights.map((w, i) => w + result.newGlobalDelta[i]);
+  }
+
+  /**
+   * Read the current global (epsilon, delta) spend for an org+model.
+   * Useful for dashboards and admission checks before initiating new rounds.
+   */
+  async getPrivacyBudgetStatus(
+    organizationId: string,
+    modelType: string = 'risk_prediction',
+    targetDelta: number = 1e-5
+  ): Promise<{
+    organizationId: string;
+    modelType: string;
+    cumulativeEpsilon: number;
+    optimalAlpha: number;
+    targetDelta: number;
+  }> {
+    const spend = await getCurrentSpend(organizationId, modelType, targetDelta);
+    return {
+      organizationId,
+      modelType,
+      cumulativeEpsilon: Math.round(spend.epsilon * 10000) / 10000,
+      optimalAlpha: spend.optimalAlpha,
+      targetDelta,
+    };
   }
 
   /**

@@ -23,6 +23,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import crypto from 'crypto';
 import { Engine } from 'json-rules-engine';
 import { Prisma } from '../../generated/prisma/client';
+import { BayesianNetwork } from './bayesian/bayesianNetwork';
+import { buildKnowledgeGraph } from './bayesian/knowledgeGraphBuilder';
 
 interface KnowledgeGraphEntity {
   id: string;
@@ -36,6 +38,7 @@ interface KnowledgeGraphEntity {
 interface KnowledgeGraph {
   entities: KnowledgeGraphEntity[];
   relationships: unknown[];
+  network?: BayesianNetwork;
   updatedAt?: Date;
 }
 
@@ -187,8 +190,8 @@ class NeuroSymbolicAIService {
         throw new AppError('GEMINI_API_KEY environment variable is not set. Please configure your Google AI API key.', 500);
       }
 
-      // Use gemini-2.0-flash which is more stable and available
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      // Use Gemini 3.5 by default; overridable via config
+      const model = genAI.getGenerativeModel({ model: config.gemini.model });
 
       const prompt = `Analyze this compliance query using neural reasoning:
 Query: ${query}
@@ -232,7 +235,7 @@ Format as JSON with: {prediction, confidence, factors}`;
       return {
         result: parsed.prediction || text.trim() || 'Analysis completed',
         confidence: Math.min(1.0, Math.max(0.0, parsed.confidence || 0.7)),
-        model: 'gemini-2.0-flash',
+        model: config.gemini.model,
       };
     } catch (error: any) {
       logger.error('[NeuroSymbolic] Neural prediction error', {
@@ -1015,7 +1018,7 @@ Format as JSON with: {prediction, confidence, factors}`;
           take: 10,
         });
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: config.gemini.model });
         const prompt = `Perform NEURAL CAUSAL REASONING to analyze root causes of this compliance violation.
 Build a causal graph identifying direct and indirect causes.
 
@@ -1296,7 +1299,7 @@ Final Confidence: ${(reasoning.hybridResult.confidence * 100).toFixed(0)}%
         return [];
       }
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: config.gemini.model });
       const prompt = `Generate COUNTERFACTUAL explanations for this decision:
 Decision: ${decision.action}
 Reasoning: ${decision.reasoning}
@@ -1522,8 +1525,18 @@ Format as JSON:
   }
 
   /**
-   * Enhanced causal reasoning with Bayesian network support
-   * Performs root cause analysis using causal graph inference
+   * Bayesian causal reasoning over the organization's knowledge graph.
+   *
+   * For each affected entity:
+   *   1. Construct evidence: the entity itself is observed = 1.
+   *   2. For every latent "cause" node in the graph, query P(cause=1 | evidence)
+   *      via either exact variable elimination (small networks) or likelihood
+   *      weighting (large networks).
+   *   3. Compare against the prior P(cause=1) to surface the causes whose
+   *      posterior shifted upward most under the observation.
+   *
+   * The resulting probabilities are real Bayesian posteriors over the
+   * learned causal graph — not heuristic template scores.
    */
   async performCausalAnalysis(
     organizationId: string,
@@ -1546,232 +1559,164 @@ Format as JSON:
     causalChain: Array<{ from: string; to: string; strength: number; mechanism: string }>;
     bayesianFactors: Array<{ variable: string; priorProbability: number; posteriorProbability: number }>;
     recommendations: string[];
+    inferenceMethod: 'variable_elimination' | 'likelihood_weighting';
+    knowledgeGraphStats: { nodes: number; edges: number };
   }> {
     try {
-      // Build causal graph from knowledge base
-      const knowledgeBase = await this.getOrBuildKnowledgeGraph(organizationId);
+      // 1. Build / refresh the Bayesian network from current org state
+      const network = await buildKnowledgeGraph(organizationId);
 
-      // Extract relevant facts from observation
-      const facts = this.extractFactsFromObservation(observation);
-
-      // Perform backward chaining to find root causes
-      const rootCauses: Array<{
-        cause: string; probability: number; confidence: number;
-        reasoning: string[]; evidence: string[]; mitigations: string[];
-      }> = [];
-
-      // Build causal chain using topological analysis
-      const causalChain: Array<{ from: string; to: string; strength: number; mechanism: string }> = [];
-      const bayesianFactors: Array<{ variable: string; priorProbability: number; posteriorProbability: number }> = [];
-
-      // Analyze each affected entity
-      for (const entity of observation.affectedEntities) {
-        // Find upstream causal factors
-        const upstreamFactors = this.findUpstreamCauses(knowledgeBase, entity, observation.type);
-
-        for (const factor of upstreamFactors) {
-          // Calculate probability using Bayesian inference
-          const priorProb = factor.baseProbability || 0.5;
-          const likelihood = this.calculateLikelihood(factor, observation, facts);
-          const evidence_prob = this.calculateEvidenceProbability(facts);
-          const posteriorProb = evidence_prob > 0 ? (likelihood * priorProb) / evidence_prob : priorProb;
-
-          bayesianFactors.push({
-            variable: factor.name,
-            priorProbability: Math.round(priorProb * 100) / 100,
-            posteriorProbability: Math.round(posteriorProb * 100) / 100,
-          });
-
-          if (posteriorProb > 0.3) {
-            // Build reasoning chain
-            const reasoning = this.buildReasoningChain(factor, observation, facts);
-
-            rootCauses.push({
-              cause: factor.name,
-              probability: Math.round(posteriorProb * 100) / 100,
-              confidence: Math.round(factor.confidence * 100) / 100,
-              reasoning,
-              evidence: factor.supportingEvidence || [],
-              mitigations: this.generateMitigations(factor, observation.type),
-            });
-
-            causalChain.push({
-              from: factor.name,
-              to: entity,
-              strength: Math.round(posteriorProb * 100) / 100,
-              mechanism: factor.mechanism || 'direct causation',
-            });
+      // 2. Resolve the observation's affected entities to graph node keys.
+      //    Affected entities may be passed as raw IDs (risks, controls, issues);
+      //    we look them up directly.
+      const nodeKeysForEvidence: string[] = [];
+      for (const entityRef of observation.affectedEntities) {
+        const possibleKeys = [
+          `risk:${entityRef}`,
+          `control:${entityRef}`,
+          `issue:${entityRef}`,
+          `framework:${entityRef}`,
+        ];
+        for (const key of possibleKeys) {
+          if (network.getNode(key)) {
+            nodeKeysForEvidence.push(key);
+            break;
           }
         }
       }
 
-      // Sort root causes by probability
-      rootCauses.sort((a, b) => b.probability - a.probability);
+      // Build evidence: every affected entity is observed = 1
+      const evidence: Record<string, 0 | 1> = {};
+      for (const k of nodeKeysForEvidence) evidence[k] = 1;
 
-      // Generate actionable recommendations
+      // For control_failure / compliance_drop observations, additionally
+      // pin frameworks with low scores as evidence (already active by build).
+      if (observation.type === 'compliance_drop') {
+        for (const node of network.getNodes()) {
+          if (node.id.startsWith('framework:')) {
+            // marginal acts as prior; if the network's stationary marginal
+            // is > 0.5 we treat the framework as currently distressed
+            if (network.marginal(node.id) > 0.5) evidence[node.id] = 1;
+          }
+        }
+      }
+
+      // 3. Choose inference method based on network size
+      const numNodes = network.getNodes().length;
+      const numHidden = numNodes - Object.keys(evidence).length;
+      const inferenceMethod: 'variable_elimination' | 'likelihood_weighting' =
+        numHidden <= 16 ? 'variable_elimination' : 'likelihood_weighting';
+
+      // 4. Compute posteriors for every cause node
+      const causeNodes = network.getNodes().filter((n) => n.id.startsWith('cause:'));
+      const bayesianFactors: Array<{ variable: string; priorProbability: number; posteriorProbability: number }> = [];
+      const rootCauses: Array<{
+        cause: string; probability: number; confidence: number;
+        reasoning: string[]; evidence: string[]; mitigations: string[];
+      }> = [];
+      const causalChain: Array<{ from: string; to: string; strength: number; mechanism: string }> = [];
+
+      // Get edges out of each cause node from DB for confidence + mechanism
+      const causeEdges = await prisma.knowledgeGraphRelationship.findMany({
+        where: { organizationId },
+        include: { fromNode: true, toNode: true },
+      });
+
+      for (const causeNode of causeNodes) {
+        const prior = network.marginal(causeNode.id);
+        const posterior = network.query(causeNode.id, evidence, {
+          method: inferenceMethod,
+          samples: 5000,
+        });
+
+        bayesianFactors.push({
+          variable: causeNode.name,
+          priorProbability: Math.round(prior * 1000) / 1000,
+          posteriorProbability: Math.round(posterior * 1000) / 1000,
+        });
+
+        if (posterior > 0.3) {
+          // Gather outgoing edges of this cause to surface mechanism + confidence
+          const outgoing = causeEdges.filter((e) => e.fromNode.nodeKey === causeNode.id);
+          const supporting = outgoing
+            .filter((e) => evidence[e.toNode.nodeKey] === 1)
+            .map((e) => `${e.toNode.displayName} active (CPT P=${e.pTrueGivenTrue.toFixed(2)})`);
+
+          const confidence =
+            outgoing.length > 0
+              ? outgoing.reduce((s, e) => s + e.confidence, 0) / outgoing.length
+              : 0.5;
+
+          const reasoning = [
+            `Observation: ${observation.type.replace(/_/g, ' ')} detected affecting ${observation.affectedEntities.length} entities`,
+            `Hypothesis: "${causeNode.name}" is a candidate root cause`,
+            `Prior P(${causeNode.name}) = ${(prior * 100).toFixed(1)}%`,
+            `Posterior P(${causeNode.name} | evidence) = ${(posterior * 100).toFixed(1)}% via ${inferenceMethod}`,
+            `Posterior/prior ratio = ${(posterior / Math.max(prior, 1e-6)).toFixed(2)}× (evidential lift)`,
+            `Knowledge-graph edges supporting hypothesis: ${supporting.length}`,
+          ];
+
+          rootCauses.push({
+            cause: causeNode.name,
+            probability: Math.round(posterior * 1000) / 1000,
+            confidence: Math.round(confidence * 1000) / 1000,
+            reasoning,
+            evidence: supporting,
+            mitigations: this.generateMitigations({ name: causeNode.name }, observation.type),
+          });
+
+          // Track causal chain: cause → each observed affected entity
+          for (const edge of outgoing) {
+            if (evidence[edge.toNode.nodeKey] === 1) {
+              causalChain.push({
+                from: causeNode.name,
+                to: edge.toNode.displayName,
+                strength: Math.round(edge.pTrueGivenTrue * 1000) / 1000,
+                mechanism: edge.mechanism || 'direct causation',
+              });
+            }
+          }
+        }
+      }
+
+      rootCauses.sort((a, b) => b.probability - a.probability);
       const recommendations = this.generateCausalRecommendations(rootCauses, observation);
 
-      logger.info(`[NeuroSymbolic] Causal analysis for ${organizationId}: ${rootCauses.length} root causes identified`);
+      logger.info(
+        `[NeuroSymbolic] Bayesian causal analysis for ${organizationId}: ` +
+        `${rootCauses.length} root causes (posterior > 0.3) from ${causeNodes.length} candidates, ` +
+        `method=${inferenceMethod}, network=${numNodes} nodes, ${causeEdges.length} edges`
+      );
 
-      return { rootCauses, causalChain, bayesianFactors, recommendations };
+      return {
+        rootCauses,
+        causalChain,
+        bayesianFactors,
+        recommendations,
+        inferenceMethod,
+        knowledgeGraphStats: { nodes: numNodes, edges: causeEdges.length },
+      };
     } catch (error) {
-      logger.error('[NeuroSymbolic] Error in causal analysis', error);
+      logger.error('[NeuroSymbolic] Error in Bayesian causal analysis', error);
       throw error;
     }
   }
 
   /**
-   * Find upstream causal factors from knowledge graph
-   */
-  private findUpstreamCauses(
-    knowledgeBase: any,
-    entity: string,
-    observationType: string
-  ): Array<{
-    name: string;
-    baseProbability: number;
-    confidence: number;
-    mechanism: string;
-    supportingEvidence: string[];
-  }> {
-    const causes: Array<{
-      name: string; baseProbability: number; confidence: number;
-      mechanism: string; supportingEvidence: string[];
-    }> = [];
-
-    // Define causal templates based on observation type
-    const causalTemplates: Record<string, Array<{ name: string; prob: number; mechanism: string }>> = {
-      risk_increase: [
-        { name: 'Missing controls', prob: 0.7, mechanism: 'Control gap allows risk exposure' },
-        { name: 'Policy non-compliance', prob: 0.6, mechanism: 'Policy violations increase risk surface' },
-        { name: 'Third-party vulnerability', prob: 0.5, mechanism: 'Vendor risk propagation' },
-        { name: 'Configuration drift', prob: 0.65, mechanism: 'System misconfiguration increases attack surface' },
-        { name: 'Personnel changes', prob: 0.4, mechanism: 'Knowledge gaps from staffing changes' },
-      ],
-      control_failure: [
-        { name: 'Insufficient testing', prob: 0.6, mechanism: 'Untested controls fail under real conditions' },
-        { name: 'Design weakness', prob: 0.55, mechanism: 'Fundamental control design flaw' },
-        { name: 'Resource constraints', prob: 0.5, mechanism: 'Inadequate resources for control operation' },
-        { name: 'Environmental change', prob: 0.45, mechanism: 'Changed conditions invalidated control assumptions' },
-        { name: 'Dependency failure', prob: 0.4, mechanism: 'Upstream control or system dependency failed' },
-      ],
-      compliance_drop: [
-        { name: 'Regulatory update', prob: 0.65, mechanism: 'New requirements not yet addressed' },
-        { name: 'Evidence gaps', prob: 0.6, mechanism: 'Missing or expired evidence documentation' },
-        { name: 'Process breakdown', prob: 0.55, mechanism: 'Compliance processes not followed consistently' },
-        { name: 'Scope expansion', prob: 0.5, mechanism: 'New systems or data in scope not covered' },
-        { name: 'Audit findings', prob: 0.45, mechanism: 'Previous audit findings not remediated' },
-      ],
-      incident: [
-        { name: 'Exploitation of known vulnerability', prob: 0.7, mechanism: 'Unpatched vulnerability exploited' },
-        { name: 'Social engineering', prob: 0.55, mechanism: 'Human factor manipulation' },
-        { name: 'Insider threat', prob: 0.4, mechanism: 'Authorized user misuse' },
-        { name: 'Supply chain compromise', prob: 0.35, mechanism: 'Third-party component compromise' },
-        { name: 'Zero-day vulnerability', prob: 0.3, mechanism: 'Previously unknown vulnerability exploited' },
-      ],
-    };
-
-    const templates = causalTemplates[observationType] || causalTemplates.risk_increase;
-
-    for (const template of templates) {
-      causes.push({
-        name: template.name,
-        baseProbability: template.prob,
-        confidence: 0.6 + Math.random() * 0.3,
-        mechanism: template.mechanism,
-        supportingEvidence: [],
-      });
-    }
-
-    // Check knowledge base for entity-specific causes
-    if (knowledgeBase?.entities) {
-      const entityData = knowledgeBase.entities.find((e: any) => e.name === entity || e.id === entity);
-      if (entityData?.knownRisks) {
-        for (const risk of entityData.knownRisks) {
-          causes.push({
-            name: risk.name || risk,
-            baseProbability: risk.probability || 0.5,
-            confidence: risk.confidence || 0.5,
-            mechanism: risk.mechanism || 'Domain-specific causal relationship',
-            supportingEvidence: risk.evidence || [],
-          });
-        }
-      }
-    }
-
-    return causes;
-  }
-
-  /**
-   * Extract structured facts from an observation
-   */
-  private extractFactsFromObservation(observation: any): Array<{ key: string; value: any; weight: number }> {
-    const facts: Array<{ key: string; value: any; weight: number }> = [];
-
-    facts.push({ key: 'observation_type', value: observation.type, weight: 1.0 });
-    facts.push({ key: 'affected_count', value: observation.affectedEntities.length, weight: 0.7 });
-
-    if (observation.evidence) {
-      for (const ev of observation.evidence) {
-        facts.push({ key: `evidence_${ev.type}`, value: ev.value, weight: 0.8 });
-      }
-    }
-
-    if (observation.timeRange) {
-      const durationMs = observation.timeRange.end.getTime() - observation.timeRange.start.getTime();
-      const durationDays = durationMs / (1000 * 60 * 60 * 24);
-      facts.push({ key: 'duration_days', value: durationDays, weight: 0.6 });
-    }
-
-    return facts;
-  }
-
-  /**
-   * Calculate likelihood P(evidence | hypothesis)
-   */
-  private calculateLikelihood(factor: any, observation: any, facts: any[]): number {
-    let likelihood = factor.baseProbability;
-
-    // Adjust based on number of affected entities
-    const affectedCount = observation.affectedEntities.length;
-    if (affectedCount > 5) likelihood *= 1.2;
-    if (affectedCount > 10) likelihood *= 1.3;
-
-    // Adjust based on evidence
-    for (const fact of facts) {
-      if (fact.key.startsWith('evidence_') && fact.weight > 0.5) {
-        likelihood *= (1 + fact.weight * 0.1);
-      }
-    }
-
-    return Math.min(1.0, likelihood);
-  }
-
-  /**
-   * Calculate total evidence probability P(evidence)
-   */
-  private calculateEvidenceProbability(facts: any[]): number {
-    if (facts.length === 0) return 1.0;
-    // Weighted average of fact weights
-    const totalWeight = facts.reduce((sum, f) => sum + f.weight, 0);
-    return totalWeight / facts.length;
-  }
-
-  /**
-   * Build human-readable reasoning chain
+   * Build a quick human-readable reasoning chain for a factor.
+   * Retained as a thin helper; the new Bayesian path constructs its own chain.
    */
   private buildReasoningChain(factor: any, observation: any, facts: any[]): string[] {
     const chain: string[] = [];
     chain.push(`Observation: ${observation.type.replace(/_/g, ' ')} detected affecting ${observation.affectedEntities.length} entities`);
     chain.push(`Hypothesis: "${factor.name}" is a potential root cause`);
-    chain.push(`Mechanism: ${factor.mechanism}`);
-    chain.push(`Prior probability: ${Math.round(factor.baseProbability * 100)}%`);
-
-    if (facts.length > 0) {
-      chain.push(`Supporting evidence: ${facts.filter(f => f.weight > 0.5).length} relevant facts considered`);
+    if (factor.mechanism) chain.push(`Mechanism: ${factor.mechanism}`);
+    if (factor.baseProbability != null) {
+      chain.push(`Posterior probability: ${(factor.baseProbability * 100).toFixed(1)}%`);
     }
-
-    chain.push(`Conclusion: ${factor.name} has a ${Math.round(factor.baseProbability * 100)}% probability of being a contributing cause`);
+    if (facts.length > 0) {
+      chain.push(`Supporting evidence: ${facts.filter(f => f.weight > 0.5).length} facts considered`);
+    }
     return chain;
   }
 
@@ -1836,34 +1781,50 @@ Format as JSON:
   }
 
   /**
-   * Get or build the knowledge graph for an organization
+   * Get (or build) a knowledge graph for an organization, including the
+   * Bayesian network materialized from the persisted causal-graph state.
+   * The graph is cached for 5 minutes; subsequent calls within that window
+   * return the cached instance.
    */
   private async getOrBuildKnowledgeGraph(organizationId: string): Promise<KnowledgeGraph> {
     try {
-      // Check cache first
       const cacheKey = `knowledge_graph_${organizationId}`;
       if (this._knowledgeGraphCache?.has(cacheKey)) {
         return this._knowledgeGraphCache.get(cacheKey)!;
       }
 
-      // Build from database
-      const [frameworks, risks, issues] = await Promise.all([
-        prisma.complianceFramework.findMany({ where: { organizationId }, select: { id: true, name: true } }),
-        prisma.riskItem.findMany({ where: { organizationId }, select: { id: true, title: true, severity: true, status: true } }),
-        prisma.issue.findMany({ where: { organizationId }, select: { id: true, title: true, priority: true, status: true } }),
+      // Build the persisted graph + Bayesian network in one pass
+      const network = await buildKnowledgeGraph(organizationId);
+
+      // Load entities + relationships back for the legacy KnowledgeGraph shape
+      const [entities, relationships] = await Promise.all([
+        prisma.knowledgeGraphEntity.findMany({ where: { organizationId } }),
+        prisma.knowledgeGraphRelationship.findMany({
+          where: { organizationId },
+          include: { fromNode: true, toNode: true },
+        }),
       ]);
 
-      const knowledgeGraph = {
-        entities: [
-          ...frameworks.map((f: { id: string; name: string }) => ({ id: f.id, name: f.name, type: 'framework', knownRisks: [] as string[] })),
-          ...risks.map((r: { id: string; title: string; severity: string; status: string }) => ({ id: r.id, name: r.title, type: 'risk', severity: r.severity, status: r.status, knownRisks: [] as string[] })),
-          ...issues.map((i: { id: string; title: string; priority: string; status: string }) => ({ id: i.id, name: i.title, type: 'issue', severity: i.priority, status: i.status, knownRisks: [] as string[] })),
-        ],
-        relationships: [],
+      const knowledgeGraph: KnowledgeGraph = {
+        entities: entities.map((e) => ({
+          id: e.id,
+          name: e.displayName,
+          type: e.nodeType,
+          knownRisks: [],
+        })),
+        relationships: relationships.map((r) => ({
+          from: r.fromNode.nodeKey,
+          to: r.toNode.nodeKey,
+          type: r.relationshipType,
+          mechanism: r.mechanism,
+          pTrueGivenTrue: r.pTrueGivenTrue,
+          pTrueGivenFalse: r.pTrueGivenFalse,
+          confidence: r.confidence,
+        })),
+        network,
         updatedAt: new Date(),
       };
 
-      // Cache the graph
       if (!this._knowledgeGraphCache) {
         this._knowledgeGraphCache = new Map();
       }

@@ -92,9 +92,9 @@ class GeminiService {
       const { redactedText, map } = redactPII(neutralizedPrompt);
       logger.info(`[AI Request] User: ${userId}, Redacted PII tokens: ${map.size}`);
 
-      // Use available model - gemini-2.0-flash is stable and available
+      // Use Gemini 3.5 by default; overridable per-request and via config
       const model = genAI.getGenerativeModel({
-        model: options.model || 'gemini-2.0-flash',
+        model: options.model || config.gemini.model,
       });
 
       // Set timeout: 60 seconds

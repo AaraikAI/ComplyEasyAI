@@ -16,6 +16,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import * as crypto from 'crypto';
 import notificationService from '../notificationService';
+import config from '../../config';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -508,7 +509,7 @@ class RegulatoryIntelligenceFabricService {
     metadata: { name: string; jurisdiction: string }
   ): Promise<string> {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: config.gemini.model });
 
       const prompt = `Classify the following regulation into one of these types: GDPR, SOC2, ISO27001, HIPAA, PCI-DSS, SOX, CCPA, NIST, or Other.
       
@@ -572,7 +573,7 @@ class RegulatoryIntelligenceFabricService {
    */
   private async extractRequirements(regulationText: string): Promise<string[]> {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: config.gemini.model });
 
       const prompt = `Extract compliance requirements from the following regulatory text.
       Return a JSON array of requirement strings, each describing a specific compliance obligation.
@@ -841,7 +842,7 @@ class RegulatoryIntelligenceFabricService {
 
       // Use AI for semantic matching if available
       try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+        const model = genAI.getGenerativeModel({ model: config.gemini.model });
         const prompt = `Analyze the following regulation text and identify which compliance controls are affected.
 
 Regulation Text:
@@ -1213,7 +1214,7 @@ Only include controls with confidence > 0.5.`;
 
     try {
       // Use AI to detect implicit conflicts
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: config.gemini.model });
 
       const prompt = `Analyze these two regulations for implicit conflicts (not explicitly stated but inferred from context):
       
@@ -1255,7 +1256,7 @@ Only include controls with confidence > 0.5.`;
     description: string
   ): Promise<string> {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const model = genAI.getGenerativeModel({ model: config.gemini.model });
       const prompt = `You are a compliance expert. Provide a specific, actionable resolution suggestion for this regulatory conflict:
 
 Regulation 1: ${regulation1}
