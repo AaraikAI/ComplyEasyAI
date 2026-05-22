@@ -48,6 +48,8 @@ interface Config {
   };
   gemini: {
     apiKey: string;
+    model: string;
+    fastModel: string;
   };
   sendgrid: {
     apiKey: string;
@@ -138,6 +140,8 @@ const config: Config = {
   },
   gemini: {
     apiKey: process.env.GEMINI_API_KEY || '',
+    model: process.env.GEMINI_MODEL || 'gemini-3.5-pro',
+    fastModel: process.env.GEMINI_FAST_MODEL || 'gemini-3.5-flash',
   },
   sendgrid: {
     apiKey: process.env.SENDGRID_API_KEY || '',

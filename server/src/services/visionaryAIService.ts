@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
+import config from '../config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AuditLogger } from '../utils/auditLogger';
 import { AppError } from '../middleware/errorHandler';
@@ -236,7 +237,7 @@ export class VisionaryAIService {
     }
 
     // Use AI to generate comprehensive policy
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: config.gemini.model });
 
     const prompt = `You are a compliance policy expert. Generate a comprehensive, enterprise-grade policy based on the following requirements:
 

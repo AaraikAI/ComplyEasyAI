@@ -4,6 +4,7 @@ import { AuditLogger } from '../utils/auditLogger';
 import { AppError } from '../middleware/errorHandler';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import logger from '../config/logger';
+import config from '../config';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -232,7 +233,7 @@ export class QuestionnaireService {
     evidence: Record<string, unknown>;
   }> {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: config.gemini.model });
 
       // Build context from organization data
       const context = this.buildOrganizationContext(organization);
