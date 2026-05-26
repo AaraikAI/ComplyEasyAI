@@ -1922,6 +1922,13 @@ class ACOSService {
     }
   ): Promise<ControlLoop | null> {
     try {
+      const existing = await prisma.controlLoop.findFirst({
+        where: { id: loopId, organizationId },
+      });
+      if (!existing) {
+        throw new AppError('Control loop not found', 404);
+      }
+
       const updated = await prisma.controlLoop.update({
         where: { id: loopId },
         data: {

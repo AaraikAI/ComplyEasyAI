@@ -10,6 +10,7 @@ const router = Router();
 router.use(authenticate);
 
 router.post('/', authorize('admin', 'editor'), validateBody(createControlMappingSchema), asyncHandler(controlMappingsController.createMapping.bind(controlMappingsController)));
+router.get('/', authenticate, asyncHandler(controlMappingsController.listAllMappings.bind(controlMappingsController)));
 router.get('/control/:controlId', authenticate, asyncHandler(controlMappingsController.getMappings.bind(controlMappingsController)));
 router.patch('/:mappingId', authorize('admin', 'editor'), validateBody(updateControlMappingSchema), asyncHandler(controlMappingsController.updateMapping.bind(controlMappingsController)));
 router.delete('/:mappingId', authorize('admin', 'editor'), asyncHandler(controlMappingsController.deleteMapping.bind(controlMappingsController)));

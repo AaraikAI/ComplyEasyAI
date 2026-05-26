@@ -31,6 +31,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { toast } from 'sonner';
 import { useSubmitGuard } from '../hooks/useSubmitGuard';
+import { logger } from '../utils/logger';
 
 const SecurityFeatures: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { user } = useAuth();
@@ -178,7 +179,7 @@ const ZeroTrustTab: React.FC = () => {
       setPolicies(policiesData || []);
       setDevices(devicesData || []);
     } catch (error) {
-      console.error('Error loading Zero Trust data:', error);
+      logger.error('Error loading Zero Trust data:', error);
     } finally {
       setLoading(false);
     }
@@ -500,7 +501,7 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
       const data = await api.security.getZKProofs() as any[];
       setProofs(data || []);
     } catch (error) {
-      console.error('Error loading ZK proofs:', error);
+      logger.error('Error loading ZK proofs:', error);
     } finally {
       setLoading(false);
     }
@@ -897,7 +898,7 @@ const BYOKTab: React.FC = () => {
       const data = await api.security.getBYOKKeys() as any[];
       setKeys(data || []);
     } catch (error) {
-      console.error('Error loading BYOK keys:', error);
+      logger.error('Error loading BYOK keys:', error);
     } finally {
       setLoading(false);
     }
@@ -1193,7 +1194,7 @@ const ComplianceAsCodeTab: React.FC = () => {
       setPolicies(policiesData || []);
       setReports(reportsData || []);
     } catch (error) {
-      console.error('Error loading Compliance-as-Code data:', error);
+      logger.error('Error loading Compliance-as-Code data:', error);
     } finally {
       setLoading(false);
     }

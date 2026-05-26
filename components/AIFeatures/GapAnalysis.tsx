@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, AlertTriangle, X, Download, TrendingUp, AlertCircle
 import ReactMarkdown from 'react-markdown';
 import { AVAILABLE_FRAMEWORKS } from '../../constants';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 export const GapAnalysis: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [currentFrameworks, setCurrentFrameworks] = useState<string[]>([]);
@@ -23,7 +24,7 @@ export const GapAnalysis: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         const frameworks = await api.frameworks.list();
         setUserFrameworks(frameworks);
       } catch (error) {
-        console.error('Failed to load frameworks:', error);
+        logger.error('Failed to load frameworks:', error);
       } finally {
         setLoadingFrameworks(false);
       }

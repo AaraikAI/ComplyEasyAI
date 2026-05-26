@@ -221,7 +221,7 @@ export const GDPR_CONTROLS: FrameworkControlTemplate[] = [
   },
   {
     controlId: 'GDPR-8',
-    name: "Children\'s Consent",
+    name: "Children's Consent",
     description:
       'Where consent applies to information society services offered directly to a child, processing is lawful only if the child is at least 16 years old (or the age set by Member State law, not below 13). Below that age, consent must be given or authorized by the holder of parental responsibility.',
     category: 'Lawful Basis & Consent',

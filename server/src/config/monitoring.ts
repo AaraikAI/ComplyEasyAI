@@ -172,13 +172,19 @@ export function initializeAPM(): void {
     }
   }
 
-  // New Relic
-  if (process.env.NEW_RELIC_LICENSE_KEY) {
+  // New Relic — only attempt if license key is set AND not a placeholder
+  const newRelicKey = process.env.NEW_RELIC_LICENSE_KEY;
+  if (newRelicKey && !newRelicKey.startsWith('your_') && newRelicKey !== 'changeme') {
     try {
       require('newrelic');
       logger.info('APM initialized (New Relic)');
     } catch (error) {
-      logger.error('Failed to initialize New Relic:', error);
+      const err = error as NodeJS.ErrnoException;
+      if (err.code === 'MODULE_NOT_FOUND') {
+        logger.warn('NEW_RELIC_LICENSE_KEY set but newrelic package not installed — skipping. Add "newrelic" to dependencies to enable.');
+      } else {
+        logger.error('Failed to initialize New Relic:', error);
+      }
     }
   }
 }

@@ -7,6 +7,7 @@ import {
   TrendingUp, BarChart3, Download, Eye, Edit, Trash2, X
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '../utils/logger';
 
 interface AIRMFAssessmentsProps {
   onBack: () => void;
@@ -51,7 +52,7 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
       }));
       setAllAssessments(allAssessments);
     } catch (error: unknown) {
-      console.error('Failed to load assessments:', error);
+      logger.error('Failed to load assessments:', error);
     } finally {
       setLoading(false);
     }
@@ -68,7 +69,7 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
       // For now, we'll just remove it from the list
       setAllAssessments(allAssessments.filter(a => a.id !== assessmentId));
     } catch (error: unknown) {
-      console.error('Failed to delete assessment:', error);
+      logger.error('Failed to delete assessment:', error);
       toast.error(`Failed to delete assessment: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setDeletingAssessment(null);
@@ -599,7 +600,7 @@ const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect
       });
       onClose();
     } catch (error: unknown) {
-      console.error('Failed to create assessment:', error);
+      logger.error('Failed to create assessment:', error);
       toast.error(`Failed to create assessment: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setSubmitting(false);
@@ -654,7 +655,7 @@ const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect
                       }));
                     }
                   } catch (error) {
-                    console.error('Failed to load system data:', error);
+                    logger.error('Failed to load system data:', error);
                   }
                 } else {
                   setSelectedSystemData(null);

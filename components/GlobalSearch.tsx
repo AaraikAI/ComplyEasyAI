@@ -24,6 +24,7 @@ import {
   Bookmark, FolderOpen, Eye, Trash2, Filter, LayoutGrid,
 } from 'lucide-react';
 import { FEATURE_CATALOG } from '../constants/featureCatalog';
+import { logger } from '../utils/logger';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
 
@@ -244,7 +245,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onC
       setSearchTime(envelope.took ?? 0);
     } catch (err) {
       // If API fails, still show feature catalog results
-      console.error('Search failed:', err);
+      logger.error('Search failed:', err);
       setResults(featureResults);
       setTotalResults(featureResults.length);
     } finally {

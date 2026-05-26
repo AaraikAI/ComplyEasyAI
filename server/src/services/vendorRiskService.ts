@@ -200,6 +200,14 @@ export class VendorRiskService {
     organizationId: string;
     nextReviewDate?: Date;
   }) {
+    // Verify the vendor belongs to the calling organization
+    const vendor = await prisma.vendor.findFirst({
+      where: { id: data.vendorId, organizationId: data.organizationId },
+    });
+    if (!vendor) {
+      throw new AppError('Vendor not found', 404);
+    }
+
     const review = await prisma.vendorReview.create({
       data: {
         vendorId: data.vendorId,
@@ -240,6 +248,15 @@ export class VendorRiskService {
     organizationId: string
   ) {
     return prisma.$transaction(async (tx) => {
+      // Verify the review's vendor belongs to the calling organization
+      const existing = await tx.vendorReview.findFirst({
+        where: { id: reviewId },
+        include: { vendor: { select: { organizationId: true } } },
+      });
+      if (!existing || existing.vendor.organizationId !== organizationId) {
+        throw new AppError('Vendor review not found', 404);
+      }
+
       const review = await tx.vendorReview.update({
         where: { id: reviewId },
         data: {
@@ -286,6 +303,14 @@ export class VendorRiskService {
     organizationId: string;
     userId: string;
   }) {
+    // Verify the vendor belongs to the calling organization
+    const vendor = await prisma.vendor.findFirst({
+      where: { id: data.vendorId, organizationId: data.organizationId },
+    });
+    if (!vendor) {
+      throw new AppError('Vendor not found', 404);
+    }
+
     const monitor = await prisma.vendorMonitor.create({
       data: {
         vendorId: data.vendorId,
@@ -323,6 +348,15 @@ export class VendorRiskService {
     userId: string,
     organizationId: string
   ) {
+    // Verify the monitor's vendor belongs to the calling organization
+    const existing = await prisma.vendorMonitor.findFirst({
+      where: { id: monitorId },
+      include: { vendor: { select: { organizationId: true } } },
+    });
+    if (!existing || existing.vendor.organizationId !== organizationId) {
+      throw new AppError('Vendor monitor not found', 404);
+    }
+
     const monitor = await prisma.vendorMonitor.update({
       where: { id: monitorId },
       data: {
@@ -697,6 +731,33 @@ export class VendorRiskService {
       orderBy: { riskScore: 'desc' },
       take: 100, // Safety limit
     });
+  }
+
+  /**
+   * Get the assessment queue (active vendor assessments) for an organization.
+   * Returns assessments scoped to the org via the vendor relation.
+   */
+  async getAssessmentQueue(organizationId: string) {
+    const assessments = await prisma.vendorAssessment.findMany({
+      where: {
+        vendor: { organizationId },
+      },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            organizationId: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    // Verify org scoping for defense-in-depth (vendor relation already filters,
+    // but this guards against a malformed include).
+    return assessments.filter((a) => a.vendor.organizationId === organizationId);
   }
 
   /**

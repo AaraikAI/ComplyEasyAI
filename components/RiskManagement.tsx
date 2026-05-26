@@ -12,6 +12,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 interface RiskManagementProps {
   onBack: () => void;
@@ -70,7 +71,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       const data = await api.risks.list();
       setRisks(data);
     } catch (error) {
-      console.error('Failed to load risks:', error);
+      logger.error('Failed to load risks:', error);
       setRisks([]);
     } finally {
       setIsLoadingData(false);
@@ -82,7 +83,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       const members = await api.team.list();
       setTeamMembers(members);
     } catch (error) {
-      console.error('Failed to load team members:', error);
+      logger.error('Failed to load team members:', error);
       setTeamMembers([]);
     }
   };
@@ -173,7 +174,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         }
       }, 600);
     } catch (error: any) {
-      console.error('Risk scan failed:', error);
+      logger.error('Risk scan failed:', error);
       setIsScanning(false);
       toast.error(`Risk scan failed: ${error.message || 'Unknown error'}`);
     }
@@ -218,7 +219,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         const result = await api.risks.generateRemediation(risk.id) as { plan?: string };
         setRemediationPlan(result.plan || '');
       } catch (error: any) {
-        console.error('Failed to generate remediation plan:', error);
+        logger.error('Failed to generate remediation plan:', error);
         // Fallback to frontend generation if backend fails
         const plan = await generateRemediationPlan(risk.description);
         setRemediationPlan(plan);
@@ -261,7 +262,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         await loadRisks();
         setSelectedRisk(null);
       } catch (error: any) {
-        console.error('Failed to update risk:', error);
+        logger.error('Failed to update risk:', error);
         toast.error(`Failed to update risk: ${error.message || 'Unknown error'}`);
       }
     }
@@ -317,7 +318,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       setShowAddRiskModal(false);
       await loadRisks();
     } catch (error: any) {
-      console.error('Failed to create risk:', error);
+      logger.error('Failed to create risk:', error);
       toast.error(`Failed to create risk: ${error.message || 'Unknown error'}`);
     }
   };

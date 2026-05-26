@@ -31,6 +31,7 @@ import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { useI18n } from '../contexts/I18nContext';
 import { toast } from 'sonner';
 import { api } from '../services/api';
+import { logger } from '../utils/logger';
 
 interface DashboardProps {
   frameworks: ComplianceFramework[];
@@ -202,7 +203,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
           days: diffDays,
         };
       } catch (error) {
-        console.error(`Invalid audit date for framework ${fw.name}:`, fw.nextAuditDate);
+        logger.error(`Invalid audit date for framework ${fw.name}:`, fw.nextAuditDate);
         return null;
       }
     })

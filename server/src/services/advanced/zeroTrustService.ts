@@ -826,7 +826,7 @@ class ZeroTrustService {
     const parts = fieldPath.trim().split('.');
     let current: any = context;
     for (const part of parts) {
-      if (current == null || typeof current !== 'object') return undefined;
+      if (current === null || current === undefined || typeof current !== 'object') return undefined;
       current = current[part];
     }
     return current;
@@ -874,8 +874,10 @@ class ZeroTrustService {
 
       switch (op.trim()) {
         case '==':
+          // eslint-disable-next-line eqeqeq -- policy DSL preserves '==' semantics (type coercion intentional)
           return left == right;
         case '!=':
+          // eslint-disable-next-line eqeqeq -- policy DSL preserves '!=' semantics
           return left != right;
         case '>':
           return typeof left === 'number' && typeof right === 'number' && left > right;

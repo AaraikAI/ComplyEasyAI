@@ -1365,9 +1365,16 @@ router.post(
 
       res.json({ received: true, processed: result.processed });
     } catch (error: any) {
-      logger.error(`[Ticketing Webhook] Error processing ${provider} webhook`, error);
-      // Always return 200 so the webhook provider does not retry indefinitely
-      res.status(200).json({ received: true, processed: false, error: error.message });
+      // Logger is wired to Sentry transport — this captures the exception in error tracking.
+      logger.error(`[Ticketing Webhook] Error processing ${provider} webhook`, {
+        err: error,
+        provider,
+        orgId,
+        ticketId: req.params?.id,
+        ip: req.ip,
+      });
+      // Intentionally return 200 to prevent webhook retry storms.
+      res.status(200).json({ received: true, processed: false, error: 'logged' });
     }
   })
 );

@@ -6,6 +6,7 @@ import { useI18n } from '../contexts/I18nContext';
 import { ShieldCheck, Search, Filter, Download, Loader2, ArrowUpDown, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import crypto from 'crypto';
 import { getBlockchainExplorerUrl } from '../utils/blockchain';
+import { logger } from '../utils/logger';
 
 // Extended type for transformed audit logs with Date timestamp and additional blockchain properties
 interface TransformedAuditLog extends Omit<AuditLog, 'timestamp'> {
@@ -72,7 +73,7 @@ export const AuditTrail: React.FC = () => {
         setAllUsers(uniqueUsers);
         setAllActions(uniqueActions);
       } catch (error) {
-        console.error('Failed to load audit logs:', error);
+        logger.error('Failed to load audit logs:', error);
         setAuditLogs([]);
       } finally {
         setIsLoading(false);

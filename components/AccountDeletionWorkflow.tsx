@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
+import { logger } from '../utils/logger';
 import {
   ArrowLeft,
   Trash2,
@@ -141,7 +142,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
       }
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
-      console.error('AccountDeletionWorkflow data load error:', err);
+      logger.error('AccountDeletionWorkflow data load error:', err);
     } finally {
       setLoading(false);
     }

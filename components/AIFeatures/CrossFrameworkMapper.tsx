@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   ArrowLeft, ArrowRight, Plus, Trash2, Download, Search, Filter, Eye,
   AlertTriangle, CheckCircle, XCircle, X, ChevronDown, ChevronRight,
@@ -7,6 +7,7 @@ import {
   GitCompare, Target, TrendingUp, Loader2, Copy, Hash, Info
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -58,214 +59,11 @@ interface MappingSession {
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const FRAMEWORKS: Framework[] = [
-  { id: 'soc2', name: 'SOC 2 Type II', shortName: 'SOC 2', color: 'bg-blue-500', controlCount: 64, category: 'Security' },
-  { id: 'iso27001', name: 'ISO/IEC 27001:2022', shortName: 'ISO 27001', color: 'bg-indigo-500', controlCount: 93, category: 'Security' },
-  { id: 'nist-csf', name: 'NIST Cybersecurity Framework 2.0', shortName: 'NIST CSF', color: 'bg-green-600', controlCount: 108, category: 'Security' },
-  { id: 'hipaa', name: 'HIPAA Security Rule', shortName: 'HIPAA', color: 'bg-pink-500', controlCount: 54, category: 'Industry' },
-  { id: 'pci-dss', name: 'PCI DSS v4.0', shortName: 'PCI DSS', color: 'bg-red-500', controlCount: 78, category: 'Industry' },
-  { id: 'gdpr', name: 'GDPR (Regulation EU 2016/679)', shortName: 'GDPR', color: 'bg-purple-600', controlCount: 42, category: 'Privacy' },
-  { id: 'eu-ai-act', name: 'EU AI Act', shortName: 'EU AI Act', color: 'bg-cyan-600', controlCount: 36, category: 'AI Governance' },
-  { id: 'cra', name: 'Cyber Resilience Act (CRA)', shortName: 'CRA', color: 'bg-teal-600', controlCount: 31, category: 'Security' },
-  { id: 'nis2', name: 'NIS2 Directive', shortName: 'NIS2', color: 'bg-amber-600', controlCount: 44, category: 'Security' },
-  { id: 'csrd', name: 'Corporate Sustainability Reporting Directive', shortName: 'CSRD', color: 'bg-emerald-600', controlCount: 38, category: 'Sustainability' },
-  { id: 'nist-ai-rmf', name: 'NIST AI Risk Management Framework', shortName: 'NIST AI RMF', color: 'bg-violet-600', controlCount: 28, category: 'AI Governance' },
-  { id: 'iso42001', name: 'ISO/IEC 42001 AI Management', shortName: 'ISO 42001', color: 'bg-fuchsia-600', controlCount: 32, category: 'AI Governance' },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Pre-built controls database                                         */
-/* ------------------------------------------------------------------ */
-
-const CONTROLS_DB: Control[] = [
-  // SOC 2
-  { id: 'soc2-cc6.1', frameworkId: 'soc2', controlId: 'CC6.1', title: 'Logical and Physical Access Controls', description: 'The entity implements logical access security software, infrastructure, and architectures over protected information assets.', domain: 'Logical and Physical Access' },
-  { id: 'soc2-cc6.2', frameworkId: 'soc2', controlId: 'CC6.2', title: 'Access Authentication', description: 'Prior to issuing system credentials and granting system access, the entity registers and authorizes new internal and external users.', domain: 'Logical and Physical Access' },
-  { id: 'soc2-cc6.3', frameworkId: 'soc2', controlId: 'CC6.3', title: 'Access Authorization', description: 'The entity authorizes, modifies, or removes access to data, software, functions, and other protected information assets.', domain: 'Logical and Physical Access' },
-  { id: 'soc2-cc6.6', frameworkId: 'soc2', controlId: 'CC6.6', title: 'System Boundary Protection', description: 'The entity implements logical access security measures to protect against threats from outside its system boundaries.', domain: 'Logical and Physical Access' },
-  { id: 'soc2-cc6.7', frameworkId: 'soc2', controlId: 'CC6.7', title: 'Data Transmission Protection', description: 'The entity restricts the transmission, movement, and removal of information to authorized users and processes.', domain: 'Logical and Physical Access' },
-  { id: 'soc2-cc6.8', frameworkId: 'soc2', controlId: 'CC6.8', title: 'Malicious Software Prevention', description: 'The entity implements controls to prevent or detect and act upon the introduction of unauthorized or malicious software.', domain: 'Logical and Physical Access' },
-  { id: 'soc2-cc7.1', frameworkId: 'soc2', controlId: 'CC7.1', title: 'Vulnerability Management', description: 'To meet its objectives, the entity uses detection and monitoring procedures to identify changes to configurations resulting in vulnerabilities.', domain: 'System Operations' },
-  { id: 'soc2-cc7.2', frameworkId: 'soc2', controlId: 'CC7.2', title: 'Anomaly Detection', description: 'The entity monitors system components and the operation of those components for anomalies.', domain: 'System Operations' },
-  { id: 'soc2-cc7.3', frameworkId: 'soc2', controlId: 'CC7.3', title: 'Security Incident Evaluation', description: 'The entity evaluates security events to determine whether they could or have resulted in a failure of the entity.', domain: 'System Operations' },
-  { id: 'soc2-cc7.4', frameworkId: 'soc2', controlId: 'CC7.4', title: 'Incident Response', description: 'The entity responds to identified security incidents by executing a defined incident response program.', domain: 'System Operations' },
-  { id: 'soc2-cc8.1', frameworkId: 'soc2', controlId: 'CC8.1', title: 'Change Management', description: 'The entity authorizes, designs, develops, configures, documents, tests, approves, and implements changes to infrastructure and software.', domain: 'Change Management' },
-  { id: 'soc2-cc9.1', frameworkId: 'soc2', controlId: 'CC9.1', title: 'Risk Mitigation', description: 'The entity identifies, selects, and develops risk mitigation activities for risks arising from potential business disruptions.', domain: 'Risk Mitigation' },
-  { id: 'soc2-cc1.1', frameworkId: 'soc2', controlId: 'CC1.1', title: 'COSO Principle 1 - Integrity & Ethics', description: 'The entity demonstrates a commitment to integrity and ethical values.', domain: 'Control Environment' },
-  { id: 'soc2-cc1.2', frameworkId: 'soc2', controlId: 'CC1.2', title: 'Board Oversight', description: 'The board of directors demonstrates independence from management and exercises oversight.', domain: 'Control Environment' },
-  { id: 'soc2-cc5.1', frameworkId: 'soc2', controlId: 'CC5.1', title: 'Control Activities', description: 'The entity selects and develops control activities that contribute to the mitigation of risks.', domain: 'Control Activities' },
-
-  // ISO 27001
-  { id: 'iso-a5.1', frameworkId: 'iso27001', controlId: 'A.5.1', title: 'Policies for Information Security', description: 'A set of policies for information security shall be defined, approved by management, published and communicated.', domain: 'Organizational Controls' },
-  { id: 'iso-a5.2', frameworkId: 'iso27001', controlId: 'A.5.2', title: 'Information Security Roles and Responsibilities', description: 'Information security roles and responsibilities shall be defined and allocated.', domain: 'Organizational Controls' },
-  { id: 'iso-a5.3', frameworkId: 'iso27001', controlId: 'A.5.3', title: 'Segregation of Duties', description: 'Conflicting duties and conflicting areas of responsibility shall be segregated.', domain: 'Organizational Controls' },
-  { id: 'iso-a8.1', frameworkId: 'iso27001', controlId: 'A.8.1', title: 'User Endpoint Devices', description: 'Information stored on, processed by or accessible via user endpoint devices shall be protected.', domain: 'Technological Controls' },
-  { id: 'iso-a8.2', frameworkId: 'iso27001', controlId: 'A.8.2', title: 'Privileged Access Rights', description: 'The allocation and use of privileged access rights shall be restricted and managed.', domain: 'Technological Controls' },
-  { id: 'iso-a8.3', frameworkId: 'iso27001', controlId: 'A.8.3', title: 'Information Access Restriction', description: 'Access to information and other associated assets shall be restricted in accordance with the topic-specific policy.', domain: 'Technological Controls' },
-  { id: 'iso-a8.5', frameworkId: 'iso27001', controlId: 'A.8.5', title: 'Secure Authentication', description: 'Secure authentication technologies and procedures shall be established and implemented.', domain: 'Technological Controls' },
-  { id: 'iso-a8.7', frameworkId: 'iso27001', controlId: 'A.8.7', title: 'Protection Against Malware', description: 'Protection against malware shall be implemented and supported by appropriate user awareness.', domain: 'Technological Controls' },
-  { id: 'iso-a8.8', frameworkId: 'iso27001', controlId: 'A.8.8', title: 'Management of Technical Vulnerabilities', description: 'Information about technical vulnerabilities of information systems in use shall be obtained timely.', domain: 'Technological Controls' },
-  { id: 'iso-a8.9', frameworkId: 'iso27001', controlId: 'A.8.9', title: 'Configuration Management', description: 'Configurations, including security configurations, of hardware, software, services and networks shall be managed.', domain: 'Technological Controls' },
-  { id: 'iso-a8.15', frameworkId: 'iso27001', controlId: 'A.8.15', title: 'Logging', description: 'Logs that record activities, exceptions, faults and other relevant events shall be produced and stored.', domain: 'Technological Controls' },
-  { id: 'iso-a8.16', frameworkId: 'iso27001', controlId: 'A.8.16', title: 'Monitoring Activities', description: 'Networks, systems and applications shall be monitored for anomalous behavior.', domain: 'Technological Controls' },
-  { id: 'iso-a8.20', frameworkId: 'iso27001', controlId: 'A.8.20', title: 'Networks Security', description: 'Networks and network devices shall be secured, managed and controlled to protect information in systems.', domain: 'Technological Controls' },
-  { id: 'iso-a8.24', frameworkId: 'iso27001', controlId: 'A.8.24', title: 'Use of Cryptography', description: 'Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented.', domain: 'Technological Controls' },
-  { id: 'iso-a8.25', frameworkId: 'iso27001', controlId: 'A.8.25', title: 'Secure Development Life Cycle', description: 'Rules for the secure development of software and systems shall be established and applied.', domain: 'Technological Controls' },
-  { id: 'iso-a8.32', frameworkId: 'iso27001', controlId: 'A.8.32', title: 'Change Management', description: 'Changes to information processing facilities and information systems shall be subject to change management procedures.', domain: 'Technological Controls' },
-  { id: 'iso-a5.24', frameworkId: 'iso27001', controlId: 'A.5.24', title: 'Incident Management Planning', description: 'The organization shall plan and prepare for managing information security incidents.', domain: 'Organizational Controls' },
-  { id: 'iso-a5.25', frameworkId: 'iso27001', controlId: 'A.5.25', title: 'Assessment of Information Security Events', description: 'The organization shall assess information security events and decide if they are to be categorized as incidents.', domain: 'Organizational Controls' },
-  { id: 'iso-a5.26', frameworkId: 'iso27001', controlId: 'A.5.26', title: 'Response to Information Security Incidents', description: 'Information security incidents shall be responded to in accordance with the documented procedures.', domain: 'Organizational Controls' },
-  { id: 'iso-a5.29', frameworkId: 'iso27001', controlId: 'A.5.29', title: 'ICT Readiness for Business Continuity', description: 'ICT readiness shall be planned, implemented, maintained and tested based on business continuity objectives.', domain: 'Organizational Controls' },
-
-  // NIST CSF
-  { id: 'nist-pr.ac-1', frameworkId: 'nist-csf', controlId: 'PR.AC-1', title: 'Identities and Credentials', description: 'Identities and credentials are issued, managed, verified, revoked, and audited for authorized devices, users, and processes.', domain: 'Protect - Access Control' },
-  { id: 'nist-pr.ac-3', frameworkId: 'nist-csf', controlId: 'PR.AC-3', title: 'Remote Access Management', description: 'Remote access is managed.', domain: 'Protect - Access Control' },
-  { id: 'nist-pr.ac-4', frameworkId: 'nist-csf', controlId: 'PR.AC-4', title: 'Access Permissions', description: 'Access permissions and authorizations are managed, incorporating the principles of least privilege and separation of duties.', domain: 'Protect - Access Control' },
-  { id: 'nist-pr.ac-5', frameworkId: 'nist-csf', controlId: 'PR.AC-5', title: 'Network Integrity Protection', description: 'Network integrity is protected (e.g., network segregation, network segmentation).', domain: 'Protect - Access Control' },
-  { id: 'nist-pr.ds-1', frameworkId: 'nist-csf', controlId: 'PR.DS-1', title: 'Data-at-Rest Protection', description: 'Data-at-rest is protected.', domain: 'Protect - Data Security' },
-  { id: 'nist-pr.ds-2', frameworkId: 'nist-csf', controlId: 'PR.DS-2', title: 'Data-in-Transit Protection', description: 'Data-in-transit is protected.', domain: 'Protect - Data Security' },
-  { id: 'nist-pr.ip-1', frameworkId: 'nist-csf', controlId: 'PR.IP-1', title: 'Security Baseline Configurations', description: 'A baseline configuration of IT/ICS systems is created and maintained incorporating security principles.', domain: 'Protect - Information Protection' },
-  { id: 'nist-pr.ip-3', frameworkId: 'nist-csf', controlId: 'PR.IP-3', title: 'Configuration Change Control', description: 'Configuration change control processes are in place.', domain: 'Protect - Information Protection' },
-  { id: 'nist-de.ae-1', frameworkId: 'nist-csf', controlId: 'DE.AE-1', title: 'Network Operations Baseline', description: 'A baseline of network operations and expected data flows is established and managed.', domain: 'Detect - Anomalies and Events' },
-  { id: 'nist-de.cm-1', frameworkId: 'nist-csf', controlId: 'DE.CM-1', title: 'Network Monitoring', description: 'The network is monitored to detect potential cybersecurity events.', domain: 'Detect - Continuous Monitoring' },
-  { id: 'nist-de.cm-4', frameworkId: 'nist-csf', controlId: 'DE.CM-4', title: 'Malicious Code Detection', description: 'Malicious code is detected.', domain: 'Detect - Continuous Monitoring' },
-  { id: 'nist-de.cm-8', frameworkId: 'nist-csf', controlId: 'DE.CM-8', title: 'Vulnerability Scans', description: 'Vulnerability scans are performed.', domain: 'Detect - Continuous Monitoring' },
-  { id: 'nist-rs.rp-1', frameworkId: 'nist-csf', controlId: 'RS.RP-1', title: 'Response Plan Execution', description: 'Response plan is executed during or after an incident.', domain: 'Respond - Response Planning' },
-  { id: 'nist-rs.an-1', frameworkId: 'nist-csf', controlId: 'RS.AN-1', title: 'Incident Investigation', description: 'Notifications from detection systems are investigated.', domain: 'Respond - Analysis' },
-  { id: 'nist-rc.rp-1', frameworkId: 'nist-csf', controlId: 'RC.RP-1', title: 'Recovery Plan Execution', description: 'Recovery plan is executed during or after a cybersecurity incident.', domain: 'Recover - Recovery Planning' },
-
-  // GDPR
-  { id: 'gdpr-art5', frameworkId: 'gdpr', controlId: 'Art. 5', title: 'Principles of Processing', description: 'Personal data shall be processed lawfully, fairly and in a transparent manner (lawfulness, fairness, transparency).', domain: 'Principles' },
-  { id: 'gdpr-art6', frameworkId: 'gdpr', controlId: 'Art. 6', title: 'Lawfulness of Processing', description: 'Processing shall be lawful only if and to the extent that at least one legal basis applies.', domain: 'Lawful Basis' },
-  { id: 'gdpr-art25', frameworkId: 'gdpr', controlId: 'Art. 25', title: 'Data Protection by Design and Default', description: 'The controller shall implement appropriate technical and organisational measures for implementing data-protection principles.', domain: 'Technical Measures' },
-  { id: 'gdpr-art28', frameworkId: 'gdpr', controlId: 'Art. 28', title: 'Processor Requirements', description: 'Processing by a processor shall be governed by a contract or other legal act that is binding on the processor.', domain: 'Third Parties' },
-  { id: 'gdpr-art30', frameworkId: 'gdpr', controlId: 'Art. 30', title: 'Records of Processing Activities', description: 'Each controller shall maintain a record of processing activities under its responsibility.', domain: 'Documentation' },
-  { id: 'gdpr-art32', frameworkId: 'gdpr', controlId: 'Art. 32', title: 'Security of Processing', description: 'The controller and processor shall implement appropriate technical and organisational measures to ensure security.', domain: 'Security' },
-  { id: 'gdpr-art33', frameworkId: 'gdpr', controlId: 'Art. 33', title: 'Notification to Supervisory Authority', description: 'In the case of a personal data breach, the controller shall notify the supervisory authority within 72 hours.', domain: 'Breach Notification' },
-  { id: 'gdpr-art35', frameworkId: 'gdpr', controlId: 'Art. 35', title: 'Data Protection Impact Assessment', description: 'Where processing is likely to result in a high risk, the controller shall carry out a DPIA.', domain: 'Risk Assessment' },
-
-  // NIS2
-  { id: 'nis2-art21a', frameworkId: 'nis2', controlId: 'Art. 21(a)', title: 'Risk Analysis and IS Policies', description: 'Policies on risk analysis and information system security.', domain: 'Risk Management' },
-  { id: 'nis2-art21b', frameworkId: 'nis2', controlId: 'Art. 21(b)', title: 'Incident Handling', description: 'Incident handling procedures and capabilities.', domain: 'Incident Response' },
-  { id: 'nis2-art21c', frameworkId: 'nis2', controlId: 'Art. 21(c)', title: 'Business Continuity', description: 'Business continuity, such as backup management and disaster recovery, and crisis management.', domain: 'Continuity' },
-  { id: 'nis2-art21d', frameworkId: 'nis2', controlId: 'Art. 21(d)', title: 'Supply Chain Security', description: 'Supply chain security, including security-related aspects concerning the relationships between entities and their direct suppliers.', domain: 'Supply Chain' },
-  { id: 'nis2-art21e', frameworkId: 'nis2', controlId: 'Art. 21(e)', title: 'Network and IS Security', description: 'Security in network and information systems acquisition, development and maintenance, including vulnerability handling and disclosure.', domain: 'System Security' },
-  { id: 'nis2-art21g', frameworkId: 'nis2', controlId: 'Art. 21(g)', title: 'Cybersecurity Training', description: 'Basic cyber hygiene practices and cybersecurity training.', domain: 'Awareness' },
-  { id: 'nis2-art21h', frameworkId: 'nis2', controlId: 'Art. 21(h)', title: 'Cryptography and Encryption', description: 'Policies and procedures regarding the use of cryptography and, where appropriate, encryption.', domain: 'Cryptography' },
-  { id: 'nis2-art21i', frameworkId: 'nis2', controlId: 'Art. 21(i)', title: 'HR Security and Access Control', description: 'Human resources security, access control policies and asset management.', domain: 'People & Access' },
-  { id: 'nis2-art21j', frameworkId: 'nis2', controlId: 'Art. 21(j)', title: 'Multi-factor Authentication', description: 'Use of multi-factor authentication or continuous authentication solutions.', domain: 'Authentication' },
-
-  // EU AI Act
-  { id: 'aiact-art9', frameworkId: 'eu-ai-act', controlId: 'Art. 9', title: 'Risk Management System', description: 'A risk management system shall be established, implemented, documented and maintained for high-risk AI systems.', domain: 'Risk Management' },
-  { id: 'aiact-art10', frameworkId: 'eu-ai-act', controlId: 'Art. 10', title: 'Data and Data Governance', description: 'High-risk AI systems which make use of techniques involving training with data shall be developed on the basis of training, validation and testing data sets.', domain: 'Data Governance' },
-  { id: 'aiact-art13', frameworkId: 'eu-ai-act', controlId: 'Art. 13', title: 'Transparency and Provision of Information', description: 'High-risk AI systems shall be designed and developed in such a way to ensure their operation is sufficiently transparent.', domain: 'Transparency' },
-  { id: 'aiact-art14', frameworkId: 'eu-ai-act', controlId: 'Art. 14', title: 'Human Oversight', description: 'High-risk AI systems shall be designed and developed to be effectively overseen by natural persons.', domain: 'Human Oversight' },
-  { id: 'aiact-art15', frameworkId: 'eu-ai-act', controlId: 'Art. 15', title: 'Accuracy, Robustness and Cybersecurity', description: 'High-risk AI systems shall be designed and developed to achieve an appropriate level of accuracy, robustness and cybersecurity.', domain: 'Technical Requirements' },
-  { id: 'aiact-art17', frameworkId: 'eu-ai-act', controlId: 'Art. 17', title: 'Quality Management System', description: 'Providers of high-risk AI systems shall put a quality management system in place.', domain: 'Quality' },
-
-  // CRA
-  { id: 'cra-annex1-1', frameworkId: 'cra', controlId: 'Annex I.1', title: 'Security by Design', description: 'Products with digital elements shall be designed, developed and produced to ensure an appropriate level of cybersecurity.', domain: 'Design' },
-  { id: 'cra-annex1-2', frameworkId: 'cra', controlId: 'Annex I.2', title: 'Vulnerability Handling', description: 'Manufacturers shall identify and document vulnerabilities and components, address and remediate vulnerabilities without delay.', domain: 'Vulnerability Management' },
-  { id: 'cra-art11', frameworkId: 'cra', controlId: 'Art. 11', title: 'Reporting Obligations', description: 'Manufacturers shall notify any actively exploited vulnerability and any severe incident to ENISA.', domain: 'Reporting' },
-
-  // HIPAA
-  { id: 'hipaa-164.312a', frameworkId: 'hipaa', controlId: '164.312(a)', title: 'Access Control', description: 'Implement technical policies and procedures for electronic information systems that maintain ePHI.', domain: 'Technical Safeguards' },
-  { id: 'hipaa-164.312c', frameworkId: 'hipaa', controlId: '164.312(c)', title: 'Integrity Controls', description: 'Implement policies and procedures to protect ePHI from improper alteration or destruction.', domain: 'Technical Safeguards' },
-  { id: 'hipaa-164.312e', frameworkId: 'hipaa', controlId: '164.312(e)', title: 'Transmission Security', description: 'Implement technical security measures to guard against unauthorized access to ePHI being transmitted.', domain: 'Technical Safeguards' },
-  { id: 'hipaa-164.308a1', frameworkId: 'hipaa', controlId: '164.308(a)(1)', title: 'Security Management Process', description: 'Implement policies and procedures to prevent, detect, contain, and correct security violations.', domain: 'Administrative Safeguards' },
-  { id: 'hipaa-164.308a6', frameworkId: 'hipaa', controlId: '164.308(a)(6)', title: 'Security Incident Procedures', description: 'Implement policies and procedures to address security incidents.', domain: 'Administrative Safeguards' },
-
-  // PCI DSS
-  { id: 'pci-1.1', frameworkId: 'pci-dss', controlId: 'Req 1', title: 'Network Security Controls', description: 'Install and maintain network security controls to protect cardholder data.', domain: 'Network Security' },
-  { id: 'pci-3.1', frameworkId: 'pci-dss', controlId: 'Req 3', title: 'Protect Stored Account Data', description: 'Protect stored account data with strong cryptography.', domain: 'Data Protection' },
-  { id: 'pci-4.1', frameworkId: 'pci-dss', controlId: 'Req 4', title: 'Protect Data in Transit', description: 'Protect cardholder data with strong cryptography during transmission over open, public networks.', domain: 'Data Protection' },
-  { id: 'pci-6.1', frameworkId: 'pci-dss', controlId: 'Req 6', title: 'Secure Systems and Software', description: 'Develop and maintain secure systems and software.', domain: 'Secure Development' },
-  { id: 'pci-7.1', frameworkId: 'pci-dss', controlId: 'Req 7', title: 'Restrict Access', description: 'Restrict access to system components and cardholder data by business need to know.', domain: 'Access Control' },
-  { id: 'pci-10.1', frameworkId: 'pci-dss', controlId: 'Req 10', title: 'Log and Monitor', description: 'Log and monitor all access to system components and cardholder data.', domain: 'Monitoring' },
-  { id: 'pci-11.1', frameworkId: 'pci-dss', controlId: 'Req 11', title: 'Test Security', description: 'Test security of systems and networks regularly.', domain: 'Testing' },
-  { id: 'pci-12.1', frameworkId: 'pci-dss', controlId: 'Req 12', title: 'Information Security Policy', description: 'Support information security with organizational policies and programs.', domain: 'Governance' },
-
-  // CSRD
-  { id: 'csrd-e1', frameworkId: 'csrd', controlId: 'ESRS E1', title: 'Climate Change', description: 'Disclosure of climate-related risks, opportunities, targets and transition plans.', domain: 'Environment' },
-  { id: 'csrd-s1', frameworkId: 'csrd', controlId: 'ESRS S1', title: 'Own Workforce', description: 'Disclosure of impacts, risks and opportunities related to own workforce.', domain: 'Social' },
-  { id: 'csrd-g1', frameworkId: 'csrd', controlId: 'ESRS G1', title: 'Business Conduct', description: 'Disclosure of governance, risk management and internal controls related to sustainability.', domain: 'Governance' },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Pre-built mapping database (50+ mappings)                          */
-/* ------------------------------------------------------------------ */
-
-const PREBUILT_MAPPINGS: Omit<ControlMapping, 'id'>[] = [
-  // SOC 2 <-> ISO 27001
-  { sourceControlId: 'soc2-cc6.1', targetControlId: 'iso-a8.3', confidence: 92, status: 'AI Suggested', rationale: 'Both address logical access control and restriction of access to information assets based on policy.', mappingType: 'Full' },
-  { sourceControlId: 'soc2-cc6.2', targetControlId: 'iso-a8.5', confidence: 88, status: 'AI Suggested', rationale: 'Both controls address user registration, authentication and credential management processes.', mappingType: 'Full' },
-  { sourceControlId: 'soc2-cc6.3', targetControlId: 'iso-a8.2', confidence: 85, status: 'AI Suggested', rationale: 'Both address authorization of access rights including privileged access management.', mappingType: 'Partial' },
-  { sourceControlId: 'soc2-cc6.6', targetControlId: 'iso-a8.20', confidence: 90, status: 'AI Suggested', rationale: 'Both address network boundary protection and segmentation for security.', mappingType: 'Full' },
-  { sourceControlId: 'soc2-cc6.7', targetControlId: 'iso-a8.24', confidence: 82, status: 'AI Suggested', rationale: 'SOC 2 data transmission protection maps to ISO 27001 cryptography requirements for data in transit.', mappingType: 'Partial' },
-  { sourceControlId: 'soc2-cc6.8', targetControlId: 'iso-a8.7', confidence: 95, status: 'AI Suggested', rationale: 'Direct mapping - both specifically address malware prevention and detection controls.', mappingType: 'Full' },
-  { sourceControlId: 'soc2-cc7.1', targetControlId: 'iso-a8.8', confidence: 91, status: 'AI Suggested', rationale: 'Both focus on vulnerability identification, assessment, and management processes.', mappingType: 'Full' },
-  { sourceControlId: 'soc2-cc7.2', targetControlId: 'iso-a8.16', confidence: 93, status: 'AI Suggested', rationale: 'Direct mapping for anomaly detection and monitoring activities.', mappingType: 'Full' },
-  { sourceControlId: 'soc2-cc7.3', targetControlId: 'iso-a5.25', confidence: 87, status: 'AI Suggested', rationale: 'Both address evaluation and assessment of security events for incident classification.', mappingType: 'Full' },
-  { sourceControlId: 'soc2-cc7.4', targetControlId: 'iso-a5.26', confidence: 94, status: 'AI Suggested', rationale: 'Both cover incident response procedures and execution of response plans.', mappingType: 'Full' },
-  { sourceControlId: 'soc2-cc8.1', targetControlId: 'iso-a8.32', confidence: 96, status: 'AI Suggested', rationale: 'Direct mapping - both address change management processes for systems and infrastructure.', mappingType: 'Full' },
-  { sourceControlId: 'soc2-cc9.1', targetControlId: 'iso-a5.29', confidence: 78, status: 'AI Suggested', rationale: 'SOC 2 risk mitigation for business disruptions maps partially to ISO ICT readiness for business continuity.', mappingType: 'Partial' },
-  { sourceControlId: 'soc2-cc1.1', targetControlId: 'iso-a5.1', confidence: 72, status: 'AI Suggested', rationale: 'SOC 2 integrity and ethics principles relate to ISO information security policy governance.', mappingType: 'Semantic' },
-  { sourceControlId: 'soc2-cc5.1', targetControlId: 'iso-a5.1', confidence: 74, status: 'AI Suggested', rationale: 'Control activities selection and development maps to overall policy framework.', mappingType: 'Semantic' },
-
-  // NIST CSF <-> SOC 2
-  { sourceControlId: 'nist-pr.ac-1', targetControlId: 'soc2-cc6.2', confidence: 90, status: 'AI Suggested', rationale: 'NIST identity and credential management directly maps to SOC 2 access authentication controls.', mappingType: 'Full' },
-  { sourceControlId: 'nist-pr.ac-4', targetControlId: 'soc2-cc6.1', confidence: 91, status: 'AI Suggested', rationale: 'NIST access permissions with least privilege maps to SOC 2 logical access controls.', mappingType: 'Full' },
-  { sourceControlId: 'nist-pr.ac-5', targetControlId: 'soc2-cc6.6', confidence: 88, status: 'AI Suggested', rationale: 'Network integrity protection maps to system boundary protection.', mappingType: 'Full' },
-  { sourceControlId: 'nist-pr.ds-2', targetControlId: 'soc2-cc6.7', confidence: 93, status: 'AI Suggested', rationale: 'Data-in-transit protection directly corresponds to data transmission protection.', mappingType: 'Full' },
-  { sourceControlId: 'nist-pr.ip-3', targetControlId: 'soc2-cc8.1', confidence: 89, status: 'AI Suggested', rationale: 'Configuration change control maps to change management process.', mappingType: 'Full' },
-  { sourceControlId: 'nist-de.cm-4', targetControlId: 'soc2-cc6.8', confidence: 94, status: 'AI Suggested', rationale: 'Malicious code detection directly maps to malicious software prevention.', mappingType: 'Full' },
-  { sourceControlId: 'nist-de.cm-8', targetControlId: 'soc2-cc7.1', confidence: 92, status: 'AI Suggested', rationale: 'Vulnerability scanning maps to vulnerability management.', mappingType: 'Full' },
-  { sourceControlId: 'nist-de.cm-1', targetControlId: 'soc2-cc7.2', confidence: 90, status: 'AI Suggested', rationale: 'Network monitoring for cybersecurity events maps to anomaly detection.', mappingType: 'Full' },
-  { sourceControlId: 'nist-rs.rp-1', targetControlId: 'soc2-cc7.4', confidence: 91, status: 'AI Suggested', rationale: 'Response plan execution maps to incident response program.', mappingType: 'Full' },
-
-  // NIST CSF <-> ISO 27001
-  { sourceControlId: 'nist-pr.ac-1', targetControlId: 'iso-a8.5', confidence: 87, status: 'AI Suggested', rationale: 'Identity management maps to secure authentication.', mappingType: 'Full' },
-  { sourceControlId: 'nist-pr.ac-4', targetControlId: 'iso-a8.2', confidence: 86, status: 'AI Suggested', rationale: 'Least privilege access permissions map to privileged access rights management.', mappingType: 'Full' },
-  { sourceControlId: 'nist-pr.ds-1', targetControlId: 'iso-a8.24', confidence: 84, status: 'AI Suggested', rationale: 'Data-at-rest protection maps to cryptography controls.', mappingType: 'Partial' },
-  { sourceControlId: 'nist-de.cm-1', targetControlId: 'iso-a8.16', confidence: 92, status: 'AI Suggested', rationale: 'Network monitoring maps to monitoring activities.', mappingType: 'Full' },
-  { sourceControlId: 'nist-rs.an-1', targetControlId: 'iso-a5.25', confidence: 85, status: 'AI Suggested', rationale: 'Incident investigation maps to assessment of security events.', mappingType: 'Full' },
-
-  // GDPR <-> ISO 27001
-  { sourceControlId: 'gdpr-art32', targetControlId: 'iso-a8.24', confidence: 80, status: 'AI Suggested', rationale: 'GDPR security of processing maps to ISO cryptography as one technical measure.', mappingType: 'Partial' },
-  { sourceControlId: 'gdpr-art33', targetControlId: 'iso-a5.26', confidence: 76, status: 'AI Suggested', rationale: 'GDPR breach notification relates to ISO incident response, though GDPR adds regulatory notification requirements.', mappingType: 'Partial' },
-  { sourceControlId: 'gdpr-art25', targetControlId: 'iso-a8.25', confidence: 73, status: 'AI Suggested', rationale: 'Data protection by design maps to secure development lifecycle for privacy-by-design implementation.', mappingType: 'Semantic' },
-
-  // NIS2 <-> ISO 27001
-  { sourceControlId: 'nis2-art21a', targetControlId: 'iso-a5.1', confidence: 88, status: 'AI Suggested', rationale: 'NIS2 risk analysis and IS policies directly correspond to ISO information security policies.', mappingType: 'Full' },
-  { sourceControlId: 'nis2-art21b', targetControlId: 'iso-a5.24', confidence: 91, status: 'AI Suggested', rationale: 'NIS2 incident handling maps to ISO incident management planning.', mappingType: 'Full' },
-  { sourceControlId: 'nis2-art21c', targetControlId: 'iso-a5.29', confidence: 89, status: 'AI Suggested', rationale: 'NIS2 business continuity maps to ISO ICT readiness for business continuity.', mappingType: 'Full' },
-  { sourceControlId: 'nis2-art21e', targetControlId: 'iso-a8.8', confidence: 86, status: 'AI Suggested', rationale: 'NIS2 vulnerability handling maps to ISO management of technical vulnerabilities.', mappingType: 'Full' },
-  { sourceControlId: 'nis2-art21h', targetControlId: 'iso-a8.24', confidence: 93, status: 'AI Suggested', rationale: 'Direct mapping of cryptography and encryption policies.', mappingType: 'Full' },
-  { sourceControlId: 'nis2-art21i', targetControlId: 'iso-a8.2', confidence: 84, status: 'AI Suggested', rationale: 'NIS2 access control maps to ISO privileged access rights.', mappingType: 'Partial' },
-  { sourceControlId: 'nis2-art21j', targetControlId: 'iso-a8.5', confidence: 90, status: 'AI Suggested', rationale: 'NIS2 MFA requirement maps to ISO secure authentication.', mappingType: 'Full' },
-
-  // HIPAA <-> SOC 2
-  { sourceControlId: 'hipaa-164.312a', targetControlId: 'soc2-cc6.1', confidence: 87, status: 'AI Suggested', rationale: 'HIPAA access control maps to SOC 2 logical access controls.', mappingType: 'Full' },
-  { sourceControlId: 'hipaa-164.312e', targetControlId: 'soc2-cc6.7', confidence: 91, status: 'AI Suggested', rationale: 'HIPAA transmission security maps to SOC 2 data transmission protection.', mappingType: 'Full' },
-  { sourceControlId: 'hipaa-164.308a6', targetControlId: 'soc2-cc7.4', confidence: 85, status: 'AI Suggested', rationale: 'HIPAA security incident procedures map to SOC 2 incident response.', mappingType: 'Partial' },
-
-  // PCI DSS <-> ISO 27001
-  { sourceControlId: 'pci-1.1', targetControlId: 'iso-a8.20', confidence: 88, status: 'AI Suggested', rationale: 'PCI network security controls map to ISO network security.', mappingType: 'Full' },
-  { sourceControlId: 'pci-3.1', targetControlId: 'iso-a8.24', confidence: 86, status: 'AI Suggested', rationale: 'PCI stored data protection with cryptography maps to ISO cryptography controls.', mappingType: 'Partial' },
-  { sourceControlId: 'pci-6.1', targetControlId: 'iso-a8.25', confidence: 89, status: 'AI Suggested', rationale: 'PCI secure systems and software maps to ISO secure development lifecycle.', mappingType: 'Full' },
-  { sourceControlId: 'pci-7.1', targetControlId: 'iso-a8.3', confidence: 90, status: 'AI Suggested', rationale: 'PCI restrict access maps to ISO information access restriction.', mappingType: 'Full' },
-  { sourceControlId: 'pci-10.1', targetControlId: 'iso-a8.15', confidence: 92, status: 'AI Suggested', rationale: 'PCI logging and monitoring maps to ISO logging requirements.', mappingType: 'Full' },
-  { sourceControlId: 'pci-11.1', targetControlId: 'iso-a8.8', confidence: 84, status: 'AI Suggested', rationale: 'PCI security testing maps to ISO vulnerability management.', mappingType: 'Partial' },
-  { sourceControlId: 'pci-12.1', targetControlId: 'iso-a5.1', confidence: 91, status: 'AI Suggested', rationale: 'PCI information security policy maps to ISO information security policies.', mappingType: 'Full' },
-
-  // CRA <-> NIS2
-  { sourceControlId: 'cra-annex1-2', targetControlId: 'nis2-art21e', confidence: 87, status: 'AI Suggested', rationale: 'CRA vulnerability handling maps to NIS2 vulnerability handling and disclosure requirements.', mappingType: 'Full' },
-  { sourceControlId: 'cra-art11', targetControlId: 'nis2-art21b', confidence: 79, status: 'AI Suggested', rationale: 'CRA reporting obligations relate to NIS2 incident handling, though CRA focuses on product vulnerabilities while NIS2 is broader.', mappingType: 'Partial' },
-
-  // EU AI Act <-> NIST AI RMF (semantic)
-  { sourceControlId: 'aiact-art9', targetControlId: 'gdpr-art35', confidence: 71, status: 'AI Suggested', rationale: 'AI Act risk management system shares conceptual alignment with GDPR DPIA for high-risk processing involving AI.', mappingType: 'Semantic' },
-  { sourceControlId: 'aiact-art15', targetControlId: 'cra-annex1-1', confidence: 74, status: 'AI Suggested', rationale: 'AI Act cybersecurity requirements for AI systems align with CRA security by design principles.', mappingType: 'Semantic' },
-];
+// Backing arrays — populated at runtime from the live API. See useEffect
+// inside CrossFrameworkMapper for the load logic.
+const FRAMEWORKS: Framework[] = [];
+const CONTROLS_DB: Control[] = [];
+const PREBUILT_MAPPINGS: Omit<ControlMapping, 'id'>[] = [];
 
 /* ------------------------------------------------------------------ */
 /*  ID helper                                                          */
@@ -314,10 +112,133 @@ const getControl = (id: string) => CONTROLS_DB.find(c => c.id === id);
 const getFramework = (id: string) => FRAMEWORKS.find(f => f.id === id);
 
 /* ------------------------------------------------------------------ */
+/*  Backend → frontend adapters                                         */
+/* ------------------------------------------------------------------ */
+
+const FRAMEWORK_COLORS = [
+  'bg-blue-500', 'bg-indigo-500', 'bg-green-600', 'bg-pink-500', 'bg-red-500',
+  'bg-purple-600', 'bg-cyan-600', 'bg-teal-600', 'bg-amber-600', 'bg-emerald-600',
+  'bg-violet-600', 'bg-fuchsia-600',
+];
+
+function deriveShortName(name: string): string {
+  // Strip common prefixes and trailing version suffixes for a compact label.
+  return name
+    .replace(/\(.*?\)/g, '')
+    .replace(/Regulation EU \d+\/\d+/i, '')
+    .replace(/v\d+(\.\d+)*/i, '')
+    .replace(/Type II/i, '')
+    .replace(/Cybersecurity Framework/i, 'CSF')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 3)
+    .join(' ');
+}
+
+function deriveCategory(name: string): Framework['category'] {
+  const n = name.toLowerCase();
+  if (n.includes('ai ') || n.includes(' ai') || n.includes('artificial')) return 'AI Governance';
+  if (n.includes('gdpr') || n.includes('privacy') || n.includes('ccpa') || n.includes('hipaa')) return 'Privacy';
+  if (n.includes('sustainability') || n.includes('esg') || n.includes('csrd')) return 'Sustainability';
+  if (n.includes('pci') || n.includes('finance') || n.includes('sox')) return 'Industry';
+  return 'Security';
+}
+
+function adaptBackendFramework(fw: any, idx: number): Framework {
+  return {
+    id: fw.id,
+    name: fw.name || 'Untitled Framework',
+    shortName: deriveShortName(fw.name || 'Framework'),
+    color: FRAMEWORK_COLORS[idx % FRAMEWORK_COLORS.length],
+    controlCount: Array.isArray(fw.controls) ? fw.controls.length : 0,
+    category: deriveCategory(fw.name || ''),
+  };
+}
+
+function adaptBackendControl(c: any, frameworkId: string): Control {
+  return {
+    id: c.id,
+    frameworkId,
+    controlId: c.category || c.name || c.id,
+    title: c.name || 'Untitled Control',
+    description: c.description || '',
+    domain: c.category || 'General',
+  };
+}
+
+function adaptBackendMapping(m: any): Omit<ControlMapping, 'id'> {
+  const conf = typeof m.confidence === 'number' ? Math.round(m.confidence) : 75;
+  const mappingType = ((): ControlMapping['mappingType'] => {
+    const t = (m.mappingType || '').toLowerCase();
+    if (t === 'full' || t === 'equivalent') return 'Full';
+    if (t === 'partial') return 'Partial';
+    return 'Semantic';
+  })();
+  return {
+    sourceControlId: m.sourceControlId,
+    targetControlId: m.targetControlId,
+    confidence: conf,
+    status: 'AI Suggested',
+    rationale: m.notes || 'Mapping imported from backend control-mappings catalog.',
+    mappingType,
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
 export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  /* loading state */
+  const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // Bump this to force re-render after mutating the module-scope catalog arrays.
+  const [, setDataVersion] = useState<number>(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const [frameworksRaw, mappingsRaw] = await Promise.all([
+          api.frameworks.list(),
+          api.frameworks.listControlMappings().catch(() => []),
+        ]);
+        if (cancelled) return;
+
+        // Wipe and repopulate module-level catalog arrays.
+        FRAMEWORKS.length = 0;
+        CONTROLS_DB.length = 0;
+        PREBUILT_MAPPINGS.length = 0;
+
+        (frameworksRaw || []).forEach((fw: any, idx: number) => {
+          FRAMEWORKS.push(adaptBackendFramework(fw, idx));
+          if (Array.isArray(fw.controls)) {
+            fw.controls.forEach((c: any) => {
+              CONTROLS_DB.push(adaptBackendControl(c, fw.id));
+            });
+          }
+        });
+
+        (mappingsRaw || []).forEach((m: any) => {
+          PREBUILT_MAPPINGS.push(adaptBackendMapping(m));
+        });
+
+        setDataVersion(v => v + 1);
+      } catch (err: any) {
+        if (cancelled) return;
+        logger.error('Failed to load cross-framework catalog', err);
+        setLoadError(err?.message || 'Failed to load framework catalog.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   /* state */
   const [sourceFrameworkId, setSourceFrameworkId] = useState<string>('');
   const [targetFrameworkId, setTargetFrameworkId] = useState<string>('');
@@ -458,7 +379,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
       setSessions(prev => [...prev, session]);
       setActiveSessionId(session.id);
     } catch (error: any) {
-      console.error('Cross-framework mapping error:', error);
+      logger.error('Cross-framework mapping error:', error);
       setAiError(error?.message || 'Failed to perform AI mapping. Please try again.');
 
       // Fallback to pre-built mappings only
@@ -570,6 +491,24 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
   if (!activeSession) {
     return (
       <div className="h-full flex flex-col space-y-6">
+        {loading && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2 text-blue-700 text-sm">
+            <Loader2 size={14} className="animate-spin" />
+            Loading framework catalog...
+          </div>
+        )}
+        {loadError && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2 text-red-700 text-sm">
+            <AlertTriangle size={14} />
+            {loadError}
+          </div>
+        )}
+        {!loading && !loadError && FRAMEWORKS.length === 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center gap-2 text-yellow-800 text-sm">
+            <Info size={14} />
+            No frameworks configured for your organization yet. Add a framework to begin mapping.
+          </div>
+        )}
         <div className="flex items-center space-x-4">
           <button onClick={onBack} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><ArrowLeft size={20} /></button>
           <div>

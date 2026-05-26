@@ -8,6 +8,7 @@ import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { isUrlSafe } from '../../utils/urlValidator';
 
 interface SlackTokenResponse {
   ok: boolean;
@@ -199,8 +200,12 @@ class SlackService {
    * Make authenticated API request
    */
   private async makeRequest(accessToken: string, endpoint: string, params?: any) {
+    const url = `${this.apiBaseUrl}/${endpoint}`;
+    if (!isUrlSafe(url)) {
+      throw new AppError('Blocked unsafe outbound URL', 400);
+    }
     try {
-      const response = await axios.get(`${this.apiBaseUrl}/${endpoint}`, {
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },

@@ -4,6 +4,7 @@
  */
 
 import { api } from './api';
+import { logger } from '../utils/logger';
 
 export const generateComplianceReport = async (
   framework: string,
@@ -15,7 +16,7 @@ export const generateComplianceReport = async (
     const response: any = await api.ai.generateReport(framework, companyName, context);
     return response.report || "Failed to generate report.";
   } catch (error: any) {
-    console.error("AI Error:", error);
+    logger.error("AI Error:", error);
     const errorMessage = error?.message || 'Unknown error';
     
     if (errorMessage.includes('401') || errorMessage.includes('Authentication required') || errorMessage.includes('Invalid token')) {
@@ -39,12 +40,12 @@ export const chatWithComplianceBot = async (message: string): Promise<string> =>
     // Response now includes: { response, sources, encrypted }
     return response.response || "Error.";
   } catch (e: any) {
-    console.error('Chat error:', e);
+    logger.error('Chat error:', e);
     const errorMessage = e?.message || 'Unknown error';
     
     // Log full error details in development
     if ((import.meta as ImportMeta & { env: { DEV: boolean } }).env.DEV) {
-      console.error('Full error details:', {
+      logger.error('Full error details:', {
         message: errorMessage,
         error: e,
         auth: 'httpOnly cookie',
@@ -86,7 +87,7 @@ export const generatePolicy = async (type: string, company: string, tone: string
     const response: any = await api.ai.generatePolicy(type, company, tone);
     return response.policy || "Error.";
   } catch (e: any) {
-    console.error('Policy generation error:', e);
+    logger.error('Policy generation error:', e);
     const errorMessage = e?.message || 'Unknown error';
     
     if (errorMessage.includes('401') || errorMessage.includes('Authentication required') || errorMessage.includes('Invalid token')) {

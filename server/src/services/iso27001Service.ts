@@ -630,7 +630,7 @@ export class ISO27001Service {
     const openRisks = scenarios.filter((s) => s.status === 'Open').length;
     const treatedRisks = scenarios.filter((s) => s.status === 'Treated').length;
     const highInherent = scenarios.filter((s) => s.inherentRisk >= 16).length;
-    const residualValues = scenarios.map((s) => s.residualRisk).filter((v): v is number => v != null);
+    const residualValues = scenarios.map((s) => s.residualRisk).filter((v): v is number => v !== null);
     const averageResidual = residualValues.length > 0
       ? Math.round((residualValues.reduce((a, b) => a + b, 0) / residualValues.length) * 10) / 10
       : null;

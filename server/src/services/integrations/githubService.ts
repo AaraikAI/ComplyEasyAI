@@ -8,6 +8,7 @@ import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { isUrlSafe } from '../../utils/urlValidator';
 
 interface GitHubTokenResponse {
   access_token: string;
@@ -174,8 +175,12 @@ class GitHubService {
    * Make authenticated API request
    */
   private async makeRequest(accessToken: string, endpoint: string, params?: any) {
+    const url = `${this.apiBaseUrl}${endpoint}`;
+    if (!isUrlSafe(url)) {
+      throw new AppError('Blocked unsafe outbound URL', 400);
+    }
     try {
-      const response = await axios.get(`${this.apiBaseUrl}${endpoint}`, {
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           Accept: 'application/vnd.github.v3+json',
@@ -381,7 +386,10 @@ class GitHubService {
             issues.outdatedDependencies.push(repo.fullName);
           }
         } catch (error) {
-          // Skip if not accessible
+          logger.warn('Skipping inaccessible GitHub repository during compliance scan', {
+            err: error,
+            repository: repo?.fullName,
+          });
         }
       }
 

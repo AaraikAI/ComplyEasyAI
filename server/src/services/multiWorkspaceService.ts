@@ -9,7 +9,9 @@ import { AppError } from '../middleware/errorHandler';
  */
 export class MultiWorkspaceService {
   /**
-   * Create child organization
+   * Create child organization — multi-tenant safe.
+   * Verifies the calling user is a member of the parent organization before
+   * mutating the parent or creating a child under it.
    */
   async createChildOrganization(
     parentOrganizationId: string,
@@ -19,6 +21,15 @@ export class MultiWorkspaceService {
     },
     userId: string
   ) {
+    // Multi-tenant guard: the caller MUST belong to the parent organization.
+    const caller = await prisma.user.findFirst({
+      where: { id: userId, organizationId: parentOrganizationId },
+      select: { id: true },
+    });
+    if (!caller) {
+      throw new AppError('Not authorized to create child organizations for this parent', 403);
+    }
+
     // Ensure parent exists and is marked as parent
     const parent = await prisma.organization.findUnique({
       where: { id: parentOrganizationId },
@@ -28,7 +39,9 @@ export class MultiWorkspaceService {
       throw new AppError('Parent organization not found', 404);
     }
 
-    // Update parent to be marked as parent if not already
+    // Update parent to be marked as parent if not already.
+    // Re-asserting organizationId in the where clause defends against any
+    // future signature changes that decouple parentOrganizationId from the caller.
     if (!parent.isParent) {
       await prisma.organization.update({
         where: { id: parentOrganizationId },

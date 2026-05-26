@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 import {
   ArrowLeft, Plus, Trash2, Edit3, Save, Download, ChevronDown, ChevronRight,
   AlertTriangle, CheckCircle, XCircle, Play, Square, Diamond, Circle,
@@ -482,7 +483,7 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setShowAddProcess(false);
       setNewProcess({ name: '', description: '', category: 'Business Operations', owner: '' });
     } catch (error: any) {
-      console.error('AI process generation error:', error);
+      logger.error('AI process generation error:', error);
       setAiError(error?.message || 'Failed to generate process with AI. Try creating manually.');
     } finally {
       setIsAiGenerating(false);

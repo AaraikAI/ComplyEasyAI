@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { logger } from '../utils/logger';
 
 export interface UseServiceWorkerReturn {
   /** Whether service workers are supported in this browser */
@@ -125,7 +126,7 @@ export function useServiceWorker(
       } catch (err) {
         if (!mounted) return;
         const regError = err instanceof Error ? err : new Error(String(err));
-        console.error('[useServiceWorker] Registration failed:', regError);
+        logger.error('[useServiceWorker] Registration failed:', regError);
         setError(regError);
       }
     }

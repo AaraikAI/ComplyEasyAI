@@ -332,17 +332,25 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   // Loading / error state
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // serverReachable mirrors API load success; when false the DEMO_* fallback fixtures stay visible
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
   // ----- Centralised data loader (reusable for refresh) -----
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const [apiMetrics, apiMateriality, apiReports] = await Promise.all([
+      const results = await Promise.allSettled([
         api.modules.esg.listMetrics(),
         api.modules.esg.listMateriality(),
-        api.modules.esg.listReports().catch(() => [] as any[]),
+        api.modules.esg.listReports(),
       ]);
+      // If every endpoint failed the server is unreachable and DEMO fixtures remain visible
+      const allFailed = results.every(r => r.status === 'rejected');
+      setServerReachable(!allFailed);
+      const apiMetrics = results[0].status === 'fulfilled' ? results[0].value : null;
+      const apiMateriality = results[1].status === 'fulfilled' ? results[1].value : null;
+      const apiReports = results[2].status === 'fulfilled' ? results[2].value : [];
 
       // --- Metrics ---
       if (apiMetrics && apiMetrics.length > 0) {

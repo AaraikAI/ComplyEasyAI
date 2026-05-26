@@ -6,6 +6,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
+import { logger } from '../utils/logger';
 import {
   ArrowLeft, Shield, AlertTriangle, CheckCircle, Search, Plus, X,
   Eye, Filter, BarChart3, Grid3X3, ShieldCheck, ShieldAlert, Users,
@@ -130,7 +131,7 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
       }
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
-      console.error('SoDAnalysisDashboard data load error:', err);
+      logger.error('SoDAnalysisDashboard data load error:', err);
     } finally {
       setLoading(false);
     }

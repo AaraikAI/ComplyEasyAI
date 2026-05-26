@@ -20,6 +20,7 @@ import { Toaster } from 'sonner';
 import { toast } from 'sonner';
 import GlobalSearch from './components/GlobalSearch';
 import NotificationCenter from './components/NotificationCenter';
+import { logger } from './utils/logger';
 
 // ── Lazy-loaded public pages ──────────────────────────────────────────
 const SignupPage = lazy(() => import('./components/SignupPage'));
@@ -185,7 +186,7 @@ const MainApp: React.FC = () => {
       setFrameworks(fwData);
       setRisks(risksData);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      logger.error('Failed to load data:', error);
       setFrameworks([]);
       setRisks([]);
     }

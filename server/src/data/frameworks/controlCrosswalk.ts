@@ -485,6 +485,239 @@ export const CONTROL_CROSSWALK: ControlCrosswalkMapping[] = [
 
   // Incident response
   { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.16.1', targetFramework: 'FedRAMP', targetControlId: 'FR-IR-1', mappingType: 'equivalent', confidence: 0.9 },
+
+  // =============================================================================
+  // SOC 3 <-> SOC 2 Mappings (IDENTICAL Trust Services Criteria — 1:1 equivalent)
+  // SOC 3 uses the same AICPA 2017 TSC (with 2022 revisions) as SOC 2.
+  // Difference is only the report deliverable (general-use seal vs detailed Type 1/2).
+  // =============================================================================
+
+  // CC1: Control Environment
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC1.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC1.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC1.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC1.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC1.3', targetFramework: 'SOC 2 Type II', targetControlId: 'CC1.3', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC1.4', targetFramework: 'SOC 2 Type II', targetControlId: 'CC1.4', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC1.5', targetFramework: 'SOC 2 Type II', targetControlId: 'CC1.5', mappingType: 'equivalent', confidence: 1.0 },
+  // CC2: Communication and Information
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC2.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC2.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC2.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC2.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC2.3', targetFramework: 'SOC 2 Type II', targetControlId: 'CC2.3', mappingType: 'equivalent', confidence: 1.0 },
+  // CC3: Risk Assessment
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC3.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC3.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC3.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC3.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC3.3', targetFramework: 'SOC 2 Type II', targetControlId: 'CC3.3', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC3.4', targetFramework: 'SOC 2 Type II', targetControlId: 'CC3.4', mappingType: 'equivalent', confidence: 1.0 },
+  // CC4: Monitoring Activities
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC4.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC4.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC4.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC4.2', mappingType: 'equivalent', confidence: 1.0 },
+  // CC5: Control Activities
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC5.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC5.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC5.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC5.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC5.3', targetFramework: 'SOC 2 Type II', targetControlId: 'CC5.3', mappingType: 'equivalent', confidence: 1.0 },
+  // CC6: Logical and Physical Access Controls
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.3', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.3', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.4', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.4', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.5', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.5', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.6', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.6', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.7', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.7', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.8', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.8', mappingType: 'equivalent', confidence: 1.0 },
+  // CC7: System Operations
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.3', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.3', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.4', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.4', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.5', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.5', mappingType: 'equivalent', confidence: 1.0 },
+  // CC8: Change Management
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC8.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC8.1', mappingType: 'equivalent', confidence: 1.0 },
+  // CC9: Risk Mitigation
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC9.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC9.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC9.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC9.2', mappingType: 'equivalent', confidence: 1.0 },
+  // A1: Availability
+  { sourceFramework: 'SOC 3', sourceControlId: 'A1.1', targetFramework: 'SOC 2 Type II', targetControlId: 'A1.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'A1.2', targetFramework: 'SOC 2 Type II', targetControlId: 'A1.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'A1.3', targetFramework: 'SOC 2 Type II', targetControlId: 'A1.3', mappingType: 'equivalent', confidence: 1.0 },
+  // PI1: Processing Integrity
+  { sourceFramework: 'SOC 3', sourceControlId: 'PI1.1', targetFramework: 'SOC 2 Type II', targetControlId: 'PI1.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'PI1.2', targetFramework: 'SOC 2 Type II', targetControlId: 'PI1.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'PI1.3', targetFramework: 'SOC 2 Type II', targetControlId: 'PI1.3', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'PI1.4', targetFramework: 'SOC 2 Type II', targetControlId: 'PI1.4', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'PI1.5', targetFramework: 'SOC 2 Type II', targetControlId: 'PI1.5', mappingType: 'equivalent', confidence: 1.0 },
+  // C1: Confidentiality
+  { sourceFramework: 'SOC 3', sourceControlId: 'C1.1', targetFramework: 'SOC 2 Type II', targetControlId: 'C1.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'C1.2', targetFramework: 'SOC 2 Type II', targetControlId: 'C1.2', mappingType: 'equivalent', confidence: 1.0 },
+  // P1-P8: Privacy
+  { sourceFramework: 'SOC 3', sourceControlId: 'P1.1', targetFramework: 'SOC 2 Type II', targetControlId: 'P1.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P2.1', targetFramework: 'SOC 2 Type II', targetControlId: 'P2.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P3.1', targetFramework: 'SOC 2 Type II', targetControlId: 'P3.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P3.2', targetFramework: 'SOC 2 Type II', targetControlId: 'P3.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P4.1', targetFramework: 'SOC 2 Type II', targetControlId: 'P4.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P4.2', targetFramework: 'SOC 2 Type II', targetControlId: 'P4.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P4.3', targetFramework: 'SOC 2 Type II', targetControlId: 'P4.3', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P5.1', targetFramework: 'SOC 2 Type II', targetControlId: 'P5.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P5.2', targetFramework: 'SOC 2 Type II', targetControlId: 'P5.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P6.1', targetFramework: 'SOC 2 Type II', targetControlId: 'P6.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P6.2', targetFramework: 'SOC 2 Type II', targetControlId: 'P6.2', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P6.3', targetFramework: 'SOC 2 Type II', targetControlId: 'P6.3', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P6.4', targetFramework: 'SOC 2 Type II', targetControlId: 'P6.4', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P6.5', targetFramework: 'SOC 2 Type II', targetControlId: 'P6.5', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P6.6', targetFramework: 'SOC 2 Type II', targetControlId: 'P6.6', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P6.7', targetFramework: 'SOC 2 Type II', targetControlId: 'P6.7', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P7.1', targetFramework: 'SOC 2 Type II', targetControlId: 'P7.1', mappingType: 'equivalent', confidence: 1.0 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P8.1', targetFramework: 'SOC 2 Type II', targetControlId: 'P8.1', mappingType: 'equivalent', confidence: 1.0 },
+
+  // =============================================================================
+  // SOC 3 <-> ISO 27001 Mappings (inherited via SOC 2 TSCs)
+  // =============================================================================
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC1.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC3.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.7', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.15', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.2', targetFramework: 'ISO 27001', targetControlId: 'A.5.16', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.17', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.7', targetFramework: 'ISO 27001', targetControlId: 'A.8.24', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.2', targetFramework: 'ISO 27001', targetControlId: 'A.8.16', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.24', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC8.1', targetFramework: 'ISO 27001', targetControlId: 'A.8.32', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC9.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.29', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC9.2', targetFramework: 'ISO 27001', targetControlId: 'A.5.19', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'A1.1', targetFramework: 'ISO 27001', targetControlId: 'A.8.6', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'A1.2', targetFramework: 'ISO 27001', targetControlId: 'A.8.13', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'A1.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.30', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'C1.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.12', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'C1.2', targetFramework: 'ISO 27001', targetControlId: 'A.7.14', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P1.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.34', mappingType: 'equivalent', confidence: 0.85 },
+
+  // =============================================================================
+  // SOC 3 <-> HIPAA Mappings (inherited via SOC 2 TSCs)
+  // =============================================================================
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.1', targetFramework: 'HIPAA', targetControlId: 'HIPAA-TECH-1.5', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.2', targetFramework: 'HIPAA', targetControlId: 'HIPAA-TECH-1.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.7', targetFramework: 'HIPAA', targetControlId: 'HIPAA-TECH-5.2', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.3', targetFramework: 'HIPAA', targetControlId: 'HIPAA-ADM-6.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC9.1', targetFramework: 'HIPAA', targetControlId: 'HIPAA-ADM-7.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC4.1', targetFramework: 'HIPAA', targetControlId: 'HIPAA-TECH-2.1', mappingType: 'equivalent', confidence: 0.9 },
+
+  // =============================================================================
+  // SOC 3 <-> GDPR Mappings (inherited via SOC 2 TSCs)
+  // =============================================================================
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.1', targetFramework: 'GDPR', targetControlId: 'GDPR-32', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.3', targetFramework: 'GDPR', targetControlId: 'GDPR-33', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.5', targetFramework: 'GDPR', targetControlId: 'GDPR-34', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P1.1', targetFramework: 'GDPR', targetControlId: 'GDPR-12', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P2.1', targetFramework: 'GDPR', targetControlId: 'GDPR-6', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P5.1', targetFramework: 'GDPR', targetControlId: 'GDPR-15', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P5.2', targetFramework: 'GDPR', targetControlId: 'GDPR-16', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'P4.3', targetFramework: 'GDPR', targetControlId: 'GDPR-17', mappingType: 'equivalent', confidence: 0.9 },
+
+  // =============================================================================
+  // SOC 3 <-> PCI DSS Mappings (inherited via SOC 2 TSCs)
+  // =============================================================================
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.1', targetFramework: 'PCI DSS', targetControlId: 'PCI-7.1', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.2', targetFramework: 'PCI DSS', targetControlId: 'PCI-8.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.7', targetFramework: 'PCI DSS', targetControlId: 'PCI-4.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC4.1', targetFramework: 'PCI DSS', targetControlId: 'PCI-10.1', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC8.1', targetFramework: 'PCI DSS', targetControlId: 'PCI-6.4', mappingType: 'equivalent', confidence: 0.9 },
+
+  // =============================================================================
+  // SOC 3 <-> NIST 800-53 Mappings (inherited via SOC 2 TSCs)
+  // =============================================================================
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.1', targetFramework: 'NIST 800-53', targetControlId: 'AC-1', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC6.2', targetFramework: 'NIST 800-53', targetControlId: 'AC-2', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC4.1', targetFramework: 'NIST 800-53', targetControlId: 'AU-1', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC3.1', targetFramework: 'NIST 800-53', targetControlId: 'RA-1', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC8.1', targetFramework: 'NIST 800-53', targetControlId: 'CM-3', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'SOC 3', sourceControlId: 'CC7.3', targetFramework: 'NIST 800-53', targetControlId: 'IR-1', mappingType: 'equivalent', confidence: 0.95 },
+
+  // =============================================================================
+  // ISO 42001 <-> ISO 27001 Mappings
+  // Per Annex A integration guidance: AIMS leverages ISMS where appropriate.
+  // =============================================================================
+
+  // Management system clauses overlap (Annex SL alignment)
+  { sourceFramework: 'ISO 42001', sourceControlId: '4.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.1', mappingType: 'related', confidence: 0.8 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '5.2', targetFramework: 'ISO 27001', targetControlId: 'A.5.1', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '5.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.2', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '6.1.2', targetFramework: 'ISO 27001', targetControlId: 'A.5.7', mappingType: 'related', confidence: 0.7 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '7.2', targetFramework: 'ISO 27001', targetControlId: 'A.6.3', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '7.3', targetFramework: 'ISO 27001', targetControlId: 'A.6.3', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '7.5', targetFramework: 'ISO 27001', targetControlId: 'A.5.33', mappingType: 'related', confidence: 0.8 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '9.2', targetFramework: 'ISO 27001', targetControlId: 'A.5.35', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '9.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.36', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '10.2', targetFramework: 'ISO 27001', targetControlId: 'A.5.27', mappingType: 'equivalent', confidence: 0.85 },
+
+  // Annex A controls
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.2.2', targetFramework: 'ISO 27001', targetControlId: 'A.5.1', mappingType: 'related', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.2.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.1', mappingType: 'related', confidence: 0.8 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.3.2', targetFramework: 'ISO 27001', targetControlId: 'A.5.2', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.3.3', targetFramework: 'ISO 27001', targetControlId: 'A.6.8', mappingType: 'related', confidence: 0.75 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.4.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.12', mappingType: 'related', confidence: 0.8 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.6.2.7', targetFramework: 'ISO 27001', targetControlId: 'A.5.33', mappingType: 'related', confidence: 0.8 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.6.2.8', targetFramework: 'ISO 27001', targetControlId: 'A.8.15', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.7.4', targetFramework: 'ISO 27001', targetControlId: 'A.5.12', mappingType: 'related', confidence: 0.75 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.10.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.19', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.10.4', targetFramework: 'ISO 27001', targetControlId: 'A.5.20', mappingType: 'related', confidence: 0.8 },
+
+  // =============================================================================
+  // ISO 42001 <-> SOC 2 Mappings (governance and operational overlap)
+  // =============================================================================
+  { sourceFramework: 'ISO 42001', sourceControlId: '5.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC1.1', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '5.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC1.5', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '5.3', targetFramework: 'SOC 2 Type II', targetControlId: 'CC1.3', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '6.1.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC3.2', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '7.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC1.4', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '7.4', targetFramework: 'SOC 2 Type II', targetControlId: 'CC2.2', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '8.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC5.1', mappingType: 'equivalent', confidence: 0.8 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '9.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC4.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '9.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC4.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '10.2', targetFramework: 'SOC 2 Type II', targetControlId: 'CC4.2', mappingType: 'equivalent', confidence: 0.9 },
+
+  // =============================================================================
+  // ISO 42001 <-> EU AI Act Mappings
+  // Direct overlap on AI governance, risk, transparency, oversight requirements.
+  // =============================================================================
+  // Quality Management System (EU AI Act Article 17 ↔ ISO 42001 management system)
+  { sourceFramework: 'ISO 42001', sourceControlId: '4.4', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.9', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.2.2', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.9', mappingType: 'equivalent', confidence: 0.9 },
+  // Risk management (EU AI Act Article 9 ↔ ISO 42001 risk processes)
+  { sourceFramework: 'ISO 42001', sourceControlId: '6.1.2', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '8.2', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.1', mappingType: 'equivalent', confidence: 0.85 },
+  // Data and data governance (EU AI Act Article 10 ↔ ISO 42001 A.7 controls)
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.7.4', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.2', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.7.5', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.2', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.7.6', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.2', mappingType: 'related', confidence: 0.8 },
+  // Technical documentation (EU AI Act Article 11 ↔ ISO 42001 A.6.2.3, A.6.2.7)
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.6.2.3', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.3', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.6.2.7', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.3', mappingType: 'equivalent', confidence: 0.95 },
+  // Record-keeping / event logs (EU AI Act Article 12 ↔ ISO 42001 A.6.2.8)
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.6.2.8', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.4', mappingType: 'equivalent', confidence: 0.95 },
+  // Transparency to users (EU AI Act Article 13 ↔ ISO 42001 A.8.2)
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.8.2', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.5', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.8.5', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.5', mappingType: 'related', confidence: 0.8 },
+  // Human oversight (EU AI Act Article 14 ↔ ISO 42001 A.9.2)
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.9.2', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.6', mappingType: 'equivalent', confidence: 0.9 },
+  // Accuracy, robustness, cybersecurity (EU AI Act Article 15 ↔ ISO 42001 A.6.2.4)
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.6.2.4', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.7', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.6.2.6', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-3.7', mappingType: 'related', confidence: 0.8 },
+  // Impact assessment / conformity (EU AI Act Article 27 / 43 ↔ ISO 42001 A.5)
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.5.2', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-4.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.5.4', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-4.2', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.5.5', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-4.3', mappingType: 'related', confidence: 0.8 },
+  // Post-market monitoring (EU AI Act Article 72 ↔ ISO 42001 A.6.2.6, 9.1)
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.6.2.6', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-5.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '9.1', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-5.2', mappingType: 'equivalent', confidence: 0.85 },
+  // Incident reporting (EU AI Act Article 73 ↔ ISO 42001 A.8.4)
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.8.4', targetFramework: 'EU AI Act', targetControlId: 'EU-AI-ACT-5.3', mappingType: 'equivalent', confidence: 0.95 },
+
+  // =============================================================================
+  // ISO 42001 <-> NIST 800-53 (general controls overlap)
+  // =============================================================================
+  { sourceFramework: 'ISO 42001', sourceControlId: '5.2', targetFramework: 'NIST 800-53', targetControlId: 'PL-1', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '6.1.2', targetFramework: 'NIST 800-53', targetControlId: 'RA-1', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: '7.2', targetFramework: 'NIST 800-53', targetControlId: 'AT-3', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.6.2.8', targetFramework: 'NIST 800-53', targetControlId: 'AU-2', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.7.4', targetFramework: 'NIST 800-53', targetControlId: 'SI-12', mappingType: 'related', confidence: 0.8 },
+  { sourceFramework: 'ISO 42001', sourceControlId: 'A.10.3', targetFramework: 'NIST 800-53', targetControlId: 'SA-9', mappingType: 'equivalent', confidence: 0.9 },
 ];
 
 /**
@@ -544,6 +777,20 @@ function normalizeFrameworkName(name: string): string {
     'iso27017': 'iso 27017',
     'iso 27017:2015': 'iso 27017',
     'iso-27017': 'iso 27017',
+    // SOC 3 normalizations
+    'aicpa soc 3': 'soc 3',
+    'aicpa soc3': 'soc 3',
+    'soc3': 'soc 3',
+    'soc 3 type ii': 'soc 3',
+    'soc 3 trust services report': 'soc 3',
+    'soc for service organizations': 'soc 3',
+    // ISO 42001 normalizations
+    'iso/iec 42001': 'iso 42001',
+    'iso/iec 42001:2023': 'iso 42001',
+    'iso 42001:2023': 'iso 42001',
+    'iso42001': 'iso 42001',
+    'aims': 'iso 42001',
+    'ai management system': 'iso 42001',
   };
 
   return aliases[normalized] || normalized;

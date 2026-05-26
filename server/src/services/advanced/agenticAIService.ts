@@ -739,6 +739,17 @@ class AgenticAIService {
     try {
       const { status, description, evidence } = agenticAction.parameters;
 
+      // Verify ownership via parent framework (defense-in-depth)
+      const control = await prisma.frameworkControl.findFirst({
+        where: {
+          id: agenticAction.targetId,
+          framework: { organizationId },
+        },
+      });
+      if (!control) {
+        throw new AppError('Framework control not found', 404);
+      }
+
       await prisma.frameworkControl.update({
         where: { id: agenticAction.targetId },
         data: {

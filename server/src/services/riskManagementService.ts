@@ -1,6 +1,7 @@
 import { RiskSeverity, RiskItem, RiskAssessment } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 
 interface RiskAssessmentWithRisks extends RiskAssessment {
@@ -115,6 +116,13 @@ export class RiskManagementService {
     organizationId: string
   ) {
     return prisma.$transaction(async (tx) => {
+      const existing = await tx.riskAssessment.findFirst({
+        where: { id: assessmentId, organizationId },
+      });
+      if (!existing) {
+        throw new AppError('Risk assessment not found', 404);
+      }
+
       const assessment = await tx.riskAssessment.update({
         where: { id: assessmentId },
         data: {
@@ -158,6 +166,13 @@ export class RiskManagementService {
     organizationId: string
   ) {
     return prisma.$transaction(async (tx) => {
+      const existing = await tx.riskItem.findFirst({
+        where: { id: riskId, organizationId },
+      });
+      if (!existing) {
+        throw new AppError('Risk not found', 404);
+      }
+
       const risk = await tx.riskItem.update({
         where: { id: riskId },
         data: {
@@ -206,6 +221,13 @@ export class RiskManagementService {
     const severity = this.calculateRiskSeverity(riskScore);
 
     return prisma.$transaction(async (tx) => {
+      const existing = await tx.riskItem.findFirst({
+        where: { id: riskId, organizationId },
+      });
+      if (!existing) {
+        throw new AppError('Risk not found', 404);
+      }
+
       const risk = await tx.riskItem.update({
         where: { id: riskId },
         data: {
@@ -248,6 +270,13 @@ export class RiskManagementService {
     organizationId: string
   ) {
     return prisma.$transaction(async (tx) => {
+      const existing = await tx.riskItem.findFirst({
+        where: { id: riskId, organizationId },
+      });
+      if (!existing) {
+        throw new AppError('Risk not found', 404);
+      }
+
       const risk = await tx.riskItem.update({
         where: { id: riskId },
         data: {

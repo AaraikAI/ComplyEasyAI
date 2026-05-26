@@ -6,13 +6,14 @@
  * The ACS callback and login initiation routes are unauthenticated.
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { validateBody } from '../middleware/validate';
 import { upsertSSOConfigSchema } from '../validators/ssoSchemas';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 import config from '../config';
 import crypto from 'crypto';
 import { SignedXml } from 'xml-crypto';
@@ -152,7 +153,7 @@ function extractSamlClaims(samlResponseXml: string): {
  */
 router.post(
   '/acs',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { SAMLResponse, RelayState } = req.body;
 
@@ -196,9 +197,16 @@ router.post(
       try {
         verifySamlSignature(samlResponseXml, ssoConfig.certificate);
       } catch (sigError: any) {
-        logger.error('SSO ACS: SAML signature verification failed', { error: sigError.message, ip: req.ip, ssoConfigId: ssoConfig.id });
-        res.status(401).json({ error: 'SAML signature verification failed' });
-        return;
+        logger.error('SSO ACS: SAML signature verification failed', {
+          err: sigError,
+          path: req.path,
+          method: req.method,
+          ssoConfigId: ssoConfig.id,
+          ip: req.ip,
+        });
+        const wrapped = new AppError('SAML signature verification failed', 400);
+        (wrapped as any).cause = sigError;
+        return next(wrapped);
       }
 
       // Extract NameID from parsed SAML claims (already parsed above)
@@ -300,8 +308,16 @@ router.post(
         },
       });
     } catch (error) {
-      logger.error('SSO ACS error:', error);
-      res.status(500).json({ error: 'SSO authentication failed' });
+      logger.error('SSO ACS failed', {
+        err: error,
+        path: req.path,
+        method: req.method,
+        ssoConfigId: req.body?.ssoConfigId ?? req.params?.id,
+        ip: req.ip,
+      });
+      const wrapped = new AppError('SSO authentication failed', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -312,7 +328,7 @@ router.post(
  */
 router.get(
   '/login/:orgSlug',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { orgSlug } = req.params;
 
@@ -370,8 +386,16 @@ router.get(
         },
       });
     } catch (error) {
-      logger.error('SSO login initiation error:', error);
-      res.status(500).json({ error: 'Failed to initiate SSO login' });
+      logger.error('SSO login initiation failed', {
+        err: error,
+        path: req.path,
+        method: req.method,
+        ssoConfigId: req.body?.ssoConfigId ?? req.params?.id,
+        ip: req.ip,
+      });
+      const wrapped = new AppError('Failed to initiate SSO login', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -388,7 +412,7 @@ router.use(authenticate);
 
 router.get(
   '/config',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const user = (req as AuthRequest).user!;
 
     try {
@@ -412,8 +436,16 @@ router.get(
         },
       });
     } catch (error) {
-      logger.error('Error fetching SSO config:', error);
-      res.status(500).json({ error: 'Failed to fetch SSO configuration' });
+      logger.error('Failed to fetch SSO config', {
+        err: error,
+        path: req.path,
+        method: req.method,
+        ssoConfigId: req.body?.ssoConfigId ?? req.params?.id,
+        ip: req.ip,
+      });
+      const wrapped = new AppError('Failed to fetch SSO configuration', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -426,7 +458,7 @@ router.post(
   '/config',
   authorize('admin'),
   validateBody(upsertSSOConfigSchema),
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const user = (req as AuthRequest).user!;
 
     try {
@@ -483,8 +515,16 @@ router.post(
         },
       });
     } catch (error) {
-      logger.error('Error creating/updating SSO config:', error);
-      res.status(500).json({ error: 'Failed to save SSO configuration' });
+      logger.error('Failed to save SSO config', {
+        err: error,
+        path: req.path,
+        method: req.method,
+        ssoConfigId: req.body?.ssoConfigId ?? req.params?.id,
+        ip: req.ip,
+      });
+      const wrapped = new AppError('Failed to save SSO configuration', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -496,7 +536,7 @@ router.post(
 router.delete(
   '/config',
   authorize('admin'),
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const user = (req as AuthRequest).user!;
 
     try {
@@ -515,8 +555,16 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'SSO configuration deleted' } });
     } catch (error) {
-      logger.error('Error deleting SSO config:', error);
-      res.status(500).json({ error: 'Failed to delete SSO configuration' });
+      logger.error('Failed to delete SSO config', {
+        err: error,
+        path: req.path,
+        method: req.method,
+        ssoConfigId: req.body?.ssoConfigId ?? req.params?.id,
+        ip: req.ip,
+      });
+      const wrapped = new AppError('Failed to delete SSO configuration', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -527,7 +575,7 @@ router.delete(
 
 router.get(
   '/metadata',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const user = (req as AuthRequest).user!;
 
     try {
@@ -563,8 +611,16 @@ router.get(
       res.setHeader('Content-Type', 'application/xml');
       res.send(metadata);
     } catch (error) {
-      logger.error('Error generating SP metadata:', error);
-      res.status(500).json({ error: 'Failed to generate SP metadata' });
+      logger.error('Failed to generate SP metadata', {
+        err: error,
+        path: req.path,
+        method: req.method,
+        ssoConfigId: req.body?.ssoConfigId ?? req.params?.id,
+        ip: req.ip,
+      });
+      const wrapped = new AppError('Failed to generate SP metadata', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -576,7 +632,7 @@ router.get(
 router.post(
   '/test',
   authorize('admin'),
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const user = (req as AuthRequest).user!;
 
     try {
@@ -651,8 +707,16 @@ router.post(
         },
       });
     } catch (error) {
-      logger.error('Error testing SSO configuration:', error);
-      res.status(500).json({ error: 'Failed to test SSO configuration' });
+      logger.error('Failed to test SSO configuration', {
+        err: error,
+        path: req.path,
+        method: req.method,
+        ssoConfigId: req.body?.ssoConfigId ?? req.params?.id,
+        ip: req.ip,
+      });
+      const wrapped = new AppError('Failed to test SSO configuration', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );

@@ -12,6 +12,7 @@ import { useI18n } from '../contexts/I18nContext';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import { logger } from '../utils/logger';
 
 interface TemplateInfo {
   frameworkType: string;
@@ -138,7 +139,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({
         setTemplates(response.templates || []);
         setTemplatesLoaded(true);
       } catch (err) {
-        console.error('Failed to load framework templates:', err);
+        logger.error('Failed to load framework templates:', err);
         setTemplatesLoaded(true);
       }
     };
@@ -260,7 +261,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({
               break;
             }
           } catch (error) {
-            console.error('Error checking framework:', error);
+            logger.error('Error checking framework:', error);
           }
         }
       };
@@ -288,7 +289,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({
         controlCount: response.controlCount || 0,
       });
     } catch (err) {
-      console.error('Failed to load template preview:', err);
+      logger.error('Failed to load template preview:', err);
     } finally {
       setTemplatePreviewLoading(false);
     }
@@ -320,7 +321,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({
         handleAIGapAnalysis(frameworkId, frameworkName, result.applied);
       }
     } catch (err: unknown) {
-      console.error('Failed to apply template:', err);
+      logger.error('Failed to apply template:', err);
       toast.error(`Failed to apply template: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setApplyingTemplate(null);
@@ -378,7 +379,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({
       setAiGapAnalysis(parsedGaps);
       setShowGapAnalysisModal(true);
     } catch (err: unknown) {
-      console.error('AI Gap Analysis failed:', err);
+      logger.error('AI Gap Analysis failed:', err);
       // Still show modal with basic info
       setAiGapAnalysis({
         gaps: [],
@@ -443,7 +444,7 @@ Return as JSON with: suggestedControl, suggestedControlId, confidenceScore, reas
         });
       }
     } catch (err: unknown) {
-      console.error('AI Evidence Classification failed:', err);
+      logger.error('AI Evidence Classification failed:', err);
       toast.error('Failed to classify evidence: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setEvidenceClassifyLoading(false);
@@ -506,7 +507,7 @@ Return as JSON with: currentStatus, complianceGaps, requiredEvidence, requiredAc
         });
       }
     } catch (err: unknown) {
-      console.error('AI Control Assessment failed:', err);
+      logger.error('AI Control Assessment failed:', err);
       setControlAssessment({
         currentStatus: 'Assessment Failed',
         complianceGaps: [],
@@ -580,7 +581,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
         setCoPilotRecommendations(frameworkRecommendations);
       }
     } catch (err: unknown) {
-      console.error('AI Co-Pilot failed:', err);
+      logger.error('AI Co-Pilot failed:', err);
       setCoPilotRecommendations([]);
     } finally {
       setCoPilotLoading(false);
@@ -611,7 +612,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
         onFrameworkDeleted();
       }
     } catch (error: unknown) {
-      console.error('Failed to delete framework:', error);
+      logger.error('Failed to delete framework:', error);
       toast.error(`Failed to delete framework: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setDeletingFramework(null);
@@ -656,7 +657,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
             });
           }
         } catch (error) {
-          console.error(`Error fetching framework ${fw.id}:`, error);
+          logger.error(`Error fetching framework ${fw.id}:`, error);
           csvRows.push(`"${fw.name}","","Error loading controls","${fw.status}","${fw.progress}%","${fw.nextAuditDate}","${fw.region || ''}"`);
         }
       }
@@ -674,7 +675,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error: unknown) {
-      console.error('Failed to export control report:', error);
+      logger.error('Failed to export control report:', error);
       toast.error(`Failed to export control report: ${error instanceof Error ? error.message : String(error)}`);
     }
   };

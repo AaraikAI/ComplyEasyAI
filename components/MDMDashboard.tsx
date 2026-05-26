@@ -15,6 +15,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 import {
   ArrowLeft, Smartphone, Shield, CheckCircle, XCircle, AlertTriangle,
   Search, Plus, X, Lock, Trash2, Eye, Download, Settings, Filter,
@@ -156,7 +157,7 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
-      console.error('MDMDashboard data load error:', err);
+      logger.error('MDMDashboard data load error:', err);
     } finally {
       setLoading(false);
     }

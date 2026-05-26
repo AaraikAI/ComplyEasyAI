@@ -119,6 +119,14 @@ describe('QuestionnaireService contract', () => {
   // addQuestions
   // ---------------------------------------------------------------------------
   describe('addQuestions', () => {
+    beforeEach(() => {
+      // Multi-tenant pre-check: parent questionnaire must belong to org.
+      prismaMock.questionnaire.findFirst.mockResolvedValue({
+        id: 'q-1',
+        organizationId: 'org-123',
+      } as any);
+    });
+
     it('should create questions with correct order and category defaults', async () => {
       prismaMock.questionnaireQuestion.create
         .mockResolvedValueOnce({ id: 'qq-1', order: 1 })

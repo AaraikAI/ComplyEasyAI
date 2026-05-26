@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import { logger } from '../utils/logger';
 
 type SortField = 'severity' | 'detectedAt' | 'aiScore';
 type SortOrder = 'asc' | 'desc';
@@ -69,7 +70,7 @@ export const MyTasks: React.FC = () => {
       }));
       setTasks(normalizedTasks);
     } catch (error) {
-      console.error('Failed to load tasks:', error);
+      logger.error('Failed to load tasks:', error);
       setTasks([]);
     } finally {
       setIsLoading(false);
@@ -148,7 +149,7 @@ export const MyTasks: React.FC = () => {
         await loadTasks();
         setSelectedTask(null);
       } catch (error: any) {
-        console.error('Failed to update task:', error);
+        logger.error('Failed to update task:', error);
         toast.error(`Failed to update task: ${error.message || 'Unknown error'}`);
       }
     }

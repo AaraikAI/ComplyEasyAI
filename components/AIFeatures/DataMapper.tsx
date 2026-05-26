@@ -3,6 +3,7 @@ import { mapGDPRData } from '../../services/geminiService';
 import { Database, Loader2, ArrowLeft, Shield, Globe, Clock, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 export const DataMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [process, setProcess] = useState('');
@@ -35,7 +36,7 @@ export const DataMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setCrossBorderTransfers((result as any).crossBorderTransfers || []);
       setRetentionPeriods((result as any).retentionPeriods || []);
     } catch (error: any) {
-      console.error('Error mapping data:', error);
+      logger.error('Error mapping data:', error);
       setMap('Error generating data map. Please try again.');
       setPiiIdentified([]);
       setCrossBorderTransfers([]);

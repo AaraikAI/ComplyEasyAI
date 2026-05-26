@@ -109,6 +109,8 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  // serverReachable mirrors API load success — controls whether DEFAULTS fallback is used in preview
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
   // Form state
   const [companyName, setCompanyName] = useState('');
@@ -142,8 +144,14 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) => {
       const data = await apiFetch<BrandingConfig>(`${API_BASE}/config`);
       setConfig(data);
       populateForm(data);
+      setServerReachable(true);
     } catch {
-      setError('Failed to load branding settings.');
+      // Server unreachable — populate form from DEFAULTS so the preview/UI still renders
+      setServerReachable(false);
+      const fallback = { ...DEFAULTS, id: 'local', updatedAt: new Date().toISOString() } as BrandingConfig;
+      setConfig(fallback);
+      populateForm(fallback);
+      setError('Failed to load branding settings — showing defaults.');
     } finally {
       setIsLoading(false);
     }

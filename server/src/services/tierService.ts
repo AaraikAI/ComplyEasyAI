@@ -286,15 +286,16 @@ class TierService {
       case 'maxFrameworks':
         return await prisma.complianceFramework.count({ where: { organizationId } });
 
-      case 'maxWorkspaces':
+      case 'maxWorkspaces': {
         // Count child organizations (workspaces)
         const org = await prisma.organization.findUnique({
           where: { id: organizationId },
           include: { childOrganizations: true },
         });
         return org?.childOrganizations.length || 0;
+      }
 
-      case 'maxQuestionnairesPerMonth':
+      case 'maxQuestionnairesPerMonth': {
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
@@ -304,6 +305,7 @@ class TierService {
             createdAt: { gte: startOfMonth },
           },
         });
+      }
 
       case 'maxVendors':
         return await prisma.vendor.count({ where: { organizationId } });

@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 interface Feature {
   id: string;
@@ -104,7 +105,7 @@ export default function FeatureMarketplace() {
       const response = await api.getFeatureSubscriptions();
       setSubscriptions(response.subscriptions || []);
     } catch (err: any) {
-      console.error('Failed to load subscriptions', err);
+      logger.error('Failed to load subscriptions', err);
     }
   };
 

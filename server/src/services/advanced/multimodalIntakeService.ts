@@ -1973,7 +1973,7 @@ class MultimodalIntakeService {
         const trimmed = line.trim();
         if (!trimmed) continue;
 
-        const isHeading = /^(\d+\.|\#{1,3}\s|[A-Z][A-Z\s]{3,}$|Article\s+\d+|Section\s+\d+)/i.test(trimmed);
+        const isHeading = /^(\d+\.|#{1,3}\s|[A-Z][A-Z\s]{3,}$|Article\s+\d+|Section\s+\d+)/i.test(trimmed);
 
         if (isHeading) {
           if (currentSection) {

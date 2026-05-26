@@ -1,3 +1,4 @@
+import { logger } from '../../../utils/logger';
 /**
  * Mobile API Service
  *
@@ -59,7 +60,7 @@ function validateCertificatePin(hostname: string): void {
   if (validPins.length === 0) {
     const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.EXPO_PUBLIC_ENV !== 'production';
     if (!isDev) {
-      console.error(
+      logger.error(
         '[CertPin] CRITICAL: No valid certificate pins configured for production! ' +
         'Set EXPO_PUBLIC_CERT_PIN_PRIMARY and EXPO_PUBLIC_CERT_PIN_BACKUP with valid SPKI SHA-256 hashes. ' +
         'See: openssl s_client -connect api.complyeasy.ai:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64'

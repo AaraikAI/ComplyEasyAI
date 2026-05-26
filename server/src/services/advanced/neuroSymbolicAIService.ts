@@ -779,10 +779,10 @@ Format as JSON with: {prediction, confidence, factors}`;
     for (const part of parts) {
       const next: any[] = [];
       for (const item of current) {
-        if (item == null) continue;
+        if (item === null || item === undefined) continue;
         if (Array.isArray(item)) {
           for (const el of item) {
-            if (el != null && el[part] !== undefined) {
+            if (el !== null && el !== undefined && el[part] !== undefined) {
               next.push(el[part]);
             }
           }
@@ -1711,7 +1711,7 @@ Format as JSON:
     chain.push(`Observation: ${observation.type.replace(/_/g, ' ')} detected affecting ${observation.affectedEntities.length} entities`);
     chain.push(`Hypothesis: "${factor.name}" is a potential root cause`);
     if (factor.mechanism) chain.push(`Mechanism: ${factor.mechanism}`);
-    if (factor.baseProbability != null) {
+    if (factor.baseProbability !== null && factor.baseProbability !== undefined) {
       chain.push(`Posterior probability: ${(factor.baseProbability * 100).toFixed(1)}%`);
     }
     if (facts.length > 0) {

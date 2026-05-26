@@ -186,7 +186,10 @@ describe('WorkflowEngineService contract', () => {
 
       // findMany returns matching workflows for processEvent
       prismaMock.gRCWorkflow.findMany.mockResolvedValue([mockWorkflow]);
-      // findUnique returns the same workflow for executeWorkflow
+      // Multi-tenant pre-check: executeWorkflow uses findFirst (org-scoped)
+      // and logExecution does another findFirst to verify the parent workflow.
+      prismaMock.gRCWorkflow.findFirst.mockResolvedValue(mockWorkflow);
+      // findUnique fallback (when no org provided) — keep for back-compat.
       prismaMock.gRCWorkflow.findUnique.mockResolvedValue(mockWorkflow);
       // update for run stats
       prismaMock.gRCWorkflow.update.mockResolvedValue(mockWorkflow);

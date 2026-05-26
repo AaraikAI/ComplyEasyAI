@@ -95,6 +95,43 @@ class ControlMappingsController {
     }
   };
 
+  // List ALL mappings for the caller's organization
+  listAllMappings: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
+
+      const mappings = await prisma.controlMapping.findMany({
+        where: {
+          AND: [
+            { sourceControl: { framework: { organizationId } } },
+            { targetControl: { framework: { organizationId } } },
+          ],
+        },
+        include: {
+          sourceControl: {
+            include: {
+              framework: { select: { id: true, name: true } },
+            },
+          },
+          targetControl: {
+            include: {
+              framework: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      });
+
+      res.json({ mappings });
+    } catch (error) {
+      logger.error('List mappings error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to list mappings', 500);
+    }
+  };
+
   // Get mappings for a control
   getMappings: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {

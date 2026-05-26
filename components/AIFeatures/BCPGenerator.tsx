@@ -3,6 +3,7 @@ import { generateBCP } from '../../services/geminiService';
 import { LifeBuoy, Loader2, ArrowLeft, Users, Clock, Target } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 const DISASTER_SCENARIOS = [
   'Ransomware Attack',
@@ -128,7 +129,7 @@ export const BCPGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setPlan(dateHeader + planText);
       setContactTree(contactTreeData);
     } catch (error: any) {
-      console.error('Error generating BCP:', error);
+      logger.error('Error generating BCP:', error);
       setPlan('Error generating business continuity plan. Please try again.');
       setContactTree([]);
     } finally {

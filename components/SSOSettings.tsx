@@ -147,6 +147,8 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
   const [showCert, setShowCert] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const certFileInputRef = useRef<HTMLInputElement>(null);
+  // serverReachable mirrors API load success; when false DEFAULT_MAPPINGS stays as the editable starting point
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
   // ── Form state ────────────────────────────────────────────────────────
   const [formProvider, setFormProvider] = useState<SSOProvider>('saml');
@@ -171,14 +173,26 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const [configData, metadataData] = await Promise.all([
+      const results = await Promise.allSettled([
         apiFetch<SSOConfig>(`${API_BASE}/config`),
         apiFetch<SPMetadata>(`${API_BASE}/sp-metadata`),
       ]);
-      setConfig(configData);
-      setSpMetadata(metadataData);
-      populateForm(configData);
+      const allFailed = results.every(r => r.status === 'rejected');
+      setServerReachable(!allFailed);
+      if (results[0].status === 'fulfilled') {
+        setConfig(results[0].value);
+        populateForm(results[0].value);
+      } else {
+        setConfig(null);
+      }
+      if (results[1].status === 'fulfilled') {
+        setSpMetadata(results[1].value);
+      }
+      if (allFailed) {
+        setError('Failed to load SSO configuration.');
+      }
     } catch {
+      setServerReachable(false);
       setError('Failed to load SSO configuration.');
       setConfig(null);
     } finally {

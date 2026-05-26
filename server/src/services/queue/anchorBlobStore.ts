@@ -85,11 +85,25 @@ export async function putAnchorBlob(
 
 export async function getAnchorBlob(s3Bucket: string, s3Key: string): Promise<Buffer> {
   const client = getClient();
-  if (!client) throw new Error('Anchor blob store is not configured');
+  if (!client) {
+    logger.error('anchorBlobStore.getAnchorBlob: S3 client not configured', {
+      err: 'BLOB_BUCKET or AWS region unset',
+      s3Bucket,
+      s3Key,
+    });
+    throw new Error('anchorBlobStore.getAnchorBlob: anchor blob store is not configured');
+  }
 
   const result = await client.send(new GetObjectCommand({ Bucket: s3Bucket, Key: s3Key }));
 
-  if (!result.Body) throw new Error(`Empty body for s3://${s3Bucket}/${s3Key}`);
+  if (!result.Body) {
+    logger.error('anchorBlobStore.getAnchorBlob: empty body returned from S3', {
+      err: 'empty S3 response body',
+      s3Bucket,
+      s3Key,
+    });
+    throw new Error(`anchorBlobStore.getAnchorBlob: empty body for s3://${s3Bucket}/${s3Key}`);
+  }
   // result.Body is a stream in Node; AWS SDK v3 exposes transformToByteArray().
   const stream = result.Body as { transformToByteArray?: () => Promise<Uint8Array> };
   if (typeof stream.transformToByteArray === 'function') {

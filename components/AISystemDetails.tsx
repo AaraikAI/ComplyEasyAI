@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { CreateRiskActivityModal, CreateActorModal, EditRiskActivityModal } from './AISystemDetails_Modals';
 import { toast } from 'sonner';
+import { logger } from '../utils/logger';
 
 interface AISystemDetailsProps {
   systemId: string;
@@ -47,7 +48,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       const data = await api.aiRmf.getAISystemById(systemId);
       setSystem(data);
     } catch (error: any) {
-      console.error('Failed to load AI system:', error);
+      logger.error('Failed to load AI system:', error);
       toast.error(`Failed to load AI system: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -60,7 +61,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       setSystem({ ...system, [field]: value });
       setEditingField(null);
     } catch (error: any) {
-      console.error('Failed to update:', error);
+      logger.error('Failed to update:', error);
       toast.error(`Failed to update: ${error.message || 'Unknown error'}`);
     }
   };
@@ -70,7 +71,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       await api.aiRmf.updateSubcategory(subcategoryId, updates);
       loadSystemDetails();
     } catch (error: any) {
-      console.error('Failed to update subcategory:', error);
+      logger.error('Failed to update subcategory:', error);
       toast.error(`Failed to update subcategory: ${error.message || 'Unknown error'}`);
     }
   };
@@ -84,7 +85,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
         detail: { systemId } 
       }));
     } catch (error: any) {
-      console.error('Failed to update trustworthiness:', error);
+      logger.error('Failed to update trustworthiness:', error);
       toast.error(`Failed to update trustworthiness: ${error.message || 'Unknown error'}`);
     }
   };
@@ -94,7 +95,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       const result = await api.aiRmf.calculateTrustworthinessScore(systemId);
       loadSystemDetails();
     } catch (error: any) {
-      console.error('Failed to calculate score:', error);
+      logger.error('Failed to calculate score:', error);
       toast.error(`Failed to calculate score: ${error.message || 'Unknown error'}`);
     }
   };
@@ -670,7 +671,7 @@ const LifecycleTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       setEditingStage(null);
       if (onRefresh) onRefresh();
     } catch (error: any) {
-      console.error('Failed to update lifecycle stage:', error);
+      logger.error('Failed to update lifecycle stage:', error);
       toast.error(`Failed to update: ${error.message || 'Unknown error'}`);
     }
   };
@@ -815,7 +816,7 @@ const AssessmentsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       // Data should already include assessedByUser from backend
       setAssessments(data as any[]);
     } catch (error: any) {
-      console.error('Failed to load assessments:', error);
+      logger.error('Failed to load assessments:', error);
     } finally {
       setLoading(false);
     }
@@ -863,7 +864,7 @@ const AssessmentsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
                           loadAssessments();
                           if (onRefresh) onRefresh();
                         } catch (error: any) {
-                          console.error('Failed to delete assessment:', error);
+                          logger.error('Failed to delete assessment:', error);
                           toast.error(`Failed to delete assessment: ${error.message || 'Unknown error'}`);
                         }
                       }}
@@ -976,7 +977,7 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       const systemData = await api.aiRmf.getAISystemById(systemId);
       setRiskActivities((systemData as any).riskActivities || []);
     } catch (error: any) {
-      console.error('Failed to load risk activities:', error);
+      logger.error('Failed to load risk activities:', error);
     } finally {
       setLoading(false);
     }
@@ -987,7 +988,7 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       const members = await api.team.list();
       setTeamMembers(members || []);
     } catch (error) {
-      console.error('Failed to load team members:', error);
+      logger.error('Failed to load team members:', error);
     }
   };
 
@@ -1003,7 +1004,7 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       loadRiskActivities();
       if (onRefresh) onRefresh();
     } catch (error: any) {
-      console.error('Failed to delete risk activity:', error);
+      logger.error('Failed to delete risk activity:', error);
       toast.error(`Failed to delete: ${error.message || 'Unknown error'}`);
     }
   };
@@ -1143,7 +1144,7 @@ const ActorsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       const systemData = await api.aiRmf.getAISystemById(systemId);
       setActors((systemData as any).actors || []);
     } catch (error: any) {
-      console.error('Failed to load actors:', error);
+      logger.error('Failed to load actors:', error);
     } finally {
       setLoading(false);
     }
@@ -1154,7 +1155,7 @@ const ActorsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       const members = await api.team.list();
       setTeamMembers(members || []);
     } catch (error) {
-      console.error('Failed to load team members:', error);
+      logger.error('Failed to load team members:', error);
     }
   };
 
@@ -1168,7 +1169,7 @@ const ActorsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       loadActors();
       if (onRefresh) onRefresh();
     } catch (error: any) {
-      console.error('Failed to remove actor:', error);
+      logger.error('Failed to remove actor:', error);
       toast.error(`Failed to remove actor: ${error.message || 'Unknown error'}`);
     }
   };
@@ -1318,7 +1319,7 @@ const CreateAssessmentModal: React.FC<any> = ({ systemId, system, onClose }) => 
       });
       onClose();
     } catch (error: any) {
-      console.error('Failed to create assessment:', error);
+      logger.error('Failed to create assessment:', error);
       toast.error(`Failed to create assessment: ${error.message || 'Unknown error'}`);
     }
   };

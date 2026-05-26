@@ -126,7 +126,7 @@ describe('IssueManagementService contract', () => {
   // ---------------------------------------------------------------------------
   describe('updateIssueStatus', () => {
     it('should find issue first then update', async () => {
-      prismaMock.issue.findUnique.mockResolvedValue(createMockIssue({ status: 'Open' }));
+      prismaMock.issue.findFirst.mockResolvedValue(createMockIssue({ status: 'Open' }));
       prismaMock.issue.update.mockResolvedValue(
         createMockIssue({ status: 'In_Progress' })
       );
@@ -138,8 +138,8 @@ describe('IssueManagementService contract', () => {
         'org-123'
       );
 
-      expect(prismaMock.issue.findUnique).toHaveBeenCalledWith({
-        where: { id: 'issue-123' },
+      expect(prismaMock.issue.findFirst).toHaveBeenCalledWith({
+        where: { id: 'issue-123', organizationId: 'org-123' },
       });
       expect(prismaMock.issue.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -152,7 +152,7 @@ describe('IssueManagementService contract', () => {
     });
 
     it('should set resolvedDate when status is Resolved', async () => {
-      prismaMock.issue.findUnique.mockResolvedValue(createMockIssue({ status: 'Open' }));
+      prismaMock.issue.findFirst.mockResolvedValue(createMockIssue({ status: 'Open' }));
       prismaMock.issue.update.mockResolvedValue(createMockIssue({ status: 'Resolved' }));
 
       await issueManagementService.updateIssueStatus(
@@ -173,7 +173,7 @@ describe('IssueManagementService contract', () => {
     });
 
     it('should set closedDate when status is Closed', async () => {
-      prismaMock.issue.findUnique.mockResolvedValue(createMockIssue({ status: 'Resolved' }));
+      prismaMock.issue.findFirst.mockResolvedValue(createMockIssue({ status: 'Resolved' }));
       prismaMock.issue.update.mockResolvedValue(createMockIssue({ status: 'Closed' }));
 
       await issueManagementService.updateIssueStatus(
@@ -194,7 +194,7 @@ describe('IssueManagementService contract', () => {
     });
 
     it('should clear dates when reopened', async () => {
-      prismaMock.issue.findUnique.mockResolvedValue(
+      prismaMock.issue.findFirst.mockResolvedValue(
         createMockIssue({ status: 'Closed' })
       );
       prismaMock.issue.update.mockResolvedValue(createMockIssue({ status: 'Reopened' }));
@@ -218,7 +218,7 @@ describe('IssueManagementService contract', () => {
     });
 
     it('should throw when issue not found', async () => {
-      prismaMock.issue.findUnique.mockResolvedValue(null);
+      prismaMock.issue.findFirst.mockResolvedValue(null);
 
       await expect(
         issueManagementService.updateIssueStatus(

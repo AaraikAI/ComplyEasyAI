@@ -425,6 +425,7 @@ router.post(
       const widget = await prisma.dashboardWidget.create({
         data: {
           dashboardId: req.params.id,
+          organizationId: orgId,
           type,
           title: title.trim(),
           config: config || {},
@@ -467,7 +468,7 @@ router.patch(
       }
 
       const widget = await prisma.dashboardWidget.findFirst({
-        where: { id: req.params.widgetId, dashboardId: req.params.id },
+        where: { id: req.params.widgetId, dashboardId: req.params.id, organizationId: orgId },
       });
 
       if (!widget) {
@@ -521,7 +522,7 @@ router.delete(
       }
 
       const widget = await prisma.dashboardWidget.findFirst({
-        where: { id: req.params.widgetId, dashboardId: req.params.id },
+        where: { id: req.params.widgetId, dashboardId: req.params.id, organizationId: orgId },
       });
 
       if (!widget) {
@@ -590,6 +591,7 @@ router.post(
           await tx.dashboardWidget.createMany({
             data: source.widgets.map((w) => ({
               dashboardId: newDashboard.id,
+              organizationId: orgId,
               type: w.type,
               title: w.title,
               config: w.config as any,

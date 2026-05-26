@@ -1753,6 +1753,7 @@ class ACOSController {
       const result = await vrCollaborativeReviewService.joinSession(
         sessionId,
         authReq.user!.id,
+        authReq.user!.organizationId,
         role
       );
       res.json(result);

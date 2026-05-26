@@ -197,18 +197,21 @@ export class IssueManagementService {
     },
     organizationId: string
   ) {
+    // Verify the parent issue belongs to the caller's organization
+    const issue = await prisma.issue.findFirst({
+      where: { id: issueId, organizationId },
+      include: { assignedTo: true, createdBy: true },
+    });
+    if (!issue) {
+      throw new AppError('Issue not found', 404);
+    }
+
     const comment = await prisma.issueComment.create({
       data: {
         issueId,
         comment: data.content,
         author: data.userId,
       },
-    });
-
-    // Get issue for notification
-    const issue = await prisma.issue.findUnique({
-      where: { id: issueId },
-      include: { assignedTo: true, createdBy: true },
     });
 
     if (issue) {
@@ -254,6 +257,14 @@ export class IssueManagementService {
     userId: string,
     organizationId: string
   ) {
+    // Verify org ownership before mutating
+    const existing = await prisma.issue.findFirst({
+      where: { id: issueId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Issue not found', 404);
+    }
+
     const issue = await prisma.issue.update({
       where: { id: issueId },
       data: {

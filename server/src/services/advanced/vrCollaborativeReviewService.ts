@@ -549,13 +549,19 @@ class VRCollaborativeReviewService {
   /**
    * Health check for a session - verifies it exists and is valid
    */
-  async healthCheck(sessionId: string): Promise<{ valid: boolean; reason?: string }> {
+  async healthCheck(
+    sessionId: string,
+    organizationId?: string,
+  ): Promise<{ valid: boolean; reason?: string }> {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        // Check database
-        const dbSession = await prisma.vRCollaborativeSession.findUnique({
-          where: { sessionId },
+        // Check database — scope to caller's org when provided to prevent
+        // cross-tenant session probing.
+        const dbSession = await prisma.vRCollaborativeSession.findFirst({
+          where: organizationId
+            ? { sessionId, organizationId }
+            : { sessionId },
         });
 
         if (!dbSession) {
@@ -789,6 +795,7 @@ class VRCollaborativeReviewService {
   async joinSession(
     sessionId: string,
     userId: string,
+    organizationId: string,
     role: VRParticipant['role'] = 'reviewer'
   ): Promise<{
     session: VRSession;
@@ -798,6 +805,10 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
+        throw new AppError('Session not found or inactive', 404);
+      }
+
+      if (session.organizationId !== organizationId) {
         throw new AppError('Session not found or inactive', 404);
       }
 
@@ -851,9 +862,9 @@ class VRCollaborativeReviewService {
         voiceChat.participants.push({ userId, isMuted: false, volume: 1.0 });
       }
 
-      // Update session in database
+      // Update session in database (org-scoped where prevents cross-tenant writes)
       await prisma.vRCollaborativeSession.update({
-        where: { sessionId },
+        where: { sessionId, organizationId },
         data: {
           participants: session.participants as unknown as Prisma.InputJsonValue,
           lastActivityAt: new Date(),
@@ -891,10 +902,20 @@ class VRCollaborativeReviewService {
   /**
    * Leave a VR session
    */
-  async leaveSession(sessionId: string, userId: string): Promise<void> {
+  async leaveSession(
+    sessionId: string,
+    userId: string,
+    organizationId?: string,
+  ): Promise<void> {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
+        throw new AppError('Session not found', 404);
+      }
+
+      // Verify caller's org matches the session's org (defense-in-depth for
+      // cross-tenant participant mutation via known sessionId).
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
         throw new AppError('Session not found', 404);
       }
 
@@ -918,9 +939,12 @@ class VRCollaborativeReviewService {
         }
       });
 
-      // Update session in database
-      await prisma.vRCollaborativeSession.update({
-        where: { sessionId },
+      // Update session in database — scope by org when provided to ensure
+      // the write targets the caller's tenant only.
+      await prisma.vRCollaborativeSession.updateMany({
+        where: organizationId
+          ? { sessionId, organizationId }
+          : { sessionId },
         data: {
           participants: session.participants as unknown as Prisma.InputJsonValue,
           lastActivityAt: new Date(),
@@ -951,7 +975,11 @@ class VRCollaborativeReviewService {
   /**
    * Start a VR session
    */
-  async startSession(sessionId: string, hostUserId: string): Promise<VRSession> {
+  async startSession(
+    sessionId: string,
+    hostUserId: string,
+    organizationId?: string,
+  ): Promise<VRSession> {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
@@ -962,13 +990,20 @@ class VRCollaborativeReviewService {
         throw new AppError('Only the host can start the session', 403);
       }
 
+      // Verify caller's org matches the session's org to block cross-tenant start.
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
+        throw new AppError('Session not found', 404);
+      }
+
       session.status = 'active';
       session.startedAt = new Date();
       session.updatedAt = new Date();
 
-      // Update session in database
-      await prisma.vRCollaborativeSession.update({
-        where: { sessionId },
+      // Update session in database — scope by org when provided.
+      await prisma.vRCollaborativeSession.updateMany({
+        where: organizationId
+          ? { sessionId, organizationId }
+          : { sessionId },
         data: {
           status: 'active',
           startedAt: session.startedAt,
@@ -1003,7 +1038,8 @@ class VRCollaborativeReviewService {
    */
   async endSession(
     sessionId: string,
-    hostUserId: string
+    hostUserId: string,
+    organizationId?: string,
   ): Promise<{
     session: VRSession;
     summary: SessionSummary;
@@ -1014,6 +1050,10 @@ class VRCollaborativeReviewService {
         throw new AppError('Session not found', 404);
       }
 
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
+        throw new AppError('Session not found', 404);
+      }
+
       session.status = 'completed';
       session.endedAt = new Date();
       session.updatedAt = new Date();
@@ -1021,9 +1061,11 @@ class VRCollaborativeReviewService {
       // Generate session summary
       const summary = await this.generateSessionSummary(session);
 
-      // Update session in database
-      await prisma.vRCollaborativeSession.update({
-        where: { sessionId },
+      // Update session in database — scope by org when provided.
+      await prisma.vRCollaborativeSession.updateMany({
+        where: organizationId
+          ? { sessionId, organizationId }
+          : { sessionId },
         data: {
           status: 'completed',
           endedAt: session.endedAt,
@@ -1665,12 +1707,16 @@ class VRCollaborativeReviewService {
       fps: number;
       renderTime: number;
       latency?: number;
-    }
+    },
+    organizationId?: string
   ): Promise<void> {
     try {
-      // Find session in database
-      const dbSession = await prisma.vRTrainingSession.findUnique({
-        where: { sessionId },
+      // Find session in database scoped to caller's organization to prevent
+      // cross-tenant write of performance metrics under a foreign session id.
+      const dbSession = await prisma.vRTrainingSession.findFirst({
+        where: organizationId
+          ? { sessionId, organizationId }
+          : { sessionId },
       });
 
       if (dbSession) {
@@ -1699,18 +1745,27 @@ class VRCollaborativeReviewService {
     }
   }
 
-  async getSessionDetails(sessionId: string): Promise<VRSession | null> {
+  async getSessionDetails(
+    sessionId: string,
+    organizationId?: string,
+  ): Promise<VRSession | null> {
     const session = this.activeSessions.get(sessionId);
     if (!session) {
       return null;
     }
 
+    // Block cross-tenant disclosure when caller's org is provided.
+    if (organizationId && session.organizationId && session.organizationId !== organizationId) {
+      return null;
+    }
+
     // Update environment performance metrics from real session data
     if (session.environment) {
-      // Get latest performance metrics from database
-      // First find the database session record
-      const dbSession = await prisma.vRTrainingSession.findUnique({
-        where: { sessionId },
+      // Get latest performance metrics from database — org-scoped lookup.
+      const dbSession = await prisma.vRTrainingSession.findFirst({
+        where: organizationId
+          ? { sessionId, organizationId }
+          : { sessionId },
       });
 
       const latestMetrics = dbSession ? await prisma.vRSessionPerformance.findFirst({

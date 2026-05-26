@@ -1120,12 +1120,20 @@ class ComplianceDigitalTwinService {
     userId: string
   ): Promise<boolean> {
     try {
+      // Verify org-scoped ownership before mutating
+      const scenario = await prisma.simulationScenario.findFirst({
+        where: { id: scenarioId, organizationId },
+      });
+      if (!scenario) {
+        throw new AppError('Scenario not found', 404);
+      }
+
       // Store state in scenario parameters
       await prisma.simulationScenario.update({
         where: { id: scenarioId },
         data: {
           parameters: {
-            ...(await prisma.simulationScenario.findUnique({ where: { id: scenarioId } }))?.parameters as any || {},
+            ...((scenario.parameters as any) || {}),
             savedState: state,
             savedAt: new Date().toISOString(),
             savedBy: userId,

@@ -8,6 +8,7 @@ import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { isUrlSafe } from '../../utils/urlValidator';
 
 interface JiraTokenResponse {
   access_token: string;
@@ -323,9 +324,13 @@ class JiraService {
     endpoint: string,
     params?: any
   ) {
+    const url = `${this.apiBaseUrl}/ex/jira/${cloudId}/rest/api/3${endpoint}`;
+    if (!isUrlSafe(url)) {
+      throw new AppError('Blocked unsafe outbound URL', 400);
+    }
     try {
       const response = await axios.get(
-        `${this.apiBaseUrl}/ex/jira/${cloudId}/rest/api/3${endpoint}`,
+        url,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,

@@ -9,6 +9,7 @@ import { canAccessView, normalizePlan, VIEW_TO_FEATURE } from '../constants/tier
 import { toast } from 'sonner';
 import { useDraggable } from '../hooks/useDraggable';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 interface ComplianceChatProps {
   onNavigate?: (view: string) => void;
@@ -129,7 +130,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
 
         newFiles.push({ file, content });
       } catch (error) {
-        console.error(`Error reading file ${file.name}:`, error);
+        logger.error(`Error reading file ${file.name}:`, error);
         toast.error(`Error reading file ${file.name}. Please try again.`);
       }
     }

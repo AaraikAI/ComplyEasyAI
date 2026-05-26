@@ -164,6 +164,7 @@ describe('VRCollaborativeReviewService', () => {
       const { participant, spawnPoint } = await vrService.joinSession(
         session.id,
         participantUserId,
+        orgId,
         'reviewer'
       );
 
@@ -176,7 +177,7 @@ describe('VRCollaborativeReviewService', () => {
 
     it('should throw when session is not found', async () => {
       await expect(
-        vrService.joinSession('nonexistent-session', participantUserId, 'reviewer')
+        vrService.joinSession('nonexistent-session', participantUserId, orgId, 'reviewer')
       ).rejects.toThrow('Session not found or inactive');
     });
 
@@ -201,7 +202,7 @@ describe('VRCollaborativeReviewService', () => {
       } as any);
 
       await expect(
-        vrService.joinSession(session.id, participantUserId, 'reviewer')
+        vrService.joinSession(session.id, participantUserId, orgId, 'reviewer')
       ).rejects.toThrow(/Session is full/);
     });
   });
@@ -222,7 +223,7 @@ describe('VRCollaborativeReviewService', () => {
       // Join
       (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: participantUserId, name: 'P' } as any);
       (vrPrismaMock.vRCollaborativeSession.update as jest.Mock).mockResolvedValue({} as any);
-      await vrService.joinSession(session.id, participantUserId, 'reviewer');
+      await vrService.joinSession(session.id, participantUserId, orgId, 'reviewer');
 
       // Leave
       await vrService.leaveSession(session.id, participantUserId);

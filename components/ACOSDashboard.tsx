@@ -37,6 +37,7 @@ import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { Plus, X } from 'lucide-react';
 import { HomomorphicAI } from './AIFeatures/HomomorphicAI';
 import { toast } from 'sonner';
+import { logger } from '../utils/logger';
 
 interface ComplianceGoal {
   id: string;
@@ -134,7 +135,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
       setWarnings((warningsData || []) as any);
       setLoops((loopsData || []) as any);
     } catch (error) {
-      console.error('Error loading aCOS data:', error);
+      logger.error('Error loading aCOS data:', error);
     } finally {
       setLoading(false);
     }
@@ -161,7 +162,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
       await api.acos.deleteGoal(goalId);
       await loadData();
     } catch (error) {
-      console.error('Error deleting goal:', error);
+      logger.error('Error deleting goal:', error);
       toast.error('Failed to delete goal');
     } finally {
       setDeletingGoal(null);
@@ -173,7 +174,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
       await api.acos.restoreGoal(goalId);
       await loadData();
     } catch (error) {
-      console.error('Error restoring goal:', error);
+      logger.error('Error restoring goal:', error);
       toast.error('Failed to restore goal');
     }
   };
@@ -556,7 +557,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
                   setGoals(goalsData);
                 }
               } catch (err) {
-                console.error('Error refreshing goals:', err);
+                logger.error('Error refreshing goals:', err);
               }
               // Also refresh other data
               loadData();
@@ -769,7 +770,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
         setLoops([]);
       }
     } catch (error) {
-      console.error('Error loading control loops:', error);
+      logger.error('Error loading control loops:', error);
       setLoops([]);
     } finally {
       setLoading(false);
@@ -793,7 +794,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
       });
       setAvailableControls(controls);
     } catch (error) {
-      console.error('Error loading controls:', error);
+      logger.error('Error loading controls:', error);
     }
   };
 
@@ -832,7 +833,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
             }
           }
         } catch (err) {
-          console.error('Error loading loops:', err);
+          logger.error('Error loading loops:', err);
           // If reload fails but we have the result, keep it
           if (result && result.id) {
             // Already added above
@@ -842,7 +843,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
       
       toast.success('Control loop created successfully');
     } catch (error: unknown) {
-      console.error('Error creating control loop:', error);
+      logger.error('Error creating control loop:', error);
       toast.error(`Failed to create control loop: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -859,7 +860,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
       // Refresh loops to get updated cycle count and confidence
       await loadLoops();
     } catch (error) {
-      console.error('Error executing control loop:', error);
+      logger.error('Error executing control loop:', error);
       toast.error('Failed to execute control loop');
     } finally {
       setLoading(false);
@@ -1297,7 +1298,7 @@ const PredictionsTab: React.FC = () => {
       const data = await api.acos.predictFutureRisks(6) as any;
       setPredictions(data || []);
     } catch (error) {
-      console.error('Error loading predictions:', error);
+      logger.error('Error loading predictions:', error);
     } finally {
       setLoading(false);
     }
@@ -1392,7 +1393,7 @@ const SimulationsTab: React.FC = () => {
       });
       setResult(data);
     } catch (error) {
-      console.error('Error running simulation:', error);
+      logger.error('Error running simulation:', error);
       toast.error('Failed to run simulation');
     } finally {
       setLoading(false);
@@ -1511,7 +1512,7 @@ const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
       const data = await api.acos.runAutomatedScan() as any;
       setResults(data || []);
     } catch (error) {
-      console.error('Error running scan:', error);
+      logger.error('Error running scan:', error);
       toast.error('Failed to run red team scan');
     } finally {
       setScanning(false);
@@ -1654,7 +1655,7 @@ const SwarmTab: React.FC = () => {
       const data = await api.acos.getSwarmInsights(selectedFrameworks.length > 0 ? selectedFrameworks : undefined) as any;
       setInsights(data || []);
     } catch (error) {
-      console.error('Error loading swarm insights:', error);
+      logger.error('Error loading swarm insights:', error);
     } finally {
       setLoading(false);
     }
@@ -1665,7 +1666,7 @@ const SwarmTab: React.FC = () => {
       const frameworks = await api.frameworks.list();
       setAvailableFrameworks(frameworks.map((f: any) => f.name));
     } catch (error) {
-      console.error('Error loading frameworks:', error);
+      logger.error('Error loading frameworks:', error);
     }
   };
 
@@ -1803,7 +1804,7 @@ const IoTTab: React.FC = () => {
       const data = await api.acos.getDevices() as any;
       setDevices(data || []);
     } catch (error) {
-      console.error('Error loading devices:', error);
+      logger.error('Error loading devices:', error);
     } finally {
       setLoading(false);
     }
@@ -1826,7 +1827,7 @@ const IoTTab: React.FC = () => {
       await loadDevices(); // Reload devices
       toast.success('Device registered successfully');
     } catch (error: unknown) {
-      console.error('Error registering device:', error);
+      logger.error('Error registering device:', error);
       toast.error(`Failed to register device: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -1962,7 +1963,7 @@ const NeuroSymbolicTab: React.FC = () => {
       const history = await api.acos.getReasoningHistory(20) as any;
       setReasoningHistory(history.history || []);
     } catch (error) {
-      console.error('Error loading reasoning history:', error);
+      logger.error('Error loading reasoning history:', error);
     }
   };
 
@@ -1977,7 +1978,7 @@ const NeuroSymbolicTab: React.FC = () => {
       setReasoningResult(result);
       await loadHistory();
     } catch (error: unknown) {
-      console.error('Error performing hybrid reasoning:', error);
+      logger.error('Error performing hybrid reasoning:', error);
       toast.error(`Failed to perform reasoning: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -1994,7 +1995,7 @@ const NeuroSymbolicTab: React.FC = () => {
       const result = await api.acos.performCausalReasoning(violationData);
       setCausalResult(result);
     } catch (error: unknown) {
-      console.error('Error performing causal reasoning:', error);
+      logger.error('Error performing causal reasoning:', error);
       toast.error(`Failed to perform causal reasoning: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -2013,7 +2014,7 @@ const NeuroSymbolicTab: React.FC = () => {
       toast.success(`Inferred ${result.inferences?.length || 0} new rules from patterns`);
       await loadHistory();
     } catch (error: unknown) {
-      console.error('Error inferring rules:', error);
+      logger.error('Error inferring rules:', error);
       toast.error(`Failed to infer rules: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -2369,7 +2370,7 @@ const VRCollaborationsTab: React.FC = () => {
         setSessions([]);
       }
     } catch (error) {
-      console.error('Error loading VR sessions:', error);
+      logger.error('Error loading VR sessions:', error);
       setSessions([]);
     } finally {
       setLoading(false);
@@ -2397,7 +2398,7 @@ const VRCollaborationsTab: React.FC = () => {
       });
       loadSessions();
     } catch (error) {
-      console.error('Error creating VR session:', error);
+      logger.error('Error creating VR session:', error);
       toast.error('Failed to create VR session. Please try again.');
     } finally {
       setCreating(false);
@@ -2458,7 +2459,7 @@ const VRCollaborationsTab: React.FC = () => {
                         // Refresh session list to get updated participant count
                         loadSessions();
                       } catch (err: unknown) {
-                        console.error('Error joining session:', err);
+                        logger.error('Error joining session:', err);
                         const errorMessage = (err instanceof Error ? err.message : String(err)) || 'Failed to join session';
                         toast.error(errorMessage);
                         // If session not found, refresh the list
@@ -2630,7 +2631,7 @@ const JITAccessTab: React.FC = () => {
       const data = await api.acos.getJITAccessSessions() as any;
       setSessions(data || []);
     } catch (error) {
-      console.error('Error loading JIT access sessions:', error);
+      logger.error('Error loading JIT access sessions:', error);
       setSessions([]);
     } finally {
       setLoading(false);
@@ -2643,7 +2644,7 @@ const JITAccessTab: React.FC = () => {
       const data = await api.acos.getPendingJITAccessRequests() as any;
       setPendingRequests(data || []);
     } catch (error) {
-      console.error('Error loading pending requests:', error);
+      logger.error('Error loading pending requests:', error);
       setPendingRequests([]);
     } finally {
       setLoadingPending(false);
@@ -2655,7 +2656,7 @@ const JITAccessTab: React.FC = () => {
       const data = await api.acos.getAllJITAccessRequests() as any;
       setAllRequests(data || []);
     } catch (error) {
-      console.error('Error loading all requests:', error);
+      logger.error('Error loading all requests:', error);
       setAllRequests([]);
     }
   };
@@ -2672,7 +2673,7 @@ const JITAccessTab: React.FC = () => {
       await loadAllRequests();
       await loadSessions();
     } catch (error: unknown) {
-      console.error('Error approving request:', error);
+      logger.error('Error approving request:', error);
       toast.error((error instanceof Error ? error.message : String(error)) || 'Failed to approve request');
     }
   };
@@ -2695,7 +2696,7 @@ const JITAccessTab: React.FC = () => {
       await loadAllRequests();
       await loadSessions();
     } catch (error: unknown) {
-      console.error('Error denying request:', error);
+      logger.error('Error denying request:', error);
       toast.error((error instanceof Error ? error.message : String(error)) || 'Failed to deny request');
     }
   };
@@ -2731,7 +2732,7 @@ const JITAccessTab: React.FC = () => {
       
       toast.success('JIT access requested successfully!');
     } catch (error: unknown) {
-      console.error('Error requesting JIT access:', error);
+      logger.error('Error requesting JIT access:', error);
       toast.error((error instanceof Error ? error.message : String(error)) || 'Failed to request JIT access. Please try again.');
     } finally {
       setRequesting(false);
@@ -3024,7 +3025,7 @@ const JITAccessTab: React.FC = () => {
                                 // Reload to ensure consistency
                                 await loadSessions();
                               } catch (err: unknown) {
-                                console.error('Error canceling request:', err);
+                                logger.error('Error canceling request:', err);
                                 toast.error((err instanceof Error ? err.message : String(err)) || 'Failed to cancel request');
                               }
                             }
@@ -3043,7 +3044,7 @@ const JITAccessTab: React.FC = () => {
                                   loadSessions();
                                 })
                                 .catch((err) => {
-                                  console.error('Error revoking session:', err);
+                                  logger.error('Error revoking session:', err);
                                   toast.error('Failed to revoke session');
                                 });
                             }

@@ -1456,6 +1456,14 @@ class AIRMFService {
    */
   async calculateTrustworthinessScore(organizationId: string, aiSystemId: string): Promise<number> {
     try {
+      // Verify the AI system belongs to the caller's organization
+      const aiSystem = await prisma.aISystem.findFirst({
+        where: { id: aiSystemId, organizationId },
+      });
+      if (!aiSystem) {
+        throw new AppError('AI system not found', 404);
+      }
+
       const characteristics = await prisma.aIRMFTrustworthinessCharacteristic.findMany({
         where: { aiSystemId },
       });
@@ -1478,6 +1486,7 @@ class AIRMFService {
 
       return Math.round(average);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error('Error calculating trustworthiness score:', error);
       throw new AppError(`Failed to calculate trustworthiness score: ${error.message}`, 500);
     }

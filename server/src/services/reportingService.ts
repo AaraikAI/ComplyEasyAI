@@ -355,6 +355,14 @@ export class ReportingService {
     userId: string,
     organizationId: string
   ) {
+    // Verify org ownership before mutating
+    const existing = await prisma.customReport.findFirst({
+      where: { id: reportId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Custom report not found', 404);
+    }
+
     const report = await prisma.customReport.update({
       where: { id: reportId },
       data: {

@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 import {
   ArrowLeft,
   Shield,
@@ -195,7 +196,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
     } catch (err) {
       setLoadError('Failed to load processing activities. Please check your connection and try again.');
-      console.error('RoPAManagement data load error:', err);
+      logger.error('RoPAManagement data load error:', err);
     } finally {
       setLoading(false);
     }
@@ -341,7 +342,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setEditingId(null);
       await loadData();
     } catch (err) {
-      console.error('Failed to save processing activity:', err);
+      logger.error('Failed to save processing activity:', err);
       setLoadError('Failed to save processing activity. Please try again.');
     } finally {
       setSubmitting(false);

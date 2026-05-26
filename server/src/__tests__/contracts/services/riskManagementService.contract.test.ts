@@ -27,6 +27,11 @@ import riskManagementService from '../../../services/riskManagementService';
 describe('RiskManagementService contract', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // jest.config has resetMocks:true which wipes the $transaction implementation
+    // between tests, so we restore it here so callbacks are invoked.
+    (prismaMock.$transaction as jest.Mock).mockImplementation(
+      (callback: any) => callback(prismaMock)
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -202,6 +207,11 @@ describe('RiskManagementService contract', () => {
         overallRiskScore: 75,
         completedDate: new Date(),
       };
+      // Multi-tenant pre-check inside $transaction
+      prismaMock.riskAssessment.findFirst.mockResolvedValueOnce({
+        id: 'assessment-1',
+        organizationId: 'org-123',
+      });
       prismaMock.riskAssessment.update.mockResolvedValue(mockAssessment);
 
       await riskManagementService.completeRiskAssessment(
@@ -225,6 +235,10 @@ describe('RiskManagementService contract', () => {
     it('should return the updated assessment with risks', async () => {
       const risks = [createMockRiskItem(), createMockRiskItem({ id: 'risk-456' })];
       const mockAssessment = { id: 'assessment-1', status: 'Completed', risks };
+      prismaMock.riskAssessment.findFirst.mockResolvedValueOnce({
+        id: 'assessment-1',
+        organizationId: 'org-123',
+      });
       prismaMock.riskAssessment.update.mockResolvedValue(mockAssessment);
 
       const result = await riskManagementService.completeRiskAssessment(
@@ -244,6 +258,10 @@ describe('RiskManagementService contract', () => {
   describe('updateRiskRemediation', () => {
     it('should set status to In_Progress and include assignedTo', async () => {
       const mockRisk = createMockRiskItem({ status: 'In_Progress' });
+      // Multi-tenant pre-check inside $transaction
+      prismaMock.riskItem.findFirst.mockResolvedValueOnce(
+        createMockRiskItem({ id: 'risk-123', organizationId: 'org-123' })
+      );
       prismaMock.riskItem.update.mockResolvedValue(mockRisk);
 
       const targetDate = new Date('2026-06-01');
@@ -279,6 +297,10 @@ describe('RiskManagementService contract', () => {
   describe('updateRiskScore', () => {
     it('should recalculate riskScore and severity', async () => {
       const mockRisk = createMockRiskItem({ riskScore: 12 });
+      // Multi-tenant pre-check inside $transaction
+      prismaMock.riskItem.findFirst.mockResolvedValueOnce(
+        createMockRiskItem({ id: 'risk-123', organizationId: 'org-123' })
+      );
       prismaMock.riskItem.update.mockResolvedValue(mockRisk);
 
       await riskManagementService.updateRiskScore(
@@ -300,6 +322,9 @@ describe('RiskManagementService contract', () => {
     });
 
     it('should pass AI priority score when provided', async () => {
+      prismaMock.riskItem.findFirst.mockResolvedValueOnce(
+        createMockRiskItem({ id: 'risk-123', organizationId: 'org-123' })
+      );
       prismaMock.riskItem.update.mockResolvedValue(createMockRiskItem());
 
       await riskManagementService.updateRiskScore(

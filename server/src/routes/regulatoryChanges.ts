@@ -82,6 +82,235 @@ router.get(
 );
 
 // ============================================================================
+// DASHBOARD: aggregated regulatory-change view consumed by the
+// RegulatoryAutoRemediation component. Returns recent changes, derived
+// remediation tasks (from Issue), impact items, and audit-log events.
+// ============================================================================
+
+router.get(
+  '/dashboard/changes',
+  asyncHandler(async (req: Request, res: Response) => {
+    const orgId = (req as any).user.organizationId;
+
+    try {
+      const detections = await prisma.regulatoryChangeDetection.findMany({
+        where: { impacts: { some: { organizationId: orgId } } },
+        orderBy: { detectedAt: 'desc' },
+        take: 100,
+        include: {
+          impacts: { where: { organizationId: orgId } },
+          _count: { select: { impacts: true } },
+        },
+      });
+
+      // Map detected changes to the UI shape
+      const changes = detections.map((d) => {
+        // Severity inferred from impact levels (Critical > High > Medium > Low)
+        const sevRank: Record<string, number> = {
+          Critical: 4,
+          High: 3,
+          Medium: 2,
+          Low: 1,
+        };
+        let topSev = 'Medium';
+        for (const imp of d.impacts) {
+          if ((sevRank[imp.impactLevel] || 0) > (sevRank[topSev] || 0)) {
+            topSev = imp.impactLevel;
+          }
+        }
+        const severity = topSev.toLowerCase() as 'critical' | 'high' | 'medium' | 'low';
+
+        // Status mapping
+        const statusMap: Record<string, string> = {
+          NEW: 'pending',
+          REVIEWING: 'in-review',
+          IN_PROGRESS: 'remediation',
+          REG_RESOLVED: 'completed',
+          DISMISSED: 'dismissed',
+        };
+
+        return {
+          id: d.id,
+          title: d.title,
+          source: d.regulationName,
+          publishDate: d.detectedAt.toISOString(),
+          effectiveDate: d.effectiveDate ? d.effectiveDate.toISOString() : d.detectedAt.toISOString(),
+          jurisdiction: 'Global',
+          category: d.changeType,
+          severity,
+          status: statusMap[d.status] || 'pending',
+          summary: d.summary,
+          affectedFrameworks: [] as string[],
+          affectedControls: d.impacts.length,
+          affectedPolicies: 0,
+          affectedProcedures: 0,
+          complianceImpact: { before: 80, after: Math.max(40, 80 - d.impacts.length * 2) },
+          rifScore: Math.min(99, 50 + d.impacts.length * 5),
+        };
+      });
+
+      res.json({ status: 'success', data: { changes } });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      logger.error('Error fetching regulatory changes dashboard:', error);
+      throw new AppError('Failed to fetch regulatory changes', 500);
+    }
+  })
+);
+
+router.get(
+  '/dashboard/remediation-tasks',
+  asyncHandler(async (req: Request, res: Response) => {
+    const orgId = (req as any).user.organizationId;
+
+    try {
+      // Issues tagged as regulatory remediation
+      const issues = await prisma.issue.findMany({
+        where: {
+          organizationId: orgId,
+          OR: [
+            { issueType: 'regulatory_remediation' },
+            { category: 'Regulatory' },
+            { category: { contains: 'regulatory', mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        include: { assignedTo: { select: { name: true } } },
+      });
+
+      const priorityMap: Record<string, 'critical' | 'high' | 'medium' | 'low'> = {
+        Critical: 'critical',
+        High: 'high',
+        Medium: 'medium',
+        Low: 'low',
+      };
+      const statusMap: Record<string, 'pending' | 'in-progress' | 'review' | 'completed'> = {
+        Open: 'pending',
+        In_Progress: 'in-progress',
+        InProgress: 'in-progress',
+        Review: 'review',
+        Resolved: 'completed',
+        Closed: 'completed',
+      };
+
+      const tasks = issues.map((i) => ({
+        id: i.id,
+        changeId: (i.tags as any)?.regulatoryChangeId || '',
+        changeName: (i.tags as any)?.changeName || i.category || 'Regulatory Change',
+        title: i.title,
+        description: i.description,
+        type: 'control-update' as const,
+        priority: priorityMap[i.priority] || 'medium',
+        status: statusMap[i.status] || 'pending',
+        assignee: i.assignedTo?.name || 'Unassigned',
+        dueDate: i.dueDate ? i.dueDate.toISOString() : '',
+        estimatedEffort: ((i.tags as any)?.estimatedEffort as string) || 'TBD',
+        affectedItem: ((i.tags as any)?.affectedItem as string) || i.title,
+        aiGenerated: !!(i.tags as any)?.aiGenerated,
+        completedDate: i.resolvedDate ? i.resolvedDate.toISOString() : undefined,
+      }));
+
+      res.json({ status: 'success', data: { tasks } });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      logger.error('Error fetching remediation tasks:', error);
+      throw new AppError('Failed to fetch remediation tasks', 500);
+    }
+  })
+);
+
+router.get(
+  '/dashboard/impact-items',
+  asyncHandler(async (req: Request, res: Response) => {
+    const orgId = (req as any).user.organizationId;
+
+    try {
+      const impacts = await prisma.regulatoryChangeImpact.findMany({
+        where: { organizationId: orgId },
+        take: 200,
+        orderBy: { impactLevel: 'asc' },
+        include: {
+          regulatoryChange: { select: { regulationName: true, title: true } },
+        },
+      });
+
+      const items = impacts.map((imp) => ({
+        id: imp.id,
+        name: imp.controlId,
+        type: 'control' as const,
+        framework: imp.regulatoryChange?.regulationName || 'Unknown',
+        currentStatus: imp.status === 'REG_RESOLVED' ? 'Implemented' : 'Pending',
+        impactLevel:
+          imp.impactLevel === 'High' || imp.impactLevel === 'Critical'
+            ? ('direct' as const)
+            : imp.impactLevel === 'Medium'
+              ? ('indirect' as const)
+              : ('minimal' as const),
+        requiredAction: imp.requiredAction,
+      }));
+
+      res.json({ status: 'success', data: { items } });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      logger.error('Error fetching impact items:', error);
+      throw new AppError('Failed to fetch impact items', 500);
+    }
+  })
+);
+
+router.get(
+  '/dashboard/audit-log',
+  asyncHandler(async (req: Request, res: Response) => {
+    const orgId = (req as any).user.organizationId;
+    const sinceParam = req.query.since as string | undefined;
+    const since = sinceParam ? new Date(sinceParam) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+    try {
+      const logs = await prisma.auditLog.findMany({
+        where: {
+          organizationId: orgId,
+          timestamp: { gte: since },
+          OR: [
+            { resourceType: 'RegulatoryChange' },
+            { resourceType: 'RegulatoryChangeImpact' },
+            { action: { contains: 'regulatory', mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 200,
+        include: { user: { select: { name: true } } },
+      });
+
+      const entries = logs.map((l) => {
+        let type: 'detection' | 'analysis' | 'remediation' | 'notification' | 'completion' = 'analysis';
+        const a = l.action.toLowerCase();
+        if (a.includes('detect')) type = 'detection';
+        else if (a.includes('remediat')) type = 'remediation';
+        else if (a.includes('notif')) type = 'notification';
+        else if (a.includes('complet') || a.includes('resolved')) type = 'completion';
+
+        return {
+          id: l.id,
+          timestamp: l.timestamp.toISOString(),
+          action: l.action,
+          actor: l.user?.name || 'System',
+          details: l.details || '',
+          changeId: l.resourceId || '',
+          type,
+        };
+      });
+
+      res.json({ status: 'success', data: { entries } });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      logger.error('Error fetching regulatory audit log:', error);
+      throw new AppError('Failed to fetch audit log', 500);
+    }
+  })
+);
+
+// ============================================================================
 // LIST REGULATORY CHANGES
 // ============================================================================
 

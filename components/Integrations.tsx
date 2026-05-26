@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 // Comprehensive list of ALL available integrations (380+)
 const ALL_INTEGRATIONS: Integration[] = [
@@ -577,7 +578,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
           return { ...int, connected: false, lastSync: 'Never' };
         }));
       } catch (error) {
-        console.error('Failed to load integrations:', error);
+        logger.error('Failed to load integrations:', error);
         // Fallback to catalog without connection status
         setIntegrations(ALL_INTEGRATIONS);
       } finally {
@@ -628,7 +629,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
         return { ...int, connected: false, lastSync: 'Never' };
       }));
     } catch (error) {
-      console.error('Failed to refresh integrations:', error);
+      logger.error('Failed to refresh integrations:', error);
     }
     
     setSelectedIntegration(null);
@@ -639,14 +640,14 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
     if (!integration) {
       // If called from modal, selectedIntegration should be set
       if (!selectedIntegration) {
-        console.error('No integration selected for disconnect');
+        logger.error('No integration selected for disconnect');
         return;
       }
       integration = selectedIntegration;
     }
 
     if (!integration.name) {
-      console.error('Integration name is missing');
+      logger.error('Integration name is missing');
       return;
     }
 
@@ -680,7 +681,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
       // Show success message
       toast.success(`${integration.name} has been disconnected successfully.`);
     } catch (error: unknown) {
-      console.error('Failed to disconnect integration:', error);
+      logger.error('Failed to disconnect integration:', error);
       toast.error(`Failed to disconnect: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
@@ -713,7 +714,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
       
       toast.success(`${integration.name} synced successfully!`);
     } catch (error: unknown) {
-      console.error('Failed to sync integration:', error);
+      logger.error('Failed to sync integration:', error);
       toast.error(`Failed to sync: ${error instanceof Error ? error.message : String(error)}`);
     }
   };

@@ -141,68 +141,6 @@ const services: ServiceStatus[] = [
   },
 ];
 
-const recentIncidents: Incident[] = [
-  {
-    id: '1',
-    title: 'Elevated API response times',
-    status: 'resolved',
-    severity: 'minor',
-    affectedServices: ['API Services'],
-    createdAt: '2026-01-20T14:30:00Z',
-    updatedAt: '2026-01-20T15:15:00Z',
-    updates: [
-      {
-        timestamp: '2026-01-20T15:15:00Z',
-        status: 'Resolved',
-        message: 'The issue has been resolved. API response times have returned to normal levels.',
-      },
-      {
-        timestamp: '2026-01-20T14:45:00Z',
-        status: 'Monitoring',
-        message: 'We have deployed a fix and are monitoring the situation.',
-      },
-      {
-        timestamp: '2026-01-20T14:30:00Z',
-        status: 'Investigating',
-        message: 'We are investigating reports of elevated API response times.',
-      },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Scheduled database maintenance',
-    status: 'resolved',
-    severity: 'minor',
-    affectedServices: ['Database Cluster'],
-    createdAt: '2026-01-15T02:00:00Z',
-    updatedAt: '2026-01-15T04:00:00Z',
-    updates: [
-      {
-        timestamp: '2026-01-15T04:00:00Z',
-        status: 'Completed',
-        message: 'Database maintenance has been completed successfully. All services are operational.',
-      },
-      {
-        timestamp: '2026-01-15T02:00:00Z',
-        status: 'In Progress',
-        message: 'Scheduled database maintenance has begun. Some operations may be slower than usual.',
-      },
-    ],
-  },
-];
-
-const scheduledMaintenance: MaintenanceWindow[] = [
-  {
-    id: '1',
-    title: 'Infrastructure upgrade - US-East region',
-    description: 'Upgrading server infrastructure for improved performance. Minimal impact expected.',
-    scheduledStart: '2026-02-01T03:00:00Z',
-    scheduledEnd: '2026-02-01T05:00:00Z',
-    affectedServices: ['Web Application', 'API Services'],
-    status: 'scheduled',
-  },
-];
-
 const uptimeHistory: UptimeData[] = Array.from({ length: 90 }, (_, i) => {
   const date = new Date();
   date.setDate(date.getDate() - (89 - i));
@@ -220,25 +158,106 @@ export const StatusPage: React.FC = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [subscribedMaintenance, setSubscribedMaintenance] = useState<Set<string>>(new Set());
   const [liveServices, setLiveServices] = useState<ServiceStatus[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
+  const [recentIncidents, setRecentIncidents] = useState<Incident[]>([]);
+  const [scheduledMaintenance, setScheduledMaintenance] = useState<MaintenanceWindow[]>([]);
+  const [incidentsLoading, setIncidentsLoading] = useState(true);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
+  const [incidentsError, setIncidentsError] = useState<string | null>(null);
+  const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
+
+  // Map backend incident status enum to the UI-friendly union used in this file.
+  const mapIncidentStatus = (s: string): Incident['status'] => {
+    const lower = s.toLowerCase();
+    if (lower === 'investigating' || lower === 'identified' || lower === 'monitoring' || lower === 'resolved') {
+      return lower;
+    }
+    return 'investigating';
+  };
+
+  const mapIncidentSeverity = (s: string): Incident['severity'] => {
+    const lower = s.toLowerCase();
+    if (lower === 'minor' || lower === 'major' || lower === 'critical') return lower;
+    return 'minor';
+  };
+
+  const mapMaintenanceStatus = (s: string): MaintenanceWindow['status'] => {
+    const lower = s.toLowerCase().replace(/-/g, '_');
+    if (lower === 'scheduled' || lower === 'in_progress' || lower === 'completed') return lower;
+    return 'scheduled';
+  };
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchStatus = async () => {
       try {
         const response = await fetch('/api/health', { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
-          if (data.services && Array.isArray(data.services)) {
+          if (data.services && Array.isArray(data.services) && !cancelled) {
             setLiveServices(data.services);
           }
         }
       } catch {
-        // API unavailable — keep using fallback data
+        // /health is the lightweight liveness probe; service-level detail is optional
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    fetchStatus();
+
+    const fetchIncidents = async () => {
+      try {
+        const response = await fetch('/api/status/incidents?limit=10', { credentials: 'include' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const body = await response.json();
+        const list = Array.isArray(body?.data) ? body.data : [];
+        if (cancelled) return;
+        setRecentIncidents(list.map((inc: any) => ({
+          id: inc.id,
+          title: inc.title,
+          status: mapIncidentStatus(inc.status),
+          severity: mapIncidentSeverity(inc.severity),
+          affectedServices: Array.isArray(inc.affectedServices) ? inc.affectedServices : [],
+          createdAt: inc.createdAt,
+          updatedAt: inc.updatedAt,
+          updates: Array.isArray(inc.updates) ? inc.updates : [],
+        })));
+      } catch (error: any) {
+        if (!cancelled) setIncidentsError(error?.message || 'Failed to load incidents');
+      } finally {
+        if (!cancelled) setIncidentsLoading(false);
+      }
+    };
+
+    const fetchMaintenance = async () => {
+      try {
+        const response = await fetch('/api/status/maintenance', { credentials: 'include' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const body = await response.json();
+        const list = Array.isArray(body?.data) ? body.data : [];
+        if (cancelled) return;
+        setScheduledMaintenance(list.map((m: any) => ({
+          id: m.id,
+          title: m.title,
+          description: m.description || '',
+          scheduledStart: m.scheduledStart,
+          scheduledEnd: m.scheduledEnd,
+          affectedServices: Array.isArray(m.affectedServices) ? m.affectedServices : [],
+          status: mapMaintenanceStatus(m.status),
+        })));
+      } catch (error: any) {
+        if (!cancelled) setMaintenanceError(error?.message || 'Failed to load maintenance windows');
+      } finally {
+        if (!cancelled) setMaintenanceLoading(false);
+      }
+    };
+
+    void fetchStatus();
+    void fetchIncidents();
+    void fetchMaintenance();
+
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -513,12 +532,21 @@ export const StatusPage: React.FC = () => {
         </section>
 
         {/* Scheduled Maintenance */}
-        {scheduledMaintenance.length > 0 && (
+        {(scheduledMaintenance.length > 0 || maintenanceLoading || maintenanceError) && (
           <section className="mb-12">
             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-blue-400" />
               Scheduled Maintenance
             </h2>
+            {maintenanceLoading ? (
+              <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 text-center text-slate-400">
+                Loading scheduled maintenance...
+              </div>
+            ) : maintenanceError ? (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-red-400 text-sm">
+                Unable to load maintenance schedule: {maintenanceError}
+              </div>
+            ) : (
             <div className="space-y-4">
               {scheduledMaintenance.map((maintenance) => (
                 <div key={maintenance.id} className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6">
@@ -568,6 +596,7 @@ export const StatusPage: React.FC = () => {
                 </div>
               ))}
             </div>
+            )}
           </section>
         )}
 
@@ -577,6 +606,21 @@ export const StatusPage: React.FC = () => {
             <AlertTriangle className="w-5 h-5 text-yellow-400" />
             Recent Incidents
           </h2>
+          {incidentsLoading ? (
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 text-center text-slate-400">
+              Loading incident history...
+            </div>
+          ) : incidentsError ? (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-red-400 text-sm">
+              Unable to load incident history: {incidentsError}
+            </div>
+          ) : recentIncidents.length === 0 ? (
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 text-center">
+              <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-3" />
+              <p className="text-slate-300 font-medium">No recent incidents</p>
+              <p className="text-slate-500 text-sm mt-1">All systems have been operating normally.</p>
+            </div>
+          ) : (
           <div className="space-y-4">
             {recentIncidents.map((incident) => (
               <div key={incident.id} className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
@@ -663,6 +707,7 @@ export const StatusPage: React.FC = () => {
               </div>
             ))}
           </div>
+          )}
         </section>
 
         {/* Subscribe Section */}

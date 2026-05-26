@@ -107,6 +107,7 @@ import anonymizationRoutes from './routes/anonymization';
 
 // Compliance History Routes
 import complianceRoutes from './routes/compliance';
+import statusRoutes from './routes/status';
 import realTimeComplianceRoutes from './routes/realTimeCompliance';
 import iso27001Routes from './routes/iso27001';
 import hipaaRoutes from './routes/hipaa';
@@ -667,6 +668,8 @@ app.use('/api/reports', apiLimiter, reportRoutes);
 app.use('/api/bulk', apiLimiter, bulkRoutes);
 app.use('/api/ticketing', apiLimiter, ticketingRoutes);
 app.use('/api/compliance', apiLimiter, complianceRoutes);
+// Public status page endpoints — no auth, no org scoping
+app.use('/api/status', apiLimiter, statusRoutes);
 app.use('/api/realtime', apiLimiter, realTimeComplianceRoutes);
 app.use('/api/iso27001', apiLimiter, iso27001Routes);
 app.use('/api/hipaa', apiLimiter, hipaaRoutes);
