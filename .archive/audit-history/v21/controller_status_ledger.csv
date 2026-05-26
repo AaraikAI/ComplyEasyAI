@@ -1,0 +1,59 @@
+file,line,status_code,verdict,intent,contract_test,code
+server/src/controllers/aiRmfController.ts,29,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(aiSystem);
+server/src/controllers/aiRmfController.ts,272,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(actor);
+server/src/controllers/aiRmfController.ts,316,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(assessment);
+server/src/controllers/aiRmfController.ts,375,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(profile);
+server/src/controllers/aiRmfController.ts,403,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(riskActivity);
+server/src/controllers/auditController.ts,135,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(auditLog);
+server/src/controllers/authController.ts,747,200,SUCCESS_2xx,SUCCESS_2xx,,res.status(200).json(response);
+server/src/controllers/authController.ts,822,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(response);
+server/src/controllers/controlMappingsController.ts,90,201,SUCCESS_2xx,SUCCESS_2xx,,"res.status(201).json({ message: 'Mapping created successfully', mapping });"
+server/src/controllers/demoController.ts,121,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({
+server/src/controllers/euRegulationsController.ts,31,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ system });
+server/src/controllers/euRegulationsController.ts,76,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ assessment });
+server/src/controllers/euRegulationsController.ts,90,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ report });
+server/src/controllers/euRegulationsController.ts,119,204,SUCCESS_2xx,SUCCESS_2xx,,res.status(204).send();
+server/src/controllers/euRegulationsController.ts,131,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ gatekeeper });
+server/src/controllers/euRegulationsController.ts,193,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ report });
+server/src/controllers/euRegulationsController.ts,211,204,SUCCESS_2xx,SUCCESS_2xx,,res.status(204).send();
+server/src/controllers/euRegulationsController.ts,223,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ platform });
+server/src/controllers/euRegulationsController.ts,249,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ moderation });
+server/src/controllers/euRegulationsController.ts,267,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ report });
+server/src/controllers/euRegulationsController.ts,285,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ adEntry });
+server/src/controllers/euRegulationsController.ts,303,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ report });
+server/src/controllers/euRegulationsController.ts,322,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ assessment });
+server/src/controllers/euRegulationsController.ts,358,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ feedConfig });
+server/src/controllers/euRegulationsController.ts,394,204,SUCCESS_2xx,SUCCESS_2xx,,res.status(204).send();
+server/src/controllers/evidenceVersioningController.ts,170,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ version });
+server/src/controllers/featureModulesController.ts,47,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(body);
+server/src/controllers/featureModulesController.ts,72,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(meeting);
+server/src/controllers/featureModulesController.ts,94,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(decision);
+server/src/controllers/featureModulesController.ts,112,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(path);
+server/src/controllers/featureModulesController.ts,170,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(incident);
+server/src/controllers/featureModulesController.ts,206,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(notification);
+server/src/controllers/featureModulesController.ts,234,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(template);
+server/src/controllers/featureModulesController.ts,264,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(contact);
+server/src/controllers/featureModulesController.ts,300,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(product);
+server/src/controllers/featureModulesController.ts,471,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(passport);
+server/src/controllers/featureModulesController.ts,641,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(metric);
+server/src/controllers/featureModulesController.ts,668,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(assessment);
+server/src/controllers/featureModulesController.ts,741,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(report);
+server/src/controllers/featureModulesController.ts,792,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(entry);
+server/src/controllers/featureModulesController.ts,813,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ created: result.count });
+server/src/controllers/featureModulesController.ts,830,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(repo);
+server/src/controllers/featureModulesController.ts,930,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(plan);
+server/src/controllers/featureModulesController.ts,958,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(incident);
+server/src/controllers/featureModulesController.ts,993,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(recall);
+server/src/controllers/featureModulesController.ts,1029,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(product);
+server/src/controllers/featureModulesController.ts,1065,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(assessment);
+server/src/controllers/featureModulesController.ts,1110,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(product);
+server/src/controllers/featureModulesController.ts,1153,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(map);
+server/src/controllers/featureModulesController.ts,1313,404,INTENTIONAL_STRUCTURED_DIAGNOSTIC,INTENTIONAL_STRUCTURED_DIAGNOSTIC,integration status probe shape,"res.status(404).json({ connected: false, error: `No active ${provider} integration found` });"
+server/src/controllers/featureModulesController.ts,1393,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(record);
+server/src/controllers/frameworksController.ts,191,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(framework);
+server/src/controllers/frameworksController.ts,565,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(control);
+server/src/controllers/onboardingController.ts,161,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({ event });
+server/src/controllers/risksController.ts,164,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json(risk);
+server/src/controllers/webhookController.ts,104,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({
+server/src/controllers/webhookController.ts,205,422,INTENTIONAL_STRUCTURED_DIAGNOSTIC,INTENTIONAL_STRUCTURED_DIAGNOSTIC,server/src/__tests__/integration/api/webhooks.test.ts (if exists),res.status(422).json({
+server/src/controllers/webhookController.ts,383,201,SUCCESS_2xx,SUCCESS_2xx,,res.status(201).json({

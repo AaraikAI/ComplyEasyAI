@@ -1,0 +1,157 @@
+file,verdict,serverReachable_lines,api_call_lines,static_constants_declared,static_constants_overridden,static_constants_still_persistent,notes
+components/ACOSDashboard.tsx,FULLY_WIRED,,"129,130,131,161,173,554,582,761,781,807,826,857,964,992,1008,1023,1047,1297,1387,1511,1654,1665,1803,1823,1962,1976,1994,2012,2346,2350,2383,2456,2630,2643,2655,2669,2689,2707,3016,3041",,,,"useEffect@83,753,1306,1672,1812; grep_hits=50"
+components/AIComplianceCopilot.tsx,FULLY_WIRED,,561,,,,"useEffect@507,514,521; grep_hits=5"
+components/AIFeatures/AgenticVendorRisk.tsx,FULLY_WIRED,,452,,,,grep_hits=1
+components/AIFeatures/AuditSimulator.tsx,FULLY_WIRED,,"458,507,583",,,,useEffect@451; grep_hits=5
+components/AIFeatures/BCPGenerator.tsx,FULLY_WIRED,,38,,,,grep_hits=1
+components/AIFeatures/ContractAnalyzer.tsx,FULLY_WIRED,,68,,,,
+components/AIFeatures/CrossFrameworkMapper.tsx,FULLY_WIRED,,394,,,,grep_hits=1
+components/AIFeatures/DataMapper.tsx,FULLY_WIRED,,32,,,,useEffect@17; grep_hits=3
+components/AIFeatures/EvidenceCompletenessChecker.tsx,FULLY_WIRED,,678,,,,grep_hits=1
+components/AIFeatures/EvidenceDetailPanel.tsx,FULLY_WIRED,,"98,99,100,137,159",,,,useEffect@120; grep_hits=7
+components/AIFeatures/GapAnalysis.tsx,FULLY_WIRED,,"23,88",,,,useEffect@19; grep_hits=4
+components/AIFeatures/HomomorphicAI.tsx,FULLY_WIRED,,"65,98,120,154,157,195,198,240,243",,,,grep_hits=9
+components/AIFeatures/NaturalLanguageQuery.tsx,FULLY_WIRED,,265,,,,"useEffect@244,250; grep_hits=4"
+components/AIFeatures/PhishingGenerator.tsx,FULLY_WIRED,,69,,,,grep_hits=1
+components/AIFeatures/PolicyGenerator.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=2
+components/AIFeatures/RFPResponder.tsx,FULLY_WIRED,,"72,91",,,,grep_hits=2
+components/AIFeatures/RegulatoryAutoRemediation.tsx,FULLY_WIRED,,635,,,,grep_hits=2
+components/AIFeatures/VendorScorer.tsx,STATIC_ONLY,,,,,,no API after full read
+components/AIRMFAssessments.tsx,FULLY_WIRED,,"38,44,588,633",,,,useEffect@30; grep_hits=6
+components/AIRMFDashboard.tsx,FULLY_WIRED,,"88,89",,,,useEffect@30; grep_hits=4
+components/AIReportGenerator.tsx,FULLY_WIRED,,23,,,,useEffect@19; grep_hits=3
+components/AISystemCreate.tsx,FULLY_WIRED,,45,,,,grep_hits=1
+components/AISystemDetails.tsx,FULLY_WIRED,,"47,59,70,80,94,664,814,862,976,987,1002,1143,1154,1167,1311",,,,"useEffect@27,648,807,968,1135; grep_hits=21"
+components/AISystemDetails_Modals.tsx,FULLY_WIRED,,"34,195,348",,,,grep_hits=3
+components/AISystemList.tsx,FULLY_WIRED,,"47,63",,,,useEffect@26; grep_hits=4
+components/AccessibilitySettings.tsx,STATIC_ONLY,,,DEFAULT_PREFERENCES:39,DEFAULT_PREFERENCES@199,,no API after full read; grep_hits=10
+components/AccountDeletionWorkflow.tsx,FULLY_WIRED,,"121,122,391",,,,useEffect@150; grep_hits=5
+components/AssetManagement.tsx,FULLY_WIRED,,"206,255,283,305",,,,useEffect@200; grep_hits=2
+components/AuditPrepAssistant.tsx,FULLY_WIRED,,"169,193,205,217,230,243",,,,grep_hits=7
+components/AuditTrail.tsx,FULLY_WIRED,,47,,,,useEffect@43; grep_hits=3
+components/AuditorHub.tsx,FULLY_WIRED,,"286,287,288,289,290",,,,useEffect@281; grep_hits=2
+components/BrandingSettings.tsx,FULLY_WIRED,,"142,223,244",DEFAULTS:84,DEFAULTS@populateForm:152-163 (via apiFetch loadData:138-166 useEffect:166),,apiFetch /api/branding/config; DEFAULTS only for reset/display fallback lines 648-650; no DEMO_ arrays
+components/BreachNotificationWizard.tsx,FULLY_WIRED_WITH_FALLBACK,,"396,397,398,524,561",DEMO_BREACH_HISTORY:150;DEMO_TEMPLATES:188;DEMO_CONTACTS:221,DEMO_BREACH_HISTORY@401;DEMO_TEMPLATES@418;DEMO_CONTACTS@425,,grep_hits=13
+components/Breadcrumbs.tsx,STATIC_ONLY,,,,,,no API after full read
+components/BusinessImpactAnalysis.tsx,FULLY_WIRED,,,,,,useEffect@173; grep_hits=2
+components/CEMarkingWorkflow.tsx,FULLY_WIRED_WITH_FALLBACK,454,"486-491,626,658,671",DEMO_PRODUCTS:183;DEMO_NOTIFIED_BODIES:260;DEMO_REQUIREMENTS:317;DEMO_DOCUMENTS:330;DEMO_RISK_ITEMS:341;DEMO_SURVEILLANCE_CHECKS:351,"all DEMO_*@497-502,555-560 catch/offline; API setters in loadData useEffect:567+",,serverReachable state; API list* on mount; DEMO_* only when unreachable
+components/CICDGateSettings.tsx,FULLY_WIRED_WITH_FALLBACK,,"235,236,360,364,382,394",DEFAULT_CHECKS:149,DEFAULT_CHECKS@policy-template:166-219 (new-policy UI); policies from api.cicdGates.listPolicies:235 useEffect:279,,"DEFAULT_CHECKS is factory template for new policies, not persistent user data; policies loaded from API"
+components/CSRDDashboard.tsx,FULLY_WIRED_WITH_FALLBACK,238,"255,292-296",DEFAULT_MATERIALITY_TOPICS:138;DEFAULT_ENVIRONMENTAL:151;DEFAULT_SOCIAL:174;DEFAULT_GOVERNANCE:182;DEFAULT_REPORTS:189,"setTopics@258,264-268;setEnvMetrics@259;setSocialMetrics@260;setGovMetrics@261;setReports@262,265-268;catch@273-277",,regulationData csrd load/save; serverReachable gates persist useEffect:287-307
+components/CertificationTracker.tsx,FULLY_WIRED,,,,,,useEffect@144; grep_hits=2
+components/CommandPalette.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=5
+components/CommunityPage.tsx,STATIC_ONLY,,,,,,no API after full read
+components/ComplianceCalendar.tsx,FULLY_WIRED,,,,,,useEffect@230; grep_hits=2
+components/ComplianceChat.tsx,FULLY_WIRED,,"529,551,566,595,631,636,648,689,712,808",,,,useEffect@150; grep_hits=12
+components/ComplianceCostDashboard.tsx,FULLY_WIRED,,260,,,,useEffect@137; grep_hits=2
+components/ComplianceGauge.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=2
+components/ComplianceScoreForecasting.tsx,FULLY_WIRED,,"333,342,418",,,,useEffect@332; grep_hits=3
+components/ControlTestResults.tsx,FULLY_WIRED,,"162,173,182,192,200,214,226",,,,useEffect@153; grep_hits=9
+components/CookieConsentBanner.tsx,FULLY_WIRED,,,,,,"useEffect@146,160,167; grep_hits=4"
+components/DMAGatekeeperManagement.tsx,FULLY_WIRED,,"80,93,143,157,168,571",,,,useEffect@73; grep_hits=8
+components/DORADashboard.tsx,FULLY_WIRED,,"182,183,184,185,186",,,,useEffect@175; grep_hits=7
+components/DPIAWorkflow.tsx,FULLY_WIRED,,"278,324",,,,useEffect@239; grep_hits=2
+components/DSAPlatformManagement.tsx,FULLY_WIRED,,"134,147,170,192,212,221,230,265,282,295,333,364,380,1082,1544,1766",,,,useEffect@127; grep_hits=18
+components/DarkModeToggle.tsx,STATIC_ONLY,,,,,,no API after full read
+components/Dashboard.tsx,FULLY_WIRED,,94,,,,"useEffect@89,115; grep_hits=5"
+components/DemoBookingForm.tsx,FULLY_WIRED,,148,,,,grep_hits=1
+components/DigitalProductPassport.tsx,FULLY_WIRED_WITH_FALLBACK,432,"488,502-505,560-562,617,651,678",DEMO_PRODUCTS:168;DEMO_MATERIALS:261;DEMO_CARBON:279;DEMO_SUPPLY_CHAIN:295;DEMO_VERSIONS:307;DEMO_SHARING:316,all setters@539-545 catch; API loadData useEffect:553,,serverReachable; dpp API primary; DEMO on load failure only
+components/DocsPage.tsx,FULLY_WIRED,,,,,,grep_hits=3
+components/ESGReportingModule.tsx,FULLY_WIRED_WITH_FALLBACK,,"342-344,1006,1027,1038,1049,1061,1072,1083",DEMO_METRICS:124;DEMO_ESRS:160;DEMO_MATERIALITY:173;DEMO_SDG:189;DEMO_REPORTS:201,setMetrics@348-363;setMaterialityTopics@367-377;setEsrsStandards@382-392;setSdgAlignments@396-403;setReports@407-418;catch@420-421 leaves DEMO,"DEMO_ESRS,DEMO_SDG persist when API omits nested fields (conditional length>0 only) — offline/empty-catalog fallback not unwired slice",No serverReachable flag; catch shows local data; API replaces when non-empty
+components/EUAIActDashboard.tsx,FULLY_WIRED,,"98,111,138,165,170,526,908",,,,useEffect@91; grep_hits=9
+components/EUCRADashboard.tsx,FULLY_WIRED_WITH_FALLBACK,"381,415,427","392,418,419,420,421",DEFAULT_PRODUCTS:104;DEFAULT_VULNERABILITIES:210;DEFAULT_UPDATES:258;DEFAULT_TIMELINE:289,DEFAULT_PRODUCTS@non-state:104;DEFAULT_VULNERABILITIES@non-state:210;DEFAULT_UPDATES@non-state:258;DEFAULT_TIMELINE@non-state:289,,"serverReachable@381,415,427; grep_hits=20"
+components/EcodesignDashboard.tsx,FULLY_WIRED_WITH_FALLBACK,"295,350,367","320,353,354,355,356",DEFAULT_PRODUCTS:125;DEFAULT_PASSPORTS:182;DEFAULT_LCAS:188;DEFAULT_REQUIREMENTS:217,DEFAULT_PRODUCTS@non-state:125;DEFAULT_PASSPORTS@non-state:182;DEFAULT_LCAS@non-state:188;DEFAULT_REQUIREMENTS@non-state:217,,"serverReachable@295,350,367; grep_hits=27"
+components/EnvironmentalLifecycle.tsx,FULLY_WIRED_WITH_FALLBACK,326,"334,416,429,443",DEMO_PRODUCTS:115;DEMO_STAGES:121;DEMO_IMPACT_CATEGORIES:179;DEMO_IMPROVEMENTS:232;DEMO_REPORTS:245;DEMO_CIRCULAR:252,"setProducts,setStages,...@378-384 catch; API listAssessments:334 useEffect:392",,Comment L318 server-first; DEMO_* only server unreachable
+components/EvidenceCollectionRules.tsx,FULLY_WIRED,,"171,182,191,202,216,231,244,255",,,,useEffect@162; grep_hits=10
+components/ExceptionManagement.tsx,FULLY_WIRED,,282,,,,useEffect@151; grep_hits=2
+components/ExecutiveDashboard.tsx,FULLY_WIRED,,163,,,,useEffect@157; grep_hits=2
+components/FeatureLibrary.tsx,INTENTIONAL_STATIC,,,,,,CLAUDE.md intentional static
+components/FeatureMarketplace.tsx,FULLY_WIRED,,"93,104,115,133",,,,useEffect@85; grep_hits=6
+components/FrameworkDetails.tsx,FULLY_WIRED,,"96,140,197,236,259,302,366,394,435,439,491,544,596,637,657,762,1335,1357,1394,1424,1450,1507,1510,1540,1545,1691,1701",,,,"useEffect@89,106; grep_hits=30"
+components/Frameworks.tsx,FULLY_WIRED,,"137,181,244,284,305,337,341,420,479,532,558,609,646",,,,"useEffect@134,150,237; grep_hits=17"
+components/GlobalSearch.tsx,FULLY_WIRED,,220,,,,"useEffect@110,118,135,142,154; grep_hits=8"
+components/GoalModal.tsx,FULLY_WIRED,,"79,140,143",,,,useEffect@43; grep_hits=5
+components/GovernanceManager.tsx,FULLY_WIRED,,"407,408,459,483,489,505,511,584",,,,useEffect@403; grep_hits=10
+components/HomeOS.tsx,STATIC_ONLY,,,,,,no API after full read
+components/IncidentManagement.tsx,FULLY_WIRED,,"251,316,350,390",,,,useEffect@245; grep_hits=2
+components/IntegrationModal.tsx,FULLY_WIRED,,"220,374,413,452,505,511,564,615,654,907",,,,"useEffect@54,136; grep_hits=21"
+components/Integrations.tsx,FULLY_WIRED,,"550,612,661,664,692,695",,,,useEffect@546; grep_hits=8
+components/IssueManagement.tsx,FULLY_WIRED,,"194,203,212,255,262,264,282,289,301,311,314,324,327,339,340,357,414,476,532,584,1414,1415",,,,useEffect@219; grep_hits=24
+components/LandingPage.tsx,INTENTIONAL_STATIC,,149,,,,CLAUDE.md intentional static; grep_hits=2
+components/LanguageSwitcher.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=3
+components/Layout.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=2
+components/LearnPage.tsx,STATIC_ONLY,,,,,,no API after full read
+components/MDMDashboard.tsx,FULLY_WIRED,,"128,129,130,755,758,805",,,,useEffect@165; grep_hits=8
+components/MaturityAssessment.tsx,FULLY_WIRED_WITH_FALLBACK,,"210,236,255",DEFAULT_QUESTIONS:103,setQuestions merges saved answers@217-220; assessments setAssessments@212 API,,DEFAULT_QUESTIONS is static questionnaire catalog (not API-backed); assessments/recommendations fully API-wired
+components/MonitoringDashboard.tsx,FULLY_WIRED,,"180,189,230,249,263,274,277,289,301,332,381,394,410",,,,useEffect@196; grep_hits=15
+components/MyTasks.tsx,FULLY_WIRED,,"64,142",,,,useEffect@37; grep_hits=4
+components/NIS2Dashboard.tsx,FULLY_WIRED_WITH_FALLBACK,"256,287,300","262,290,291,292,293,294",DEFAULT_ENTITY:135;DEFAULT_MEASURES:143;DEFAULT_INCIDENTS:156;DEFAULT_SUPPLIERS:195;DEFAULT_BCP:203,"DEFAULT_ENTITY@264,274;DEFAULT_MEASURES@non-state:143;DEFAULT_INCIDENTS@non-state:156;DEFAULT_SUPPLIERS@non-state:195;DEFAULT_BCP@non-state:203",,"serverReachable@256,287,300; grep_hits=24"
+components/NPSSurvey.tsx,FULLY_WIRED,,"54,83,104,117",,,,useEffect@61; grep_hits=6
+components/NotificationCenter.tsx,FULLY_WIRED,,"71,87,108,118,128",,,,"useEffect@47,53,59; grep_hits=9"
+components/OfflineBanner.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=4
+components/Onboarding/OnboardingCelebration.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=2
+components/Onboarding/OnboardingChecklist.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=3
+components/Onboarding/OnboardingHint.tsx,STATIC_ONLY,,,,,,no API after full read
+components/Onboarding/OnboardingModal.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=2
+components/Onboarding/OnboardingOverlay.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=3
+components/Onboarding/OnboardingProgress.tsx,STATIC_ONLY,,,,,,no API after full read
+components/Onboarding/OnboardingTierBadge.tsx,STATIC_ONLY,,,,,,no API after full read
+components/Onboarding/OnboardingTooltip.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=4
+components/Onboarding/OnboardingWelcome.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=2
+components/Pagination.tsx,STATIC_ONLY,,,,,,no API after full read
+components/PaymentModal.tsx,FULLY_WIRED,,33,,,,grep_hits=2
+components/PolicyManagement.tsx,FULLY_WIRED,,"165,174,183,248,268,282,295,305,319,333,360,408,427,441",,,,useEffect@190; grep_hits=16
+components/PostMarketSurveillance.tsx,FULLY_WIRED_WITH_FALLBACK,383,"419-424,1178,1326",DEMO_PLANS:175;DEMO_INCIDENTS:183;DEMO_CAPAS:193;DEMO_RECALLS:248;DEMO_NON_CONFORMITIES:261;DEMO_REPORTS:270,"setPlans,setRecalls,...@430-435,455-460; API load useEffect:467",,serverReachable; surveillance list* APIs; DEMO fixtures offline only
+components/PricingSection.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=1
+components/PrivacyManagementPlatform.tsx,FULLY_WIRED,,"196,197,198,199,200,201,627",,,,useEffect@240; grep_hits=9
+components/PrivacyNoticeServing.tsx,FULLY_WIRED,,"451,452,453,454,543,577,622,683,696",,,,useEffect@446; grep_hits=11
+components/ProcessMapper.tsx,FULLY_WIRED,,"357,398,400,430,442",,,,useEffect@354; grep_hits=7
+components/ProductDecommissioning.tsx,FULLY_WIRED_WITH_FALLBACK,275,"288-291,347,358,373",DEMO_PRODUCTS:103;DEMO_WORKFLOW_TASKS:160;DEMO_DATA_PLANS:179;DEMO_NOTIFICATIONS:191,"setProducts,...@298-301,330-333; loadData useEffect:340",,Mutations gated by serverReachable@345-381
+components/ProductLifecycleTracker.tsx,FULLY_WIRED,,427,,,,useEffect@424; grep_hits=3
+components/QuestionnaireManagement.tsx,FULLY_WIRED,,"170,179,186,225,246,268,284,294,297,309,329,333,345,346,367,368,382,397,401,416,438,444,462",,,,useEffect@191; grep_hits=25
+components/RealTimeAnalytics.tsx,FULLY_WIRED,,"96,97,152,153,154,182,183,184,185",,,,useEffect@75; grep_hits=13
+components/RegulatoryChangeTracker.tsx,FULLY_WIRED,,"154,165,175,179,194,210,225",,,,useEffect@146; grep_hits=9
+components/ReportBuilder.tsx,FULLY_WIRED,,"234,262,273,278,291,307",,,,useEffect@225; grep_hits=8
+components/Reports.tsx,FULLY_WIRED,,"124,244,300,315,330,345",,,,useEffect@120; grep_hits=8
+components/RisingSignals.tsx,STATIC_ONLY,,,,,,no API after full read
+components/RiskCanvas.tsx,STATIC_ONLY,,,INITIAL_MESSAGES:155,"INITIAL_MESSAGES@274,314",,no API after full read; grep_hits=4
+components/RiskHeatMap.tsx,FULLY_WIRED,,71,,,,useEffect@63; grep_hits=3
+components/RiskManagement.tsx,FULLY_WIRED,,"70,82,141,194,218,255,303",,,,useEffect@62; grep_hits=9
+components/RoPAManagement.tsx,FULLY_WIRED,,"328,333",,,,useEffect@204; grep_hits=2
+components/RoleManager.tsx,FULLY_WIRED,,"355,378,394",,,,useEffect@258; grep_hits=2
+components/SBOMManager.tsx,FULLY_WIRED_WITH_FALLBACK,233,"240-242,350,379,412,427,436,445,471",DEMO_COMPONENTS:107;DEMO_VULNERABILITIES:125;DEMO_LICENSES:143;DEMO_REPOSITORIES:153;DEMO_REPORTS:161,"setComponents,...@259-263 catch; loadData useEffect:269",,"CRUD gated when !serverReachable@377,386,422"
+components/SCIMSettings.tsx,FULLY_WIRED,,"226,278",,,,useEffect@185; grep_hits=3
+components/SOXComplianceDashboard.tsx,FULLY_WIRED,,"77,78,79,80,480,592",,,,useEffect@114; grep_hits=8
+components/SSOSettings.tsx,FULLY_WIRED_WITH_FALLBACK,,"175,176 (apiFetch)",DEFAULT_MAPPINGS:127,setFormMappings@197 populateForm from apiFetch config,,apiFetch /api/sso/config; DEFAULT_MAPPINGS when server returns empty mappings only
+components/SecurityFeatures.tsx,FULLY_WIRED,,"175,176,192,210,500,513,648,762,897,910,1190,1191,1206",,,,"useEffect@43,167,493,890,1182; grep_hits=19"
+components/SecurityTrainingDashboard.tsx,FULLY_WIRED,,"346,371",,,,useEffect@284; grep_hits=2
+components/Settings.tsx,FULLY_WIRED,,"162,185,206,224,256,277,317,320,399,404,431,456,473,511,865,968,1043,1110,1130,1221,1312,1450,1451,1484,1485,1630,1632",,,,"useEffect@105,145,158,181,203; grep_hits=36"
+components/SignupPage.tsx,FULLY_WIRED,,170,,,,grep_hits=1
+components/SkipNavLink.tsx,STATIC_ONLY,,,,,,no API after full read
+components/SlimSidebar.tsx,STATIC_ONLY,,,,,,no API after full read
+components/SoDAnalysisDashboard.tsx,FULLY_WIRED,,"95,96,97,98,403,404,405,570,609,612,615",,,,useEffect@139; grep_hits=13
+components/StatusPage.tsx,FULLY_WIRED,,228,,,,"useEffect@225,244; grep_hits=3"
+components/TabbedContainer.tsx,STATIC_ONLY,,,,,,no API after full read
+components/ThemeToggle.tsx,STATIC_ONLY,,,,,,no API after full read
+components/TicketingIntegrations.tsx,FULLY_WIRED,,"218,230,246,257,316,335,350,367,392,409,420,434",,,,"useEffect@265,273,278; grep_hits=16"
+components/TierCard.tsx,STATIC_ONLY,,,,,,no API after full read
+components/TierLimitBanner.tsx,STATIC_ONLY,,,,,,no API after full read
+components/USPrivacyTracker.tsx,FULLY_WIRED_WITH_FALLBACK,336,"342,366-368",DEFAULT_STATE_LAWS:89;DEFAULT_GAPS:263;DEFAULT_TASKS:274,"setLaws,setGaps,setTasks from api.regulationData@342-351; catch@352-354",,Catalog seed + regulationData persistence; serverReachable gates save useEffect:362-374
+components/UpdateAvailableBanner.tsx,STATIC_ONLY,,,,,,no API after full read; grep_hits=3
+components/VendorManagement.tsx,FULLY_WIRED,,"181,190,260,293,309,334,346,364,382,401,417,418,433",,,,useEffect@197; grep_hits=15
+components/VendorMonitoringDashboard.tsx,FULLY_WIRED,,"82,83,84,85,102,114,133",,,,useEffect@73; grep_hits=9
+components/WorkflowAutomationRules.tsx,FULLY_WIRED_WITH_FALLBACK,260,"281,297,389,391,408,420,428",DEMO_WORKFLOWS:1418;DEMO_EXECUTIONS:1497,setWorkflows@289;setExecutions@300 catch paths,,api.workflows.list/listRuns; DEMO on catch; mutations need serverReachable@406-424
+components/WorkflowBuilder.tsx,FULLY_WIRED,,"249,256,263,270,297,311,323,335,347",,,,useEffect@275; grep_hits=11
+components/WorkspaceManagement.tsx,FULLY_WIRED,,"124,133,161,177,193,212,226,240",,,,useEffect@140; grep_hits=10
+components/hubs/AIComplianceTools.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/AIDocumentTools.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/AnalyticsHub.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/AuditCenter.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/EnterpriseOpsHub.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/EvidenceHub.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/GovernanceHub.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/IncidentHub.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/PolicyHub.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/ProductHub.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/ReportingCenter.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/RiskHub.tsx,STATIC_ONLY,,,,,,no API after full read
+components/hubs/VendorHub.tsx,STATIC_ONLY,,,,,,no API after full read

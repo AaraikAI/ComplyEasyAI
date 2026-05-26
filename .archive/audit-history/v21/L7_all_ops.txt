@@ -1,0 +1,564 @@
+server/src/services/advanced/acosService.ts:157:createdGoal = await prisma.complianceGoal.create({
+server/src/services/advanced/acosService.ts:170:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:273:const createdLoop = await prisma.controlLoop.create({
+server/src/services/advanced/acosService.ts:296:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:483:await prisma.controlLoop.update({
+server/src/services/advanced/acosService.ts:549:await prisma.controlLoop.update({
+server/src/services/advanced/acosService.ts:568:await prisma.controlLoop.update({
+server/src/services/advanced/acosService.ts:595:await prisma.controlLoop.update({
+server/src/services/advanced/acosService.ts:661:await prisma.frameworkControl.update({
+server/src/services/advanced/acosService.ts:715:const createdDebt = await prisma.complianceDebt.create({
+server/src/services/advanced/acosService.ts:730:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:903:const impact = await prisma.changeImpact.create({
+server/src/services/advanced/acosService.ts:919:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:1198:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:1209:await prisma.changeImpact.update({
+server/src/services/advanced/acosService.ts:1427:const updatedLoop = await prisma.controlLoop.update({
+server/src/services/advanced/acosService.ts:1433:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:1488:const updatedLoop = await prisma.controlLoop.update({
+server/src/services/advanced/acosService.ts:1494:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:1549:const updatedLoop = await prisma.controlLoop.update({
+server/src/services/advanced/acosService.ts:1555:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:1620:await prisma.controlLoop.delete({
+server/src/services/advanced/acosService.ts:1625:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:1781:const updatedGoal = await prisma.complianceGoal.update({
+server/src/services/advanced/acosService.ts:1787:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:1799:await prisma.complianceGoal.update({
+server/src/services/advanced/acosService.ts:1838:await prisma.complianceGoal.update({
+server/src/services/advanced/acosService.ts:1844:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:1876:const restoredGoal = await prisma.complianceGoal.update({
+server/src/services/advanced/acosService.ts:1882:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:1925:const updated = await prisma.controlLoop.update({
+server/src/services/advanced/acosService.ts:2093:await prisma.complianceDebt.update({
+server/src/services/advanced/acosService.ts:2102:await prisma.auditLog.create({
+server/src/services/advanced/acosService.ts:2153:await prisma.complianceFramework.update({
+server/src/services/advanced/acosService.ts:2312:await prisma.controlLoop.updateMany({
+server/src/services/advanced/acosService.ts:2340:await prisma.controlLoopHistory.create({
+server/src/services/advanced/agenticAIService.ts:469:const dbAction = await prisma.agenticAction.create({
+server/src/services/advanced/agenticAIService.ts:529:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:568:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:580:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:588:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:596:await prisma.auditLog.create({
+server/src/services/advanced/agenticAIService.ts:623:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:691:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:742:await prisma.frameworkControl.update({
+server/src/services/advanced/agenticAIService.ts:770:await prisma.policy.create({
+server/src/services/advanced/agenticAIService.ts:806:await prisma.riskItem.update({
+server/src/services/advanced/agenticAIService.ts:896:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:908:await prisma.auditLog.create({
+server/src/services/advanced/agenticAIService.ts:1017:await prisma.frameworkControl.update({
+server/src/services/advanced/agenticAIService.ts:1035:await prisma.riskItem.update({
+server/src/services/advanced/agenticAIService.ts:1052:await prisma.policy.delete({
+server/src/services/advanced/agenticAIService.ts:1122:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:1167:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:1201:await prisma.auditLog.create({
+server/src/services/advanced/agenticAIService.ts:1263:await prisma.agenticAction.update({
+server/src/services/advanced/agenticAIService.ts:1295:await prisma.agenticAction.update({
+server/src/services/advanced/bayesian/knowledgeGraphBuilder.ts:193:prisma.knowledgeGraphEntity.upsert({
+server/src/services/advanced/bayesian/knowledgeGraphBuilder.ts:219:await prisma.knowledgeGraphRelationship.upsert({
+server/src/services/advanced/bayesian/knowledgeGraphBuilder.ts:247:return prisma.knowledgeGraphEntity.update({
+server/src/services/advanced/bayesian/knowledgeGraphBuilder.ts:286:return prisma.knowledgeGraphRelationship.update({
+server/src/services/advanced/blockchainService.ts:944:await prisma.auditLog.create({
+server/src/services/advanced/blockchainService.ts:1005:await prisma.organization.updateMany({
+server/src/services/advanced/blockchainService.ts:1913:await prisma.auditLog.create({
+server/src/services/advanced/blockchainService.ts:1948:await prisma.auditLog.create({
+server/src/services/advanced/blockchainService.ts:1981:await prisma.auditLog.create({
+server/src/services/advanced/blockchainService.ts:2016:await prisma.auditLog.create({
+server/src/services/advanced/blockchainService.ts:2052:await prisma.auditLog.create({
+server/src/services/advanced/blockchainService.ts:2087:await prisma.auditLog.create({
+server/src/services/advanced/blockchainService.ts:2255:await prisma.auditLog.create({
+server/src/services/advanced/blockchainService.ts:2374:await prisma.auditLog.create({
+server/src/services/advanced/byokService.ts:919:await prisma.keyUsage.create({
+server/src/services/advanced/byokService.ts:992:await prisma.keyRotationPolicy.upsert({
+server/src/services/advanced/byokService.ts:1100:await prisma.keyRotationPolicy.update({
+server/src/services/advanced/byokService.ts:1115:await prisma.auditLog.create({
+server/src/services/advanced/byokService.ts:1137:await prisma.auditLog.create({
+server/src/services/advanced/byokService.ts:1171:await prisma.auditLog.create({
+server/src/services/advanced/complianceAsCodeService.ts:125:const dbPolicy = await prisma.compliancePolicy.create({
+server/src/services/advanced/complianceAsCodeService.ts:377:await prisma.auditLog.create({
+server/src/services/advanced/complianceAsCodeService.ts:1085:const updatedPolicy = await prisma.compliancePolicy.create({
+server/src/services/advanced/complianceAsCodeService.ts:1141:const rolledBack = await prisma.compliancePolicy.create({
+server/src/services/advanced/complianceAsCodeService.ts:1196:await prisma.compliancePolicy.update({
+server/src/services/advanced/complianceAsCodeService.ts:1201:await prisma.auditLog.create({
+server/src/services/advanced/complianceDigitalTwinService.ts:189:simulationScenario = await prisma.simulationScenario.create({
+server/src/services/advanced/complianceDigitalTwinService.ts:222:await prisma.simulationResult.create({
+server/src/services/advanced/complianceDigitalTwinService.ts:243:await prisma.auditLog.create({
+server/src/services/advanced/complianceDigitalTwinService.ts:1124:await prisma.simulationScenario.update({
+server/src/services/advanced/complianceDigitalTwinService.ts:1190:await prisma.simulationResult.deleteMany({
+server/src/services/advanced/complianceDigitalTwinService.ts:1198:await prisma.simulationScenario.update({
+server/src/services/advanced/dp/budgetLedger.ts:119:await prisma.privacyBudgetLedger.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:137:await prisma.evidenceAnalysis.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:155:await prisma.auditLog.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:673:await prisma.keyUsage.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:720:await prisma.keyRotationPolicy.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:733:await prisma.keyUsage.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:787:await prisma.auditLog.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:827:await prisma.auditLog.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:885:const created = await prisma.userSigningKey.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:933:const attestationRow = await prisma.evidenceAttestation.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:958:await prisma.auditLog.create({
+server/src/services/advanced/evidenceTruthLayerService.ts:2023:await prisma.evidenceAnalysis.deleteMany({
+server/src/services/advanced/evidenceTruthLayerService.ts:2518:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:96:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:110:await prisma.federatedSwarmPeer.create({
+server/src/services/advanced/federatedSwarmService.ts:136:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:197:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:379:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:702:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:754:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:790:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:1080:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:1098:await prisma.swarmInsight.create({
+server/src/services/advanced/federatedSwarmService.ts:1667:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:1884:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:1927:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:2220:await prisma.federatedSwarmAggregation.create({
+server/src/services/advanced/federatedSwarmService.ts:2230:await prisma.federatedSwarmPeer.updateMany({
+server/src/services/advanced/federatedSwarmService.ts:2576:await prisma.auditLog.create({
+server/src/services/advanced/federatedSwarmService.ts:2706:await prisma.sCAFFOLDControlVariate.create({
+server/src/services/advanced/federatedSwarmService.ts:2718:await prisma.sCAFFOLDControlVariate.upsert({
+server/src/services/advanced/federatedSwarmService.ts:2815:await prisma.auditLog.create({
+server/src/services/advanced/homomorphicAIService.ts:1017:await prisma.auditLog.create({
+server/src/services/advanced/homomorphicAIService.ts:1164:await prisma.auditLog.create({
+server/src/services/advanced/jitAccessService.ts:244:await prisma.auditLog.create({
+server/src/services/advanced/jitAccessService.ts:395:await prisma.auditLog.create({
+server/src/services/advanced/jitAccessService.ts:941:await prisma.user.update({
+server/src/services/advanced/jitAccessService.ts:967:await prisma.user.update({
+server/src/services/advanced/jitAccessService.ts:989:await prisma.auditLog.create({
+server/src/services/advanced/jitAccessService.ts:1099:await prisma.auditLog.create({
+server/src/services/advanced/jitAccessService.ts:1164:await prisma.auditLog.create({
+server/src/services/advanced/jitAccessService.ts:1188:await prisma.auditLog.create({
+server/src/services/advanced/mlModelsService.ts:1033:await prisma.auditLog.create({
+server/src/services/advanced/mlModelsService.ts:1137:await prisma.auditLog.create({
+server/src/services/advanced/mqttService.ts:281:await prisma.ioTDevice.update({
+server/src/services/advanced/mqttService.ts:317:await prisma.ioTDevice.update({
+server/src/services/advanced/mqttService.ts:347:await prisma.edgeComplianceCheck.create({
+server/src/services/advanced/multimodalIntakeService.ts:498:await prisma.transcriptionResult.create({
+server/src/services/advanced/neuroSymbolicAIService.ts:1355:await prisma.auditLog.create({
+server/src/services/advanced/neuroSymbolicAIService.ts:1378:await prisma.neuroSymbolicReasoning.create({
+server/src/services/advanced/neuroSymbolicAIService.ts:1406:await prisma.ruleInference.create({
+server/src/services/advanced/neuroSymbolicAIService.ts:1499:const updated = await prisma.ruleInference.update({
+server/src/services/advanced/physicalAIService.ts:209:const dbDevice = await prisma.ioTDevice.create({
+server/src/services/advanced/physicalAIService.ts:256:await prisma.ioTDevice.update({
+server/src/services/advanced/physicalAIService.ts:262:await prisma.auditLog.create({
+server/src/services/advanced/physicalAIService.ts:414:await prisma.ioTDevice.delete({
+server/src/services/advanced/physicalAIService.ts:419:await prisma.auditLog.create({
+server/src/services/advanced/physicalAIService.ts:453:await prisma.ioTDevice.updateMany({
+server/src/services/advanced/physicalAIService.ts:502:await prisma.auditLog.create({
+server/src/services/advanced/physicalAIService.ts:538:await prisma.auditLog.create({
+server/src/services/advanced/physicalAIService.ts:629:await prisma.edgeComplianceCheck.create({
+server/src/services/advanced/physicalAIService.ts:643:await prisma.ioTDevice.update({
+server/src/services/advanced/physicalAIService.ts:1179:await prisma.ioTDevice.updateMany({
+server/src/services/advanced/physicalAIService.ts:1191:await prisma.auditLog.create({
+server/src/services/advanced/physicalAIService.ts:1333:await prisma.auditLog.create({
+server/src/services/advanced/physicalAIService.ts:1647:await prisma.auditLog.create({
+server/src/services/advanced/physicalAIService.ts:2968:await prisma.auditLog.create({
+server/src/services/advanced/redTeamService.ts:247:await prisma.auditLog.create({
+server/src/services/advanced/redTeamService.ts:299:await prisma.auditLog.create({
+server/src/services/advanced/redTeamService.ts:1059:await prisma.auditLog.create({
+server/src/services/advanced/redTeamService.ts:1373:await prisma.auditLog.create({
+server/src/services/advanced/redTeamService.ts:1632:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:188:const dbChange = await prisma.regulatoryChange.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:220:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:243:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1152:await prisma.regulatoryChange.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1176:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1322:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1448:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1620:await prisma.frameworkControl.update({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1642:await prisma.frameworkControl.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1664:await prisma.regulatoryChange.update({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1673:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1718:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1820:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1923:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2016:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2073:await prisma.frameworkControl.update({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2089:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2232:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2360:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2618:await prisma.regulatoryFeed.updateMany({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2718:await prisma.regulatoryFeed.updateMany({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2733:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2772:const dbFeed = await prisma.regulatoryFeed.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2797:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2826:await prisma.regulatoryFeed.deleteMany({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2834:await prisma.auditLog.create({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2894:const dbFeed = await prisma.regulatoryFeed.updateMany({
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2918:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:328:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:383:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:416:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:450:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:575:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:1067:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:1181:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:1245:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:1527:await prisma.auditLog.create({
+server/src/services/advanced/swarmTaskAllocationService.ts:1777:await prisma.auditLog.create({
+server/src/services/advanced/temporalGraphNetworkService.ts:156:await prisma.riskPrediction.create({
+server/src/services/advanced/temporalGraphNetworkService.ts:684:await prisma.riskPrediction.deleteMany({
+server/src/services/advanced/temporalGraphNetworkService.ts:1239:await prisma.auditLog.create({
+server/src/services/advanced/temporalGraphNetworkService.ts:1272:await prisma.auditLog.create({
+server/src/services/advanced/temporalGraphNetworkService.ts:1637:await prisma.complianceTrajectory.deleteMany({
+server/src/services/advanced/vrCollaborativeReviewService.ts:537:await prisma.vRCollaborativeSession.updateMany({
+server/src/services/advanced/vrCollaborativeReviewService.ts:736:await prisma.vRCollaborativeSession.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:757:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:855:await prisma.vRCollaborativeSession.update({
+server/src/services/advanced/vrCollaborativeReviewService.ts:864:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:922:await prisma.vRCollaborativeSession.update({
+server/src/services/advanced/vrCollaborativeReviewService.ts:931:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:970:await prisma.vRCollaborativeSession.update({
+server/src/services/advanced/vrCollaborativeReviewService.ts:979:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1025:await prisma.vRCollaborativeSession.update({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1039:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1120:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1214:await prisma.vRTrainingScenario.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1268:await prisma.vRTrainingSession.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1459:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1470:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1562:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1682:await prisma.vRSessionPerformance.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1791:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1837:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:1968:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:2214:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:2370:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:2526:await prisma.auditLog.create({
+server/src/services/advanced/vrCollaborativeReviewService.ts:3789:await prisma.auditLog.create({
+server/src/services/advanced/whisperService.ts:163:await prisma.transcriptionResult.create({
+server/src/services/advanced/whisperService.ts:304:await prisma.transcriptionResult.create({
+server/src/services/advanced/whisperService.ts:641:await prisma.transcriptionResult.updateMany({
+server/src/services/advanced/whisperService.ts:750:const result = await prisma.transcriptionResult.deleteMany({
+server/src/services/advanced/zeroKnowledgeService.ts:574:await prisma.auditLog.create({
+server/src/services/advanced/zeroTrustService.ts:940:await prisma.zeroTrustPolicy.create({
+server/src/services/advanced/zeroTrustService.ts:1146:await prisma.deviceTrust.upsert({
+server/src/services/aiRmfService.ts:225:const updated = await prisma.aISystem.update({
+server/src/services/aiRmfService.ts:298:await prisma.aISystem.delete({
+server/src/services/aiRmfService.ts:431:const updated = await prisma.aIRMFCoreFunction.update({
+server/src/services/aiRmfService.ts:503:const updated = await prisma.aIRMFCategory.update({
+server/src/services/aiRmfService.ts:581:const updated = await prisma.aIRMFSubcategory.update({
+server/src/services/aiRmfService.ts:664:await prisma.aIRMFCategory.update({
+server/src/services/aiRmfService.ts:713:await prisma.aIRMFCoreFunction.update({
+server/src/services/aiRmfService.ts:795:const updated = await prisma.aIRMFTrustworthinessCharacteristic.update({
+server/src/services/aiRmfService.ts:911:const updated = await prisma.aIRMFLifecycleStage.update({
+server/src/services/aiRmfService.ts:993:return await prisma.aIRMFActor.create({
+server/src/services/aiRmfService.ts:1027:await prisma.aIRMFActor.delete({
+server/src/services/aiRmfService.ts:1085:const assessment = await prisma.aIRMFAssessment.create({
+server/src/services/aiRmfService.ts:1165:await prisma.aIRMFAssessment.delete({
+server/src/services/aiRmfService.ts:1269:return await prisma.aIRMFProfile.create({
+server/src/services/aiRmfService.ts:1330:const riskActivity = await prisma.aIRMFRiskActivity.create({
+server/src/services/aiRmfService.ts:1404:const updated = await prisma.aIRMFRiskActivity.update({
+server/src/services/aiRmfService.ts:1474:await prisma.aISystem.update({
+server/src/services/auditorService.ts:377:const profile = await prisma.auditorProfile.create({
+server/src/services/auditorService.ts:464:const profile = await prisma.auditorProfile.update({
+server/src/services/auditorService.ts:491:await prisma.auditorProfile.delete({
+server/src/services/auditorService.ts:580:const engagement = await prisma.auditEngagement.create({
+server/src/services/auditorService.ts:710:await prisma.auditEngagement.delete({
+server/src/services/auditorService.ts:796:const finding = await prisma.auditFinding.create({
+server/src/services/auditorService.ts:879:const finding = await prisma.auditFinding.update({
+server/src/services/auditorService.ts:910:await prisma.auditFinding.delete({
+server/src/services/auditorService.ts:998:const workpaper = await prisma.auditWorkpaper.create({
+server/src/services/auditorService.ts:1081:const workpaper = await prisma.auditWorkpaper.update({
+server/src/services/auditorService.ts:1116:await prisma.auditWorkpaper.delete({
+server/src/services/auditorService.ts:1206:const request = await prisma.auditRequest.create({
+server/src/services/auditorService.ts:1286:const request = await prisma.auditRequest.update({
+server/src/services/auditorService.ts:1321:await prisma.auditRequest.delete({
+server/src/services/aws/s3ClientV3.ts:213:const fileRecord = await prisma.fileUpload.create({
+server/src/services/aws/s3ClientV3.ts:318:await prisma.fileUpload.delete({
+server/src/services/doraService.ts:214:const assessment = await prisma.dORAICTRiskAssessment.create({
+server/src/services/doraService.ts:364:const assessment = await prisma.dORAICTRiskAssessment.update({
+server/src/services/doraService.ts:394:await prisma.dORAICTRiskAssessment.delete({
+server/src/services/doraService.ts:476:const updated = await prisma.dORAICTRiskAssessment.update({
+server/src/services/doraService.ts:528:const incident = await prisma.dORAICTIncident.create({
+server/src/services/doraService.ts:717:const incident = await prisma.dORAICTIncident.update({
+server/src/services/doraService.ts:759:const incident = await prisma.dORAICTIncident.update({
+server/src/services/doraService.ts:820:const incident = await prisma.dORAICTIncident.update({
+server/src/services/doraService.ts:857:const provider = await prisma.dORAThirdPartyProvider.create({
+server/src/services/doraService.ts:1013:const provider = await prisma.dORAThirdPartyProvider.update({
+server/src/services/doraService.ts:1042:await prisma.dORAThirdPartyProvider.delete({
+server/src/services/doraService.ts:1272:const test = await prisma.dORAResilienceTest.create({
+server/src/services/doraService.ts:1414:const test = await prisma.dORAResilienceTest.update({
+server/src/services/doraService.ts:1443:await prisma.dORAResilienceTest.delete({
+server/src/services/doraService.ts:1506:const test = await prisma.dORAResilienceTest.update({
+server/src/services/doraService.ts:1556:const entry = await prisma.dORAInformationRegister.create({
+server/src/services/doraService.ts:1729:const entry = await prisma.dORAInformationRegister.update({
+server/src/services/doraService.ts:1758:await prisma.dORAInformationRegister.delete({
+server/src/services/euRegulations/dmaService.ts:163:const gatekeeper = await prisma.dMAGatekeeper.create({
+server/src/services/euRegulations/dmaService.ts:182:prisma.dMAObligationTracking.create({
+server/src/services/euRegulations/dmaService.ts:301:await prisma.dMAObligationTracking.update({
+server/src/services/euRegulations/dmaService.ts:312:await prisma.dMAObligationTracking.create({
+server/src/services/euRegulations/dmaService.ts:366:const report = await prisma.dMAComplianceReport.create({
+server/src/services/euRegulations/dmaService.ts:428:const updated = await prisma.dMAGatekeeper.update({
+server/src/services/euRegulations/dmaService.ts:505:await prisma.dMAGatekeeper.delete({
+server/src/services/euRegulations/dsaService.ts:211:const platform = await prisma.dSAPlatform.create({
+server/src/services/euRegulations/dsaService.ts:256:const moderation = await prisma.dSAContentModeration.create({
+server/src/services/euRegulations/dsaService.ts:322:const report = await prisma.dSAIllegalContentReport.create({
+server/src/services/euRegulations/dsaService.ts:366:const updated = await prisma.dSAIllegalContentReport.update({
+server/src/services/euRegulations/dsaService.ts:431:const adEntry = await prisma.dSAAdRepository.create({
+server/src/services/euRegulations/dsaService.ts:545:const report = await prisma.dSATransparencyReport.create({
+server/src/services/euRegulations/dsaService.ts:659:const updated = await prisma.dSAPlatform.update({
+server/src/services/euRegulations/dsaService.ts:679:await prisma.dSAPlatform.delete({
+server/src/services/euRegulations/dsaService.ts:828:const assessment = await prisma.dSARiskAssessment.create({
+server/src/services/euRegulations/dsaService.ts:920:const updated = await prisma.dSARiskAssessment.update({
+server/src/services/euRegulations/dsaService.ts:967:const feedConfig = await prisma.dSANonPersonalizedFeed.upsert({
+server/src/services/euRegulations/dsaService.ts:1042:const updated = await prisma.dSANonPersonalizedFeed.update({
+server/src/services/euRegulations/euAiActService.ts:322:finalSystem = await prisma.eUAIActSystem.update({
+server/src/services/euRegulations/euAiActService.ts:380:const assessment = await prisma.eUAIActRiskAssessment.create({
+server/src/services/euRegulations/euAiActService.ts:401:await prisma.eUAIActSystem.update({
+server/src/services/euRegulations/euAiActService.ts:465:const report = await prisma.eUAIActTransparencyReport.create({
+server/src/services/euRegulations/euAiActService.ts:587:const updated = await prisma.eUAIActSystem.update({
+server/src/services/euRegulations/euAiActService.ts:639:await prisma.eUAIActSystem.delete({
+server/src/services/featureService.ts:348:await prisma.featureSubscription.update({
+server/src/services/featureService.ts:358:await prisma.subscriptionHistory.create({
+server/src/services/frameworkTemplateService.ts:1716:await prisma.frameworkControl.createMany({
+server/src/services/frameworkTemplateService.ts:1744:await prisma.auditLog.create({
+server/src/services/frameworkTemplateService.ts:1860:await prisma.controlMapping.create({
+server/src/services/frameworkTemplateService.ts:2138:const deleteResult = await prisma.controlMapping.deleteMany({
+server/src/services/hipaaService.ts:120:const record = await prisma.pHIRecord.create({
+server/src/services/hipaaService.ts:204:const grant = await prisma.pHIAccessGrant.create({
+server/src/services/hipaaService.ts:242:const updated = await prisma.pHIAccessGrant.update({
+server/src/services/hipaaService.ts:298:const baa = await prisma.businessAssociateAgreement.create({
+server/src/services/hipaaService.ts:348:const updated = await prisma.businessAssociateAgreement.update({
+server/src/services/hipaaService.ts:417:const assessment = await prisma.hIPAABreachRiskAssessment.create({
+server/src/services/hipaaService.ts:512:const updated = await prisma.hIPAABreachRiskAssessment.update({
+server/src/services/integrations/awsService.ts:88:await prisma.integration.upsert({
+server/src/services/integrations/awsService.ts:524:await prisma.integration.update({
+server/src/services/integrations/azureDevOpsService.ts:240:await prisma.integration.update({
+server/src/services/integrations/azureDevOpsService.ts:334:await prisma.integration.upsert({
+server/src/services/integrations/azureDevOpsService.ts:367:await prisma.integration.update({
+server/src/services/integrations/azureDevOpsService.ts:812:await prisma.auditLog.create({
+server/src/services/integrations/azureDevOpsService.ts:877:await prisma.auditLog.create({
+server/src/services/integrations/azureDevOpsService.ts:935:const localIssue = await prisma.issue.create({
+server/src/services/integrations/azureDevOpsService.ts:951:await prisma.auditLog.create({
+server/src/services/integrations/azureService.ts:454:await prisma.integration.update({
+server/src/services/integrations/azureService.ts:475:await prisma.integration.updateMany({
+server/src/services/integrations/azureSyncService.ts:45:const job = await prisma.azureSyncJob.create({
+server/src/services/integrations/azureSyncService.ts:71:await prisma.azureSyncJob.update({
+server/src/services/integrations/azureSyncService.ts:213:await prisma.azureResource.upsert({
+server/src/services/integrations/azureSyncService.ts:279:await prisma.azureSecurityFinding.upsert({
+server/src/services/integrations/azureSyncService.ts:344:await prisma.azureSecurityAlert.upsert({
+server/src/services/integrations/azureSyncService.ts:417:await prisma.azurePolicyCompliance.upsert({
+server/src/services/integrations/azureSyncService.ts:477:await prisma.azureUser.upsert({
+server/src/services/integrations/azureSyncService.ts:600:prisma.azureResource.deleteMany({ where: { organizationId } }),
+server/src/services/integrations/azureSyncService.ts:601:prisma.azureSecurityFinding.deleteMany({ where: { organizationId } }),
+server/src/services/integrations/azureSyncService.ts:602:prisma.azureSecurityAlert.deleteMany({ where: { organizationId } }),
+server/src/services/integrations/azureSyncService.ts:603:prisma.azurePolicyCompliance.deleteMany({ where: { organizationId } }),
+server/src/services/integrations/azureSyncService.ts:604:prisma.azureUser.deleteMany({ where: { organizationId } }),
+server/src/services/integrations/azureSyncService.ts:605:prisma.azureSyncJob.deleteMany({ where: { organizationId } }),
+server/src/services/integrations/githubService.ts:114:await prisma.integration.upsert({
+server/src/services/integrations/githubService.ts:429:await prisma.integration.update({
+server/src/services/integrations/googleService.ts:129:await prisma.integration.upsert({
+server/src/services/integrations/googleService.ts:222:await prisma.integration.update({
+server/src/services/integrations/googleService.ts:473:await prisma.integration.update({
+server/src/services/integrations/jiraService.ts:150:await prisma.integration.upsert({
+server/src/services/integrations/jiraService.ts:243:await prisma.integration.update({
+server/src/services/integrations/jiraService.ts:574:await prisma.integration.update({
+server/src/services/integrations/jiraService.ts:662:await prisma.auditLog.create({
+server/src/services/integrations/jiraService.ts:706:await prisma.issue.update({
+server/src/services/integrations/jiraService.ts:717:const localIssue = await prisma.issue.create({
+server/src/services/integrations/jiraService.ts:730:await prisma.auditLog.create({
+server/src/services/integrations/jiraService.ts:943:await prisma.issue.update({
+server/src/services/integrations/servicenowService.ts:240:await prisma.integration.update({
+server/src/services/integrations/servicenowService.ts:339:await prisma.integration.upsert({
+server/src/services/integrations/servicenowService.ts:372:await prisma.integration.update({
+server/src/services/integrations/servicenowService.ts:569:await prisma.auditLog.create({
+server/src/services/integrations/servicenowService.ts:759:await prisma.auditLog.create({
+server/src/services/integrations/servicenowService.ts:824:await prisma.auditLog.create({
+server/src/services/integrations/servicenowService.ts:883:const localIssue = await prisma.issue.create({
+server/src/services/integrations/servicenowService.ts:900:await prisma.auditLog.create({
+server/src/services/integrations/slackService.ts:139:await prisma.integration.upsert({
+server/src/services/integrations/slackService.ts:516:await prisma.integration.update({
+server/src/services/integrations/slackService.ts:668:await prisma.integration.update({
+server/src/services/iso27001Service.ts:155:const assessment = await prisma.iSO27001Assessment.create({
+server/src/services/iso27001Service.ts:228:const updated = await prisma.iSO27001Assessment.update({
+server/src/services/iso27001Service.ts:268:const entry = await prisma.iSO27001SoA.upsert({
+server/src/services/iso27001Service.ts:345:const scenario = await prisma.iSO27001RiskScenario.create({
+server/src/services/iso27001Service.ts:405:const updated = await prisma.iSO27001RiskScenario.update({
+server/src/services/iso27001Service.ts:447:const action = await prisma.iSO27001CorrectiveAction.create({
+server/src/services/iso27001Service.ts:489:const updated = await prisma.iSO27001CorrectiveAction.update({
+server/src/services/issueManagementService.ts:33:const issue = await prisma.issue.create({
+server/src/services/issueManagementService.ts:117:const updated = await prisma.issue.update({
+server/src/services/issueManagementService.ts:157:const issue = await prisma.issue.update({
+server/src/services/issueManagementService.ts:200:const comment = await prisma.issueComment.create({
+server/src/services/issueManagementService.ts:257:const issue = await prisma.issue.update({
+server/src/services/issueManagementService.ts:384:return await prisma.issue.update({
+server/src/services/mdmService.ts:136:const device = await prisma.managedDevice.create({
+server/src/services/mdmService.ts:262:const updated = await prisma.managedDevice.update({
+server/src/services/mdmService.ts:294:const updated = await prisma.managedDevice.update({
+server/src/services/mdmService.ts:325:await prisma.managedDevice.delete({ where: { id } });
+server/src/services/mdmService.ts:360:const updated = await prisma.managedDevice.update({
+server/src/services/mdmService.ts:425:const policy = await prisma.mDMPolicy.create({
+server/src/services/mdmService.ts:536:const updated = await prisma.mDMPolicy.update({
+server/src/services/mdmService.ts:565:await prisma.mDMPolicy.delete({ where: { id } });
+server/src/services/mdmService.ts:606:const actionRecord = await prisma.deviceAction.create({
+server/src/services/mdmService.ts:782:const complianceCheck = await prisma.deviceComplianceCheck.create({
+server/src/services/mdmService.ts:797:await prisma.managedDevice.update({
+server/src/services/mdmService.ts:1139:await prisma.deviceAction.update({
+server/src/services/mdmService.ts:1150:await prisma.managedDevice.update({
+server/src/services/monitoringService.ts:29:const monitor = await prisma.continuousMonitor.create({
+server/src/services/monitoringService.ts:75:const monitorResult = await prisma.monitorResult.create({
+server/src/services/monitoringService.ts:89:await prisma.continuousMonitor.update({
+server/src/services/monitoringService.ts:262:await prisma.issue.create({
+server/src/services/monitoringService.ts:399:const monitor = await prisma.continuousMonitor.update({
+server/src/services/monitoringService.ts:461:const monitor = await prisma.continuousMonitor.update({
+server/src/services/monitoringService.ts:493:await prisma.monitorResult.deleteMany({ where: { monitorId, monitor: { organizationId } } });
+server/src/services/monitoringService.ts:494:await prisma.continuousMonitor.delete({ where: { id: monitorId, organizationId } });
+server/src/services/multiWorkspaceService.ts:33:await prisma.organization.update({
+server/src/services/multiWorkspaceService.ts:40:const child = await prisma.organization.create({
+server/src/services/multiWorkspaceService.ts:269:const updatedUser = await prisma.user.update({
+server/src/services/multiWorkspaceService.ts:314:const newFramework = await prisma.complianceFramework.create({
+server/src/services/multiWorkspaceService.ts:326:prisma.frameworkControl.create({
+server/src/services/nistCsfService.ts:445:const profile = await prisma.nistCsfProfile.create({
+server/src/services/nistCsfService.ts:492:const updated = await prisma.nistCsfProfile.update({
+server/src/services/nistCsfService.ts:558:const updated = await prisma.nistCsfProfile.update({
+server/src/services/nistCsfService.ts:599:const assessment = await prisma.nistCsfSubcategoryAssessment.upsert({
+server/src/services/nistCsfService.ts:683:prisma.nistCsfSubcategoryAssessment.create({
+server/src/services/nistCsfService.ts:906:prisma.nistCsfGapAnalysis.create({
+server/src/services/nistCsfService.ts:926:prisma.nistCsfGapAnalysis.create({
+server/src/services/nistCsfService.ts:1045:const item = await prisma.nistCsfActionItem.create({
+server/src/services/nistCsfService.ts:1090:const updated = await prisma.nistCsfActionItem.update({
+server/src/services/nistCsfService.ts:1144:const updated = await prisma.nistCsfActionItem.update({
+server/src/services/notificationService.ts:197:const dbNotification = await prisma.notification.create({
+server/src/services/notificationService.ts:231:await prisma.notification.update({
+server/src/services/notificationService.ts:537:await prisma.notification.create({
+server/src/services/notificationService.ts:704:await prisma.notification.update({
+server/src/services/npsService.ts:134:const invitation = await prisma.nPSInvitation.create({
+server/src/services/npsService.ts:177:await prisma.nPSInvitation.update({
+server/src/services/npsService.ts:211:const updated = await prisma.nPSInvitation.update({
+server/src/services/npsService.ts:294:const inv = await prisma.nPSInvitation.updateMany({
+server/src/services/npsService.ts:317:const inv = await prisma.nPSInvitation.updateMany({
+server/src/services/personnelService.ts:26:const personnel = await prisma.personnel.create({
+server/src/services/personnelService.ts:73:const personnel = await prisma.personnel.update({
+server/src/services/personnelService.ts:85:await prisma.user.update({
+server/src/services/personnelService.ts:118:const personnel = await prisma.personnel.update({
+server/src/services/personnelService.ts:131:await prisma.user.update({
+server/src/services/personnelService.ts:170:const review = await prisma.accessReview.create({
+server/src/services/personnelService.ts:221:const review = await prisma.accessReview.update({
+server/src/services/personnelService.ts:239:await prisma.personnel.update({
+server/src/services/personnelService.ts:347:const personnel = await prisma.personnel.update({
+server/src/services/personnelService.ts:387:const personnel = await prisma.personnel.update({
+server/src/services/personnelService.ts:496:const personnel = await prisma.personnel.update({
+server/src/services/personnelService.ts:544:await prisma.personnel.update({
+server/src/services/personnelService.ts:553:await prisma.user.update({
+server/src/services/policyLibraryService.ts:30:const policy = await prisma.policy.create({
+server/src/services/policyLibraryService.ts:256:const updated = await prisma.frameworkControl.update({
+server/src/services/policyLibraryService.ts:305:const policy = await prisma.policy.update({
+server/src/services/policyLibraryService.ts:331:const policy = await prisma.policy.update({
+server/src/services/policyLibraryService.ts:357:const duplicate = await prisma.policy.create({
+server/src/services/policyLibraryService.ts:449:const policy = await prisma.policy.update({
+server/src/services/policyLibraryService.ts:484:const policy = await prisma.policy.update({
+server/src/services/questionnaireService.ts:48:const questionnaire = await prisma.questionnaire.create({
+server/src/services/questionnaireService.ts:97:return await prisma.questionnaireQuestion.create({
+server/src/services/questionnaireService.ts:175:const response = await prisma.questionnaireResponse.create({
+server/src/services/questionnaireService.ts:195:await prisma.questionnaire.update({
+server/src/services/questionnaireService.ts:377:response = await prisma.questionnaireResponse.update({
+server/src/services/questionnaireService.ts:388:response = await prisma.questionnaireResponse.create({
+server/src/services/questionnaireService.ts:451:const updated = await prisma.questionnaire.update({
+server/src/services/realTimeComplianceService.ts:514:await prisma.metricsHistory.create({
+server/src/services/reportingService.ts:29:const report = await prisma.customReport.create({
+server/src/services/reportingService.ts:358:const report = await prisma.customReport.update({
+server/src/services/s3Service.ts:122:const fileRecord = await prisma.fileUpload.create({
+server/src/services/s3Service.ts:209:await prisma.fileUpload.delete({
+server/src/services/secureChatService.ts:1752:return await prisma.chatConversation.create({
+server/src/services/secureChatService.ts:1813:await prisma.chatConversation.update({
+server/src/services/secureChatService.ts:1824:await prisma.auditLog.create({
+server/src/services/sessionManagementService.ts:351:await prisma.auditLog.create({
+server/src/services/sessionManagementService.ts:386:await prisma.auditLog.create({
+server/src/services/sessionManagementService.ts:412:await prisma.auditLog.create({
+server/src/services/soc2Service.ts:265:const engagement = await prisma.sOC2Engagement.create({
+server/src/services/soc2Service.ts:339:const updated = await prisma.sOC2Engagement.update({
+server/src/services/soc2Service.ts:448:const control = await prisma.sOC2Control.upsert({
+server/src/services/soc2Service.ts:618:const updated = await prisma.sOC2Control.update({
+server/src/services/soc2Service.ts:738:const sample = await prisma.sOC2EvidenceSample.create({
+server/src/services/soc2Service.ts:804:const updated = await prisma.sOC2EvidenceSample.update({
+server/src/services/soc2Service.ts:865:const exception = await prisma.sOC2Exception.create({
+server/src/services/soc2Service.ts:949:const updated = await prisma.sOC2Exception.update({
+server/src/services/soc2Service.ts:1018:const cuec = await prisma.sOC2CUEC.create({
+server/src/services/soc2Service.ts:1078:const assertion = await prisma.sOC2ManagementAssertion.create({
+server/src/services/sodService.ts:112:const rule = await prisma.soDRule.create({
+server/src/services/sodService.ts:230:const updated = await prisma.soDRule.update({
+server/src/services/sodService.ts:254:await prisma.soDRule.delete({ where: { id } });
+server/src/services/sodService.ts:279:const violation = await prisma.soDViolation.create({
+server/src/services/sodService.ts:511:const updated = await prisma.soDViolation.update({
+server/src/services/sodService.ts:548:const updated = await prisma.soDViolation.update({
+server/src/services/sodService.ts:585:const updated = await prisma.soDViolation.update({
+server/src/services/sodService.ts:1057:await prisma.soDViolation.update({
+server/src/services/sodService.ts:1119:await prisma.soDViolation.update({
+server/src/services/sodService.ts:1168:await prisma.soDViolation.update({
+server/src/services/soxService.ts:128:const control = await prisma.sOXControl.create({
+server/src/services/soxService.ts:238:const updated = await prisma.sOXControl.update({
+server/src/services/soxService.ts:260:await prisma.sOXControl.deleteMany({ where: { id, organizationId } });
+server/src/services/soxService.ts:335:const testResult = await prisma.sOXTestResult.create({
+server/src/services/soxService.ts:369:await prisma.sOXControl.update({
+server/src/services/soxService.ts:470:const updated = await prisma.sOXTestResult.update({
+server/src/services/soxService.ts:492:await prisma.sOXTestResult.delete({ where: { id, control: { organizationId } } });
+server/src/services/soxService.ts:545:const assessment = await prisma.sOXAssessment.create({
+server/src/services/soxService.ts:634:const updated = await prisma.sOXAssessment.update({
+server/src/services/soxService.ts:656:await prisma.sOXAssessment.deleteMany({ where: { id, organizationId } });
+server/src/services/soxService.ts:1118:await prisma.sOXControl.update({
+server/src/services/stripeService.ts:222:await prisma.organization.update({
+server/src/services/stripeService.ts:639:await prisma.organization.update({
+server/src/services/stripeService.ts:645:await prisma.subscriptionHistory.create({
+server/src/services/stripeService.ts:693:await prisma.organization.update({
+server/src/services/stripeService.ts:702:await prisma.subscriptionHistory.create({
+server/src/services/stripeService.ts:747:await prisma.organization.update({
+server/src/services/stripeService.ts:755:await prisma.subscriptionHistory.create({
+server/src/services/stripeService.ts:797:await prisma.stripeEvent.create({
+server/src/services/stripeService.ts:842:await prisma.stripeEvent.update({
+server/src/services/stripeService.ts:954:await prisma.organization.update({
+server/src/services/stripeService.ts:999:await prisma.organization.update({
+server/src/services/stripeService.ts:1011:await prisma.subscriptionHistory.create({
+server/src/services/stripeService.ts:1041:await prisma.organization.update({
+server/src/services/stripeService.ts:1053:await prisma.subscriptionHistory.create({
+server/src/services/stripeService.ts:1086:await prisma.organization.update({
+server/src/services/stripeService.ts:1091:await prisma.subscriptionHistory.create({
+server/src/services/stripeService.ts:1123:await prisma.organization.update({
+server/src/services/stripeService.ts:1128:await prisma.subscriptionHistory.create({
+server/src/services/stripeService.ts:1257:await prisma.featureSubscription.create({
+server/src/services/stripeService.ts:1277:await prisma.featureSubscription.update({
+server/src/services/stripeService.ts:1308:await prisma.featureSubscription.update({
+server/src/services/stripeService.ts:1344:await prisma.featureSubscription.update({
+server/src/services/stripeService.ts:1353:await prisma.featureSubscription.update({
+server/src/services/stripeService.ts:1370:await prisma.subscriptionHistory.create({
+server/src/services/stripeService.ts:1434:await prisma.subscriptionHistory.create({
+server/src/services/tierService.ts:517:await prisma.usageTracking.upsert({
+server/src/services/trustCenterService.ts:36:const certificate = await prisma.trustCertificate.create({
+server/src/services/trustCenterService.ts:216:const certificate = await prisma.trustCertificate.update({
+server/src/services/twoFactorService.ts:51:await prisma.user.update({
+server/src/services/twoFactorService.ts:109:await prisma.user.update({
+server/src/services/twoFactorService.ts:189:await prisma.twoFactorBackupCode.update({
+server/src/services/twoFactorService.ts:225:await prisma.user.update({
+server/src/services/twoFactorService.ts:235:await prisma.twoFactorBackupCode.deleteMany({
+server/src/services/twoFactorService.ts:260:await prisma.twoFactorBackupCode.deleteMany({
+server/src/services/twoFactorService.ts:358:await prisma.twoFactorBackupCode.createMany({
+server/src/services/vendorRiskService.ts:104:const assessment = await prisma.vendorAssessment.create({
+server/src/services/vendorRiskService.ts:203:const review = await prisma.vendorReview.create({
+server/src/services/vendorRiskService.ts:289:const monitor = await prisma.vendorMonitor.create({
+server/src/services/vendorRiskService.ts:326:const monitor = await prisma.vendorMonitor.update({
+server/src/services/vendorRiskService.ts:585:const vendor = await prisma.vendor.update({
+server/src/services/vendorRiskService.ts:615:const vendor = await prisma.vendor.update({
+server/src/services/visionaryAIService.ts:294:const savedPolicy = await prisma.policy.create({
+server/src/services/visionaryAIService.ts:766:await prisma.frameworkControl.update({
+server/src/services/webhookService.ts:152:const webhook = await prisma.webhook.create({
+server/src/services/webhookService.ts:192:const webhook = await prisma.webhook.update({
+server/src/services/webhookService.ts:219:await prisma.webhook.delete({
+server/src/services/webhookService.ts:291:await prisma.webhook.update({
+server/src/services/webhookService.ts:411:await prisma.webhookEvent.update({
+server/src/services/webhookService.ts:423:await prisma.webhookEvent.update({
+server/src/services/webhookService.ts:436:await prisma.webhook.update({
+server/src/services/webhookService.ts:448:await prisma.webhookEvent.update({
+server/src/services/webhookService.ts:459:await prisma.webhook.update({
+server/src/services/webhookService.ts:470:await prisma.webhookEvent.update({
+server/src/services/webhookService.ts:665:await prisma.webhookEvent.update({
+server/src/services/webhookService.ts:716:const result = await prisma.webhookEvent.deleteMany({
+server/src/services/workflowEngine.ts:336:await prisma.notification.create({
+server/src/services/workflowEngine.ts:409:const issue = await prisma.issue.create({
+server/src/services/workflowEngine.ts:426:await prisma.notification.create({
+server/src/services/workflowEngine.ts:481:await prisma.grcIncident.create({
+server/src/services/workflowEngine.ts:593:await prisma.notification.create({
+server/src/services/workflowEngine.ts:625:const escalationIssue = await prisma.issue.create({
+server/src/services/workflowEngine.ts:641:await prisma.notification.create({
+server/src/services/workflowEngine.ts:923:await prisma.gRCWorkflow.update({
+server/src/services/workflowEngine.ts:977:await prisma.workflowExecution.create({

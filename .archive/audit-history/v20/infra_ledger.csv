@@ -1,0 +1,20 @@
+file_path,kind,verdict,notes
+./docker-compose.elk.yml,compose,READ,infrastructure file
+./Dockerfile,dockerfile,READ,infrastructure file
+./docker-compose.yml,compose,READ,infrastructure file
+./docker-compose.prod.yml,compose,READ,infrastructure file
+./docker-compose.security.yml,compose,READ,infrastructure file
+./server/docker/opa/Dockerfile,dockerfile,READ,infrastructure file
+./server/docker/opa/docker-compose.yml,compose,READ,infrastructure file
+./infrastructure/security/falco/docker-compose.falco.yml,compose,READ,infrastructure file
+.github/workflows/scheduled-backup.yml,ci-workflow,READ,CI workflow file
+.github/workflows/codeql.yml,ci-workflow,READ,CI workflow file
+.github/workflows/mobile.yml,ci-workflow,READ,CI workflow file
+.github/workflows/dependency-scan.yml,ci-workflow,READ,CI workflow file
+.github/workflows/ci.yml,ci-workflow,READ,CI workflow file
+./nginx/default.conf,infra-config,READ,infrastructure config
+./nginx/nginx.conf,infra-config,READ,infrastructure config
+./logstash/pipeline/logstash.conf,infra-config,READ,infrastructure config
+./infrastructure/security/falco/falco.yaml,infra-config,READ,infrastructure config
+./infrastructure/security/falco/complyeasy_rules.yaml,infra-config,READ,infrastructure config
+./infrastructure/security/falco/docker-compose.falco.yml,infra-config,READ,infrastructure config
