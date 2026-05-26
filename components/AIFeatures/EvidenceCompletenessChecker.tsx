@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -95,413 +96,8 @@ interface Recommendation {
   steps: string[];
 }
 
-// ─── Demo Data ──────────────────────────────────────────────────────────────────
+// Static demo arrays removed; data is now fetched from the backend
 
-const FRAMEWORK_READINESS: FrameworkReadiness[] = [
-  {
-    id: 'fw-1',
-    name: 'SOC 2 Type II',
-    overallScore: 71,
-    totalControls: 64,
-    evidenceComplete: 45,
-    evidenceCurrent: 40,
-    evidenceVerified: 38,
-    evidenceMatched: 42,
-    evidenceMissing: 12,
-    evidenceStale: 7,
-    evidenceUnverified: 5,
-    evidenceMismatched: 3,
-    lastScanned: '2026-02-17T08:30:00Z',
-    status: 'at-risk',
-  },
-  {
-    id: 'fw-2',
-    name: 'ISO 27001:2022',
-    overallScore: 78,
-    totalControls: 93,
-    evidenceComplete: 72,
-    evidenceCurrent: 68,
-    evidenceVerified: 65,
-    evidenceMatched: 70,
-    evidenceMissing: 14,
-    evidenceStale: 8,
-    evidenceUnverified: 6,
-    evidenceMismatched: 4,
-    lastScanned: '2026-02-17T08:30:00Z',
-    status: 'at-risk',
-  },
-  {
-    id: 'fw-3',
-    name: 'GDPR',
-    overallScore: 85,
-    totalControls: 48,
-    evidenceComplete: 41,
-    evidenceCurrent: 39,
-    evidenceVerified: 40,
-    evidenceMatched: 40,
-    evidenceMissing: 3,
-    evidenceStale: 4,
-    evidenceUnverified: 2,
-    evidenceMismatched: 1,
-    lastScanned: '2026-02-17T08:30:00Z',
-    status: 'ready',
-  },
-  {
-    id: 'fw-4',
-    name: 'HIPAA',
-    overallScore: 64,
-    totalControls: 54,
-    evidenceComplete: 34,
-    evidenceCurrent: 30,
-    evidenceVerified: 28,
-    evidenceMatched: 31,
-    evidenceMissing: 15,
-    evidenceStale: 6,
-    evidenceUnverified: 5,
-    evidenceMismatched: 4,
-    lastScanned: '2026-02-17T08:30:00Z',
-    status: 'not-ready',
-  },
-  {
-    id: 'fw-5',
-    name: 'PCI DSS v4.0',
-    overallScore: 73,
-    totalControls: 78,
-    evidenceComplete: 57,
-    evidenceCurrent: 52,
-    evidenceVerified: 50,
-    evidenceMatched: 54,
-    evidenceMissing: 10,
-    evidenceStale: 9,
-    evidenceUnverified: 6,
-    evidenceMismatched: 5,
-    lastScanned: '2026-02-17T08:30:00Z',
-    status: 'at-risk',
-  },
-  {
-    id: 'fw-6',
-    name: 'NIST CSF 2.0',
-    overallScore: 82,
-    totalControls: 106,
-    evidenceComplete: 87,
-    evidenceCurrent: 82,
-    evidenceVerified: 80,
-    evidenceMatched: 84,
-    evidenceMissing: 11,
-    evidenceStale: 7,
-    evidenceUnverified: 5,
-    evidenceMismatched: 3,
-    lastScanned: '2026-02-17T08:30:00Z',
-    status: 'ready',
-  },
-];
-
-const EVIDENCE_GAPS: EvidenceGap[] = [
-  {
-    id: 'EG-001',
-    controlId: 'CC6.1',
-    controlName: 'Logical Access Security',
-    framework: 'SOC 2 Type II',
-    gapType: 'missing',
-    severity: 'critical',
-    description: 'No evidence of multi-factor authentication configuration for production systems. Required for SOC 2 CC6.1 logical access controls.',
-    aiSuggestion: 'Export MFA enrollment report from your identity provider (Okta/Azure AD). Include screenshots of MFA policy configuration and coverage statistics.',
-    suggestedEvidence: ['MFA enrollment report', 'Identity provider MFA policy screenshot', 'MFA coverage statistics by user group'],
-    estimatedEffort: '2 hours',
-    controlOwner: 'IT Security Team',
-  },
-  {
-    id: 'EG-002',
-    controlId: 'CC7.2',
-    controlName: 'Security Incident Monitoring',
-    framework: 'SOC 2 Type II',
-    gapType: 'stale',
-    severity: 'critical',
-    description: 'SIEM monitoring configuration evidence is 120 days old. Auditors require evidence within the audit period (last 90 days).',
-    currentEvidence: 'SIEM Configuration Review - Oct 2025',
-    lastUpdated: '2025-10-20',
-    daysStale: 120,
-    aiSuggestion: 'Generate a fresh SIEM configuration export showing current monitoring rules, alert thresholds, and incident response escalation paths.',
-    suggestedEvidence: ['Current SIEM configuration export', 'Active monitoring rules inventory', 'Recent alert log samples (last 30 days)'],
-    estimatedEffort: '3 hours',
-    controlOwner: 'SOC Team',
-  },
-  {
-    id: 'EG-003',
-    controlId: 'A.8.24',
-    controlName: 'Use of Cryptography',
-    framework: 'ISO 27001:2022',
-    gapType: 'unverified',
-    severity: 'high',
-    description: 'Encryption policy documentation exists but has not been verified against actual implementation. Key management practices may not match policy.',
-    currentEvidence: 'Encryption Policy v3.1',
-    lastUpdated: '2025-12-15',
-    aiSuggestion: 'Conduct a verification review comparing the encryption policy with actual implementation. Document TLS configurations, encryption-at-rest settings, and key rotation schedules.',
-    suggestedEvidence: ['TLS configuration scan results', 'Encryption-at-rest verification report', 'Key rotation schedule evidence', 'Certificate management inventory'],
-    estimatedEffort: '4 hours',
-    controlOwner: 'Platform Engineering',
-  },
-  {
-    id: 'EG-004',
-    controlId: 'Art. 30',
-    controlName: 'Records of Processing Activities',
-    framework: 'GDPR',
-    gapType: 'incomplete',
-    severity: 'high',
-    description: 'Data processing inventory is missing 3 recently added data flows. Record of Processing Activities (ROPA) is not complete per GDPR Article 30.',
-    currentEvidence: 'ROPA v2.4 - 45 of 48 processing activities documented',
-    lastUpdated: '2026-01-10',
-    aiSuggestion: 'Run the AI Data Mapper to identify undocumented data flows. Update the ROPA to include the new processing activities with legal basis, purpose, and data categories.',
-    suggestedEvidence: ['Updated ROPA with all 48 processing activities', 'Data flow diagrams for new activities', 'Legal basis documentation for each activity'],
-    estimatedEffort: '6 hours',
-    controlOwner: 'DPO Office',
-  },
-  {
-    id: 'EG-005',
-    controlId: '164.312(a)',
-    controlName: 'Access Control - Unique User ID',
-    framework: 'HIPAA',
-    gapType: 'missing',
-    severity: 'critical',
-    description: 'No evidence of unique user identification for ePHI systems. Required by HIPAA 164.312(a)(2)(i) for user identity verification.',
-    aiSuggestion: 'Export user access lists from all ePHI-containing systems. Document the user provisioning process and unique ID assignment procedures.',
-    suggestedEvidence: ['User access list for each ePHI system', 'User provisioning workflow documentation', 'Annual access review results', 'Terminated user deprovisioning evidence'],
-    estimatedEffort: '8 hours',
-    controlOwner: 'Health IT Team',
-  },
-  {
-    id: 'EG-006',
-    controlId: '164.308(a)(5)',
-    controlName: 'Security Awareness Training',
-    framework: 'HIPAA',
-    gapType: 'stale',
-    severity: 'high',
-    description: 'Security awareness training completion records are 95 days old. Training compliance evidence should be refreshed quarterly.',
-    currentEvidence: 'Training Completion Report - Nov 2025',
-    lastUpdated: '2025-11-14',
-    daysStale: 95,
-    aiSuggestion: 'Generate current training completion report from your LMS. Include completion rates by department, quiz scores, and attestation records.',
-    suggestedEvidence: ['Current LMS training completion report', 'Department-level completion rates', 'Training content review records'],
-    estimatedEffort: '1 hour',
-    controlOwner: 'HR Department',
-  },
-  {
-    id: 'EG-007',
-    controlId: 'Req 6.3',
-    controlName: 'Software Development Security',
-    framework: 'PCI DSS v4.0',
-    gapType: 'mismatched',
-    severity: 'high',
-    description: 'Code review evidence references an outdated SDLC process. The current development workflow uses a different branching and review strategy not reflected in evidence.',
-    currentEvidence: 'SDLC Policy v2.0 - Waterfall Methodology',
-    lastUpdated: '2025-09-01',
-    aiSuggestion: 'Update the SDLC evidence to reflect current Agile/DevOps practices. Document the code review process, branch protection rules, and security testing integration.',
-    suggestedEvidence: ['Updated SDLC policy reflecting current practices', 'Branch protection rule configuration', 'Code review workflow documentation', 'SAST/DAST scan results'],
-    estimatedEffort: '6 hours',
-    controlOwner: 'Engineering Lead',
-  },
-  {
-    id: 'EG-008',
-    controlId: 'A1.2',
-    controlName: 'Business Continuity Testing',
-    framework: 'SOC 2 Type II',
-    gapType: 'stale',
-    severity: 'high',
-    description: 'Business continuity plan test results are from over 8 months ago. Annual testing minimum required, but semi-annual is recommended for SOC 2.',
-    currentEvidence: 'BCP Test Results - June 2025',
-    lastUpdated: '2025-06-15',
-    daysStale: 247,
-    aiSuggestion: 'Schedule and execute a BCP tabletop exercise or full simulation. Document test scenarios, participant roles, results, and improvement actions.',
-    suggestedEvidence: ['BCP tabletop exercise report', 'DR failover test results', 'RTO/RPO measurement evidence', 'Improvement action plan from test'],
-    estimatedEffort: '16 hours',
-    controlOwner: 'IT Operations',
-  },
-  {
-    id: 'EG-009',
-    controlId: 'GV.SC-03',
-    controlName: 'Supply Chain Risk Management',
-    framework: 'NIST CSF 2.0',
-    gapType: 'missing',
-    severity: 'medium',
-    description: 'No evidence of formal supply chain risk management program. NIST CSF 2.0 Govern category requires documented SCRM processes.',
-    aiSuggestion: 'Create a supply chain risk management policy and procedure. Document vendor risk assessment criteria, monitoring processes, and incident response for supply chain events.',
-    suggestedEvidence: ['SCRM Policy document', 'Vendor risk assessment template', 'Active vendor risk register', 'Supply chain incident response plan'],
-    estimatedEffort: '12 hours',
-    controlOwner: 'Procurement/Security',
-  },
-  {
-    id: 'EG-010',
-    controlId: 'C1.1',
-    controlName: 'Data Classification',
-    framework: 'SOC 2 Type II',
-    gapType: 'incomplete',
-    severity: 'medium',
-    description: 'Data classification policy exists but 4 data repositories have not been classified. All data stores must have documented classification levels.',
-    currentEvidence: 'Data Classification Inventory - 28 of 32 repositories classified',
-    lastUpdated: '2026-01-05',
-    aiSuggestion: 'Identify and classify the remaining 4 unclassified data repositories. Update the data classification inventory and apply appropriate handling labels.',
-    suggestedEvidence: ['Complete data classification inventory', 'Data repository scan results', 'Classification label assignment evidence'],
-    estimatedEffort: '4 hours',
-    controlOwner: 'Data Governance Team',
-  },
-  {
-    id: 'EG-011',
-    controlId: 'Req 11.3',
-    controlName: 'Penetration Testing',
-    framework: 'PCI DSS v4.0',
-    gapType: 'stale',
-    severity: 'critical',
-    description: 'Most recent penetration test report is 13 months old. PCI DSS requires annual penetration testing of the CDE at minimum.',
-    currentEvidence: 'Annual Pentest Report - January 2025',
-    lastUpdated: '2025-01-20',
-    daysStale: 393,
-    aiSuggestion: 'Commission an internal or external penetration test of the cardholder data environment. Ensure scope includes all in-scope network segments, applications, and APIs.',
-    suggestedEvidence: ['Penetration test report (within last 12 months)', 'Remediation evidence for identified findings', 'Retest results for critical/high findings'],
-    estimatedEffort: '40 hours',
-    controlOwner: 'Security Team',
-  },
-  {
-    id: 'EG-012',
-    controlId: 'Art. 35',
-    controlName: 'Data Protection Impact Assessment',
-    framework: 'GDPR',
-    gapType: 'missing',
-    severity: 'high',
-    description: '2 high-risk processing activities identified but no DPIA completed. GDPR Article 35 requires DPIAs for processing likely to result in high risk.',
-    aiSuggestion: 'Conduct DPIAs for the identified high-risk processing activities. Include risk assessment, necessity/proportionality analysis, and mitigation measures.',
-    suggestedEvidence: ['DPIA for AI-based customer profiling', 'DPIA for employee monitoring system', 'DPO consultation records', 'Supervisory authority consultation (if required)'],
-    estimatedEffort: '16 hours',
-    controlOwner: 'DPO Office',
-  },
-];
-
-const RECOMMENDATIONS: Recommendation[] = [
-  {
-    id: 'REC-001',
-    title: 'Implement Automated Evidence Collection Pipeline',
-    description: 'Set up automated evidence collection from identity providers, SIEM, cloud platforms, and development tools. This would address 60% of your stale and missing evidence gaps.',
-    impact: 'high',
-    effort: 'high',
-    affectedControls: 38,
-    scoreImprovement: 15,
-    category: 'Automation',
-    priority: 1,
-    steps: [
-      'Identify top 10 evidence types that can be automated',
-      'Configure API integrations with source systems (IdP, SIEM, AWS/Azure, GitHub)',
-      'Set up scheduled evidence collection jobs',
-      'Configure evidence freshness alerts',
-      'Test and validate automated evidence against control requirements',
-    ],
-  },
-  {
-    id: 'REC-002',
-    title: 'Schedule Immediate Penetration Test',
-    description: 'Your PCI DSS penetration test evidence is 13 months old. Schedule an immediate pen test to avoid non-compliance and potential audit findings.',
-    impact: 'high',
-    effort: 'medium',
-    affectedControls: 5,
-    scoreImprovement: 8,
-    category: 'Critical Gap',
-    priority: 2,
-    steps: [
-      'Engage approved penetration testing vendor',
-      'Define scope covering all CDE segments',
-      'Execute penetration test within next 30 days',
-      'Document remediation for all critical/high findings',
-      'Conduct retest to verify remediation effectiveness',
-    ],
-  },
-  {
-    id: 'REC-003',
-    title: 'Complete HIPAA ePHI System Access Reviews',
-    description: 'Multiple HIPAA controls lack evidence of user access management for ePHI systems. Completing access reviews would address 3 critical gaps.',
-    impact: 'high',
-    effort: 'medium',
-    affectedControls: 8,
-    scoreImprovement: 12,
-    category: 'Critical Gap',
-    priority: 3,
-    steps: [
-      'Inventory all systems containing ePHI',
-      'Export current user access lists from each system',
-      'Conduct access review with system owners',
-      'Remove excessive/unauthorized access',
-      'Document review results and retain evidence',
-    ],
-  },
-  {
-    id: 'REC-004',
-    title: 'Run BCP Tabletop Exercise',
-    description: 'Business continuity plan testing evidence is 8 months old. Schedule a tabletop exercise to demonstrate ongoing BCP effectiveness.',
-    impact: 'medium',
-    effort: 'medium',
-    affectedControls: 4,
-    scoreImprovement: 6,
-    category: 'Refresh Required',
-    priority: 4,
-    steps: [
-      'Select 2-3 relevant disaster scenarios',
-      'Identify key participants from each business unit',
-      'Schedule 2-hour tabletop exercise',
-      'Document scenario walkthroughs, decisions, and gaps identified',
-      'Create improvement action plan with deadlines',
-    ],
-  },
-  {
-    id: 'REC-005',
-    title: 'Complete GDPR Data Protection Impact Assessments',
-    description: '2 high-risk processing activities require DPIAs under GDPR Article 35. Complete these to maintain GDPR compliance.',
-    impact: 'high',
-    effort: 'medium',
-    affectedControls: 3,
-    scoreImprovement: 5,
-    category: 'Regulatory Requirement',
-    priority: 5,
-    steps: [
-      'Review processing activities identified as high-risk',
-      'Conduct DPIA using organization template',
-      'Document necessity and proportionality analysis',
-      'Identify and implement risk mitigation measures',
-      'Consult DPO and document recommendations',
-    ],
-  },
-  {
-    id: 'REC-006',
-    title: 'Update SDLC Evidence for PCI DSS',
-    description: 'Software development lifecycle evidence does not match current practices. Update to reflect the Agile/DevOps methodology currently in use.',
-    impact: 'medium',
-    effort: 'low',
-    affectedControls: 6,
-    scoreImprovement: 4,
-    category: 'Evidence Mismatch',
-    priority: 6,
-    steps: [
-      'Document current SDLC process (branching strategy, code review, testing)',
-      'Export branch protection rules from GitHub/GitLab',
-      'Capture SAST/DAST scan configurations and recent results',
-      'Update SDLC policy to reflect current practices',
-      'Obtain management approval for updated policy',
-    ],
-  },
-  {
-    id: 'REC-007',
-    title: 'Implement Evidence Freshness Monitoring',
-    description: 'Set up automated alerts when evidence items approach their expiration or recommended refresh dates. Prevents evidence from becoming stale.',
-    impact: 'medium',
-    effort: 'low',
-    affectedControls: 24,
-    scoreImprovement: 7,
-    category: 'Process Improvement',
-    priority: 7,
-    steps: [
-      'Define evidence freshness thresholds by evidence type',
-      'Configure automated expiration alerts (30, 14, 7 days before)',
-      'Set up weekly evidence freshness digest for control owners',
-      'Create evidence renewal workflow with approval tracking',
-    ],
-  },
-];
 
 // ─── Helper Components ──────────────────────────────────────────────────────────
 
@@ -601,16 +197,52 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
   const [expandedRec, setExpandedRec] = useState<string | null>(null);
   const [selectedFramework, setSelectedFramework] = useState<string | null>(null);
 
-  // Calculated stats
-  const totalControls = FRAMEWORK_READINESS.reduce((sum, fw) => sum + fw.totalControls, 0);
-  const totalMissing = FRAMEWORK_READINESS.reduce((sum, fw) => sum + fw.evidenceMissing, 0);
-  const totalStale = FRAMEWORK_READINESS.reduce((sum, fw) => sum + fw.evidenceStale, 0);
-  const totalUnverified = FRAMEWORK_READINESS.reduce((sum, fw) => sum + fw.evidenceUnverified, 0);
-  const overallScore = Math.round(FRAMEWORK_READINESS.reduce((sum, fw) => sum + fw.overallScore, 0) / FRAMEWORK_READINESS.length);
-  const totalGaps = EVIDENCE_GAPS.length;
-  const criticalGaps = EVIDENCE_GAPS.filter(g => g.severity === 'critical').length;
+  // Live API-backed data
+  const [frameworkReadiness, setFrameworkReadiness] = useState<FrameworkReadiness[]>([]);
+  const [evidenceGaps, setEvidenceGaps] = useState<EvidenceGap[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [dataLoading, setDataLoading] = useState<boolean>(true);
+  const [dataError, setDataError] = useState<string | null>(null);
 
-  const filteredGaps = EVIDENCE_GAPS.filter(gap => {
+  const loadData = useCallback(async () => {
+    setDataLoading(true);
+    setDataError(null);
+    try {
+      const [completeness, gapsRes, recsRes] = await Promise.all([
+        api.evidenceCollection.getCompleteness(),
+        api.evidenceCollection.getGaps(),
+        api.evidenceCollection.getRecommendations(),
+      ]);
+      setFrameworkReadiness((completeness?.readiness as FrameworkReadiness[]) || []);
+      setEvidenceGaps((gapsRes?.gaps as EvidenceGap[]) || []);
+      setRecommendations((recsRes?.recommendations as Recommendation[]) || []);
+    } catch (err: any) {
+      logger.error('Failed to load evidence completeness data:', err);
+      setDataError(err?.message || 'Failed to load evidence data.');
+      setFrameworkReadiness([]);
+      setEvidenceGaps([]);
+      setRecommendations([]);
+    } finally {
+      setDataLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  // Calculated stats
+  const totalControls = frameworkReadiness.reduce((sum, fw) => sum + fw.totalControls, 0);
+  const totalMissing = frameworkReadiness.reduce((sum, fw) => sum + fw.evidenceMissing, 0);
+  const totalStale = frameworkReadiness.reduce((sum, fw) => sum + fw.evidenceStale, 0);
+  const totalUnverified = frameworkReadiness.reduce((sum, fw) => sum + fw.evidenceUnverified, 0);
+  const overallScore = frameworkReadiness.length > 0
+    ? Math.round(frameworkReadiness.reduce((sum, fw) => sum + fw.overallScore, 0) / frameworkReadiness.length)
+    : 0;
+  const totalGaps = evidenceGaps.length;
+  const criticalGaps = evidenceGaps.filter(g => g.severity === 'critical').length;
+
+  const filteredGaps = evidenceGaps.filter(gap => {
     if (searchQuery && !gap.controlName.toLowerCase().includes(searchQuery.toLowerCase()) && !gap.controlId.toLowerCase().includes(searchQuery.toLowerCase()) && !gap.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (gapTypeFilter !== 'all' && gap.gapType !== gapTypeFilter) return false;
     if (severityFilter !== 'all' && gap.severity !== severityFilter) return false;
@@ -662,9 +294,12 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
     setAiError(null);
 
     try {
+      // Refresh live evidence data first
+      await loadData();
+
       // Build controls array from framework readiness data for AI analysis
-      const controls = FRAMEWORK_READINESS.flatMap(fw =>
-        EVIDENCE_GAPS
+      const controls = frameworkReadiness.flatMap(fw =>
+        evidenceGaps
           .filter(g => g.framework === fw.name)
           .map(g => ({
             controlId: g.controlId,
@@ -685,20 +320,20 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
 
       setScanComplete(true);
     } catch (error: any) {
-      console.error('Evidence scan error:', error);
-      setAiError(error?.message || 'Failed to run AI evidence scan. Showing cached results.');
-      setScanComplete(true); // Still show cached data
+      logger.error('Evidence scan error:', error);
+      setAiError(error?.message || 'Failed to run AI evidence scan.');
+      setScanComplete(true);
     } finally {
       setIsScanning(false);
     }
-  }, []);
+  }, [loadData, frameworkReadiness, evidenceGaps]);
 
   const handleExport = useCallback(() => {
     const exportData = {
       overallScore,
-      frameworkReadiness: FRAMEWORK_READINESS,
-      evidenceGaps: EVIDENCE_GAPS,
-      recommendations: RECOMMENDATIONS,
+      frameworkReadiness: frameworkReadiness,
+      evidenceGaps: evidenceGaps,
+      recommendations: recommendations,
       exportedAt: new Date().toISOString(),
       totalControls,
       totalGaps,
@@ -715,9 +350,9 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
 
   const tabs = [
     { key: 'overview', label: 'Overview', icon: <PieChart size={16} /> },
-    { key: 'frameworks', label: 'Framework Readiness', icon: <Shield size={16} />, count: FRAMEWORK_READINESS.length },
+    { key: 'frameworks', label: 'Framework Readiness', icon: <Shield size={16} />, count: frameworkReadiness.length },
     { key: 'gaps', label: 'Evidence Gaps', icon: <AlertCircle size={16} />, count: totalGaps },
-    { key: 'recommendations', label: 'Recommendations', icon: <Lightbulb size={16} />, count: RECOMMENDATIONS.length },
+    { key: 'recommendations', label: 'Recommendations', icon: <Lightbulb size={16} />, count: recommendations.length },
   ] as const;
 
   return (
@@ -770,6 +405,27 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
         </div>
       </div>
 
+      {/* Data load status */}
+      {dataLoading && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          <Loader2 size={16} className="animate-spin" />
+          Loading evidence completeness data...
+        </div>
+      )}
+      {dataError && !dataLoading && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          <AlertCircle size={16} />
+          {dataError}
+          <button onClick={() => void loadData()} className="ml-auto text-xs underline">Retry</button>
+        </div>
+      )}
+      {!dataLoading && !dataError && frameworkReadiness.length === 0 && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+          <Info size={16} />
+          No frameworks are configured for your organization yet. Add a compliance framework to see evidence completeness.
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center gap-3">
@@ -785,7 +441,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
             <ListChecks size={16} className="text-brand-500" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{totalControls}</p>
-          <p className="text-xs text-gray-400">across {FRAMEWORK_READINESS.length} frameworks</p>
+          <p className="text-xs text-gray-400">across {frameworkReadiness.length} frameworks</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-1">
@@ -869,7 +525,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Framework Readiness Summary</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {FRAMEWORK_READINESS.map(fw => (
+                {frameworkReadiness.map(fw => (
                   <button
                     key={fw.id}
                     onClick={() => { setActiveTab('frameworks'); setSelectedFramework(fw.id); }}
@@ -903,25 +559,25 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
               <div className="grid grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                   <FileCheck size={24} className="text-green-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-green-700">{FRAMEWORK_READINESS.reduce((s, f) => s + f.evidenceComplete, 0)}</p>
+                  <p className="text-2xl font-bold text-green-700">{frameworkReadiness.reduce((s, f) => s + f.evidenceComplete, 0)}</p>
                   <p className="text-xs text-green-600 font-medium">Complete</p>
                   <p className="text-xs text-gray-500 mt-0.5">Evidence exists for the control</p>
                 </div>
                 <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <Clock size={24} className="text-blue-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-blue-700">{FRAMEWORK_READINESS.reduce((s, f) => s + f.evidenceCurrent, 0)}</p>
+                  <p className="text-2xl font-bold text-blue-700">{frameworkReadiness.reduce((s, f) => s + f.evidenceCurrent, 0)}</p>
                   <p className="text-xs text-blue-600 font-medium">Current</p>
                   <p className="text-xs text-gray-500 mt-0.5">Evidence is within freshness window</p>
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
                   <CheckSquare size={24} className="text-purple-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-purple-700">{FRAMEWORK_READINESS.reduce((s, f) => s + f.evidenceVerified, 0)}</p>
+                  <p className="text-2xl font-bold text-purple-700">{frameworkReadiness.reduce((s, f) => s + f.evidenceVerified, 0)}</p>
                   <p className="text-xs text-purple-600 font-medium">Verified</p>
                   <p className="text-xs text-gray-500 mt-0.5">Evidence reviewed and approved</p>
                 </div>
                 <div className="text-center p-4 bg-teal-50 rounded-lg border border-teal-200">
                   <Target size={24} className="text-teal-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-teal-700">{FRAMEWORK_READINESS.reduce((s, f) => s + f.evidenceMatched, 0)}</p>
+                  <p className="text-2xl font-bold text-teal-700">{frameworkReadiness.reduce((s, f) => s + f.evidenceMatched, 0)}</p>
                   <p className="text-xs text-teal-600 font-medium">Matched</p>
                   <p className="text-xs text-gray-500 mt-0.5">Evidence matches control requirements</p>
                 </div>
@@ -963,7 +619,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
         {/* ─── Framework Readiness Tab ──────────────────────────── */}
         {activeTab === 'frameworks' && (
           <div className="p-4 space-y-4">
-            {FRAMEWORK_READINESS.map(fw => (
+            {frameworkReadiness.map(fw => (
               <div
                 key={fw.id}
                 className={`bg-white border rounded-xl overflow-hidden transition-all ${
@@ -1037,7 +693,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                     <div className="mt-4 pt-3 border-t border-gray-100">
                       <h5 className="text-xs font-semibold text-gray-500 uppercase mb-2">Evidence Gaps for {fw.name}</h5>
                       <div className="space-y-2">
-                        {EVIDENCE_GAPS.filter(g => g.framework === fw.name).map(gap => (
+                        {evidenceGaps.filter(g => g.framework === fw.name).map(gap => (
                           <div key={gap.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
                             <div className="flex items-center gap-2">
                               <SeverityBadge severity={gap.severity} />
@@ -1052,7 +708,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                             </button>
                           </div>
                         ))}
-                        {EVIDENCE_GAPS.filter(g => g.framework === fw.name).length === 0 && (
+                        {evidenceGaps.filter(g => g.framework === fw.name).length === 0 && (
                           <p className="text-xs text-gray-500 italic">No specific gaps identified for this framework.</p>
                         )}
                       </div>
@@ -1109,7 +765,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                   </select>
                   <select value={frameworkFilter} onChange={e => setFrameworkFilter(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
                     <option value="all">All Frameworks</option>
-                    {FRAMEWORK_READINESS.map(fw => (
+                    {frameworkReadiness.map(fw => (
                       <option key={fw.id} value={fw.name}>{fw.name}</option>
                     ))}
                   </select>
@@ -1258,7 +914,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
               </h4>
             </div>
 
-            {RECOMMENDATIONS.sort((a, b) => a.priority - b.priority).map(rec => (
+            {recommendations.sort((a, b) => a.priority - b.priority).map(rec => (
               <div key={rec.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-brand-200 transition-colors">
                 <button
                   onClick={() => setExpandedRec(expandedRec === rec.id ? null : rec.id)}
@@ -1360,7 +1016,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <Info size={14} />
-          <span>Last full scan: {new Date().toLocaleString()} | {totalControls} controls across {FRAMEWORK_READINESS.length} frameworks analyzed</span>
+          <span>Last full scan: {new Date().toLocaleString()} | {totalControls} controls across {frameworkReadiness.length} frameworks analyzed</span>
         </div>
         <button
           onClick={handleScan}

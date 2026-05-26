@@ -1,4 +1,5 @@
 import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, SubscriptionDetails, UsageMetrics, Tier, TierComparison, UpgradePreview, Webhook, WebhookEvent, ApiKey, BillingCycle, OnboardingProgress, OnboardingChecklist } from '../types';
+import { logger } from '../utils/logger';
 
 // Backend API Configuration — ensure base always ends with /api so /auth/register etc. resolve correctly
 const rawBase = (import.meta as ImportMeta & { env: Record<string, string> }).env.VITE_API_URL || 'http://localhost:3001/api';
@@ -129,7 +130,7 @@ async function fetchAPI<T>(
               }
             }
           } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
+            logger.error('Token refresh failed:', refreshError);
           }
         }
 
@@ -153,7 +154,7 @@ async function fetchAPI<T>(
       
       // Log detailed error for debugging
       if ((import.meta as ImportMeta & { env: { DEV: boolean } }).env.DEV) {
-        console.error('API Error:', {
+        logger.error('API Error:', {
           endpoint,
           status: response.status,
           statusText: response.statusText,
@@ -178,7 +179,7 @@ async function fetchAPI<T>(
 
     // Handle timeout/abort errors
     if (error.name === 'AbortError') {
-      console.error('Request timeout:', {
+      logger.error('Request timeout:', {
         endpoint,
         timeoutMs,
         url: `${API_BASE_URL}${endpoint}`,
@@ -188,7 +189,7 @@ async function fetchAPI<T>(
 
     // Handle network errors
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      console.error('Network error - Backend may be down:', {
+      logger.error('Network error - Backend may be down:', {
         endpoint,
         url: `${API_BASE_URL}${endpoint}`,
         apiBaseUrl: API_BASE_URL,
@@ -533,6 +534,10 @@ export const api = {
     },
 
     // Control Mappings
+    listControlMappings: async () => {
+      const res = await fetchAPI<any>('/control-mappings');
+      return Array.isArray(res) ? res : res?.mappings ?? [];
+    },
     getControlMappings: async (controlId: string) => {
       return fetchAPI(`/control-mappings/control/${controlId}`);
     },
@@ -1096,6 +1101,10 @@ export const api = {
     },
     getDashboard: async () => {
       return fetchAPI<any>('/vendors/dashboard');
+    },
+    getAssessmentQueue: async () => {
+      const res = await fetchAPI<any>('/vendors/assessments/queue');
+      return Array.isArray(res) ? res : res?.queue ?? [];
     },
   },
 
@@ -3028,6 +3037,13 @@ export const api = {
     addImpact: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/regulatory-changes/${encodeURIComponent(id)}/impacts`, { method: 'POST', body: JSON.stringify(data) }),
     updateImpact: async (id: string, impactId: string, data: Record<string, any>) => fetchAPI<any>(`/regulatory-changes/${encodeURIComponent(id)}/impacts/${encodeURIComponent(impactId)}`, { method: 'PATCH', body: JSON.stringify(data) }),
     getStats: async () => fetchAPI<any>('/regulatory-changes/stats'),
+    getDashboardChanges: async () => fetchAPI<{ changes: any[] }>('/regulatory-changes/dashboard/changes'),
+    getRemediationTasks: async () => fetchAPI<{ tasks: any[] }>('/regulatory-changes/dashboard/remediation-tasks'),
+    getImpactItems: async () => fetchAPI<{ items: any[] }>('/regulatory-changes/dashboard/impact-items'),
+    getAuditLog: async (since?: string) => {
+      const q = since ? '?since=' + encodeURIComponent(since) : '';
+      return fetchAPI<{ entries: any[] }>(`/regulatory-changes/dashboard/audit-log${q}`);
+    },
   },
 
   // --- Evidence Auto-Collection ---
@@ -3042,6 +3058,12 @@ export const api = {
     delete: async (id: string) => fetchAPI<any>(`/evidence-collection/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     trigger: async (id: string) => fetchAPI<any>(`/evidence-collection/${encodeURIComponent(id)}/trigger`, { method: 'POST' }),
     getStatus: async () => fetchAPI<any>('/evidence-collection/status'),
+    getCompleteness: async () => fetchAPI<{ readiness: any[] }>('/evidence-collection/completeness'),
+    getGaps: async (frameworkId?: string) => {
+      const q = frameworkId ? '?frameworkId=' + encodeURIComponent(frameworkId) : '';
+      return fetchAPI<{ gaps: any[] }>(`/evidence-collection/gaps${q}`);
+    },
+    getRecommendations: async () => fetchAPI<{ recommendations: any[] }>('/evidence-collection/recommendations'),
   },
 
   // --- Audit Preparation ---

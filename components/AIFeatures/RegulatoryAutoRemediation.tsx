@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -106,336 +107,8 @@ interface AuditLogEntry {
   type: 'detection' | 'analysis' | 'remediation' | 'notification' | 'completion';
 }
 
-// ─── Demo Data ──────────────────────────────────────────────────────────────────
+// Static demo arrays removed; data is now fetched from the backend
 
-const REGULATORY_CHANGES: RegulatoryChange[] = [
-  {
-    id: 'RC-2026-001',
-    title: 'EU AI Act - Article 6 High-Risk AI Classification Update',
-    source: 'European Commission',
-    publishDate: '2026-02-10',
-    effectiveDate: '2026-08-01',
-    jurisdiction: 'European Union',
-    category: 'AI Regulation',
-    severity: 'critical',
-    status: 'remediation',
-    summary: 'Updated classification criteria for high-risk AI systems under Annex III. New requirements for conformity assessments, technical documentation, and transparency obligations for AI systems used in critical infrastructure, education, and employment decisions.',
-    affectedFrameworks: ['EU AI Act', 'ISO 27001', 'SOC 2'],
-    affectedControls: 18,
-    affectedPolicies: 5,
-    affectedProcedures: 8,
-    complianceImpact: { before: 82, after: 71 },
-    assignedTo: 'Sarah Chen',
-    rifScore: 94,
-  },
-  {
-    id: 'RC-2026-002',
-    title: 'NIST SP 800-53 Rev 6 Draft - Enhanced Supply Chain Controls',
-    source: 'NIST',
-    publishDate: '2026-01-28',
-    effectiveDate: '2026-06-15',
-    jurisdiction: 'United States',
-    category: 'Security Controls',
-    severity: 'high',
-    status: 'in-review',
-    summary: 'New supply chain risk management controls (SR-13 through SR-18) requiring enhanced vendor assessment, software bill of materials (SBOM) management, and continuous monitoring of third-party components.',
-    affectedFrameworks: ['NIST 800-53', 'SOC 2', 'FedRAMP'],
-    affectedControls: 12,
-    affectedPolicies: 3,
-    affectedProcedures: 6,
-    complianceImpact: { before: 78, after: 68 },
-    assignedTo: 'Mike Rodriguez',
-    rifScore: 87,
-  },
-  {
-    id: 'RC-2026-003',
-    title: 'GDPR - Updated Data Transfer Mechanism Requirements',
-    source: 'European Data Protection Board',
-    publishDate: '2026-02-05',
-    effectiveDate: '2026-05-01',
-    jurisdiction: 'European Union',
-    category: 'Data Protection',
-    severity: 'high',
-    status: 'pending',
-    summary: 'Revised guidelines on international data transfers following the adequacy framework review. New requirements for Transfer Impact Assessments (TIAs) and supplementary measures for transfers to non-adequate countries.',
-    affectedFrameworks: ['GDPR', 'ISO 27701'],
-    affectedControls: 8,
-    affectedPolicies: 4,
-    affectedProcedures: 5,
-    complianceImpact: { before: 85, after: 76 },
-    rifScore: 82,
-  },
-  {
-    id: 'RC-2026-004',
-    title: 'SOC 2 TSC 2025 - Updated Availability Criteria',
-    source: 'AICPA',
-    publishDate: '2026-01-15',
-    effectiveDate: '2026-04-01',
-    jurisdiction: 'United States',
-    category: 'Audit Standards',
-    severity: 'medium',
-    status: 'completed',
-    summary: 'Revised availability trust service criteria with enhanced requirements for cloud service resilience, business continuity testing frequency, and disaster recovery documentation.',
-    affectedFrameworks: ['SOC 2'],
-    affectedControls: 6,
-    affectedPolicies: 2,
-    affectedProcedures: 4,
-    complianceImpact: { before: 88, after: 84 },
-    assignedTo: 'Alex Kim',
-    rifScore: 65,
-  },
-  {
-    id: 'RC-2026-005',
-    title: 'HIPAA - Cybersecurity Performance Goals (CPGs)',
-    source: 'HHS Office for Civil Rights',
-    publishDate: '2026-02-12',
-    effectiveDate: '2026-09-01',
-    jurisdiction: 'United States',
-    category: 'Healthcare Security',
-    severity: 'critical',
-    status: 'pending',
-    summary: 'Mandatory cybersecurity performance goals for HIPAA-covered entities. Includes requirements for multifactor authentication, network segmentation, and enhanced audit logging for ePHI access.',
-    affectedFrameworks: ['HIPAA', 'NIST 800-53'],
-    affectedControls: 15,
-    affectedPolicies: 6,
-    affectedProcedures: 9,
-    complianceImpact: { before: 74, after: 62 },
-    rifScore: 91,
-  },
-  {
-    id: 'RC-2026-006',
-    title: 'PCI DSS v4.1 - Enhanced Authentication Requirements',
-    source: 'PCI Security Standards Council',
-    publishDate: '2026-01-20',
-    effectiveDate: '2026-07-01',
-    jurisdiction: 'Global',
-    category: 'Payment Security',
-    severity: 'medium',
-    status: 'remediation',
-    summary: 'Updated requirements for multi-factor authentication across all access to cardholder data environments, including phishing-resistant authentication methods and adaptive authentication risk scoring.',
-    affectedFrameworks: ['PCI DSS'],
-    affectedControls: 9,
-    affectedPolicies: 2,
-    affectedProcedures: 5,
-    complianceImpact: { before: 80, after: 74 },
-    assignedTo: 'Lisa Park',
-    rifScore: 72,
-  },
-];
-
-const REMEDIATION_TASKS: RemediationTask[] = [
-  {
-    id: 'RT-001',
-    changeId: 'RC-2026-001',
-    changeName: 'EU AI Act Update',
-    title: 'Update AI System Risk Classification Matrix',
-    description: 'Revise the AI system inventory to classify all systems per the updated Annex III criteria. Document conformity assessment requirements for newly classified high-risk systems.',
-    type: 'control-update',
-    priority: 'critical',
-    status: 'in-progress',
-    assignee: 'Sarah Chen',
-    dueDate: '2026-03-15',
-    estimatedEffort: '16 hours',
-    affectedItem: 'AI-GOV-001: AI System Classification',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-002',
-    changeId: 'RC-2026-001',
-    changeName: 'EU AI Act Update',
-    title: 'Develop Conformity Assessment Procedures',
-    description: 'Create new conformity assessment procedures for high-risk AI systems including technical documentation requirements, quality management system updates, and post-market monitoring plans.',
-    type: 'procedure-change',
-    priority: 'critical',
-    status: 'pending',
-    assignee: 'Sarah Chen',
-    dueDate: '2026-04-01',
-    estimatedEffort: '24 hours',
-    affectedItem: 'AI-GOV-003: Conformity Assessment',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-003',
-    changeId: 'RC-2026-001',
-    changeName: 'EU AI Act Update',
-    title: 'Update Transparency Obligation Documentation',
-    description: 'Revise transparency documentation for AI systems interacting with natural persons. Update user notification mechanisms and technical documentation for model explainability.',
-    type: 'policy-revision',
-    priority: 'high',
-    status: 'pending',
-    assignee: 'James Wilson',
-    dueDate: '2026-03-30',
-    estimatedEffort: '8 hours',
-    affectedItem: 'AI-TRANS-002: Transparency Obligations',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-004',
-    changeId: 'RC-2026-001',
-    changeName: 'EU AI Act Update',
-    title: 'Conduct AI Team Training on New Classifications',
-    description: 'Develop and deliver training materials covering updated high-risk classifications, new conformity requirements, and transparency obligations under the amended EU AI Act.',
-    type: 'training',
-    priority: 'medium',
-    status: 'pending',
-    assignee: 'HR Department',
-    dueDate: '2026-04-15',
-    estimatedEffort: '12 hours',
-    affectedItem: 'Training: EU AI Act Compliance',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-005',
-    changeId: 'RC-2026-002',
-    changeName: 'NIST SP 800-53 Rev 6',
-    title: 'Implement SBOM Management Process',
-    description: 'Establish a software bill of materials (SBOM) management process for all production systems. Include automated SBOM generation, vulnerability monitoring, and supplier notification workflows.',
-    type: 'procedure-change',
-    priority: 'high',
-    status: 'in-progress',
-    assignee: 'Mike Rodriguez',
-    dueDate: '2026-03-20',
-    estimatedEffort: '32 hours',
-    affectedItem: 'SR-14: SBOM Management',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-006',
-    changeId: 'RC-2026-002',
-    changeName: 'NIST SP 800-53 Rev 6',
-    title: 'Update Vendor Assessment Questionnaire',
-    description: 'Add new supply chain security questions to the vendor risk assessment questionnaire covering SBOM disclosure, incident notification SLAs, and fourth-party risk management practices.',
-    type: 'control-update',
-    priority: 'high',
-    status: 'pending',
-    assignee: 'Mike Rodriguez',
-    dueDate: '2026-03-25',
-    estimatedEffort: '8 hours',
-    affectedItem: 'SR-15: Vendor Supply Chain Assessment',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-007',
-    changeId: 'RC-2026-002',
-    changeName: 'NIST SP 800-53 Rev 6',
-    title: 'Deploy Continuous Component Monitoring',
-    description: 'Implement automated monitoring for third-party software components including CVE tracking, license compliance, and end-of-life detection for all dependencies.',
-    type: 'control-update',
-    priority: 'medium',
-    status: 'pending',
-    assignee: 'DevOps Team',
-    dueDate: '2026-04-10',
-    estimatedEffort: '40 hours',
-    affectedItem: 'SR-16: Continuous Component Monitoring',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-008',
-    changeId: 'RC-2026-006',
-    changeName: 'PCI DSS v4.1',
-    title: 'Implement Phishing-Resistant MFA for CDE Access',
-    description: 'Deploy FIDO2/WebAuthn-based authentication for all users accessing the cardholder data environment. Migrate from SMS-based OTP to phishing-resistant methods.',
-    type: 'control-update',
-    priority: 'high',
-    status: 'in-progress',
-    assignee: 'Lisa Park',
-    dueDate: '2026-04-01',
-    estimatedEffort: '48 hours',
-    affectedItem: 'PCI-AUTH-001: MFA for CDE',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-009',
-    changeId: 'RC-2026-006',
-    changeName: 'PCI DSS v4.1',
-    title: 'Configure Adaptive Authentication Risk Scoring',
-    description: 'Implement risk-based authentication scoring that evaluates device trust, geographic anomalies, and behavioral biometrics before granting access to payment processing systems.',
-    type: 'procedure-change',
-    priority: 'medium',
-    status: 'pending',
-    assignee: 'Lisa Park',
-    dueDate: '2026-04-15',
-    estimatedEffort: '24 hours',
-    affectedItem: 'PCI-AUTH-003: Adaptive Authentication',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-010',
-    changeId: 'RC-2026-003',
-    changeName: 'GDPR Transfer Updates',
-    title: 'Conduct Transfer Impact Assessments',
-    description: 'Perform Transfer Impact Assessments (TIAs) for all international data transfers to non-adequate countries. Document supplementary measures and legal basis for each transfer.',
-    type: 'evidence-collection',
-    priority: 'high',
-    status: 'pending',
-    assignee: 'DPO Office',
-    dueDate: '2026-04-01',
-    estimatedEffort: '20 hours',
-    affectedItem: 'GDPR-TRANSFER-001: International Transfers',
-    aiGenerated: true,
-  },
-  {
-    id: 'RT-011',
-    changeId: 'RC-2026-004',
-    changeName: 'SOC 2 TSC 2025',
-    title: 'Update BCP Testing Schedule',
-    description: 'Revise business continuity plan testing frequency from annual to semi-annual. Document testing results and improvement actions per updated availability criteria.',
-    type: 'procedure-change',
-    priority: 'medium',
-    status: 'completed',
-    assignee: 'Alex Kim',
-    dueDate: '2026-02-28',
-    estimatedEffort: '12 hours',
-    affectedItem: 'A1.2: BCP Testing',
-    aiGenerated: true,
-    completedDate: '2026-02-14',
-  },
-  {
-    id: 'RT-012',
-    changeId: 'RC-2026-005',
-    changeName: 'HIPAA CPGs',
-    title: 'Notify Control Owners of New HIPAA Requirements',
-    description: 'Send notifications to all HIPAA control owners regarding the new Cybersecurity Performance Goals. Include summary of changes, timeline, and required actions.',
-    type: 'notification',
-    priority: 'high',
-    status: 'pending',
-    assignee: 'Compliance Team',
-    dueDate: '2026-03-01',
-    estimatedEffort: '4 hours',
-    affectedItem: 'Notification: HIPAA CPG Requirements',
-    aiGenerated: true,
-  },
-];
-
-const IMPACT_ITEMS: ImpactItem[] = [
-  { id: 'IMP-001', name: 'AI-GOV-001: AI System Classification', type: 'control', framework: 'EU AI Act', currentStatus: 'Implemented', impactLevel: 'direct', requiredAction: 'Update classification criteria per Annex III changes' },
-  { id: 'IMP-002', name: 'AI-GOV-003: Conformity Assessment', type: 'control', framework: 'EU AI Act', currentStatus: 'Partially Implemented', impactLevel: 'direct', requiredAction: 'Develop new conformity assessment procedures' },
-  { id: 'IMP-003', name: 'AI-TRANS-002: Transparency Policy', type: 'policy', framework: 'EU AI Act', currentStatus: 'Approved', impactLevel: 'direct', requiredAction: 'Revise transparency obligations documentation' },
-  { id: 'IMP-004', name: 'AI-MON-001: Post-Market Monitoring', type: 'procedure', framework: 'EU AI Act', currentStatus: 'Draft', impactLevel: 'direct', requiredAction: 'Implement post-market monitoring system' },
-  { id: 'IMP-005', name: 'SR-14: Software Supply Chain', type: 'control', framework: 'NIST 800-53', currentStatus: 'Not Implemented', impactLevel: 'direct', requiredAction: 'New control - implement SBOM management' },
-  { id: 'IMP-006', name: 'SR-15: Vendor Assessment', type: 'control', framework: 'NIST 800-53', currentStatus: 'Implemented', impactLevel: 'direct', requiredAction: 'Update assessment questionnaire with new criteria' },
-  { id: 'IMP-007', name: 'A.15.1: Supplier Relationships', type: 'control', framework: 'ISO 27001', currentStatus: 'Implemented', impactLevel: 'indirect', requiredAction: 'Review alignment with updated supply chain controls' },
-  { id: 'IMP-008', name: 'CC6.1: Logical Access', type: 'control', framework: 'SOC 2', currentStatus: 'Implemented', impactLevel: 'indirect', requiredAction: 'Verify MFA coverage includes new requirements' },
-  { id: 'IMP-009', name: 'Data Transfer Policy', type: 'policy', framework: 'GDPR', currentStatus: 'Approved', impactLevel: 'direct', requiredAction: 'Add TIA requirements and supplementary measures' },
-  { id: 'IMP-010', name: 'Incident Response Plan', type: 'procedure', framework: 'HIPAA', currentStatus: 'Approved', impactLevel: 'indirect', requiredAction: 'Update to include CPG incident response metrics' },
-  { id: 'IMP-011', name: 'Access Control Policy', type: 'policy', framework: 'PCI DSS', currentStatus: 'Approved', impactLevel: 'direct', requiredAction: 'Update MFA requirements for phishing-resistant methods' },
-  { id: 'IMP-012', name: 'Network Segmentation Procedure', type: 'procedure', framework: 'HIPAA', currentStatus: 'Implemented', impactLevel: 'direct', requiredAction: 'Enhance segmentation per CPG requirements' },
-];
-
-const AUDIT_LOG: AuditLogEntry[] = [
-  { id: 'AL-001', timestamp: '2026-02-17T09:30:00Z', action: 'Regulatory change detected', actor: 'RIF Engine', details: 'EU AI Act Article 6 update detected from European Commission feed', changeId: 'RC-2026-001', type: 'detection' },
-  { id: 'AL-002', timestamp: '2026-02-17T09:31:00Z', action: 'Impact analysis started', actor: 'AI Analysis Engine', details: 'Automated impact analysis initiated for RC-2026-001. Scanning 4 frameworks, 156 controls.', changeId: 'RC-2026-001', type: 'analysis' },
-  { id: 'AL-003', timestamp: '2026-02-17T09:33:00Z', action: 'Impact analysis completed', actor: 'AI Analysis Engine', details: 'Found 18 affected controls, 5 policies, 8 procedures across EU AI Act, ISO 27001, SOC 2', changeId: 'RC-2026-001', type: 'analysis' },
-  { id: 'AL-004', timestamp: '2026-02-17T09:34:00Z', action: 'Remediation tasks generated', actor: 'AI Remediation Engine', details: '4 AI-generated remediation tasks created with priority assignments and timeline estimates', changeId: 'RC-2026-001', type: 'remediation' },
-  { id: 'AL-005', timestamp: '2026-02-17T09:35:00Z', action: 'Notification sent', actor: 'Notification Service', details: 'Alert sent to Sarah Chen (Control Owner), James Wilson (Policy Owner), Compliance Team', changeId: 'RC-2026-001', type: 'notification' },
-  { id: 'AL-006', timestamp: '2026-02-15T14:00:00Z', action: 'Remediation task completed', actor: 'Alex Kim', details: 'BCP Testing Schedule update completed. Evidence uploaded and verified.', changeId: 'RC-2026-004', type: 'completion' },
-  { id: 'AL-007', timestamp: '2026-02-12T10:15:00Z', action: 'Regulatory change detected', actor: 'RIF Engine', details: 'HIPAA Cybersecurity Performance Goals detected from HHS OCR feed', changeId: 'RC-2026-005', type: 'detection' },
-  { id: 'AL-008', timestamp: '2026-02-12T10:17:00Z', action: 'Impact analysis completed', actor: 'AI Analysis Engine', details: 'Found 15 affected controls, 6 policies, 9 procedures across HIPAA, NIST 800-53', changeId: 'RC-2026-005', type: 'analysis' },
-  { id: 'AL-009', timestamp: '2026-02-10T08:00:00Z', action: 'Regulatory change detected', actor: 'RIF Engine', details: 'GDPR data transfer mechanism updates detected from EDPB publications', changeId: 'RC-2026-003', type: 'detection' },
-  { id: 'AL-010', timestamp: '2026-02-05T11:30:00Z', action: 'Remediation started', actor: 'Lisa Park', details: 'Phishing-resistant MFA implementation started for PCI DSS v4.1 compliance', changeId: 'RC-2026-006', type: 'remediation' },
-  { id: 'AL-011', timestamp: '2026-01-28T09:00:00Z', action: 'Regulatory change detected', actor: 'RIF Engine', details: 'NIST SP 800-53 Rev 6 Draft published with enhanced supply chain controls', changeId: 'RC-2026-002', type: 'detection' },
-  { id: 'AL-012', timestamp: '2026-01-20T16:00:00Z', action: 'Impact analysis completed', actor: 'AI Analysis Engine', details: 'PCI DSS v4.1 analysis complete. 9 controls, 2 policies, 5 procedures affected.', changeId: 'RC-2026-006', type: 'analysis' },
-];
 
 // ─── Helper Components ──────────────────────────────────────────────────────────
 
@@ -568,6 +241,44 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
   const [reassigningTaskId, setReassigningTaskId] = useState<string | null>(null);
   const [reassignValue, setReassignValue] = useState('');
 
+  // Live API-backed dashboard data
+  const [regulatoryChanges, setRegulatoryChanges] = useState<RegulatoryChange[]>([]);
+  const [remediationTasks, setRemediationTasks] = useState<RemediationTask[]>([]);
+  const [impactItems, setImpactItems] = useState<ImpactItem[]>([]);
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  const [dataLoading, setDataLoading] = useState<boolean>(true);
+  const [dataError, setDataError] = useState<string | null>(null);
+
+  const loadDashboard = useCallback(async () => {
+    setDataLoading(true);
+    setDataError(null);
+    try {
+      const [chRes, tRes, iRes, lRes] = await Promise.all([
+        api.regulatoryChanges.getDashboardChanges(),
+        api.regulatoryChanges.getRemediationTasks(),
+        api.regulatoryChanges.getImpactItems(),
+        api.regulatoryChanges.getAuditLog(),
+      ]);
+      setRegulatoryChanges((chRes?.changes as RegulatoryChange[]) || []);
+      setRemediationTasks((tRes?.tasks as RemediationTask[]) || []);
+      setImpactItems((iRes?.items as ImpactItem[]) || []);
+      setAuditLog((lRes?.entries as AuditLogEntry[]) || []);
+    } catch (err: any) {
+      logger.error('Failed to load regulatory dashboard data:', err);
+      setDataError(err?.message || 'Failed to load regulatory data.');
+      setRegulatoryChanges([]);
+      setRemediationTasks([]);
+      setImpactItems([]);
+      setAuditLog([]);
+    } finally {
+      setDataLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
+
   // Helper to get effective task status (accounting for locally started tasks)
   const getEffectiveTaskStatus = (task: RemediationTask) => {
     if (startedTasks.has(task.id) && task.status === 'pending') return 'in-progress';
@@ -575,34 +286,34 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
   };
 
   // Summary stats
-  const pendingCount = REGULATORY_CHANGES.filter(c => c.status === 'pending').length;
-  const remediationCount = REGULATORY_CHANGES.filter(c => c.status === 'remediation' || c.status === 'in-review').length;
-  const completedCount = REGULATORY_CHANGES.filter(c => c.status === 'completed').length;
-  const totalTasks = REMEDIATION_TASKS.length;
-  const completedTasks = REMEDIATION_TASKS.filter(t => t.status === 'completed').length;
-  const criticalChanges = REGULATORY_CHANGES.filter(c => c.severity === 'critical' && c.status !== 'completed').length;
+  const pendingCount = regulatoryChanges.filter(c => c.status === 'pending').length;
+  const remediationCount = regulatoryChanges.filter(c => c.status === 'remediation' || c.status === 'in-review').length;
+  const completedCount = regulatoryChanges.filter(c => c.status === 'completed').length;
+  const totalTasks = remediationTasks.length;
+  const completedTasks = remediationTasks.filter(t => t.status === 'completed').length;
+  const criticalChanges = regulatoryChanges.filter(c => c.severity === 'critical' && c.status !== 'completed').length;
 
-  const filteredChanges = REGULATORY_CHANGES.filter(change => {
+  const filteredChanges = regulatoryChanges.filter(change => {
     if (searchQuery && !change.title.toLowerCase().includes(searchQuery.toLowerCase()) && !change.source.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (severityFilter !== 'all' && change.severity !== severityFilter) return false;
     if (statusFilter !== 'all' && change.status !== statusFilter) return false;
     return true;
   });
 
-  const filteredTasks = REMEDIATION_TASKS.filter(task => {
+  const filteredTasks = remediationTasks.filter(task => {
     if (selectedChange && task.changeId !== selectedChange) return false;
     if (taskStatusFilter !== 'all' && task.status !== taskStatusFilter) return false;
     if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
-  const filteredImpactItems = IMPACT_ITEMS.filter(item => {
+  const filteredImpactItems = impactItems.filter(item => {
     if (impactTypeFilter !== 'all' && item.type !== impactTypeFilter) return false;
     if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
-  const filteredLogs = AUDIT_LOG.filter(log => {
+  const filteredLogs = auditLog.filter(log => {
     if (logTypeFilter !== 'all' && log.type !== logTypeFilter) return false;
     if (selectedChange && log.changeId !== selectedChange) return false;
     return true;
@@ -616,8 +327,11 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
     setAiError(null);
 
     try {
+      // Refresh live regulatory dashboard data first
+      await loadDashboard();
+
       // Build gaps from current regulatory changes that need remediation
-      const gaps = REGULATORY_CHANGES
+      const gaps = regulatoryChanges
         .filter(c => c.status === 'pending' || c.status === 'in-review' || c.status === 'remediation')
         .map(c => ({
           controlId: c.id,
@@ -644,19 +358,19 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
         timeline: result.totalEstimatedTimeline || 'Unknown',
       });
     } catch (error: any) {
-      console.error('Auto-remediation analysis error:', error);
+      logger.error('Auto-remediation analysis error:', error);
       setAiError(error?.message || 'Failed to run AI analysis. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
-  }, []);
+  }, [loadDashboard, regulatoryChanges]);
 
   const handleExport = useCallback(() => {
     const exportData = {
-      regulatoryChanges: REGULATORY_CHANGES,
-      remediationTasks: REMEDIATION_TASKS,
-      impactItems: IMPACT_ITEMS,
-      auditLog: AUDIT_LOG,
+      regulatoryChanges: regulatoryChanges,
+      remediationTasks: remediationTasks,
+      impactItems: impactItems,
+      auditLog: auditLog,
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -671,8 +385,8 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
   const tabs = [
     { key: 'pending', label: 'Pending Changes', icon: <AlertCircle size={16} />, count: pendingCount },
     { key: 'remediation', label: 'Remediation Queue', icon: <Zap size={16} />, count: totalTasks - completedTasks },
-    { key: 'impact', label: 'Impact Analysis', icon: <GitBranch size={16} />, count: IMPACT_ITEMS.length },
-    { key: 'history', label: 'History', icon: <History size={16} />, count: AUDIT_LOG.length },
+    { key: 'impact', label: 'Impact Analysis', icon: <GitBranch size={16} />, count: impactItems.length },
+    { key: 'history', label: 'History', icon: <History size={16} />, count: auditLog.length },
   ] as const;
 
   return (
@@ -715,6 +429,27 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
           </button>
         </div>
       </div>
+
+      {/* Data load status */}
+      {dataLoading && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          <Loader2 size={16} className="animate-spin" />
+          Loading regulatory change data...
+        </div>
+      )}
+      {dataError && !dataLoading && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          <AlertCircle size={16} />
+          {dataError}
+          <button onClick={() => void loadDashboard()} className="ml-auto text-xs underline">Retry</button>
+        </div>
+      )}
+      {!dataLoading && !dataError && regulatoryChanges.length === 0 && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+          <Info size={16} />
+          No regulatory changes detected for your organization. Once the regulatory monitoring engine identifies a change, it will appear here.
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -847,7 +582,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                     className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="">All Changes</option>
-                    {REGULATORY_CHANGES.map(c => (
+                    {regulatoryChanges.map(c => (
                       <option key={c.id} value={c.id}>{c.id}: {c.title.substring(0, 40)}...</option>
                     ))}
                   </select>
@@ -995,7 +730,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
               <div className="flex items-center gap-2 mb-2 p-2 bg-brand-50 rounded-lg border border-brand-200">
                 <Filter size={14} className="text-brand-600" />
                 <span className="text-xs text-brand-700 font-medium">
-                  Filtered by: {REGULATORY_CHANGES.find(c => c.id === selectedChange)?.title.substring(0, 50)}...
+                  Filtered by: {regulatoryChanges.find(c => c.id === selectedChange)?.title.substring(0, 50)}...
                 </span>
                 <button onClick={() => setSelectedChange(null)} className="ml-auto text-brand-600 hover:text-brand-700">
                   <XCircle size={14} />
@@ -1194,7 +929,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                 <div className="text-center">
                   <div className="w-20 h-20 mx-auto rounded-full bg-red-100 border-4 border-red-300 flex items-center justify-center mb-2">
                     <div>
-                      <p className="text-xl font-bold text-red-700">{IMPACT_ITEMS.filter(i => i.impactLevel === 'direct').length}</p>
+                      <p className="text-xl font-bold text-red-700">{impactItems.filter(i => i.impactLevel === 'direct').length}</p>
                       <p className="text-xs text-red-600 -mt-0.5">Direct</p>
                     </div>
                   </div>
@@ -1203,7 +938,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                 <div className="text-center">
                   <div className="w-20 h-20 mx-auto rounded-full bg-orange-100 border-4 border-orange-300 flex items-center justify-center mb-2">
                     <div>
-                      <p className="text-xl font-bold text-orange-700">{IMPACT_ITEMS.filter(i => i.impactLevel === 'indirect').length}</p>
+                      <p className="text-xl font-bold text-orange-700">{impactItems.filter(i => i.impactLevel === 'indirect').length}</p>
                       <p className="text-xs text-orange-600 -mt-0.5">Indirect</p>
                     </div>
                   </div>
@@ -1212,7 +947,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                 <div className="text-center">
                   <div className="w-20 h-20 mx-auto rounded-full bg-yellow-100 border-4 border-yellow-300 flex items-center justify-center mb-2">
                     <div>
-                      <p className="text-xl font-bold text-yellow-700">{IMPACT_ITEMS.filter(i => i.impactLevel === 'minimal').length}</p>
+                      <p className="text-xl font-bold text-yellow-700">{impactItems.filter(i => i.impactLevel === 'minimal').length}</p>
                       <p className="text-xs text-yellow-600 -mt-0.5">Minimal</p>
                     </div>
                   </div>
@@ -1228,7 +963,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                 Compliance Score Projections (Before/After Remediation)
               </h4>
               <div className="space-y-3">
-                {REGULATORY_CHANGES.filter(c => c.status !== 'completed').map(change => (
+                {regulatoryChanges.filter(c => c.status !== 'completed').map(change => (
                   <div key={change.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex-1 min-w-0 mr-4">
                       <p className="text-sm font-medium text-gray-900 truncate">{change.title.substring(0, 50)}...</p>

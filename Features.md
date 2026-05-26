@@ -1,14 +1,54 @@
 # ComplyEasy AI - Complete Feature List
 
-**Last Updated:** May 17, 2026
-**Version:** 3.2.0 Enterprise Edition (Audit-Aligned)
+**Last Updated:** May 22, 2026
+**Version:** 3.3.0 Enterprise Edition (Framework Expansion)
 **Total Features:** 552+ Production-Ready Features
+**Framework Templates:** 158 (up from 146)
+
+---
+
+## 🆕 Recent Updates (2026-05-22) — Framework Expansion v3.3.0
+
+### Compliance framework catalog expanded from 146 → 158 templates
+- **SOC 3 rewritten** from 4 generic stubs to **64 controls** covering the full AICPA 2017 Trust Services Criteria (with 2022 revisions): CC1–CC9 Common Criteria, Availability (A1), Processing Integrity (PI1), Confidentiality (C1), Privacy (P1–P8), plus 3 SOC 3-specific reporting controls (engagement, AICPA seal, management assertion).
+- **ISO/IEC 42001:2023 rewritten** from 7 stubs to **66 controls**: 38 Annex A reference controls across A.2–A.10, plus 22 management system clause requirements (Clauses 4–10 covering context, leadership, planning, support, operation, performance evaluation, improvement).
+- **12 NEW frameworks added** — full auditor-ready control catalogs (274 new controls):
+
+| Framework | Controls | Effective Date | Region |
+|---|---|---|---|
+| Texas Responsible AI Governance Act (TRAIGA) | 27 | Jan 1, 2026 | US-TX |
+| Colorado AI Act (SB 24-205) | 23 | Jun 30, 2026 | US-CO |
+| California AI Transparency Act (SB 942) | 23 | Jan 1, 2026 | US-CA |
+| South Korea AI Basic Act | 26 | Jan 2026 | KR |
+| ISO/IEC 23894:2023 (AI Risk Management) | 28 | Published 2023 | Global |
+| ISO/IEC 5338:2023 (AI System Life Cycle) | 30 | Published 2023 | Global |
+| ISO/IEC 38507:2022 (AI Governance) | 25 | Published 2022 | Global |
+| NIST AI 600-1 (Generative AI Profile) | 30 | Published Jul 2024 | US |
+| ISO 27001:2022/Amd 1:2024 (Climate Action) | 9 | Published Feb 2024 | Global |
+| NYDFS 23 NYCRR 500 Second Amendment | 16 | Nov 1, 2025 | US-NY |
+| CMMC 2.0 Final Rule (32 CFR Part 170) | 16 | Dec 2024 / Nov 2025-2028 phase-in | US |
+| HIPAA Security Rule 2024 NPRM | 21 | Proposed Dec 2024 | US |
+
+### Cross-mappings expanded
+- **379 total cross-mappings** in `controlCrosswalk.ts` (was ~265, added 114 new)
+- SOC 3 ↔ SOC 2/ISO 27001/HIPAA/GDPR/PCI DSS/NIST 800-53 (full 1:1 TSC parity with SOC 2)
+- ISO 42001 ↔ ISO 27001/SOC 2/EU AI Act/NIST 800-53 (AI governance overlap)
+
+### Database hardening
+- **Synced 4 missing Prisma tables** to Supabase prod with RLS + org-isolation policies: `KnowledgeGraphEntity`, `KnowledgeGraphRelationship`, `PrivacyBudgetLedger`, `SCAFFOLDControlVariate` (from v9 production substrate rewrite)
+- **Enabled RLS on 3 previously-exposed tables**: `GrcIncident`, `EvidenceAttestation` (contains evidence signatures!), `UserSigningKey` (contains encrypted private keys!) — closed multi-tenant exposure of cryptographic material
+- **All new/existing tables** now have 4-policy multi-tenant isolation via `public.get_current_organization_id()`
+
+### Infrastructure
+- Fixed `monitoring.ts:178` `MODULE_NOT_FOUND` for newrelic — now conditionalized on real license key (not placeholder) and demoted MODULE_NOT_FOUND to a warn with installation hint
+- Frontend ↔ backend framework name resolution fixed (`'AICPA SOC 3'` → `'SOC 3'` template alias)
+- 489 framework aliases now in `FRAMEWORK_ALIASES` (was ~414)
 
 ---
 
 ## 📊 Executive Summary
 
-ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform with **552+ features** across **33 major categories**. This document provides a complete inventory of all features, their implementation status, and cross-references with technical documentation.
+ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform with **552+ features** across **33 major categories** and **158 ready-to-deploy compliance framework templates**. This document provides a complete inventory of all features, their implementation status, and cross-references with technical documentation.
 
 **Audit alignment (v16):** The platform remains feature-complete at inventory level, but production hardening is still in progress for a small set of cross-cutting security/operational concerns (see "Implementation Status Summary" and "Audit-Tracked Gaps" below).
 
@@ -62,14 +102,16 @@ ComplyEasy AI is a comprehensive GRC (Governance, Risk & Compliance) platform wi
 **Frontend:** `components/Frameworks.tsx`, `components/FrameworkDetails.tsx`
 **Status:** ✅ 100% Implemented
 
-1. ✅ **Multi-Framework Support** - SOC 2, ISO 27001, HIPAA, GDPR, PCI-DSS, NIST, and custom frameworks
+1. ✅ **158 Pre-Built Framework Templates** (v3.3.0) — SOC 1/2/3, ISO 27001/27017/27018/27701/22301/42001/23894/5338/38507, HIPAA + HITECH + HIPAA NPRM, GDPR, PCI-DSS v4.0.1, NIST 800-53/171/172/207/218/CSF/AI RMF/AI 600-1, CCPA/CPRA, SOX + SOX ITGC, all 19+ US state privacy laws (VCDPA, CPA, CTDPA, UCPA, TDPSA, OCPA, MCDPA, DPDPA, ICDPA, NJDPA, INCDPA, TIPA, KCDPA, etc.), FedRAMP, CMMC + CMMC 2.0 Final Rule, FISMA, NYDFS + 2nd Amendment, GLBA, EU AI Act, DORA, NIS2, DMA, DSA, EU CRA, CSRD, ESPR, Data Act, DGA, ITAR, EAR, DFARS, COBIT, ITIL, CMMI, HITRUST, CIS Controls, CSA CCM/STAR, OWASP, MITRE ATT&CK/D3FEND, Texas TRAIGA, Colorado AI Act, California AI Transparency Act, Korea AI Basic Act, and 80+ more — see `server/src/data/frameworks/` for the full catalog
 2. ✅ **Framework CRUD Operations** - Create, read, update, delete frameworks
-3. ✅ **Framework Templates** - Pre-built templates for common frameworks
-4. ✅ **Unicode Framework Names** - Support for international characters
-5. ✅ **Framework Notes** - Add notes and comments to frameworks
-6. ✅ **Framework Export** - Export frameworks to PDF/CSV
-7. ✅ **Framework Import** - Import frameworks from external sources
-8. ✅ **Framework Versioning** - Track framework changes over time
+3. ✅ **Framework Templates with Auto-Population** - Pre-built templates auto-create 5-130 controls per framework on selection
+4. ✅ **Cross-Framework Mappings** — 379 official cross-mappings (AICPA, ISO, NIST sources) auto-populate "Also Satisfies" relationships when adding multiple frameworks
+5. ✅ **Unicode Framework Names** - Support for international characters
+6. ✅ **Framework Notes** - Add notes and comments to frameworks
+7. ✅ **Framework Export** - Export frameworks to PDF/CSV
+8. ✅ **Framework Import** - Import frameworks from external sources
+9. ✅ **Framework Versioning** - Track framework changes over time
+10. ✅ **Framework Aliases** — 489 frontend ↔ backend name aliases (e.g., "AICPA SOC 3" → "SOC 3", "ISO/IEC 23894:2023" → "ISO 23894", "Texas TRAIGA" → "TRAIGA")
 
 ### Control Management
 **Service:** `server/src/services/frameworksController.ts`

@@ -70,6 +70,18 @@ router.get(
   })
 );
 
+// Get vendor assessment queue (active assessments scoped to caller's org)
+// Must be before /:id to avoid matching "assessments" as ID.
+router.get(
+  '/assessments/queue',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const queue = await vendorRiskService.getAssessmentQueue(
+      req.user.organizationId
+    );
+    res.json({ queue });
+  })
+);
+
 // Get all vendors
 router.get(
   '/',

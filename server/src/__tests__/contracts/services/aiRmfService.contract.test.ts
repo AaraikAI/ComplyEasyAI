@@ -45,6 +45,11 @@ import aiRmfService from '../../../services/aiRmfService';
 describe('AIRMFService contract', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // jest.config has resetMocks:true which wipes the $transaction implementation
+    // between tests, so we restore it here so callbacks are invoked.
+    (prismaMock.$transaction as jest.Mock).mockImplementation(
+      (callback: any) => callback(prismaMock)
+    );
   });
 
   // ---------------------------------------------------------------------------

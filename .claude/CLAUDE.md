@@ -10,6 +10,19 @@ These components display reference/catalog data by design. They do NOT need back
 - Any `HelpCenter` / `DocumentationPage` — help content rendered from markdown
 - Any `LandingPage` / `PricingPage` / marketing pages — static marketing content
 - `OnboardingWizard` step descriptions — static instructional text
+- `CommunityPage.tsx` — community marketing/forum landing page (static curated content)
+- `LearnPage.tsx` — courses/tutorials catalog landing page (static curated content)
+- `components/hubs/*` — navigation hub components (route shells with link grids; child components are wired)
+- `components/Breadcrumbs.tsx`, `Pagination.tsx`, `TabbedContainer.tsx`, `SkipNavLink.tsx`, `DarkModeToggle.tsx`, `ThemeToggle.tsx`, `TierCard.tsx`, `TierLimitBanner.tsx`, `SlimSidebar.tsx`, `Onboarding/Onboarding{Hint,Progress,TierBadge}.tsx` — UI primitives (presentational only)
+
+### Components That LOOK Static But Are Wired Via Hooks/Services (Do Not Flag)
+
+The scan-runner's STATIC_ONLY classifier looks for raw `api.*` or `fetch(/axios.*` calls. These components are wired through abstractions and are FULLY_WIRED:
+
+- `HomeOS.tsx` — uses `useExecutiveDashboard()` + `useRisks()` React Query hooks (which call the API internally)
+- `RisingSignals.tsx` — uses `useNotifications()` hook
+- `components/AIFeatures/VendorScorer.tsx` — uses `scoreVendorRisk()` from `services/geminiService` (Gemini API wrapper)
+- Any component using TanStack Query hooks from `hooks/queries/*` — those hooks ARE the API calls
 
 ### Known Unfixable Upstream Vulnerabilities (Do NOT Count Against Score)
 
@@ -352,6 +365,53 @@ L9 counts rate limit references but doesn't enumerate specific gaps. T24 lists e
 
 #### Rule: ReDoS Wrapper Effectiveness Verification (T25)
 T4 checks that `safeRegexTest` is used at all `new RegExp()` call sites. But the wrapper itself may be insufficient (Pitfall 17). T25 checks the wrapper IMPLEMENTATION: if it uses only `.length` guards without `re2` or timeout, ALL call sites are still vulnerable despite passing T4.
+
+### v13 Audit Rules — Known-Intentional Patterns (Added 2026-05-24, after v22)
+
+These rules were added after the v22 audit found 28 GAP_FOUND_PER_SCAN entries that were ALL false positives — intentional code patterns the scan-runner regex couldn't distinguish from real defects. Scanner v3.4 now post-filters these at scan time; the audit prompt (v20.1 §1.3) also instructs subagents to recognize them.
+
+#### Rule: Allow Fire-and-Forget Temp/Worker Cleanup (E1 exception)
+Empty catch blocks attached to cleanup operations are intentional:
+- `await unlink(tempPath).catch(() => {})`
+- `await rmdir(scratchDir).catch(() => {})`
+- `worker.close().catch(() => {})`
+- Any `.catch(() => {})` immediately following `unlink|rmdir|rmSync|rm\(|worker\.close|tempDir|tmpFile|temp[A-Z]|cleanup|teardown|disconnect`
+
+Rationale: cleanup failures are expected (file already gone, worker already closed) and re-throwing would mask the original error. The catch deliberately drops the error.
+
+When scanning: scan-runner v3.4 auto-suppresses these via `safe_grep -Ev` in pattern E1. If the agent encounters one anyway → verdict `INTENTIONAL_FIRE_AND_FORGET` per AUDIT_PROMPT_v20.1 §1.3.
+
+#### Rule: Allow TypeScript Enum/Union String Literals for "NotImplemented" (C1 exception)
+`'NotImplemented'`, `'Not_Implemented'`, `'NOT_IMPLEMENTED'` appearing as string-literal VALUES of:
+- Type annotations: `status: 'Implemented' | 'NotImplemented' | 'InProgress'`
+- Enum assignments: `const STATUS = { NotImplemented: 'NotImplemented' as const }`
+- Comparisons: `if (control.status === 'NotImplemented')`
+- Object literals: `{ status: 'NotImplemented', count: 0 }`
+
+…are STATUS VALUES in implementation-tracking systems (SOC2/NIST/ISO controls, compliance frameworks). They are NOT actual unimplemented markers.
+
+When scanning: scan-runner v3.4 auto-suppresses lines where these literals appear after `:|=|=>|\||===|!==|<>`. If the agent encounters one anyway → verdict `ENUM_STATUS_VALUE_NOT_GAP`.
+
+#### Rule: Allow `throw new Error(...)` in Pure Math/Crypto Libraries (F11 exception)
+Files under these directories use `throw new Error()` for domain-validation guards, not HTTP-routed exceptions:
+- `server/src/services/advanced/dp/` (differential privacy: RDP accountant, privacy budget)
+- `server/src/services/advanced/bayesian/` (Bayesian networks)
+- `server/src/services/advanced/byzantine*` (byzantine-robust aggregation)
+- `server/src/services/advanced/scaffold*` (SCAFFOLD federated learning)
+- `server/src/services/advanced/secretSharing*` (Shamir secret sharing)
+- `server/src/services/advanced/rdp*` (Rényi DP)
+- `server/src/utils/blockchain/anchor*` (chain anchor store config preconditions)
+
+Rationale: AppError carries HTTP status codes and is for request-handler error paths. Pure math libraries have no HTTP context — using AppError would be misleading. These throws are precondition guards (`if (epsilon <= 0) throw new Error('epsilon must be positive')`).
+
+When scanning: scan-runner v3.4 auto-suppresses F11 hits in these directories. If the agent encounters one anyway → verdict `MATH_LIBRARY_PRECONDITION_NOT_GAP`.
+
+#### Rule: Comment-Only References Are Not Active Code (F11 exception)
+`throw new Error(...)` appearing inside `//` line comments or `/* */` block comments is documentation, not active code.
+
+Example: `// Alternative: throw new Error('Phone number not configured') for strict mode`
+
+When scanning: scan-runner v3.4 auto-suppresses lines matching `^[^:]+:[0-9]+:[[:space:]]*(//|\*)`. If the agent encounters one anyway → verdict `COMMENT_NOT_ACTIVE_CODE`.
 
 ---
 

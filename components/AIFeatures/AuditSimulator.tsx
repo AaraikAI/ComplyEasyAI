@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -482,7 +483,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         // If no questions returned, keep MOCK_INTERVIEW_QUESTIONS (initial state)
       } catch (err: any) {
         if (cancelled) return;
-        console.error('Failed to fetch AI interview questions:', err);
+        logger.error('Failed to fetch AI interview questions:', err);
         setInterviewError(err?.message || 'Failed to load AI interview questions. Showing default questions.');
         // interviewQuestions remains MOCK_INTERVIEW_QUESTIONS from initial state
       } finally {
@@ -541,7 +542,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         }));
       }
     } catch (err: any) {
-      console.error('Answer evaluation error:', err);
+      logger.error('Answer evaluation error:', err);
       setEvaluationResults(prev => ({
         ...prev,
         [questionId]: {
@@ -592,7 +593,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
       setActiveTab('active');
     } catch (error: any) {
-      console.error('Audit simulation error:', error);
+      logger.error('Audit simulation error:', error);
       setAiError(error?.message || 'Failed to start AI audit simulation. Using default questions.');
       setActiveTab('active'); // Still switch tab with default questions
     } finally {

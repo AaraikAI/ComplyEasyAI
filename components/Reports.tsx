@@ -14,6 +14,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { generateComplianceReport } from '../services/geminiService';
 import DOMPurify from 'dompurify';
+import { logger } from '../utils/logger';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   Tooltip, Legend, LineChart, Line, CartesianGrid, RadarChart, Radar, PolarGrid,
@@ -124,7 +125,7 @@ export const Reports: React.FC = () => {
         const allFrameworks = await api.frameworks.list();
         setFrameworks(allFrameworks);
       } catch (error) {
-        console.error('Failed to load frameworks:', error);
+        logger.error('Failed to load frameworks:', error);
         setError('Failed to load frameworks');
       } finally {
         setLoadingFrameworks(false);

@@ -478,7 +478,8 @@ class LivenessDetectionService {
           { x: rightEyeX + eyeW, y: eyeY - eyeH * 2 },
         ],
       };
-    } catch {
+    } catch (err) {
+      logger.warn('Liveness detection step failed; using safe default', { err });
       return null;
     }
   }
@@ -1036,7 +1037,8 @@ class LivenessDetectionService {
       }
 
       return classes[maxIdx] || 'video_replay';
-    } catch {
+    } catch (err) {
+      logger.warn('Liveness detection step failed; using safe default', { err });
       return 'video_replay';
     }
   }

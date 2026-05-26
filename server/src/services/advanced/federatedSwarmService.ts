@@ -1059,13 +1059,14 @@ class FederatedSwarmService {
           swarmContribution = this.calculateRiskPatternContribution(risks);
           break;
 
-        case 'control_review':
+        case 'control_review': {
           // Review controls and contribute effectiveness data
           const allControls = frameworks.flatMap(f => f.controls);
           assignedTasks = Math.min(allControls.length, 20);
           completedTasks = assignedTasks;
           swarmContribution = this.calculateControlEffectivenessContribution(allControls);
           break;
+        }
 
         case 'evidence_verification':
           // Verify evidence patterns

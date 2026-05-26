@@ -374,7 +374,7 @@ export function responseEnvelope(): RequestHandler {
     // Override json to wrap in envelope
     res.json = function (body: any) {
       // Skip if body is null/undefined
-      if (body == null) {
+      if (body === null) {
         return originalJson(body);
       }
 

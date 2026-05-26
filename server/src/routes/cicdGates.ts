@@ -331,6 +331,7 @@ router.post(
         await prisma.cICDGateResult.create({
           data: {
             policyId: policy.id,
+            organizationId: user.organizationId,
             repository,
             branch,
             commitHash,
@@ -403,6 +404,7 @@ router.post(
       const result = await prisma.cICDGateResult.create({
         data: {
           policyId,
+          organizationId: user.organizationId,
           repository,
           branch,
           commitHash,

@@ -10,6 +10,7 @@ import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { isUrlSafe } from '../../utils/urlValidator';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -162,6 +163,11 @@ class ServiceNowService {
     }
 
     const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
+
+    if (!isUrlSafe(instanceUrl)) {
+      throw new AppError(`Unsafe ServiceNow instance URL: ${instanceUrl}`, 400);
+    }
+
     const headers: Record<string, string> = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -211,6 +217,10 @@ class ServiceNowService {
     config: ServiceNowConfig
   ): Promise<string> {
     const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
+
+    if (!isUrlSafe(instanceUrl)) {
+      throw new AppError(`Unsafe ServiceNow instance URL: ${instanceUrl}`, 400);
+    }
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       try {

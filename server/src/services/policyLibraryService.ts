@@ -243,12 +243,28 @@ Manage risks associated with third-party relationships.
     userId: string,
     organizationId: string
   ) {
-    const sourceControl = await prisma.frameworkControl.findUnique({
-      where: { id: sourceControlId },
+    // Verify the source control belongs to the caller's organization (via parent framework)
+    const sourceControl = await prisma.frameworkControl.findFirst({
+      where: {
+        id: sourceControlId,
+        framework: { organizationId },
+      },
     });
 
     if (!sourceControl) {
       throw new AppError('Source control not found', 404);
+    }
+
+    // Verify the target control also belongs to the caller's organization
+    const targetControl = await prisma.frameworkControl.findFirst({
+      where: {
+        id: targetControlId,
+        framework: { organizationId },
+      },
+    });
+
+    if (!targetControl) {
+      throw new AppError('Target control not found', 404);
     }
 
     const existingMappings = (sourceControl.mappedControls as { mappings?: unknown[] } | null)?.mappings || [];

@@ -24,15 +24,38 @@ PROJECT_ROOT="${1:-.}"
 cd "$PROJECT_ROOT"
 
 echo "============================================"
-echo "  PRODUCTION READINESS AUDIT — VISIONARY v3.1"
+echo "  PRODUCTION READINESS AUDIT — VISIONARY v3.4"
 echo "  v12: Cross-Audit & Depth Gap Scans (T16-T25)"
+echo "  v3.3 fixes: shell-quoting in extractors;"
+echo "             worktree/archive/AppleDouble exclusion"
+echo "  v3.4 fixes: FP suppression for E1 unlink-catch,"
+echo "             C1 enum status values, F11 math-lib"
+echo "             throws, F11 in comments (v22 lesson)"
 echo "============================================"
 echo "Project: $(pwd)"
 echo "Started: $(date)"
 echo ""
 
-# Clean previous audit files
-rm -f /tmp/audit_*.txt /tmp/audit_*.jsonl /tmp/audit_scan_log.txt
+# FIX (v3.3): preserve previous /tmp outputs to .claude/audit-prev-run/ BEFORE
+# wiping. The old unconditional `rm -f /tmp/audit_*.txt` destroyed any in-progress
+# v19 ledger work (audit_ledger_files.txt, audit_L7_all_ops.txt, etc. all match
+# the wipe glob), and made it impossible to recover from an interrupted audit.
+#
+# Now: the previous run's raw outputs survive in PROJECT_ROOT/.claude/audit-prev-run/
+# until the NEXT re-run. The agent can pull recovered ledgers from there if a
+# mid-audit re-run was accidental. The per-run baseline in .claude/audit-baseline/
+# is still updated at end-of-run as before (delta comparison still works).
+PREV_DIR="$(pwd)/.claude/audit-prev-run"
+rm -rf "$PREV_DIR" 2>/dev/null || true
+if compgen -G "/tmp/audit_*" >/dev/null 2>&1; then
+  mkdir -p "$PREV_DIR"
+  mv /tmp/audit_*.txt   "$PREV_DIR/" 2>/dev/null || true
+  mv /tmp/audit_*.jsonl "$PREV_DIR/" 2>/dev/null || true
+  mv /tmp/audit_*.csv   "$PREV_DIR/" 2>/dev/null || true
+  mv /tmp/audit_scan_log.txt "$PREV_DIR/" 2>/dev/null || true
+  mv /tmp/audit_metrics.json "$PREV_DIR/" 2>/dev/null || true
+  echo "  ✓ Previous /tmp/audit_* outputs preserved at .claude/audit-prev-run/"
+fi
 
 # ─────────────────────────────────────
 # SAFETY NET: Save baseline on exit (even on Ctrl-C or hang)
@@ -143,7 +166,9 @@ run_pattern_raw() {
 }
 
 # Common --exclude-dir for any direct grep -rn calls
-GREP_EXCL="--exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.venv --exclude-dir=coverage --exclude-dir=test-results --exclude-dir=playwright-report"
+# FIX (v3.3): add .claude/worktrees (git worktree clones inflate counts ~3×),
+# .archive (historical snapshots), and AppleDouble files (macOS ._* metadata).
+GREP_EXCL="--exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.venv --exclude-dir=coverage --exclude-dir=test-results --exclude-dir=playwright-report --exclude-dir=worktrees --exclude-dir=.archive --exclude=._*"
 
 # ─────────────────────────────────────
 # STEP 0: Load Previous Baseline & Project Exclusions
@@ -209,6 +234,9 @@ echo ""
 echo "  Building pre-filtered file lists..."
 
 # Master list: all source files excluding node_modules, dist, build, .git
+# FIX (v3.3): also exclude .claude/worktrees (git worktree clones, ~3× duplication
+# of services/components), .archive (historical snapshots), and AppleDouble files
+# (macOS ._* metadata that break path-flattening in downstream extractors).
 find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" -o -name "*.go" -o -name "*.rs" -o -name "*.java" -o -name "*.rb" -o -name "*.php" -o -name "*.vue" -o -name "*.svelte" \) \
   -not -path "*/node_modules/*" \
   -not -path "*/dist/*" \
@@ -218,6 +246,9 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx"
   -not -path "*/.venv/*" \
   -not -path "*/target/*" \
   -not -path "*/coverage/*" \
+  -not -path "*/.claude/worktrees/*" \
+  -not -path "*/.archive/*" \
+  -not -name "._*" \
   | sort > /tmp/audit_all_source.txt
 
 TOTAL_FILES=$(wc -l < /tmp/audit_all_source.txt | tr -d ' ')
@@ -333,6 +364,15 @@ run_pattern_v3 "B5" "Commented-out code" /tmp/audit_source_lean.txt \
 run_pattern_v3 "C1" "Not-implemented markers" /tmp/audit_source_lean.txt \
   -i -e "not.implemented" -e "NotImplemented" -e "NOT_IMPLEMENTED"
 
+# v3.4 FP suppression: TypeScript enum/union/comparison string-literal values
+# `: 'NotImplemented'` (type literal), `= 'NotImplemented'` (assign), `| 'NotImplemented'` (union),
+# `=== 'NotImplemented'` (comparison) are all status values, not runtime throws.
+if [ -f /tmp/audit_C1.txt ]; then
+  safe_grep -Ev "(:|=|=>|\||===|!==|<>)[[:space:]]*['\"](Not[_]?Implemented|NOT_IMPLEMENTED)['\"]" \
+    /tmp/audit_C1.txt > /tmp/audit_C1_filtered.txt || true
+  mv /tmp/audit_C1_filtered.txt /tmp/audit_C1.txt
+fi
+
 run_pattern_v3 "C2" "Throw guards for missing impl" /tmp/audit_source_lean.txt \
   -e "throw new Error.*[Ii]mplement" -e "throw new Error.*[Tt]odo" -e "throw new Error.*missing"
 
@@ -348,6 +388,14 @@ run_pattern_v3 "D2" "Empty function bodies" /tmp/audit_source_lean.txt \
 
 run_pattern_v3 "E1" "Empty catch blocks" /tmp/audit_source_lean.txt \
   -e "catch.*{[[:space:]]*}"
+
+# v3.4 FP suppression: fire-and-forget temp/worker cleanup is intentional per CLAUDE.md
+# Common signatures: `await unlink(tempPath).catch(() => {})`, `worker.close().catch(() => {})`
+if [ -f /tmp/audit_E1.txt ]; then
+  safe_grep -Ev '(unlink|rmdir|rmSync|rm\(|worker\.close|tempDir|tmpFile|temp[A-Z]|cleanup|teardown|disconnect)[^)]*\)?\.catch\(\(\)[[:space:]]*=>[[:space:]]*\{[[:space:]]*\}\)' \
+    /tmp/audit_E1.txt > /tmp/audit_E1_filtered.txt || true
+  mv /tmp/audit_E1_filtered.txt /tmp/audit_E1.txt
+fi
 
 # v3 FIX: E3 used -A2 which doesn't work with xargs — simplified pattern
 run_pattern_v3 "E3" "Catch with only console.log" /tmp/audit_source_lean.txt \
@@ -736,6 +784,20 @@ xargs grep -n -e "throw new Error(" \
   < /tmp/audit_source_services.txt 2>/dev/null \
   | safe_grep -v "AppError\|HttpError" \
   > /tmp/audit_F11.txt || true
+
+# v3.4 FP suppression for F11:
+# 1) Pure math/crypto library directories — AppError is for HTTP context, not appropriate here.
+#    These libraries (Bayesian, byzantine-robust, RDP accountant, SCAFFOLD, secret sharing,
+#    blockchain anchor) use throw new Error for domain-validation guards.
+# 2) Comment-only references (line starts with //, *, or contains throw inside a string).
+if [ -f /tmp/audit_F11.txt ]; then
+  safe_grep -Ev '/(services/advanced/(dp|bayesian|byzantine|scaffold|secretSharing|rdp)|utils/blockchain/anchor)' \
+    /tmp/audit_F11.txt \
+    | safe_grep -Ev '^[^:]+:[0-9]+:[[:space:]]*(//|\*)' \
+    > /tmp/audit_F11_filtered.txt || true
+  mv /tmp/audit_F11_filtered.txt /tmp/audit_F11.txt
+fi
+
 echo "    → $(wc -l < /tmp/audit_F11.txt | tr -d ' ') bare Error throws"
 
 echo "  [L7] Multi-tenant write operations..."
@@ -1259,7 +1321,7 @@ METRICS_CATEGORIES_CLEAN=$(printf '%b' "$METRICS_CATEGORIES" | sed '$ s/,$//')
 cat > /tmp/audit_metrics.json << METRICS_EOF
 {
   "scan_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "scanner_version": "3.2-v13",
+  "scanner_version": "3.4-v13",
   "total_source_files": $TOTAL_FILES,
   "production_files_scanned": $LEAN_FILES,
   "total_grep_findings": $TOTAL_FINDINGS,
@@ -1376,23 +1438,27 @@ fi
 echo ""
 echo "  --- v13 ENRICHMENT VERIFICATION ---"
 
+# FIX (v3.3): `grep -c PATTERN FILE 2>/dev/null || echo 0` produces "0\n0" when
+# the file has no matches (grep -c prints "0" AND exits 1, so the `|| echo 0`
+# appends a SECOND "0"). The downstream `[ "$X" -eq "$Y" ]` then fails with
+# "integer expression expected". Use `|| true` + `${X:-0}` instead.
 L7_RAW=$(wc -l < /tmp/audit_L7.txt 2>/dev/null | tr -d ' ')
-L7_ENRICHED=$(grep -c "^═══ L7 #" /tmp/audit_L7_enriched.txt 2>/dev/null || echo 0)
+L7_ENRICHED=$(grep -c "^═══ L7 #" /tmp/audit_L7_enriched.txt 2>/dev/null || true); L7_ENRICHED=${L7_ENRICHED:-0}
 echo "  L7: $L7_ENRICHED of $L7_RAW enriched"
 [ "$L7_ENRICHED" -eq "$L7_RAW" ] && echo "    ✅ 100% L7 coverage" || echo "    ⚠️  L7 MISMATCH"
 
 F7_RAW=$(wc -l < /tmp/audit_F7.txt 2>/dev/null | tr -d ' ')
-F7_ENRICHED=$(grep -c "^═══ F7 #" /tmp/audit_F7_enriched.txt 2>/dev/null || echo 0)
+F7_ENRICHED=$(grep -c "^═══ F7 #" /tmp/audit_F7_enriched.txt 2>/dev/null || true); F7_ENRICHED=${F7_ENRICHED:-0}
 echo "  F7: $F7_ENRICHED of $F7_RAW enriched"
 [ "$F7_ENRICHED" -eq "$F7_RAW" ] && echo "    ✅ 100% F7 coverage" || echo "    ⚠️  F7 MISMATCH"
 
 SVC_TOTAL=$(wc -l < /tmp/audit_all_services.txt 2>/dev/null | tr -d ' ')
-SVC_ENRICHED=$(grep -c "^═══ SERVICE:" /tmp/audit_service_summary.txt 2>/dev/null || echo 0)
+SVC_ENRICHED=$(grep -c "^═══ SERVICE:" /tmp/audit_service_summary.txt 2>/dev/null || true); SVC_ENRICHED=${SVC_ENRICHED:-0}
 echo "  Services: $SVC_ENRICHED of $SVC_TOTAL deep-read"
 [ "$SVC_ENRICHED" -eq "$SVC_TOTAL" ] && echo "    ✅ 100% service coverage" || echo "    ⚠️  SERVICE MISMATCH"
 
 COMP_TOTAL=$(wc -l < /tmp/audit_all_components.txt 2>/dev/null | tr -d ' ')
-COMP_ENRICHED=$(grep -c "^═══ COMPONENT:" /tmp/audit_component_wiring_detail.txt 2>/dev/null || echo 0)
+COMP_ENRICHED=$(grep -c "^═══ COMPONENT:" /tmp/audit_component_wiring_detail.txt 2>/dev/null || true); COMP_ENRICHED=${COMP_ENRICHED:-0}
 echo "  Components: $COMP_ENRICHED of $COMP_TOTAL analyzed"
 [ "$COMP_ENRICHED" -eq "$COMP_TOTAL" ] && echo "    ✅ 100% component coverage" || echo "    ⚠️  COMPONENT MISMATCH"
 

@@ -163,14 +163,15 @@ describe('MonitoringService contract', () => {
         status: 'Passing',
         active: true,
       };
-      prismaMock.continuousMonitor.findUnique.mockResolvedValue(mockMonitor);
+      // Multi-tenant pre-check: service now uses findFirst({ id, organizationId }).
+      prismaMock.continuousMonitor.findFirst.mockResolvedValue(mockMonitor);
       prismaMock.monitorResult.create.mockResolvedValue({ id: 'result-1' });
       prismaMock.continuousMonitor.update.mockResolvedValue(mockMonitor);
 
       await monitoringService.executeMonitor('monitor-1', 'user-1', 'org-123');
 
-      expect(prismaMock.continuousMonitor.findUnique).toHaveBeenCalledWith({
-        where: { id: 'monitor-1' },
+      expect(prismaMock.continuousMonitor.findFirst).toHaveBeenCalledWith({
+        where: { id: 'monitor-1', organizationId: 'org-123' },
       });
       expect(prismaMock.monitorResult.create).toHaveBeenCalled();
       expect(prismaMock.continuousMonitor.update).toHaveBeenCalledWith(
@@ -185,7 +186,7 @@ describe('MonitoringService contract', () => {
     });
 
     it('should throw when monitor not found', async () => {
-      prismaMock.continuousMonitor.findUnique.mockResolvedValue(null);
+      prismaMock.continuousMonitor.findFirst.mockResolvedValue(null);
 
       await expect(
         monitoringService.executeMonitor('nonexistent', 'user-1', 'org-123')
@@ -203,7 +204,7 @@ describe('MonitoringService contract', () => {
         status: 'Unknown',
         active: true,
       };
-      prismaMock.continuousMonitor.findUnique.mockResolvedValue(mockMonitor);
+      prismaMock.continuousMonitor.findFirst.mockResolvedValue(mockMonitor);
       prismaMock.monitorResult.create.mockResolvedValue({ id: 'result-1' });
       prismaMock.continuousMonitor.update.mockResolvedValue(mockMonitor);
 

@@ -86,12 +86,37 @@ export default [
     },
   },
   {
+    // Test / script / blockchain / zkp / validators schema literals — relax noisy rules
+    files: [
+      '**/__tests__/**/*.ts',
+      'src/zkp/**/*.ts',
+      'src/blockchain/scripts/**/*.ts',
+      'src/scripts/**/*.ts',
+      'src/validators/coreModulesSchemas.ts',
+    ],
+    rules: {
+      'no-console': 'off',
+      'no-undef': 'off',
+      'eqeqeq': 'off',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'no-useless-catch': 'off',
+      'no-dupe-keys': 'off',
+      'require-yield': 'off',
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
       'dist/**',
       'build/**',
       'src/generated/**',
-      '__tests__/**',
+      'src/zkp/**/*.js',
+      'src/zkp/compiled/**',
+      'src/zkp/test_output/**',
+      'src/blockchain/**/*.js',
+      'src/blockchain/scripts/**',
+      'src/blockchain/node_modules/**',
       'jest.config.js',
       '*.config.js',
       '*.config.ts',

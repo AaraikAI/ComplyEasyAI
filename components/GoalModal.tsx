@@ -15,6 +15,7 @@ import { AVAILABLE_FRAMEWORKS } from '../constants';
 import { api } from '../services/api';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 interface GoalModalProps {
   isOpen: boolean;
@@ -79,7 +80,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
       const frameworks = await api.frameworks.list();
       setAvailableFrameworks(frameworks.map((f: any) => f.name));
     } catch (error) {
-      console.error('Error loading frameworks:', error);
+      logger.error('Error loading frameworks:', error);
       // Fallback to constants
       setAvailableFrameworks(AVAILABLE_FRAMEWORKS.map(f => f.name));
     }
@@ -146,7 +147,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error('Error saving goal:', error);
+      logger.error('Error saving goal:', error);
       toast.error(`Failed to ${goal ? 'update' : 'create'} goal: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);

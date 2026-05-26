@@ -820,6 +820,11 @@ export class WorkflowEngineService {
 
   /**
    * Execute a specific workflow by its ID.
+   *
+   * Multi-tenant safety: when `triggerData.organizationId` is provided (the
+   * normal case — both internal event dispatch and route handlers thread it
+   * through), the workflow MUST belong to that organization. Cross-tenant
+   * execution is rejected as not-found to avoid information disclosure.
    */
   async executeWorkflow(
     workflowId: string,
@@ -828,11 +833,17 @@ export class WorkflowEngineService {
     const startTime = Date.now();
     const triggeredAt = new Date().toISOString();
     const steps: StepResult[] = [];
+    const callerOrganizationId =
+      typeof triggerData?.organizationId === 'string' ? (triggerData.organizationId as string) : undefined;
 
-    // Fetch the workflow
-    const workflow = await prisma.gRCWorkflow.findUnique({
-      where: { id: workflowId },
-    });
+    // Fetch the workflow with multi-tenant scoping when a caller org is supplied.
+    const workflow = callerOrganizationId
+      ? await prisma.gRCWorkflow.findFirst({
+          where: { id: workflowId, organizationId: callerOrganizationId },
+        })
+      : await prisma.gRCWorkflow.findUnique({
+          where: { id: workflowId },
+        });
 
     if (!workflow) {
       throw new AppError(`Workflow not found: ${workflowId}`, 404);
@@ -962,18 +973,33 @@ export class WorkflowEngineService {
 
   /**
    * Log a workflow execution to the WorkflowExecution model.
+   *
+   * Multi-tenant safety: `organizationId` is REQUIRED. WorkflowExecution
+   * inherits its tenant scope from the parent GRCWorkflow, so we verify
+   * the parent workflow belongs to the caller's organization before logging.
+   * This prevents cross-tenant log injection / inference attacks.
    */
   async logExecution(
     workflowId: string,
     status: string,
     steps: StepResult[],
-    organizationId?: string,
+    organizationId: string,
     triggerData?: Record<string, unknown>
   ): Promise<void> {
     const startedAt = steps.length > 0 ? new Date() : new Date();
     const totalDuration = steps.reduce((sum, s) => sum + s.durationMs, 0);
 
     try {
+      // Verify the parent workflow belongs to the caller's organization
+      // before creating an execution record on it.
+      const parentWorkflow = await prisma.gRCWorkflow.findFirst({
+        where: { id: workflowId, organizationId },
+        select: { id: true },
+      });
+      if (!parentWorkflow) {
+        throw new AppError('Workflow not found in organization', 404);
+      }
+
       await prisma.workflowExecution.create({
         data: {
           workflowId,
@@ -990,10 +1016,11 @@ export class WorkflowEngineService {
         },
       });
 
-      logger.debug('Workflow execution logged', { workflowId, status, steps: steps.length });
+      logger.debug('Workflow execution logged', { workflowId, organizationId, status, steps: steps.length });
     } catch (error: any) {
       logger.error('Failed to log workflow execution', {
         workflowId,
+        organizationId,
         error: error.message,
       });
     }

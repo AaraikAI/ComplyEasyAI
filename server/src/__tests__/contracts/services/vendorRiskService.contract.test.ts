@@ -27,6 +27,11 @@ import vendorRiskService from '../../../services/vendorRiskService';
 describe('VendorRiskService contract', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // jest.config has resetMocks:true which wipes the $transaction implementation
+    // between tests, so we restore it here so callbacks are invoked.
+    (prismaMock.$transaction as jest.Mock).mockImplementation(
+      (callback: any) => callback(prismaMock)
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -148,6 +153,12 @@ describe('VendorRiskService contract', () => {
         riskLevel: 'High',
         vendor: createMockVendor(),
       };
+      // Multi-tenant pre-check: assessment's vendor must belong to org.
+      prismaMock.vendorAssessment.findFirst.mockResolvedValue({
+        id: 'assessment-1',
+        vendorId: 'vendor-123',
+        vendor: { organizationId: 'org-123' },
+      } as any);
       prismaMock.vendorAssessment.update.mockResolvedValue(mockAssessment);
       prismaMock.vendor.update.mockResolvedValue(createMockVendor({ riskScore: 75 }));
 
@@ -198,6 +209,10 @@ describe('VendorRiskService contract', () => {
         reviewType: 'Annual',
         vendor: createMockVendor(),
       };
+      // Multi-tenant pre-check: verify the parent vendor belongs to the org.
+      prismaMock.vendor.findFirst.mockResolvedValueOnce(
+        createMockVendor({ id: 'vendor-123', organizationId: 'org-123' })
+      );
       prismaMock.vendorReview.create.mockResolvedValue(mockReview);
 
       await vendorRiskService.createVendorReview({
@@ -218,10 +233,9 @@ describe('VendorRiskService contract', () => {
       });
     });
 
-    it('should propagate errors when vendor does not exist', async () => {
-      prismaMock.vendorReview.create.mockRejectedValue(
-        new Error('Foreign key constraint failed on the field: `vendorId`')
-      );
+    it('should throw 404 when vendor does not belong to the organization', async () => {
+      // Multi-tenant pre-check returns null → service throws AppError(404) before create runs.
+      prismaMock.vendor.findFirst.mockImplementationOnce(async () => null);
 
       await expect(
         vendorRiskService.createVendorReview({
@@ -230,7 +244,7 @@ describe('VendorRiskService contract', () => {
           reviewer: 'user-1',
           organizationId: 'org-123',
         })
-      ).rejects.toThrow('Foreign key constraint');
+      ).rejects.toThrow('Vendor not found');
     });
   });
 
@@ -241,11 +255,19 @@ describe('VendorRiskService contract', () => {
     it('should update review with findings and action items', async () => {
       const mockReview = {
         id: 'review-1',
+        vendorId: 'vendor-123',
         findings: { items: ['finding-1'] },
         actionItems: { tasks: ['task-1'] },
         vendor: createMockVendor(),
       };
+      // Multi-tenant pre-check: review must exist and its vendor must belong to org.
+      prismaMock.vendorReview.findFirst.mockResolvedValue({
+        id: 'review-1',
+        vendorId: 'vendor-123',
+        vendor: { organizationId: 'org-123' },
+      } as any);
       prismaMock.vendorReview.update.mockResolvedValue(mockReview);
+      prismaMock.vendor.update.mockResolvedValue(createMockVendor({ id: 'vendor-123' }));
 
       await vendorRiskService.completeVendorReview(
         'review-1',
@@ -274,6 +296,10 @@ describe('VendorRiskService contract', () => {
   // ---------------------------------------------------------------------------
   describe('createVendorAssessment', () => {
     it('should create assessment with In_Progress status', async () => {
+      // Multi-tenant pre-check: vendor must belong to org.
+      prismaMock.vendor.findFirst.mockResolvedValue(
+        createMockVendor({ id: 'vendor-123', organizationId: 'org-123' })
+      );
       prismaMock.vendorAssessment.create.mockResolvedValue({
         id: 'a-1',
         vendorId: 'vendor-123',

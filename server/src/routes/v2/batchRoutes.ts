@@ -114,7 +114,6 @@ batchRouter.post('/vendors', validateBody(batchVendorsSchema), asyncHandler(asyn
   const validationError = validateBatchPayload(items, 'vendor');
   if (validationError) {
     throw new AppError(validationError, 400);
-    return;
   }
 
   const result: BatchResult<any> = {
@@ -181,7 +180,6 @@ batchRouter.post('/risks', validateBody(batchRisksSchema), asyncHandler(async (r
   const validationError = validateBatchPayload(items, 'risk');
   if (validationError) {
     throw new AppError(validationError, 400);
-    return;
   }
 
   const result: BatchResult<any> = {
@@ -250,7 +248,6 @@ batchRouter.post('/policies', validateBody(batchPoliciesSchema), asyncHandler(as
   const validationError = validateBatchPayload(items, 'policy');
   if (validationError) {
     throw new AppError(validationError, 400);
-    return;
   }
 
   const result: BatchResult<any> = {
@@ -316,7 +313,6 @@ batchRouter.post('/frameworks', asyncHandler(async (req: Request, res: Response)
   const validationError = validateBatchPayload(items, 'framework');
   if (validationError) {
     throw new AppError(validationError, 400);
-    return;
   }
 
   const result: BatchResult<any> = {

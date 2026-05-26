@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -119,195 +120,104 @@ interface AssessmentQueue {
   aiAgent: string;
 }
 
-// ─── Demo Data ──────────────────────────────────────────────────────────────────
+// ─── Adapters ───────────────────────────────────────────────────────────────────
 
-const VENDORS: Vendor[] = [
-  {
-    id: 'V-001',
-    name: 'CloudSync Analytics',
-    category: 'Cloud Infrastructure',
-    tier: 'critical',
-    overallRiskScore: 58,
-    previousRiskScore: 72,
-    status: 'under-review',
-    dataAccess: 'Full Database Access',
-    contractExpiry: '2026-12-31',
-    lastAssessment: '2025-11-15',
-    nextAssessment: '2026-03-15',
-    certifications: ['SOC 2 Type II', 'ISO 27001'],
-    country: 'United States',
-    contactEmail: 'security@cloudsync.example.com',
-    slaCompliance: 94.2,
-    incidentCount: 3,
-    fourthParties: ['AWS', 'Datadog', 'PagerDuty'],
-    riskBreakdown: { security: 62, privacy: 55, operational: 48, financial: 70, compliance: 58, reputational: 52 },
-    findings: [
-      { id: 'F-001', title: 'Insufficient encryption for data in transit between regions', severity: 'critical', category: 'Security', description: 'Data transfers between US-East and EU-West regions use TLS 1.2 without perfect forward secrecy.', status: 'open', discoveredDate: '2026-02-01', dueDate: '2026-03-01' },
-      { id: 'F-002', title: 'Missing SOC 2 bridge letter', severity: 'high', category: 'Compliance', description: 'SOC 2 Type II report expires March 2026 with no bridge letter provided for the gap period.', status: 'open', discoveredDate: '2026-01-20', dueDate: '2026-02-28' },
-      { id: 'F-003', title: 'Data retention policy exceeds contractual limits', severity: 'medium', category: 'Privacy', description: 'Vendor retains processed data for 180 days despite contractual requirement of 90 days maximum.', status: 'mitigated', discoveredDate: '2025-12-10' },
-    ],
-    tasks: [
-      { id: 'T-001', title: 'Request updated encryption documentation', type: 'follow-up', status: 'in-progress', assignee: 'Sarah Chen', dueDate: '2026-02-28', aiGenerated: true },
-      { id: 'T-002', title: 'Schedule quarterly security review call', type: 'review', status: 'pending', assignee: 'Mike Rodriguez', dueDate: '2026-03-15', aiGenerated: true },
-    ],
-  },
-  {
-    id: 'V-002',
-    name: 'SecureHost Pro',
-    category: 'Web Hosting',
-    tier: 'high',
-    overallRiskScore: 74,
-    previousRiskScore: 71,
-    status: 'active',
-    dataAccess: 'Read-Only Customer PII',
-    contractExpiry: '2027-06-30',
-    lastAssessment: '2026-01-10',
-    nextAssessment: '2026-07-10',
-    certifications: ['SOC 2 Type II', 'ISO 27001', 'PCI DSS'],
-    country: 'Germany',
-    contactEmail: 'compliance@securehost.example.com',
-    slaCompliance: 99.1,
+/**
+ * Map a backend Prisma Vendor (with assessments/reviews/monitors) to the
+ * frontend-display Vendor shape. The backend stores a flat record with risk
+ * level/score and a few certification booleans; we synthesize the remaining
+ * display fields with conservative defaults rather than fabricating data.
+ */
+function adaptBackendVendor(v: any): Vendor {
+  const tierMap: Record<string, Vendor['tier']> = {
+    Critical: 'critical',
+    High: 'high',
+    Medium: 'medium',
+    Low: 'low',
+  };
+  const statusMap: Record<string, Vendor['status']> = {
+    Active: 'active',
+    Onboarding: 'onboarding',
+    Under_Review: 'under-review',
+    Offboarding: 'offboarding',
+  };
+  const certifications: string[] = [];
+  if (v.soc2Report) certifications.push('SOC 2 Type II');
+  if (v.iso27001Certified) certifications.push('ISO 27001');
+  if (v.gdprCompliant) certifications.push('GDPR');
+  if (v.hipaaBaa) certifications.push('HIPAA BAA');
+
+  const baseScore = typeof v.riskScore === 'number' ? v.riskScore : 0;
+  return {
+    id: v.id,
+    name: v.name || 'Untitled Vendor',
+    category: v.category || v.serviceDescription || 'Uncategorized',
+    tier: tierMap[v.riskLevel] || 'medium',
+    overallRiskScore: baseScore,
+    previousRiskScore: baseScore,
+    status: statusMap[v.status] || 'active',
+    dataAccess: v.hasDataAccess ? 'Has Data Access' : 'No Data Access',
+    contractExpiry: v.contractEnd
+      ? new Date(v.contractEnd).toISOString().split('T')[0]
+      : '',
+    lastAssessment: v.lastSecurityReview
+      ? new Date(v.lastSecurityReview).toISOString().split('T')[0]
+      : '',
+    nextAssessment: v.nextSecurityReview
+      ? new Date(v.nextSecurityReview).toISOString().split('T')[0]
+      : '',
+    certifications,
+    country: v.country || '—',
+    contactEmail: v.contactEmail || '',
+    slaCompliance: 0,
     incidentCount: 0,
-    fourthParties: ['Hetzner', 'Cloudflare'],
-    riskBreakdown: { security: 78, privacy: 72, operational: 80, financial: 68, compliance: 75, reputational: 71 },
-    findings: [
-      { id: 'F-004', title: 'Annual penetration test scheduled but not yet completed', severity: 'medium', category: 'Security', description: 'Vendor committed to annual pen testing. 2026 test is scheduled for March but not yet executed.', status: 'open', discoveredDate: '2026-02-01', dueDate: '2026-03-31' },
-    ],
-    tasks: [
-      { id: 'T-003', title: 'Verify penetration test completion', type: 'monitoring', status: 'pending', assignee: 'Lisa Park', dueDate: '2026-04-01', aiGenerated: true },
-    ],
-  },
-  {
-    id: 'V-003',
-    name: 'DataFlow Inc',
-    category: 'Data Processing',
-    tier: 'critical',
-    overallRiskScore: 65,
-    previousRiskScore: 68,
-    status: 'monitoring',
-    dataAccess: 'Full Database Access',
-    contractExpiry: '2026-09-30',
-    lastAssessment: '2025-09-20',
-    nextAssessment: '2026-03-20',
-    certifications: ['SOC 2 Type II'],
-    country: 'India',
-    contactEmail: 'security@dataflow.example.com',
-    slaCompliance: 96.8,
-    incidentCount: 1,
-    fourthParties: ['Azure', 'MongoDB Atlas', 'Elastic Cloud', 'Twilio'],
-    riskBreakdown: { security: 68, privacy: 60, operational: 72, financial: 62, compliance: 55, reputational: 63 },
-    findings: [
-      { id: 'F-005', title: 'New sub-processor added without prior notification', severity: 'high', category: 'Privacy', description: 'Vendor onboarded Twilio as a sub-processor without providing the contractually required 30-day prior notification.', status: 'open', discoveredDate: '2026-02-05', dueDate: '2026-02-25' },
-      { id: 'F-006', title: 'ISO 27001 certification not maintained', severity: 'high', category: 'Compliance', description: 'Vendor previously held ISO 27001 certification which lapsed in 2025. Only SOC 2 remains current.', status: 'accepted', discoveredDate: '2025-10-01' },
-      { id: 'F-007', title: 'Incident response SLA breached', severity: 'medium', category: 'Operational', description: 'Recent security incident reported 8 hours after detection, exceeding the 4-hour SLA.', status: 'open', discoveredDate: '2026-01-15', dueDate: '2026-03-01' },
-    ],
-    tasks: [
-      { id: 'T-004', title: 'Obtain sub-processor disclosure documentation', type: 'follow-up', status: 'overdue', assignee: 'DPO Office', dueDate: '2026-02-15', aiGenerated: true },
-      { id: 'T-005', title: 'Annual reassessment - full scope', type: 'assessment', status: 'pending', assignee: 'Sarah Chen', dueDate: '2026-03-20', aiGenerated: false },
-    ],
-  },
-  {
-    id: 'V-004',
-    name: 'PaymentGate Systems',
-    category: 'Payment Processing',
-    tier: 'critical',
-    overallRiskScore: 81,
-    previousRiskScore: 79,
-    status: 'active',
-    dataAccess: 'Payment/Health Data (PCI/HIPAA)',
-    contractExpiry: '2027-12-31',
-    lastAssessment: '2026-01-05',
-    nextAssessment: '2026-04-05',
-    certifications: ['PCI DSS Level 1', 'SOC 2 Type II', 'ISO 27001'],
-    country: 'United States',
-    contactEmail: 'security@paymentgate.example.com',
-    slaCompliance: 99.97,
-    incidentCount: 0,
-    fourthParties: ['Visa', 'Mastercard'],
-    riskBreakdown: { security: 85, privacy: 78, operational: 88, financial: 80, compliance: 82, reputational: 75 },
-    findings: [],
-    tasks: [
-      { id: 'T-006', title: 'Quarterly PCI compliance verification', type: 'review', status: 'pending', assignee: 'Alex Kim', dueDate: '2026-04-05', aiGenerated: true },
-    ],
-  },
-  {
-    id: 'V-005',
-    name: 'TalentHub HR',
-    category: 'HR/Payroll',
-    tier: 'high',
-    overallRiskScore: 69,
-    previousRiskScore: 69,
-    status: 'active',
-    dataAccess: 'Employee PII',
-    contractExpiry: '2026-11-30',
-    lastAssessment: '2025-12-01',
-    nextAssessment: '2026-06-01',
-    certifications: ['SOC 2 Type II'],
-    country: 'United Kingdom',
-    contactEmail: 'compliance@talenthub.example.com',
-    slaCompliance: 97.5,
-    incidentCount: 1,
-    fourthParties: ['AWS', 'Stripe', 'SendGrid'],
-    riskBreakdown: { security: 72, privacy: 65, operational: 74, financial: 68, compliance: 67, reputational: 70 },
-    findings: [
-      { id: 'F-008', title: 'Employee data exported to non-adequate jurisdiction', severity: 'high', category: 'Privacy', description: 'Analytics processing involves temporary data transfer to servers in a jurisdiction without GDPR adequacy decision.', status: 'open', discoveredDate: '2026-01-20', dueDate: '2026-03-15' },
-    ],
-    tasks: [
-      { id: 'T-007', title: 'Request data transfer impact assessment', type: 'follow-up', status: 'in-progress', assignee: 'DPO Office', dueDate: '2026-03-01', aiGenerated: true },
-    ],
-  },
-  {
-    id: 'V-006',
-    name: 'NetGuard Security',
-    category: 'Security Services',
-    tier: 'medium',
-    overallRiskScore: 82,
-    previousRiskScore: 80,
-    status: 'active',
-    dataAccess: 'Network Logs Only',
-    contractExpiry: '2027-03-31',
-    lastAssessment: '2026-02-01',
-    nextAssessment: '2026-08-01',
-    certifications: ['SOC 2 Type II', 'ISO 27001', 'CREST'],
-    country: 'Australia',
-    contactEmail: 'security@netguard.example.com',
-    slaCompliance: 99.8,
-    incidentCount: 0,
-    fourthParties: ['GCP'],
-    riskBreakdown: { security: 88, privacy: 80, operational: 82, financial: 78, compliance: 84, reputational: 80 },
+    fourthParties: [],
+    riskBreakdown: {
+      security: baseScore,
+      privacy: baseScore,
+      operational: baseScore,
+      financial: baseScore,
+      compliance: baseScore,
+      reputational: baseScore,
+    },
     findings: [],
     tasks: [],
-  },
-  {
-    id: 'V-007',
-    name: 'QuickScan Docs',
-    category: 'Document Management',
-    tier: 'low',
-    overallRiskScore: 76,
-    previousRiskScore: 74,
-    status: 'active',
-    dataAccess: 'Internal Documents',
-    contractExpiry: '2026-08-31',
-    lastAssessment: '2025-10-15',
-    nextAssessment: '2026-04-15',
-    certifications: ['ISO 27001'],
-    country: 'Canada',
-    contactEmail: 'support@quickscan.example.com',
-    slaCompliance: 98.2,
-    incidentCount: 0,
-    fourthParties: ['AWS S3'],
-    riskBreakdown: { security: 75, privacy: 73, operational: 80, financial: 78, compliance: 72, reputational: 78 },
-    findings: [],
-    tasks: [],
-  },
-];
+  };
+}
 
-const ASSESSMENT_QUEUE: AssessmentQueue[] = [
-  { id: 'AQ-001', vendorName: 'CloudSync Analytics', vendorId: 'V-001', assessmentType: 'Emergency Reassessment', status: 'analyzing', progress: 72, startedAt: '2026-02-17T08:00:00Z', estimatedCompletion: '2026-02-17T14:00:00Z', aiAgent: 'Risk Analysis Agent' },
-  { id: 'AQ-002', vendorName: 'DataFlow Inc', vendorId: 'V-003', assessmentType: 'Annual Reassessment', status: 'collecting', progress: 35, startedAt: '2026-02-17T09:00:00Z', estimatedCompletion: '2026-02-18T12:00:00Z', aiAgent: 'Evidence Collection Agent' },
-  { id: 'AQ-003', vendorName: 'TalentHub HR', vendorId: 'V-005', assessmentType: 'Privacy Impact Assessment', status: 'queued', progress: 0, aiAgent: 'Privacy Analysis Agent' },
-  { id: 'AQ-004', vendorName: 'PaymentGate Systems', vendorId: 'V-004', assessmentType: 'Quarterly PCI Review', status: 'completed', progress: 100, startedAt: '2026-02-15T10:00:00Z', estimatedCompletion: '2026-02-16T09:00:00Z', aiAgent: 'Compliance Verification Agent' },
-];
+/**
+ * Map a backend VendorAssessment to the frontend-display AssessmentQueue shape.
+ */
+function adaptBackendAssessment(a: any): AssessmentQueue {
+  const statusMap: Record<string, AssessmentQueue['status']> = {
+    In_Progress: 'analyzing',
+    Pending: 'queued',
+    Completed: 'completed',
+    Collecting: 'collecting',
+    Review: 'review',
+  };
+  const status = statusMap[a.status] || 'queued';
+  const progress =
+    status === 'completed' ? 100 :
+    status === 'review' ? 80 :
+    status === 'analyzing' ? 60 :
+    status === 'collecting' ? 30 : 0;
+  return {
+    id: a.id,
+    vendorName: a.vendor?.name || 'Unknown Vendor',
+    vendorId: a.vendorId,
+    assessmentType: a.assessmentType || 'Risk Assessment',
+    status,
+    progress,
+    startedAt: a.assessedDate || a.createdAt,
+    estimatedCompletion: undefined,
+    aiAgent: a.assessedBy || 'Risk Analysis Agent',
+  };
+}
+
+// Static demo data (7 hardcoded vendors and 4 assessment queue entries) was
+// removed and replaced with live API data: api.vendors.list and
+// api.vendors.getAssessmentQueue. See the useEffect inside AgenticVendorRisk.
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -416,15 +326,51 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const [generatedReports, setGeneratedReports] = useState<Record<number, boolean>>({});
   const [scheduleReportIdx, setScheduleReportIdx] = useState<number | null>(null);
 
-  // Stats
-  const criticalVendors = VENDORS.filter(v => v.tier === 'critical').length;
-  const underReviewCount = VENDORS.filter(v => v.status === 'under-review').length;
-  const avgRiskScore = Math.round(VENDORS.reduce((sum, v) => sum + v.overallRiskScore, 0) / VENDORS.length);
-  const openFindings = VENDORS.reduce((sum, v) => sum + v.findings.filter(f => f.status === 'open').length, 0);
-  const totalFourthParties = new Set(VENDORS.flatMap(v => v.fourthParties)).size;
-  const activeAssessments = ASSESSMENT_QUEUE.filter(a => a.status !== 'completed').length;
+  // Live data loaded from backend on mount.
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [assessmentQueue, setAssessmentQueue] = useState<AssessmentQueue[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const filteredVendors = VENDORS.filter(v => {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const [vendorsRaw, queueRaw] = await Promise.all([
+          api.vendors.list(),
+          api.vendors.getAssessmentQueue(),
+        ]);
+        if (cancelled) return;
+        setVendors((vendorsRaw || []).map(adaptBackendVendor));
+        setAssessmentQueue((queueRaw || []).map(adaptBackendAssessment));
+      } catch (err: any) {
+        if (cancelled) return;
+        logger.error('Failed to load vendor risk data', err);
+        setLoadError(err?.message || 'Failed to load vendor data.');
+        setVendors([]);
+        setAssessmentQueue([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Stats (derived from live state)
+  const criticalVendors = vendors.filter(v => v.tier === 'critical').length;
+  const underReviewCount = vendors.filter(v => v.status === 'under-review').length;
+  const avgRiskScore = vendors.length > 0
+    ? Math.round(vendors.reduce((sum, v) => sum + v.overallRiskScore, 0) / vendors.length)
+    : 0;
+  const openFindings = vendors.reduce((sum, v) => sum + v.findings.filter(f => f.status === 'open').length, 0);
+  const totalFourthParties = new Set(vendors.flatMap(v => v.fourthParties)).size;
+  const activeAssessments = assessmentQueue.filter(a => a.status !== 'completed').length;
+
+  const filteredVendors = vendors.filter(v => {
     if (searchQuery && !v.name.toLowerCase().includes(searchQuery.toLowerCase()) && !v.category.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (tierFilter !== 'all' && v.tier !== tierFilter) return false;
     if (statusFilter !== 'all' && v.status !== statusFilter) return false;
@@ -439,8 +385,8 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
     setAiError(null);
 
     try {
-      // Pick first vendor from queue for assessment, or use the selected vendor
-      const vendorToAssess = ASSESSMENT_QUEUE[0] || VENDORS[0];
+      // Pick first vendor from queue for assessment, or use the first vendor
+      const vendorToAssess = assessmentQueue[0] || vendors[0];
       if (!vendorToAssess) {
         setAiError('No vendors in the assessment queue.');
         setIsRunningAgent(false);
@@ -462,17 +408,17 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
       setAiAssessmentResult(result);
     } catch (error: any) {
-      console.error('Agentic vendor risk error:', error);
+      logger.error('Agentic vendor risk error:', error);
       setAiError(error?.message || 'Failed to run AI vendor assessment. Please try again.');
     } finally {
       setIsRunningAgent(false);
     }
-  }, []);
+  }, [assessmentQueue, vendors]);
 
   const handleExport = useCallback(() => {
     const exportData = {
-      vendors: VENDORS,
-      assessmentQueue: ASSESSMENT_QUEUE,
+      vendors,
+      assessmentQueue,
       avgRiskScore,
       exportedAt: new Date().toISOString(),
     };
@@ -483,10 +429,10 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
     a.download = `vendor-risk-report-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [avgRiskScore]);
+  }, [vendors, assessmentQueue, avgRiskScore]);
 
   const tabs = [
-    { key: 'queue', label: 'Vendor Queue', icon: <Layers size={16} />, count: VENDORS.length },
+    { key: 'queue', label: 'Vendor Queue', icon: <Layers size={16} />, count: vendors.length },
     { key: 'assessments', label: 'Active Assessments', icon: <Activity size={16} />, count: activeAssessments },
     { key: 'scores', label: 'Risk Scores', icon: <BarChart3 size={16} /> },
     { key: 'reports', label: 'Reports', icon: <FileText size={16} /> },
@@ -494,6 +440,26 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
   return (
     <div className="h-full flex flex-col space-y-6">
+      {/* Loading / error banner */}
+      {loading && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2 text-blue-700 text-sm">
+          <Loader2 size={14} className="animate-spin" />
+          Loading vendor risk data...
+        </div>
+      )}
+      {loadError && !loading && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2 text-red-700 text-sm">
+          <AlertTriangle size={14} />
+          {loadError}
+        </div>
+      )}
+      {!loading && !loadError && vendors.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center gap-2 text-yellow-800 text-sm">
+          <Info size={14} />
+          No vendors yet. Add vendors to your organization to begin tracking risk.
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -540,7 +506,7 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
             <span className="text-xs text-gray-500 font-medium">Total Vendors</span>
             <Building2 size={16} className="text-brand-500" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{VENDORS.length}</p>
+          <p className="text-2xl font-bold text-gray-900">{vendors.length}</p>
           <p className="text-xs text-gray-400">managed vendors</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -930,7 +896,7 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
               </div>
             </div>
 
-            {ASSESSMENT_QUEUE.map(assessment => (
+            {assessmentQueue.map(assessment => (
               <div key={assessment.id} className={`bg-white border rounded-xl p-4 ${assessment.status === 'completed' ? 'border-green-200' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -1103,9 +1069,9 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
             {/* Tier Distribution */}
             <div className="grid grid-cols-4 gap-4">
               {(['critical', 'high', 'medium', 'low'] as const).map(tier => {
-                const count = VENDORS.filter(v => v.tier === tier).length;
+                const count = vendors.filter(v => v.tier === tier).length;
                 const avgScore = count > 0
-                  ? Math.round(VENDORS.filter(v => v.tier === tier).reduce((s, v) => s + v.overallRiskScore, 0) / count)
+                  ? Math.round(vendors.filter(v => v.tier === tier).reduce((s, v) => s + v.overallRiskScore, 0) / count)
                   : 0;
                 const colors: Record<string, { bg: string; border: string; text: string }> = {
                   critical: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
@@ -1132,7 +1098,7 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 <div>
                   <h4 className="text-sm font-semibold text-green-900">Continuous Monitoring Active</h4>
                   <p className="text-xs text-green-700 mt-0.5">
-                    AI agents continuously monitor all {VENDORS.length} vendors for risk score changes, certification expirations, security incidents,
+                    AI agents continuously monitor all {vendors.length} vendors for risk score changes, certification expirations, security incidents,
                     and fourth-party supply chain events. Alert thresholds are configured per vendor tier.
                   </p>
                   <div className="flex items-center gap-4 mt-2 text-xs text-green-600">

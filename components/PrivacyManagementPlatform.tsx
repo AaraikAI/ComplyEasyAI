@@ -13,6 +13,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
+import { logger } from '../utils/logger';
 import {
   ArrowLeft,
   Shield,
@@ -231,7 +232,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       }
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
-      console.error('PrivacyManagementPlatform data load error:', err);
+      logger.error('PrivacyManagementPlatform data load error:', err);
     } finally {
       setLoading(false);
     }

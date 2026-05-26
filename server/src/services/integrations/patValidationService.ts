@@ -861,24 +861,19 @@ class PATValidationService {
     }
     this.validateBaseUrl(baseUrl);
 
-    try {
-      // Workday uses OAuth2, validate by checking token format and making a test call
-      if (!token || token.length < 20) {
-        return { valid: false, error: 'Workday token appears to be invalid' };
-      }
-
-      // Basic validation - Workday tokens are typically JWT or opaque strings
-      // We can't fully validate without making an authenticated API call
-      // For now, validate format
-      return {
-        valid: true,
-        userInfo: {
-          authenticated: true,
-        },
-      };
-    } catch (error: any) {
-      throw error;
+    // Workday uses OAuth2, validate by checking token format and making a test call
+    if (!token || token.length < 20) {
+      return { valid: false, error: 'Workday token appears to be invalid' };
     }
+
+    // Basic validation - Workday tokens are typically JWT or opaque strings
+    // Format-level check only; full validation requires an authenticated API call.
+    return {
+      valid: true,
+      userInfo: {
+        authenticated: true,
+      },
+    };
   }
 
   /**
@@ -1821,7 +1816,7 @@ class PATValidationService {
     }
 
     // Basic format validation - tokens usually contain alphanumeric characters
-    if (!/^[a-zA-Z0-9_\-\.]+$/.test(token)) {
+    if (!/^[a-zA-Z0-9_.-]+$/.test(token)) {
       return { valid: false, error: 'Token contains invalid characters' };
     }
 

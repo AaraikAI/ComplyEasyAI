@@ -167,8 +167,10 @@ model Organization {
   customRoles                   CustomRole[]
   brandingConfig                BrandingConfig?
   customDashboards              CustomDashboard[]
+  dashboardWidgets              DashboardWidget[]
   reportTemplates               ReportTemplate[]
   cicdGatePolicies              CICDGatePolicy[]
+  cicdGateResults               CICDGateResult[]
   searchIndices                 SearchIndex[]
   vendorMonitoringChecks        VendorMonitoringCheck[]
   evidenceCollectionRules       EvidenceCollectionRule[]
@@ -6593,15 +6595,21 @@ model CustomDashboard {
 }
 
 model DashboardWidget {
-  id          String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  dashboardId String
-  type        String // METRIC_CARD, LINE_CHART, BAR_CHART, etc.
-  title       String
-  config      Json?
-  position    Json? // x, y, width, height
-  dashboard   CustomDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  id             String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  dashboardId    String
+  // Nullable initially — production backfill required from parent CustomDashboard
+  // before changing to NOT NULL. See migration TODO.
+  organizationId String?
+  type           String // METRIC_CARD, LINE_CHART, BAR_CHART, etc.
+  title          String
+  config         Json?
+  position       Json? // x, y, width, height
+  dashboard      CustomDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([dashboardId])
+  @@index([organizationId])
+  @@index([dashboardId, organizationId])
 }
 
 // ── 6.1 Report Builder ───────────────────────────────────────────────
@@ -6641,18 +6649,24 @@ model CICDGatePolicy {
 }
 
 model CICDGateResult {
-  id          String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  policyId    String
-  repository  String
-  branch      String
-  commitHash  String
-  status      String // PASSED, FAILED, SKIPPED
-  details     Json?
-  triggeredAt DateTime       @default(now())
-  policy      CICDGatePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  id             String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  policyId       String
+  // Nullable initially — production backfill required from parent CICDGatePolicy
+  // before changing to NOT NULL. See migration TODO.
+  organizationId String?
+  repository     String
+  branch         String
+  commitHash     String
+  status         String // PASSED, FAILED, SKIPPED
+  details        Json?
+  triggeredAt    DateTime       @default(now())
+  policy         CICDGatePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([policyId])
   @@index([repository])
+  @@index([organizationId])
+  @@index([policyId, organizationId])
 }
 
 // ── 1.3 Search Index ─────────────────────────────────────────────────

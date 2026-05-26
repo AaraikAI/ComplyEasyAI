@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -289,7 +290,7 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
       setResults(prev => [...prev, newResult]);
       setExpandedResult(newResult.id);
     } catch (error: any) {
-      console.error('NL query error:', error);
+      logger.error('NL query error:', error);
 
       const errorResult: QueryResult = {
         id: `qr-err-${Date.now()}`,

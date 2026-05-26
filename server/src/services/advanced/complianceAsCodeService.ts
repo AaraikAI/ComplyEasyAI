@@ -1176,6 +1176,14 @@ allow {
    */
   async deletePolicy(policyId: string, organizationId: string): Promise<void> {
     try {
+      // Verify ownership before any side effects
+      const existingPolicy = await prisma.compliancePolicy.findFirst({
+        where: { id: policyId, organizationId },
+      });
+      if (!existingPolicy) {
+        throw new AppError('Compliance policy not found', 404);
+      }
+
       const policyFile = path.join(this.policiesPath, `${policyId}.rego`);
       if (fs.existsSync(policyFile)) {
         fs.unlinkSync(policyFile);

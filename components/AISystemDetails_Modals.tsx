@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '../utils/logger';
 
 export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, onClose }) => {
   const { user } = useAuth();
@@ -42,7 +43,7 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
       });
       onClose();
     } catch (error: any) {
-      console.error('Failed to create risk activity:', error);
+      logger.error('Failed to create risk activity:', error);
       toast.error(`Failed to create risk activity: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
@@ -201,7 +202,7 @@ export const EditRiskActivityModal: React.FC<any> = ({ activity, teamMembers, on
       });
       onClose();
     } catch (error: any) {
-      console.error('Failed to update risk activity:', error);
+      logger.error('Failed to update risk activity:', error);
       toast.error(`Failed to update risk activity: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
@@ -353,7 +354,7 @@ export const CreateActorModal: React.FC<any> = ({ systemId, teamMembers, onClose
       });
       onClose();
     } catch (error: any) {
-      console.error('Failed to create actor:', error);
+      logger.error('Failed to create actor:', error);
       toast.error(`Failed to create actor: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);

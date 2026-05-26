@@ -8,6 +8,7 @@
  */
 
 import en from './locales/en.json';
+import { logger } from '../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -110,7 +111,7 @@ export async function loadLocale(locale: SupportedLocale): Promise<TranslationDi
     loadedLocales[locale] = module.default;
     return module.default;
   } catch (err) {
-    console.error(`[i18n] Failed to load locale "${locale}":`, err);
+    logger.error(`[i18n] Failed to load locale "${locale}":`, err);
     return loadedLocales[DEFAULT_LOCALE];
   }
 }

@@ -12,6 +12,7 @@ import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { toast } from 'sonner';
 import { useSubmitGuard } from '../hooks/useSubmitGuard';
+import { logger } from '../utils/logger';
 
 interface SettingsProps {
   onNavigateToIntegrations?: () => void;
@@ -162,7 +163,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         const teamMembers = await api.team.list();
         setUsers(teamMembers);
       } catch (error) {
-        console.error('Failed to load team members:', error);
+        logger.error('Failed to load team members:', error);
         // Fallback to current user if API fails
         if (currentUser) {
           setUsers([currentUser]);
@@ -187,7 +188,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         const integrationsArray = Array.isArray(connectedIntegrations) ? connectedIntegrations : [];
         setIntegrations(integrationsArray);
       } catch (error) {
-        console.error('Failed to load integrations:', error);
+        logger.error('Failed to load integrations:', error);
         setIntegrations([]);
       } finally {
         setIsLoadingIntegrations(false);
@@ -207,7 +208,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         setTwoFactorEnabled(status.enabled);
         setTwoFactorVerified(status.verified);
       } catch (error) {
-        console.error('Failed to load 2FA status:', error);
+        logger.error('Failed to load 2FA status:', error);
       }
     };
 
@@ -237,7 +238,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         setOrganizationTier(tier);
         setCurrentTier(tier);
       } catch (error) {
-        console.error('Failed to load organization:', error);
+        logger.error('Failed to load organization:', error);
       }
     };
 
@@ -264,7 +265,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
           setUsageMetrics(usage);
         }
       } catch (error: any) {
-        console.error('Failed to load billing details:', error);
+        logger.error('Failed to load billing details:', error);
         setBillingError(error.message || 'Failed to load billing information');
       } finally {
         setIsLoadingBilling(false);
@@ -283,7 +284,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
           });
         }
       } catch (error: any) {
-        console.error('Failed to load feature subscriptions:', error);
+        logger.error('Failed to load feature subscriptions:', error);
         // Don't show error - feature subscriptions are optional
       } finally {
         setIsLoadingFeatures(false);
@@ -324,7 +325,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       setNewMember({ name: '', email: '', role: 'viewer' });
       toast.success('Invitation sent successfully!');
     } catch (error: any) {
-      console.error('Failed to invite team member:', error);
+      logger.error('Failed to invite team member:', error);
       const errorMessage = error.message || 'Failed to invite team member. Please try again.';
       if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
         toast.warning('This email is already in use. Please use a different email.');
@@ -406,7 +407,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       
       // Don't close modal yet - show results
     } catch (error: any) {
-      console.error('Failed to process bulk invite:', error);
+      logger.error('Failed to process bulk invite:', error);
       toast.error(error.message || 'Failed to process bulk invite. Please check the CSV format.');
     } finally {
       setIsProcessingBulkInvite(false);
@@ -438,7 +439,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
           });
         }
       } catch (error) {
-        console.error('Failed to load proration preview:', error);
+        logger.error('Failed to load proration preview:', error);
         // Continue without proration preview
       } finally {
         setIsLoadingProration(false);
@@ -461,7 +462,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         throw new Error('No checkout URL received');
       }
     } catch (error: any) {
-      console.error('Failed to create checkout:', error);
+      logger.error('Failed to create checkout:', error);
       const errorMessage = error.message || 'Failed to create checkout session. Please check your Stripe configuration.';
       setPlanChangeStatus(`Error: ${errorMessage}`);
       toast.error(errorMessage);
@@ -475,7 +476,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         window.location.href = response.url;
       }
     } catch (error: any) {
-      console.error('Failed to open billing portal:', error);
+      logger.error('Failed to open billing portal:', error);
       toast.error(error.message || 'Failed to open billing portal');
     }
   };
@@ -520,7 +521,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
 
         toast.success('Profile updated successfully!');
       } catch (error: any) {
-        console.error('Failed to update profile:', error);
+        logger.error('Failed to update profile:', error);
         const errorMessage = error.message || 'Failed to update profile';
         if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
           toast.warning('This email is already in use. Please use a different email.');
@@ -869,7 +870,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                              window.location.reload(); // Simple refresh to update avatar
                            }
                          } catch (error: any) {
-                           console.error('Avatar upload error:', error);
+                           logger.error('Avatar upload error:', error);
                            toast.error(error.message || 'Failed to upload avatar');
                          }
                        }
@@ -976,7 +977,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                         setBackupCodes(codes);
                         setShow2FASetup(true);
                       } catch (error: any) {
-                        console.error('Failed to setup 2FA:', error);
+                        logger.error('Failed to setup 2FA:', error);
                         toast.error(`Failed to setup 2FA: ${error.message || 'Unknown error'}`);
                       } finally {
                         setIsLoading2FA(false);
@@ -1047,7 +1048,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                               setVerificationToken('');
                               toast.success('Two-factor authentication enabled successfully!');
                             } catch (error: any) {
-                              console.error('Failed to enable 2FA:', error);
+                              logger.error('Failed to enable 2FA:', error);
                               toast.error(`Failed to enable 2FA: ${error.message || 'Invalid code. Please try again.'}`);
                             } finally {
                               setIsLoading2FA(false);
@@ -1112,7 +1113,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                           setTwoFactorVerified(false);
                           toast.success('Two-factor authentication has been disabled.');
                         } catch (error: any) {
-                          console.error('Failed to disable 2FA:', error);
+                          logger.error('Failed to disable 2FA:', error);
                           toast.error(`Failed to disable 2FA: ${error.message || 'Unknown error'}`);
                         } finally {
                           setIsLoading2FA(false);
@@ -1131,7 +1132,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                           setBackupCodes(result.backupCodes || result.data?.backupCodes || []);
                           toast.success('New backup codes generated. Please save them securely.');
                         } catch (error: any) {
-                          console.error('Failed to regenerate codes:', error);
+                          logger.error('Failed to regenerate codes:', error);
                           toast.error(`Failed to regenerate codes: ${error.message || 'Unknown error'}`);
                         } finally {
                           setIsLoading2FA(false);
@@ -1452,7 +1453,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                                     setUsers(updated);
                                     toast.success(`Role updated to ${newRole} successfully!`);
                                   } catch (error: any) {
-                                    console.error('Failed to update role:', error);
+                                    logger.error('Failed to update role:', error);
                                     const errorMsg = error.message || 'Unknown error';
                                     if (errorMsg.includes('only admin') || errorMsg.includes('last admin')) {
                                       toast.warning('Cannot change role: This is the only admin user. Please assign another admin before changing this role.');
@@ -1486,7 +1487,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                                 setUsers(updated);
                                 toast.success('Team member removed successfully');
                                 } catch (error: any) {
-                                  console.error('Failed to remove team member:', error);
+                                  logger.error('Failed to remove team member:', error);
                                   toast.error(`Failed to remove team member: ${error.message || 'Unknown error'}`);
                                 }
                               }
@@ -1636,7 +1637,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                                 toast.info('Please use the "View Catalog" button to connect new integrations.');
                               }
                             } catch (error: any) {
-                              console.error('Failed to toggle integration:', error);
+                              logger.error('Failed to toggle integration:', error);
                               toast.error(`Failed to toggle integration: ${error.message || 'Unknown error'}`);
                             }
                           }} 

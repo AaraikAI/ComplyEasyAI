@@ -19,6 +19,7 @@ import {
 } from '../validators/scimSchemas';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 import crypto from 'crypto';
 
 const router = Router();
@@ -148,12 +149,16 @@ const scimAuthenticate: RequestHandler = async (
 
     next();
   } catch (error) {
-    logger.error('SCIM auth error:', error);
-    res.status(500).json({
-      schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-      detail: 'Internal server error',
-      status: '500',
+    logger.error('SCIM auth failed', {
+      err: error,
+      endpoint: req.path,
+      method: req.method,
+      scimId: req.params?.id,
+      ip: req.ip,
     });
+    const wrapped = new AppError('SCIM authentication failed', 500);
+    (wrapped as any).cause = error;
+    return next(wrapped);
   }
 };
 
@@ -262,7 +267,7 @@ router.use('/v2/Groups', scimAuthenticate);
 
 router.get(
   '/v2/Users',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
     const baseUrl = getBaseUrl(req);
@@ -310,12 +315,16 @@ router.get(
         Resources: users.map((u) => toSCIMUser(u, baseUrl)),
       });
     } catch (error) {
-      logger.error('SCIM list users error:', error);
-      res.status(500).json({
-        schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-        detail: 'Failed to list users',
-        status: '500',
+      logger.error('SCIM list users failed', {
+        err: error,
+        endpoint: req.path,
+        method: req.method,
+        userId: req.params?.id,
+        ip: req.ip,
       });
+      const wrapped = new AppError('Failed to list users', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -327,7 +336,7 @@ router.get(
 router.post(
   '/v2/Users',
   validateBody(scimCreateUserSchema),
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
     const baseUrl = getBaseUrl(req);
@@ -373,12 +382,16 @@ router.post(
 
       res.status(201).json(toSCIMUser(user, baseUrl));
     } catch (error) {
-      logger.error('SCIM create user error:', error);
-      res.status(500).json({
-        schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-        detail: 'Failed to create user',
-        status: '500',
+      logger.error('SCIM create user failed', {
+        err: error,
+        endpoint: req.path,
+        method: req.method,
+        userId: req.params?.id,
+        ip: req.ip,
       });
+      const wrapped = new AppError('Failed to create user', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -389,7 +402,7 @@ router.post(
 
 router.get(
   '/v2/Users/:id',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
     const baseUrl = getBaseUrl(req);
@@ -410,12 +423,16 @@ router.get(
 
       res.json(toSCIMUser(user, baseUrl));
     } catch (error) {
-      logger.error('SCIM get user error:', error);
-      res.status(500).json({
-        schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-        detail: 'Failed to get user',
-        status: '500',
+      logger.error('SCIM get user failed', {
+        err: error,
+        endpoint: req.path,
+        method: req.method,
+        userId: req.params?.id,
+        ip: req.ip,
       });
+      const wrapped = new AppError('Failed to get user', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -427,7 +444,7 @@ router.get(
 router.put(
   '/v2/Users/:id',
   validateBody(scimReplaceUserSchema),
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
     const baseUrl = getBaseUrl(req);
@@ -467,12 +484,16 @@ router.put(
 
       res.json(toSCIMUser(user, baseUrl));
     } catch (error) {
-      logger.error('SCIM replace user error:', error);
-      res.status(500).json({
-        schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-        detail: 'Failed to replace user',
-        status: '500',
+      logger.error('SCIM replace user failed', {
+        err: error,
+        endpoint: req.path,
+        method: req.method,
+        userId: req.params?.id,
+        ip: req.ip,
       });
+      const wrapped = new AppError('Failed to replace user', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -484,7 +505,7 @@ router.put(
 router.patch(
   '/v2/Users/:id',
   validateBody(scimPatchUserSchema),
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
     const baseUrl = getBaseUrl(req);
@@ -572,12 +593,16 @@ router.patch(
 
       res.json(toSCIMUser(user, baseUrl));
     } catch (error) {
-      logger.error('SCIM patch user error:', error);
-      res.status(500).json({
-        schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-        detail: 'Failed to update user',
-        status: '500',
+      logger.error('SCIM patch user failed', {
+        err: error,
+        endpoint: req.path,
+        method: req.method,
+        userId: req.params?.id,
+        ip: req.ip,
       });
+      const wrapped = new AppError('Failed to update user', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -588,7 +613,7 @@ router.patch(
 
 router.delete(
   '/v2/Users/:id',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
 
@@ -614,12 +639,16 @@ router.delete(
 
       res.status(204).send();
     } catch (error) {
-      logger.error('SCIM deactivate user error:', error);
-      res.status(500).json({
-        schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-        detail: 'Failed to deactivate user',
-        status: '500',
+      logger.error('SCIM deactivate user failed', {
+        err: error,
+        endpoint: req.path,
+        method: req.method,
+        userId: req.params?.id,
+        ip: req.ip,
       });
+      const wrapped = new AppError('Failed to deactivate user', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -630,7 +659,7 @@ router.delete(
 
 router.get(
   '/v2/Groups',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
     const baseUrl = getBaseUrl(req);
@@ -690,12 +719,16 @@ router.get(
         Resources: resources,
       });
     } catch (error) {
-      logger.error('SCIM list groups error:', error);
-      res.status(500).json({
-        schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-        detail: 'Failed to list groups',
-        status: '500',
+      logger.error('SCIM list groups failed', {
+        err: error,
+        endpoint: req.path,
+        method: req.method,
+        userId: req.params?.id,
+        ip: req.ip,
       });
+      const wrapped = new AppError('Failed to list groups', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );
@@ -707,7 +740,7 @@ router.get(
 router.post(
   '/v2/Groups',
   validateBody(scimCreateGroupSchema),
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
     const baseUrl = getBaseUrl(req);
@@ -792,12 +825,16 @@ router.post(
         },
       });
     } catch (error) {
-      logger.error('SCIM create group error:', error);
-      res.status(500).json({
-        schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-        detail: 'Failed to create group',
-        status: '500',
+      logger.error('SCIM create group failed', {
+        err: error,
+        endpoint: req.path,
+        method: req.method,
+        userId: req.params?.id,
+        ip: req.ip,
       });
+      const wrapped = new AppError('Failed to create group', 500);
+      (wrapped as any).cause = error;
+      return next(wrapped);
     }
   })
 );

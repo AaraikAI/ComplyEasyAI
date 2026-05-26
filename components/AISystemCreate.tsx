@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { ArrowLeft, Brain, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 interface AISystemCreateProps {
   onBack: () => void;
@@ -45,7 +46,7 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
       const system = await api.aiRmf.createAISystem(formData);
       onSuccess((system as any).id);
     } catch (error: any) {
-      console.error('Failed to create AI system:', error);
+      logger.error('Failed to create AI system:', error);
       toast.error(`Failed to create AI system: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);

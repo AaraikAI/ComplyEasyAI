@@ -762,6 +762,17 @@ Make it professional, legally sound, and actionable.`;
     organizationId: string,
     userId: string
   ): Promise<any> {
+    // Verify the control belongs to the caller's organization via its parent framework
+    const control = await prisma.frameworkControl.findFirst({
+      where: {
+        id: action.controlId,
+        framework: { organizationId },
+      },
+    });
+    if (!control) {
+      throw new AppError('Framework control not found', 404);
+    }
+
     // Auto-implement control
     await prisma.frameworkControl.update({
       where: { id: action.controlId },

@@ -16,6 +16,7 @@ import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import { Globe, CheckCircle, AlertTriangle, X, Plus, FileText, Shield, Users, Eye, Megaphone, Ban } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '../utils/logger';
 
 interface DSAPlatform {
   id: string;
@@ -203,7 +204,7 @@ export const DSAPlatformManagement: React.FC = () => {
       );
     } catch (err: unknown) {
       // Do not block UI on history failure; just log error locally
-      console.error('Failed to load moderation history', err);
+      logger.error('Failed to load moderation history', err);
     }
   };
 
@@ -212,7 +213,7 @@ export const DSAPlatformManagement: React.FC = () => {
       const response = await api.euRegulations.dsa.getTransparencyReports(platformId);
       setTransparencyReports(response.reports || []);
     } catch (err: unknown) {
-      console.error('Failed to load transparency reports', err);
+      logger.error('Failed to load transparency reports', err);
     }
   };
 
@@ -221,7 +222,7 @@ export const DSAPlatformManagement: React.FC = () => {
       const response = await api.euRegulations.dsa.getRiskAssessments(platformId);
       setRiskAssessments(response.assessments || []);
     } catch (err: unknown) {
-      console.error('Failed to load risk assessments', err);
+      logger.error('Failed to load risk assessments', err);
     }
   };
 
@@ -252,7 +253,7 @@ export const DSAPlatformManagement: React.FC = () => {
         });
       }
     } catch (err: unknown) {
-      console.error('Failed to load feed config', err);
+      logger.error('Failed to load feed config', err);
     }
   };
 
@@ -282,7 +283,7 @@ export const DSAPlatformManagement: React.FC = () => {
       const response = await api.euRegulations.dsa.getAdsFromRepository(platformId);
       setAdHistory(response.ads || []);
     } catch (err: unknown) {
-      console.error('Failed to load ad history', err);
+      logger.error('Failed to load ad history', err);
     }
   };
 

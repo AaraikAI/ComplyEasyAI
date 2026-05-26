@@ -483,12 +483,13 @@ class ZeroKnowledgeService {
    */
   private extractPublicSignals(circuitName: string, input: any): string[] {
     switch (circuitName) {
-      case 'compliance_check':
+      case 'compliance_check': {
         // Public output: compliance score (0-100)
         const score = Math.floor(
           (input.controlsImplemented / input.totalControls) * 100
         );
         return [score.toString()];
+      }
 
       case 'data_ownership':
         // Public output: user ID hash

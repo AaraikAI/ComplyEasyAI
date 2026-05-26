@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 interface FrameworkControl {
   id: string;
@@ -96,7 +97,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         const members = await api.team.list();
         setTeamMembers(members || []);
       } catch (error) {
-        console.error('Failed to load team members:', error);
+        logger.error('Failed to load team members:', error);
       }
     };
     loadTeamMembers();
@@ -172,7 +173,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       
       setReadinessScore(calculateReadinessScore());
     } catch (error) {
-      console.error('Failed to load framework details:', error);
+      logger.error('Failed to load framework details:', error);
       setControls([]);
     } finally {
       setIsLoading(false);
@@ -219,7 +220,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         }, 3000);
       }
     } catch (error: any) {
-      console.error('Smart upload failed:', error);
+      logger.error('Smart upload failed:', error);
       setAnalysisResult(`Error: ${error.message || 'Failed to upload file'}`);
     } finally {
       setAnalyzingFile(null);
@@ -247,7 +248,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         setAnalysisResult(null);
       }, 3000);
     } catch (error: any) {
-      console.error('Failed to accept suggestion:', error);
+      logger.error('Failed to accept suggestion:', error);
       toast.error(`Failed to accept suggestion: ${error.message || 'Unknown error'}`);
     }
   };
@@ -266,7 +267,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         setAnalysisResult(null);
       }, 3000);
     } catch (error: any) {
-      console.error('Failed to reject suggestion:', error);
+      logger.error('Failed to reject suggestion:', error);
       toast.error(`Failed to reject suggestion: ${error.message || 'Unknown error'}`);
     }
   };
@@ -325,7 +326,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         triggerCelebration('First Evidence Uploaded!');
       }
     } catch (error: any) {
-      console.error('Evidence upload failed:', error);
+      logger.error('Evidence upload failed:', error);
       const errorMessage = error.message || error.error || 'Unknown error';
       toast.error(`Failed to upload evidence: ${errorMessage}. Please ensure you have the necessary permissions, the file format is supported, and the file size is under 50MB.`);
     } finally {
@@ -372,7 +373,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         onDataChanged();
       }
     } catch (error: any) {
-      console.error('Failed to create control:', error);
+      logger.error('Failed to create control:', error);
       const errorMessage = error.message || error.error || 'Unknown error';
       toast.error(`Failed to create control: ${errorMessage}`);
     }
@@ -408,7 +409,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         triggerCelebration('First Control Passed!');
       }
     } catch (error: any) {
-      console.error('Failed to update control status:', error);
+      logger.error('Failed to update control status:', error);
       toast.error(`Failed to update control status: ${error.message || 'Unknown error'}`);
     }
   };
@@ -433,11 +434,11 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     try {
       const [mappingsData, versionsData] = await Promise.all([
         api.frameworks.getControlMappings(control.id).catch(err => {
-          console.error('Failed to load mappings:', err);
+          logger.error('Failed to load mappings:', err);
           return { mappings: [] };
         }),
         api.frameworks.getEvidenceVersions(control.id).catch(err => {
-          console.error('Failed to load versions:', err);
+          logger.error('Failed to load versions:', err);
           return { versions: [] };
         }),
       ]);
@@ -457,7 +458,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         setShowMappings(true);
       }
     } catch (error) {
-      console.error('Failed to load mappings/versions:', error);
+      logger.error('Failed to load mappings/versions:', error);
       setControlMappings([]);
       setEvidenceVersions([]);
     }
@@ -505,7 +506,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       setConflictData(null);
       setPendingUpdate(null);
     } catch (error: any) {
-      console.error('Failed to update audit date:', error);
+      logger.error('Failed to update audit date:', error);
       
       // Check for 409 Conflict
       if (error.status === 409 || error.message?.includes('409')) {
@@ -555,7 +556,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       
       toast.success('Notes saved successfully');
     } catch (error: any) {
-      console.error('Failed to save notes:', error);
+      logger.error('Failed to save notes:', error);
       
       // Check for 409 Conflict
       if (error.status === 409 || error.message?.includes('409')) {
@@ -610,7 +611,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       setShowBulkUpdate(false);
       toast.success(`Successfully updated ${selectedControls.size} control(s)`);
     } catch (error: any) {
-      console.error('Failed to bulk update controls:', error);
+      logger.error('Failed to bulk update controls:', error);
       toast.error(`Failed to bulk update: ${error.message || 'Unknown error'}`);
     }
   };
@@ -640,7 +641,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         onDataChanged();
       }
     } catch (error: any) {
-      console.error('Failed to delete control:', error);
+      logger.error('Failed to delete control:', error);
       toast.error(`Failed to delete control: ${error.message || 'Unknown error'}`);
     } finally {
       setDeletingControl(null);
@@ -667,7 +668,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Failed to export control:', error);
+      logger.error('Failed to export control:', error);
       toast.error('Failed to export control report. Please try again.');
     } finally {
       setExportingControl(null);
@@ -1514,7 +1515,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                                         setControlMappings(mappingsArray);
                                         // Mappings reloaded after delete
                                       } catch (reloadError: any) {
-                                        console.error('Failed to reload mappings after delete:', reloadError);
+                                        logger.error('Failed to reload mappings after delete:', reloadError);
                                         // Fallback: remove from local state
                                         setControlMappings(controlMappings.filter(m => m.id !== mapping.id));
                                       }
@@ -1550,7 +1551,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                                   }));
                                   allControls.push(...fwControls);
                                 } catch (err) {
-                                  console.error(`Failed to load controls for framework ${fw.id}:`, err);
+                                  logger.error(`Failed to load controls for framework ${fw.id}:`, err);
                                 }
                               }
                             }
@@ -1706,7 +1707,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                         setShowMappings(true); // Automatically show mappings after creation
                         // Mappings reloaded after creation
                       } catch (reloadError: any) {
-                        console.error('Failed to reload mappings:', reloadError);
+                        logger.error('Failed to reload mappings:', reloadError);
                         // Fallback: reload entire control
                         await handleControlClick(selectedControl);
                         setShowMappings(true);

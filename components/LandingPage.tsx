@@ -14,6 +14,7 @@ import { TierName } from '../types';
 import { ThemeToggleCompact } from './ThemeToggle';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Feature data grouped by tab category
@@ -128,7 +129,7 @@ export const LandingPage: React.FC = () => {
       }
       setAuthStep('magic-link-sent');
     } catch (e: any) {
-      console.error('Login error:', e);
+      logger.error('Login error:', e);
       const errorMsg = e?.message || 'Failed to send magic link';
       // Backend auto-creates users, so errors are likely network/server issues
       if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch') || errorMsg.includes('Cannot connect')) {
@@ -165,7 +166,7 @@ export const LandingPage: React.FC = () => {
       setMagicLinkEmail(email);
       setAuthStep('magic-link-sent');
     } catch (error: any) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
       const errorMsg = error?.message || 'Unknown error';
       if (errorMsg.includes('already exists') || errorMsg.includes('409')) {
         // This shouldn't happen anymore since backend handles it, but just in case
@@ -194,7 +195,7 @@ export const LandingPage: React.FC = () => {
         toast.info('Please check your email and click the magic link to sign in. The simulation feature is only available in development mode.');
       }
     } catch (error: any) {
-      console.error('Magic link verification error:', error);
+      logger.error('Magic link verification error:', error);
       toast.error(`Failed to verify magic link: ${error?.message || 'Unknown error'}. Please try requesting a new magic link.`);
     }
     setLoading(false);
@@ -213,7 +214,7 @@ export const LandingPage: React.FC = () => {
         toast.success('A new magic link has been sent to your email.');
       }
     } catch (error: any) {
-      console.error('Resend magic link error:', error);
+      logger.error('Resend magic link error:', error);
       toast.error(`Failed to resend magic link: ${error?.message || 'Unknown error'}`);
     }
     setLoading(false);
@@ -792,7 +793,7 @@ export const LandingPage: React.FC = () => {
                         try {
                           await login(email, password);
                         } catch (error: any) {
-                          console.error('Login error:', error);
+                          logger.error('Login error:', error);
                           toast.error(error.message || 'Login failed. Please check your credentials.');
                         } finally {
                           setLoading(false);

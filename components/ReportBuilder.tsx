@@ -25,6 +25,7 @@ import {
   Users, Zap, FileDown, Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '../utils/logger';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
 
@@ -245,7 +246,7 @@ const ReportBuilder: React.FC = () => {
       ];
       setTemplates(merged);
     } catch (err: any) {
-      console.error('Failed to load templates:', err);
+      logger.error('Failed to load templates:', err);
       const builtInWithDates = BUILT_IN_TEMPLATES.map(t => ({
         ...t,
         createdAt: new Date().toISOString(),

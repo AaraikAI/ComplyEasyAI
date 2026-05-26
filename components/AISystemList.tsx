@@ -7,6 +7,7 @@ import {
   AlertTriangle, CheckCircle, Clock, Trash2 
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '../utils/logger';
 
 interface AISystemListProps {
   onSelectSystem: (systemId: string) => void;
@@ -47,7 +48,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
       const data = await api.aiRmf.getAISystems(filters);
       setSystems(data as any[]);
     } catch (error: any) {
-      console.error('Failed to load AI systems:', error);
+      logger.error('Failed to load AI systems:', error);
     } finally {
       setLoading(false);
     }
@@ -63,7 +64,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
       await api.aiRmf.deleteAISystem(systemId);
       loadSystems();
     } catch (error: any) {
-      console.error('Failed to delete system:', error);
+      logger.error('Failed to delete system:', error);
       toast.error(`Failed to delete system: ${error.message || 'Unknown error'}`);
     } finally {
       setDeletingSystem(null);

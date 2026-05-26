@@ -183,7 +183,6 @@ beforeEach(async () => {
   app.use('/api/enterprise', enterpriseRoutes);
 });
 
-// eslint-disable-next-line jest/no-disabled-tests
 describe.skip('Enterprise Routes Integration', () => {
   // ===========================================================================
   // Risk Management Tests

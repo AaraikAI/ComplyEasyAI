@@ -10,6 +10,7 @@ import {
   BookOpen, Filter, X, Sliders, Sparkles, Award, Gauge,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -111,41 +112,9 @@ interface ComplianceScoreForecastingProps {
 }
 
 // ---------------------------------------------------------------------------
-// Demo Data
+// What-if scenario presets (UI catalog — represent proposed control bundles
+// the user can apply against their own current score). Not user data.
 // ---------------------------------------------------------------------------
-
-const FRAMEWORK_PROJECTIONS: FrameworkProjection[] = [
-  { id: 'fw-1', name: 'SOC 2 Type II', currentScore: 82, projected30: 84, projected60: 87, projected90: 89, projected180: 93, trend: 'improving', trendDelta: 3.2, category: 'Security' },
-  { id: 'fw-2', name: 'ISO 27001', currentScore: 78, projected30: 79, projected60: 81, projected90: 83, projected180: 88, trend: 'improving', trendDelta: 1.8, category: 'Security' },
-  { id: 'fw-3', name: 'GDPR', currentScore: 91, projected30: 91, projected60: 90, projected90: 89, projected180: 87, trend: 'declining', trendDelta: -1.2, category: 'Privacy' },
-  { id: 'fw-4', name: 'HIPAA', currentScore: 75, projected30: 76, projected60: 78, projected90: 80, projected180: 85, trend: 'improving', trendDelta: 2.5, category: 'Healthcare' },
-  { id: 'fw-5', name: 'PCI DSS', currentScore: 88, projected30: 88, projected60: 88, projected90: 87, projected180: 86, trend: 'stable', trendDelta: -0.3, category: 'Financial' },
-  { id: 'fw-6', name: 'NIST 800-53', currentScore: 71, projected30: 73, projected60: 76, projected90: 79, projected180: 84, trend: 'improving', trendDelta: 4.1, category: 'Federal' },
-  { id: 'fw-7', name: 'EU AI Act', currentScore: 64, projected30: 67, projected60: 71, projected90: 75, projected180: 82, trend: 'improving', trendDelta: 5.6, category: 'AI Governance' },
-  { id: 'fw-8', name: 'CCPA', currentScore: 86, projected30: 86, projected60: 85, projected90: 85, projected180: 84, trend: 'stable', trendDelta: -0.5, category: 'Privacy' },
-];
-
-const RISK_FACTORS: RiskFactor[] = [
-  { id: 'rf-1', title: 'GDPR Enforcement Update Q2 2026', description: 'New GDPR enforcement guidelines expected to tighten data transfer rules, requiring additional safeguards for cross-border processing.', category: 'regulation', severity: 'high', impactScore: -4.5, expectedDate: '2026-04-15', status: 'upcoming', affectedFrameworks: ['GDPR', 'CCPA'] },
-  { id: 'rf-2', title: 'ISO 27001 Certification Renewal', description: 'Current ISO 27001 certification expires in 120 days. Recertification audit must be scheduled and prepared for.', category: 'certification', severity: 'critical', impactScore: -8.0, expectedDate: '2026-06-17', status: 'upcoming', affectedFrameworks: ['ISO 27001'] },
-  { id: 'rf-3', title: 'SOC 2 Annual Audit Pending', description: 'Annual SOC 2 Type II audit window begins next month. Evidence collection must be finalized.', category: 'audit', severity: 'high', impactScore: -3.0, expectedDate: '2026-03-10', status: 'active', affectedFrameworks: ['SOC 2 Type II'] },
-  { id: 'rf-4', title: 'CISO Departure - Knowledge Transfer', description: 'Current CISO departing in 60 days. Knowledge transfer and succession planning needed for compliance continuity.', category: 'personnel', severity: 'high', impactScore: -5.0, expectedDate: '2026-04-20', status: 'upcoming', affectedFrameworks: ['SOC 2 Type II', 'ISO 27001', 'NIST 800-53'] },
-  { id: 'rf-5', title: 'EU AI Act Classification Deadline', description: 'High-risk AI systems must complete conformity assessment by deadline. Three systems pending classification.', category: 'regulation', severity: 'critical', impactScore: -6.0, expectedDate: '2026-08-01', status: 'upcoming', affectedFrameworks: ['EU AI Act'] },
-  { id: 'rf-6', title: 'Cloud Migration - Security Controls', description: 'Ongoing cloud migration may temporarily reduce physical security control scores during transition.', category: 'technology', severity: 'medium', impactScore: -2.5, expectedDate: '2026-05-01', status: 'active', affectedFrameworks: ['SOC 2 Type II', 'PCI DSS', 'HIPAA'] },
-  { id: 'rf-7', title: 'PCI DSS v4.0 Transition', description: 'PCI DSS v4.0 requirements become mandatory. Several new controls need implementation.', category: 'regulation', severity: 'high', impactScore: -4.0, expectedDate: '2026-03-31', status: 'active', affectedFrameworks: ['PCI DSS'] },
-  { id: 'rf-8', title: 'Vendor Security Assessment Backlog', description: '12 vendor security assessments overdue, potentially impacting third-party risk management scores.', category: 'audit', severity: 'medium', impactScore: -2.0, expectedDate: '2026-03-15', status: 'active', affectedFrameworks: ['SOC 2 Type II', 'ISO 27001'] },
-];
-
-const RECOMMENDATIONS: Recommendation[] = [
-  { id: 'rec-1', title: 'Implement Automated Evidence Collection', description: 'Deploy automated evidence collection pipelines for SOC 2 and ISO 27001 controls. This will reduce manual effort by 60% and improve evidence freshness scores significantly.', priority: 'high', estimatedImpact: 5.2, effort: 'medium', category: 'Technical Controls', affectedFrameworks: ['SOC 2 Type II', 'ISO 27001'], timeToImplement: '4-6 weeks', status: 'pending' },
-  { id: 'rec-2', title: 'Complete Data Mapping Inventory', description: 'Finalize data flow mapping for all processing activities. Critical for GDPR Article 30 compliance and CCPA disclosure requirements.', priority: 'critical', estimatedImpact: 7.8, effort: 'high', category: 'Administrative Controls', affectedFrameworks: ['GDPR', 'CCPA'], timeToImplement: '6-8 weeks', status: 'in_progress' },
-  { id: 'rec-3', title: 'Deploy Encryption at Rest for All Databases', description: 'Enable AES-256 encryption at rest for all production databases. Currently 3 databases lack encryption configuration.', priority: 'high', estimatedImpact: 4.5, effort: 'low', category: 'Technical Controls', affectedFrameworks: ['PCI DSS', 'HIPAA', 'SOC 2 Type II'], timeToImplement: '1-2 weeks', status: 'pending' },
-  { id: 'rec-4', title: 'Establish AI Model Governance Board', description: 'Create a cross-functional AI governance board to oversee model risk management, bias testing, and EU AI Act conformity assessment processes.', priority: 'high', estimatedImpact: 8.5, effort: 'medium', category: 'Administrative Controls', affectedFrameworks: ['EU AI Act', 'NIST 800-53'], timeToImplement: '3-4 weeks', status: 'pending' },
-  { id: 'rec-5', title: 'Implement Multi-Factor Authentication Everywhere', description: 'Enforce MFA for all system access points including VPN, cloud console, and internal applications. Currently at 78% coverage.', priority: 'medium', estimatedImpact: 3.2, effort: 'low', category: 'Technical Controls', affectedFrameworks: ['SOC 2 Type II', 'ISO 27001', 'NIST 800-53'], timeToImplement: '2-3 weeks', status: 'pending' },
-  { id: 'rec-6', title: 'Update Incident Response Playbooks', description: 'Review and update all incident response playbooks to align with latest NIST guidelines and include AI-specific incident scenarios.', priority: 'medium', estimatedImpact: 2.8, effort: 'medium', category: 'Administrative Controls', affectedFrameworks: ['NIST 800-53', 'SOC 2 Type II', 'HIPAA'], timeToImplement: '3-4 weeks', status: 'pending' },
-  { id: 'rec-7', title: 'Physical Access Control Upgrade', description: 'Upgrade badge access systems to biometric authentication for server rooms and sensitive areas. Current system lacks audit trail integration.', priority: 'low', estimatedImpact: 2.0, effort: 'high', category: 'Physical Controls', affectedFrameworks: ['SOC 2 Type II', 'PCI DSS'], timeToImplement: '8-12 weeks', status: 'pending' },
-  { id: 'rec-8', title: 'Automate HIPAA Training Compliance', description: 'Implement automated HIPAA training assignment, tracking, and certification renewal. 15% of workforce is overdue for annual training.', priority: 'high', estimatedImpact: 3.8, effort: 'low', category: 'Administrative Controls', affectedFrameworks: ['HIPAA'], timeToImplement: '1-2 weeks', status: 'completed' },
-];
 
 const WHATIF_SCENARIOS: WhatIfScenario[] = [
   {
@@ -188,16 +157,6 @@ const WHATIF_SCENARIOS: WhatIfScenario[] = [
       { id: 'c-15', name: 'Continuous Vendor Monitoring', category: 'Technical', currentStatus: 'not_implemented', proposedStatus: 'implemented', scoreImpact: 1.5 },
     ],
   },
-];
-
-const HISTORICAL_DATA: HistoricalEntry[] = [
-  { month: 'Aug 2025', overall: 68, technical: 72, administrative: 62, physical: 70 },
-  { month: 'Sep 2025', overall: 70, technical: 73, administrative: 65, physical: 71 },
-  { month: 'Oct 2025', overall: 72, technical: 75, administrative: 67, physical: 73 },
-  { month: 'Nov 2025', overall: 74, technical: 77, administrative: 70, physical: 74 },
-  { month: 'Dec 2025', overall: 76, technical: 78, administrative: 72, physical: 76 },
-  { month: 'Jan 2026', overall: 79, technical: 81, administrative: 75, physical: 78 },
-  { month: 'Feb 2026', overall: 81, technical: 83, administrative: 77, physical: 80 },
 ];
 
 const ALERT_THRESHOLDS: AlertThreshold[] = [
@@ -325,28 +284,72 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
   const [isExporting, setIsExporting] = useState(false);
   const [showBenchmarks, setShowBenchmarks] = useState(false);
   const [historyCategoryFilter, setHistoryCategoryFilter] = useState<'all' | 'technical' | 'administrative' | 'physical'>('all');
-  const [projections, setProjections] = useState<FrameworkProjection[]>(FRAMEWORK_PROJECTIONS);
-  const [historicalData, setHistoricalData] = useState<HistoricalEntry[]>(HISTORICAL_DATA);
+  const [projections, setProjections] = useState<FrameworkProjection[]>([]);
+  const [historicalData, setHistoricalData] = useState<HistoricalEntry[]>([]);
+  const [riskFactors, setRiskFactors] = useState<RiskFactor[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [loadingForecast, setLoadingForecast] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [forecastError, setForecastError] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
-  // Fetch live projection data and history from API, fallback to hardcoded demo data
+  // Fetch live forecasting data (projections + risk factors + recommendations)
+  // and historical compliance scores from the backend.
   useEffect(() => {
-    fetch('/api/compliance/forecasting', { credentials: 'include' })
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data?.projections && Array.isArray(data.projections) && data.projections.length > 0) {
+    let cancelled = false;
+
+    const loadForecast = async () => {
+      setLoadingForecast(true);
+      setForecastError(null);
+      try {
+        const data = await api.get('/compliance/forecasting') as {
+          projections?: FrameworkProjection[];
+          riskFactors?: RiskFactor[];
+          recommendations?: Recommendation[];
+        };
+        if (cancelled) return;
+        if (data?.projections && Array.isArray(data.projections)) {
           setProjections(data.projections);
         }
-      })
-      .catch((error) => { console.warn('Failed to fetch data:', error); });
-
-    fetch('/api/compliance/history', { credentials: 'include' })
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-          setHistoricalData(data.data);
+        if (data?.riskFactors && Array.isArray(data.riskFactors)) {
+          setRiskFactors(data.riskFactors);
         }
-      })
-      .catch((error) => { console.warn('Failed to fetch data:', error); });
+        if (data?.recommendations && Array.isArray(data.recommendations)) {
+          setRecommendations(data.recommendations);
+        }
+      } catch (error: any) {
+        if (cancelled) return;
+        logger.error('Failed to load compliance forecasting data', error);
+        setForecastError(error?.message || 'Failed to load forecasting data.');
+      } finally {
+        if (!cancelled) setLoadingForecast(false);
+      }
+    };
+
+    const loadHistory = async () => {
+      setLoadingHistory(true);
+      setHistoryError(null);
+      try {
+        const history = await api.get('/compliance/history') as HistoricalEntry[];
+        if (cancelled) return;
+        if (Array.isArray(history)) {
+          setHistoricalData(history);
+        }
+      } catch (error: any) {
+        if (cancelled) return;
+        logger.error('Failed to load compliance history', error);
+        setHistoryError(error?.message || 'Failed to load historical data.');
+      } finally {
+        if (!cancelled) setLoadingHistory(false);
+      }
+    };
+
+    void loadForecast();
+    void loadHistory();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Computed values
@@ -371,14 +374,14 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
   }, [projectionFilter, projections]);
 
   const filteredRecommendations = useMemo(() => {
-    let recs = [...RECOMMENDATIONS];
+    let recs = [...recommendations];
     if (recFilter !== 'all') recs = recs.filter(r => r.status === recFilter);
     if (recPriorityFilter !== 'all') recs = recs.filter(r => r.priority === recPriorityFilter);
     return recs;
-  }, [recFilter, recPriorityFilter]);
+  }, [recFilter, recPriorityFilter, recommendations]);
 
-  const criticalRiskCount = useMemo(() => RISK_FACTORS.filter(rf => rf.severity === 'critical').length, []);
-  const activeRiskCount = useMemo(() => RISK_FACTORS.filter(rf => rf.status === 'active').length, []);
+  const criticalRiskCount = useMemo(() => riskFactors.filter(rf => rf.severity === 'critical').length, [riskFactors]);
+  const activeRiskCount = useMemo(() => riskFactors.filter(rf => rf.status === 'active').length, [riskFactors]);
 
   const toggleRiskExpanded = useCallback((id: string) => {
     setExpandedRiskFactors(prev => {
@@ -427,7 +430,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
         summary: result.summary || '',
       });
     } catch (error: any) {
-      console.error('Forecast refresh error:', error);
+      logger.error('Forecast refresh error:', error);
       setAiError(error?.message || 'Failed to refresh AI forecast.');
     } finally {
       setIsRefreshing(false);
@@ -556,7 +559,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
               {criticalRiskCount} {t('risks.critical')}
             </span>
-            <span className="text-xs text-gray-400">{RISK_FACTORS.length} {t('common.total')}</span>
+            <span className="text-xs text-gray-400">{riskFactors.length} {t('common.total')}</span>
           </div>
         </div>
 
@@ -696,7 +699,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
           </h3>
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
-          {RISK_FACTORS.filter(rf => rf.severity === 'critical' || rf.severity === 'high').slice(0, 4).map(rf => (
+          {riskFactors.filter(rf => rf.severity === 'critical' || rf.severity === 'high').slice(0, 4).map(rf => (
             <div key={rf.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div className="flex items-center gap-3">
                 <div className={`p-1.5 rounded-lg ${rf.severity === 'critical' ? 'bg-red-100' : 'bg-orange-100'}`}>
@@ -732,7 +735,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
           </h3>
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
-          {RECOMMENDATIONS.filter(r => r.status === 'pending').slice(0, 3).map(rec => (
+          {recommendations.filter(r => r.status === 'pending').slice(0, 3).map(rec => (
             <div key={rec.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="p-1.5 rounded-lg bg-purple-100">
@@ -828,11 +831,11 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
             </div>
 
             {/* Affected Risk Factors */}
-            {RISK_FACTORS.filter(rf => rf.affectedFrameworks.includes(fw.name)).length > 0 && (
+            {riskFactors.filter(rf => rf.affectedFrameworks.includes(fw.name)).length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Risk Factors:</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {RISK_FACTORS.filter(rf => rf.affectedFrameworks.includes(fw.name)).map(rf => (
+                  {riskFactors.filter(rf => rf.affectedFrameworks.includes(fw.name)).map(rf => (
                     <span key={rf.id} className={`text-xs px-2 py-0.5 rounded-full border ${getSeverityStyles(rf.severity)}`}>
                       {rf.title.length > 30 ? rf.title.substring(0, 30) + '...' : rf.title}
                     </span>
@@ -853,7 +856,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
           </h3>
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
-          {RISK_FACTORS.map(rf => (
+          {riskFactors.map(rf => (
             <div key={rf.id} className="px-5 py-3">
               <button onClick={() => toggleRiskExpanded(rf.id)} className="w-full flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors p-1 -m-1">
                 <div className="flex items-center gap-3">
@@ -1362,20 +1365,20 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <div className="text-2xl font-bold text-green-600">
-              +{RECOMMENDATIONS.filter(r => r.status === 'pending').reduce((a, r) => a + r.estimatedImpact, 0).toFixed(1)}
+              +{recommendations.filter(r => r.status === 'pending').reduce((a, r) => a + r.estimatedImpact, 0).toFixed(1)}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">Total pending impact (pts)</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-blue-600">{RECOMMENDATIONS.filter(r => r.status === 'pending').length}</div>
+            <div className="text-2xl font-bold text-blue-600">{recommendations.filter(r => r.status === 'pending').length}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400">Pending recommendations</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-indigo-600">{RECOMMENDATIONS.filter(r => r.status === 'in_progress').length}</div>
+            <div className="text-2xl font-bold text-indigo-600">{recommendations.filter(r => r.status === 'in_progress').length}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400">In progress</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-green-600">{RECOMMENDATIONS.filter(r => r.status === 'completed').length}</div>
+            <div className="text-2xl font-bold text-green-600">{recommendations.filter(r => r.status === 'completed').length}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400">Completed</div>
           </div>
         </div>

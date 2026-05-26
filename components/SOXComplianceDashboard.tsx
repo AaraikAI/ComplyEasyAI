@@ -6,6 +6,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
+import { logger } from '../utils/logger';
 import {
   ArrowLeft, Shield, CheckCircle, AlertTriangle, XCircle, Search, Plus, X,
   FileText, Clock, BarChart3, ChevronRight, Edit3, Trash2, Eye, Download,
@@ -105,7 +106,7 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
       }
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
-      console.error('SOXComplianceDashboard data load error:', err);
+      logger.error('SOXComplianceDashboard data load error:', err);
     } finally {
       setLoading(false);
     }

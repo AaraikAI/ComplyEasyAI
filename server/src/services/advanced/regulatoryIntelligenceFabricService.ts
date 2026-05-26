@@ -3193,9 +3193,9 @@ Return only the resolution text, no JSON or formatting.`;
       { regex: /^(\d+\.)\s+([A-Z][A-Za-z\s]+)$/, level: 1 },
       { regex: /^(\d+\.\d+\.?)\s+(.+)$/, level: 2 },
       { regex: /^(\d+\.\d+\.\d+\.?)\s+(.+)$/, level: 3 },
-      { regex: /^(Article\s+\d+)[:\.]?\s*(.*)$/i, level: 1 },
-      { regex: /^(Section\s+\d+)[:\.]?\s*(.*)$/i, level: 1 },
-      { regex: /^(Chapter\s+\d+)[:\.]?\s*(.*)$/i, level: 1 },
+      { regex: /^(Article\s+\d+)[:.]?\s*(.*)$/i, level: 1 },
+      { regex: /^(Section\s+\d+)[:.]?\s*(.*)$/i, level: 1 },
+      { regex: /^(Chapter\s+\d+)[:.]?\s*(.*)$/i, level: 1 },
       { regex: /^([A-Z][A-Z\s]{5,})$/, level: 1 },
     ];
 

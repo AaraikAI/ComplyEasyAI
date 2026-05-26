@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 interface Metric {
   id: string;
@@ -135,7 +136,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         const orgData = await api.organization?.get?.().catch(() => null) as { users?: { active?: boolean }[] } | null;
         activeUsersCount = orgData?.users?.filter((u: { active?: boolean }) => u.active !== false)?.length ?? 0;
       } catch (err) {
-        console.error('Failed to load active users:', err);
+        logger.error('Failed to load active users:', err);
       }
 
       try {
@@ -143,7 +144,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         const monitorData = await api.enterprise?.monitoring?.getDashboard?.().catch(() => null);
         avgResponseTime = (monitorData as { avgResponseTime?: string } | null)?.avgResponseTime ?? 'N/A';
       } catch (err) {
-        console.error('Failed to load monitoring metrics:', err);
+        logger.error('Failed to load monitoring metrics:', err);
       }
 
       // Calculate historical changes from backend metrics history
@@ -173,7 +174,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             ((passedControls - prevControls) / prevControls) * 100 : 0;
         }
       } catch (err) {
-        console.error('Failed to load historical metrics:', err);
+        logger.error('Failed to load historical metrics:', err);
       }
 
       // Record current metrics to backend for historical tracking
@@ -185,7 +186,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           api.metrics.record('frameworks_active', frameworks.length),
         ]);
       } catch (err) {
-        console.error('Failed to record metrics:', err);
+        logger.error('Failed to record metrics:', err);
       }
 
       // Calculate metrics from real data
@@ -247,7 +248,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       ];
       setMetrics(calculatedMetrics);
     } catch (error) {
-      console.error('Error loading metrics:', error);
+      logger.error('Error loading metrics:', error);
       // Show empty/error state instead of fake data
       const errorMetrics: Metric[] = [
         {
@@ -352,7 +353,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       toast.error('Failed to export analytics data');
     }
   };

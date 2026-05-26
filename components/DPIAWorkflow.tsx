@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 import {
   ArrowLeft,
   Shield,
@@ -230,7 +231,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
-      console.error('DPIAWorkflow data load error:', err);
+      logger.error('DPIAWorkflow data load error:', err);
     } finally {
       setLoading(false);
     }
@@ -299,7 +300,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       });
       await loadData();
     } catch (err) {
-      console.error('Failed to create DPIA:', err);
+      logger.error('Failed to create DPIA:', err);
       setLoadError('Failed to create DPIA. Please try again.');
     } finally {
       setSubmitting(false);
@@ -341,7 +342,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       });
       await loadData();
     } catch (err) {
-      console.error('Failed to submit DPO review:', err);
+      logger.error('Failed to submit DPO review:', err);
       setLoadError('Failed to submit DPO review. Please try again.');
     } finally {
       setSubmitting(false);

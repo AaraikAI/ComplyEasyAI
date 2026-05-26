@@ -286,8 +286,8 @@ class JITAccessService {
 
       this.activeSessions.set(sessionId, session);
 
-      // Grant temporary privilege to user
-      await this.grantTemporaryPrivilege(request.userId, request.requestedPrivilege);
+      // Grant temporary privilege to user — scoped to request.organizationId
+      await this.grantTemporaryPrivilege(request.userId, request.requestedPrivilege, request.organizationId);
 
       // Store session in database
       await this.storeSession(session);
@@ -357,8 +357,8 @@ class JITAccessService {
         throw new AppError('Session not found', 404);
       }
 
-      // Revoke privilege immediately
-      await this.revokeTemporaryPrivilege(session.userId, session.privilege);
+      // Revoke privilege immediately — scoped to session.organizationId
+      await this.revokeTemporaryPrivilege(session.userId, session.privilege, session.organizationId);
 
       session.active = false;
       session.endTime = new Date();
@@ -919,13 +919,24 @@ class JITAccessService {
   }
 
   /**
-   * Grant temporary privilege to user
+   * Grant temporary privilege to user — multi-tenant safe.
+   * Verifies the target user belongs to the requesting organizationId before mutation.
    */
   private async grantTemporaryPrivilege(
     userId: string,
-    privilege: PrivilegeLevel
+    privilege: PrivilegeLevel,
+    organizationId: string
   ): Promise<void> {
     try {
+      // Multi-tenant guard: ensure target user is in the same org as the access request.
+      const targetUser = await prisma.user.findFirst({
+        where: { id: userId, organizationId },
+        select: { id: true },
+      });
+      if (!targetUser) {
+        throw new AppError('Target user not found in organization', 404);
+      }
+
       // Map PrivilegeLevel to database Role values
       const roleMap: Record<string, string> = {
         viewer: 'viewer',
@@ -944,7 +955,7 @@ class JITAccessService {
       });
 
       logger.info(
-        `Granted temporary ${privilege} (role: ${targetRole}) to user ${userId}`
+        `Granted temporary ${privilege} (role: ${targetRole}) to user ${userId} in org ${organizationId}`
       );
     } catch (error) {
       logger.error(
@@ -956,13 +967,24 @@ class JITAccessService {
   }
 
   /**
-   * Revoke temporary privilege from user
+   * Revoke temporary privilege from user — multi-tenant safe.
+   * Verifies the target user belongs to the session's organizationId before mutation.
    */
   private async revokeTemporaryPrivilege(
     userId: string,
-    privilege: PrivilegeLevel
+    privilege: PrivilegeLevel,
+    organizationId: string
   ): Promise<void> {
     try {
+      // Multi-tenant guard: ensure target user is in the same org as the session.
+      const targetUser = await prisma.user.findFirst({
+        where: { id: userId, organizationId },
+        select: { id: true },
+      });
+      if (!targetUser) {
+        throw new AppError('Target user not found in organization', 404);
+      }
+
       // Revert to default base role
       await prisma.user.update({
         where: { id: userId },
@@ -970,7 +992,7 @@ class JITAccessService {
       });
 
       logger.info(
-        `Revoked temporary ${privilege} from user ${userId}, reverted to base role`
+        `Revoked temporary ${privilege} from user ${userId} in org ${organizationId}, reverted to base role`
       );
     } catch (error) {
       logger.error(

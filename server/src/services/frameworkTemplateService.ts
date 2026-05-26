@@ -104,7 +104,21 @@ import { UNECE_WP29_CONTROLS, ETSI_EN_303_645_CONTROLS, IEC_62443_4_1_CONTROLS, 
 // Quality & Process
 import { ITIL_CONTROLS, CMMI_CONTROLS } from '../data/frameworks/qualityFrameworkControls';
 
-import { CONTROL_CROSSWALK, findMappedControls, getMappingsBetweenFrameworks } from '../data/frameworks/controlCrosswalk';
+// 2026 framework additions: 4 AI laws + 4 ISO/NIST AI standards + 4 amendments
+import { TRAIGA_CONTROLS } from '../data/frameworks/traigaControls';
+import { COLORADO_AI_ACT_CONTROLS } from '../data/frameworks/coloradoAiActControls';
+import { KOREA_AI_BASIC_ACT_CONTROLS } from '../data/frameworks/koreaAiBasicActControls';
+import { CALIFORNIA_AI_TRANSPARENCY_CONTROLS } from '../data/frameworks/californiaAiTransparencyControls';
+import { ISO_23894_CONTROLS } from '../data/frameworks/iso23894Controls';
+import { ISO_5338_CONTROLS } from '../data/frameworks/iso5338Controls';
+import { ISO_38507_CONTROLS } from '../data/frameworks/iso38507Controls';
+import { NIST_AI_600_1_CONTROLS } from '../data/frameworks/nistAi600Controls';
+import { ISO_27001_AMD1_CONTROLS } from '../data/frameworks/iso27001Amd1Controls';
+import { NYDFS_AMD2_CONTROLS } from '../data/frameworks/nydfsAmd2Controls';
+import { CMMC_2_FINAL_CONTROLS } from '../data/frameworks/cmmc2FinalControls';
+import { HIPAA_SECURITY_NPRM_CONTROLS } from '../data/frameworks/hipaaSecurityNprmControls';
+
+import { getMappingsBetweenFrameworks } from '../data/frameworks/controlCrosswalk';
 import type { FrameworkControlTemplate } from '../data/frameworks/soc2Controls';
 
 export { FrameworkControlTemplate };
@@ -852,6 +866,70 @@ const FRAMEWORK_TEMPLATE_MAP: Record<string, { controls: FrameworkControlTemplat
     displayName: 'CMMI',
     description: 'Capability Maturity Model Integration for process improvement',
   },
+  // ===== 2026 framework additions =====
+  // 4 new AI laws
+  'TRAIGA': {
+    controls: TRAIGA_CONTROLS,
+    displayName: 'Texas Responsible AI Governance Act',
+    description: 'Texas Responsible AI Governance Act (HB 149) — effective Jan 1, 2026. AG enforcement with 60-day cure period. Applies to businesses deploying AI in Texas.',
+  },
+  'Colorado AI Act': {
+    controls: COLORADO_AI_ACT_CONTROLS,
+    displayName: 'Colorado AI Act (SB 24-205)',
+    description: 'Colorado AI Act — effective June 30, 2026 (delayed from Feb 1). High-risk AI obligations: risk management, impact assessments, consumer disclosures, AG reporting.',
+  },
+  'California AI Transparency Act': {
+    controls: CALIFORNIA_AI_TRANSPARENCY_CONTROLS,
+    displayName: 'California AI Transparency Act (SB 942)',
+    description: 'California SB 942 — effective Jan 1, 2026. Generative AI content disclosure, watermarking, free public detection tool for covered providers (>1M users).',
+  },
+  'Korea AI Basic Act': {
+    controls: KOREA_AI_BASIC_ACT_CONTROLS,
+    displayName: 'Korea AI Basic Act',
+    description: 'South Korea AI Basic Act — effective Jan 2026, extraterritorial. High-impact AI obligations, generative AI labeling, foundation model duties, MSIT notification.',
+  },
+  // 4 ISO/NIST AI standards
+  'ISO 23894': {
+    controls: ISO_23894_CONTROLS,
+    displayName: 'ISO/IEC 23894:2023',
+    description: 'AI Risk Management guidance — companion standard to ISO 42001 with detailed AI risk identification, analysis, evaluation, and treatment processes.',
+  },
+  'ISO 5338': {
+    controls: ISO_5338_CONTROLS,
+    displayName: 'ISO/IEC 5338:2023',
+    description: 'AI System Life Cycle Processes — process reference model for AI system development, deployment, operation, and maintenance.',
+  },
+  'ISO 38507': {
+    controls: ISO_38507_CONTROLS,
+    displayName: 'ISO/IEC 38507:2022',
+    description: 'Governance Implications of AI — board-level governance guidance for organizations using AI.',
+  },
+  'NIST AI 600-1': {
+    controls: NIST_AI_600_1_CONTROLS,
+    displayName: 'NIST AI 600-1 Generative AI Profile',
+    description: 'NIST Generative AI Profile (July 2024) — companion to NIST AI RMF 1.0 addressing 12 GenAI-specific risks including hallucinations, data leakage, and misuse.',
+  },
+  // 4 amendments
+  'ISO 27001 Amd 1': {
+    controls: ISO_27001_AMD1_CONTROLS,
+    displayName: 'ISO/IEC 27001:2022/Amd 1:2024',
+    description: 'ISO 27001 Climate Action Amendment (Feb 2024) — adds climate change to Clause 4.1 context and Clause 4.2 interested-party requirements.',
+  },
+  'NYDFS 2nd Amendment': {
+    controls: NYDFS_AMD2_CONTROLS,
+    displayName: 'NYDFS 23 NYCRR 500 Second Amendment',
+    description: 'NYDFS Cybersecurity Regulation Second Amendment — full enforcement Nov 1, 2025. Class A obligations, expanded MFA, asset inventory, 24/72hr ransomware reporting.',
+  },
+  'CMMC 2.0 Final Rule': {
+    controls: CMMC_2_FINAL_CONTROLS,
+    displayName: 'CMMC 2.0 Final Rule (32 CFR Part 170)',
+    description: 'CMMC 2.0 Final Rule — phased DoD contract enforcement Nov 10, 2025 (Phase 1) through Nov 10, 2028 (Phase 4). Covers Level 1/2/3 assessment requirements.',
+  },
+  'HIPAA Security Rule NPRM': {
+    controls: HIPAA_SECURITY_NPRM_CONTROLS,
+    displayName: 'HIPAA Security Rule 2024 NPRM',
+    description: 'HIPAA Security Rule Notice of Proposed Rulemaking (Dec 2024) — mandatory encryption/MFA/segmentation. PROPOSED — fate uncertain under regulatory freeze.',
+  },
 };
 
 // Also support alternate name lookups
@@ -859,6 +937,24 @@ const FRAMEWORK_ALIASES: Record<string, string> = {
   'SOC2': 'SOC 2 Type II',
   'SOC 2': 'SOC 2 Type II',
   'soc2': 'SOC 2 Type II',
+  // SOC 3 aliases — frontend uses 'AICPA SOC 3' (constants.ts:205); template map key is 'SOC 3'
+  'AICPA SOC 3': 'SOC 3',
+  'AICPA SOC3': 'SOC 3',
+  'SOC3': 'SOC 3',
+  'soc3': 'SOC 3',
+  'soc 3': 'SOC 3',
+  'SOC for Service Organizations': 'SOC 3',
+  'SOC 3 Type II': 'SOC 3',
+  'SOC 3 Trust Services Report': 'SOC 3',
+  // SOC 1 alias used by frontend (constants.ts:204 uses 'AICPA SOC 1')
+  'AICPA SOC 1': 'SOC 1',
+  'AICPA SOC1': 'SOC 1',
+  // ISO 42001 additional aliases — frontend uses 'ISO 42001' which matches the template key
+  'ISO/IEC 42001': 'ISO 42001',
+  'ISO/IEC 42001:2023': 'ISO 42001',
+  'ISO 42001:2023': 'ISO 42001',
+  'AI Management System Standard': 'ISO 42001',
+  'AIMS Standard': 'ISO 42001',
   'ISO27001': 'ISO 27001',
   'ISO 27001:2022': 'ISO 27001',
   'iso27001': 'ISO 27001',
@@ -1275,8 +1371,6 @@ const FRAMEWORK_ALIASES: Record<string, string> = {
   // Financial aliases
   'basel': 'Basel III',
   'Basel': 'Basel III',
-  'soc3': 'SOC 3',
-  'SOC3': 'SOC 3',
   'sox-itgc': 'SOX ITGC',
   'ITGC': 'SOX ITGC',
   'ffiec': 'FFIEC CAT',
@@ -1355,6 +1449,75 @@ const FRAMEWORK_ALIASES: Record<string, string> = {
   'cmmi-dev': 'CMMI',
   'CMMI-DEV': 'CMMI',
   'CMMI DEV': 'CMMI',
+  // ===== 2026 framework aliases =====
+  // TRAIGA
+  'Texas TRAIGA': 'TRAIGA',
+  'traiga': 'TRAIGA',
+  'HB 149': 'TRAIGA',
+  'Texas Responsible AI Governance Act': 'TRAIGA',
+  'Texas Responsible AI': 'TRAIGA',
+  // Colorado AI Act
+  'colorado-ai-act': 'Colorado AI Act',
+  'Colorado AI': 'Colorado AI Act',
+  'CO AI': 'Colorado AI Act',
+  'SB 24-205': 'Colorado AI Act',
+  'Colorado SB 205': 'Colorado AI Act',
+  // California AI Transparency Act
+  'cal-ai-transparency': 'California AI Transparency Act',
+  'CAAITA': 'California AI Transparency Act',
+  'SB 942': 'California AI Transparency Act',
+  'California SB 942': 'California AI Transparency Act',
+  'CA AI Transparency': 'California AI Transparency Act',
+  // Korea AI Basic Act
+  'korea-ai-act': 'Korea AI Basic Act',
+  'Korea AI Act': 'Korea AI Basic Act',
+  'South Korea AI Basic Act': 'Korea AI Basic Act',
+  'KR AI Basic Act': 'Korea AI Basic Act',
+  // ISO 23894
+  'iso23894': 'ISO 23894',
+  'ISO/IEC 23894': 'ISO 23894',
+  'ISO/IEC 23894:2023': 'ISO 23894',
+  'ISO 23894:2023': 'ISO 23894',
+  'AI Risk Management Standard': 'ISO 23894',
+  // ISO 5338
+  'iso5338': 'ISO 5338',
+  'ISO/IEC 5338': 'ISO 5338',
+  'ISO/IEC 5338:2023': 'ISO 5338',
+  'ISO 5338:2023': 'ISO 5338',
+  'AI System Life Cycle Processes': 'ISO 5338',
+  // ISO 38507
+  'iso38507': 'ISO 38507',
+  'ISO/IEC 38507': 'ISO 38507',
+  'ISO/IEC 38507:2022': 'ISO 38507',
+  'ISO 38507:2022': 'ISO 38507',
+  'AI Governance Standard': 'ISO 38507',
+  // NIST AI 600-1
+  'nist-ai-600-1': 'NIST AI 600-1',
+  'NIST AI 600.1': 'NIST AI 600-1',
+  'NIST GenAI Profile': 'NIST AI 600-1',
+  'Generative AI Profile': 'NIST AI 600-1',
+  // ISO 27001 Amd 1
+  'ISO 27001 Amd1': 'ISO 27001 Amd 1',
+  'ISO 27001:2022 Amd 1': 'ISO 27001 Amd 1',
+  'ISO/IEC 27001:2022/Amd 1:2024': 'ISO 27001 Amd 1',
+  'ISO 27001 Climate': 'ISO 27001 Amd 1',
+  'ISO 27001 Amendment 1': 'ISO 27001 Amd 1',
+  // NYDFS 2nd Amendment
+  'NYDFS Amd 2': 'NYDFS 2nd Amendment',
+  'NYDFS Amendment 2': 'NYDFS 2nd Amendment',
+  'NYDFS Second Amendment': 'NYDFS 2nd Amendment',
+  '23 NYCRR 500 Amendment 2': 'NYDFS 2nd Amendment',
+  '23 NYCRR 500 Second Amendment': 'NYDFS 2nd Amendment',
+  // CMMC 2.0 Final Rule
+  'CMMC 2.0 Final': 'CMMC 2.0 Final Rule',
+  '32 CFR Part 170': 'CMMC 2.0 Final Rule',
+  'CMMC 2 Final Rule': 'CMMC 2.0 Final Rule',
+  'CMMC Final Rule': 'CMMC 2.0 Final Rule',
+  // HIPAA Security Rule NPRM
+  'HIPAA NPRM': 'HIPAA Security Rule NPRM',
+  'HIPAA Security NPRM': 'HIPAA Security Rule NPRM',
+  'HIPAA 2024 NPRM': 'HIPAA Security Rule NPRM',
+  'HIPAA Security Rule 2024': 'HIPAA Security Rule NPRM',
 };
 
 function resolveFrameworkKey(frameworkType: string): string | null {
@@ -1725,7 +1888,7 @@ export class FrameworkTemplateService {
 
     for (const control of controls) {
       // Extract control ID from name (format: "CC1.1: Control Name" or "A.5.1: Control Name")
-      const match = control.name.match(/^([A-Za-z0-9.\-]+):/);
+      const match = control.name.match(/^([A-Za-z0-9.-]+):/);
       if (match) {
         map.set(match[1].trim(), control.id);
       }
@@ -1926,6 +2089,22 @@ export class FrameworkTemplateService {
       'iso 13485:2016': 'iso 13485',
       'medical devices qms': 'iso 13485',
       'medical device quality': 'iso 13485',
+      // SOC 3 — frontend 'AICPA SOC 3' must collapse to canonical 'soc 3'
+      'aicpa soc 3': 'soc 3',
+      'aicpa soc3': 'soc 3',
+      'soc3': 'soc 3',
+      'soc for service organizations': 'soc 3',
+      'soc 3 type ii': 'soc 3',
+      'soc 3 trust services report': 'soc 3',
+      // ISO 42001 — multiple official spellings collapse to canonical 'iso 42001'
+      'iso/iec 42001': 'iso 42001',
+      'iso/iec 42001:2023': 'iso 42001',
+      'iso 42001:2023': 'iso 42001',
+      'iso42001': 'iso 42001',
+      'ai management system standard': 'iso 42001',
+      'aims standard': 'iso 42001',
+      'aims': 'iso 42001',
+      'ai management system': 'iso 42001',
     };
 
     return aliases[normalized] || normalized;

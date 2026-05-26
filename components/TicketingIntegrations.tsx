@@ -35,6 +35,7 @@ import {
   Edit,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { logger } from '../utils/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -218,7 +219,7 @@ const TicketingIntegrations: React.FC = () => {
       const data = await api.ticketing.listConnections();
       setConnections(data.connections || []);
     } catch (err: any) {
-      console.error('Failed to load connections:', err);
+      logger.error('Failed to load connections:', err);
     }
   }, []);
 
@@ -233,7 +234,7 @@ const TicketingIntegrations: React.FC = () => {
           data.pagination || { page: 1, limit: 20, totalCount: 0, totalPages: 0 }
         );
       } catch (err: any) {
-        console.error('Failed to load tickets:', err);
+        logger.error('Failed to load tickets:', err);
       }
     },
     [providerFilter]

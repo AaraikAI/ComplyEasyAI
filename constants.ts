@@ -100,6 +100,19 @@ export const AVAILABLE_FRAMEWORKS = [
   { name: 'ISO 22301:2019', region: 'Global', description: 'Business Continuity Management Systems' },
   { name: 'ISO 20000-1', region: 'Global', description: 'IT Service Management' },
   { name: 'ISO 42001', region: 'Global', description: 'AI Management System' },
+  { name: 'ISO 27001:2022 Amd 1', region: 'Global', description: 'ISO 27001 Climate Action Amendment (Feb 2024) — adds climate change as a relevant issue for ISMS' },
+  { name: 'ISO/IEC 23894:2023', region: 'Global', description: 'AI Risk Management guidance — companion standard to ISO 42001' },
+  { name: 'ISO/IEC 5338:2023', region: 'Global', description: 'AI System Life Cycle Processes — reference model for AI development, deployment, operation' },
+  { name: 'ISO/IEC 38507:2022', region: 'Global', description: 'Governance Implications of AI — board-level AI governance guidance' },
+
+  // =========================================================================
+  // AI Governance Laws (US State + International)
+  // =========================================================================
+  { name: 'Texas TRAIGA', region: 'US-TX', description: 'Texas Responsible AI Governance Act (HB 149) — effective Jan 1, 2026; AG enforcement with 60-day cure period' },
+  { name: 'Colorado AI Act', region: 'US-CO', description: 'Colorado AI Act (SB 24-205) — effective June 30, 2026; high-risk AI obligations including impact assessments and consumer disclosures' },
+  { name: 'California AI Transparency Act', region: 'US-CA', description: 'California SB 942 — effective Jan 1, 2026; generative AI content disclosure, watermarking, free detection tool' },
+  { name: 'Korea AI Basic Act', region: 'KR', description: 'South Korea AI Basic Act — effective Jan 2026, extraterritorial; high-impact and large-scale AI obligations' },
+  { name: 'NIST AI 600-1', region: 'US', description: 'NIST Generative AI Profile (July 2024) — 200+ actions addressing GenAI-specific risks (hallucinations, data leakage, misuse)' },
 
   // =========================================================================
   // US Federal Frameworks
@@ -107,7 +120,9 @@ export const AVAILABLE_FRAMEWORKS = [
   { name: 'FISMA', region: 'US', description: 'Federal Information Security Management Act' },
   { name: 'FedRAMP', region: 'US', description: 'Federal Risk and Authorization Management Program' },
   { name: 'CMMC', region: 'US', description: 'Cybersecurity Maturity Model Certification' },
+  { name: 'CMMC 2.0 Final Rule', region: 'US', description: 'CMMC 2.0 Final Rule (32 CFR Part 170) — phased enforcement Nov 2025 through Nov 2028 in DoD contracts' },
   { name: 'NYDFS', region: 'US-NY', description: 'New York Department of Financial Services Cybersecurity Regulation' },
+  { name: 'NYDFS 2nd Amendment', region: 'US-NY', description: '23 NYCRR 500 Second Amendment — full enforcement Nov 1, 2025; Class A obligations, MFA, asset inventory, 24/72hr ransomware reporting' },
   { name: 'GLBA', region: 'US', description: 'Gramm-Leach-Bliley Act - Financial privacy' },
   { name: 'SOX', region: 'US', description: 'Sarbanes-Oxley Act - Financial reporting controls' },
   { name: 'FERPA', region: 'US', description: 'Family Educational Rights and Privacy Act' },
@@ -187,6 +202,7 @@ export const AVAILABLE_FRAMEWORKS = [
   // =========================================================================
   { name: 'HITRUST CSF v11', region: 'US', description: 'Health Information Trust Alliance latest version' },
   { name: 'HITECH', region: 'US', description: 'Health Information Technology for Economic and Clinical Health Act' },
+  { name: 'HIPAA Security Rule NPRM', region: 'US', description: 'HIPAA Security Rule 2024 NPRM (proposed Dec 2024) — mandatory encryption/MFA/segmentation; fate uncertain under regulatory freeze' },
   { name: '21 CFR Part 11', region: 'US', description: 'FDA Electronic Records and Signatures' },
   { name: 'FDA 21 CFR Part 820', region: 'US', description: 'Quality System Regulation for medical devices' },
   { name: 'GxP', region: 'Global', description: 'Good Practice Guidelines for Life Sciences' },

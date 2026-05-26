@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 import {
   Shield,
   X,
@@ -98,7 +99,7 @@ function storePreferences(prefs: CookiePreferences): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
   } catch (err) {
-    console.error('Failed to store cookie preferences:', err);
+    logger.error('Failed to store cookie preferences:', err);
   }
 }
 

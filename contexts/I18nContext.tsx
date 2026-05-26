@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { logger } from '../utils/logger';
 import {
   SupportedLocale,
   AVAILABLE_LOCALES,
@@ -62,7 +63,7 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const localeData = AVAILABLE_LOCALES.find((l) => l.code === initialLocale);
       if (localeData) document.documentElement.dir = localeData.dir;
     }).catch((err) => {
-      console.error('Failed to initialize i18n:', err);
+      logger.error('Failed to initialize i18n:', err);
     }).finally(() => {
       setIsLoading(false);
     });

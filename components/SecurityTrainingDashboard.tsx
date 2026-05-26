@@ -37,6 +37,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
 
@@ -275,7 +276,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
       }
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
-      console.error('SecurityTrainingDashboard data load error:', err);
+      logger.error('SecurityTrainingDashboard data load error:', err);
     } finally {
       setLoading(false);
     }
@@ -358,7 +359,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
       });
       await loadData();
     } catch (err) {
-      console.error('Failed to create training module:', err);
+      logger.error('Failed to create training module:', err);
       setLoadError('Failed to create training module. Please try again.');
     } finally {
       setSubmitting(false);
@@ -380,7 +381,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
       setAssignForm({ moduleId: '', userIds: '', dueDate: '' });
       await loadData();
     } catch (err) {
-      console.error('Failed to assign training:', err);
+      logger.error('Failed to assign training:', err);
       setLoadError('Failed to assign training. Please try again.');
     } finally {
       setSubmitting(false);

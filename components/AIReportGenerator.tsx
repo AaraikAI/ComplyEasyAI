@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { api } from '../services/api';
 import { ComplianceFramework } from '../types';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 export const AIReportGenerator: React.FC = () => {
   const { t } = useI18n();
@@ -26,7 +27,7 @@ export const AIReportGenerator: React.FC = () => {
           setFramework(allFrameworks[0].name);
         }
       } catch (error) {
-        console.error('Failed to load frameworks:', error);
+        logger.error('Failed to load frameworks:', error);
         // Fallback to default frameworks
         setFrameworks([
           { id: '1', name: 'SOC 2 Type II', status: 'In Review' as any, progress: 0, nextAuditDate: new Date().toISOString() },

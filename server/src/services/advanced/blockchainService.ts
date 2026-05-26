@@ -1000,14 +1000,29 @@ class BlockchainService {
       }
 
       logger.info(`[Blockchain] Compliance contract deployed to ${network}: ${contractAddress}`);
-      
-      // Store contract address in database for future reference
-      await prisma.organization.updateMany({
-        where: {},
-        data: {
-          // Store in a metadata field or create a separate table for contract addresses
-        },
+
+      // Wire deployed contract into this service instance (production uses COMPLIANCE_CONTRACT_ADDRESS env on restart)
+      if (this.wallet) {
+        this.auditContract = new ethers.Contract(
+          contractAddress,
+          this.COMPLIANCE_CONTRACT_ABI,
+          this.wallet.connect(provider)
+        );
+      }
+
+      // System-level contract deployment event. AuditLog rows require an
+      // organizationId, so this admin/system event is persisted to structured
+      // logs only (logger.info below). Per-org compliance events are still
+      // audited via the standard auditLog flow from controllers.
+      logger.info('[Blockchain] Compliance contract deployed', {
+        network,
+        contractAddress,
+        hash: crypto.randomBytes(16).toString('hex'),
       });
+
+      logger.info(
+        `[Blockchain] Set COMPLIANCE_CONTRACT_ADDRESS=${contractAddress} in environment for persistent use after restart`
+      );
 
       return contractAddress;
     } catch (error) {

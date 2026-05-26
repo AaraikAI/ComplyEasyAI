@@ -224,6 +224,8 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showTokenValue, setShowTokenValue] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  // serverReachable mirrors API load success; when false the DEFAULT_CHECKS fallback is shown
+  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
   // ── Data Loading ──────────────────────────────────────────────────────
 
@@ -263,8 +265,12 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
         repositories: [],
       });
 
+      // serverReachable = true if EITHER endpoint succeeded; false only when both failed
       if (policiesRes.status === 'rejected' && resultsRes.status === 'rejected') {
+        setServerReachable(false);
         setError('Failed to load CI/CD gate settings. Please try again.');
+      } else {
+        setServerReachable(true);
       }
     } catch (err) {
       setError('Failed to load CI/CD gate settings. Please try again.');
