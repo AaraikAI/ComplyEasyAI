@@ -1,0 +1,98 @@
+call_number,file,line,call_type,url_source,has_url_param,validation_count,verdict,scan_hint
+001,./server/src/controllers/authController.ts,82,fetch,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+002,./server/src/controllers/integrationsController.ts,817,axios.post,HARDCODED_CONSTANT,NO,0,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+003,./server/src/controllers/integrationsController.ts,833,axios.get,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,target: const subResponse = await axios.get(
+004,./server/src/graphql/index.ts,382,fetch,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,"target: const res = await fetch('/api/graphql', { method: 'POST', he"
+005,./server/src/services/advanced/byokService.ts,186,unknown,ENV_VAR,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+006,./server/src/services/advanced/complianceAsCodeService.ts,164,axios.post,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,target: const response = await axios.post(
+007,./server/src/services/advanced/complianceAsCodeService.ts,195,axios.put,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,target: await axios.put(
+008,./server/src/services/advanced/complianceAsCodeService.ts,230,axios.post,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,target: const response = await axios.post(
+009,./server/src/services/advanced/complianceAsCodeService.ts,565,axios.post,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+010,./server/src/services/advanced/complianceAsCodeService.ts,608,axios.post,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+011,./server/src/services/advanced/complianceAsCodeService.ts,1186,axios.delete,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+012,./server/src/services/advanced/complianceAsCodeService.ts,1190,axios.delete,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+013,./server/src/services/advanced/multimodalIntakeService.ts,375,axios.post,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+014,./server/src/services/advanced/physicalAIService.ts,2696,axios.get,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+015,./server/src/services/advanced/physicalAIService.ts,2719,axios.get,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+016,./server/src/services/advanced/physicalAIService.ts,2746,axios.get,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+017,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,117,axios.get,CONFIG_OBJECT,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+018,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2397,axios.get,CONFIG_OBJECT,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+019,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2566,axios.get,CONFIG_OBJECT,YES,4,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+020,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2600,axios.get,CONFIG_OBJECT,YES,4,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+021,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2667,axios.get,CONFIG_OBJECT,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+022,./server/src/services/advanced/whisperService.ts,533,axios.post,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+023,./server/src/services/advanced/zeroTrustService.ts,524,axios.get,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+024,./server/src/services/advanced/zeroTrustService.ts,574,axios.get,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+025,./server/src/services/euRegulations/euAiDatabaseClient.ts,61,axios.post,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+026,./server/src/services/integrations/azureDevOpsService.ts,167,unknown,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,"target: client: axios.create({ baseURL, headers, timeout: 30000 }),"
+027,./server/src/services/integrations/azureDevOpsService.ts,223,axios.post,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+028,./server/src/services/integrations/githubService.ts,60,axios.post,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,target: const response = await axios.post(
+029,./server/src/services/integrations/githubService.ts,91,axios.get,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+030,./server/src/services/integrations/githubService.ts,183,axios.get,PARAM_OR_DYNAMIC,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+031,./server/src/services/integrations/jiraService.ts,63,axios.post,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,target: const response = await axios.post(
+032,./server/src/services/integrations/jiraService.ts,95,axios.post,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,target: const response = await axios.post(
+033,./server/src/services/integrations/jiraService.ts,120,axios.get,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+034,./server/src/services/integrations/jiraService.ts,332,axios.get,PARAM_OR_DYNAMIC,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+035,./server/src/services/integrations/jiraService.ts,439,axios.post,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+036,./server/src/services/integrations/jiraService.ts,787,axios.get,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+037,./server/src/services/integrations/jiraService.ts,799,axios.post,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+038,./server/src/services/integrations/jiraService.ts,808,axios.post,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+039,./server/src/services/integrations/patValidationService.ts,163,axios.get,HARDCODED_CONSTANT,NO,1,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+040,./server/src/services/integrations/patValidationService.ts,202,axios.get,HARDCODED_CONSTANT,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+041,./server/src/services/integrations/patValidationService.ts,235,axios.get,HARDCODED_CONSTANT,NO,0,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+042,./server/src/services/integrations/patValidationService.ts,268,axios.get,HARDCODED_CONSTANT,NO,1,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+043,./server/src/services/integrations/patValidationService.ts,305,axios.get,HARDCODED_CONSTANT,NO,1,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+044,./server/src/services/integrations/patValidationService.ts,344,axios.get,PARAM_OR_DYNAMIC,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+045,./server/src/services/integrations/patValidationService.ts,383,axios.get,HARDCODED_CONSTANT,NO,0,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+046,./server/src/services/integrations/patValidationService.ts,424,axios.get,HARDCODED_CONSTANT,NO,0,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+047,./server/src/services/integrations/patValidationService.ts,475,axios.get,HARDCODED_CONSTANT,NO,0,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+048,./server/src/services/integrations/patValidationService.ts,511,axios.get,HARDCODED_CONSTANT,NO,1,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+049,./server/src/services/integrations/patValidationService.ts,546,axios.get,HARDCODED_CONSTANT,NO,2,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+050,./server/src/services/integrations/patValidationService.ts,582,axios.get,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+051,./server/src/services/integrations/patValidationService.ts,620,axios.get,PARAM_OR_DYNAMIC,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+052,./server/src/services/integrations/patValidationService.ts,657,axios.get,HARDCODED_CONSTANT,NO,0,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+053,./server/src/services/integrations/patValidationService.ts,691,axios.get,HARDCODED_CONSTANT,NO,0,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+054,./server/src/services/integrations/patValidationService.ts,723,axios.post,HARDCODED_CONSTANT,NO,0,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+055,./server/src/services/integrations/patValidationService.ts,759,axios.get,HARDCODED_CONSTANT,NO,1,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+056,./server/src/services/integrations/patValidationService.ts,791,axios.get,HARDCODED_CONSTANT,NO,2,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+057,./server/src/services/integrations/patValidationService.ts,828,axios.get,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+058,./server/src/services/integrations/patValidationService.ts,884,axios.get,HARDCODED_CONSTANT,NO,1,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+059,./server/src/services/integrations/patValidationService.ts,917,axios.get,HARDCODED_CONSTANT,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+060,./server/src/services/integrations/patValidationService.ts,948,axios.get,HARDCODED_CONSTANT,NO,2,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+061,./server/src/services/integrations/patValidationService.ts,986,axios.get,PARAM_OR_DYNAMIC,YES,3,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+062,./server/src/services/integrations/patValidationService.ts,1022,axios.get,HARDCODED_CONSTANT,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+063,./server/src/services/integrations/patValidationService.ts,1063,axios.get,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+064,./server/src/services/integrations/patValidationService.ts,1110,axios.get,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+065,./server/src/services/integrations/patValidationService.ts,1153,axios.post,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+066,./server/src/services/integrations/patValidationService.ts,1168,axios.get,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+067,./server/src/services/integrations/patValidationService.ts,1206,axios.get,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+068,./server/src/services/integrations/patValidationService.ts,1246,axios.get,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+069,./server/src/services/integrations/patValidationService.ts,1286,axios.get,PARAM_OR_DYNAMIC,YES,3,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+070,./server/src/services/integrations/patValidationService.ts,1323,axios.get,HARDCODED_CONSTANT,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+071,./server/src/services/integrations/patValidationService.ts,1367,axios.post,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+072,./server/src/services/integrations/patValidationService.ts,1414,axios.get,HARDCODED_CONSTANT,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+073,./server/src/services/integrations/patValidationService.ts,1551,axios.get,HARDCODED_CONSTANT,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+074,./server/src/services/integrations/patValidationService.ts,1584,axios.get,HARDCODED_CONSTANT,NO,1,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+075,./server/src/services/integrations/patValidationService.ts,1625,axios.post,PARAM_OR_DYNAMIC,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+076,./server/src/services/integrations/patValidationService.ts,1649,axios.get,PARAM_OR_DYNAMIC,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+077,./server/src/services/integrations/patValidationService.ts,1680,axios.get,HARDCODED_CONSTANT,NO,2,SAFE_CONSTANT_NO_OVERRIDE_SCAN_HINT,CONSTANT_URL_SAFE
+078,./server/src/services/integrations/patValidationService.ts,1723,axios.get,PARAM_OR_DYNAMIC,YES,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+079,./server/src/services/integrations/patValidationService.ts,1770,axios.post,HARDCODED_CONSTANT,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+080,./server/src/services/integrations/providers/baseIntegration.ts,130,unknown,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,target: this.httpClient = axios.create({
+081,./server/src/services/integrations/servicenowService.ts,181,unknown,CONFIG_OBJECT,NO,0,SAFE_CONFIG_SCAN_HINT,CONFIG_URL_LIKELY_SAFE
+082,./server/src/services/integrations/servicenowService.ts,217,axios.post,CONFIG_OBJECT,NO,0,SAFE_CONFIG_SCAN_HINT,CONFIG_URL_LIKELY_SAFE
+083,./server/src/services/integrations/slackService.ts,75,axios.post,PARAM_OR_DYNAMIC,NO,0,UNCLASSIFIED_PER_CALL_NEEDS_DEEPER_READ_VERIFIED_v19,target: const response = await axios.post(
+084,./server/src/services/integrations/slackService.ts,106,axios.get,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+085,./server/src/services/integrations/slackService.ts,208,axios.get,PARAM_OR_DYNAMIC,YES,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+086,./server/src/services/integrations/slackService.ts,358,axios.post,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+087,./server/src/services/integrations/slackService.ts,501,axios.post,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+088,./server/src/services/integrations/slackService.ts,624,axios.post,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+089,./server/src/services/integrations/slackService.ts,745,axios.post,PARAM_OR_DYNAMIC,NO,0,SAFE_CONSTANT_NO_OVERRIDE_VERIFIED_v19,URL constructed from pinned base URL constant (verified)
+090,./server/src/services/monitoringService.ts,817,axios.get,CONFIG_OBJECT,NO,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+091,./server/src/services/monitoringService.ts,965,axios.get,CONFIG_OBJECT,NO,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+092,./server/src/services/monitoringService.ts,992,axios.get,CONFIG_OBJECT,NO,2,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+093,./server/src/services/monitoringService.ts,1028,axios.get,CONFIG_OBJECT,NO,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+094,./server/src/services/monitoringService.ts,1118,axios.get,CONFIG_OBJECT,NO,1,SAFE_VALIDATED_SCAN_HINT,VALIDATED
+095,./server/src/services/s3Service.ts,343,axios.post,ENV_VAR,NO,0,SAFE_ENV_NO_OVERRIDE_SCAN_HINT,ENV_URL_SAFE
+096,./server/src/services/workflowEngine.ts,530,axios(config),CONFIG_OBJECT,NO,0,SAFE_CONFIG_SCAN_HINT,CONFIG_URL_LIKELY_SAFE
+097,./server/src/utils/urlValidator.ts,113,fetch,PARAM_OR_DYNAMIC,YES,4,SAFE_VALIDATED_SCAN_HINT,VALIDATED

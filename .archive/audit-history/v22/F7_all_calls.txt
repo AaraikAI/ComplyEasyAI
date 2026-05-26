@@ -1,0 +1,88 @@
+server/src/services/advanced/complianceAsCodeService.ts:164:const response = await axios.post(
+server/src/services/advanced/complianceAsCodeService.ts:195:await axios.put(
+server/src/services/advanced/complianceAsCodeService.ts:230:const response = await axios.post(
+server/src/services/advanced/complianceAsCodeService.ts:565:await axios.post(
+server/src/services/advanced/complianceAsCodeService.ts:608:await axios.post(
+server/src/services/advanced/complianceAsCodeService.ts:1186:await axios.delete(`${this.opaEndpoint}/v1/policies/${policyId}`, {
+server/src/services/advanced/complianceAsCodeService.ts:1190:await axios.delete(`${this.opaEndpoint}/v1/policies/${policyId}`).catch(() => {
+server/src/services/advanced/multimodalIntakeService.ts:375:const response = await axios.post(`${pyannoteServiceUrl}/diarize`, formData, {
+server/src/services/advanced/physicalAIService.ts:2696:const response = await axios.get(`${firmwareRegistry}/firmware/${safeDeviceType}/latest`, {
+server/src/services/advanced/physicalAIService.ts:2719:const response = await axios.get(nvdUrl, {
+server/src/services/advanced/physicalAIService.ts:2746:const response = await axios.get(apiUrl, {
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:117:const response = await axios.get(input.url, {
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2397:const response = await axios.get(feed.url, {
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2566:const response = await axios.get(feed.url, {
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2600:const response = await axios.get(feed.url, {
+server/src/services/advanced/regulatoryIntelligenceFabricService.ts:2667:const response = await axios.get(item.url, { timeout: 30000 });
+server/src/services/advanced/whisperService.ts:533:const response = await axios.post(`${pyannoteServiceUrl}/diarize`, formData, {
+server/src/services/advanced/zeroTrustService.ts:524:const response = await axios.get('https://api.abuseipdb.com/api/v2/check', {
+server/src/services/advanced/zeroTrustService.ts:574:const response = await axios.get(`https://www.virustotal.com/vtapi/v2/ip-address/report`, {
+server/src/services/euRegulations/euAiDatabaseClient.ts:61:const response = await axios.post<EUAIRegistrationResponse>(
+server/src/services/integrations/azureDevOpsService.ts:223:const response = await axios.post<AzureDevOpsOAuthTokenResponse>(tokenUrl, body, {
+server/src/services/integrations/githubService.ts:60:const response = await axios.post(
+server/src/services/integrations/githubService.ts:91:const response = await axios.get(`${this.apiBaseUrl}/user`, {
+server/src/services/integrations/githubService.ts:183:const response = await axios.get(url, {
+server/src/services/integrations/jiraService.ts:63:const response = await axios.post(
+server/src/services/integrations/jiraService.ts:95:const response = await axios.post(
+server/src/services/integrations/jiraService.ts:120:const response = await axios.get(
+server/src/services/integrations/jiraService.ts:332:const response = await axios.get(
+server/src/services/integrations/jiraService.ts:439:const response = await axios.post(
+server/src/services/integrations/jiraService.ts:787:const transitionsResponse = await axios.get(
+server/src/services/integrations/jiraService.ts:799:await axios.post(
+server/src/services/integrations/jiraService.ts:808:await axios.post(
+server/src/services/integrations/patValidationService.ts:163:const response = await axios.get('https://api.github.com/user', {
+server/src/services/integrations/patValidationService.ts:202:const response = await axios.get(apiUrl, {
+server/src/services/integrations/patValidationService.ts:235:const response = await axios.get('https://api.bitbucket.org/2.0/user', {
+server/src/services/integrations/patValidationService.ts:268:const response = await axios.get('https://api.travis-ci.com/user', {
+server/src/services/integrations/patValidationService.ts:305:const response = await axios.get('https://circleci.com/api/v2/me', {
+server/src/services/integrations/patValidationService.ts:344:const response = await axios.get(apiUrl, {
+server/src/services/integrations/patValidationService.ts:383:const response = await axios.get('https://api.stripe.com/v1/account', {
+server/src/services/integrations/patValidationService.ts:424:const response = await axios.get('https://api.sendgrid.com/v3/user/profile', {
+server/src/services/integrations/patValidationService.ts:475:const response = await axios.get(`https://api.twilio.com/2010-04-01/Accounts/${sid}.json`, {
+server/src/services/integrations/patValidationService.ts:511:const response = await axios.get('https://api.digitalocean.com/v2/account', {
+server/src/services/integrations/patValidationService.ts:546:const response = await axios.get('https://hub.docker.com/v2/users/me', {
+server/src/services/integrations/patValidationService.ts:582:const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/v1/namespaces`, {
+server/src/services/integrations/patValidationService.ts:620:const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/rest/api/user/current`, {
+server/src/services/integrations/patValidationService.ts:657:const response = await axios.get(`https://api.trello.com/1/members/me`, {
+server/src/services/integrations/patValidationService.ts:691:const response = await axios.get('https://app.asana.com/api/1.0/users/me', {
+server/src/services/integrations/patValidationService.ts:723:const response = await axios.post('https://api.monday.com/v2', {
+server/src/services/integrations/patValidationService.ts:759:const response = await axios.get('https://graph.microsoft.com/v1.0/me', {
+server/src/services/integrations/patValidationService.ts:791:const response = await axios.get('https://discord.com/api/v10/users/@me', {
+server/src/services/integrations/patValidationService.ts:828:const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/v1/users/me`, {
+server/src/services/integrations/patValidationService.ts:884:const response = await axios.get('https://api.newrelic.com/v2/users.json', {
+server/src/services/integrations/patValidationService.ts:917:const response = await axios.get(`${apiUrl}organizations/`, {
+server/src/services/integrations/patValidationService.ts:948:const response = await axios.get('https://api.pagerduty.com/users/me', {
+server/src/services/integrations/patValidationService.ts:986:const response = await axios.get(`https://${baseUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}/api/v2/users`, {
+server/src/services/integrations/patValidationService.ts:1022:const response = await axios.get(`${apiUrl}/api/v1/validate`, {
+server/src/services/integrations/patValidationService.ts:1063:const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/2.0/fo/asset/host/`, {
+server/src/services/integrations/patValidationService.ts:1110:const response = await axios.get(`${apiUrl}/scanners`, {
+server/src/services/integrations/patValidationService.ts:1153:const oauthResponse = await axios.post(`${apiUrl}/oauth2/token`,
+server/src/services/integrations/patValidationService.ts:1168:const validateResponse = await axios.get(`${apiUrl}/sensors/queries/sensors/v1`, {
+server/src/services/integrations/patValidationService.ts:1206:const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/`, {
+server/src/services/integrations/patValidationService.ts:1246:const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/3/account`, {
+server/src/services/integrations/patValidationService.ts:1286:const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/services/auth/current-context`, {
+server/src/services/integrations/patValidationService.ts:1323:const response = await axios.get(`${apiUrl}/employees/directory`, {
+server/src/services/integrations/patValidationService.ts:1367:const oauthResponse = await axios.post(`${baseUrl}/auth/oauth/v2/token`,
+server/src/services/integrations/patValidationService.ts:1414:const response = await axios.get('https://cloud.mongodb.com/api/atlas/v1.0/groups', {
+server/src/services/integrations/patValidationService.ts:1551:const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/`, {
+server/src/services/integrations/patValidationService.ts:1584:const response = await axios.get('https://api.heroku.com/account', {
+server/src/services/integrations/patValidationService.ts:1625:const oauthResponse = await axios.post(`${baseUrl}/services/oauth2/token`,
+server/src/services/integrations/patValidationService.ts:1649:const response = await axios.get(`${baseUrl}/services/data/v57.0/`, {
+server/src/services/integrations/patValidationService.ts:1680:const response = await axios.get('https://api.hubapi.com/contacts/v1/lists/all/contacts/all', {
+server/src/services/integrations/patValidationService.ts:1723:const response = await axios.get(`${zendeskUrl}/api/v2/users/me.json`, {
+server/src/services/integrations/patValidationService.ts:1770:const oauthResponse = await axios.post(apiUrl,
+server/src/services/integrations/servicenowService.ts:217:const response = await axios.post<ServiceNowOAuthTokenResponse>(
+server/src/services/integrations/slackService.ts:75:const response = await axios.post(
+server/src/services/integrations/slackService.ts:106:const response = await axios.get(`${this.apiBaseUrl}/users.identity`, {
+server/src/services/integrations/slackService.ts:208:const response = await axios.get(url, {
+server/src/services/integrations/slackService.ts:358:const response = await axios.post(
+server/src/services/integrations/slackService.ts:501:await axios.post(
+server/src/services/integrations/slackService.ts:624:const response = await axios.post(
+server/src/services/integrations/slackService.ts:745:await axios.post(
+server/src/services/monitoringService.ts:817:const response = await axios.get(config.endpoint, {
+server/src/services/monitoringService.ts:965:const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
+server/src/services/monitoringService.ts:992:const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
+server/src/services/monitoringService.ts:1028:const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
+server/src/services/monitoringService.ts:1118:const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
+server/src/services/s3Service.ts:343:const response = await axios.post(
+server/src/utils/urlValidator.ts:113:const response = await fetch(url, {

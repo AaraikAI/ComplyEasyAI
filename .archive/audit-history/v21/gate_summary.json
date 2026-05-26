@@ -1,0 +1,13 @@
+{
+  "files_total": 2464,
+  "files_classified": 2464,
+  "l7_total": 755,
+  "l7_classified": 755,
+  "f7_total": 97,
+  "f7_classified": 97,
+  "components_total": 156,
+  "controller_status": 58,
+  "rate_limit_mounts": 76,
+  "l7_gaps": 10,
+  "f7_gaps": 53
+}

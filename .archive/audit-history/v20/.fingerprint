@@ -1,0 +1,10 @@
+=== v20 Ledger Fingerprint (computed 2026-05-25T22:10:31Z) ===
+ed8b2f4a7abdbcc746744be033b7c8354d568b0e061a1247b382427dd24df5b8  .claude/audit-v20/F7_verified.csv
+4fe579e2311d089c7320f214bd087be9806bc1970381710cdfc7c270e69fcea3  .claude/audit-v20/L7_verified.csv
+810fec08a9f94c8def59463b22a08804aafa4afa0885f57636f99b5b41a55a8e  .claude/audit-v20/component_verified.csv
+1d0014aa180aea77a5bf1a956194dc583a6b05eba17755dc4c1e3f8db849915b  .claude/audit-v20/controllers_verified.csv
+3fb1f5675e6c79feeed858b64590938146f403315d68ba0da59a2865b4ecfc07  .claude/audit-v20/infra_verified.csv
+5075cd5ba9d54405c4009a6421099db92fe0de1263f329207f6686bee70974d8  .claude/audit-v20/prisma_rls_verified.csv
+94b5b6d1a835e9fe4bd2f5ae280e47bc96a2be7b4fce842de8242dc9351b4bec  .claude/audit-v20/rate_limits_verified.csv
+66d4b8fac1e632727fb67ab896db249e6e91e7884372510fb0f4a105aaf8061a  .claude/audit-v20/service_verified.csv
+f22e1566c5c13d8afd6285ae8a67e9a33d1c5d4f16f073d470f8772af71dba14  .claude/audit-v20/state.json

@@ -1,0 +1,756 @@
+op_number,file,line,model,operation,verdict,evidence_function_name,evidence_org_check_line,scan_hint
+001,./server/src/services/advanced/acosService.ts,157,complianceGoal,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createComplianceGoal(,,ORG_IN_FUNC_NOT_IN_WRITE
+002,./server/src/services/advanced/acosService.ts,170,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createComplianceGoal(,,ORG_SCOPED
+003,./server/src/services/advanced/acosService.ts,273,controlLoop,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createControlLoop(,,ORG_SCOPED
+004,./server/src/services/advanced/acosService.ts,296,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createControlLoop(,,ORG_SCOPED
+005,./server/src/services/advanced/acosService.ts,483,controlLoop,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async executeControlLoop(,,ORG_IN_FUNC_NOT_IN_WRITE
+006,./server/src/services/advanced/acosService.ts,549,controlLoop,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async executeControlLoop(,,ORG_IN_FUNC_NOT_IN_WRITE
+007,./server/src/services/advanced/acosService.ts,568,controlLoop,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async executeControlLoop(,,ORG_IN_FUNC_NOT_IN_WRITE
+008,./server/src/services/advanced/acosService.ts,595,controlLoop,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async executeControlLoop(,,ORG_IN_FUNC_NOT_IN_WRITE
+009,./server/src/services/advanced/acosService.ts,661,frameworkControl,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async autonomousAction(,,ORG_IN_FUNC_NOT_IN_WRITE
+010,./server/src/services/advanced/acosService.ts,715,complianceDebt,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async trackComplianceDebt(,,ORG_SCOPED
+011,./server/src/services/advanced/acosService.ts,730,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async trackComplianceDebt(,,ORG_IN_FUNC_NOT_IN_WRITE
+012,./server/src/services/advanced/acosService.ts,903,changeImpact,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async forecastChangeImpact(,,ORG_SCOPED
+013,./server/src/services/advanced/acosService.ts,919,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async forecastChangeImpact(,,ORG_IN_FUNC_NOT_IN_WRITE
+014,./server/src/services/advanced/acosService.ts,1198,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async resolveChangeImpact(,,ORG_SCOPED
+015,./server/src/services/advanced/acosService.ts,1209,changeImpact,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async resolveChangeImpact(,,ORG_IN_FUNC_NOT_IN_WRITE
+016,./server/src/services/advanced/acosService.ts,1427,controlLoop,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateControlLoop(,,ORG_IN_FUNC_NOT_IN_WRITE
+017,./server/src/services/advanced/acosService.ts,1433,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateControlLoop(,,ORG_SCOPED
+018,./server/src/services/advanced/acosService.ts,1488,controlLoop,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async pauseControlLoop(loopId: string, organizationId: string, userId: string): ",,ORG_IN_FUNC_NOT_IN_WRITE
+019,./server/src/services/advanced/acosService.ts,1494,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async pauseControlLoop(loopId: string, organizationId: string, userId: string): ",,ORG_SCOPED
+020,./server/src/services/advanced/acosService.ts,1549,controlLoop,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async resumeControlLoop(loopId: string, organizationId: string, userId: string):",,ORG_IN_FUNC_NOT_IN_WRITE
+021,./server/src/services/advanced/acosService.ts,1555,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async resumeControlLoop(loopId: string, organizationId: string, userId: string):",,ORG_SCOPED
+022,./server/src/services/advanced/acosService.ts,1620,controlLoop,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteControlLoop(loopId: string, organizationId: string, userId: string):",,ORG_IN_FUNC_NOT_IN_WRITE
+023,./server/src/services/advanced/acosService.ts,1625,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteControlLoop(loopId: string, organizationId: string, userId: string):",,ORG_SCOPED
+024,./server/src/services/advanced/acosService.ts,1781,complianceGoal,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateComplianceGoal(,,ORG_IN_FUNC_NOT_IN_WRITE
+025,./server/src/services/advanced/acosService.ts,1787,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateComplianceGoal(,,ORG_SCOPED
+026,./server/src/services/advanced/acosService.ts,1799,complianceGoal,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateComplianceGoal(,,ORG_IN_FUNC_NOT_IN_WRITE
+027,./server/src/services/advanced/acosService.ts,1838,complianceGoal,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteComplianceGoal(goalId: string, organizationId: string, userId: strin",,ORG_IN_FUNC_NOT_IN_WRITE
+028,./server/src/services/advanced/acosService.ts,1844,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteComplianceGoal(goalId: string, organizationId: string, userId: strin",,ORG_SCOPED
+029,./server/src/services/advanced/acosService.ts,1876,complianceGoal,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async restoreComplianceGoal(goalId: string, organizationId: string, userId: stri",,ORG_IN_FUNC_NOT_IN_WRITE
+030,./server/src/services/advanced/acosService.ts,1882,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async restoreComplianceGoal(goalId: string, organizationId: string, userId: stri",,ORG_SCOPED
+031,./server/src/services/advanced/acosService.ts,1925,controlLoop,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateControlLoopMetrics(,,ORG_IN_FUNC_NOT_IN_WRITE
+032,./server/src/services/advanced/acosService.ts,2093,complianceDebt,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async resolveComplianceDebt(,,ORG_IN_FUNC_NOT_IN_WRITE
+033,./server/src/services/advanced/acosService.ts,2102,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async resolveComplianceDebt(,,ORG_SCOPED
+034,./server/src/services/advanced/acosService.ts,2153,complianceFramework,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async recalculateComplianceScore(,,ORG_IN_FUNC_NOT_IN_WRITE
+035,./server/src/services/advanced/acosService.ts,2312,controlLoop,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async updateControlLoopConfidence(controlId: string, organizationId: string): Pr",,ORG_SCOPED
+036,./server/src/services/advanced/acosService.ts,2340,controlLoopHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async recordLoopHistory(,,ORG_SCOPED
+037,./server/src/services/advanced/agenticAIService.ts,469,agenticAction,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async executeAction(,,ORG_SCOPED
+038,./server/src/services/advanced/agenticAIService.ts,529,agenticAction,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async executeActionInternal(,,ORG_IN_FUNC_NOT_IN_WRITE
+039,./server/src/services/advanced/agenticAIService.ts,568,agenticAction,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async executeActionInternal(,,ORG_IN_FUNC_NOT_IN_WRITE
+040,./server/src/services/advanced/agenticAIService.ts,580,agenticAction,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async executeActionInternal(,,ORG_IN_FUNC_NOT_IN_WRITE
+041,./server/src/services/advanced/agenticAIService.ts,588,agenticAction,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeActionInternal(,,ORG_SCOPED
+042,./server/src/services/advanced/agenticAIService.ts,596,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async executeActionInternal(,,ORG_IN_FUNC_NOT_IN_WRITE
+043,./server/src/services/advanced/agenticAIService.ts,623,agenticAction,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async executeActionInternal(,,ORG_IN_FUNC_NOT_IN_WRITE
+044,./server/src/services/advanced/agenticAIService.ts,691,agenticAction,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async createCheckpoint(,,ORG_IN_FUNC_NOT_IN_WRITE
+045,./server/src/services/advanced/agenticAIService.ts,742,frameworkControl,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeControlUpdate(,,ORG_SCOPED
+046,./server/src/services/advanced/agenticAIService.ts,770,policy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executePolicyCreate(,,ORG_SCOPED
+047,./server/src/services/advanced/agenticAIService.ts,806,riskItem,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async executeRiskMitigation(,,ORG_IN_FUNC_NOT_IN_WRITE
+048,./server/src/services/advanced/agenticAIService.ts,896,agenticAction,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async rollbackAction(,,ORG_SCOPED
+049,./server/src/services/advanced/agenticAIService.ts,908,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async rollbackAction(,,ORG_IN_FUNC_NOT_IN_WRITE
+050,./server/src/services/advanced/agenticAIService.ts,1017,frameworkControl,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async performRollback(,,ORG_IN_FUNC_NOT_IN_WRITE
+051,./server/src/services/advanced/agenticAIService.ts,1035,riskItem,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async performRollback(,,ORG_IN_FUNC_NOT_IN_WRITE
+052,./server/src/services/advanced/agenticAIService.ts,1052,policy,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async performRollback(,,ORG_IN_FUNC_NOT_IN_WRITE
+053,./server/src/services/advanced/agenticAIService.ts,1122,agenticAction,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async cleanupExpiredCheckpoints(organizationId: string): Promise<number> {,,ORG_IN_FUNC_NOT_IN_WRITE
+054,./server/src/services/advanced/agenticAIService.ts,1167,agenticAction,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async approveAction(,,ORG_IN_FUNC_NOT_IN_WRITE
+055,./server/src/services/advanced/agenticAIService.ts,1201,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async approveAction(,,ORG_IN_FUNC_NOT_IN_WRITE
+056,./server/src/services/advanced/agenticAIService.ts,1263,agenticAction,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"private async lockAction(lockKey: string, organizationId: string, actionId: stri",,ORG_SCOPED
+057,./server/src/services/advanced/agenticAIService.ts,1295,agenticAction,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private async unlockAction(lockKey: string, organizationId: string): Promise<voi",,ORG_IN_FUNC_NOT_IN_WRITE
+058,./server/src/services/advanced/bayesian/knowledgeGraphBuilder.ts,193,knowledgeGraphEntity,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,export async function buildKnowledgeGraph(,,ORG_SCOPED
+059,./server/src/services/advanced/bayesian/knowledgeGraphBuilder.ts,219,knowledgeGraphRelationship,upsert,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function buildKnowledgeGraph(,,ORG_IN_FUNC_NOT_IN_WRITE
+060,./server/src/services/advanced/bayesian/knowledgeGraphBuilder.ts,247,knowledgeGraphEntity,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function buildKnowledgeGraph(,,ORG_IN_FUNC_NOT_IN_WRITE
+061,./server/src/services/advanced/bayesian/knowledgeGraphBuilder.ts,286,knowledgeGraphRelationship,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function buildKnowledgeGraph(,,ORG_IN_FUNC_NOT_IN_WRITE
+062,./server/src/services/advanced/blockchainService.ts,278,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async recordAuditLog(,,ORG_IN_FUNC_NOT_IN_WRITE
+063,./server/src/services/advanced/blockchainService.ts,455,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private async initializeHyperledger(): Promise<void> {,,NO_ORG_CHECK
+064,./server/src/services/advanced/blockchainService.ts,944,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeBlockchainRecord(record: BlockchainRecord): Promise<void> {,,ORG_SCOPED
+065,./server/src/services/advanced/blockchainService.ts,1005,organization,update,NON_PRISMA_FALSE_POSITIVE,async deployComplianceContract(network: BlockchainNetwork = 'polygon'): Promise<,blockchainService.ts:1005 — line is 'if (this.wallet) {' not a Prisma write,NO_ORG_CHECK
+066,./server/src/services/advanced/blockchainService.ts,1913,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async startRegistryEventListeners(): Promise<void> {,,ORG_SCOPED
+067,./server/src/services/advanced/blockchainService.ts,1948,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async startRegistryEventListeners(): Promise<void> {,,ORG_SCOPED
+068,./server/src/services/advanced/blockchainService.ts,1981,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async startRegistryEventListeners(): Promise<void> {,,ORG_SCOPED
+069,./server/src/services/advanced/blockchainService.ts,2016,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async startRegistryEventListeners(): Promise<void> {,,ORG_SCOPED
+070,./server/src/services/advanced/blockchainService.ts,2052,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async startRegistryEventListeners(): Promise<void> {,,ORG_SCOPED
+071,./server/src/services/advanced/blockchainService.ts,2087,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async startRegistryEventListeners(): Promise<void> {,,ORG_SCOPED
+072,./server/src/services/advanced/blockchainService.ts,2189,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async anchorEvidenceHash(,,ORG_IN_FUNC_NOT_IN_WRITE
+073,./server/src/services/advanced/blockchainService.ts,2203,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async anchorEvidenceHash(,,ORG_IN_FUNC_NOT_IN_WRITE
+074,./server/src/services/advanced/blockchainService.ts,2255,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async anchorEvidenceHash(,,ORG_SCOPED
+075,./server/src/services/advanced/blockchainService.ts,2311,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async detectTampering(,,ORG_SCOPED
+076,./server/src/services/advanced/blockchainService.ts,2374,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async detectTampering(,,ORG_SCOPED
+077,./server/src/services/advanced/byokService.ts,186,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private getVaultClient(vaultUrl: string, token?: string): AxiosInstance {",,ORG_IN_FUNC_NOT_IN_WRITE
+078,./server/src/services/advanced/byokService.ts,402,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async encryptData(,,ORG_IN_FUNC_NOT_IN_WRITE
+079,./server/src/services/advanced/byokService.ts,469,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async decryptData(,,ORG_SCOPED
+080,./server/src/services/advanced/byokService.ts,919,keyUsage,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async trackKeyUsage(,,ORG_SCOPED
+081,./server/src/services/advanced/byokService.ts,992,keyRotationPolicy,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async setKeyRotationPolicy(,,ORG_SCOPED
+082,./server/src/services/advanced/byokService.ts,1100,keyRotationPolicy,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async checkAndRotateKeys(organizationId?: string): Promise<number> {,,ORG_SCOPED
+083,./server/src/services/advanced/byokService.ts,1115,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async checkAndRotateKeys(organizationId?: string): Promise<number> {,,ORG_SCOPED
+084,./server/src/services/advanced/byokService.ts,1137,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async checkAndRotateKeys(organizationId?: string): Promise<number> {,,ORG_SCOPED
+085,./server/src/services/advanced/byokService.ts,1171,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeEncryptionMetadata(,,ORG_SCOPED
+086,./server/src/services/advanced/byokService.ts,1240,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,async scheduleKeyDeletion(,,NO_ORG_CHECK
+087,./server/src/services/advanced/complianceAsCodeService.ts,125,compliancePolicy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createPolicy(,,ORG_SCOPED
+088,./server/src/services/advanced/complianceAsCodeService.ts,377,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async setupCIIntegration(,,ORG_SCOPED
+089,./server/src/services/advanced/complianceAsCodeService.ts,453,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private verifyWebhookSignature(,,NO_ORG_CHECK
+090,./server/src/services/advanced/complianceAsCodeService.ts,481,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private verifyWebhookSignature(,,NO_ORG_CHECK
+091,./server/src/services/advanced/complianceAsCodeService.ts,1085,compliancePolicy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updatePolicy(,,ORG_SCOPED
+092,./server/src/services/advanced/complianceAsCodeService.ts,1141,compliancePolicy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async rollbackPolicy(policyId: string, organizationId: string): Promise<Policy> ",,ORG_SCOPED
+093,./server/src/services/advanced/complianceAsCodeService.ts,1186,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deletePolicy(policyId: string, organizationId: string): Promise<void> {",,ORG_IN_FUNC_NOT_IN_WRITE
+094,./server/src/services/advanced/complianceAsCodeService.ts,1190,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deletePolicy(policyId: string, organizationId: string): Promise<void> {",,ORG_IN_FUNC_NOT_IN_WRITE
+095,./server/src/services/advanced/complianceAsCodeService.ts,1196,compliancePolicy,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deletePolicy(policyId: string, organizationId: string): Promise<void> {",,ORG_IN_FUNC_NOT_IN_WRITE
+096,./server/src/services/advanced/complianceAsCodeService.ts,1201,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deletePolicy(policyId: string, organizationId: string): Promise<void> {",,ORG_SCOPED
+097,./server/src/services/advanced/complianceDigitalTwinService.ts,189,simulationScenario,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async runSimulation(,,ORG_SCOPED
+098,./server/src/services/advanced/complianceDigitalTwinService.ts,222,simulationResult,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async runSimulation(,,ORG_SCOPED
+099,./server/src/services/advanced/complianceDigitalTwinService.ts,243,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async runSimulation(,,ORG_SCOPED
+100,./server/src/services/advanced/complianceDigitalTwinService.ts,1124,simulationScenario,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async saveSimulationState(,,ORG_IN_FUNC_NOT_IN_WRITE
+101,./server/src/services/advanced/complianceDigitalTwinService.ts,1190,simulationResult,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async rollbackSimulation(,,ORG_SCOPED
+102,./server/src/services/advanced/complianceDigitalTwinService.ts,1198,simulationScenario,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async rollbackSimulation(,,ORG_SCOPED
+103,./server/src/services/advanced/deepfakeDetectionService.ts,974,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private computeCacheKey(buffer: Buffer): string {,,NO_ORG_CHECK
+104,./server/src/services/advanced/deepfakeDetectionService.ts,1067,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private startCacheCleanup(): void {,,NO_ORG_CHECK
+105,./server/src/services/advanced/dp/budgetLedger.ts,119,privacyBudgetLedger,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,export async function commitSpend(,,ORG_SCOPED
+106,./server/src/services/advanced/dp/secretSharing.ts,48,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,(unknown),,NO_ORG_CHECK
+107,./server/src/services/advanced/dp/secretSharing.ts,55,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,(unknown),,NO_ORG_CHECK
+108,./server/src/services/advanced/evidenceTruthLayerService.ts,137,evidenceAnalysis,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async analyzeEvidence(,,ORG_SCOPED
+109,./server/src/services/advanced/evidenceTruthLayerService.ts,155,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async analyzeEvidence(,,ORG_SCOPED
+110,./server/src/services/advanced/evidenceTruthLayerService.ts,548,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private generateCryptographicHash(fileBuffer: Buffer): string {,,ORG_IN_FUNC_NOT_IN_WRITE
+111,./server/src/services/advanced/evidenceTruthLayerService.ts,582,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async signEvidence(,,ORG_SCOPED
+112,./server/src/services/advanced/evidenceTruthLayerService.ts,608,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async verifyEvidenceSignature(,,ORG_IN_FUNC_NOT_IN_WRITE
+113,./server/src/services/advanced/evidenceTruthLayerService.ts,673,keyUsage,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async getOrganizationSigningKey(organizationId: string): Promise<{ priva,,ORG_SCOPED
+114,./server/src/services/advanced/evidenceTruthLayerService.ts,720,keyRotationPolicy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async getOrganizationSigningKey(organizationId: string): Promise<{ priva,,ORG_SCOPED
+115,./server/src/services/advanced/evidenceTruthLayerService.ts,733,keyUsage,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async getOrganizationSigningKey(organizationId: string): Promise<{ priva,,ORG_SCOPED
+116,./server/src/services/advanced/evidenceTruthLayerService.ts,784,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async timestampEvidence(,,ORG_SCOPED
+117,./server/src/services/advanced/evidenceTruthLayerService.ts,787,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async timestampEvidence(,,ORG_SCOPED
+118,./server/src/services/advanced/evidenceTruthLayerService.ts,824,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createChainOfCustody(,,ORG_IN_FUNC_NOT_IN_WRITE
+119,./server/src/services/advanced/evidenceTruthLayerService.ts,827,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createChainOfCustody(,,ORG_IN_FUNC_NOT_IN_WRITE
+120,./server/src/services/advanced/evidenceTruthLayerService.ts,885,userSigningKey,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async getOrCreateUserSigningKey(,,ORG_SCOPED
+121,./server/src/services/advanced/evidenceTruthLayerService.ts,929,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createMultiPartyAttestation(,,ORG_SCOPED
+122,./server/src/services/advanced/evidenceTruthLayerService.ts,933,evidenceAttestation,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createMultiPartyAttestation(,,ORG_SCOPED
+123,./server/src/services/advanced/evidenceTruthLayerService.ts,958,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createMultiPartyAttestation(,,ORG_IN_FUNC_NOT_IN_WRITE
+124,./server/src/services/advanced/evidenceTruthLayerService.ts,2023,evidenceAnalysis,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async reanalyzeEvidence(,,ORG_SCOPED
+125,./server/src/services/advanced/evidenceTruthLayerService.ts,2465,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async verifyIntegrity(,,ORG_IN_FUNC_NOT_IN_WRITE
+126,./server/src/services/advanced/evidenceTruthLayerService.ts,2518,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async verifyIntegrity(,,ORG_SCOPED
+127,./server/src/services/advanced/federatedSwarmService.ts,96,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async joinFederation(,,ORG_IN_FUNC_NOT_IN_WRITE
+128,./server/src/services/advanced/federatedSwarmService.ts,110,federatedSwarmPeer,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async joinFederation(,,ORG_SCOPED
+129,./server/src/services/advanced/federatedSwarmService.ts,136,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async leaveFederation(,,ORG_SCOPED
+130,./server/src/services/advanced/federatedSwarmService.ts,197,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async contributeToFederation(,,ORG_IN_FUNC_NOT_IN_WRITE
+131,./server/src/services/advanced/federatedSwarmService.ts,379,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async recoverFederation(,,ORG_IN_FUNC_NOT_IN_WRITE
+132,./server/src/services/advanced/federatedSwarmService.ts,702,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async receiveFederatedModel(,,ORG_IN_FUNC_NOT_IN_WRITE
+133,./server/src/services/advanced/federatedSwarmService.ts,754,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async getFederatedModel(,,ORG_IN_FUNC_NOT_IN_WRITE
+134,./server/src/services/advanced/federatedSwarmService.ts,790,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async getFederatedModel(,,ORG_IN_FUNC_NOT_IN_WRITE
+135,./server/src/services/advanced/federatedSwarmService.ts,1080,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async participateInSwarm(,,ORG_IN_FUNC_NOT_IN_WRITE
+136,./server/src/services/advanced/federatedSwarmService.ts,1098,swarmInsight,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async participateInSwarm(,,ORG_SCOPED
+137,./server/src/services/advanced/federatedSwarmService.ts,1667,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async trackConvergenceHistory(,,ORG_IN_FUNC_NOT_IN_WRITE
+138,./server/src/services/advanced/federatedSwarmService.ts,1884,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async rollbackModel(,,ORG_IN_FUNC_NOT_IN_WRITE
+139,./server/src/services/advanced/federatedSwarmService.ts,1927,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async distributeModel(,,ORG_SCOPED
+140,./server/src/services/advanced/federatedSwarmService.ts,2220,federatedSwarmAggregation,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async aggregatePeerContributions(,,ORG_SCOPED
+141,./server/src/services/advanced/federatedSwarmService.ts,2230,federatedSwarmPeer,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async aggregatePeerContributions(,,ORG_SCOPED
+142,./server/src/services/advanced/federatedSwarmService.ts,2571,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async secureAggregateModels(,,ORG_IN_FUNC_NOT_IN_WRITE
+143,./server/src/services/advanced/federatedSwarmService.ts,2576,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async secureAggregateModels(,,ORG_SCOPED
+144,./server/src/services/advanced/federatedSwarmService.ts,2706,sCAFFOLDControlVariate,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async aggregateScaffoldStrategy(input: {,,ORG_SCOPED
+145,./server/src/services/advanced/federatedSwarmService.ts,2718,sCAFFOLDControlVariate,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async aggregateScaffoldStrategy(input: {,,ORG_SCOPED
+146,./server/src/services/advanced/federatedSwarmService.ts,2815,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async registerPeerUpdate(,,ORG_SCOPED
+147,./server/src/services/advanced/homomorphicAIService.ts,1017,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeInferenceMetadata(,,ORG_SCOPED
+148,./server/src/services/advanced/homomorphicAIService.ts,1164,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async performEncryptedNeuralInference(,,ORG_SCOPED
+149,./server/src/services/advanced/homomorphicAIService.ts,1168,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async performEncryptedNeuralInference(,,ORG_SCOPED
+150,./server/src/services/advanced/jitAccessService.ts,244,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async denyAccess(,,ORG_SCOPED
+151,./server/src/services/advanced/jitAccessService.ts,367,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async revokeSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+152,./server/src/services/advanced/jitAccessService.ts,395,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async logSessionAction(,,ORG_SCOPED
+153,./server/src/services/advanced/jitAccessService.ts,941,user,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async grantTemporaryPrivilege(,,ORG_IN_FUNC_NOT_IN_WRITE
+154,./server/src/services/advanced/jitAccessService.ts,967,user,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async revokeTemporaryPrivilege(,,ORG_IN_FUNC_NOT_IN_WRITE
+155,./server/src/services/advanced/jitAccessService.ts,989,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeAccessRequest(request: JITAccessRequest): Promise<void> {,,ORG_SCOPED
+156,./server/src/services/advanced/jitAccessService.ts,1099,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async updateAccessRequest(request: JITAccessRequest): Promise<void> {,,ORG_SCOPED
+157,./server/src/services/advanced/jitAccessService.ts,1164,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeSession(session: JITSession): Promise<void> {,,ORG_SCOPED
+158,./server/src/services/advanced/jitAccessService.ts,1188,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async updateSession(session: JITSession): Promise<void> {,,ORG_SCOPED
+159,./server/src/services/advanced/ldapPermissionService.ts,598,?,.delete(,NON_PRISMA_FALSE_POSITIVE,"private sendAndWait(msgId: number, data: Buffer): Promise<BERElement> {",ldapPermissionService.ts:598 — this.pendingResponses.delete(msgId) is Map.delete on in-memory state,CHILD_ENTITY_NO_ORG
+160,./server/src/services/advanced/ldapPermissionService.ts,616,?,.delete(,NON_PRISMA_FALSE_POSITIVE,"private sendAndWaitMulti(msgId: number, data: Buffer): Promise<Array<{ dn: strin",ldapPermissionService.ts:616 — this.pendingResponses.delete(msgId) is Map.delete,CHILD_ENTITY_NO_ORG
+161,./server/src/services/advanced/ldapPermissionService.ts,659,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private handleMessage(element: BERElement): void {,,NO_ORG_CHECK
+162,./server/src/services/advanced/ldapPermissionService.ts,689,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private handleMessage(element: BERElement): void {,,NO_ORG_CHECK
+163,./server/src/services/advanced/ldapPermissionService.ts,694,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private handleMessage(element: BERElement): void {,,NO_ORG_CHECK
+164,./server/src/services/advanced/ldapPermissionService.ts,1061,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"async resolveNestedGroups(userDN: string, maxDepth: number = 10): Promise<string",,NO_ORG_CHECK
+165,./server/src/services/advanced/ldapPermissionService.ts,1483,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private startCacheCleanup(): void {,,NO_ORG_CHECK
+166,./server/src/services/advanced/ldapPermissionService.ts,1486,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private startCacheCleanup(): void {,,NO_ORG_CHECK
+167,./server/src/services/advanced/livenessDetectionService.ts,308,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,async verifyChallengeResponse(,,NO_ORG_CHECK
+168,./server/src/services/advanced/livenessDetectionService.ts,347,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,async verifyChallengeResponse(,,NO_ORG_CHECK
+169,./server/src/services/advanced/livenessDetectionService.ts,1128,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private startChallengeCleanup(): void {,,NO_ORG_CHECK
+170,./server/src/services/advanced/mlModelsService.ts,1033,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async trainClassificationModel(,,ORG_SCOPED
+171,./server/src/services/advanced/mlModelsService.ts,1137,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async trainRegressionModel(,,ORG_SCOPED
+172,./server/src/services/advanced/mqttService.ts,173,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private setupDefaultSubscriptions(): void {,,NO_ORG_CHECK
+173,./server/src/services/advanced/mqttService.ts,281,ioTDevice,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async handleDeviceData(message: DeviceMessage): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+174,./server/src/services/advanced/mqttService.ts,317,ioTDevice,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async handleDeviceStatus(message: DeviceMessage): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+175,./server/src/services/advanced/mqttService.ts,347,edgeComplianceCheck,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleComplianceCheck(message: DeviceMessage): Promise<void> {,,ORG_SCOPED
+176,./server/src/services/advanced/multimodalIntakeService.ts,498,transcriptionResult,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeTranscriptionResult(,,ORG_SCOPED
+177,./server/src/services/advanced/neuroSymbolicAIService.ts,1355,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeCausalGraph(,,ORG_SCOPED
+178,./server/src/services/advanced/neuroSymbolicAIService.ts,1378,neuroSymbolicReasoning,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeReasoningResult(reasoning: NeuralSymbolicReasoning): Promise<,,ORG_SCOPED
+179,./server/src/services/advanced/neuroSymbolicAIService.ts,1406,ruleInference,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeRuleInferences(inferences: RuleInference[]): Promise<void> {,,ORG_SCOPED
+180,./server/src/services/advanced/neuroSymbolicAIService.ts,1499,ruleInference,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async validateInferredRule(,,ORG_SCOPED
+181,./server/src/services/advanced/neuroSymbolicAIService.ts,1835,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async getOrBuildKnowledgeGraph(organizationId: string): Promise<Knowledg,,ORG_IN_FUNC_NOT_IN_WRITE
+182,./server/src/services/advanced/physicalAIService.ts,209,ioTDevice,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async registerDevice(,,ORG_SCOPED
+183,./server/src/services/advanced/physicalAIService.ts,256,ioTDevice,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async registerDevice(,,ORG_SCOPED
+184,./server/src/services/advanced/physicalAIService.ts,262,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async registerDevice(,,ORG_IN_FUNC_NOT_IN_WRITE
+185,./server/src/services/advanced/physicalAIService.ts,414,ioTDevice,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,async deregisterDevice(,,ORG_IN_FUNC_NOT_IN_WRITE
+186,./server/src/services/advanced/physicalAIService.ts,419,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async deregisterDevice(,,ORG_IN_FUNC_NOT_IN_WRITE
+187,./server/src/services/advanced/physicalAIService.ts,453,ioTDevice,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleDeviceMessage(,,ORG_SCOPED
+188,./server/src/services/advanced/physicalAIService.ts,502,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async updateBatteryTracking(,,ORG_IN_FUNC_NOT_IN_WRITE
+189,./server/src/services/advanced/physicalAIService.ts,538,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async updateConnectionQualityTracking(,,ORG_IN_FUNC_NOT_IN_WRITE
+190,./server/src/services/advanced/physicalAIService.ts,629,edgeComplianceCheck,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async performEdgeComplianceCheck(,,ORG_SCOPED
+191,./server/src/services/advanced/physicalAIService.ts,643,ioTDevice,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async performEdgeComplianceCheck(,,ORG_IN_FUNC_NOT_IN_WRITE
+192,./server/src/services/advanced/physicalAIService.ts,1157,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async receiveSensorData(,,ORG_IN_FUNC_NOT_IN_WRITE
+193,./server/src/services/advanced/physicalAIService.ts,1166,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async receiveSensorData(,,ORG_IN_FUNC_NOT_IN_WRITE
+194,./server/src/services/advanced/physicalAIService.ts,1179,ioTDevice,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async receiveSensorData(,,ORG_SCOPED
+195,./server/src/services/advanced/physicalAIService.ts,1191,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async receiveSensorData(,,ORG_SCOPED
+196,./server/src/services/advanced/physicalAIService.ts,1333,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async detectAnomalies(,,ORG_IN_FUNC_NOT_IN_WRITE
+197,./server/src/services/advanced/physicalAIService.ts,1647,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async alertOnDeviceFailure(,,ORG_SCOPED
+198,./server/src/services/advanced/physicalAIService.ts,2968,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async validateFirmware(,,ORG_SCOPED
+199,./server/src/services/advanced/redTeamService.ts,247,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async runRedTeamSimulation(,,ORG_SCOPED
+200,./server/src/services/advanced/redTeamService.ts,299,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async runRedTeamSimulation(,,ORG_SCOPED
+201,./server/src/services/advanced/redTeamService.ts,1059,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async runAutomatedScan(,,ORG_IN_FUNC_NOT_IN_WRITE
+202,./server/src/services/advanced/redTeamService.ts,1373,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async scheduleScan(,,ORG_IN_FUNC_NOT_IN_WRITE
+203,./server/src/services/advanced/redTeamService.ts,1632,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async markFalsePositive(,,ORG_IN_FUNC_NOT_IN_WRITE
+204,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,188,regulatoryChange,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async ingestRegulation(,,ORG_SCOPED
+205,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,220,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async ingestRegulation(,,ORG_IN_FUNC_NOT_IN_WRITE
+206,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,243,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async ingestRegulation(,,ORG_IN_FUNC_NOT_IN_WRITE
+207,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,305,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async detectDuplicate(,,ORG_SCOPED
+208,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,314,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async detectDuplicate(,,ORG_SCOPED
+209,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1152,regulatoryChange,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async detectConflicts(,,ORG_SCOPED
+210,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1176,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async detectConflicts(,,ORG_IN_FUNC_NOT_IN_WRITE
+211,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1322,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async notifyConflictStakeholders(,,ORG_IN_FUNC_NOT_IN_WRITE
+212,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1448,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async resolveConflict(,,ORG_IN_FUNC_NOT_IN_WRITE
+213,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1620,frameworkControl,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async autoUpdateControls(,,ORG_IN_FUNC_NOT_IN_WRITE
+214,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1642,frameworkControl,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async autoUpdateControls(,,ORG_SCOPED
+215,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1664,regulatoryChange,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async autoUpdateControls(,,ORG_IN_FUNC_NOT_IN_WRITE
+216,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1673,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async autoUpdateControls(,,ORG_IN_FUNC_NOT_IN_WRITE
+217,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1718,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async autoUpdateControls(,,ORG_IN_FUNC_NOT_IN_WRITE
+218,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1820,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async createCheckpoint(,,ORG_SCOPED
+219,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,1923,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async queueForApproval(,,ORG_SCOPED
+220,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2016,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async approveAutoUpdate(,,ORG_IN_FUNC_NOT_IN_WRITE
+221,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2073,frameworkControl,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async rollbackAutoUpdate(,,ORG_IN_FUNC_NOT_IN_WRITE
+222,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2089,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async rollbackAutoUpdate(,,ORG_IN_FUNC_NOT_IN_WRITE
+223,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2232,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async notifyAutoUpdateStakeholders(,,ORG_IN_FUNC_NOT_IN_WRITE
+224,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2331,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async monitorRegulatoryFeeds(,,ORG_SCOPED
+225,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2360,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async monitorRegulatoryFeeds(,,ORG_IN_FUNC_NOT_IN_WRITE
+226,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2608,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async monitorWebsiteChanges(,,ORG_IN_FUNC_NOT_IN_WRITE
+227,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2618,regulatoryFeed,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async monitorWebsiteChanges(,,ORG_SCOPED
+228,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2718,regulatoryFeed,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async updateFeedStatus(,,ORG_SCOPED
+229,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2733,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async updateFeedStatus(,,ORG_IN_FUNC_NOT_IN_WRITE
+230,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2772,regulatoryFeed,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async addFeed(,,ORG_SCOPED
+231,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2797,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async addFeed(,,ORG_SCOPED
+232,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2826,regulatoryFeed,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async removeFeed(,,ORG_SCOPED
+233,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2834,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async removeFeed(,,ORG_SCOPED
+234,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2894,regulatoryFeed,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateFeed(,,ORG_SCOPED
+235,./server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2918,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateFeed(,,ORG_SCOPED
+236,./server/src/services/advanced/swarmTaskAllocationService.ts,328,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async registerAgent(,,ORG_IN_FUNC_NOT_IN_WRITE
+237,./server/src/services/advanced/swarmTaskAllocationService.ts,383,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateAgentStatus(,,ORG_IN_FUNC_NOT_IN_WRITE
+238,./server/src/services/advanced/swarmTaskAllocationService.ts,416,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async deactivateAgent(,,ORG_SCOPED
+239,./server/src/services/advanced/swarmTaskAllocationService.ts,450,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async reactivateAgent(,,ORG_SCOPED
+240,./server/src/services/advanced/swarmTaskAllocationService.ts,575,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async submitTask(,,ORG_IN_FUNC_NOT_IN_WRITE
+241,./server/src/services/advanced/swarmTaskAllocationService.ts,1067,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async reportProgress(,,ORG_IN_FUNC_NOT_IN_WRITE
+242,./server/src/services/advanced/swarmTaskAllocationService.ts,1174,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeTask(,,ORG_IN_FUNC_NOT_IN_WRITE
+243,./server/src/services/advanced/swarmTaskAllocationService.ts,1181,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeTask(,,ORG_IN_FUNC_NOT_IN_WRITE
+244,./server/src/services/advanced/swarmTaskAllocationService.ts,1224,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async cancelTask(taskId: string, reason: string, userId: string): Promise<SwarmT",,ORG_IN_FUNC_NOT_IN_WRITE
+245,./server/src/services/advanced/swarmTaskAllocationService.ts,1245,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async cancelTask(taskId: string, reason: string, userId: string): Promise<SwarmT",,ORG_IN_FUNC_NOT_IN_WRITE
+246,./server/src/services/advanced/swarmTaskAllocationService.ts,1527,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async resolveMetricAlert(,,ORG_SCOPED
+247,./server/src/services/advanced/swarmTaskAllocationService.ts,1655,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private async reassignTasksFromAgent(agentId: string): Promise<void> {,,NO_ORG_CHECK
+248,./server/src/services/advanced/swarmTaskAllocationService.ts,1667,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private async reassignTasksFromAgent(agentId: string): Promise<void> {,,NO_ORG_CHECK
+249,./server/src/services/advanced/swarmTaskAllocationService.ts,1753,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private async handleTaskTimeout(taskId: string, timeoutType: string): Promise<vo",,ORG_IN_FUNC_NOT_IN_WRITE
+250,./server/src/services/advanced/swarmTaskAllocationService.ts,1774,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private async handleTaskTimeout(taskId: string, timeoutType: string): Promise<vo",,ORG_IN_FUNC_NOT_IN_WRITE
+251,./server/src/services/advanced/swarmTaskAllocationService.ts,1777,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private async handleTaskTimeout(taskId: string, timeoutType: string): Promise<vo",,ORG_IN_FUNC_NOT_IN_WRITE
+252,./server/src/services/advanced/swarmTaskAllocationService.ts,1912,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async checkAndQueueDependentTasks(completedTaskId: string): Promise<void,,ORG_IN_FUNC_NOT_IN_WRITE
+253,./server/src/services/advanced/temporalGraphNetworkService.ts,156,riskPrediction,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async predictFutureRisks(,,ORG_SCOPED
+254,./server/src/services/advanced/temporalGraphNetworkService.ts,684,riskPrediction,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async refreshRiskPredictions(,,ORG_SCOPED
+255,./server/src/services/advanced/temporalGraphNetworkService.ts,1239,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async acknowledgeWarning(,,ORG_IN_FUNC_NOT_IN_WRITE
+256,./server/src/services/advanced/temporalGraphNetworkService.ts,1272,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"private async trackFalsePositive(organizationId: string, warningId: string): Pro",,ORG_SCOPED
+257,./server/src/services/advanced/temporalGraphNetworkService.ts,1637,complianceTrajectory,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async recalculateTrajectory(,,ORG_SCOPED
+258,./server/src/services/advanced/vrCollaborativeReviewService.ts,530,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async markSessionExpired(sessionId: string): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+259,./server/src/services/advanced/vrCollaborativeReviewService.ts,531,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async markSessionExpired(sessionId: string): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+260,./server/src/services/advanced/vrCollaborativeReviewService.ts,532,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async markSessionExpired(sessionId: string): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+261,./server/src/services/advanced/vrCollaborativeReviewService.ts,533,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async markSessionExpired(sessionId: string): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+262,./server/src/services/advanced/vrCollaborativeReviewService.ts,534,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async markSessionExpired(sessionId: string): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+263,./server/src/services/advanced/vrCollaborativeReviewService.ts,537,vRCollaborativeSession,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async markSessionExpired(sessionId: string): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+264,./server/src/services/advanced/vrCollaborativeReviewService.ts,736,vRCollaborativeSession,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createSession(,,ORG_SCOPED
+265,./server/src/services/advanced/vrCollaborativeReviewService.ts,757,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+266,./server/src/services/advanced/vrCollaborativeReviewService.ts,855,vRCollaborativeSession,update,ORG_IN_WHERE_OR_DATA,async joinSession(,"vrCollaborativeReviewService.ts:867 — where: { sessionId, organizationId }",NO_ORG_CHECK
+267,./server/src/services/advanced/vrCollaborativeReviewService.ts,864,auditLog,create,NON_PRISMA_FALSE_POSITIVE,async joinSession(,vrCollaborativeReviewService.ts:864 is blank line; nearby write at :866 is org-scoped,NO_ORG_CHECK
+268,./server/src/services/advanced/vrCollaborativeReviewService.ts,903,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async leaveSession(sessionId: string, userId: string): Promise<void> {",,ORG_IN_FUNC_NOT_IN_WRITE
+269,./server/src/services/advanced/vrCollaborativeReviewService.ts,922,vRCollaborativeSession,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async leaveSession(sessionId: string, userId: string): Promise<void> {",,ORG_IN_FUNC_NOT_IN_WRITE
+270,./server/src/services/advanced/vrCollaborativeReviewService.ts,931,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async leaveSession(sessionId: string, userId: string): Promise<void> {",,ORG_IN_FUNC_NOT_IN_WRITE
+271,./server/src/services/advanced/vrCollaborativeReviewService.ts,970,vRCollaborativeSession,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async startSession(sessionId: string, hostUserId: string): Promise<VRSession> {",,ORG_IN_FUNC_NOT_IN_WRITE
+272,./server/src/services/advanced/vrCollaborativeReviewService.ts,979,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async startSession(sessionId: string, hostUserId: string): Promise<VRSession> {",,ORG_IN_FUNC_NOT_IN_WRITE
+273,./server/src/services/advanced/vrCollaborativeReviewService.ts,1025,vRCollaborativeSession,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async endSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+274,./server/src/services/advanced/vrCollaborativeReviewService.ts,1039,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async endSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+275,./server/src/services/advanced/vrCollaborativeReviewService.ts,1054,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async endSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+276,./server/src/services/advanced/vrCollaborativeReviewService.ts,1055,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async endSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+277,./server/src/services/advanced/vrCollaborativeReviewService.ts,1056,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async endSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+278,./server/src/services/advanced/vrCollaborativeReviewService.ts,1057,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async endSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+279,./server/src/services/advanced/vrCollaborativeReviewService.ts,1058,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async endSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+280,./server/src/services/advanced/vrCollaborativeReviewService.ts,1120,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async addAnnotation(,,ORG_SCOPED
+281,./server/src/services/advanced/vrCollaborativeReviewService.ts,1214,vRTrainingScenario,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createTrainingScenario(,,ORG_SCOPED
+282,./server/src/services/advanced/vrCollaborativeReviewService.ts,1268,vRTrainingSession,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async startTrainingSession(,,ORG_SCOPED
+283,./server/src/services/advanced/vrCollaborativeReviewService.ts,1459,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async completeTraining(,,ORG_SCOPED
+284,./server/src/services/advanced/vrCollaborativeReviewService.ts,1470,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeTraining(,,ORG_IN_FUNC_NOT_IN_WRITE
+285,./server/src/services/advanced/vrCollaborativeReviewService.ts,1562,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async startRecording(,,ORG_IN_FUNC_NOT_IN_WRITE
+286,./server/src/services/advanced/vrCollaborativeReviewService.ts,1633,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async getActiveSessions(organizationId: string): Promise<VRSession[]> {,,ORG_IN_FUNC_NOT_IN_WRITE
+287,./server/src/services/advanced/vrCollaborativeReviewService.ts,1682,vRSessionPerformance,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async recordPerformanceMetrics(,,ORG_IN_FUNC_NOT_IN_WRITE
+288,./server/src/services/advanced/vrCollaborativeReviewService.ts,1791,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async editAnnotation(,,ORG_SCOPED
+289,./server/src/services/advanced/vrCollaborativeReviewService.ts,1837,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async deleteAnnotation(,,ORG_SCOPED
+290,./server/src/services/advanced/vrCollaborativeReviewService.ts,1968,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async addVoiceAnnotation(,,ORG_SCOPED
+291,./server/src/services/advanced/vrCollaborativeReviewService.ts,2214,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async initializeWebRTCConnections(sessionId: string): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+292,./server/src/services/advanced/vrCollaborativeReviewService.ts,2370,auditLog,create,NON_PRISMA_FALSE_POSITIVE,async joinVoiceChat(,vrCollaborativeReviewService.ts:2370 is a comment line; no Prisma write here,NO_ORG_CHECK
+293,./server/src/services/advanced/vrCollaborativeReviewService.ts,2526,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async enableScreenSharing(,,ORG_IN_FUNC_NOT_IN_WRITE
+294,./server/src/services/advanced/vrCollaborativeReviewService.ts,3789,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async loadScenarioFromTemplate(,,ORG_SCOPED
+295,./server/src/services/advanced/webrtcSignalingService.ts,284,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private dtlsFingerprints: Map<string, string> = new Map();",,ORG_IN_FUNC_NOT_IN_WRITE
+296,./server/src/services/advanced/webrtcSignalingService.ts,625,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private handleJoinSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+297,./server/src/services/advanced/webrtcSignalingService.ts,626,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private handleJoinSession(,,ORG_IN_FUNC_NOT_IN_WRITE
+298,./server/src/services/advanced/webrtcSignalingService.ts,1266,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private handleDisconnect(socket: AuthenticatedSocket, reason: string): void {",,NO_ORG_CHECK
+299,./server/src/services/advanced/webrtcSignalingService.ts,1271,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private handleDisconnect(socket: AuthenticatedSocket, reason: string): void {",,NO_ORG_CHECK
+300,./server/src/services/advanced/webrtcSignalingService.ts,1292,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private removePeerFromSession(peerId: string, sessionId: string, reason: string)",,NO_ORG_CHECK
+301,./server/src/services/advanced/webrtcSignalingService.ts,1295,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private removePeerFromSession(peerId: string, sessionId: string, reason: string)",,NO_ORG_CHECK
+302,./server/src/services/advanced/webrtcSignalingService.ts,1298,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private removePeerFromSession(peerId: string, sessionId: string, reason: string)",,NO_ORG_CHECK
+303,./server/src/services/advanced/webrtcSignalingService.ts,1299,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private removePeerFromSession(peerId: string, sessionId: string, reason: string)",,NO_ORG_CHECK
+304,./server/src/services/advanced/webrtcSignalingService.ts,1301,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private removePeerFromSession(peerId: string, sessionId: string, reason: string)",,NO_ORG_CHECK
+305,./server/src/services/advanced/webrtcSignalingService.ts,1460,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private generateTURNCredentials(): { username: string; credential: string } {,,NO_ORG_CHECK
+306,./server/src/services/advanced/webrtcSignalingService.ts,1613,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private startHeartbeatMonitor(): void {,,NO_ORG_CHECK
+307,./server/src/services/advanced/webrtcSignalingService.ts,1620,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private startHeartbeatMonitor(): void {,,NO_ORG_CHECK
+308,./server/src/services/advanced/webrtcSignalingService.ts,1669,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private startStaleSessionCleanup(): void {,,ORG_IN_FUNC_NOT_IN_WRITE
+309,./server/src/services/advanced/whisperService.ts,122,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async transcribeAudio(,,ORG_IN_FUNC_NOT_IN_WRITE
+310,./server/src/services/advanced/whisperService.ts,163,transcriptionResult,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async transcribeAudio(,,ORG_SCOPED
+311,./server/src/services/advanced/whisperService.ts,267,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async transcribeVideo(,,ORG_IN_FUNC_NOT_IN_WRITE
+312,./server/src/services/advanced/whisperService.ts,304,transcriptionResult,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async transcribeVideo(,,ORG_SCOPED
+313,./server/src/services/advanced/whisperService.ts,454,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async detectLanguage(,,ORG_IN_FUNC_NOT_IN_WRITE
+314,./server/src/services/advanced/whisperService.ts,641,transcriptionResult,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async transcribeWithDiarization(,,ORG_SCOPED
+315,./server/src/services/advanced/whisperService.ts,750,transcriptionResult,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async deleteTranscription(,,ORG_SCOPED
+316,./server/src/services/advanced/zeroKnowledgeService.ts,430,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private createSimulatedProof(circuitName: string, input: any): ZKProof {",,NO_ORG_CHECK
+317,./server/src/services/advanced/zeroKnowledgeService.ts,536,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private hashToFieldElement(data: string): bigint {,,ORG_IN_FUNC_NOT_IN_WRITE
+318,./server/src/services/advanced/zeroKnowledgeService.ts,561,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private generateProofId(proof: ZKProof): string {,,ORG_IN_FUNC_NOT_IN_WRITE
+319,./server/src/services/advanced/zeroKnowledgeService.ts,574,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeProofMetadata(metadata: {,,ORG_SCOPED
+320,./server/src/services/advanced/zeroTrustService.ts,301,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async verifyDeviceTrust(,,ORG_IN_FUNC_NOT_IN_WRITE
+321,./server/src/services/advanced/zeroTrustService.ts,672,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async evaluateAccessRequest(,,ORG_SCOPED
+322,./server/src/services/advanced/zeroTrustService.ts,940,zeroTrustPolicy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createPolicy(,,ORG_SCOPED
+323,./server/src/services/advanced/zeroTrustService.ts,1146,deviceTrust,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async storeDeviceTrust(,,ORG_SCOPED
+324,./server/src/services/aiRmfService.ts,32,aISystem,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async createAISystem(organizationId: string, data: {",,ORG_SCOPED
+325,./server/src/services/aiRmfService.ts,225,aISystem,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async updateAISystem(organizationId: string, aiSystemId: string, updates: any, u",,ORG_IN_FUNC_NOT_IN_WRITE
+326,./server/src/services/aiRmfService.ts,298,aISystem,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteAISystem(organizationId: string, aiSystemId: string, userId?: string",,ORG_IN_FUNC_NOT_IN_WRITE
+327,./server/src/services/aiRmfService.ts,321,aIRMFCoreFunction,create,PARENT_ORG_VERIFIED,"private async initializeCoreFunctions(aiSystemId: string, tx: Parameters<Paramet",aiRmfService.ts:321 — private initializeCoreFunctions(aiSystemId) called only from createAISystem which has org check,CHILD_ENTITY_NO_ORG
+328,./server/src/services/aiRmfService.ts,354,aIRMFCategory,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private async initializeCategories(aiSystemId: string, functionName: string, tx:",,ORG_IN_FUNC_NOT_IN_WRITE
+329,./server/src/services/aiRmfService.ts,371,aIRMFSubcategory,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private async initializeCategories(aiSystemId: string, functionName: string, tx:",,ORG_IN_FUNC_NOT_IN_WRITE
+330,./server/src/services/aiRmfService.ts,431,aIRMFCoreFunction,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async updateCoreFunction(organizationId: string, aiSystemId: string, functionNam",,ORG_IN_FUNC_NOT_IN_WRITE
+331,./server/src/services/aiRmfService.ts,503,aIRMFCategory,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async updateCategory(organizationId: string, categoryId: string, updates: any, u",,ORG_IN_FUNC_NOT_IN_WRITE
+332,./server/src/services/aiRmfService.ts,581,aIRMFSubcategory,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async updateSubcategory(organizationId: string, subcategoryId: string, updates: ",,ORG_IN_FUNC_NOT_IN_WRITE
+333,./server/src/services/aiRmfService.ts,664,aIRMFCategory,update,SYSTEM_LEVEL_NO_ORG_REQUIRED,private async recalculateCategoryCompletion(categoryId: string) {,aiRmfService.ts:664 — recalculateCategoryCompletion updates derived completion% from already-validated parent state,NO_ORG_CHECK
+334,./server/src/services/aiRmfService.ts,713,aIRMFCoreFunction,update,SYSTEM_LEVEL_NO_ORG_REQUIRED,private async recalculateCoreFunctionCompletion(coreFunctionId: string) {,aiRmfService.ts:713 — recalculateCoreFunctionCompletion same pattern as #333,NO_ORG_CHECK
+335,./server/src/services/aiRmfService.ts,741,aIRMFTrustworthinessCharacteristic,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private async initializeTrustworthinessCharacteristics(aiSystemId: string, tx: P",,ORG_IN_FUNC_NOT_IN_WRITE
+336,./server/src/services/aiRmfService.ts,795,aIRMFTrustworthinessCharacteristic,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async updateTrustworthinessCharacteristic(organizationId: string, aiSystemId: st",,ORG_IN_FUNC_NOT_IN_WRITE
+337,./server/src/services/aiRmfService.ts,860,aIRMFLifecycleStage,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private async initializeLifecycleStages(aiSystemId: string, tx: Parameters<Param",,ORG_IN_FUNC_NOT_IN_WRITE
+338,./server/src/services/aiRmfService.ts,911,aIRMFLifecycleStage,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async updateLifecycleStage(organizationId: string, aiSystemId: string, stage: st",,ORG_IN_FUNC_NOT_IN_WRITE
+339,./server/src/services/aiRmfService.ts,993,aIRMFActor,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async addActor(organizationId: string, aiSystemId: string, data: {",,ORG_IN_FUNC_NOT_IN_WRITE
+340,./server/src/services/aiRmfService.ts,1027,aIRMFActor,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async removeActor(organizationId: string, actorId: string) {",,ORG_SCOPED
+341,./server/src/services/aiRmfService.ts,1085,aIRMFAssessment,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async createAssessment(organizationId: string, aiSystemId: string, data: {",,ORG_IN_FUNC_NOT_IN_WRITE
+342,./server/src/services/aiRmfService.ts,1165,aIRMFAssessment,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteAssessment(organizationId: string, assessmentId: string, userId?: st",,ORG_IN_FUNC_NOT_IN_WRITE
+343,./server/src/services/aiRmfService.ts,1269,aIRMFProfile,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async createProfile(organizationId: string, aiSystemId: string, data: {",,ORG_IN_FUNC_NOT_IN_WRITE
+344,./server/src/services/aiRmfService.ts,1330,aIRMFRiskActivity,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async createRiskActivity(organizationId: string, aiSystemId: string, data: {",,ORG_IN_FUNC_NOT_IN_WRITE
+345,./server/src/services/aiRmfService.ts,1404,aIRMFRiskActivity,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async updateRiskActivity(organizationId: string, riskActivityId: string, updates",,ORG_IN_FUNC_NOT_IN_WRITE
+346,./server/src/services/aiRmfService.ts,1474,aISystem,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async calculateTrustworthinessScore(organizationId: string, aiSystemId: string):",,ORG_IN_FUNC_NOT_IN_WRITE
+347,./server/src/services/auditorService.ts,377,auditorProfile,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async createAuditorProfile(organizationId: string, data: {",,ORG_SCOPED
+348,./server/src/services/auditorService.ts,464,auditorProfile,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateAuditorProfile(,,ORG_IN_FUNC_NOT_IN_WRITE
+349,./server/src/services/auditorService.ts,491,auditorProfile,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteAuditorProfile(organizationId: string, profileId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+350,./server/src/services/auditorService.ts,580,auditEngagement,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async createEngagement(organizationId: string, data: {",,ORG_SCOPED
+351,./server/src/services/auditorService.ts,666,auditEngagement,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateEngagement(,,ORG_IN_FUNC_NOT_IN_WRITE
+352,./server/src/services/auditorService.ts,676,auditorProfile,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateEngagement(,,ORG_IN_FUNC_NOT_IN_WRITE
+353,./server/src/services/auditorService.ts,710,auditEngagement,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteEngagement(organizationId: string, engagementId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+354,./server/src/services/auditorService.ts,796,auditFinding,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async createFinding(organizationId: string, data: {",,ORG_SCOPED
+355,./server/src/services/auditorService.ts,879,auditFinding,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateFinding(,,ORG_IN_FUNC_NOT_IN_WRITE
+356,./server/src/services/auditorService.ts,910,auditFinding,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteFinding(organizationId: string, findingId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+357,./server/src/services/auditorService.ts,998,auditWorkpaper,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async createWorkpaper(organizationId: string, data: {",,ORG_IN_FUNC_NOT_IN_WRITE
+358,./server/src/services/auditorService.ts,1081,auditWorkpaper,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateWorkpaper(,,ORG_SCOPED
+359,./server/src/services/auditorService.ts,1116,auditWorkpaper,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteWorkpaper(organizationId: string, workpaperId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+360,./server/src/services/auditorService.ts,1206,auditRequest,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async createRequest(organizationId: string, data: {",,ORG_IN_FUNC_NOT_IN_WRITE
+361,./server/src/services/auditorService.ts,1286,auditRequest,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateRequest(,,ORG_SCOPED
+362,./server/src/services/auditorService.ts,1321,auditRequest,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteRequest(organizationId: string, requestId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+363,./server/src/services/aws/s3ClientV3.ts,213,fileUpload,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async uploadFile(options: UploadOptions): Promise<UploadResult> {,,ORG_IN_FUNC_NOT_IN_WRITE
+364,./server/src/services/aws/s3ClientV3.ts,318,fileUpload,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteFileById(fileId: string, organizationId: string): Promise<void> {",,ORG_IN_FUNC_NOT_IN_WRITE
+365,./server/src/services/aws/secretsManagerService.ts,464,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,async listSecrets(filters?: {,,NO_ORG_CHECK
+366,./server/src/services/cache/redisCacheService.ts,219,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"async get<T = any>(key: string, options?: { namespace?: string }): Promise<T | n",,NO_ORG_CHECK
+367,./server/src/services/cache/redisCacheService.ts,319,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"async del(key: string, options?: { namespace?: string }): Promise<boolean> {",,NO_ORG_CHECK
+368,./server/src/services/cache/redisCacheService.ts,365,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"async delPattern(pattern: string, options?: { namespace?: string }): Promise<num",,NO_ORG_CHECK
+369,./server/src/services/cache/redisCacheService.ts,408,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,async invalidateByTag(tag: string): Promise<number> {,,NO_ORG_CHECK
+370,./server/src/services/cache/redisCacheService.ts,413,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,async invalidateByTag(tag: string): Promise<number> {,,NO_ORG_CHECK
+371,./server/src/services/cache/redisCacheService.ts,463,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"async exists(key: string, options?: { namespace?: string }): Promise<boolean> {",,NO_ORG_CHECK
+372,./server/src/services/cache/redisCacheService.ts,588,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private removeFromTagIndex(key: string, tags: string[]): void {",,NO_ORG_CHECK
+373,./server/src/services/cache/redisCacheService.ts,590,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,"private removeFromTagIndex(key: string, tags: string[]): void {",,NO_ORG_CHECK
+374,./server/src/services/cache/redisCacheService.ts,622,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private evictLRU(): void {,,NO_ORG_CHECK
+375,./server/src/services/cache/redisCacheService.ts,633,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private cleanup(): void {,,NO_ORG_CHECK
+376,./server/src/services/dataAnonymizationService.ts,35,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private pseudonymizationKey: string;,,NO_ORG_CHECK
+377,./server/src/services/doraService.ts,214,dORAICTRiskAssessment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,export async function createICTRiskAssessment(data: {,,ORG_SCOPED
+378,./server/src/services/doraService.ts,364,dORAICTRiskAssessment,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function updateICTRiskAssessment(,,ORG_IN_FUNC_NOT_IN_WRITE
+379,./server/src/services/doraService.ts,394,dORAICTRiskAssessment,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function deleteICTRiskAssessment(,,ORG_IN_FUNC_NOT_IN_WRITE
+380,./server/src/services/doraService.ts,476,dORAICTRiskAssessment,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function scoreICTRiskAssessment(,,ORG_IN_FUNC_NOT_IN_WRITE
+381,./server/src/services/doraService.ts,528,dORAICTIncident,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,export async function createICTIncident(data: {,,ORG_SCOPED
+382,./server/src/services/doraService.ts,717,dORAICTIncident,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function updateICTIncident(,,ORG_IN_FUNC_NOT_IN_WRITE
+383,./server/src/services/doraService.ts,759,dORAICTIncident,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function deleteICTIncident(,,ORG_IN_FUNC_NOT_IN_WRITE
+384,./server/src/services/doraService.ts,820,dORAICTIncident,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function escalateIncident(,,ORG_IN_FUNC_NOT_IN_WRITE
+385,./server/src/services/doraService.ts,857,dORAThirdPartyProvider,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,export async function createThirdPartyProvider(data: {,,ORG_SCOPED
+386,./server/src/services/doraService.ts,1013,dORAThirdPartyProvider,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function updateThirdPartyProvider(,,ORG_IN_FUNC_NOT_IN_WRITE
+387,./server/src/services/doraService.ts,1042,dORAThirdPartyProvider,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function deleteThirdPartyProvider(,,ORG_IN_FUNC_NOT_IN_WRITE
+388,./server/src/services/doraService.ts,1272,dORAResilienceTest,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,export async function createResilienceTest(data: {,,ORG_SCOPED
+389,./server/src/services/doraService.ts,1414,dORAResilienceTest,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function updateResilienceTest(,,ORG_IN_FUNC_NOT_IN_WRITE
+390,./server/src/services/doraService.ts,1443,dORAResilienceTest,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function deleteResilienceTest(,,ORG_IN_FUNC_NOT_IN_WRITE
+391,./server/src/services/doraService.ts,1506,dORAResilienceTest,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function executeResilienceTest(,,ORG_IN_FUNC_NOT_IN_WRITE
+392,./server/src/services/doraService.ts,1556,dORAInformationRegister,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,export async function createInformationRegisterEntry(data: {,,ORG_SCOPED
+393,./server/src/services/doraService.ts,1729,dORAInformationRegister,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function updateInformationRegisterEntry(,,ORG_IN_FUNC_NOT_IN_WRITE
+394,./server/src/services/doraService.ts,1758,dORAInformationRegister,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,export async function deleteInformationRegisterEntry(,,ORG_IN_FUNC_NOT_IN_WRITE
+395,./server/src/services/euRegulations/dmaService.ts,163,dMAGatekeeper,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async registerGatekeeper(,,ORG_SCOPED
+396,./server/src/services/euRegulations/dmaService.ts,182,dMAObligationTracking,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async registerGatekeeper(,,ORG_SCOPED
+397,./server/src/services/euRegulations/dmaService.ts,301,dMAObligationTracking,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateObligationCompliance(,,ORG_IN_FUNC_NOT_IN_WRITE
+398,./server/src/services/euRegulations/dmaService.ts,312,dMAObligationTracking,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateObligationCompliance(,,ORG_SCOPED
+399,./server/src/services/euRegulations/dmaService.ts,366,dMAComplianceReport,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async generateComplianceReport(,,ORG_SCOPED
+400,./server/src/services/euRegulations/dmaService.ts,428,dMAGatekeeper,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateGatekeeper(,,ORG_IN_FUNC_NOT_IN_WRITE
+401,./server/src/services/euRegulations/dmaService.ts,505,dMAGatekeeper,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteGatekeeper(organizationId: string, gatekeeperId: string): Promise<vo",,ORG_SCOPED
+402,./server/src/services/euRegulations/dsaService.ts,211,dSAPlatform,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async registerPlatform(,,ORG_SCOPED
+403,./server/src/services/euRegulations/dsaService.ts,256,dSAContentModeration,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async recordContentModeration(,,ORG_SCOPED
+404,./server/src/services/euRegulations/dsaService.ts,322,dSAIllegalContentReport,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async reportIllegalContent(,,ORG_SCOPED
+405,./server/src/services/euRegulations/dsaService.ts,366,dSAIllegalContentReport,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async processIllegalContentReport(,,ORG_IN_FUNC_NOT_IN_WRITE
+406,./server/src/services/euRegulations/dsaService.ts,431,dSAAdRepository,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async addAdToRepository(,,ORG_SCOPED
+407,./server/src/services/euRegulations/dsaService.ts,545,dSATransparencyReport,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async generateTransparencyReport(,,ORG_SCOPED
+408,./server/src/services/euRegulations/dsaService.ts,659,dSAPlatform,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updatePlatform(,,ORG_IN_FUNC_NOT_IN_WRITE
+409,./server/src/services/euRegulations/dsaService.ts,679,dSAPlatform,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deletePlatform(organizationId: string, platformId: string): Promise<void> ",,ORG_SCOPED
+410,./server/src/services/euRegulations/dsaService.ts,828,dSARiskAssessment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async conductRiskAssessment(,,ORG_SCOPED
+411,./server/src/services/euRegulations/dsaService.ts,920,dSARiskAssessment,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateRiskAssessment(,,ORG_IN_FUNC_NOT_IN_WRITE
+412,./server/src/services/euRegulations/dsaService.ts,967,dSANonPersonalizedFeed,upsert,ORG_IN_PRIOR_findFirst_SCAN_HINT,async configureNonPersonalizedFeed(,,ORG_IN_FUNC_NOT_IN_WRITE
+413,./server/src/services/euRegulations/dsaService.ts,1042,dSANonPersonalizedFeed,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateNonPersonalizedFeedStatus(,,ORG_SCOPED
+414,./server/src/services/euRegulations/euAiActService.ts,251,eUAIActSystem,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async registerAISystem(,,ORG_SCOPED
+415,./server/src/services/euRegulations/euAiActService.ts,274,eUAIActRiskAssessment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async registerAISystem(,,ORG_SCOPED
+416,./server/src/services/euRegulations/euAiActService.ts,322,eUAIActSystem,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async registerAISystem(,,ORG_IN_FUNC_NOT_IN_WRITE
+417,./server/src/services/euRegulations/euAiActService.ts,380,eUAIActRiskAssessment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async conductRiskAssessment(,,ORG_SCOPED
+418,./server/src/services/euRegulations/euAiActService.ts,401,eUAIActSystem,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async conductRiskAssessment(,,ORG_IN_FUNC_NOT_IN_WRITE
+419,./server/src/services/euRegulations/euAiActService.ts,465,eUAIActTransparencyReport,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async generateTransparencyReport(,,ORG_SCOPED
+420,./server/src/services/euRegulations/euAiActService.ts,587,eUAIActSystem,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateAISystem(,,ORG_IN_FUNC_NOT_IN_WRITE
+421,./server/src/services/euRegulations/euAiActService.ts,639,eUAIActSystem,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteAISystem(organizationId: string, systemId: string): Promise<void> {",,ORG_SCOPED
+422,./server/src/services/featureService.ts,214,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async subscribeToFeature(,,ORG_IN_FUNC_NOT_IN_WRITE
+423,./server/src/services/featureService.ts,238,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async subscribeToFeature(,,ORG_IN_FUNC_NOT_IN_WRITE
+424,./server/src/services/featureService.ts,249,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async subscribeToFeature(,,ORG_IN_FUNC_NOT_IN_WRITE
+425,./server/src/services/featureService.ts,263,featureSubscription,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async subscribeToFeature(,,ORG_SCOPED
+426,./server/src/services/featureService.ts,277,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async subscribeToFeature(,,ORG_SCOPED
+427,./server/src/services/featureService.ts,337,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async unsubscribeFromFeature(,,ORG_IN_FUNC_NOT_IN_WRITE
+428,./server/src/services/featureService.ts,348,featureSubscription,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async unsubscribeFromFeature(,,ORG_IN_FUNC_NOT_IN_WRITE
+429,./server/src/services/featureService.ts,358,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async unsubscribeFromFeature(,,ORG_SCOPED
+430,./server/src/services/frameworkTemplateService.ts,1744,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async applyTemplateToFramework(,,ORG_SCOPED
+431,./server/src/services/frameworkTemplateService.ts,1860,controlMapping,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async applyControlMappings(,,ORG_IN_FUNC_NOT_IN_WRITE
+432,./server/src/services/frameworkTemplateService.ts,2138,controlMapping,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,async regenerateControlMappings(,,ORG_IN_FUNC_NOT_IN_WRITE
+433,./server/src/services/hipaaService.ts,120,pHIRecord,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createPHIRecord(data: {,,ORG_SCOPED
+434,./server/src/services/hipaaService.ts,204,pHIAccessGrant,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async grantPHIAccess(data: {,,ORG_SCOPED
+435,./server/src/services/hipaaService.ts,242,pHIAccessGrant,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async revokePHIAccess(grantId: string, organizationId: string, userId: string, r",,ORG_SCOPED
+436,./server/src/services/hipaaService.ts,298,businessAssociateAgreement,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createBAA(data: {,,ORG_SCOPED
+437,./server/src/services/hipaaService.ts,348,businessAssociateAgreement,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async updateBAAStatus(id: string, organizationId: string, userId: string, status",,ORG_SCOPED
+438,./server/src/services/hipaaService.ts,417,hIPAABreachRiskAssessment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async assessBreachRisk(data: BreachRiskAssessmentInput) {,,ORG_SCOPED
+439,./server/src/services/hipaaService.ts,512,hIPAABreachRiskAssessment,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async markBreachNotificationSent(,,ORG_IN_FUNC_NOT_IN_WRITE
+440,./server/src/services/integrations/awsService.ts,88,integration,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async saveIntegration(,,ORG_SCOPED
+441,./server/src/services/integrations/awsService.ts,524,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async disconnect(organizationId: string): Promise<void> {,,ORG_SCOPED
+442,./server/src/services/integrations/azureDevOpsService.ts,167,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async getClient(organizationId: string): Promise<{ client: AxiosInstance,,ORG_IN_FUNC_NOT_IN_WRITE
+443,./server/src/services/integrations/azureDevOpsService.ts,240,integration,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async refreshOAuthToken(,,ORG_IN_FUNC_NOT_IN_WRITE
+444,./server/src/services/integrations/azureDevOpsService.ts,334,integration,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async saveIntegration(,,ORG_SCOPED
+445,./server/src/services/integrations/azureDevOpsService.ts,367,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async disconnect(organizationId: string): Promise<void> {,,ORG_SCOPED
+446,./server/src/services/integrations/azureDevOpsService.ts,812,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createComplianceWorkItem(,,ORG_SCOPED
+447,./server/src/services/integrations/azureDevOpsService.ts,877,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncWorkItems(,,ORG_SCOPED
+448,./server/src/services/integrations/azureDevOpsService.ts,924,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async syncWorkItems(,,ORG_IN_FUNC_NOT_IN_WRITE
+449,./server/src/services/integrations/azureDevOpsService.ts,935,issue,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncWorkItems(,,ORG_SCOPED
+450,./server/src/services/integrations/azureDevOpsService.ts,951,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncWorkItems(,,ORG_SCOPED
+451,./server/src/services/integrations/azureDevOpsService.ts,1072,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async processWebhookEvent(,,ORG_IN_FUNC_NOT_IN_WRITE
+452,./server/src/services/integrations/azureService.ts,454,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async updateLastSync(organizationId: string): Promise<void> {,,ORG_SCOPED
+453,./server/src/services/integrations/azureService.ts,475,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async disconnect(organizationId: string): Promise<void> {,,ORG_SCOPED
+454,./server/src/services/integrations/azureSyncService.ts,45,azureSyncJob,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async createSyncJob(,,ORG_SCOPED
+455,./server/src/services/integrations/azureSyncService.ts,71,azureSyncJob,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async updateSyncJob(,,ORG_IN_FUNC_NOT_IN_WRITE
+456,./server/src/services/integrations/azureSyncService.ts,213,azureResource,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncResources(organizationId: string): Promise<SyncResult> {,,ORG_SCOPED
+457,./server/src/services/integrations/azureSyncService.ts,279,azureSecurityFinding,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncSecurityFindings(organizationId: string): Promise<SyncResult> {,,ORG_SCOPED
+458,./server/src/services/integrations/azureSyncService.ts,344,azureSecurityAlert,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncSecurityAlerts(organizationId: string): Promise<SyncResult> {,,ORG_SCOPED
+459,./server/src/services/integrations/azureSyncService.ts,417,azurePolicyCompliance,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncPolicyCompliance(organizationId: string): Promise<SyncResult> {,,ORG_SCOPED
+460,./server/src/services/integrations/azureSyncService.ts,477,azureUser,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncUsers(organizationId: string): Promise<SyncResult> {,,ORG_SCOPED
+461,./server/src/services/integrations/azureSyncService.ts,600,azureResource,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async deleteSyncedData(organizationId: string): Promise<void> {,,ORG_SCOPED
+462,./server/src/services/integrations/azureSyncService.ts,601,azureSecurityFinding,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async deleteSyncedData(organizationId: string): Promise<void> {,,ORG_SCOPED
+463,./server/src/services/integrations/azureSyncService.ts,602,azureSecurityAlert,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async deleteSyncedData(organizationId: string): Promise<void> {,,ORG_SCOPED
+464,./server/src/services/integrations/azureSyncService.ts,603,azurePolicyCompliance,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async deleteSyncedData(organizationId: string): Promise<void> {,,ORG_SCOPED
+465,./server/src/services/integrations/azureSyncService.ts,604,azureUser,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async deleteSyncedData(organizationId: string): Promise<void> {,,ORG_SCOPED
+466,./server/src/services/integrations/azureSyncService.ts,605,azureSyncJob,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async deleteSyncedData(organizationId: string): Promise<void> {,,ORG_SCOPED
+467,./server/src/services/integrations/githubService.ts,114,integration,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async saveIntegration(,,ORG_SCOPED
+468,./server/src/services/integrations/githubService.ts,429,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async disconnect(organizationId: string): Promise<void> {,,ORG_SCOPED
+469,./server/src/services/integrations/googleService.ts,129,integration,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async saveIntegration(,,ORG_SCOPED
+470,./server/src/services/integrations/googleService.ts,222,integration,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async ensureValidToken(organizationId: string, retryCount: number = 0): Promise<",,ORG_IN_FUNC_NOT_IN_WRITE
+471,./server/src/services/integrations/googleService.ts,473,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async disconnect(organizationId: string): Promise<void> {,,ORG_SCOPED
+472,./server/src/services/integrations/jiraService.ts,150,integration,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async saveIntegration(,,ORG_SCOPED
+473,./server/src/services/integrations/jiraService.ts,243,integration,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async ensureValidToken(organizationId: string, retryCount: number = 0): Promise<",,ORG_IN_FUNC_NOT_IN_WRITE
+474,./server/src/services/integrations/jiraService.ts,574,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async disconnect(organizationId: string): Promise<void> {,,ORG_SCOPED
+475,./server/src/services/integrations/jiraService.ts,662,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncComplianceIssues(,,ORG_SCOPED
+476,./server/src/services/integrations/jiraService.ts,706,issue,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async syncComplianceIssues(,,ORG_IN_FUNC_NOT_IN_WRITE
+477,./server/src/services/integrations/jiraService.ts,717,issue,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncComplianceIssues(,,ORG_SCOPED
+478,./server/src/services/integrations/jiraService.ts,730,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncComplianceIssues(,,ORG_SCOPED
+479,./server/src/services/integrations/jiraService.ts,943,issue,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async processWebhookEvent(,,ORG_IN_FUNC_NOT_IN_WRITE
+480,./server/src/services/integrations/providers/baseIntegration.ts,130,?,.create(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,protected httpClient: AxiosInstance;,,NO_ORG_CHECK
+481,./server/src/services/integrations/providers/baseIntegration.ts,182,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,protected createEvidenceItem(,,NO_ORG_CHECK
+482,./server/src/services/integrations/servicenowService.ts,181,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async getClient(organizationId: string): Promise<AxiosInstance> {,,ORG_IN_FUNC_NOT_IN_WRITE
+483,./server/src/services/integrations/servicenowService.ts,240,integration,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async refreshOAuthToken(,,ORG_IN_FUNC_NOT_IN_WRITE
+484,./server/src/services/integrations/servicenowService.ts,339,integration,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async saveIntegration(,,ORG_SCOPED
+485,./server/src/services/integrations/servicenowService.ts,372,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async disconnect(organizationId: string): Promise<void> {,,ORG_SCOPED
+486,./server/src/services/integrations/servicenowService.ts,569,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createChange(,,ORG_SCOPED
+487,./server/src/services/integrations/servicenowService.ts,759,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createComplianceIncident(,,ORG_SCOPED
+488,./server/src/services/integrations/servicenowService.ts,824,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncIncidents(,,ORG_SCOPED
+489,./server/src/services/integrations/servicenowService.ts,872,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async syncIncidents(,,ORG_IN_FUNC_NOT_IN_WRITE
+490,./server/src/services/integrations/servicenowService.ts,883,issue,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncIncidents(,,ORG_SCOPED
+491,./server/src/services/integrations/servicenowService.ts,900,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async syncIncidents(,,ORG_SCOPED
+492,./server/src/services/integrations/servicenowService.ts,1017,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async processWebhookEvent(,,ORG_IN_FUNC_NOT_IN_WRITE
+493,./server/src/services/integrations/slackService.ts,139,integration,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async saveIntegration(,,ORG_SCOPED
+494,./server/src/services/integrations/slackService.ts,516,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async disconnect(organizationId: string): Promise<void> {,,ORG_SCOPED
+495,./server/src/services/integrations/slackService.ts,668,integration,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async configureAlertChannel(,,ORG_SCOPED
+496,./server/src/services/iso27001Service.ts,155,iSO27001Assessment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createAssessment(data: {,,ORG_SCOPED
+497,./server/src/services/iso27001Service.ts,228,iSO27001Assessment,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateAssessmentStatus(,,ORG_SCOPED
+498,./server/src/services/iso27001Service.ts,268,iSO27001SoA,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async upsertSoAEntry(data: {,,ORG_SCOPED
+499,./server/src/services/iso27001Service.ts,345,iSO27001RiskScenario,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createRiskScenario(data: {,,ORG_SCOPED
+500,./server/src/services/iso27001Service.ts,405,iSO27001RiskScenario,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateRiskScenario(,,ORG_SCOPED
+501,./server/src/services/iso27001Service.ts,447,iSO27001CorrectiveAction,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createCorrectiveAction(data: {,,ORG_SCOPED
+502,./server/src/services/iso27001Service.ts,489,iSO27001CorrectiveAction,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateCorrectiveActionStatus(,,ORG_SCOPED
+503,./server/src/services/issueManagementService.ts,33,issue,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createIssue(data: {,,ORG_SCOPED
+504,./server/src/services/issueManagementService.ts,117,issue,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateIssueStatus(,,ORG_IN_FUNC_NOT_IN_WRITE
+505,./server/src/services/issueManagementService.ts,157,issue,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async assignIssue(,,ORG_IN_FUNC_NOT_IN_WRITE
+506,./server/src/services/issueManagementService.ts,200,issueComment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async addComment(,,ORG_SCOPED
+507,./server/src/services/issueManagementService.ts,257,issue,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateRemediationPlan(,,ORG_SCOPED
+508,./server/src/services/issueManagementService.ts,384,issue,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateSLAStatuses(organizationId: string) {,,ORG_IN_FUNC_NOT_IN_WRITE
+509,./server/src/services/mdmService.ts,136,managedDevice,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async enrollDevice(data: {,,ORG_SCOPED
+510,./server/src/services/mdmService.ts,262,managedDevice,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateDevice(,,ORG_IN_FUNC_NOT_IN_WRITE
+511,./server/src/services/mdmService.ts,294,managedDevice,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async unenrollDevice(,,ORG_SCOPED
+512,./server/src/services/mdmService.ts,325,managedDevice,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteDevice(id: string, userId: string, organizationId: string): Promise<",,ORG_SCOPED
+513,./server/src/services/mdmService.ts,360,managedDevice,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async reassignDevice(,,ORG_IN_FUNC_NOT_IN_WRITE
+514,./server/src/services/mdmService.ts,425,mDMPolicy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createPolicy(data: {,,ORG_SCOPED
+515,./server/src/services/mdmService.ts,536,mDMPolicy,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updatePolicy(,,ORG_IN_FUNC_NOT_IN_WRITE
+516,./server/src/services/mdmService.ts,565,mDMPolicy,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deletePolicy(id: string, userId: string, organizationId: string): Promise<",,ORG_SCOPED
+517,./server/src/services/mdmService.ts,606,deviceAction,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async executeAction(data: {,,ORG_IN_FUNC_NOT_IN_WRITE
+518,./server/src/services/mdmService.ts,782,deviceComplianceCheck,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async runComplianceCheck(,,ORG_IN_FUNC_NOT_IN_WRITE
+519,./server/src/services/mdmService.ts,797,managedDevice,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async runComplianceCheck(,,ORG_IN_FUNC_NOT_IN_WRITE
+520,./server/src/services/mdmService.ts,1139,deviceAction,update,ORG_IN_PRIOR_FETCH,private async executeDeviceAction(,"mdmService.ts:1139 — executeDeviceAction(action, device) receives pre-fetched org-validated records as parameters",NO_ORG_CHECK
+521,./server/src/services/mdmService.ts,1150,managedDevice,update,ORG_IN_PRIOR_FETCH,private async executeDeviceAction(,mdmService.ts:1150 — executeDeviceAction same as #520,NO_ORG_CHECK
+522,./server/src/services/monitoringService.ts,29,continuousMonitor,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createMonitor(data: {,,ORG_SCOPED
+523,./server/src/services/monitoringService.ts,75,monitorResult,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async executeMonitor(,,ORG_IN_FUNC_NOT_IN_WRITE
+524,./server/src/services/monitoringService.ts,89,continuousMonitor,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async executeMonitor(,,ORG_SCOPED
+525,./server/src/services/monitoringService.ts,262,issue,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async createIssueFromFailure(,,ORG_SCOPED
+526,./server/src/services/monitoringService.ts,399,continuousMonitor,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async toggleMonitorActive(,,ORG_SCOPED
+527,./server/src/services/monitoringService.ts,461,continuousMonitor,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateMonitor(,,ORG_SCOPED
+528,./server/src/services/monitoringService.ts,493,monitorResult,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteMonitor(monitorId: string, userId: string, organizationId: string) {",,ORG_SCOPED
+529,./server/src/services/monitoringService.ts,494,continuousMonitor,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteMonitor(monitorId: string, userId: string, organizationId: string) {",,ORG_SCOPED
+530,./server/src/services/multiWorkspaceService.ts,33,organization,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createChildOrganization(,,ORG_IN_FUNC_NOT_IN_WRITE
+531,./server/src/services/multiWorkspaceService.ts,40,organization,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createChildOrganization(,,ORG_IN_FUNC_NOT_IN_WRITE
+532,./server/src/services/multiWorkspaceService.ts,269,user,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async moveUserToOrganization(,,ORG_SCOPED
+533,./server/src/services/multiWorkspaceService.ts,314,complianceFramework,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async cloneFrameworkToChildren(,,ORG_SCOPED
+534,./server/src/services/multiWorkspaceService.ts,326,frameworkControl,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async cloneFrameworkToChildren(,,ORG_IN_FUNC_NOT_IN_WRITE
+535,./server/src/services/nistCsfService.ts,445,nistCsfProfile,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createProfile(input: CreateProfileInput) {,,ORG_SCOPED
+536,./server/src/services/nistCsfService.ts,492,nistCsfProfile,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateProfile(,,ORG_IN_FUNC_NOT_IN_WRITE
+537,./server/src/services/nistCsfService.ts,558,nistCsfProfile,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async archiveProfile(id: string, organizationId: string, userId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+538,./server/src/services/nistCsfService.ts,599,nistCsfSubcategoryAssessment,upsert,ORG_IN_PRIOR_findFirst_SCAN_HINT,async upsertSubcategoryAssessment(input: UpsertAssessmentInput) {,,ORG_IN_FUNC_NOT_IN_WRITE
+539,./server/src/services/nistCsfService.ts,683,nistCsfSubcategoryAssessment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async bulkSeedSubcategories(profileId: string, organizationId: string, userId: s",,ORG_SCOPED
+540,./server/src/services/nistCsfService.ts,906,nistCsfGapAnalysis,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async generateGapAnalysis(,,ORG_SCOPED
+541,./server/src/services/nistCsfService.ts,926,nistCsfGapAnalysis,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async generateGapAnalysis(,,ORG_SCOPED
+542,./server/src/services/nistCsfService.ts,1045,nistCsfActionItem,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createActionItem(input: CreateActionItemInput) {,,ORG_SCOPED
+543,./server/src/services/nistCsfService.ts,1090,nistCsfActionItem,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateActionItem(,,ORG_SCOPED
+544,./server/src/services/nistCsfService.ts,1144,nistCsfActionItem,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async completeActionItem(id: string, organizationId: string, userId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+545,./server/src/services/notificationService.ts,197,notification,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async sendNotification(,,ORG_SCOPED
+546,./server/src/services/notificationService.ts,231,notification,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async sendNotification(,,ORG_IN_FUNC_NOT_IN_WRITE
+547,./server/src/services/notificationService.ts,528,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async sendSMS(,,ORG_IN_FUNC_NOT_IN_WRITE
+548,./server/src/services/notificationService.ts,537,notification,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async sendSMS(,,ORG_SCOPED
+549,./server/src/services/notificationService.ts,704,notification,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async markAsRead(notificationId: string, userId: string): Promise<void> {",,ORG_IN_FUNC_NOT_IN_WRITE
+550,./server/src/services/npsService.ts,92,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,(unknown),,ORG_IN_FUNC_NOT_IN_WRITE
+551,./server/src/services/npsService.ts,134,nPSInvitation,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async scheduleInvitation(input: {,,ORG_SCOPED
+552,./server/src/services/npsService.ts,177,nPSInvitation,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async sendInvitation(invitationId: string, organizationId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+553,./server/src/services/npsService.ts,211,nPSInvitation,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async sendInvitation(invitationId: string, organizationId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+554,./server/src/services/npsService.ts,256,nPSResponse,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createResponse(input: CreateNPSResponseInput) {,,ORG_SCOPED
+555,./server/src/services/npsService.ts,270,nPSInvitation,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createResponse(input: CreateNPSResponseInput) {,,ORG_IN_FUNC_NOT_IN_WRITE
+556,./server/src/services/npsService.ts,294,nPSInvitation,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async dismissInvitation(invitationId: string, organizationId: string, userId: st",,ORG_SCOPED
+557,./server/src/services/npsService.ts,317,nPSInvitation,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async snoozeInvitation(invitationId: string, organizationId: string, userId: str",,ORG_SCOPED
+558,./server/src/services/pciDssService.ts,241,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createScope(data: {,,ORG_SCOPED
+559,./server/src/services/pciDssService.ts,305,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateScope(,,ORG_SCOPED
+560,./server/src/services/pciDssService.ts,413,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async upsertRequirement(data: {,,ORG_SCOPED
+561,./server/src/services/pciDssService.ts,414,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async upsertRequirement(data: {,,ORG_SCOPED
+562,./server/src/services/pciDssService.ts,492,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async bulkSeedRequirements(scopeId: string, organizationId: string, userId: stri",,ORG_SCOPED
+563,./server/src/services/pciDssService.ts,551,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createEvidence(data: {,,ORG_SCOPED
+564,./server/src/services/pciDssService.ts,616,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async approveEvidence(id: string, organizationId: string, reviewerId: string) {",,ORG_SCOPED
+565,./server/src/services/pciDssService.ts,649,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async rejectEvidence(id: string, organizationId: string, reviewerId: string, rea",,ORG_SCOPED
+566,./server/src/services/pciDssService.ts,707,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createQSAFinding(data: {,,ORG_SCOPED
+567,./server/src/services/pciDssService.ts,784,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateQSAFindingStatus(,,ORG_IN_FUNC_NOT_IN_WRITE
+568,./server/src/services/pciDssService.ts,856,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createCCW(data: {,,ORG_SCOPED
+569,./server/src/services/pciDssService.ts,892,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async approveCCW(id: string, organizationId: string, approverId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+570,./server/src/services/pciDssService.ts,896,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async approveCCW(id: string, organizationId: string, approverId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+571,./server/src/services/pciDssService.ts,946,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createROC(data: {,,ORG_SCOPED
+572,./server/src/services/pciDssService.ts,1001,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async finalizeROC(id: string, organizationId: string, userId: string) {",,ORG_IN_FUNC_NOT_IN_WRITE
+573,./server/src/services/pciDssService.ts,1051,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async generateAOC(,,ORG_SCOPED
+574,./server/src/services/personnelService.ts,26,personnel,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createPersonnel(data: {,,ORG_SCOPED
+575,./server/src/services/personnelService.ts,73,personnel,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeOnboarding(,,ORG_IN_FUNC_NOT_IN_WRITE
+576,./server/src/services/personnelService.ts,85,user,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeOnboarding(,,ORG_IN_FUNC_NOT_IN_WRITE
+577,./server/src/services/personnelService.ts,118,personnel,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async startOffboarding(,,ORG_IN_FUNC_NOT_IN_WRITE
+578,./server/src/services/personnelService.ts,131,user,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async startOffboarding(,,ORG_IN_FUNC_NOT_IN_WRITE
+579,./server/src/services/personnelService.ts,170,accessReview,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createAccessReview(data: {,,ORG_SCOPED
+580,./server/src/services/personnelService.ts,221,accessReview,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeAccessReview(,,ORG_IN_FUNC_NOT_IN_WRITE
+581,./server/src/services/personnelService.ts,239,personnel,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeAccessReview(,,ORG_IN_FUNC_NOT_IN_WRITE
+582,./server/src/services/personnelService.ts,347,personnel,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updatePersonnelAccess(,,ORG_IN_FUNC_NOT_IN_WRITE
+583,./server/src/services/personnelService.ts,387,personnel,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateTrainingStatus(,,ORG_IN_FUNC_NOT_IN_WRITE
+584,./server/src/services/personnelService.ts,496,personnel,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updatePersonnel(,,ORG_IN_FUNC_NOT_IN_WRITE
+585,./server/src/services/personnelService.ts,544,personnel,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async deletePersonnel(,,ORG_IN_FUNC_NOT_IN_WRITE
+586,./server/src/services/personnelService.ts,553,user,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async deletePersonnel(,,ORG_IN_FUNC_NOT_IN_WRITE
+587,./server/src/services/policyLibraryService.ts,30,policy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createPolicy(data: {,,ORG_SCOPED
+588,./server/src/services/policyLibraryService.ts,256,frameworkControl,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createControlMapping(,,ORG_IN_FUNC_NOT_IN_WRITE
+589,./server/src/services/policyLibraryService.ts,305,policy,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async archivePolicy(policyId: string, userId: string, organizationId: string) {",,ORG_SCOPED
+590,./server/src/services/policyLibraryService.ts,331,policy,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async submitForReview(policyId: string, userId: string, organizationId: string) ",,ORG_SCOPED
+591,./server/src/services/policyLibraryService.ts,357,policy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async duplicatePolicy(policyId: string, userId: string, organizationId: string) ",,ORG_SCOPED
+592,./server/src/services/policyLibraryService.ts,449,policy,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updatePolicy(,,ORG_IN_FUNC_NOT_IN_WRITE
+593,./server/src/services/policyLibraryService.ts,484,policy,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async approvePolicy(,,ORG_IN_FUNC_NOT_IN_WRITE
+594,./server/src/services/questionnaireService.ts,48,questionnaire,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createQuestionnaire(data: {,,ORG_SCOPED
+595,./server/src/services/questionnaireService.ts,97,questionnaireQuestion,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async addQuestions(,,ORG_IN_FUNC_NOT_IN_WRITE
+596,./server/src/services/questionnaireService.ts,175,questionnaireResponse,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async generateAIResponses(,,ORG_IN_FUNC_NOT_IN_WRITE
+597,./server/src/services/questionnaireService.ts,195,questionnaire,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async generateAIResponses(,,ORG_IN_FUNC_NOT_IN_WRITE
+598,./server/src/services/questionnaireService.ts,377,questionnaireResponse,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async submitResponse(,,ORG_IN_FUNC_NOT_IN_WRITE
+599,./server/src/services/questionnaireService.ts,388,questionnaireResponse,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async submitResponse(,,ORG_IN_FUNC_NOT_IN_WRITE
+600,./server/src/services/questionnaireService.ts,451,questionnaire,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeQuestionnaire(,,ORG_IN_FUNC_NOT_IN_WRITE
+601,./server/src/services/queue/jobQueue.ts,607,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private setupRepeatableJob(,,NO_ORG_CHECK
+602,./server/src/services/queue/jobQueue.ts,791,?,.delete(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,async shutdown(timeoutMs = 30000): Promise<void> {,,NO_ORG_CHECK
+603,./server/src/services/realTimeComplianceService.ts,418,?,.delete(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async executeMonitorAndBroadcast(,,ORG_IN_FUNC_NOT_IN_WRITE
+604,./server/src/services/realTimeComplianceService.ts,514,metricsHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async recomputeAndBroadcastScore(,,ORG_SCOPED
+605,./server/src/services/realTimeComplianceService.ts,653,?,.delete(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"private scheduleScoreRecompute(organizationId: string, reason: string): void {",,ORG_SCOPED
+606,./server/src/services/reportingService.ts,29,customReport,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createReport(data: {,,ORG_SCOPED
+607,./server/src/services/reportingService.ts,358,customReport,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async scheduleReport(,,ORG_SCOPED
+608,./server/src/services/riskManagementService.ts,28,riskAssessment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createRiskAssessment(data: {,,ORG_SCOPED
+609,./server/src/services/riskManagementService.ts,74,riskItem,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async addRiskToAssessment(,,ORG_IN_FUNC_NOT_IN_WRITE
+610,./server/src/services/riskManagementService.ts,118,riskAssessment,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async completeRiskAssessment(,,ORG_SCOPED
+611,./server/src/services/riskManagementService.ts,161,riskItem,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateRiskRemediation(,,ORG_SCOPED
+612,./server/src/services/riskManagementService.ts,209,riskItem,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateRiskScore(,,ORG_IN_FUNC_NOT_IN_WRITE
+613,./server/src/services/riskManagementService.ts,251,riskItem,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async resolveRisk(,,ORG_SCOPED
+614,./server/src/services/s3Service.ts,34,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,(unknown),,ORG_IN_FUNC_NOT_IN_WRITE
+615,./server/src/services/s3Service.ts,122,fileUpload,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async uploadFile(options: UploadOptions): Promise<UploadResult> {,,ORG_IN_FUNC_NOT_IN_WRITE
+616,./server/src/services/s3Service.ts,209,fileUpload,delete,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async deleteFile(fileId: string, organizationId: string): Promise<void> {",,ORG_IN_FUNC_NOT_IN_WRITE
+617,./server/src/services/secureChatService.ts,1752,chatConversation,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"private async getConversation(userId: string, organizationId: string): Promise<a",,ORG_SCOPED
+618,./server/src/services/secureChatService.ts,1813,chatConversation,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async chatWithUser(,,ORG_IN_FUNC_NOT_IN_WRITE
+619,./server/src/services/secureChatService.ts,1824,auditLog,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async chatWithUser(,,ORG_SCOPED
+620,./server/src/services/sessionManagementService.ts,351,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async sendTimeoutWarning(session: UserSession): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+621,./server/src/services/sessionManagementService.ts,386,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async storeSessionInDatabase(session: UserSession): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+622,./server/src/services/sessionManagementService.ts,412,auditLog,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"private async markSessionTerminated(sessionId: string, reason: string): Promise<",,ORG_IN_FUNC_NOT_IN_WRITE
+623,./server/src/services/soc2Service.ts,265,sOC2Engagement,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createEngagement(data: {,,ORG_SCOPED
+624,./server/src/services/soc2Service.ts,339,sOC2Engagement,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateEngagement(,,ORG_IN_FUNC_NOT_IN_WRITE
+625,./server/src/services/soc2Service.ts,448,sOC2Control,upsert,ORG_IN_PRIOR_findFirst_SCAN_HINT,async upsertControl(data: {,,ORG_IN_FUNC_NOT_IN_WRITE
+626,./server/src/services/soc2Service.ts,538,sOC2Control,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async bulkSeedControls(engagementId: string, organizationId: string, userId: str",,ORG_SCOPED
+627,./server/src/services/soc2Service.ts,618,sOC2Control,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async testControl(,,ORG_IN_FUNC_NOT_IN_WRITE
+628,./server/src/services/soc2Service.ts,738,sOC2EvidenceSample,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createEvidenceSample(data: {,,ORG_SCOPED
+629,./server/src/services/soc2Service.ts,804,sOC2EvidenceSample,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async approveEvidenceSample(id: string, organizationId: string, reviewerId: stri",,ORG_IN_FUNC_NOT_IN_WRITE
+630,./server/src/services/soc2Service.ts,865,sOC2Exception,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createException(data: {,,ORG_SCOPED
+631,./server/src/services/soc2Service.ts,949,sOC2Exception,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateExceptionStatus(,,ORG_SCOPED
+632,./server/src/services/soc2Service.ts,1018,sOC2CUEC,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createCUEC(data: {,,ORG_SCOPED
+633,./server/src/services/soc2Service.ts,1078,sOC2ManagementAssertion,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createManagementAssertion(data: {,,ORG_SCOPED
+634,./server/src/services/sodService.ts,112,soDRule,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createSoDRule(data: SoDRuleInput): Promise<SoDRuleRecord> {,,ORG_SCOPED
+635,./server/src/services/sodService.ts,230,soDRule,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateSoDRule(,,ORG_IN_FUNC_NOT_IN_WRITE
+636,./server/src/services/sodService.ts,254,soDRule,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteSoDRule(id: string, userId: string, organizationId: string): Promise",,ORG_SCOPED
+637,./server/src/services/sodService.ts,279,soDViolation,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createSoDViolation(data: SoDViolationInput): Promise<SoDViolationRecord> {,,ORG_SCOPED
+638,./server/src/services/sodService.ts,511,soDViolation,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async mitigateViolation(,,ORG_SCOPED
+639,./server/src/services/sodService.ts,548,soDViolation,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async acceptViolation(,,ORG_SCOPED
+640,./server/src/services/sodService.ts,585,soDViolation,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async remediateViolation(,,ORG_SCOPED
+641,./server/src/services/sodService.ts,1057,soDViolation,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async addCompensatingControl(,,ORG_IN_FUNC_NOT_IN_WRITE
+642,./server/src/services/sodService.ts,1119,soDViolation,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateCompensatingControl(,,ORG_IN_FUNC_NOT_IN_WRITE
+643,./server/src/services/sodService.ts,1168,soDViolation,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async deleteCompensatingControl(,,ORG_IN_FUNC_NOT_IN_WRITE
+644,./server/src/services/soxService.ts,128,sOXControl,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createSOXControl(data: {,,ORG_SCOPED
+645,./server/src/services/soxService.ts,238,sOXControl,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateSOXControl(,,ORG_IN_FUNC_NOT_IN_WRITE
+646,./server/src/services/soxService.ts,260,sOXControl,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteSOXControl(id: string, userId: string, organizationId: string): Prom",,ORG_SCOPED
+647,./server/src/services/soxService.ts,335,sOXTestResult,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createSOXTestResult(data: {,,ORG_IN_FUNC_NOT_IN_WRITE
+648,./server/src/services/soxService.ts,369,sOXControl,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createSOXTestResult(data: {,,ORG_IN_FUNC_NOT_IN_WRITE
+649,./server/src/services/soxService.ts,470,sOXTestResult,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateSOXTestResult(,,ORG_SCOPED
+650,./server/src/services/soxService.ts,492,sOXTestResult,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteSOXTestResult(id: string, userId: string, organizationId: string): P",,ORG_SCOPED
+651,./server/src/services/soxService.ts,545,sOXAssessment,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createSOXAssessment(data: {,,ORG_SCOPED
+652,./server/src/services/soxService.ts,634,sOXAssessment,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateSOXAssessment(,,ORG_IN_FUNC_NOT_IN_WRITE
+653,./server/src/services/soxService.ts,656,sOXAssessment,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteSOXAssessment(id: string, userId: string, organizationId: string): P",,ORG_SCOPED
+654,./server/src/services/soxService.ts,1118,sOXControl,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async scoreWalkthrough(,,ORG_IN_FUNC_NOT_IN_WRITE
+655,./server/src/services/stripeService.ts,158,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async function ensureStripePricesExist(): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+656,./server/src/services/stripeService.ts,167,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async function ensureStripePricesExist(): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+657,./server/src/services/stripeService.ts,180,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async function ensureStripePricesExist(): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+658,./server/src/services/stripeService.ts,212,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createCustomer(,,ORG_SCOPED
+659,./server/src/services/stripeService.ts,222,organization,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createCustomer(,,ORG_SCOPED
+660,./server/src/services/stripeService.ts,328,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createCheckoutSession(options: CreateCheckoutSessionOptions): Promise<stri,,ORG_IN_FUNC_NOT_IN_WRITE
+661,./server/src/services/stripeService.ts,343,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async createPortalSession(customerId: string, returnUrl: string): Promise<string",,ORG_IN_FUNC_NOT_IN_WRITE
+662,./server/src/services/stripeService.ts,494,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async changeTier(,,ORG_IN_FUNC_NOT_IN_WRITE
+663,./server/src/services/stripeService.ts,511,organization,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async changeTier(,,ORG_SCOPED
+664,./server/src/services/stripeService.ts,519,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async changeTier(,,ORG_SCOPED
+665,./server/src/services/stripeService.ts,560,?,.update(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async cancelSubscription(,,ORG_IN_FUNC_NOT_IN_WRITE
+666,./server/src/services/stripeService.ts,566,organization,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async cancelSubscription(,,ORG_SCOPED
+667,./server/src/services/stripeService.ts,571,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async cancelSubscription(,,ORG_SCOPED
+668,./server/src/services/stripeService.ts,589,organization,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async cancelSubscription(,,ORG_SCOPED
+669,./server/src/services/stripeService.ts,599,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async cancelSubscription(,,ORG_SCOPED
+670,./server/src/services/stripeService.ts,635,?,.update(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async reactivateSubscription(organizationId: string): Promise<boolean> {,,ORG_SCOPED
+671,./server/src/services/stripeService.ts,639,organization,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async reactivateSubscription(organizationId: string): Promise<boolean> {,,ORG_SCOPED
+672,./server/src/services/stripeService.ts,645,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async reactivateSubscription(organizationId: string): Promise<boolean> {,,ORG_SCOPED
+673,./server/src/services/stripeService.ts,684,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async addAddOn(organizationId: string, addOnId: string): Promise<boolean> {",,ORG_IN_FUNC_NOT_IN_WRITE
+674,./server/src/services/stripeService.ts,693,organization,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async addAddOn(organizationId: string, addOnId: string): Promise<boolean> {",,ORG_SCOPED
+675,./server/src/services/stripeService.ts,702,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async addAddOn(organizationId: string, addOnId: string): Promise<boolean> {",,ORG_SCOPED
+676,./server/src/services/stripeService.ts,747,organization,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async removeAddOn(organizationId: string, addOnId: string): Promise<boolean> {",,ORG_SCOPED
+677,./server/src/services/stripeService.ts,755,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async removeAddOn(organizationId: string, addOnId: string): Promise<boolean> {",,ORG_SCOPED
+678,./server/src/services/stripeService.ts,797,stripeEvent,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async handleWebhook(payload: Buffer, signature: string): Promise<{",,ORG_IN_FUNC_NOT_IN_WRITE
+679,./server/src/services/stripeService.ts,842,stripeEvent,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async handleWebhook(payload: Buffer, signature: string): Promise<{",,ORG_IN_FUNC_NOT_IN_WRITE
+680,./server/src/services/stripeService.ts,895,organization,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise,,ORG_SCOPED
+681,./server/src/services/stripeService.ts,910,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise,,ORG_SCOPED
+682,./server/src/services/stripeService.ts,954,organization,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleSubscriptionCreated(subscription: Stripe.Subscription): Prom,,ORG_SCOPED
+683,./server/src/services/stripeService.ts,999,organization,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Prom,,ORG_IN_FUNC_NOT_IN_WRITE
+684,./server/src/services/stripeService.ts,1011,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Prom,,ORG_SCOPED
+685,./server/src/services/stripeService.ts,1041,organization,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async handleSubscriptionDeleted(subscription: Stripe.Subscription): Prom,,ORG_IN_FUNC_NOT_IN_WRITE
+686,./server/src/services/stripeService.ts,1053,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleSubscriptionDeleted(subscription: Stripe.Subscription): Prom,,ORG_SCOPED
+687,./server/src/services/stripeService.ts,1086,organization,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+688,./server/src/services/stripeService.ts,1091,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {,,ORG_SCOPED
+689,./server/src/services/stripeService.ts,1123,organization,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {,,ORG_IN_FUNC_NOT_IN_WRITE
+690,./server/src/services/stripeService.ts,1128,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {,,ORG_SCOPED
+691,./server/src/services/stripeService.ts,1257,featureSubscription,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleSubscriptionItemCreated(subscriptionItem: Stripe.Subscriptio,,ORG_SCOPED
+692,./server/src/services/stripeService.ts,1277,featureSubscription,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleSubscriptionItemCreated(subscriptionItem: Stripe.Subscriptio,,ORG_SCOPED
+693,./server/src/services/stripeService.ts,1308,featureSubscription,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async handleSubscriptionItemUpdated(subscriptionItem: Stripe.Subscriptio,,ORG_IN_FUNC_NOT_IN_WRITE
+694,./server/src/services/stripeService.ts,1344,featureSubscription,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async handleSubscriptionItemDeleted(subscriptionItem: Stripe.Subscriptio,,ORG_IN_FUNC_NOT_IN_WRITE
+695,./server/src/services/stripeService.ts,1353,featureSubscription,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,private async handleSubscriptionItemDeleted(subscriptionItem: Stripe.Subscriptio,,ORG_IN_FUNC_NOT_IN_WRITE
+696,./server/src/services/stripeService.ts,1370,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async handleSubscriptionItemDeleted(subscriptionItem: Stripe.Subscriptio,,ORG_SCOPED
+697,./server/src/services/stripeService.ts,1431,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async processRefund(data: {,,ORG_SCOPED
+698,./server/src/services/stripeService.ts,1434,subscriptionHistory,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async processRefund(data: {,,ORG_SCOPED
+699,./server/src/services/stripeService.ts,1504,?,.create(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createQuote(,,ORG_SCOPED
+700,./server/src/services/stripeService.ts,1514,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createQuote(,,ORG_IN_FUNC_NOT_IN_WRITE
+701,./server/src/services/stripeService.ts,1524,?,.create(,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createQuote(,,ORG_IN_FUNC_NOT_IN_WRITE
+702,./server/src/services/tierService.ts,517,usageTracking,upsert,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async incrementUsage(,,ORG_SCOPED
+703,./server/src/services/tokenBlacklistService.ts,25,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,(unknown),,NO_ORG_CHECK
+704,./server/src/services/trustCenterService.ts,36,trustCertificate,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createCertificate(data: {,,ORG_SCOPED
+705,./server/src/services/trustCenterService.ts,216,trustCertificate,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async updateCertificateStatus(,,ORG_IN_FUNC_NOT_IN_WRITE
+706,./server/src/services/twoFactorService.ts,51,user,update,USER_SELF_NO_ORG_REQUIRED,"async setupTwoFactor(userId: string, userEmail: string): Promise<TwoFactorSetup>",twoFactorService.ts:51 — setupTwoFactor user updates own 2FA secret,NO_ORG_CHECK
+707,./server/src/services/twoFactorService.ts,109,user,update,USER_SELF_NO_ORG_REQUIRED,"async verifyAndEnableTwoFactor(userId: string, token: string): Promise<boolean> ",twoFactorService.ts:109 — verifyAndEnableTwoFactor user enables own 2FA,NO_ORG_CHECK
+708,./server/src/services/twoFactorService.ts,189,twoFactorBackupCode,update,USER_SELF_NO_ORG_REQUIRED,"async verifyBackupCode(userId: string, code: string): Promise<boolean> {",twoFactorService.ts:189 — verifyBackupCode marks user's own backup code as used,NO_ORG_CHECK
+709,./server/src/services/twoFactorService.ts,225,user,update,USER_SELF_NO_ORG_REQUIRED,"async disableTwoFactor(userId: string, token: string): Promise<boolean> {",twoFactorService.ts:225 — disableTwoFactor user disables own 2FA,NO_ORG_CHECK
+710,./server/src/services/twoFactorService.ts,235,twoFactorBackupCode,delete,USER_SELF_NO_ORG_REQUIRED,"async disableTwoFactor(userId: string, token: string): Promise<boolean> {",twoFactorService.ts:235 — deleteMany where userId scopes to caller's user,NO_ORG_CHECK
+711,./server/src/services/twoFactorService.ts,260,twoFactorBackupCode,delete,USER_SELF_NO_ORG_REQUIRED,"async regenerateBackupCodes(userId: string, token: string): Promise<string[] | n",twoFactorService.ts:260 — deleteMany where userId same as #710,NO_ORG_CHECK
+712,./server/src/services/twoFactorService.ts,371,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private deriveEncryptionKey(): Buffer {,,NO_ORG_CHECK
+713,./server/src/services/twoFactorService.ts,386,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private encryptSecret(secret: string): string {,,NO_ORG_CHECK
+714,./server/src/services/twoFactorService.ts,413,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private decryptSecret(encryptedSecret: string): string {,,NO_ORG_CHECK
+715,./server/src/services/twoFactorService.ts,421,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private decryptSecret(encryptedSecret: string): string {,,NO_ORG_CHECK
+716,./server/src/services/vendorRiskService.ts,38,vendor,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createVendor(data: {,,ORG_SCOPED
+717,./server/src/services/vendorRiskService.ts,65,vendorAssessment,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createVendor(data: {,,ORG_IN_FUNC_NOT_IN_WRITE
+718,./server/src/services/vendorRiskService.ts,104,vendorAssessment,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async createVendorAssessment(data: {,,ORG_IN_FUNC_NOT_IN_WRITE
+719,./server/src/services/vendorRiskService.ts,152,vendorAssessment,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async completeVendorAssessment(,,ORG_SCOPED
+720,./server/src/services/vendorRiskService.ts,168,vendor,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeVendorAssessment(,,ORG_IN_FUNC_NOT_IN_WRITE
+721,./server/src/services/vendorRiskService.ts,203,vendorReview,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createVendorReview(data: {,,ORG_SCOPED
+722,./server/src/services/vendorRiskService.ts,243,vendorReview,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async completeVendorReview(,,ORG_SCOPED
+723,./server/src/services/vendorRiskService.ts,256,vendor,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async completeVendorReview(,,ORG_IN_FUNC_NOT_IN_WRITE
+724,./server/src/services/vendorRiskService.ts,289,vendorMonitor,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createVendorMonitor(data: {,,ORG_SCOPED
+725,./server/src/services/vendorRiskService.ts,326,vendorMonitor,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateVendorMonitorResults(,,ORG_SCOPED
+726,./server/src/services/vendorRiskService.ts,585,vendor,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateVendor(,,ORG_SCOPED
+727,./server/src/services/vendorRiskService.ts,615,vendor,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async archiveVendor(vendorId: string, userId: string, organizationId: string) {",,ORG_SCOPED
+728,./server/src/services/visionaryAIService.ts,294,policy,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async generatePolicyFromNaturalLanguage(,,ORG_SCOPED
+729,./server/src/services/visionaryAIService.ts,766,frameworkControl,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeRemediationAction(,,ORG_SCOPED
+730,./server/src/services/webhookService.ts,152,webhook,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async createWebhook(options: CreateWebhookOptions): Promise<any> {,,ORG_SCOPED
+731,./server/src/services/webhookService.ts,192,webhook,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async updateWebhook(,,ORG_SCOPED
+732,./server/src/services/webhookService.ts,219,webhook,delete,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async deleteWebhook(webhookId: string, organizationId: string): Promise<boolean>",,ORG_SCOPED
+733,./server/src/services/webhookService.ts,291,webhook,update,ORG_IN_WHERE_OR_DATA_SCAN_HINT,"async regenerateSecret(webhookId: string, organizationId: string): Promise<strin",,ORG_SCOPED
+734,./server/src/services/webhookService.ts,365,webhookEvent,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,async dispatchEvent(,,ORG_SCOPED
+735,./server/src/services/webhookService.ts,411,webhookEvent,update,SYSTEM_LEVEL_NO_ORG_REQUIRED,async processWebhookEvent(eventId: string): Promise<void> {,webhookService.ts:411 — webhook delivery state tracking,NO_ORG_CHECK
+736,./server/src/services/webhookService.ts,423,webhookEvent,update,SYSTEM_LEVEL_NO_ORG_REQUIRED,async processWebhookEvent(eventId: string): Promise<void> {,webhookService.ts:423 — webhook delivered status,NO_ORG_CHECK
+737,./server/src/services/webhookService.ts,436,webhook,update,SYSTEM_LEVEL_NO_ORG_REQUIRED,async processWebhookEvent(eventId: string): Promise<void> {,webhookService.ts:436 — webhook stats update,NO_ORG_CHECK
+738,./server/src/services/webhookService.ts,448,webhookEvent,update,SYSTEM_LEVEL_NO_ORG_REQUIRED,async processWebhookEvent(eventId: string): Promise<void> {,webhookService.ts:448 — webhook exhausted state,NO_ORG_CHECK
+739,./server/src/services/webhookService.ts,459,webhook,update,SYSTEM_LEVEL_NO_ORG_REQUIRED,async processWebhookEvent(eventId: string): Promise<void> {,webhookService.ts:459 — webhook failure count,NO_ORG_CHECK
+740,./server/src/services/webhookService.ts,470,webhookEvent,update,SYSTEM_LEVEL_NO_ORG_REQUIRED,async processWebhookEvent(eventId: string): Promise<void> {,webhookService.ts:470 — webhook retry scheduling,NO_ORG_CHECK
+741,./server/src/services/webhookService.ts,565,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private async deliverWebhook(,,NO_ORG_CHECK
+742,./server/src/services/webhookService.ts,599,?,.update(,NON_PRISMA_FALSE_POSITIVE_SCAN_HINT,private async deliverWebhook(,,NO_ORG_CHECK
+743,./server/src/services/webhookService.ts,665,webhookEvent,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,"async retryEvent(eventId: string, organizationId: string): Promise<boolean> {",,ORG_IN_FUNC_NOT_IN_WRITE
+744,./server/src/services/webhookService.ts,716,webhookEvent,delete,SYSTEM_LEVEL_NO_ORG_REQUIRED,async cleanupOldEvents(olderThanDays: number = 30): Promise<number> {,webhookService.ts:716 — cleanupOldEvents cron deletes stale webhook events,NO_ORG_CHECK
+745,./server/src/services/websocketService.ts,164,?,.delete(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private handleDisconnection(socket: AuthenticatedSocket): void {,,ORG_SCOPED
+746,./server/src/services/websocketService.ts,166,?,.delete(,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private handleDisconnection(socket: AuthenticatedSocket): void {,,ORG_SCOPED
+747,./server/src/services/workflowEngine.ts,336,notification,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeAction(,,ORG_SCOPED
+748,./server/src/services/workflowEngine.ts,409,issue,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeAction(,,ORG_SCOPED
+749,./server/src/services/workflowEngine.ts,426,notification,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeAction(,,ORG_SCOPED
+750,./server/src/services/workflowEngine.ts,481,grcIncident,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeAction(,,ORG_SCOPED
+751,./server/src/services/workflowEngine.ts,593,notification,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeAction(,,ORG_SCOPED
+752,./server/src/services/workflowEngine.ts,625,issue,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeAction(,,ORG_SCOPED
+753,./server/src/services/workflowEngine.ts,641,notification,create,ORG_IN_WHERE_OR_DATA_SCAN_HINT,private async executeAction(,,ORG_SCOPED
+754,./server/src/services/workflowEngine.ts,923,gRCWorkflow,update,ORG_IN_PRIOR_findFirst_SCAN_HINT,async executeWorkflow(,,ORG_IN_FUNC_NOT_IN_WRITE
+755,./server/src/services/workflowEngine.ts,977,workflowExecution,create,ORG_IN_PRIOR_findFirst_SCAN_HINT,async logExecution(,,ORG_IN_FUNC_NOT_IN_WRITE

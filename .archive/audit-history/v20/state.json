@@ -1,0 +1,145 @@
+{
+  "audit_version": "v20.1",
+  "started_at": "2026-05-25T16:00:00Z",
+  "current_session": 3,
+  "ledgers": {
+    "L7_ops": {
+      "total": 754,
+      "verified": 754,
+      "unclassified": 0,
+      "chunk_size": 50,
+      "chunks": 16
+    },
+    "F7_calls": {
+      "total": 97,
+      "verified": 97,
+      "unclassified": 0,
+      "chunk_size": 25,
+      "chunks": 4
+    },
+    "components": {
+      "total": 156,
+      "verified": 156,
+      "unclassified": 0,
+      "chunk_size": 20,
+      "chunks": 8
+    },
+    "services": {
+      "total": 106,
+      "verified": 106,
+      "unclassified": 0,
+      "chunk_size": 10,
+      "chunks": 11
+    },
+    "controllers": {
+      "total": 234,
+      "verified": 234,
+      "unclassified": 0,
+      "chunk_size": 50,
+      "chunks": 5
+    },
+    "rate_limits": {
+      "total": 78,
+      "verified": 78,
+      "unclassified": 0,
+      "chunk_size": 50,
+      "chunks": 2
+    },
+    "prisma_rls": {
+      "total": 283,
+      "verified": 283,
+      "unclassified": 0,
+      "chunk_size": 50,
+      "chunks": 6
+    },
+    "infra": {
+      "total": 26,
+      "verified": 26,
+      "unclassified": 0,
+      "chunk_size": 26,
+      "chunks": 1
+    }
+  },
+  "chunks_pending": [],
+  "chunks_done": [
+    "L7_chunk_01",
+    "L7_chunk_02",
+    "L7_chunk_03",
+    "L7_chunk_04",
+    "L7_chunk_05",
+    "L7_chunk_06",
+    "L7_chunk_07",
+    "L7_chunk_08",
+    "L7_chunk_09",
+    "L7_chunk_10",
+    "L7_chunk_11",
+    "L7_chunk_12",
+    "L7_chunk_13",
+    "L7_chunk_14",
+    "L7_chunk_15",
+    "L7_chunk_16",
+    "F7_chunk_01",
+    "F7_chunk_02",
+    "F7_chunk_03",
+    "F7_chunk_04",
+    "component_chunk_01",
+    "component_chunk_02",
+    "component_chunk_03",
+    "component_chunk_04",
+    "component_chunk_05",
+    "component_chunk_06",
+    "component_chunk_07",
+    "component_chunk_08",
+    "service_chunk_01",
+    "service_chunk_02",
+    "service_chunk_03",
+    "service_chunk_04",
+    "service_chunk_05",
+    "service_chunk_06",
+    "service_chunk_07",
+    "service_chunk_08",
+    "service_chunk_09",
+    "service_chunk_10",
+    "service_chunk_11",
+    "controllers_chunk_01",
+    "controllers_chunk_02",
+    "controllers_chunk_03",
+    "controllers_chunk_04",
+    "controllers_chunk_05",
+    "rate_limits_chunk_01",
+    "rate_limits_chunk_02",
+    "prisma_rls_chunk_01",
+    "prisma_rls_chunk_02",
+    "prisma_rls_chunk_03",
+    "prisma_rls_chunk_04",
+    "prisma_rls_chunk_05",
+    "prisma_rls_chunk_06",
+    "infra_chunk_01"
+  ],
+  "session_1_findings": {
+    "L7_GAP_HIGH": 25,
+    "F7_GAP_MEDIUM": 2
+  },
+  "session_2_findings": {
+    "component_partially_wired": 6,
+    "component_static_only_needs_api": 0,
+    "service_high_or_medium": 0
+  },
+  "session_3_findings": {
+    "controllers_5xx_bypass": 17,
+    "controllers_4xx_bypass": 1,
+    "rate_limits_gap": 0,
+    "prisma_rls_missing_org_gap": 2,
+    "infra_medium_gap": 1,
+    "infra_high_gap": 0
+  },
+  "test_health_score": 92.88,
+  "tests_total": 7798,
+  "tests_passed": 7243,
+  "tests_failed": 447,
+  "tests_skipped": 108,
+  "report_status": "FINAL_COMPLETE",
+  "gate_fingerprint": "e38fde3fe9306a8a3be7ee54045938eb6e9d3d6912855dcc0b4f7136635fb5fd",
+  "gate_last_run_at": "2026-05-25T22:10:31Z",
+  "gate_last_exit_code": 0
+}

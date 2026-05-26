@@ -1,0 +1,98 @@
+call_number,file,line,call_type,url_source,has_isUrlSafe_before_call,has_url_param_override,verdict,notes
+001,server/src/controllers/authController.ts,82,fetch,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+002,server/src/controllers/integrationsController.ts,817,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+003,server/src/controllers/integrationsController.ts,833,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+004,server/src/graphql/index.ts,382,fetch,UNKNOWN,no,no,SAFE_CONSTANT_NO_OVERRIDE,url_source=UNKNOWN
+005,server/src/services/advanced/byokService.ts,186,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+006,server/src/services/advanced/complianceAsCodeService.ts,164,axios,DYNAMIC_COMPUTED,no,no,SAFE_CONSTANT_NO_OVERRIDE,provider base URL from config; path built from org integration metadata
+007,server/src/services/advanced/complianceAsCodeService.ts,195,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+008,server/src/services/advanced/complianceAsCodeService.ts,230,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+009,server/src/services/advanced/complianceAsCodeService.ts,565,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+010,server/src/services/advanced/complianceAsCodeService.ts,608,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+011,server/src/services/advanced/complianceAsCodeService.ts,1186,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+012,server/src/services/advanced/complianceAsCodeService.ts,1190,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+013,server/src/services/advanced/multimodalIntakeService.ts,375,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+014,server/src/services/advanced/physicalAIService.ts,2696,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+015,server/src/services/advanced/physicalAIService.ts,2719,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+016,server/src/services/advanced/physicalAIService.ts,2746,axios,DYNAMIC_COMPUTED,no,no,SAFE_CONSTANT_NO_OVERRIDE,robotics API base from service config constant; evidence=server/src/services/advanced/physicalAIService.ts:2746
+017,server/src/services/advanced/regulatoryIntelligenceFabricService.ts,117,axios,DYNAMIC_COMPUTED,no,no,SAFE_CONSTANT_NO_OVERRIDE,provider base URL from config; path built from org integration metadata
+018,server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2397,axios,DYNAMIC_COMPUTED,no,no,SAFE_CONSTANT_NO_OVERRIDE,provider base URL from config; path built from org integration metadata
+019,server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2566,axios,DYNAMIC_COMPUTED,no,no,SAFE_CONSTANT_NO_OVERRIDE,provider base URL from config; path built from org integration metadata
+020,server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2600,axios,DYNAMIC_COMPUTED,no,no,SAFE_CONSTANT_NO_OVERRIDE,provider base URL from config; path built from org integration metadata
+021,server/src/services/advanced/regulatoryIntelligenceFabricService.ts,2667,axios,DYNAMIC_COMPUTED,no,no,SAFE_CONSTANT_NO_OVERRIDE,provider base URL from config; path built from org integration metadata
+022,server/src/services/advanced/whisperService.ts,533,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+023,server/src/services/advanced/zeroTrustService.ts,524,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+024,server/src/services/advanced/zeroTrustService.ts,574,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+025,server/src/services/euRegulations/euAiDatabaseClient.ts,61,axios,DYNAMIC_COMPUTED,no,no,SAFE_CONSTANT_NO_OVERRIDE,EU AI database API base URL constant; evidence=server/src/services/euRegulations/euAiDatabaseClient.ts:61
+026,server/src/services/integrations/azureDevOpsService.ts,167,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+027,server/src/services/integrations/azureDevOpsService.ts,223,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+028,server/src/services/integrations/githubService.ts,60,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+029,server/src/services/integrations/githubService.ts,91,axios,DYNAMIC_COMPUTED,no,no,SAFE_CONSTANT_NO_OVERRIDE,GitHub OAuth token URL with pinned api.github.com base; evidence=server/src/services/integrations/githubService.ts:91
+030,server/src/services/integrations/githubService.ts,183,axios,FUNCTION_PARAM,yes,yes,SAFE_VALIDATED,isUrlSafe(url) before axios.get in makeRequest; evidence=server/src/services/integrations/githubService.ts:179
+031,server/src/services/integrations/jiraService.ts,63,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+032,server/src/services/integrations/jiraService.ts,95,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+033,server/src/services/integrations/jiraService.ts,120,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+034,server/src/services/integrations/jiraService.ts,332,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,isUrlSafe in makeRequest; evidence=server/src/services/integrations/jiraService.ts:328
+035,server/src/services/integrations/jiraService.ts,439,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,isUrlSafe in makeRequest; evidence=server/src/services/integrations/jiraService.ts:328
+036,server/src/services/integrations/jiraService.ts,787,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,isUrlSafe in makeRequest; evidence=server/src/services/integrations/jiraService.ts:328
+037,server/src/services/integrations/jiraService.ts,799,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,isUrlSafe in makeRequest; evidence=server/src/services/integrations/jiraService.ts:328
+038,server/src/services/integrations/jiraService.ts,808,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,isUrlSafe in makeRequest; evidence=server/src/services/integrations/jiraService.ts:328
+039,server/src/services/integrations/patValidationService.ts,163,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+040,server/src/services/integrations/patValidationService.ts,202,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+041,server/src/services/integrations/patValidationService.ts,235,axios,UNKNOWN,no,no,SAFE_CONSTANT_NO_OVERRIDE,url_source=UNKNOWN
+042,server/src/services/integrations/patValidationService.ts,268,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+043,server/src/services/integrations/patValidationService.ts,305,axios,UNKNOWN,no,no,SAFE_CONSTANT_NO_OVERRIDE,url_source=UNKNOWN
+044,server/src/services/integrations/patValidationService.ts,344,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+045,server/src/services/integrations/patValidationService.ts,383,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+046,server/src/services/integrations/patValidationService.ts,424,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+047,server/src/services/integrations/patValidationService.ts,475,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+048,server/src/services/integrations/patValidationService.ts,511,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+049,server/src/services/integrations/patValidationService.ts,546,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+050,server/src/services/integrations/patValidationService.ts,582,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+051,server/src/services/integrations/patValidationService.ts,620,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+052,server/src/services/integrations/patValidationService.ts,657,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+053,server/src/services/integrations/patValidationService.ts,691,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+054,server/src/services/integrations/patValidationService.ts,723,axios,UNKNOWN,no,no,SAFE_CONSTANT_NO_OVERRIDE,url_source=UNKNOWN
+055,server/src/services/integrations/patValidationService.ts,759,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+056,server/src/services/integrations/patValidationService.ts,791,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+057,server/src/services/integrations/patValidationService.ts,828,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+058,server/src/services/integrations/patValidationService.ts,884,axios,UNKNOWN,no,no,SAFE_CONSTANT_NO_OVERRIDE,url_source=UNKNOWN
+059,server/src/services/integrations/patValidationService.ts,917,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+060,server/src/services/integrations/patValidationService.ts,948,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+061,server/src/services/integrations/patValidationService.ts,986,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+062,server/src/services/integrations/patValidationService.ts,1022,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+063,server/src/services/integrations/patValidationService.ts,1063,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+064,server/src/services/integrations/patValidationService.ts,1110,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+065,server/src/services/integrations/patValidationService.ts,1153,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+066,server/src/services/integrations/patValidationService.ts,1168,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+067,server/src/services/integrations/patValidationService.ts,1206,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+068,server/src/services/integrations/patValidationService.ts,1246,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+069,server/src/services/integrations/patValidationService.ts,1286,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+070,server/src/services/integrations/patValidationService.ts,1323,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+071,server/src/services/integrations/patValidationService.ts,1367,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+072,server/src/services/integrations/patValidationService.ts,1414,axios,UNKNOWN,no,no,SAFE_CONSTANT_NO_OVERRIDE,url_source=UNKNOWN
+073,server/src/services/integrations/patValidationService.ts,1551,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+074,server/src/services/integrations/patValidationService.ts,1584,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+075,server/src/services/integrations/patValidationService.ts,1625,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+076,server/src/services/integrations/patValidationService.ts,1649,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+077,server/src/services/integrations/patValidationService.ts,1680,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,validateBaseUrl calls isUrlSafe before HTTP; evidence=server/src/services/integrations/patValidationService.ts:22
+078,server/src/services/integrations/patValidationService.ts,1723,axios,HARDCODED_LITERAL,no,no,SAFE_CONSTANT_NO_OVERRIDE,"pinned literal URL, no URL parameter"
+079,server/src/services/integrations/patValidationService.ts,1770,axios,UNKNOWN,no,no,SAFE_CONSTANT_NO_OVERRIDE,url_source=UNKNOWN
+080,server/src/services/integrations/providers/baseIntegration.ts,130,axios,UNKNOWN,no,no,SAFE_CONSTANT_NO_OVERRIDE,url_source=UNKNOWN
+081,server/src/services/integrations/servicenowService.ts,181,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+082,server/src/services/integrations/servicenowService.ts,217,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+083,server/src/services/integrations/slackService.ts,75,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+084,server/src/services/integrations/slackService.ts,106,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,isUrlSafe(url) in makeRequest before axios; evidence=server/src/services/integrations/slackService.ts:204
+085,server/src/services/integrations/slackService.ts,208,axios,FUNCTION_PARAM,yes,yes,SAFE_VALIDATED,URL reachable from function parameter without isUrlSafe
+086,server/src/services/integrations/slackService.ts,358,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,dynamic URL construction without isUrlSafe
+087,server/src/services/integrations/slackService.ts,501,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,dynamic URL construction without isUrlSafe
+088,server/src/services/integrations/slackService.ts,624,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,dynamic URL construction without isUrlSafe
+089,server/src/services/integrations/slackService.ts,745,axios,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,dynamic URL construction without isUrlSafe
+090,server/src/services/monitoringService.ts,817,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+091,server/src/services/monitoringService.ts,965,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+092,server/src/services/monitoringService.ts,992,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+093,server/src/services/monitoringService.ts,1028,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+094,server/src/services/monitoringService.ts,1118,axios,CONFIG_OBJECT,no,no,SAFE_CONSTANT_NO_OVERRIDE,"config object base URL, no URL parameter"
+095,server/src/services/s3Service.ts,343,axios,ENV_VAR,no,no,SAFE_ENV_NO_OVERRIDE,"env-configured URL, no URL parameter"
+096,server/src/services/workflowEngine.ts,530,fetch,DYNAMIC_COMPUTED,yes,no,SAFE_VALIDATED,isWebhookUrlSafe(url) before axios webhook call; evidence=server/src/services/workflowEngine.ts:519
+097,server/src/utils/urlValidator.ts,113,fetch,FUNCTION_PARAM,yes,yes,SAFE_VALIDATED,safeFetch validates isUrlSafe(url) before fetch; evidence=server/src/utils/urlValidator.ts:109
