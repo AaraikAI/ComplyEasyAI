@@ -10,6 +10,7 @@ import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 // Security fix for GHSA-j965-2qgj-vjmq: Validate AWS region parameter
 const validateRegion = (region: string): string => {
@@ -101,10 +102,10 @@ class AWSService {
           config: {
             accountId,
             region: credentials.region,
-            // Encrypt these with KMS or similar service when available
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-            sessionToken: credentials.sessionToken,
+            // Field-level AES-256-GCM encryption at rest
+            accessKeyId: credentials.accessKeyId ? encryptField(credentials.accessKeyId) : null,
+            secretAccessKey: credentials.secretAccessKey ? encryptField(credentials.secretAccessKey) : null,
+            sessionToken: credentials.sessionToken ? encryptField(credentials.sessionToken) : null,
           },
           lastSync: new Date(),
         },
@@ -113,9 +114,9 @@ class AWSService {
           config: {
             accountId,
             region: credentials.region,
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-            sessionToken: credentials.sessionToken,
+            accessKeyId: credentials.accessKeyId ? encryptField(credentials.accessKeyId) : null,
+            secretAccessKey: credentials.secretAccessKey ? encryptField(credentials.secretAccessKey) : null,
+            sessionToken: credentials.sessionToken ? encryptField(credentials.sessionToken) : null,
           },
           lastSync: new Date(),
         },
@@ -155,10 +156,10 @@ class AWSService {
     const config = integration.config as any;
 
     return {
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
+      accessKeyId: config.accessKeyId ? decryptField(config.accessKeyId) : config.accessKeyId,
+      secretAccessKey: config.secretAccessKey ? decryptField(config.secretAccessKey) : config.secretAccessKey,
       region: config.region || 'us-east-1',
-      sessionToken: config.sessionToken,
+      sessionToken: config.sessionToken ? decryptField(config.sessionToken) : config.sessionToken,
     };
   }
 

@@ -18,6 +18,7 @@ import config from '../config';
 import crypto from 'crypto';
 import { SignedXml } from 'xml-crypto';
 import { XMLParser } from 'fast-xml-parser';
+import { encryptField, decryptField } from '../utils/credentialEncryption';
 
 const router = Router();
 
@@ -195,7 +196,8 @@ router.post(
       }
 
       try {
-        verifySamlSignature(samlResponseXml, ssoConfig.certificate);
+        // Certificate is encrypted at rest — decrypt before passing to signature verifier.
+        verifySamlSignature(samlResponseXml, decryptField(ssoConfig.certificate));
       } catch (sigError: any) {
         logger.error('SSO ACS: SAML signature verification failed', {
           err: sigError,
@@ -475,6 +477,9 @@ router.post(
         domains,
       } = req.body;
 
+      // Encrypt the SAML/OIDC IdP certificate at rest. Schema annotation: certificate String? // Encrypted
+      const encryptedCertificate = certificate ? encryptField(certificate) : null;
+
       const ssoConfig = await prisma.sSOConfiguration.upsert({
         where: { organizationId: user.organizationId },
         update: {
@@ -482,7 +487,7 @@ router.post(
           enabled: enabled !== undefined ? enabled : false,
           entityId: entityId || null,
           ssoUrl: ssoUrl || null,
-          certificate: certificate || null,
+          certificate: encryptedCertificate,
           metadataUrl: metadataUrl || null,
           attributeMapping: attributeMapping || null,
           defaultRole: defaultRole || 'viewer',
@@ -495,7 +500,7 @@ router.post(
           enabled: enabled !== undefined ? enabled : false,
           entityId: entityId || null,
           ssoUrl: ssoUrl || null,
-          certificate: certificate || null,
+          certificate: encryptedCertificate,
           metadataUrl: metadataUrl || null,
           attributeMapping: attributeMapping || null,
           defaultRole: defaultRole || 'viewer',
@@ -672,8 +677,8 @@ router.post(
       if (!ssoConfig.certificate) {
         errors.push('Certificate is not configured');
       } else {
-        // Basic certificate format validation
-        const certContent = ssoConfig.certificate.trim();
+        // Basic certificate format validation (decrypt at-rest stored cert first)
+        const certContent = decryptField(ssoConfig.certificate).trim();
         if (!certContent.includes('BEGIN CERTIFICATE') && !certContent.includes('MIIC')) {
           warnings.push('Certificate does not appear to be in PEM or Base64 format');
         }

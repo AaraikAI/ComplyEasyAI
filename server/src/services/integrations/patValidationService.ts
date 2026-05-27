@@ -25,6 +25,17 @@ class PATValidationService {
   }
 
   /**
+   * Verify resolved URL is safe before making outbound HTTP request (SSRF defense-in-depth).
+   * Use this on every URL that interpolates user-controlled segments (baseUrl, subdomain, etc.).
+   */
+  private assertSafeOutbound(url: string, context: string): void {
+    if (!isUrlSafe(url)) {
+      logger.error(`PAT validation outbound URL rejected by isUrlSafe (${context})`, { url });
+      throw new AppError(`Unsafe outbound URL in ${context}`, 400);
+    }
+  }
+
+  /**
    * Validate PAT for a specific provider
    */
   async validateToken(provider: string, token: string, baseUrl?: string): Promise<ValidationResult> {
@@ -1318,9 +1329,11 @@ class PATValidationService {
     this.validateBaseUrl(baseUrl);
 
     try {
-      const apiUrl = baseUrl.includes('.') ? baseUrl : `https://api.bamboohr.com/api/gateway.php/${baseUrl}/v1`;
-      
-      const response = await axios.get(`${apiUrl}/employees/directory`, {
+      const apiUrl = baseUrl.includes('.') ? baseUrl : `https://api.bamboohr.com/api/gateway.php/${encodeURIComponent(baseUrl)}/v1`;
+      const directoryUrl = `${apiUrl}/employees/directory`;
+      this.assertSafeOutbound(directoryUrl, 'BambooHR');
+
+      const response = await axios.get(directoryUrl, {
         auth: {
           username: token,
           password: 'x', // BambooHR uses API key as username with dummy password
@@ -1718,9 +1731,11 @@ class PATValidationService {
       // Zendesk uses email/token format or API token
       const [email, apiToken] = token.includes('/') ? token.split('/') : ['', token];
       
-      const zendeskUrl = baseUrl.includes('.') ? baseUrl : `https://${baseUrl}.zendesk.com`;
-      
-      const response = await axios.get(`${zendeskUrl}/api/v2/users/me.json`, {
+      const zendeskUrl = baseUrl.includes('.') ? baseUrl : `https://${encodeURIComponent(baseUrl)}.zendesk.com`;
+      const userUrl = `${zendeskUrl}/api/v2/users/me.json`;
+      this.assertSafeOutbound(userUrl, 'Zendesk');
+
+      const response = await axios.get(userUrl, {
         auth: {
           username: email || `${token}@zendesk.com`,
           password: apiToken || token,

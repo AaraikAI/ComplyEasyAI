@@ -11,6 +11,7 @@ import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
 import { isUrlSafe } from '../../utils/urlValidator';
+import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -149,6 +150,33 @@ class ServiceNowService {
   private readonly baseRetryDelay = 1000;
 
   /**
+   * Build a config snapshot with sensitive credential fields encrypted for at-rest storage.
+   * Non-sensitive identifiers (instanceUrl, authType, clientId, tokenExpiresAt) are left untouched.
+   */
+  private encryptConfigSecrets(cfg: ServiceNowConfig): ServiceNowConfig {
+    return {
+      ...cfg,
+      password: cfg.password ? encryptField(cfg.password) : cfg.password,
+      clientSecret: cfg.clientSecret ? encryptField(cfg.clientSecret) : cfg.clientSecret,
+      accessToken: cfg.accessToken ? encryptField(cfg.accessToken) : cfg.accessToken,
+      refreshToken: cfg.refreshToken ? encryptField(cfg.refreshToken) : cfg.refreshToken,
+    };
+  }
+
+  /**
+   * Decrypt sensitive credential fields after reading from the database.
+   */
+  private decryptConfigSecrets(cfg: ServiceNowConfig): ServiceNowConfig {
+    return {
+      ...cfg,
+      password: cfg.password ? decryptField(cfg.password) : cfg.password,
+      clientSecret: cfg.clientSecret ? decryptField(cfg.clientSecret) : cfg.clientSecret,
+      accessToken: cfg.accessToken ? decryptField(cfg.accessToken) : cfg.accessToken,
+      refreshToken: cfg.refreshToken ? decryptField(cfg.refreshToken) : cfg.refreshToken,
+    };
+  }
+
+  /**
    * Build an authenticated axios client for a given organization
    */
   private async getClient(organizationId: string): Promise<AxiosInstance> {
@@ -157,10 +185,11 @@ class ServiceNowService {
       throw new AppError('ServiceNow integration not connected', 400);
     }
 
-    const config = integration.config as unknown as ServiceNowConfig;
-    if (!config?.instanceUrl) {
+    const rawConfig = integration.config as unknown as ServiceNowConfig;
+    if (!rawConfig?.instanceUrl) {
       throw new AppError('ServiceNow instance URL not configured', 400);
     }
+    const config = this.decryptConfigSecrets(rawConfig);
 
     const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
 
@@ -238,7 +267,7 @@ class ServiceNowService {
         const { access_token, refresh_token, expires_in } = response.data;
         const tokenExpiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
 
-        // Persist new tokens
+        // Persist new tokens (encrypted at rest)
         const integration = await this.getIntegration(organizationId);
         if (integration) {
           const updatedConfig: ServiceNowConfig = {
@@ -250,10 +279,10 @@ class ServiceNowService {
           await prisma.integration.update({
             where: { id: integration.id },
             data: {
-              accessToken: access_token,
-              refreshToken: refresh_token,
+              accessToken: access_token ? encryptField(access_token) : null,
+              refreshToken: refresh_token ? encryptField(refresh_token) : null,
               expiresAt: new Date(tokenExpiresAt),
-              config: updatedConfig as any,
+              config: this.encryptConfigSecrets(updatedConfig) as any,
             },
           });
         }
@@ -345,6 +374,7 @@ class ServiceNowService {
     config: ServiceNowConfig
   ): Promise<void> {
     const expiresAt = config.tokenExpiresAt ? new Date(config.tokenExpiresAt) : null;
+    const encryptedConfig = this.encryptConfigSecrets(config);
 
     await prisma.integration.upsert({
       where: {
@@ -359,18 +389,18 @@ class ServiceNowService {
         category: 'itsm',
         provider: 'servicenow',
         connected: true,
-        accessToken: config.accessToken || null,
-        refreshToken: config.refreshToken || null,
+        accessToken: config.accessToken ? encryptField(config.accessToken) : null,
+        refreshToken: config.refreshToken ? encryptField(config.refreshToken) : null,
         expiresAt,
-        config: config as any,
+        config: encryptedConfig as any,
         lastSync: new Date(),
       },
       update: {
         connected: true,
-        accessToken: config.accessToken || null,
-        refreshToken: config.refreshToken || null,
+        accessToken: config.accessToken ? encryptField(config.accessToken) : null,
+        refreshToken: config.refreshToken ? encryptField(config.refreshToken) : null,
         expiresAt,
-        config: config as any,
+        config: encryptedConfig as any,
         lastSync: new Date(),
       },
     });

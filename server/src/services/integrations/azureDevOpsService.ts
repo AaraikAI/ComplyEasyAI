@@ -10,6 +10,8 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { isUrlSafe } from '../../utils/urlValidator';
+import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -133,6 +135,34 @@ class AzureDevOpsService {
   private readonly baseRetryDelay = 1000;
 
   /**
+   * Encrypt sensitive credential fields in the config JSON for at-rest storage.
+   * Non-sensitive identifiers (organization, project, authType, clientId, tenantId, tokenExpiresAt)
+   * remain untouched.
+   */
+  private encryptConfigSecrets(cfg: AzureDevOpsConfig): AzureDevOpsConfig {
+    return {
+      ...cfg,
+      pat: cfg.pat ? encryptField(cfg.pat) : cfg.pat,
+      clientSecret: cfg.clientSecret ? encryptField(cfg.clientSecret) : cfg.clientSecret,
+      accessToken: cfg.accessToken ? encryptField(cfg.accessToken) : cfg.accessToken,
+      refreshToken: cfg.refreshToken ? encryptField(cfg.refreshToken) : cfg.refreshToken,
+    };
+  }
+
+  /**
+   * Decrypt credential fields after reading from the database.
+   */
+  private decryptConfigSecrets(cfg: AzureDevOpsConfig): AzureDevOpsConfig {
+    return {
+      ...cfg,
+      pat: cfg.pat ? decryptField(cfg.pat) : cfg.pat,
+      clientSecret: cfg.clientSecret ? decryptField(cfg.clientSecret) : cfg.clientSecret,
+      accessToken: cfg.accessToken ? decryptField(cfg.accessToken) : cfg.accessToken,
+      refreshToken: cfg.refreshToken ? decryptField(cfg.refreshToken) : cfg.refreshToken,
+    };
+  }
+
+  /**
    * Build an authenticated axios client for a given organization
    */
   private async getClient(organizationId: string): Promise<{ client: AxiosInstance; config: AzureDevOpsConfig }> {
@@ -141,12 +171,17 @@ class AzureDevOpsService {
       throw new AppError('Azure DevOps integration not connected', 400);
     }
 
-    const adoConfig = integration.config as unknown as AzureDevOpsConfig;
-    if (!adoConfig?.organization) {
+    const rawAdoConfig = integration.config as unknown as AzureDevOpsConfig;
+    if (!rawAdoConfig?.organization) {
       throw new AppError('Azure DevOps organization not configured', 400);
     }
+    const adoConfig = this.decryptConfigSecrets(rawAdoConfig);
 
     const baseURL = `https://dev.azure.com/${encodeURIComponent(adoConfig.organization)}`;
+    if (!isUrlSafe(baseURL)) {
+      logger.error('Azure DevOps outbound URL rejected by isUrlSafe', { url: baseURL });
+      throw new AppError(`Unsafe Azure DevOps URL: ${baseURL}`, 400);
+    }
     const headers: Record<string, string> = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -199,8 +234,13 @@ class AzureDevOpsService {
     config: AzureDevOpsConfig
   ): Promise<string> {
     const tokenUrl = config.tenantId
-      ? `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`
+      ? `https://login.microsoftonline.com/${encodeURIComponent(config.tenantId)}/oauth2/v2.0/token`
       : 'https://app.vssps.visualstudio.com/oauth2/token';
+
+    if (!isUrlSafe(tokenUrl)) {
+      logger.error('Azure DevOps token URL rejected by isUrlSafe', { url: tokenUrl, tenantId: config.tenantId });
+      throw new AppError(`Unsafe Azure DevOps token URL: ${tokenUrl}`, 400);
+    }
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       try {
@@ -228,7 +268,7 @@ class AzureDevOpsService {
         const { access_token, refresh_token, expires_in } = response.data;
         const tokenExpiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
 
-        // Persist new tokens
+        // Persist new tokens (encrypted at rest)
         const integration = await this.getIntegration(organizationId);
         if (integration) {
           const updatedConfig: AzureDevOpsConfig = {
@@ -240,10 +280,10 @@ class AzureDevOpsService {
           await prisma.integration.update({
             where: { id: integration.id },
             data: {
-              accessToken: access_token,
-              refreshToken: refresh_token,
+              accessToken: access_token ? encryptField(access_token) : null,
+              refreshToken: refresh_token ? encryptField(refresh_token) : null,
               expiresAt: new Date(tokenExpiresAt),
-              config: updatedConfig as any,
+              config: this.encryptConfigSecrets(updatedConfig) as any,
             },
           });
         }
@@ -330,6 +370,8 @@ class AzureDevOpsService {
     config: AzureDevOpsConfig
   ): Promise<void> {
     const expiresAt = config.tokenExpiresAt ? new Date(config.tokenExpiresAt) : null;
+    const encryptedConfig = this.encryptConfigSecrets(config);
+    const plaintextPrimary = config.accessToken || config.pat || null;
 
     await prisma.integration.upsert({
       where: {
@@ -344,18 +386,18 @@ class AzureDevOpsService {
         category: 'devops',
         provider: 'azure_devops',
         connected: true,
-        accessToken: config.accessToken || config.pat || null,
-        refreshToken: config.refreshToken || null,
+        accessToken: plaintextPrimary ? encryptField(plaintextPrimary) : null,
+        refreshToken: config.refreshToken ? encryptField(config.refreshToken) : null,
         expiresAt,
-        config: config as any,
+        config: encryptedConfig as any,
         lastSync: new Date(),
       },
       update: {
         connected: true,
-        accessToken: config.accessToken || config.pat || null,
-        refreshToken: config.refreshToken || null,
+        accessToken: plaintextPrimary ? encryptField(plaintextPrimary) : null,
+        refreshToken: config.refreshToken ? encryptField(config.refreshToken) : null,
         expiresAt,
-        config: config as any,
+        config: encryptedConfig as any,
         lastSync: new Date(),
       },
     });

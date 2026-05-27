@@ -14,6 +14,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import { WebhookEventStatus } from '../generated/prisma/client';
+import { encryptField, decryptField } from '../utils/credentialEncryption';
 
 // ============================================================================
 // TYPES
@@ -154,7 +155,8 @@ class WebhookService {
           organizationId: options.organizationId,
           name: options.name,
           url: options.url,
-          secret,
+          // Encrypt webhook signing secret at rest (AES-256-GCM)
+          secret: encryptField(secret),
           events: options.events,
           headers: options.headers || {},
           createdBy: options.createdBy,
@@ -165,7 +167,7 @@ class WebhookService {
 
       return {
         ...webhook,
-        secret, // Return secret only on creation
+        secret, // Return plaintext secret only on creation (caller needs it once for setup)
       };
     } catch (error: any) {
       if (error.code === 'P2002') {
@@ -293,11 +295,12 @@ class WebhookService {
         id: webhookId,
         organizationId,
       },
-      data: { secret: newSecret },
+      // Encrypt the new secret at rest
+      data: { secret: encryptField(newSecret) },
     });
 
     logger.info(`Webhook secret regenerated: ${webhookId}`);
-    return newSecret;
+    return newSecret; // Return plaintext to caller (one-time display)
   }
 
   /**
@@ -505,8 +508,9 @@ class WebhookService {
       throw new AppError('Webhook URL is not allowed for security reasons (SSRF protection)', 400);
     }
 
-    // Generate HMAC signature
-    const signature = this.generateSignature(payloadString, webhook.secret);
+    // Generate HMAC signature (decrypt webhook.secret which is encrypted at rest)
+    const plaintextSecret = decryptField(webhook.secret);
+    const signature = this.generateSignature(payloadString, plaintextSecret);
 
     try {
       // Use safeFetch for additional SSRF protection

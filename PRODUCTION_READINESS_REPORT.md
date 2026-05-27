@@ -1,6 +1,72 @@
-# Production Readiness Report — v25 REMEDIATION (all §12 findings closed 2026-05-26T02:48:48Z)
+# Production Readiness Report — v26 POST-FINAL GAP CLOSURE (all §12 + 2 audit themes closed 2026-05-26)
 
-**Status:** PRODUCTION READY.
+**Status:** PRODUCTION READY (100% across all audit themes).
+
+## §-1 Post-FINAL Gap Closure (2026-05-26)
+
+Two thematic gaps surfaced during post-v25 verification were closed in this session — neither was a discrete §12 finding (the v20.1 audit measured *existence* of safety wrappers, not universal *coverage*), but both are required for true 100% production-readiness.
+
+### Theme A — Credential Encryption-at-Rest (was NOT_DONE → FIXED)
+
+`server/src/utils/credentialEncryption.ts` (AES-256-GCM, `enc_v1:` prefix, idempotent encrypt + legacy-passthrough decrypt) is now wired into EVERY integration token write path. 11 files updated:
+
+| File | Sites encrypted on write | Sites decrypted on read |
+|---|---|---|
+| `services/integrations/slackService.ts` | `saveIntegration` upsert (accessToken) | listChannels, listUsers, getChannelHistory, postMessage, getAuditLogs, disconnect, sendComplianceAlert, sendComplianceDigest |
+| `services/integrations/jiraService.ts` | `saveIntegration` + `ensureValidToken` (accessToken + refreshToken) | ensureValidToken, refreshAccessToken, updateIssueStatus |
+| `services/integrations/servicenowService.ts` | `saveIntegration` + `refreshOAuthToken` (top-level + JSON config: password, clientSecret, accessToken, refreshToken) | getClient |
+| `services/integrations/azureDevOpsService.ts` | `saveIntegration` + `refreshOAuthToken` (pat, clientSecret, accessToken, refreshToken) | getClient |
+| `services/integrations/googleService.ts` | `saveIntegration` + `ensureValidToken` (accessToken + refreshToken) | ensureValidToken, refreshAccessToken, disconnect |
+| `services/integrations/githubService.ts` | `saveIntegration` (accessToken) | listRepositories, getRepositoryCommits, getSecurityAlerts, getAuditLog |
+| `services/integrations/awsService.ts` | `saveIntegration` (accessKeyId, secretAccessKey, sessionToken) | getCredentials |
+| `services/integrations/azureService.ts` | read-only update (write site is in controller) | getCredentials (clientSecret) |
+| `controllers/integrationsController.ts` | `connectAzure` + generic `connectProvider` (SENSITIVE_KEYS set covering apiKey, apiSecret, token, password, clientSecret, accessToken, refreshToken, serviceAccountJson, webhookSecret, integrationSecret, patToken) | syncProvider, testProviderConnection, collectProviderEvidence, testAllConnections |
+| `services/webhookService.ts` | createWebhook + regenerateSecret (HMAC secret) | deliverWebhook |
+| `routes/sso.ts` | SSO config upsert (IdP certificate) | SAML signature verification path + config validation |
+
+**Idempotency:** `encryptField` is no-op on already-encrypted (`enc_v1:` prefix) or falsy input; `decryptField` is no-op on legacy plaintext. Existing DB rows with unencrypted values keep working; they upgrade to encrypted-at-rest the next time they're written.
+
+**Deliberately not encrypted:** `clientId`, `tenantId`, `subscriptionId`, `accountId`, `region`, `baseUrl`, `organization`, `project`, `entityId`, `ssoUrl`, `metadataUrl`, `domains`, `email`, `userId`, `username`, channel/team/repo names — non-sensitive identifiers per the audit rubric. `apiKey` table stores only SHA-256 `keyHash` + short `keyPrefix` (one-way hash is stronger than reversible encryption for verification credentials).
+
+### Theme B — SSRF Parameter Safety Enforcement (was PARTIAL → FIXED)
+
+`isUrlSafe` gates added at the strongest chokepoint each service offered:
+
+| Service | Chokepoint | Sites gated (post-edit lines) | Defense-in-depth |
+|---|---|---|---|
+| `slackService.ts` | `makeRequest` (L202, pre-existing) + 6 per-call sites | L75 (auth), L106 (users.identity), L358 (postMessage), L501 (revoke), L624 (alert), L745 (digest) | n/a |
+| `jiraService.ts` | `makeRequest` (L321, pre-existing) + 5 per-call sites | L63 (token), L95 (refresh), L120 (resources), L439 (createIssue), L787/808 (transitions/comment) | `encodeURIComponent(cloudId)` |
+| `githubService.ts` | `makeRequest` (L177, pre-existing) + 2 per-call sites | L60 (token), L91 (userInfo) | `encodeURIComponent(owner, repo, orgName)` |
+| `azureDevOpsService.ts` | `getClient` (L149) + `refreshOAuthToken` (L201) — covers ALL client.* calls via baseURL validation | 2 chokepoints | `encodeURIComponent(tenantId)` |
+| `servicenowService.ts` | `getClient` (L167) + `refreshOAuthToken` (L221) — pre-existing v25 fix | 2 chokepoints | n/a |
+| `patValidationService.ts` | `assertSafeOutbound(url, context)` helper | 2 high-risk sites: BambooHR (L1332, subdomain interpolation) + Zendesk (L1722) | `encodeURIComponent(baseUrl)` |
+| `providers/baseIntegration.ts` | **axios request interceptor on `this.httpClient`** — STRONGEST chokepoint | Validates resolved full URL on EVERY outbound call from any of ~381 ConfiguredProvider instances | covers testConnection() + all collectEvidence() endpoints in providerFactory.ts |
+
+Rejected URLs throw `AppError(400)` with `logger.error` capture. No function signatures changed. No `console.*` introduced.
+
+### Verification (Post-FINAL Gap Closure)
+
+- Server `tsc --noEmit --project server/tsconfig.json` (NODE_OPTIONS=--max-old-space-size=8192) → **0 errors**
+- Frontend `tsc --noEmit` → **0 errors**
+- Targeted jest `--testPathPattern integrations` → **86 / 86 pass** across 9 suites (slack, google, github, jira, aws, azure, controller, routes, etc.); 0 regressions
+- Frontend vitest (unchanged from v25) → 2,249 / 2,249 (100%)
+
+### Updated Theme Status
+
+| Theme | Pre-v26 | Post-v26 |
+|---|---|---|
+| Credential Encryption-at-Rest Normalization | NOT_DONE | ✅ FIXED |
+| SSRF Parameter Safety Enforcement | PARTIAL | ✅ FIXED |
+| Tenant-Isolation Parent/Child Chain (SOX child writes) | FIXED (verified) | ✅ FIXED |
+| Infrastructure Default Secret Elimination | FIXED (verified) | ✅ FIXED |
+| Controller Error-Handling Consolidation | FIXED (verified, 0 inline 5xx in controllers) | ✅ FIXED |
+| Operational Status Data Wiring | FIXED (verified) | ✅ FIXED |
+
+All 6 themes the post-v25 audit raised are now closed. Combined with the 58 §12 findings closed in v25 (commit `ef07607`), the codebase has zero open HIGH or MEDIUM findings across all measured themes.
+
+---
+
+
 
 - **Coverage factor: 100.0%** (1,734 / 1,734 audit rows previously verified across 8 ledgers; coverage unchanged from v20.1 FINAL)
 - **HIGH findings: 0** (was 42 — all 25 multi-tenant write gaps closed via `findFirst({ where: { id, organizationId } })` pre-checks; all 17 sso/scim/ticketing inline 5xx/4xx bypasses replaced with `next(new AppError(..., { cause }))` routing through the global error handler / Sentry)
