@@ -9,6 +9,7 @@ import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
 import { isUrlSafe } from '../../utils/urlValidator';
+import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 interface SlackTokenResponse {
   ok: boolean;
@@ -72,8 +73,13 @@ class SlackService {
    */
   async getAccessToken(code: string): Promise<SlackTokenResponse> {
     try {
+      const url = `${this.authBaseUrl}/access`;
+      if (!isUrlSafe(url)) {
+        logger.error('Slack outbound URL rejected by isUrlSafe', { url });
+        throw new AppError(`Unsafe Slack URL: ${url}`, 400);
+      }
       const response = await axios.post(
-        `${this.authBaseUrl}/access`,
+        url,
         null,
         {
           params: {
@@ -103,7 +109,12 @@ class SlackService {
    */
   async getUserInfo(accessToken: string): Promise<SlackUser> {
     try {
-      const response = await axios.get(`${this.apiBaseUrl}/users.identity`, {
+      const url = `${this.apiBaseUrl}/users.identity`;
+      if (!isUrlSafe(url)) {
+        logger.error('Slack outbound URL rejected by isUrlSafe', { url });
+        throw new AppError(`Unsafe Slack URL: ${url}`, 400);
+      }
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -149,7 +160,7 @@ class SlackService {
           category: 'communication',
           provider: 'slack',
           connected: true,
-          accessToken: tokenResponse.access_token,
+          accessToken: tokenResponse.access_token ? encryptField(tokenResponse.access_token) : null,
           config: {
             teamId: tokenResponse.team.id,
             teamName: tokenResponse.team.name,
@@ -162,7 +173,7 @@ class SlackService {
         },
         update: {
           connected: true,
-          accessToken: tokenResponse.access_token,
+          accessToken: tokenResponse.access_token ? encryptField(tokenResponse.access_token) : null,
           config: {
             teamId: tokenResponse.team.id,
             teamName: tokenResponse.team.name,
@@ -236,7 +247,8 @@ class SlackService {
         throw new AppError('Slack integration not connected', 400);
       }
 
-      const data = await this.makeRequest(integration.accessToken, 'conversations.list', {
+      const accessToken = decryptField(integration.accessToken);
+      const data = await this.makeRequest(accessToken, 'conversations.list', {
         limit: 100,
         exclude_archived: true,
       });
@@ -272,7 +284,8 @@ class SlackService {
         throw new AppError('Slack integration not connected', 400);
       }
 
-      const data = await this.makeRequest(integration.accessToken, 'users.list', {
+      const accessToken = decryptField(integration.accessToken);
+      const data = await this.makeRequest(accessToken, 'users.list', {
         limit: 100,
       });
 
@@ -316,7 +329,8 @@ class SlackService {
         throw new AppError('Slack integration not connected', 400);
       }
 
-      const data = await this.makeRequest(integration.accessToken, 'conversations.history', {
+      const accessToken = decryptField(integration.accessToken);
+      const data = await this.makeRequest(accessToken, 'conversations.history', {
         channel: channelId,
         limit,
       });
@@ -355,8 +369,14 @@ class SlackService {
         throw new AppError('Slack integration not connected', 400);
       }
 
+      const url = `${this.apiBaseUrl}/chat.postMessage`;
+      if (!isUrlSafe(url)) {
+        logger.error('Slack outbound URL rejected by isUrlSafe', { url });
+        throw new AppError(`Unsafe Slack URL: ${url}`, 400);
+      }
+      const accessToken = decryptField(integration.accessToken);
       const response = await axios.post(
-        `${this.apiBaseUrl}/chat.postMessage`,
+        url,
         {
           channel: channelId,
           text,
@@ -364,7 +384,7 @@ class SlackService {
         },
         {
           headers: {
-            Authorization: `Bearer ${integration.accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
         }
@@ -398,7 +418,8 @@ class SlackService {
         throw new AppError('Slack integration not connected', 400);
       }
 
-      const data = await this.makeRequest(integration.accessToken, 'admin.audit.anomaly.allow.getList', {
+      const accessToken = decryptField(integration.accessToken);
+      const data = await this.makeRequest(accessToken, 'admin.audit.anomaly.allow.getList', {
         limit,
       });
 
@@ -498,12 +519,18 @@ class SlackService {
 
       if (integration && integration.accessToken) {
         try {
+          const url = `${this.apiBaseUrl}/auth.revoke`;
+          if (!isUrlSafe(url)) {
+            logger.error('Slack outbound URL rejected by isUrlSafe', { url });
+            throw new AppError(`Unsafe Slack URL: ${url}`, 400);
+          }
+          const accessToken = decryptField(integration.accessToken);
           await axios.post(
-            `${this.apiBaseUrl}/auth.revoke`,
+            url,
             null,
             {
               headers: {
-                Authorization: `Bearer ${integration.accessToken}`,
+                Authorization: `Bearer ${accessToken}`,
               },
             }
           );
@@ -621,8 +648,14 @@ class SlackService {
         ],
       });
 
+      const alertUrl = `${this.apiBaseUrl}/chat.postMessage`;
+      if (!isUrlSafe(alertUrl)) {
+        logger.error('Slack outbound URL rejected by isUrlSafe', { url: alertUrl });
+        throw new AppError(`Unsafe Slack URL: ${alertUrl}`, 400);
+      }
+      const accessToken = decryptField(integration.accessToken);
       const response = await axios.post(
-        `${this.apiBaseUrl}/chat.postMessage`,
+        alertUrl,
         {
           channel: alertChannel,
           text: `[${alert.severity.toUpperCase()}] ${alert.title}`,
@@ -633,7 +666,7 @@ class SlackService {
           }],
         },
         {
-          headers: { Authorization: `Bearer ${integration.accessToken}`, 'Content-Type': 'application/json' },
+          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         }
       );
 
@@ -742,8 +775,14 @@ class SlackService {
         });
       }
 
+      const digestUrl = `${this.apiBaseUrl}/chat.postMessage`;
+      if (!isUrlSafe(digestUrl)) {
+        logger.error('Slack outbound URL rejected by isUrlSafe', { url: digestUrl });
+        throw new AppError(`Unsafe Slack URL: ${digestUrl}`, 400);
+      }
+      const accessToken = decryptField(integration.accessToken);
       await axios.post(
-        `${this.apiBaseUrl}/chat.postMessage`,
+        digestUrl,
         {
           channel,
           text: `Compliance Digest - ${digest.period}: Score ${digest.overallScore}%`,
@@ -751,7 +790,7 @@ class SlackService {
           attachments: [{ color: scoreColor, fallback: `Score: ${digest.overallScore}%` }],
         },
         {
-          headers: { Authorization: `Bearer ${integration.accessToken}`, 'Content-Type': 'application/json' },
+          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         }
       );
 

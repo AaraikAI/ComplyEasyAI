@@ -9,6 +9,7 @@ import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
 import { isUrlSafe } from '../../utils/urlValidator';
+import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 interface GitHubTokenResponse {
   access_token: string;
@@ -57,8 +58,13 @@ class GitHubService {
    */
   async getAccessToken(code: string): Promise<string> {
     try {
+      const url = `${this.authBaseUrl}/access_token`;
+      if (!isUrlSafe(url)) {
+        logger.error('GitHub outbound URL rejected by isUrlSafe', { url });
+        throw new AppError(`Unsafe GitHub URL: ${url}`, 400);
+      }
       const response = await axios.post(
-        `${this.authBaseUrl}/access_token`,
+        url,
         {
           client_id: config.oauth.github.clientId,
           client_secret: config.oauth.github.clientSecret,
@@ -88,7 +94,12 @@ class GitHubService {
    */
   async getUserInfo(accessToken: string): Promise<GitHubUser> {
     try {
-      const response = await axios.get(`${this.apiBaseUrl}/user`, {
+      const url = `${this.apiBaseUrl}/user`;
+      if (!isUrlSafe(url)) {
+        logger.error('GitHub outbound URL rejected by isUrlSafe', { url });
+        throw new AppError(`Unsafe GitHub URL: ${url}`, 400);
+      }
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           Accept: 'application/vnd.github.v3+json',
@@ -124,7 +135,7 @@ class GitHubService {
           category: 'code',
           provider: 'github',
           connected: true,
-          accessToken,
+          accessToken: accessToken ? encryptField(accessToken) : null,
           config: {
             userId: userInfo.id,
             login: userInfo.login,
@@ -137,7 +148,7 @@ class GitHubService {
         },
         update: {
           connected: true,
-          accessToken,
+          accessToken: accessToken ? encryptField(accessToken) : null,
           config: {
             userId: userInfo.id,
             login: userInfo.login,
@@ -208,7 +219,8 @@ class GitHubService {
         throw new AppError('GitHub integration not connected', 400);
       }
 
-      const repos = await this.makeRequest(integration.accessToken, '/user/repos', {
+      const accessToken = decryptField(integration.accessToken);
+      const repos = await this.makeRequest(accessToken, '/user/repos', {
         per_page: 100,
         sort: 'updated',
       });
@@ -255,9 +267,10 @@ class GitHubService {
       const params: any = { per_page: 100 };
       if (since) params.since = since;
 
+      const accessToken = decryptField(integration.accessToken);
       const commits = await this.makeRequest(
-        integration.accessToken,
-        `/repos/${owner}/${repo}/commits`,
+        accessToken,
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits`,
         params
       );
 
@@ -288,9 +301,10 @@ class GitHubService {
         throw new AppError('GitHub integration not connected', 400);
       }
 
+      const accessToken = decryptField(integration.accessToken);
       const alerts = await this.makeRequest(
-        integration.accessToken,
-        `/repos/${owner}/${repo}/dependabot/alerts`,
+        accessToken,
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/dependabot/alerts`,
         { per_page: 100 }
       );
 
@@ -329,9 +343,10 @@ class GitHubService {
         throw new AppError('GitHub integration not connected', 400);
       }
 
+      const accessToken = decryptField(integration.accessToken);
       const events = await this.makeRequest(
-        integration.accessToken,
-        `/orgs/${orgName}/audit-log`,
+        accessToken,
+        `/orgs/${encodeURIComponent(orgName)}/audit-log`,
         { per_page: 100 }
       );
 

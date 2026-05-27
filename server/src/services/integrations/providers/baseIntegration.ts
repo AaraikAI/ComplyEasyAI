@@ -10,6 +10,8 @@
 
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import logger from '../../../config/logger';
+import { isUrlSafe } from '../../../utils/urlValidator';
+import { AppError } from '../../../middleware/errorHandler';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -133,6 +135,27 @@ export abstract class BaseIntegrationProvider {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
+    });
+
+    // SSRF chokepoint: validate every outbound URL before the request is sent.
+    // This covers all 381 configuration-driven providers and any subclass that
+    // routes through `this.httpClient`. URLs interpolating user-supplied tokens
+    // (baseUrl/tenantId/region/accountId) are blocked if they resolve to
+    // private IPs, localhost, link-local, or unsupported protocols.
+    this.httpClient.interceptors.request.use((cfg) => {
+      const baseURL = (cfg.baseURL || '').toString();
+      const url = (cfg.url || '').toString();
+      const fullUrl = /^https?:\/\//i.test(url) || !baseURL
+        ? url
+        : `${baseURL.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
+      if (fullUrl && !isUrlSafe(fullUrl)) {
+        logger.error('Integration outbound URL rejected by isUrlSafe', {
+          providerId: this.providerId,
+          url: fullUrl,
+        });
+        throw new AppError(`Unsafe outbound URL for provider ${this.providerId}: ${fullUrl}`, 400);
+      }
+      return cfg;
     });
   }
 

@@ -9,6 +9,7 @@ import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
 import { isUrlSafe } from '../../utils/urlValidator';
+import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 interface JiraTokenResponse {
   access_token: string;
@@ -60,8 +61,13 @@ class JiraService {
    */
   async getAccessToken(code: string): Promise<JiraTokenResponse> {
     try {
+      const url = `${this.authBaseUrl}/oauth/token`;
+      if (!isUrlSafe(url)) {
+        logger.error('Jira outbound URL rejected by isUrlSafe', { url });
+        throw new AppError(`Unsafe Jira URL: ${url}`, 400);
+      }
       const response = await axios.post(
-        `${this.authBaseUrl}/oauth/token`,
+        url,
         {
           grant_type: 'authorization_code',
           client_id: config.oauth.jira.clientId,
@@ -92,13 +98,20 @@ class JiraService {
    */
   async refreshAccessToken(refreshToken: string): Promise<JiraTokenResponse> {
     try {
+      const url = `${this.authBaseUrl}/oauth/token`;
+      if (!isUrlSafe(url)) {
+        logger.error('Jira outbound URL rejected by isUrlSafe', { url });
+        throw new AppError(`Unsafe Jira URL: ${url}`, 400);
+      }
+      // Caller may pass an encrypted refresh token from the DB; ensure plaintext is used in the API call.
+      const plaintextRefreshToken = decryptField(refreshToken);
       const response = await axios.post(
-        `${this.authBaseUrl}/oauth/token`,
+        url,
         {
           grant_type: 'refresh_token',
           client_id: config.oauth.jira.clientId,
           client_secret: config.oauth.jira.clientSecret,
-          refresh_token: refreshToken,
+          refresh_token: plaintextRefreshToken,
         },
         {
           headers: { 'Content-Type': 'application/json' },
@@ -117,8 +130,13 @@ class JiraService {
    */
   async getAccessibleResources(accessToken: string): Promise<JiraAccessibleResource[]> {
     try {
+      const url = `${this.apiBaseUrl}/oauth/token/accessible-resources`;
+      if (!isUrlSafe(url)) {
+        logger.error('Jira outbound URL rejected by isUrlSafe', { url });
+        throw new AppError(`Unsafe Jira URL: ${url}`, 400);
+      }
       const response = await axios.get(
-        `${this.apiBaseUrl}/oauth/token/accessible-resources`,
+        url,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -160,8 +178,8 @@ class JiraService {
           category: 'project',
           provider: 'jira',
           connected: true,
-          accessToken: tokenResponse.access_token,
-          refreshToken: tokenResponse.refresh_token,
+          accessToken: tokenResponse.access_token ? encryptField(tokenResponse.access_token) : null,
+          refreshToken: tokenResponse.refresh_token ? encryptField(tokenResponse.refresh_token) : null,
           expiresAt,
           config: {
             cloudId,
@@ -173,8 +191,8 @@ class JiraService {
         },
         update: {
           connected: true,
-          accessToken: tokenResponse.access_token,
-          refreshToken: tokenResponse.refresh_token,
+          accessToken: tokenResponse.access_token ? encryptField(tokenResponse.access_token) : null,
+          refreshToken: tokenResponse.refresh_token ? encryptField(tokenResponse.refresh_token) : null,
           expiresAt,
           config: {
             cloudId,
@@ -239,18 +257,18 @@ class JiraService {
           baseDelay
         );
 
-        // Update in database
+        // Update in database (encrypt tokens at rest)
         await prisma.integration.update({
           where: { id: integration.id },
           data: {
-            accessToken: newTokens.access_token,
-            refreshToken: newTokens.refresh_token,
+            accessToken: newTokens.access_token ? encryptField(newTokens.access_token) : null,
+            refreshToken: newTokens.refresh_token ? encryptField(newTokens.refresh_token) : null,
             expiresAt: new Date(Date.now() + newTokens.expires_in * 1000),
           },
         });
 
         return {
-          accessToken: newTokens.access_token,
+          accessToken: newTokens.access_token, // plaintext for outbound API use
           cloudId: config.cloudId,
         };
       } catch (error: any) {
@@ -268,7 +286,7 @@ class JiraService {
     }
 
     return {
-      accessToken: integration.accessToken!,
+      accessToken: decryptField(integration.accessToken!),
       cloudId: config.cloudId,
     };
   }
@@ -436,8 +454,13 @@ class JiraService {
     try {
       const { accessToken, cloudId } = await this.ensureValidToken(organizationId);
 
+      const url = `${this.apiBaseUrl}/ex/jira/${encodeURIComponent(cloudId)}/rest/api/3/issue`;
+      if (!isUrlSafe(url)) {
+        logger.error('Jira outbound URL rejected by isUrlSafe', { url, cloudId });
+        throw new AppError(`Unsafe Jira URL: ${url}`, 400);
+      }
       const response = await axios.post(
-        `${this.apiBaseUrl}/ex/jira/${cloudId}/rest/api/3/issue`,
+        url,
         {
           fields: {
             project: {
@@ -779,13 +802,18 @@ class JiraService {
       const cloudId = config?.cloudId;
       if (!cloudId) throw new AppError('Jira cloud ID not found', 400);
 
-      await this.ensureValidToken(organizationId);
-      const updatedIntegration = await this.getIntegration(organizationId);
-      const accessToken = updatedIntegration?.accessToken;
+      const { accessToken } = await this.ensureValidToken(organizationId);
 
+      const encodedCloudId = encodeURIComponent(cloudId);
+      const encodedIssueKey = encodeURIComponent(issueKey);
+      const transitionsUrl = `${this.apiBaseUrl}/ex/jira/${encodedCloudId}/rest/api/3/issue/${encodedIssueKey}/transitions`;
+      if (!isUrlSafe(transitionsUrl)) {
+        logger.error('Jira outbound URL rejected by isUrlSafe', { url: transitionsUrl, cloudId, issueKey });
+        throw new AppError(`Unsafe Jira URL: ${transitionsUrl}`, 400);
+      }
       // Get available transitions
       const transitionsResponse = await axios.get(
-        `${this.apiBaseUrl}/ex/jira/${cloudId}/rest/api/3/issue/${issueKey}/transitions`,
+        transitionsUrl,
         { headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } }
       );
 
@@ -797,7 +825,7 @@ class JiraService {
 
       if (targetTransition) {
         await axios.post(
-          `${this.apiBaseUrl}/ex/jira/${cloudId}/rest/api/3/issue/${issueKey}/transitions`,
+          transitionsUrl,
           { transition: { id: targetTransition.id } },
           { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
         );
@@ -805,8 +833,13 @@ class JiraService {
 
       // Add comment if provided
       if (comment) {
+        const commentUrl = `${this.apiBaseUrl}/ex/jira/${encodedCloudId}/rest/api/3/issue/${encodedIssueKey}/comment`;
+        if (!isUrlSafe(commentUrl)) {
+          logger.error('Jira outbound URL rejected by isUrlSafe', { url: commentUrl, cloudId, issueKey });
+          throw new AppError(`Unsafe Jira URL: ${commentUrl}`, 400);
+        }
         await axios.post(
-          `${this.apiBaseUrl}/ex/jira/${cloudId}/rest/api/3/issue/${issueKey}/comment`,
+          commentUrl,
           {
             body: {
               type: 'doc',

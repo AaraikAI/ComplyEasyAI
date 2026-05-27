@@ -9,6 +9,7 @@ import { AuthRequest } from '../middleware/auth';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import { Prisma } from '../generated/prisma/client';
+import { encryptField, decryptField } from '../utils/credentialEncryption';
 
 // Import integration services
 import googleService from '../services/integrations/googleService';
@@ -870,6 +871,8 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
           subscriptionId,
           clientId,
           tenantId,
+          // clientSecret is the credential — encrypt at rest with AES-256-GCM
+          clientSecret: clientSecret ? encryptField(clientSecret) : null,
         },
         lastSync: new Date(),
       },
@@ -879,6 +882,7 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
           subscriptionId,
           clientId,
           tenantId,
+          clientSecret: clientSecret ? encryptField(clientSecret) : null,
         },
         lastSync: new Date(),
       },
@@ -1520,6 +1524,22 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
 
     const category = categoryMap[provider] || 'dev';
 
+    // Encrypt sensitive credential fields at rest (AES-256-GCM via credentialEncryption util).
+    // Non-sensitive identifiers (baseUrl, clientId, tenantId, subscriptionId, accountId, region) are left untouched.
+    const SENSITIVE_KEYS = new Set([
+      'apiKey', 'apiSecret', 'token', 'password', 'clientSecret',
+      'accessToken', 'refreshToken', 'serviceAccountJson',
+      'webhookSecret', 'integrationSecret', 'patToken',
+    ]);
+    const encryptedConfig: Record<string, any> = {};
+    for (const [k, v] of Object.entries(config)) {
+      if (typeof v === 'string' && v && SENSITIVE_KEYS.has(k)) {
+        encryptedConfig[k] = encryptField(v);
+      } else {
+        encryptedConfig[k] = v;
+      }
+    }
+
     // Save integration
     await prisma.integration.upsert({
       where: {
@@ -1534,12 +1554,12 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
         category,
         provider,
         connected: true,
-        config,
+        config: encryptedConfig,
         lastSync: new Date(),
       },
       update: {
         connected: true,
-        config,
+        config: encryptedConfig,
         lastSync: new Date(),
       },
     });
@@ -1614,20 +1634,21 @@ export const syncProvider: RequestHandler = async (req: Request, res: Response):
     const integrationRegistry = (await import('../services/integrations/providers/integrationRegistry')).default;
     await integrationRegistry.initialise();
 
-    // Extract stored credentials from the integration config
+    // Extract stored credentials from the integration config (decrypt at rest -> plaintext for outbound API use)
     const config = (integration.config as Record<string, any>) || {};
+    const dec = (v: any) => (typeof v === 'string' && v ? decryptField(v) : v);
     const credentials = {
-      apiKey: config.apiKey,
-      apiSecret: config.apiSecret,
-      token: config.token || integration.accessToken,
+      apiKey: dec(config.apiKey),
+      apiSecret: dec(config.apiSecret),
+      token: dec(config.token) || dec(integration.accessToken),
       username: config.username,
-      password: config.password,
+      password: dec(config.password),
       baseUrl: config.baseUrl,
-      accessToken: integration.accessToken,
-      refreshToken: integration.refreshToken,
-      serviceAccountJson: config.serviceAccountJson,
+      accessToken: dec(integration.accessToken),
+      refreshToken: dec(integration.refreshToken),
+      serviceAccountJson: dec(config.serviceAccountJson),
       clientId: config.clientId,
-      clientSecret: config.clientSecret,
+      clientSecret: dec(config.clientSecret),
       tenantId: config.tenantId,
       subscriptionId: config.subscriptionId,
       region: config.region,
@@ -1723,18 +1744,19 @@ export const testProviderConnection: RequestHandler = async (req: Request, res: 
     await integrationRegistry.initialise();
 
     const config = (integration.config as Record<string, any>) || {};
+    const dec = (v: any) => (typeof v === 'string' && v ? decryptField(v) : v);
     const credentials = {
-      apiKey: config.apiKey,
-      apiSecret: config.apiSecret,
-      token: config.token || integration.accessToken,
+      apiKey: dec(config.apiKey),
+      apiSecret: dec(config.apiSecret),
+      token: dec(config.token) || dec(integration.accessToken),
       username: config.username,
-      password: config.password,
+      password: dec(config.password),
       baseUrl: config.baseUrl,
-      accessToken: integration.accessToken,
-      refreshToken: integration.refreshToken,
-      serviceAccountJson: config.serviceAccountJson,
+      accessToken: dec(integration.accessToken),
+      refreshToken: dec(integration.refreshToken),
+      serviceAccountJson: dec(config.serviceAccountJson),
       clientId: config.clientId,
-      clientSecret: config.clientSecret,
+      clientSecret: dec(config.clientSecret),
       tenantId: config.tenantId,
       subscriptionId: config.subscriptionId,
       region: config.region,
@@ -1781,13 +1803,14 @@ export const collectProviderEvidence: RequestHandler = async (req: Request, res:
     await integrationRegistry.initialise();
 
     const config = (integration.config as Record<string, any>) || {};
+    const dec = (v: any) => (typeof v === 'string' && v ? decryptField(v) : v);
     const credentials = {
-      apiKey: config.apiKey,
-      apiSecret: config.apiSecret,
-      token: config.token || integration.accessToken,
+      apiKey: dec(config.apiKey),
+      apiSecret: dec(config.apiSecret),
+      token: dec(config.token) || dec(integration.accessToken),
       baseUrl: config.baseUrl,
-      accessToken: integration.accessToken,
-      refreshToken: integration.refreshToken,
+      accessToken: dec(integration.accessToken),
+      refreshToken: dec(integration.refreshToken),
     };
 
     const evidence = await integrationRegistry.collectEvidence(provider.toLowerCase(), credentials);
@@ -1848,13 +1871,14 @@ export const testAllConnections: RequestHandler = async (req: Request, res: Resp
       const batchResults = await Promise.allSettled(
         batch.map(async (int) => {
           const config = (int.config as Record<string, any>) || {};
+          const dec = (v: any) => (typeof v === 'string' && v ? decryptField(v) : v);
           const creds = {
-            apiKey: config.apiKey,
-            apiSecret: config.apiSecret,
-            token: config.token || int.accessToken,
+            apiKey: dec(config.apiKey),
+            apiSecret: dec(config.apiSecret),
+            token: dec(config.token) || dec(int.accessToken),
             baseUrl: config.baseUrl,
-            accessToken: int.accessToken,
-            refreshToken: int.refreshToken,
+            accessToken: dec(int.accessToken),
+            refreshToken: dec(int.refreshToken),
           };
           const result = await integrationRegistry.testConnection(int.provider, creds);
           return { ...result, provider: int.provider, name: int.name };

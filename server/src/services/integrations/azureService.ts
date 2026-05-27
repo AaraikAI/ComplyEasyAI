@@ -13,6 +13,7 @@ import { GraphRbacManagementClient } from '@azure/graph';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { decryptField } from '../../utils/credentialEncryption';
 
 interface AzureCredentials {
   tenantId: string;
@@ -91,7 +92,8 @@ class AzureService {
     return {
       tenantId: config.tenantId,
       clientId: config.clientId,
-      clientSecret: config.clientSecret,
+      // clientSecret is encrypted at rest; decryptField is a no-op on legacy plaintext.
+      clientSecret: config.clientSecret ? decryptField(config.clientSecret) : config.clientSecret,
       subscriptionId: config.subscriptionId,
     };
   }

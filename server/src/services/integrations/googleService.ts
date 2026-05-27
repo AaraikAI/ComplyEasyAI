@@ -8,6 +8,7 @@ import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 interface GoogleTokens {
   access_token: string;
@@ -103,7 +104,9 @@ class GoogleService {
    */
   async refreshAccessToken(refreshToken: string): Promise<GoogleTokens> {
     try {
-      this.oauth2Client.setCredentials({ refresh_token: refreshToken });
+      // Caller may pass an encrypted refresh token from the DB; ensure plaintext for the API call.
+      const plaintextRefreshToken = decryptField(refreshToken);
+      this.oauth2Client.setCredentials({ refresh_token: plaintextRefreshToken });
       const { credentials } = await this.oauth2Client.refreshAccessToken();
 
       return {
@@ -139,8 +142,8 @@ class GoogleService {
           category: 'identity',
           provider: 'google',
           connected: true,
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token || null,
+          accessToken: tokens.access_token ? encryptField(tokens.access_token) : null,
+          refreshToken: tokens.refresh_token ? encryptField(tokens.refresh_token) : null,
           expiresAt: new Date(tokens.expiry_date),
           config: {
             userId: userInfo.id,
@@ -152,8 +155,8 @@ class GoogleService {
         },
         update: {
           connected: true,
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token || undefined,
+          accessToken: tokens.access_token ? encryptField(tokens.access_token) : null,
+          refreshToken: tokens.refresh_token ? encryptField(tokens.refresh_token) : undefined,
           expiresAt: new Date(tokens.expiry_date),
           config: {
             userId: userInfo.id,
@@ -218,17 +221,17 @@ class GoogleService {
           baseDelay
         );
 
-        // Update in database
+        // Update in database (encrypted at rest)
         await prisma.integration.update({
           where: { id: integration.id },
           data: {
-            accessToken: newTokens.access_token,
-            refreshToken: newTokens.refresh_token || integration.refreshToken,
+            accessToken: newTokens.access_token ? encryptField(newTokens.access_token) : null,
+            refreshToken: newTokens.refresh_token ? encryptField(newTokens.refresh_token) : integration.refreshToken,
             expiresAt: new Date(newTokens.expiry_date),
           },
         });
 
-        return newTokens.access_token;
+        return newTokens.access_token; // plaintext for outbound API use
       } catch (error: any) {
         logger.error(`Failed to refresh Google token after ${retryCount} retries`, error);
         
@@ -243,7 +246,7 @@ class GoogleService {
       }
     }
 
-    return integration.accessToken!;
+    return decryptField(integration.accessToken!);
   }
 
   /**
@@ -463,7 +466,7 @@ class GoogleService {
       if (integration && integration.accessToken) {
         // Revoke the token
         try {
-          await this.oauth2Client.revokeToken(integration.accessToken);
+          await this.oauth2Client.revokeToken(decryptField(integration.accessToken));
         } catch (error) {
           logger.warn('Error revoking Google token (may already be revoked)', error);
         }
