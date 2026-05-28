@@ -19,6 +19,10 @@ import fs from 'fs';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
 import { promisify } from 'util';
+import cacheService from '../cache/redisCacheService';
+
+const LIVENESS_CACHE_NAMESPACE = 'liveness';
+const ACTIVE_CHALLENGES_KEY = 'active-challenges';
 
 const writeFile = promisify(fs.writeFile);
 const unlinkFile = promisify(fs.unlink);
@@ -94,8 +98,48 @@ interface FrameLivenessData {
 class LivenessDetectionService {
   private antiSpoofModel: tf.LayersModel | null = null;
   private isInitialized = false;
+  // Working set kept in-process for fast access; mirrored to Redis (via cacheService)
+  // so a restart doesn't leave in-flight liveness challenges stranded.
   private activeChallenges: Map<string, LivenessChallenge> = new Map();
   private sessionHistory: Map<string, FrameLivenessData[]> = new Map();
+  private hydrationPromise: Promise<void> | null = null;
+
+  private async hydrateActiveChallenges(): Promise<void> {
+    if (this.hydrationPromise) return this.hydrationPromise;
+    this.hydrationPromise = (async () => {
+      const entries = await cacheService.get<Array<[string, LivenessChallenge]>>(
+        ACTIVE_CHALLENGES_KEY,
+        { namespace: LIVENESS_CACHE_NAMESPACE },
+      );
+      if (!entries || !Array.isArray(entries)) return;
+      const now = Date.now();
+      for (const [id, raw] of entries) {
+        const challenge: LivenessChallenge = {
+          ...raw,
+          createdAt: new Date(raw.createdAt),
+          expiresAt: new Date(raw.expiresAt),
+        };
+        if (challenge.expiresAt.getTime() <= now) continue;
+        this.activeChallenges.set(id, challenge);
+      }
+      logger.info(`[LivenessDetection] Hydrated ${this.activeChallenges.size} active challenges from cache.`);
+    })().catch((err) => {
+      logger.warn('[LivenessDetection] Failed to hydrate challenges from cache', err);
+    });
+    return this.hydrationPromise;
+  }
+
+  private async persistActiveChallenges(): Promise<void> {
+    try {
+      const entries = Array.from(this.activeChallenges.entries());
+      await cacheService.set(ACTIVE_CHALLENGES_KEY, entries, {
+        ttl: 0,
+        namespace: LIVENESS_CACHE_NAMESPACE,
+      });
+    } catch (err) {
+      logger.warn('[LivenessDetection] Failed to persist active challenges to cache', err);
+    }
+  }
 
   // Configurable thresholds
   private readonly EAR_BLINK_THRESHOLD = parseFloat(process.env.LIVENESS_EAR_THRESHOLD || '0.21');
@@ -265,7 +309,7 @@ class LivenessDetectionService {
   /**
    * Create a challenge-response verification.
    */
-  createChallenge(numActions: number = 3): LivenessChallenge {
+  async createChallenge(numActions: number = 3): Promise<LivenessChallenge> {
     const actionPool: LivenessChallenge['actions'][0]['action'][] = [
       'blink', 'turn_left', 'turn_right', 'look_up', 'look_down', 'smile', 'open_mouth',
     ];
@@ -286,6 +330,7 @@ class LivenessDetectionService {
     };
 
     this.activeChallenges.set(challenge.challengeId, challenge);
+    await this.persistActiveChallenges();
     logger.info(`[LivenessDetection] Challenge created: ${challenge.challengeId} with ${challenge.actions.length} actions`);
     return challenge;
   }
@@ -302,10 +347,14 @@ class LivenessDetectionService {
     await this.initialize();
     const sid = sessionId || crypto.randomUUID();
 
+    // Ensure we've hydrated from cache before reading — challenge may have been
+    // created by a different process that wrote to Redis.
+    await this.hydrateActiveChallenges();
     const challenge = this.activeChallenges.get(challengeId);
     if (!challenge) throw new AppError('Challenge not found or expired', 404);
     if (new Date() > challenge.expiresAt) {
       this.activeChallenges.delete(challengeId);
+      await this.persistActiveChallenges();
       throw new AppError('Challenge has expired', 400);
     }
 
@@ -345,6 +394,7 @@ class LivenessDetectionService {
 
       // Clean up used challenge
       this.activeChallenges.delete(challengeId);
+      await this.persistActiveChallenges();
 
       return {
         isLive: overallScore >= this.LIVENESS_THRESHOLD,
@@ -1126,8 +1176,15 @@ class LivenessDetectionService {
   private startChallengeCleanup(): void {
     setInterval(() => {
       const now = new Date();
+      let deleted = 0;
       for (const [id, challenge] of this.activeChallenges.entries()) {
-        if (now > challenge.expiresAt) this.activeChallenges.delete(id);
+        if (now > challenge.expiresAt) {
+          this.activeChallenges.delete(id);
+          deleted++;
+        }
+      }
+      if (deleted > 0) {
+        this.persistActiveChallenges().catch(() => {});
       }
     }, 30000);
   }

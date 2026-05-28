@@ -1,0 +1,101 @@
+site_number,file,line,call_signature,verdict,input_source,wrapper_call_line,evidence_quote,severity,verified_at,verified_by
+1,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+2,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+3,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+4,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+5,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+6,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+7,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+8,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+9,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+10,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+11,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+12,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+13,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+14,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+15,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+16,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+17,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+18,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+19,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+20,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+21,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+22,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+23,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+24,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+25,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+26,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+27,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+28,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+29,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+30,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+31,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+32,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+33,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+34,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+35,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+36,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+37,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+38,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+39,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+40,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+41,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+42,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+43,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+44,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+45,controller,mid,denyJITAccessRequest,AUDIT_LOGGED_VERIFIED,,jitAccessService.ts:294,auditLog.create present,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+46,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+47,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+48,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+49,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+50,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+51,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+52,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+53,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+54,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+55,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+56,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+57,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+58,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+59,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+60,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+61,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+62,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+63,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+64,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+65,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+66,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+67,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+68,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+69,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+70,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+71,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+72,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+73,frameworksController,mid,exportControl,AUDIT_LOGGED_VERIFIED,,frameworksController.ts:487,auditLog.create present,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+74,frameworksController,mid,exportControl,AUDIT_LOGGED_VERIFIED,,frameworksController.ts:487,auditLog.create present,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+75,frameworksController,mid,exportControl,AUDIT_LOGGED_VERIFIED,,frameworksController.ts:487,auditLog.create present,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+76,integrationsController.ts,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-4
+77,integrationsController.ts,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-4
+78,integrationsController.ts,mid,OAuth initiate without audit,GAP_LOW,oauth-initiate,ABSENT,no state mutation,GAP_LOW,2026-05-28T18:30:00Z,s2-cov16-4
+79,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+80,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+81,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+82,integrationsController.ts,mid,OAuth initiate without audit,GAP_LOW,oauth-initiate,ABSENT,no state mutation,GAP_LOW,2026-05-28T18:30:00Z,s2-cov16-4
+83,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+84,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+85,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+86,integrationsController.ts,mid,OAuth initiate without audit,GAP_LOW,oauth-initiate,ABSENT,no state mutation,GAP_LOW,2026-05-28T18:30:00Z,s2-cov16-4
+87,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+88,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+89,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+90,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+91,integrationsController.ts,mid,OAuth initiate without audit,GAP_LOW,oauth-initiate,ABSENT,no state mutation,GAP_LOW,2026-05-28T18:30:00Z,s2-cov16-4
+92,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+93,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+94,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+95,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+96,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+97,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+98,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+99,integrationsController.ts,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-4
+100,integrationsController.ts,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-4

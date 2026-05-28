@@ -840,7 +840,7 @@ class AuthController {
       // Verify the short-lived 2FA pending JWT to extract userId securely
       let userId: string;
       try {
-        const decoded = jwt.verify(twoFactorToken, config.jwt.secret) as {
+        const decoded = jwt.verify(twoFactorToken, config.jwt.secret, { algorithms: ['HS256'] }) as {
           userId: string;
           purpose: string;
         };
@@ -1114,6 +1114,13 @@ class AuthController {
         data: { passwordHash: newPasswordHash },
       });
 
+      // Revoke all existing tokens and sessions issued before the password change.
+      // Without this step, tokens minted before the change remain valid until they expire.
+      await tokenBlacklist.revokeAllForUser(userId);
+      await prisma.userSession.updateMany({ where: { userId, terminatedAt: null }, data: { terminatedAt: new Date(), terminationReason: 'password_change' } }).catch((err) => {
+        logger.warn('[Auth] Failed to purge sessions after password change', err);
+      });
+
       // Log audit
       await prisma.auditLog.create({
         data: {
@@ -1136,6 +1143,9 @@ class AuthController {
         userId,
         organizationId,
       });
+
+      // Clear cookies so the caller is forced to re-authenticate with the new password.
+      clearAuthCookies(res);
 
       res.json({ message: 'Password changed successfully' });
       logger.info(`Password changed for user: ${userId}`);
@@ -1358,6 +1368,16 @@ class AuthController {
         resetToken: null,
         resetTokenExpiry: null,
       },
+    });
+
+    // Revoke all existing tokens and sessions after a reset. The user's credentials
+    // may have been compromised, so any previously-issued token must stop working.
+    await tokenBlacklist.revokeAllForUser(user.id);
+    await prisma.userSession.updateMany({
+      where: { userId: user.id, terminatedAt: null },
+      data: { terminatedAt: new Date(), terminationReason: 'password_reset' },
+    }).catch((err) => {
+      logger.warn('[Auth] Failed to purge sessions after password reset', err);
     });
 
     logger.info(`[Auth] Password reset completed for user ${user.email}`);

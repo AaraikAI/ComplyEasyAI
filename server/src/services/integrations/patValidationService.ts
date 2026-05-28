@@ -477,13 +477,15 @@ class PATValidationService {
         return { valid: false, error: 'Twilio Account SID and Auth Token are required' };
       }
 
-      // Validate Account SID format (starts with AC)
-      if (!sid.startsWith('AC') || sid.length < 34) {
+      // Validate Account SID format (starts with AC, alphanumeric, exactly 34 chars)
+      if (!/^AC[A-Za-z0-9]{32}$/.test(sid)) {
         return { valid: false, error: 'Invalid Twilio Account SID format. Account SID should start with "AC" and be 34 characters long.' };
       }
 
-      // Validate by making a test API call to Twilio
-      const response = await axios.get(`https://api.twilio.com/2010-04-01/Accounts/${sid}.json`, {
+      // Validate by making a test API call to Twilio (URL fully gated by isUrlSafe + strict sid format)
+      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}.json`;
+      this.assertSafeOutbound(twilioUrl, 'Twilio');
+      const response = await axios.get(twilioUrl, {
         auth: {
           username: sid,
           password: authToken,

@@ -368,6 +368,8 @@ app.use(helmet({
 // Body parsing middleware
 // Special handling for Stripe webhooks (requires raw body)
 app.use('/api/billing/webhook', apiLimiter, express.raw({ type: 'application/json' }));
+// Ticketing webhooks need the raw body for per-provider HMAC verification (jira/servicenow/azure_devops)
+app.use('/api/ticketing/webhook', apiLimiter, express.raw({ type: '*/*', limit: '5mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());

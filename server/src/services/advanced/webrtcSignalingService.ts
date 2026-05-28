@@ -471,7 +471,7 @@ class WebRTCSignalingService {
         return next(new Error('Authentication token required'));
       }
 
-      const decoded = jwt.verify(token, config.jwt.secret) as {
+      const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] }) as {
         userId: string;
         email: string;
         role: string;

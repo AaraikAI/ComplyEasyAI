@@ -11,6 +11,7 @@ import * as path from 'path';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
+import { isUrlSafe } from '../../utils/urlValidator';
 
 interface Policy {
   id: string;
@@ -561,9 +562,14 @@ class ComplianceAsCodeService {
         }
 
         const [owner, repo] = repoFullName.split('/');
+        const githubCheckUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/check-runs`;
+        if (!isUrlSafe(githubCheckUrl)) {
+          logger.warn('[ComplianceAsCode] Rejected unsafe GitHub check-run URL', { owner, repo });
+          return;
+        }
 
         await axios.post(
-          `https://api.github.com/repos/${owner}/${repo}/check-runs`,
+          githubCheckUrl,
           {
             name: 'Compliance Policy Check',
             head_sha: headSha,
@@ -605,8 +611,14 @@ class ComplianceAsCodeService {
           return;
         }
 
+        const gitlabStatusUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(String(projectId))}/statuses/${encodeURIComponent(String(commitSha))}`;
+        if (!isUrlSafe(gitlabStatusUrl)) {
+          logger.warn('[ComplianceAsCode] Rejected unsafe GitLab status URL', { projectId, commitSha });
+          return;
+        }
+
         await axios.post(
-          `https://gitlab.com/api/v4/projects/${projectId}/statuses/${commitSha}`,
+          gitlabStatusUrl,
           {
             state: evaluation.allowed ? 'success' : 'failed',
             name: 'compliance-policy-check',
