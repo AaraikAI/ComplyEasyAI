@@ -1,0 +1,576 @@
+site_number,file,line,call_signature,verdict,input_source,wrapper_call_line,evidence_quote,severity,verified_at,verified_by
+1,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+2,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+3,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+4,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+5,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+6,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+7,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+8,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,USER_SELF_READ,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+9,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+10,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+11,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+12,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+13,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+14,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+15,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+16,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+17,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+18,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+19,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,USER_SELF_READ,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+20,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+21,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+22,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+23,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+24,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+25,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-1
+26,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+27,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+28,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+29,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+30,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+31,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+32,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+33,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+34,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+35,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+36,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+37,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+38,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+39,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+40,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+41,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+42,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+43,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+44,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+45,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+46,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+47,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+48,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+49,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+50,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-2
+51,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+52,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+53,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+54,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+55,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+56,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+57,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+58,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+59,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+60,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+61,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+62,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+63,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+64,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+65,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+66,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+67,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+68,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+69,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+70,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+71,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+72,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+73,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+74,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+75,./server/src/controllers/varies,varies,prisma.X.findFirst/findMany/count,ORG_IN_WHERE_VERIFIED,controller-read,,scoped read,NONE,2026-05-28T19:50:00Z,s3-cov11-3
+76,./server/src/controllers/featureModulesController.ts,1276,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,parent surveillancePlan/breachIncident verified,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+77,./server/src/controllers/featureModulesController.ts,127,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+78,./server/src/controllers/featureModulesController.ts,1308,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+79,./server/src/controllers/featureModulesController.ts,1342,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+80,./server/src/controllers/featureModulesController.ts,1351,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+81,./server/src/controllers/featureModulesController.ts,1401,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+82,./server/src/controllers/featureModulesController.ts,1414,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+83,./server/src/controllers/featureModulesController.ts,148,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+84,./server/src/controllers/featureModulesController.ts,174,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+85,./server/src/controllers/featureModulesController.ts,219,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+86,./server/src/controllers/featureModulesController.ts,249,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+87,./server/src/controllers/featureModulesController.ts,283,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+88,./server/src/controllers/featureModulesController.ts,304,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+89,./server/src/controllers/featureModulesController.ts,32,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+90,./server/src/controllers/featureModulesController.ts,352,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+91,./server/src/controllers/featureModulesController.ts,390,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+92,./server/src/controllers/featureModulesController.ts,406,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+93,./server/src/controllers/featureModulesController.ts,454,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+94,./server/src/controllers/featureModulesController.ts,475,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+95,./server/src/controllers/featureModulesController.ts,516,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+96,./server/src/controllers/featureModulesController.ts,535,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+97,./server/src/controllers/featureModulesController.ts,557,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+98,./server/src/controllers/featureModulesController.ts,576,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+99,./server/src/controllers/featureModulesController.ts,600,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+100,./server/src/controllers/featureModulesController.ts,621,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,where organizationId,NONE,2026-05-28T20:10:00Z,s4-cov11-1
+101,./server/src/controllers/featureModulesController.ts,626,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+102,./server/src/controllers/featureModulesController.ts,655,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+103,./server/src/controllers/featureModulesController.ts,677,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+104,./server/src/controllers/featureModulesController.ts,698,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+105,./server/src/controllers/featureModulesController.ts,699,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+106,./server/src/controllers/featureModulesController.ts,749,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+107,./server/src/controllers/featureModulesController.ts,780,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+108,./server/src/controllers/featureModulesController.ts,817,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+109,./server/src/controllers/featureModulesController.ts,849,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+110,./server/src/controllers/featureModulesController.ts,909,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+111,./server/src/controllers/featureModulesController.ts,971,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+112,./server/src/controllers/frameworksController.ts,104,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+113,./server/src/controllers/frameworksController.ts,1090,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+114,./server/src/controllers/frameworksController.ts,1103,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+115,./server/src/controllers/frameworksController.ts,1162,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+116,./server/src/controllers/frameworksController.ts,1210,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+117,./server/src/controllers/frameworksController.ts,1219,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+118,./server/src/controllers/frameworksController.ts,1254,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+119,./server/src/controllers/frameworksController.ts,1263,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+120,./server/src/controllers/frameworksController.ts,1298,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+121,./server/src/controllers/frameworksController.ts,207,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+122,./server/src/controllers/frameworksController.ts,235,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+123,./server/src/controllers/frameworksController.ts,327,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+124,./server/src/controllers/frameworksController.ts,410,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+125,./server/src/controllers/frameworksController.ts,444,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-2
+126,./server/src/controllers/frameworksController.ts,44,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+127,./server/src/controllers/frameworksController.ts,453,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+128,./server/src/controllers/frameworksController.ts,516,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+129,./server/src/controllers/frameworksController.ts,581,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+130,./server/src/controllers/frameworksController.ts,590,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+131,./server/src/controllers/frameworksController.ts,66,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+132,./server/src/controllers/frameworksController.ts,709,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+133,./server/src/controllers/frameworksController.ts,765,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+134,./server/src/controllers/frameworksController.ts,774,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+135,./server/src/controllers/frameworksController.ts,879,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+136,./server/src/controllers/frameworksController.ts,887,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+137,./server/src/controllers/frameworksController.ts,89,prisma read,ORG_IN_PRIOR_LOOKUP_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+138,./server/src/controllers/frameworksController.ts,949,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+139,./server/src/controllers/integrationsController.ts,1018,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+140,./server/src/controllers/integrationsController.ts,1098,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+141,./server/src/controllers/integrationsController.ts,1104,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+142,./server/src/controllers/integrationsController.ts,1126,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+143,./server/src/controllers/integrationsController.ts,1132,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+144,./server/src/controllers/integrationsController.ts,1154,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+145,./server/src/controllers/integrationsController.ts,1160,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+146,./server/src/controllers/integrationsController.ts,1182,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+147,./server/src/controllers/integrationsController.ts,1188,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+148,./server/src/controllers/integrationsController.ts,1209,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+149,./server/src/controllers/integrationsController.ts,1215,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+150,./server/src/controllers/integrationsController.ts,1621,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-3
+151,./server/src/controllers/integrationsController.ts,1735,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+152,./server/src/controllers/integrationsController.ts,1794,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+153,./server/src/controllers/integrationsController.ts,1858,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+154,./server/src/controllers/integrationsController.ts,1965,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+155,./server/src/controllers/integrationsController.ts,740,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+156,./server/src/controllers/integrationsController.ts,768,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+157,./server/src/controllers/integrationsController.ts,916,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+158,./server/src/controllers/onboardingController.ts,316,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+159,./server/src/controllers/onboardingController.ts,38,prisma read,USER_SELF_READ,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+160,./server/src/controllers/organizationController.ts,14,prisma read,USER_SELF_READ,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+161,./server/src/controllers/risksController.ts,181,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+162,./server/src/controllers/risksController.ts,294,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+163,./server/src/controllers/risksController.ts,332,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+164,./server/src/controllers/risksController.ts,384,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+165,./server/src/controllers/risksController.ts,428,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+166,./server/src/controllers/risksController.ts,441,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+167,./server/src/controllers/risksController.ts,470,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+168,./server/src/controllers/risksController.ts,497,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+169,./server/src/controllers/risksController.ts,49,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+170,./server/src/controllers/risksController.ts,522,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+171,./server/src/controllers/risksController.ts,535,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+172,./server/src/controllers/risksController.ts,561,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+173,./server/src/controllers/risksController.ts,77,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+174,./server/src/controllers/securityController.ts,1182,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+175,./server/src/controllers/securityController.ts,1234,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-4
+176,./server/src/controllers/securityController.ts,277,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+177,./server/src/controllers/securityController.ts,558,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+178,./server/src/controllers/securityController.ts,742,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+179,./server/src/controllers/securityController.ts,818,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+180,./server/src/controllers/securityController.ts,960,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+181,./server/src/controllers/webhookController.ts,320,prisma read,ORG_IN_WHERE_VERIFIED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+182,./server/src/controllers/webhookController.ts,443,prisma read,USER_SELF_READ,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+183,./server/src/controllers/webhookController.ts,611,prisma read,SYSTEM_LEVEL_NO_ORG_REQUIRED,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+184,./server/src/examples/newPagesExamples.ts,137,prisma read,NOT_APPLICABLE,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+185,./server/src/examples/newPagesExamples.ts,695,prisma read,NOT_APPLICABLE,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+186,./server/src/examples/newPagesExamples.ts,740,prisma read,NOT_APPLICABLE,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+187,./server/src/examples/newPagesExamples.ts,766,prisma read,NOT_APPLICABLE,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+188,./server/src/examples/newPagesExamples.ts,795,prisma read,NOT_APPLICABLE,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+189,./server/src/examples/newPagesExamples.ts,798,prisma read,NOT_APPLICABLE,controller-read,scoped,,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+190,./server/src/generated/prisma/client/index.d.ts,100064,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+191,./server/src/generated/prisma/client/index.d.ts,100089,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+192,./server/src/generated/prisma/client/index.d.ts,100113,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+193,./server/src/generated/prisma/client/index.d.ts,101010,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+194,./server/src/generated/prisma/client/index.d.ts,101024,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+195,./server/src/generated/prisma/client/index.d.ts,101039,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+196,./server/src/generated/prisma/client/index.d.ts,101055,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+197,./server/src/generated/prisma/client/index.d.ts,101070,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+198,./server/src/generated/prisma/client/index.d.ts,101073,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+199,./server/src/generated/prisma/client/index.d.ts,101076,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+200,./server/src/generated/prisma/client/index.d.ts,101254,prisma read,NOT_APPLICABLE,controller-read,scoped,generated JSDoc,NONE,2026-05-28T20:10:00Z,s4-cov11-5
+201,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+202,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+203,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+204,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+205,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+206,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+207,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+208,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+209,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+210,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+211,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+212,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+213,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+214,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+215,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+216,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+217,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+218,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+219,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+220,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+221,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+222,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+223,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+224,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+225,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-6
+226,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+227,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+228,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+229,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+230,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+231,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+232,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+233,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+234,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+235,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+236,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+237,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+238,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+239,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+240,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+241,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+242,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+243,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+244,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+245,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+246,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+247,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+248,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+249,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+250,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-7
+251,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+252,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+253,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+254,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+255,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+256,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+257,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+258,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+259,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+260,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+261,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+262,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+263,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+264,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+265,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+266,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+267,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+268,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+269,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+270,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+271,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+272,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+273,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+274,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+275,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-8
+276,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+277,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+278,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+279,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+280,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+281,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+282,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+283,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+284,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+285,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+286,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+287,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+288,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+289,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+290,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+291,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+292,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+293,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+294,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+295,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+296,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+297,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+298,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+299,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+300,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-9
+301,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+302,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+303,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+304,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+305,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+306,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+307,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+308,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+309,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+310,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+311,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+312,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+313,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+314,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+315,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+316,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+317,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+318,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+319,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+320,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+321,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+322,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+323,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+324,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+325,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-10
+326,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+327,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+328,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+329,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+330,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+331,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+332,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+333,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+334,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+335,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+336,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+337,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+338,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+339,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+340,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+341,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+342,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+343,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+344,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+345,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+346,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+347,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+348,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+349,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+350,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-11
+351,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+352,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+353,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+354,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+355,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+356,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+357,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+358,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+359,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+360,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+361,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+362,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+363,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+364,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+365,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+366,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+367,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+368,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+369,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+370,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+371,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+372,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+373,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+374,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+375,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-12
+376,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+377,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+378,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+379,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+380,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+381,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+382,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+383,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+384,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+385,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+386,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+387,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+388,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+389,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+390,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+391,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+392,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+393,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+394,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+395,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+396,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+397,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+398,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+399,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+400,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-13
+401,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+402,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+403,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+404,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+405,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+406,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+407,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+408,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+409,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+410,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+411,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+412,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+413,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+414,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+415,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+416,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+417,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+418,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+419,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+420,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+421,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+422,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+423,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+424,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+425,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-14
+426,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+427,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+428,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+429,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+430,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+431,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+432,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+433,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+434,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+435,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+436,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+437,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+438,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+439,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+440,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+441,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+442,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+443,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+444,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+445,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+446,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+447,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+448,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+449,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+450,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-15
+451,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+452,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+453,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+454,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+455,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+456,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+457,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+458,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+459,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+460,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+461,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+462,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+463,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+464,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+465,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+466,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+467,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+468,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+469,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+470,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+471,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+472,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+473,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+474,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+475,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-16
+476,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+477,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+478,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+479,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+480,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+481,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+482,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+483,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+484,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+485,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+486,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+487,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+488,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+489,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+490,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+491,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+492,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+493,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+494,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+495,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+496,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+497,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+498,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+499,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+500,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-17
+501,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+502,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+503,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+504,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+505,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+506,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+507,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+508,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+509,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+510,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+511,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+512,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+513,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+514,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+515,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+516,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+517,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+518,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+519,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+520,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+521,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+522,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+523,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+524,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+525,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-18
+526,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+527,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+528,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+529,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+530,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+531,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+532,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+533,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+534,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+535,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+536,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+537,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+538,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+539,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+540,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+541,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+542,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+543,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+544,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+545,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+546,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+547,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+548,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+549,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+550,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-19
+551,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+552,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+553,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+554,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+555,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+556,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+557,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+558,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+559,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+560,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+561,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+562,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+563,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+564,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+565,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+566,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+567,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+568,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+569,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+570,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+571,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+572,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+573,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+574,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
+575,./server/src/generated/prisma/client/index.d.ts,varies,prisma JSDoc example,NOT_APPLICABLE,generated-jsdoc,N/A,JSDoc comment in generated Prisma client .d.ts (not active code),NONE,2026-05-28T20:10:00Z,s4-cov11-20
