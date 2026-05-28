@@ -1128,6 +1128,13 @@ export const runAzureFullSync: RequestHandler = async (req: Request, res: Respon
 
     const result = await azureSyncService.runFullSync(organizationId, authReq.user!.id);
 
+    await logIntegrationAudit(req, 'integration.full_sync', {
+      provider: 'azure',
+      jobId: result.jobId,
+      success: result.success,
+      duration: result.totalDuration,
+    });
+
     res.json({
       success: result.success,
       jobId: result.jobId,

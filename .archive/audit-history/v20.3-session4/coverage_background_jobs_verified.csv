@@ -1,0 +1,29 @@
+site_number,file,line,call_signature,verdict,input_source,wrapper_call_line,evidence_quote,severity,verified_at,verified_by
+1,./server/src/services/advanced/evidenceTruthLayerService.ts,2360,dynamic import jobQueue,NOT_APPLICABLE,,,dynamic import,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+2,./server/src/services/advanced/evidenceTruthLayerService.ts,2401,jobQueueService.addJob,RETRY_POLICY_VERIFIED,,2405-2411,attempts:5 backoff:exponential delay:5000 removeOnFail:2592000000 (30d DLQ),NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+3,./server/src/services/advanced/redTeamService.ts,15,import jobQueueService,NOT_APPLICABLE,,,import,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+4,./server/src/services/advanced/redTeamService.ts,1355,jobQueueService.addJob,RETRY_POLICY_VERIFIED,,1365-1369,attempts:3 + DEFAULT_JOB_OPTIONS backoff/removeOnFail,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+5,./server/src/services/npsService.ts,446,JSDoc comment,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+6,./server/src/services/queue/anchorBlobStore.ts,6,JSDoc comment,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+7,./server/src/services/queue/jobQueue.ts,4,file header,NOT_APPLICABLE,,,docstring,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+8,./server/src/services/queue/jobQueue.ts,144,BullMQ structures comment,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+9,./server/src/services/queue/jobQueue.ts,187,parseRedisUrl comment,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+10,./server/src/services/queue/jobQueue.ts,190,new BullQueue with defaults,DLQ_CONFIGURED_VERIFIED,,192-202,attempts:3 backoff:exponential removeOnComplete:3600000 removeOnFail:604800000 (7d DLQ),NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+11,./server/src/services/queue/jobQueue.ts,209,logger.info init,NOT_APPLICABLE,,,logger,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+12,./server/src/services/queue/jobQueue.ts,248,parseRedisUrl JSDoc,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+13,./server/src/services/queue/jobQueue.ts,292,BullMQ path comment,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+14,./server/src/services/queue/jobQueue.ts,327,logger.debug,NOT_APPLICABLE,,,logger,NONE,2026-05-28T15:55:00Z,subagent-cov20-8
+15,./server/src/services/queue/jobQueue.ts,331,logger.warn fallback,NOT_APPLICABLE,,,logger,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+16,./server/src/services/queue/jobQueue.ts,385,BullMQ worker path comment,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+17,./server/src/services/queue/jobQueue.ts,426,logger.debug completed,NOT_APPLICABLE,,,logger,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+18,./server/src/services/queue/jobQueue.ts,438,logger.error failed,NOT_APPLICABLE,,,logger,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+19,./server/src/services/queue/jobQueue.ts,447,logger.info registered,NOT_APPLICABLE,,,logger,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+20,./server/src/services/queue/jobQueue.ts,450,logger.warn worker fail,NOT_APPLICABLE,,,logger,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+21,./server/src/services/queue/jobQueue.ts,590,cron BullMQ comment,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+22,./server/src/services/queue/jobQueue.ts,757,BullMQ path comment,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+23,./server/src/services/queue/jobQueue.ts,763,logger.info drained,NOT_APPLICABLE,,,logger,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+24,./server/src/services/queue/jobQueue.ts,764,return 0 comment,NOT_APPLICABLE,,,return statement,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+25,./server/src/services/queue/jobQueue.ts,766,logger.warn drain error,NOT_APPLICABLE,,,logger,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+26,./server/src/services/queue/jobQueue.ts,794,close workers comment,NOT_APPLICABLE,,,comment,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+27,./server/src/services/queue/jobQueue.ts,840,JobQueueService singleton,NOT_APPLICABLE,,,new singleton,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
+28,./server/src/services/queue/jobQueue.ts,842,export default,NOT_APPLICABLE,,,export,NONE,2026-05-28T15:55:00Z,subagent-cov20-9
