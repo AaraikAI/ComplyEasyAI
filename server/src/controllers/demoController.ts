@@ -256,6 +256,18 @@ class DemoController {
         data: updateData,
       });
 
+      await prisma.auditLog.create({
+        data: {
+          action: 'demo_request.updated',
+          userId: req.user!.id,
+          organizationId: req.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ id, changes: Object.keys(updateData), previousStatus: existing.status, newStatus: status }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
       logger.info(`Demo request updated: ${id} - Status: ${status}`);
 
       // Dispatch status change webhook
@@ -293,6 +305,18 @@ class DemoController {
           status: 'scheduled',
           scheduledAt: new Date(scheduledAt),
           assignedTo,
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'demo_request.scheduled',
+          userId: req.user!.id,
+          organizationId: req.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ id, scheduledAt, assignedTo, email: demoRequest.email }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
         },
       });
 
@@ -335,6 +359,18 @@ class DemoController {
           status: 'converted',
           convertedToUserId: userId,
           convertedAt: new Date(),
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'demo_request.converted',
+          userId: req.user!.id,
+          organizationId: req.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ id, convertedToUserId: userId, email: demoRequest.email }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
         },
       });
 
@@ -453,6 +489,18 @@ class DemoController {
 
       await prisma.demoRequest.delete({
         where: { id },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'demo_request.deleted',
+          userId: req.user!.id,
+          organizationId: req.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ id, email: existing.email, status: existing.status }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
       });
 
       logger.info(`Demo request deleted: ${id}`);

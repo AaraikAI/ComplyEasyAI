@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { validateBody, validateMultipartBody, validateParams } from '../middleware/validate';
+import { AppError } from '../middleware/errorHandler';
 import {
   createGoalSchema,
   updateGoalSchema,
@@ -53,9 +54,50 @@ import multer from 'multer';
 import { requireAcosFeature, requireVisionaryFeature, requireFeature } from '../middleware/tierMiddleware';
 
 const router = Router();
+// Allowlist for aCOS evidence uploads — covers documents, images, audio, and
+// video that the evidence/multimodal pipelines accept. Reject any other MIME
+// to defend against malware/masquerade. Per audit COV-17 §5.5.17.
+const ACOS_ALLOWED_MIMES = new Set<string>([
+  // documents
+  'application/pdf',
+  'application/json',
+  'application/xml',
+  'text/plain',
+  'text/csv',
+  'text/xml',
+  'text/markdown',
+  // images
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  // audio
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/webm',
+  'audio/ogg',
+  'audio/mp4',
+  // video
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-msvideo',
+]);
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB max for audio/video/evidence files
+  fileFilter: (_req, file, cb) => {
+    if (ACOS_ALLOWED_MIMES.has(file.mimetype.toLowerCase())) {
+      cb(null, true);
+    } else {
+      cb(new AppError(`Unsupported file type: ${file.mimetype}`, 415));
+    }
+  },
 });
 
 // All routes require authentication and Growth+ tier for aCOS features

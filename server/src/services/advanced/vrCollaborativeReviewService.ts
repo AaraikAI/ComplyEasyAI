@@ -17,6 +17,10 @@ import crypto from 'crypto';
 import webrtcSignalingService, { WebRTCSessionConfig, WebRTCPeer } from './webrtcSignalingService';
 import { Prisma } from '../../generated/prisma/client';
 import { AppError } from '../../middleware/errorHandler';
+import cacheService from '../cache/redisCacheService';
+
+const VR_CACHE_NAMESPACE = 'vr-collab-review';
+const VR_SESSION_CONTENT_KEY = 'session-content';
 
 // VR Session Types
 export interface SessionSummary {
@@ -349,7 +353,54 @@ class VRCollaborativeReviewService {
   private voiceChatStates: Map<string, VoiceChatState> = new Map();
   private trainingProgress: Map<string, TrainingProgress> = new Map();
   private annotations: Map<string, VRAnnotation[]> = new Map();
-  
+  private contentPersistTimer: NodeJS.Timeout | null = null;
+
+  /**
+   * Debounced snapshot of user-content Maps (sessionChats, trainingProgress,
+   * annotations) to Redis so VR review content survives restarts.
+   */
+  private scheduleContentPersist(): void {
+    if (this.contentPersistTimer) return;
+    this.contentPersistTimer = setTimeout(() => {
+      this.contentPersistTimer = null;
+      this.persistSessionContent().catch(() => {});
+    }, 500);
+  }
+
+  private async persistSessionContent(): Promise<void> {
+    try {
+      await cacheService.set(
+        VR_SESSION_CONTENT_KEY,
+        {
+          chats: Array.from(this.sessionChats.entries()),
+          training: Array.from(this.trainingProgress.entries()),
+          annotations: Array.from(this.annotations.entries()),
+        },
+        { ttl: 0, namespace: VR_CACHE_NAMESPACE },
+      );
+    } catch (err) {
+      logger.warn('[VR Review] Failed to persist session content to cache', err);
+    }
+  }
+
+  private async hydrateSessionContent(): Promise<void> {
+    const snapshot = await cacheService.get<{
+      chats: Array<[string, ChatMessage[]]>;
+      training: Array<[string, TrainingProgress]>;
+      annotations: Array<[string, VRAnnotation[]]>;
+    }>(VR_SESSION_CONTENT_KEY, { namespace: VR_CACHE_NAMESPACE });
+    if (!snapshot) return;
+    for (const [id, chats] of snapshot.chats || []) {
+      this.sessionChats.set(id, chats);
+    }
+    for (const [id, progress] of snapshot.training || []) {
+      this.trainingProgress.set(id, progress);
+    }
+    for (const [id, anns] of snapshot.annotations || []) {
+      this.annotations.set(id, anns);
+    }
+  }
+
   // Session expiration settings (in milliseconds)
   private readonly SESSION_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours
   private readonly INACTIVE_SESSION_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours of inactivity
@@ -360,8 +411,8 @@ class VRCollaborativeReviewService {
    */
   async initialize(): Promise<void> {
     try {
-      logger.warn('[VR Review] Service initialized — in-memory VR session state (6 Maps: activeSessions, sessionParticipants, sessionChats, voiceChatStates, trainingProgress, annotations) cleared on restart. Any previously active sessions have been invalidated.');
-      logger.info('[VR Review] Initializing service - restoring sessions from database...');
+      await this.hydrateSessionContent();
+      logger.info('[VR Review] Initializing service - restoring sessions from database and cache...');
       await this.restoreSessionsFromDatabase();
       this.startCleanupJob();
       logger.info('[VR Review] Service initialized successfully');
@@ -1151,6 +1202,7 @@ class VRCollaborativeReviewService {
       const sessionAnnotations = this.annotations.get(sessionId) || [];
       sessionAnnotations.push(vrAnnotation);
       this.annotations.set(sessionId, sessionAnnotations);
+      this.scheduleContentPersist();
 
       // Add history entry
       vrAnnotation.history = [{
@@ -1351,6 +1403,7 @@ class VRCollaborativeReviewService {
         lastUpdated: new Date(),
       };
       this.trainingProgress.set(`${sessionId}_${userId}`, progress);
+      this.scheduleContentPersist();
 
       return {
         sessionId,
@@ -1388,6 +1441,7 @@ class VRCollaborativeReviewService {
       progress.lastUpdated = new Date();
 
       this.trainingProgress.set(progressKey, progress);
+      this.scheduleContentPersist();
 
       return progress;
     } catch (error) {
@@ -1884,6 +1938,7 @@ class VRCollaborativeReviewService {
       // Remove annotation
       const updatedAnnotations = annotations.filter(a => a.id !== annotationId);
       this.annotations.set(sessionId, updatedAnnotations);
+      this.scheduleContentPersist();
 
       await prisma.auditLog.create({
         data: {
@@ -2015,6 +2070,7 @@ class VRCollaborativeReviewService {
       const sessionAnnotations = this.annotations.get(sessionId) || [];
       sessionAnnotations.push(vrAnnotation);
       this.annotations.set(sessionId, sessionAnnotations);
+      this.scheduleContentPersist();
 
       await prisma.auditLog.create({
         data: {
@@ -2158,6 +2214,7 @@ class VRCollaborativeReviewService {
       const chatHistory = this.sessionChats.get(sessionId) || [];
       chatHistory.push(chatMessage);
       this.sessionChats.set(sessionId, chatHistory);
+      this.scheduleContentPersist();
 
       return chatMessage;
     } catch (error) {

@@ -277,10 +277,12 @@ router.get(
 
 // ============================================================================
 // CREATE TRAINING MODULE (Admin only)
+// Both '/' and '/modules' accepted; the frontend SecurityTrainingDashboard
+// posts to '/modules' so it's aliased to the same handler.
 // ============================================================================
 
 router.post(
-  '/',
+  ['/', '/modules'],
   authorize('admin'),
   validateBody(createSecurityTrainingSchema),
   asyncHandler(async (req: Request, res: Response) => {
@@ -468,17 +470,27 @@ router.delete(
 
 // ============================================================================
 // ASSIGN TRAINING TO SPECIFIC USERS
+// The frontend SecurityTrainingDashboard POSTs to '/assign' with a moduleId
+// in the body; older path '/:id/assign' is kept for backward compatibility.
 // ============================================================================
 
+// Frontend SecurityTrainingDashboard POSTs to '/assign' with moduleId in the
+// body; older clients use '/:id/assign'. Same handler covers both: when the
+// path doesn't include :id, we pull moduleId from the body before lookup.
 router.post(
-  '/:id/assign',
+  ['/:id/assign', '/assign'],
   authorize('admin', 'editor'),
   validateBody(assignTrainingSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
+      // Accept moduleId either as path param (/:id/assign) or in the body (/assign).
+      const moduleId = req.params.id || (req.body as any).moduleId;
+      if (!moduleId) {
+        throw new AppError('moduleId is required (path param or body)', 400);
+      }
       const training = await prisma.securityTraining.findFirst({
-        where: { id: req.params.id, organizationId: user.organizationId, status: 'Active' },
+        where: { id: moduleId, organizationId: user.organizationId, status: 'Active' },
       });
 
       if (!training) {

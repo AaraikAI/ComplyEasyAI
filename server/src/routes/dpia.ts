@@ -598,8 +598,9 @@ router.delete(
 // DPO CONSULTATION
 // ============================================================================
 
+// Frontend DPIAWorkflow.tsx calls /dpo-review — alias to the same handler.
 router.post(
-  '/:id/dpo-consultation',
+  ['/:id/dpo-consultation', '/:id/dpo-review'],
   validateBody(dpoConsultationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;

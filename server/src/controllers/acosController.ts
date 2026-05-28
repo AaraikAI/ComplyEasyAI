@@ -407,6 +407,8 @@ class ACOSController {
         authReq.user!.organizationId,
         (format as 'json' | 'csv' | 'pdf') || 'json'
       );
+      
+      await prisma.auditLog.create({ data: { action: 'evidence.analysis_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'evidence' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(report);
     } catch (error) {
       logger.error('Export analysis report error', error);
@@ -1209,6 +1211,8 @@ class ACOSController {
         results,
         format || 'json'
       );
+      
+      await prisma.auditLog.create({ data: { action: 'redteam.scan_results_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'redteam' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(exportData);
     } catch (error) {
       logger.error('Export scan results error', error);
@@ -1429,6 +1433,8 @@ class ACOSController {
         insights,
         format || 'json'
       );
+      
+      await prisma.auditLog.create({ data: { action: 'swarm.insights_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'swarm' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(exportData);
     } catch (error) {
       logger.error('Export insights error', error);
@@ -1926,6 +1932,8 @@ class ACOSController {
         (format as 'json' | 'csv') || 'json',
         filters ? JSON.parse(filters as string) : undefined
       );
+      
+      await prisma.auditLog.create({ data: { action: 'vr.annotations_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'vr' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(exportData);
     } catch (error) {
       logger.error('Export VR annotations error', error);
@@ -2441,6 +2449,8 @@ class ACOSController {
         startDate ? new Date(startDate as string) : undefined,
         endDate ? new Date(endDate as string) : undefined
       );
+      
+      await prisma.auditLog.create({ data: { action: 'swarm.metrics_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'swarm' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(exportData);
     } catch (error) {
       logger.error('Export swarm metrics error', error);
@@ -2692,6 +2702,8 @@ class ACOSController {
         authReq.user!.organizationId,
         (format as 'csv' | 'json') || 'json'
       );
+      
+      await prisma.auditLog.create({ data: { action: 'compliance.debt_report_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'debt' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(report);
     } catch (error: any) {
       logger.error('Export debt report error', error);
@@ -2885,8 +2897,21 @@ class ACOSController {
       const authReq = req as AuthRequest;
       const { sessionId } = req.params as Record<string, string>;
       const { reason } = req.body;
-      
+
       await jitAccessService.revokeSession(sessionId, reason || 'Manual revocation');
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'jit.session_revoked',
+          userId: authReq.user!.id,
+          organizationId: authReq.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ sessionId, reason: reason || 'Manual revocation' }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
       res.json({ success: true });
     } catch (error: any) {
       logger.error('Revoke JIT session error', error);
@@ -2996,6 +3021,18 @@ class ACOSController {
         authReq.user!.id,
         authReq.user!.organizationId
       );
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'jit.access_approved',
+          userId: authReq.user!.id,
+          organizationId: authReq.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ requestId, sessionId: (session as any)?.id }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
 
       res.json({ success: true, session });
     } catch (error: any) {
