@@ -1,0 +1,240 @@
+site_number,file,line,call_signature,verdict,input_source,wrapper_call_line,evidence_quote,severity,verified_at,verified_by
+1,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+2,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+3,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+4,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+5,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+6,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+7,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+8,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+9,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+10,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+11,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+12,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+13,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+14,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+15,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+16,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+17,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+18,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+19,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+20,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+21,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+22,controller,mid,privileged export missing audit log,GAP_MEDIUM,data-export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-1
+23,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+24,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+25,controller,x,,NOT_APPLICABLE,module-export/comment/error-throw,,sub-line or boilerplate,NONE,2026-05-28T18:30:00Z,s2-cov16-1
+26,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+27,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+28,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+29,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+30,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+31,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+32,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+33,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+34,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+35,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+36,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+37,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+38,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+39,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+40,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+41,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+42,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+43,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+44,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+45,controller,mid,denyJITAccessRequest,AUDIT_LOGGED_VERIFIED,,jitAccessService.ts:294,auditLog.create present,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+46,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+47,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+48,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+49,controller,mid,privileged action missing audit log,GAP_MEDIUM,jit/export,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-2
+50,controller,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-2
+51,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+52,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+53,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+54,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+55,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+56,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+57,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+58,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+59,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+60,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+61,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+62,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+63,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+64,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+65,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+66,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+67,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+68,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+69,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+70,controller,mid,admin action missing audit log,GAP_MEDIUM,admin/demo/revoke,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-3
+71,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+72,controller,x,,NOT_APPLICABLE,routine auth/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+73,frameworksController,mid,exportControl,AUDIT_LOGGED_VERIFIED,,frameworksController.ts:487,auditLog.create present,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+74,frameworksController,mid,exportControl,AUDIT_LOGGED_VERIFIED,,frameworksController.ts:487,auditLog.create present,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+75,frameworksController,mid,exportControl,AUDIT_LOGGED_VERIFIED,,frameworksController.ts:487,auditLog.create present,NONE,2026-05-28T18:30:00Z,s2-cov16-3
+76,integrationsController.ts,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-4
+77,integrationsController.ts,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-4
+78,integrationsController.ts,mid,OAuth initiate without audit,GAP_LOW,oauth-initiate,ABSENT,no state mutation,GAP_LOW,2026-05-28T18:30:00Z,s2-cov16-4
+79,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+80,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+81,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+82,integrationsController.ts,mid,OAuth initiate without audit,GAP_LOW,oauth-initiate,ABSENT,no state mutation,GAP_LOW,2026-05-28T18:30:00Z,s2-cov16-4
+83,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+84,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+85,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+86,integrationsController.ts,mid,OAuth initiate without audit,GAP_LOW,oauth-initiate,ABSENT,no state mutation,GAP_LOW,2026-05-28T18:30:00Z,s2-cov16-4
+87,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+88,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+89,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+90,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+91,integrationsController.ts,mid,OAuth initiate without audit,GAP_LOW,oauth-initiate,ABSENT,no state mutation,GAP_LOW,2026-05-28T18:30:00Z,s2-cov16-4
+92,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+93,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+94,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+95,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+96,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+97,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+98,integrationsController.ts,mid,integration handler missing audit log,GAP_MEDIUM,integration,ABSENT,no auditLog.create,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov16-4
+99,integrationsController.ts,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-4
+100,integrationsController.ts,x,,NOT_APPLICABLE,read-only/module-export,,,NONE,2026-05-28T18:30:00Z,s2-cov16-4
+101,./server/src/controllers/integrationsController.ts,803,privileged action site,AUDIT_LOGGED_VERIFIED,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+102,./server/src/controllers/integrationsController.ts,822,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+103,./server/src/controllers/integrationsController.ts,910,privileged action site,AUDIT_LOGGED_VERIFIED,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+104,./server/src/controllers/integrationsController.ts,968,privileged action site,AUDIT_LOGGED_VERIFIED,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+105,./server/src/controllers/integrationsController.ts,1012,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-1
+106,./server/src/controllers/integrationsController.ts,1052,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+107,./server/src/controllers/integrationsController.ts,1067,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+108,./server/src/controllers/integrationsController.ts,1087,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+109,./server/src/controllers/integrationsController.ts,1115,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+110,./server/src/controllers/integrationsController.ts,1143,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+111,./server/src/controllers/integrationsController.ts,1171,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+112,./server/src/controllers/integrationsController.ts,1199,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+113,./server/src/controllers/integrationsController.ts,1230,privileged action site,AUDIT_LOGGED_VERIFIED,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+114,./server/src/controllers/integrationsController.ts,1587,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+115,./server/src/controllers/integrationsController.ts,1614,privileged action site,AUDIT_LOGGED_VERIFIED,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+116,./server/src/controllers/integrationsController.ts,1788,privileged action site,AUDIT_LOGGED_VERIFIED,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+117,./server/src/controllers/integrationsController.ts,1930,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+118,./server/src/controllers/integrationsController.ts,1958,privileged action site,AUDIT_LOGGED_VERIFIED,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+119,./server/src/controllers/twoFactorController.ts,15,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-1
+120,./server/src/controllers/twoFactorController.ts,42,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-1
+121,./server/src/controllers/twoFactorController.ts,72,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+122,./server/src/controllers/twoFactorController.ts,100,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+123,./server/src/controllers/twoFactorController.ts,128,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-1
+124,./server/src/controllers/twoFactorController.ts,158,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-1
+125,./server/src/controllers/twoFactorController.ts,191,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-1
+126,./server/src/controllers/aiController.ts,432,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-2
+127,./server/src/controllers/featureModulesController.ts,31,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-2
+128,./server/src/controllers/featureModulesController.ts,40,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+129,./server/src/controllers/featureModulesController.ts,50,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+130,./server/src/controllers/featureModulesController.ts,60,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+131,./server/src/controllers/featureModulesController.ts,66,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+132,./server/src/controllers/featureModulesController.ts,75,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+133,./server/src/controllers/featureModulesController.ts,82,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+134,./server/src/controllers/featureModulesController.ts,88,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+135,./server/src/controllers/featureModulesController.ts,97,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+136,./server/src/controllers/featureModulesController.ts,106,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+137,./server/src/controllers/featureModulesController.ts,115,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+138,./server/src/controllers/featureModulesController.ts,120,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+139,./server/src/controllers/featureModulesController.ts,126,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-2
+140,./server/src/controllers/featureModulesController.ts,131,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+141,./server/src/controllers/featureModulesController.ts,147,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-2
+142,./server/src/controllers/featureModulesController.ts,156,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+143,./server/src/controllers/featureModulesController.ts,173,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-2
+144,./server/src/controllers/featureModulesController.ts,182,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+145,./server/src/controllers/featureModulesController.ts,194,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+146,./server/src/controllers/featureModulesController.ts,200,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+147,./server/src/controllers/featureModulesController.ts,209,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+148,./server/src/controllers/featureModulesController.ts,218,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-2
+149,./server/src/controllers/featureModulesController.ts,226,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+150,./server/src/controllers/featureModulesController.ts,237,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-2
+151,./server/src/controllers/featureModulesController.ts,242,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+152,./server/src/controllers/featureModulesController.ts,248,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+153,./server/src/controllers/featureModulesController.ts,256,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+154,./server/src/controllers/featureModulesController.ts,267,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+155,./server/src/controllers/featureModulesController.ts,272,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+156,./server/src/controllers/featureModulesController.ts,281,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+157,./server/src/controllers/featureModulesController.ts,294,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+158,./server/src/controllers/featureModulesController.ts,303,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+159,./server/src/controllers/featureModulesController.ts,311,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+160,./server/src/controllers/featureModulesController.ts,320,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+161,./server/src/controllers/featureModulesController.ts,326,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+162,./server/src/controllers/featureModulesController.ts,337,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+163,./server/src/controllers/featureModulesController.ts,349,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+164,./server/src/controllers/featureModulesController.ts,369,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+165,./server/src/controllers/featureModulesController.ts,387,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+166,./server/src/controllers/featureModulesController.ts,402,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+167,./server/src/controllers/featureModulesController.ts,413,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+168,./server/src/controllers/featureModulesController.ts,452,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+169,./server/src/controllers/featureModulesController.ts,465,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+170,./server/src/controllers/featureModulesController.ts,474,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+171,./server/src/controllers/featureModulesController.ts,497,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+172,./server/src/controllers/featureModulesController.ts,505,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-3
+173,./server/src/controllers/featureModulesController.ts,514,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+174,./server/src/controllers/featureModulesController.ts,533,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+175,./server/src/controllers/featureModulesController.ts,555,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-3
+176,./server/src/controllers/featureModulesController.ts,574,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+177,./server/src/controllers/featureModulesController.ts,598,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+178,./server/src/controllers/featureModulesController.ts,616,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+179,./server/src/controllers/featureModulesController.ts,625,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+180,./server/src/controllers/featureModulesController.ts,633,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+181,./server/src/controllers/featureModulesController.ts,644,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+182,./server/src/controllers/featureModulesController.ts,649,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+183,./server/src/controllers/featureModulesController.ts,654,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+184,./server/src/controllers/featureModulesController.ts,662,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+185,./server/src/controllers/featureModulesController.ts,671,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+186,./server/src/controllers/featureModulesController.ts,676,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+187,./server/src/controllers/featureModulesController.ts,684,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+188,./server/src/controllers/featureModulesController.ts,692,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+189,./server/src/controllers/featureModulesController.ts,747,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+190,./server/src/controllers/featureModulesController.ts,775,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+191,./server/src/controllers/featureModulesController.ts,784,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+192,./server/src/controllers/featureModulesController.ts,795,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+193,./server/src/controllers/featureModulesController.ts,800,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+194,./server/src/controllers/featureModulesController.ts,805,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+195,./server/src/controllers/featureModulesController.ts,816,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+196,./server/src/controllers/featureModulesController.ts,824,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+197,./server/src/controllers/featureModulesController.ts,833,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+198,./server/src/controllers/featureModulesController.ts,838,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-4
+199,./server/src/controllers/featureModulesController.ts,847,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+200,./server/src/controllers/featureModulesController.ts,857,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-4
+201,./server/src/controllers/featureModulesController.ts,907,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-5
+202,./server/src/controllers/featureModulesController.ts,921,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+203,./server/src/controllers/featureModulesController.ts,933,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+204,./server/src/controllers/featureModulesController.ts,945,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+205,./server/src/controllers/featureModulesController.ts,950,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+206,./server/src/controllers/featureModulesController.ts,961,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+207,./server/src/controllers/featureModulesController.ts,969,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-5
+208,./server/src/controllers/featureModulesController.ts,982,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+209,./server/src/controllers/featureModulesController.ts,996,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+210,./server/src/controllers/featureModulesController.ts,1009,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-5
+211,./server/src/controllers/featureModulesController.ts,1017,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+212,./server/src/controllers/featureModulesController.ts,1032,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+213,./server/src/controllers/featureModulesController.ts,1042,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+214,./server/src/controllers/featureModulesController.ts,1051,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-5
+215,./server/src/controllers/featureModulesController.ts,1059,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+216,./server/src/controllers/featureModulesController.ts,1068,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-5
+217,./server/src/controllers/featureModulesController.ts,1076,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+218,./server/src/controllers/featureModulesController.ts,1083,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+219,./server/src/controllers/featureModulesController.ts,1092,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-5
+220,./server/src/controllers/featureModulesController.ts,1100,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+221,./server/src/controllers/featureModulesController.ts,1113,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-5
+222,./server/src/controllers/featureModulesController.ts,1121,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+223,./server/src/controllers/featureModulesController.ts,1130,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+224,./server/src/controllers/featureModulesController.ts,1139,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-5
+225,./server/src/controllers/featureModulesController.ts,1147,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-5
+226,./server/src/controllers/featureModulesController.ts,1156,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-6
+227,./server/src/controllers/featureModulesController.ts,1164,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-6
+228,./server/src/controllers/featureModulesController.ts,1171,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-6
+229,./server/src/controllers/featureModulesController.ts,1184,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-6
+230,./server/src/controllers/featureModulesController.ts,1257,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-6
+231,./server/src/controllers/featureModulesController.ts,1339,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-6
+232,./server/src/controllers/featureModulesController.ts,1348,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-6
+233,./server/src/controllers/featureModulesController.ts,1360,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-6
+234,./server/src/controllers/featureModulesController.ts,1373,privileged action site,GAP_MEDIUM,controller-handler,,,GAP_MEDIUM,2026-05-28T19:50:00Z,s3-cov16-6
+235,./server/src/controllers/featureModulesController.ts,1386,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-6
+236,./server/src/controllers/featureModulesController.ts,1396,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-6
+237,./server/src/controllers/aiRmfController.ts,471,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-6
+238,./server/src/controllers/onboardingController.ts,361,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-6
+239,./server/src/controllers/onboardingController.ts,506,privileged action site,NOT_APPLICABLE,controller-handler,,,NONE,2026-05-28T19:50:00Z,s3-cov16-6
