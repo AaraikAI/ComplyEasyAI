@@ -417,6 +417,18 @@ class WebhookController {
         data: { revokedAt: new Date() },
       });
 
+      await prisma.auditLog.create({
+        data: {
+          action: 'api_key.revoked',
+          userId: authReq.user!.id,
+          organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ keyId }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
       res.json({ success: true, message: 'API key revoked' });
     } catch (error: unknown) {
       logger.error('Revoke API key error', error);

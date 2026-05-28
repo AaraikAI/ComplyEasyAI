@@ -5,6 +5,7 @@
  * assign roles to users, and manage role-permission mappings.
  */
 
+import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
@@ -533,6 +534,108 @@ router.delete(
       logger.error('Error removing role from user:', error);
       throw new AppError(error instanceof Error ? error.message : 'Failed to remove role assignment', 500);
     }
+  })
+);
+
+// ============================================================================
+// ASSIGN USER TO ROLE (alias matching frontend RoleManager.tsx contract)
+// POST /:id/users — body: { userId }
+// ============================================================================
+
+router.post(
+  '/:id/users',
+  authorize('admin'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as AuthRequest).user!;
+    const { userId } = req.body as { userId?: string };
+    const roleId = req.params.id;
+
+    if (!userId) {
+      throw new AppError('userId is required', 400);
+    }
+
+    const role = await prisma.customRole.findFirst({
+      where: { id: roleId, organizationId: user.organizationId },
+    });
+    if (!role) {
+      throw new AppError('Role not found in this organization', 404);
+    }
+
+    const targetUser = await prisma.user.findFirst({
+      where: { id: userId, organizationId: user.organizationId },
+    });
+    if (!targetUser) {
+      throw new AppError('User not found in this organization', 404);
+    }
+
+    const existing = await prisma.userRole.findFirst({ where: { userId, roleId } });
+    if (existing) {
+      throw new AppError('User is already assigned to this role', 409);
+    }
+
+    const assignment = await prisma.userRole.create({
+      data: { userId, roleId },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        role: { select: { id: true, name: true } },
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'role.user_assigned',
+        userId: user.id,
+        organizationId: user.organizationId,
+        hash: crypto.randomUUID(),
+        details: JSON.stringify({ targetUserId: userId, roleId }),
+        ipAddress: req.ip || undefined,
+        userAgent: req.headers['user-agent'] || undefined,
+      },
+    });
+
+    res.status(201).json({ status: 'success', data: assignment });
+  })
+);
+
+// ============================================================================
+// REMOVE USER FROM ROLE (alias matching frontend RoleManager.tsx contract)
+// DELETE /:id/users/:userId
+// ============================================================================
+
+router.delete(
+  '/:id/users/:userId',
+  authorize('admin'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as AuthRequest).user!;
+    const { id: roleId, userId } = req.params;
+
+    const role = await prisma.customRole.findFirst({
+      where: { id: roleId, organizationId: user.organizationId },
+    });
+    if (!role) {
+      throw new AppError('Role not found in this organization', 404);
+    }
+
+    const assignment = await prisma.userRole.findFirst({ where: { userId, roleId } });
+    if (!assignment) {
+      throw new AppError('Role assignment not found', 404);
+    }
+
+    await prisma.userRole.delete({ where: { id: assignment.id } });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'role.user_unassigned',
+        userId: user.id,
+        organizationId: user.organizationId,
+        hash: crypto.randomUUID(),
+        details: JSON.stringify({ targetUserId: userId, roleId }),
+        ipAddress: req.ip || undefined,
+        userAgent: req.headers['user-agent'] || undefined,
+      },
+    });
+
+    res.json({ status: 'success', data: { message: 'Role assignment removed', userId, roleId } });
   })
 );
 

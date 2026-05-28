@@ -387,6 +387,18 @@ class ControlMappingsController {
         `"${m.sourceControl.framework.name || ''}","${m.sourceControl.name || ''}","${m.targetControl.framework.name || ''}","${m.targetControl.name || ''}","${m.mappingType || ''}","${m.confidence || ''}"`
       ).join('\n');
 
+      await prisma.auditLog.create({
+        data: {
+          action: 'control_mappings.exported',
+          userId: (req as AuthRequest).user!.id,
+          organizationId: (req as AuthRequest).user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ recordCount: mappings.length, format: 'csv' }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=control-mappings.csv');
       res.send(csvHeader + csvRows);

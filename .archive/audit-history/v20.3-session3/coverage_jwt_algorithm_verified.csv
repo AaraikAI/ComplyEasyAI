@@ -1,0 +1,7 @@
+site_number,file,line,call_signature,verdict,input_source,wrapper_call_line,evidence_quote,severity,verified_at,verified_by
+1,./server/src/controllers/authController.ts,843,jwt.verify(twoFactorToken; config.jwt.secret),GAP_HIGH,2fa-login-token-verify,ABSENT,jwt.verify without algorithms option — allows alg:none downgrade,GAP_HIGH,2026-05-28T15:55:00Z,subagent-cov9-4
+2,./server/src/graphql/index.ts,131,jwt.verify(token; config.jwt.secret),GAP_HIGH,graphql-auth,ABSENT,jwt.verify without algorithms option,GAP_HIGH,2026-05-28T15:55:00Z,subagent-cov9-4
+3,./server/src/middleware/auth.ts,80,jwt.verify(token; config.jwt.secret),GAP_HIGH,auth-middleware,ABSENT,jwt.verify without algorithms option,GAP_HIGH,2026-05-28T15:55:00Z,subagent-cov9-4
+4,./server/src/middleware/auth.ts,215,jwt.verify(token; config.jwt.refreshSecret),GAP_HIGH,refresh-token-verify,ABSENT,jwt.verify without algorithms option,GAP_HIGH,2026-05-28T15:55:00Z,subagent-cov9-4
+5,./server/src/services/advanced/webrtcSignalingService.ts,474,jwt.verify(token; config.jwt.secret),GAP_HIGH,websocket-auth-webrtc,ABSENT,jwt.verify without algorithms option,GAP_HIGH,2026-05-28T15:55:00Z,subagent-cov9-4
+6,./server/src/services/websocketService.ts,73,jwt.verify(token; config.jwt.secret),GAP_HIGH,websocket-auth,ABSENT,jwt.verify without algorithms option,GAP_HIGH,2026-05-28T15:55:00Z,subagent-cov9-4

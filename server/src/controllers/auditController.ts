@@ -169,6 +169,19 @@ class AuditController {
         orderBy: { timestamp: 'desc' },
       });
 
+      // Audit the export itself: meta-auditing per COV-16.
+      await prisma.auditLog.create({
+        data: {
+          action: 'audit_log.exported',
+          userId: authReq.user!.id,
+          organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ format, recordCount: logs.length, startDate, endDate }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
       if (format === 'csv') {
         const csvHeader = 'ID,Timestamp,Action,User ID,User Name,User Email,IP Address,Details\n';
         const csvRows = logs.map((log) =>

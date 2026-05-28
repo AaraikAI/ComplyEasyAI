@@ -24,6 +24,7 @@ import twoFactorRoutes from './routes/twoFactor';
 import risksRoutes from './routes/risks';
 import frameworksRoutes from './routes/frameworks';
 import aiRoutes from './routes/ai';
+import contractsRoutes from './routes/contracts';
 import billingRoutes from './routes/billing';
 import integrationsRoutes from './routes/integrations';
 import teamRoutes from './routes/team';
@@ -564,6 +565,7 @@ app.use('/api/2fa', authLimiter, twoFactorRoutes);
 app.use('/api/risks', apiLimiter, risksRoutes);
 app.use('/api/frameworks', apiLimiter, frameworksRoutes);
 app.use('/api/ai', apiLimiter, aiRoutes); // Mount-level apiLimiter + internal AI-specific limiter
+app.use('/api/contracts', apiLimiter, contractsRoutes); // Contract analyzer text-extraction endpoint
 app.use('/api/billing', apiLimiter, billingRoutes);
 app.use('/api/integrations', apiLimiter, integrationsRoutes);
 app.use('/api/eu-regulations', apiLimiter, euRegulationsRoutes);
