@@ -15,6 +15,11 @@ import logger from '../../config/logger';
 import crypto from 'crypto';
 import { AppError } from '../../middleware/errorHandler';
 import mqttService from './mqttService';
+import cacheService from '../cache/redisCacheService';
+import { isUrlSafe } from '../../utils/urlValidator';
+
+const PHYSICAL_AI_CACHE_NAMESPACE = 'physical-ai';
+const DEVICE_POLICIES_KEY = 'device-policies';
 
 export interface IoTDevice {
   id: string;
@@ -96,12 +101,46 @@ export interface AttestationEntry {
 }
 
 class PhysicalAIService {
+  // Mirrored to cacheService (Redis-backed in prod) so any runtime-added policies
+  // survive restarts. Follow-up: migrate to a `DeviceCompliancePolicy` Prisma model
+  // for org-scoped persistence.
   private devicePolicies: Map<string, DeviceCompliancePolicy> = new Map();
   private deviceHealth: Map<string, DeviceHealthStatus> = new Map();
   private healthCheckInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     this.initializeDefaultPolicies();
+    this.hydrateDevicePolicies().catch((err) => {
+      logger.warn('[PhysicalAI] Failed to hydrate device policies from cache', err);
+    });
+  }
+
+  private async persistDevicePolicies(): Promise<void> {
+    try {
+      await cacheService.set(
+        DEVICE_POLICIES_KEY,
+        Array.from(this.devicePolicies.entries()),
+        { ttl: 0, namespace: PHYSICAL_AI_CACHE_NAMESPACE },
+      );
+    } catch (err) {
+      logger.warn('[PhysicalAI] Failed to persist device policies to cache', err);
+    }
+  }
+
+  private async hydrateDevicePolicies(): Promise<void> {
+    const entries = await cacheService.get<Array<[string, DeviceCompliancePolicy]>>(
+      DEVICE_POLICIES_KEY,
+      { namespace: PHYSICAL_AI_CACHE_NAMESPACE },
+    );
+    if (!entries || !Array.isArray(entries)) {
+      // Nothing cached yet — persist the defaults so they survive future restarts.
+      await this.persistDevicePolicies();
+      return;
+    }
+    for (const [id, policy] of entries) {
+      this.devicePolicies.set(id, policy);
+    }
+    logger.info(`[PhysicalAI] Restored ${entries.length} device policies from cache.`);
   }
 
   /**
@@ -2716,16 +2755,20 @@ class PhysicalAIService {
           : null;
         
         if (nvdUrl) {
-          const response = await axios.get(nvdUrl, {
-            timeout: 5000,
-            headers: nvdApiKey ? { 'apiKey': nvdApiKey } : {},
-          });
-          
-          // Extract latest affected version from CVE data
-          if (response.data?.vulnerabilities?.length > 0) {
-            const cve = response.data.vulnerabilities[0].cve;
-            // Note: CVE data doesn't directly provide latest firmware, but indicates if current version has vulnerabilities
-            logger.debug(`[Physical AI] Found CVE data for ${deviceType}`);
+          if (!isUrlSafe(nvdUrl)) {
+            logger.warn('[Physical AI] Rejected unsafe NVD URL', { deviceType });
+          } else {
+            const response = await axios.get(nvdUrl, {
+              timeout: 5000,
+              headers: nvdApiKey ? { 'apiKey': nvdApiKey } : {},
+            });
+
+            // Extract latest affected version from CVE data
+            if (response.data?.vulnerabilities?.length > 0) {
+              const cve = response.data.vulnerabilities[0].cve;
+              // Note: CVE data doesn't directly provide latest firmware, but indicates if current version has vulnerabilities
+              logger.debug(`[Physical AI] Found CVE data for ${deviceType}`);
+            }
           }
         }
       } catch (nvdError: any) {

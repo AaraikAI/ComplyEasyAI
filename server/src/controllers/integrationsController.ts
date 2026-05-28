@@ -10,6 +10,7 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import { Prisma } from '../generated/prisma/client';
 import { encryptField, decryptField } from '../utils/credentialEncryption';
+import { isUrlSafe } from '../utils/urlValidator';
 
 // Import integration services
 import googleService from '../services/integrations/googleService';
@@ -814,7 +815,12 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
     let azureAccessToken: string | null = null;
     try {
       const axios = (await import('axios')).default;
-      const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+      const safeTenantId = encodeURIComponent(tenantId);
+      const safeSubscriptionId = encodeURIComponent(subscriptionId);
+      const tokenUrl = `https://login.microsoftonline.com/${safeTenantId}/oauth2/v2.0/token`;
+      if (!isUrlSafe(tokenUrl)) {
+        throw new AppError('Azure tenant ID resolved to an unsafe URL', 400);
+      }
       const tokenResponse = await axios.post(tokenUrl, new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
@@ -831,8 +837,12 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
       }
 
       // Verify subscription access with the management API
+      const subUrl = `https://management.azure.com/subscriptions/${safeSubscriptionId}?api-version=2022-12-01`;
+      if (!isUrlSafe(subUrl)) {
+        throw new AppError('Azure subscription ID resolved to an unsafe URL', 400);
+      }
       const subResponse = await axios.get(
-        `https://management.azure.com/subscriptions/${subscriptionId}?api-version=2022-12-01`,
+        subUrl,
         {
           headers: { Authorization: `Bearer ${azureAccessToken}` },
           timeout: 15000,

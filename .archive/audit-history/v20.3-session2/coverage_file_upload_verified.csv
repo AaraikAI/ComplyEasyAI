@@ -1,0 +1,76 @@
+site_number,file,line,call_signature,verdict,input_source,wrapper_call_line,evidence_quote,severity,verified_at,verified_by
+1,frameworksController.ts,x,,NOT_APPLICABLE,AppError-throw,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+2,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+3,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+4,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+5,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+6,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+7,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+8,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+9,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+10,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+11,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+12,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+13,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+14,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+15,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+16,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+17,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+18,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+19,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+20,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+21,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+22,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+23,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+24,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+25,generated/prisma/client/index.d.ts,x,,NOT_APPLICABLE,prisma-generated-type,,not multer call site,NONE,2026-05-28T18:30:00Z,s2-cov17-1
+26,./server/src/generated/prisma/client/index.d.ts,70710,prisma.fileUpload,NOT_APPLICABLE,prisma-type,,,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+27,./server/src/generated/prisma/client/index.d.ts,70727,prisma.fileUpload,NOT_APPLICABLE,prisma-type,,,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+28,./server/src/generated/prisma/client/index.d.ts,70737,prisma.fileUpload,NOT_APPLICABLE,prisma-type,,,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+29,./server/src/generated/prisma/client/index.d.ts,70757,prisma.fileUpload,NOT_APPLICABLE,prisma-type,,,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+30,./server/src/generated/prisma/client/index.d.ts,70779,prisma.fileUpload,NOT_APPLICABLE,prisma-type,,,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+31,./server/src/routes/acos.ts,56,multer config,GAP_MEDIUM,multer.memoryStorage,ABSENT,fileSize 100MB but NO fileFilter,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+32,./server/src/routes/acos.ts,93,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+33,./server/src/routes/acos.ts,94,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+34,./server/src/routes/acos.ts,95,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+35,./server/src/routes/acos.ts,96,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+36,./server/src/routes/acos.ts,98,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+37,./server/src/routes/acos.ts,100,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+38,./server/src/routes/acos.ts,102,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+39,./server/src/routes/acos.ts,106,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+40,./server/src/routes/acos.ts,107,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+41,./server/src/routes/acos.ts,111,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+42,./server/src/routes/acos.ts,169,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+43,./server/src/routes/acos.ts,170,upload.single from acos.ts:56,GAP_MEDIUM,multer-acos-line56,ABSENT,inherits acos.ts:56 config (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+44,./server/src/routes/auth.ts,23,multer 2MB + MIME allowlist,SIZE_AND_MIME_VERIFIED,,23,2MB + jpeg/png/gif/webp,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+45,./server/src/routes/auth.ts,32,upload.single('avatar'),SIZE_AND_MIME_VERIFIED,,23,uses auth.ts:23 multer,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+46,./server/src/routes/branding.ts,23,multer 5MB + MIME allowlist,SIZE_AND_MIME_VERIFIED,,23,5MB + png/jpeg/svg/ico/webp,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+47,./server/src/routes/branding.ts,214,upload.single('logo'),SIZE_AND_MIME_VERIFIED,,23,uses branding.ts:23 multer,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+48,./server/src/routes/branding.ts,273,upload.single('favicon'),SIZE_AND_MIME_VERIFIED,,23,uses branding.ts:23 multer,NONE,2026-05-28T18:30:00Z,s2-cov17-2
+49,./server/src/routes/frameworks.ts,28,multer 50MB no MIME,GAP_MEDIUM,multer.memoryStorage,ABSENT,fileSize 50MB but NO fileFilter,GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+50,./server/src/routes/frameworks.ts,218,upload.single('file'),GAP_MEDIUM,multer-frameworks-line28,ABSENT,inherits frameworks.ts:28 (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-2
+51,./server/src/routes/frameworks.ts,222,smart-upload upload.single,GAP_MEDIUM,multer-frameworks-line28,ABSENT,inherits frameworks.ts:28 (no MIME filter),GAP_MEDIUM,2026-05-28T18:30:00Z,s2-cov17-3
+52,./server/src/routes/v2/batchRoutes.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+53,./server/src/routes/v2/batchRoutes.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+54,./server/src/routes/v2/batchRoutes.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+55,./server/src/services/advanced/graphNeuralNetworkService.ts,x,tf.tensor.array(),NOT_APPLICABLE,tensorflow-tensor,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+56,./server/src/services/advanced/graphNeuralNetworkService.ts,x,tf.tensor.array(),NOT_APPLICABLE,tensorflow-tensor,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+57,./server/src/services/advanced/graphNeuralNetworkService.ts,x,tf.tensor.array(),NOT_APPLICABLE,tensorflow-tensor,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+58,./server/src/services/aws/s3ClientV3.ts,209,upload.done after validateFile,SIZE_AND_MIME_VERIFIED,,182,validateFile (size+MIME) before upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+59,./server/src/services/aws/s3ClientV3.ts,213,prisma.fileUpload.create after validateFile,SIZE_AND_MIME_VERIFIED,,182,validateFile gated,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+60,./server/src/services/aws/s3ClientV3.ts,308,deleteFileById,NOT_APPLICABLE,db-read,,not upload entry,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+61,./server/src/services/aws/s3ClientV3.ts,318,prisma.fileUpload.delete,NOT_APPLICABLE,db-delete,,not upload entry,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+62,./server/src/services/s3Service.ts,122,prisma.fileUpload.create after validateFile,SIZE_AND_MIME_VERIFIED,,96,validateFile gated,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+63,./server/src/services/s3Service.ts,191,deleteFile findFirst,NOT_APPLICABLE,db-read,,not upload entry,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+64,./server/src/services/s3Service.ts,209,fileUpload.delete,NOT_APPLICABLE,db-delete,,not upload entry,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+65,./server/src/services/s3Service.ts,222,listFiles findMany,NOT_APPLICABLE,db-read,,not upload entry,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+66,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+67,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+68,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+69,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+70,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+71,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+72,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+73,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+74,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3
+75,./server/src/validators/acosSchemas.ts,x,Joi.array schema,NOT_APPLICABLE,joi-array-schema,,not file upload,NONE,2026-05-28T18:30:00Z,s2-cov17-3

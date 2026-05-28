@@ -1,0 +1,21 @@
+site_number,file,line,call_signature,verdict,input_source,wrapper_call_line,evidence_quote,severity,verified_at,verified_by
+1,server/src/routes/v1/index.ts,28,import webhooksRoutes,NOT_APPLICABLE,import statement,N/A,import line,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+2,server/src/routes/v1/index.ts,71,v1Router.use('/webhooks'),NOT_APPLICABLE,route mount,N/A,mount statement,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+3,server/src/routes/webhooks.ts,13,import webhookController,NOT_APPLICABLE,import statement,N/A,import line,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+4,server/src/routes/webhooks.ts,23,import webhookSchemas,NOT_APPLICABLE,import statement,N/A,import line,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+5,server/src/routes/webhooks.ts,264,router.get(/events/history),NOT_APPLICABLE,outbound event history read,N/A,authenticated read endpoint,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+6,server/src/routes/webhooks.ts,267,router.post(/events/:id/retry),NOT_APPLICABLE,authenticated admin retry,N/A,authorize('admin') guarded,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+7,server/src/routes/security.ts,92,router.post(/ci-cd/webhook),HMAC_VERIFIED,inbound webhook,server/src/services/advanced/complianceAsCodeService.ts:412,verifyWebhookSignature(provider; payload; signature) throws AppError(400) on mismatch,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+8,server/src/routes/ticketing.ts,1330,comment line,NOT_APPLICABLE,comment,N/A,// POST /webhook/:provider,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+9,server/src/routes/ticketing.ts,1334,router.post(/webhook/:provider),GAP_HIGH,inbound webhook,ABSENT,trusts request body; orgId from header/query; calls jiraService.processWebhookEvent without HMAC verification,GAP_HIGH,2026-05-28T15:55:00Z,subagent-cov8-3
+10,server/src/routes/billing.ts,22,router.post(/webhook billingController.webhook),HMAC_VERIFIED,inbound webhook,server/src/services/stripeService.ts:786,stripe.webhooks.constructEvent(payload; signature; config.stripe.webhookSecret),NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+11,server/src/controllers/billingController.ts,144,webhookService.dispatchEvent,NOT_APPLICABLE,outbound delivery,N/A,outbound dispatch with HMAC sign in webhookService,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+12,server/src/controllers/billingController.ts,304,webhookService.dispatchEvent,NOT_APPLICABLE,outbound delivery,N/A,outbound dispatch,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+13,server/src/controllers/billingController.ts,338,webhookService.dispatchEvent,NOT_APPLICABLE,outbound delivery,N/A,outbound dispatch,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+14,server/src/controllers/billingController.ts,371,webhookService.dispatchEvent,NOT_APPLICABLE,outbound delivery,N/A,outbound dispatch,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+15,server/src/controllers/billingController.ts,413,webhookService.dispatchEvent,NOT_APPLICABLE,outbound delivery,N/A,outbound dispatch (addon),NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+16,server/src/controllers/billingController.ts,444,webhookService.dispatchEvent,NOT_APPLICABLE,outbound delivery,N/A,outbound dispatch (addon-removed),NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+17,server/src/controllers/billingController.ts,585,webhookService.dispatchEvent,NOT_APPLICABLE,outbound delivery,N/A,outbound dispatch (feature),NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+18,server/src/controllers/securityController.ts,1275,webhookUrl config string,NOT_APPLICABLE,config endpoint (URL generation),N/A,URL template generation; not a receiver handler,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+19,server/src/controllers/webhookController.ts,14,import webhookService,NOT_APPLICABLE,import statement,N/A,import line,NONE,2026-05-28T15:55:00Z,subagent-cov8-3
+20,server/src/controllers/demoController.ts,13,import webhookService,NOT_APPLICABLE,import statement,N/A,import line,NONE,2026-05-28T15:55:00Z,subagent-cov8-3

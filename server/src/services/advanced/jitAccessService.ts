@@ -8,6 +8,10 @@ import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
+import cacheService from '../cache/redisCacheService';
+
+const JIT_CACHE_NAMESPACE = 'jit-access';
+const JIT_ACTIVE_SESSIONS_KEY = 'active-sessions';
 
 type PrivilegeLevel =
   | 'viewer'
@@ -73,16 +77,62 @@ interface AccessApprovalPolicy {
  * 5. Session monitoring and extension
  */
 class JITAccessService {
-  // In-memory session store — sessions are lost on server restart.
-  // For production deployments with persistence requirements,
-  // sessions should be stored in Redis or PostgreSQL.
+  // Working set kept in-process for fast access. Authoritative state is mirrored
+  // to Redis (via cacheService) so sessions survive process restarts.
   private activeSessions: Map<string, JITSession> = new Map();
   private sessionCheckInterval: NodeJS.Timeout | null = null;
 
   constructor() {
-    logger.warn('[JITAccess] Service initialized — in-memory session store cleared on restart. ' +
-      'Any previously active JIT sessions have been invalidated.');
+    this.hydrateActiveSessions()
+      .then((count) => {
+        logger.info(`[JITAccess] Initialized; hydrated ${count} active sessions from cache.`);
+      })
+      .catch((err) => {
+        logger.warn('[JITAccess] Initial hydration from cache failed', err);
+      });
     this.startSessionMonitoring();
+  }
+
+  /**
+   * Mirror the in-memory active-session map to Redis so a restart does not lose
+   * elevated-privilege auth state. Snapshot-style: one key holds the full set,
+   * which is read on startup and rewritten on every mutation.
+   */
+  private async persistActiveSessions(): Promise<void> {
+    try {
+      const entries = Array.from(this.activeSessions.entries());
+      await cacheService.set(JIT_ACTIVE_SESSIONS_KEY, entries, {
+        ttl: 0,
+        namespace: JIT_CACHE_NAMESPACE,
+      });
+    } catch (err) {
+      logger.warn('[JITAccess] Failed to persist active sessions to cache', err);
+    }
+  }
+
+  /**
+   * Restore active sessions from cache on startup. Expired sessions are dropped.
+   * Returns the count of sessions restored.
+   */
+  private async hydrateActiveSessions(): Promise<number> {
+    const entries = await cacheService.get<Array<[string, JITSession]>>(
+      JIT_ACTIVE_SESSIONS_KEY,
+      { namespace: JIT_CACHE_NAMESPACE },
+    );
+    if (!entries || !Array.isArray(entries)) return 0;
+    const now = Date.now();
+    let restored = 0;
+    for (const [id, raw] of entries) {
+      const session: JITSession = {
+        ...raw,
+        startTime: new Date(raw.startTime),
+        endTime: new Date(raw.endTime),
+      };
+      if (session.endTime.getTime() <= now || !session.active) continue;
+      this.activeSessions.set(id, session);
+      restored++;
+    }
+    return restored;
   }
 
   /**
@@ -285,6 +335,7 @@ class JITAccessService {
       };
 
       this.activeSessions.set(sessionId, session);
+      await this.persistActiveSessions();
 
       // Grant temporary privilege to user — scoped to request.organizationId
       await this.grantTemporaryPrivilege(request.userId, request.requestedPrivilege, request.organizationId);
@@ -333,6 +384,7 @@ class JITAccessService {
       session.extendedCount += 1;
 
       await this.updateSession(session);
+      await this.persistActiveSessions();
 
       logger.info(`JIT session extended: ${sessionId} (+${additionalMinutes}min)`);
 
@@ -365,6 +417,7 @@ class JITAccessService {
 
       await this.updateSession(session);
       this.activeSessions.delete(sessionId);
+      await this.persistActiveSessions();
 
       logger.info(`[JITAccess] Session revoked: ${sessionId} user=${session.userId} ` +
         `privilege=${session.privilege} reason=${reason} activeSessions=${this.activeSessions.size}`);

@@ -70,7 +70,7 @@ class WebSocketService {
       }
 
       // Verify JWT token
-      const decoded = jwt.verify(token, config.jwt.secret) as {
+      const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] }) as {
         userId: string;
         email: string;
         role: string;

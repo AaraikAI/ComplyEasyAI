@@ -1857,7 +1857,7 @@ class MultimodalIntakeService {
    * Create a challenge-response liveness verification (random actions
    * such as blink, turn head, smile, etc.).
    */
-  createLivenessChallenge(numActions: number = 3): LivenessChallenge {
+  async createLivenessChallenge(numActions: number = 3): Promise<LivenessChallenge> {
     return livenessDetectionService.createChallenge(numActions);
   }
 

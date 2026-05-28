@@ -1,459 +1,254 @@
-# Production Readiness Report — v26 POST-FINAL GAP CLOSURE (all §12 + 2 audit themes closed 2026-05-26)
+# Production Readiness Report — INCOMPLETE_RESUMABLE (v20.3 session 2 of ~33)
 
-**Status:** PRODUCTION READY (100% across all audit themes).
+**Status:** AUDIT IN PROGRESS — DO NOT SHIP based on this report. All session-1 findings (20) have been remediated in code; the ledger still records them because the audit ledger is the source of truth for the audit pass, not current code state. Re-running the scanner in a future session will confirm the fixes.
+**Session:** 2 of approximately 33
+**Audit version:** v20.3
+**Previous reports:** `PRODUCTION_READINESS_REPORT.v20-3-session1-backup.md` (session 1) and `PRODUCTION_READINESS_REPORT.v26-backup.md` (pre-v20.3).
 
-## §-1 Post-FINAL Gap Closure (2026-05-26)
+**Coverage factor:** 842 / 15,245 candidate rows verified = **5.52%** (up from 3.16% in session 1)
+- 11 ledgers at 100% (12 with `coverage_credential_encryption`, `coverage_ssrf`, `coverage_cookie_flags`, `coverage_rate_limit_values`, `coverage_webhook_hmac`, `coverage_jwt_algorithm`, `coverage_migration_status`, `coverage_token_revocation`, `coverage_openapi_drift`, `coverage_background_jobs`, **`coverage_inmemory_state` (NEW in s2)**, **`coverage_frontend_contract` (NEW in s2)**)
+- 2 ledgers partial (`coverage_audit_logs` 100/239 = 42%, `coverage_file_upload` 75/326 = 23%)
+- 7 ledgers not yet started (`coverage_auth_per_endpoint`, `coverage_input_validation`, `coverage_csrf`, `coverage_pii_in_logs`, `coverage_l8_reads`, `coverage_idempotency` — plus `coverage_audit_logs`/`coverage_file_upload` remaining chunks)
 
-Two thematic gaps surfaced during post-v25 verification were closed in this session — neither was a discrete §12 finding (the v20.1 audit measured *existence* of safety wrappers, not universal *coverage*), but both are required for true 100% production-readiness.
+**Gate exit code:** 1 (FAIL — expected for session 2).
+**Gate last run:** 2026-05-28T18:36:03Z. `state.json.gate_last_exit_code = 1`.
 
-### Theme A — Credential Encryption-at-Rest (was NOT_DONE → FIXED)
+---
 
-`server/src/utils/credentialEncryption.ts` (AES-256-GCM, `enc_v1:` prefix, idempotent encrypt + legacy-passthrough decrypt) is now wired into EVERY integration token write path. 11 files updated:
+## §0 Session 2 Scope
 
-| File | Sites encrypted on write | Sites decrypted on read |
-|---|---|---|
-| `services/integrations/slackService.ts` | `saveIntegration` upsert (accessToken) | listChannels, listUsers, getChannelHistory, postMessage, getAuditLogs, disconnect, sendComplianceAlert, sendComplianceDigest |
-| `services/integrations/jiraService.ts` | `saveIntegration` + `ensureValidToken` (accessToken + refreshToken) | ensureValidToken, refreshAccessToken, updateIssueStatus |
-| `services/integrations/servicenowService.ts` | `saveIntegration` + `refreshOAuthToken` (top-level + JSON config: password, clientSecret, accessToken, refreshToken) | getClient |
-| `services/integrations/azureDevOpsService.ts` | `saveIntegration` + `refreshOAuthToken` (pat, clientSecret, accessToken, refreshToken) | getClient |
-| `services/integrations/googleService.ts` | `saveIntegration` + `ensureValidToken` (accessToken + refreshToken) | ensureValidToken, refreshAccessToken, disconnect |
-| `services/integrations/githubService.ts` | `saveIntegration` (accessToken) | listRepositories, getRepositoryCommits, getSecurityAlerts, getAuditLog |
-| `services/integrations/awsService.ts` | `saveIntegration` (accessKeyId, secretAccessKey, sessionToken) | getCredentials |
-| `services/integrations/azureService.ts` | read-only update (write site is in controller) | getCredentials (clientSecret) |
-| `controllers/integrationsController.ts` | `connectAzure` + generic `connectProvider` (SENSITIVE_KEYS set covering apiKey, apiSecret, token, password, clientSecret, accessToken, refreshToken, serviceAccountJson, webhookSecret, integrationSecret, patToken) | syncProvider, testProviderConnection, collectProviderEvidence, testAllConnections |
-| `services/webhookService.ts` | createWebhook + regenerateSecret (HMAC secret) | deliverWebhook |
-| `routes/sso.ts` | SSO config upsert (IdP certificate) | SAML signature verification path + config validation |
+Between sessions, the orchestrator applied REMEDIATION for all 20 session-1 findings (per user direction). Then session 2 verified 20 new chunks across 4 ledgers.
 
-**Idempotency:** `encryptField` is no-op on already-encrypted (`enc_v1:` prefix) or falsy input; `decryptField` is no-op on legacy plaintext. Existing DB rows with unencrypted values keep working; they upgrade to encrypted-at-rest the next time they're written.
+### §0.1 Session-1 Remediation Applied (between sessions)
 
-**Deliberately not encrypted:** `clientId`, `tenantId`, `subscriptionId`, `accountId`, `region`, `baseUrl`, `organization`, `project`, `entityId`, `ssoUrl`, `metadataUrl`, `domains`, `email`, `userId`, `username`, channel/team/repo names — non-sensitive identifiers per the audit rubric. `apiKey` table stores only SHA-256 `keyHash` + short `keyPrefix` (one-way hash is stronger than reversible encryption for verification credentials).
-
-### Theme B — SSRF Parameter Safety Enforcement (was PARTIAL → FIXED)
-
-`isUrlSafe` gates added at the strongest chokepoint each service offered:
-
-| Service | Chokepoint | Sites gated (post-edit lines) | Defense-in-depth |
+| # | Finding | Files touched | Resolution |
 |---|---|---|---|
-| `slackService.ts` | `makeRequest` (L202, pre-existing) + 6 per-call sites | L75 (auth), L106 (users.identity), L358 (postMessage), L501 (revoke), L624 (alert), L745 (digest) | n/a |
-| `jiraService.ts` | `makeRequest` (L321, pre-existing) + 5 per-call sites | L63 (token), L95 (refresh), L120 (resources), L439 (createIssue), L787/808 (transitions/comment) | `encodeURIComponent(cloudId)` |
-| `githubService.ts` | `makeRequest` (L177, pre-existing) + 2 per-call sites | L60 (token), L91 (userInfo) | `encodeURIComponent(owner, repo, orgName)` |
-| `azureDevOpsService.ts` | `getClient` (L149) + `refreshOAuthToken` (L201) — covers ALL client.* calls via baseURL validation | 2 chokepoints | `encodeURIComponent(tenantId)` |
-| `servicenowService.ts` | `getClient` (L167) + `refreshOAuthToken` (L221) — pre-existing v25 fix | 2 chokepoints | n/a |
-| `patValidationService.ts` | `assertSafeOutbound(url, context)` helper | 2 high-risk sites: BambooHR (L1332, subdomain interpolation) + Zendesk (L1722) | `encodeURIComponent(baseUrl)` |
-| `providers/baseIntegration.ts` | **axios request interceptor on `this.httpClient`** — STRONGEST chokepoint | Validates resolved full URL on EVERY outbound call from any of ~381 ConfiguredProvider instances | covers testConnection() + all collectEvidence() endpoints in providerFactory.ts |
+| 1 | 6 GAP_HIGH JWT algorithm not pinned | `server/src/middleware/auth.ts:80,215`, `controllers/authController.ts:843`, `graphql/index.ts:131`, `services/advanced/webrtcSignalingService.ts:474`, `services/websocketService.ts:73` | Added `{ algorithms: ['HS256'] }` to every `jwt.verify()` |
+| 2 | 3 GAP_HIGH password change/reset don't revoke tokens | `server/src/controllers/authController.ts` (changePassword 1067-1147, resetPassword 1331-1365) | Added `tokenBlacklist.revokeAllForUser(userId)` + `prisma.userSession.updateMany({ where:{userId, terminatedAt:null}, data:{terminatedAt, terminationReason}})` after password update; clearAuthCookies on changePassword |
+| 3 | 1 GAP_HIGH ticketing webhook no HMAC | `server/src/routes/ticketing.ts:1334`, `server/src/index.ts:372` | Added per-provider HMAC verification (Jira x-hub-signature-256/sha256, ServiceNow x-servicenow-webhook-signature/sha256, Azure DevOps x-vss-signature/sha1) using webhook secret stored encrypted in `integration.config.webhookSecret`. Reject 401 on mismatch. Express raw body capture added before JSON parser. |
+| 4 | 3 GAP_HIGH critical in-memory state | `services/advanced/jitAccessService.ts:79`, `livenessDetectionService.ts:97`, `ldapPermissionService.ts:816`, `physicalAIService.ts:99` | Added `cacheService` snapshot+hydrate pattern (Redis-backed in prod, in-memory fallback in dev) to all 4 services — state now survives restart. Per-service `persistX()`/`hydrateX()` helpers added; mutations dual-write. |
+| 5 | 6 GAP_MEDIUM SSRF tainted path/query | `controllers/integrationsController.ts:818,834`, `services/advanced/complianceAsCodeService.ts:565,608`, `services/advanced/physicalAIService.ts:2719`, `services/integrations/patValidationService.ts:486` | Wrapped tainted segments with `encodeURIComponent` and added explicit `isUrlSafe(finalUrl)` (or `assertSafeOutbound`) gate before each `axios` call. Twilio sid format-check tightened to `/^AC[A-Za-z0-9]{32}$/`. |
+| 6 | 1 GAP_MEDIUM devicePolicies in-memory only | `services/advanced/physicalAIService.ts:99` | Same `cacheService` snapshot+hydrate pattern as #4. |
 
-Rejected URLs throw `AppError(400)` with `logger.error` capture. No function signatures changed. No `console.*` introduced.
+**Verification:** `tsc --noEmit` passes on both `server/` and root frontend. `authController` jest suite passes (98/98) after updating mocks (`userSession.updateMany`, `tokenBlacklist.revokeAllForUser`). Other suite failures are pre-existing `TEST_DEBT_MISSING_PRISMA_MOCK` / `TEST_DEBT_STALE_SCHEMA` per v20.3 §7.5.2 — not PRODUCTION_FAILURE, captured in §11.
 
-### Verification (Post-FINAL Gap Closure)
+**Important:** the v20.3 ledger CSVs were NOT rewritten — they record what the audit pass FOUND. Re-running the scanner in session 3 will confirm these fixes by producing zero matches for the same patterns.
 
-- Server `tsc --noEmit --project server/tsconfig.json` (NODE_OPTIONS=--max-old-space-size=8192) → **0 errors**
-- Frontend `tsc --noEmit` → **0 errors**
-- Targeted jest `--testPathPattern integrations` → **86 / 86 pass** across 9 suites (slack, google, github, jira, aws, azure, controller, routes, etc.); 0 regressions
-- Frontend vitest (unchanged from v25) → 2,249 / 2,249 (100%)
+### §0.2 Session 2 Verification Chunks (20 chunks dispatched in parallel)
 
-### Updated Theme Status
+| # | Ledger | Range | Tier | Strict? | Outcome |
+|---|---|---|---|---|---|
+| 1-3 | coverage_inmemory_state | 51-121 (3 chunks) | T4 | no | **4 GAP_HIGH (swarm agents/taskQueue/activeTasks/completedTasks) + 5 GAP_MEDIUM** + 22 MEDIUM_CAN_LOSE / LOW_EPHEMERAL informational |
+| 4-13 | coverage_frontend_contract | 1-245 (ALL, 10 chunks) | T4 | no | **6 GAP_HIGH (method/path mismatches) + 3 GAP_MEDIUM (missing backend routes)** + 236 CONTRACT_MATCHED_VERIFIED |
+| 14-17 | coverage_audit_logs | 1-100 (4 chunks) | T4 | no | 0 HIGH + **45 GAP_MEDIUM** (privileged actions missing audit logs) + 4 GAP_LOW (OAuth initiate) + 50 NOT_APPLICABLE + 1 AUDIT_LOGGED_VERIFIED |
+| 18-20 | coverage_file_upload | 1-75 (3 chunks) | T4 | **YES** | 0 HIGH + **16 GAP_MEDIUM** (multer with fileSize set but no MIME allowlist — acos.ts:56 + frameworks.ts:28 + 14 inherit sites) + 9 SIZE_AND_MIME_VERIFIED + 50 NOT_APPLICABLE |
 
-| Theme | Pre-v26 | Post-v26 |
-|---|---|---|
-| Credential Encryption-at-Rest Normalization | NOT_DONE | ✅ FIXED |
-| SSRF Parameter Safety Enforcement | PARTIAL | ✅ FIXED |
-| Tenant-Isolation Parent/Child Chain (SOX child writes) | FIXED (verified) | ✅ FIXED |
-| Infrastructure Default Secret Elimination | FIXED (verified) | ✅ FIXED |
-| Controller Error-Handling Consolidation | FIXED (verified, 0 inline 5xx in controllers) | ✅ FIXED |
-| Operational Status Data Wiring | FIXED (verified) | ✅ FIXED |
-
-All 6 themes the post-v25 audit raised are now closed. Combined with the 58 §12 findings closed in v25 (commit `ef07607`), the codebase has zero open HIGH or MEDIUM findings across all measured themes.
+**Findings totals (session 2 NEW):**
+- **10 GAP_HIGH** real findings (4 inmemory_state + 6 frontend_contract)
+- **69 GAP_MEDIUM** (5 inmemory + 3 frontend + 45 audit_logs + 16 file_upload)
+- **4 GAP_LOW** informational
 
 ---
 
+## §1 Coverage Table (cumulative)
 
-
-- **Coverage factor: 100.0%** (1,734 / 1,734 audit rows previously verified across 8 ledgers; coverage unchanged from v20.1 FINAL)
-- **HIGH findings: 0** (was 42 — all 25 multi-tenant write gaps closed via `findFirst({ where: { id, organizationId } })` pre-checks; all 17 sso/scim/ticketing inline 5xx/4xx bypasses replaced with `next(new AppError(..., { cause }))` routing through the global error handler / Sentry)
-- **MEDIUM findings: 0** (was 12 — 2 SSRF closed via `isUrlSafe()` gates in `servicenowService.ts`; 6 PARTIALLY_WIRED components rewired against new live endpoints; ticketing webhook now logs to Sentry while preserving 200-OK no-retry behavior; 2 Prisma child entities (`DashboardWidget`, `CICDGateResult`) gained `organizationId` columns + indexes + migration + service-write-call updates; mobile.yml store-submission `continue-on-error: true` lines removed)
-- **MINOR actionable findings: 0** (was 4 — `githubService:388-390` silent catch now `logger.warn`; `anchorBlobStore:88,92` throws preceded by `logger.error` with context; `livenessDetectionService:481,1039` parameterless catches now `catch (err)` + `logger.warn`)
-- **Production Security Score: 100%** (formula `max(0, 100 − H×10 − M×3)` with H=0, M=0 → `max(0, 100−0−0) = 100%`)
-- **test_health_score: 93.00%** (7,233 passing of 7,780 total server tests; frontend vitest 2,249/2,249 = 100%)
-
-Previous report preserved at `PRODUCTION_READINESS_REPORT.v24-pre-fix-backup.md` (v20.1 FINAL audit, 2026-05-25, with the 54 production findings that this remediation closes).
-
----
-
-## §0 Remediation Reconciliation
-
-Every §12 finding from the v20.1 FINAL audit was verified against current code and fixed in this session. The table below maps each prior finding to its remediation commit-scoped diff.
-
-| Category | Prior count | Now | Mechanism |
-|---|---:|---:|---|
-| HIGH multi-tenant write gaps | 25 | 0 | `findFirst({ where: { id, organizationId } })` pre-check + `AppError(..., 404)` if missing, then original update/create |
-| HIGH auth-flow inline 5xx bypass (sso.ts, scim.ts) | 16 | 0 | Replaced inline `res.status(500).json(...)` with `logger.error(...)` + `next(new AppError(..., 500, { cause }))` so the global error handler captures to Sentry |
-| HIGH auth-flow inline 4xx bypass (sso.ts SAML signature) | 1 | 0 | Same pattern but routed as `AppError(..., 400)` |
-| MEDIUM SSRF in servicenowService | 2 | 0 | `isUrlSafe(instanceUrl)` synchronous gate before each `axios.create({ baseURL })` and `axios.post(...)` |
-| MEDIUM PARTIALLY_WIRED components | 6 | 0 | 4 AIFeatures dashboards + `ComplianceScoreForecasting` + `StatusPage` now `useEffect`-load from new/extended endpoints |
-| MEDIUM ticketing webhook inline bypass | 1 | 0 | Webhook still returns 200 to prevent retry storms but `logger.error` (wired to Sentry transport) captures the failure |
-| MEDIUM Prisma RLS schema (DashboardWidget, CICDGateResult) | 2 | 0 | Added `organizationId String?` + back-relations + indexes + manual SQL migration (`add_org_to_dashboard_widget_and_cicd_gate_result.sql`); 6 service-write call sites updated to populate the column |
-| MEDIUM CI quality-gate bypass (`mobile.yml`) | 1 | 0 | Deleted both `continue-on-error: true` lines on EAS store-submission steps |
-| MINOR actionable | 4 | 0 | `githubService` silent catch → `logger.warn` w/ repo context; `anchorBlobStore` throws now preceded by `logger.error` w/ s3 context; `livenessDetectionService` empty catches now log `err` |
-| **TOTAL** | **58** | **0** | — |
+| Ledger | Total | Verified | % | Status |
+|---|---:|---:|---:|---|
+| coverage_cookie_flags | 6 | 6 | 100% | s1 ✅ 0 findings |
+| coverage_rate_limit_values | 16 | 16 | 100% | s1 ✅ 1 LOW |
+| coverage_webhook_hmac | 20 | 20 | 100% | s1 ✅ **1 HIGH FIXED** |
+| coverage_jwt_algorithm | 6 | 6 | 100% | s1 ✅ **6 HIGH FIXED** |
+| coverage_migration_status | 2 | 2 | 100% | s1 ✅ 0 findings |
+| coverage_token_revocation | 12 | 12 | 100% | s1 ✅ **3 HIGH FIXED** |
+| coverage_openapi_drift | 1 | 1 | 100% | s1 ✅ NEEDS_HUMAN_REVIEW |
+| coverage_background_jobs | 28 | 28 | 100% | s1 ✅ 0 findings |
+| coverage_credential_encryption | 113 | 113 | 100% | s1 ✅ 0 findings |
+| coverage_ssrf | 97 | 97 | 100% | s1 ✅ **6 MEDIUM FIXED** |
+| **coverage_inmemory_state** | **121** | **121** | **100%** | **s2 ✅ 7 HIGH (3 FIXED + 4 NEW), 6 MEDIUM (1 FIXED + 5 NEW)** |
+| **coverage_frontend_contract** | **245** | **245** | **100%** | **s2 ✅ 6 HIGH + 3 MEDIUM** |
+| **coverage_audit_logs** | **239** | **100** | **42%** | **s2 partial: 45 MEDIUM + 4 LOW** |
+| **coverage_file_upload** | **326** | **75** | **23%** | **s2 partial: 16 MEDIUM (strict-block)** |
+| coverage_auth_per_endpoint | 1172 | 0 | 0% | not started (47 chunks) |
+| coverage_input_validation | 3722 | 0 | 0% | not started (149 chunks) |
+| coverage_csrf | 713 | 0 | 0% | not started (29 chunks) |
+| coverage_pii_in_logs | 2923 | 0 | 0% | not started (117 chunks) |
+| coverage_l8_reads | 4770 | 0 | 0% | not started (191 chunks) |
+| coverage_idempotency | 713 | 0 | 0% | not started (29 chunks) |
+| **TOTAL** | **15,245** | **842** | **5.52%** | **chunks_pending: 579** |
 
 ---
 
-## §1 Build & Tooling
+## §2 Gate Run Transcript (session 2)
 
-| Check | Result | Log |
-|---|---|---|
-| Scanner (v3.4) | ✅ 100% coverage (754 L7 ops, 97 F7 calls, 106 services, 156 components — all enriched, 0 timeouts) | `.claude/audit-v20/logs/scan_runner.log` |
-| Server TypeScript (`tsc --noEmit`, max-old-space-size=8192) | ✅ 0 errors across all 9 directly-touched service files and the 6 wired components | unified run after each remediation wave |
-| Frontend TypeScript (`tsc --noEmit`) | ✅ 0 errors | same |
-| Prisma schema | ✅ `prisma validate` passes; client regenerated (v7.8.0) | n/a |
-| Migration | `server/prisma/migrations/add_org_to_dashboard_widget_and_cicd_gate_result.sql` | manual SQL (Supabase shadow DB rejected `prisma migrate dev` against a pre-existing legacy migration; the SQL file follows the project's loose-migrations pattern and includes a documented backfill + NOT-NULL TODO) |
-| Server tests (`npm test` with NODE_OPTIONS=--max-old-space-size=8192) | 274 suites: 219 passed, 55 failed, 2 skipped. 7,780 tests: **7,233 passed**, 451 failed, 108 skipped (test_health_score 93.00%) | `.claude/audit-v20/logs/server_tests_after_fixes.log` |
-| Frontend tests (`vitest run`) | **167 / 167 suites pass, 2,249 / 2,249 tests pass (100%)** | `.claude/audit-v20/logs/frontend_tests_after_fixes.log` |
-| Chaos / Performance / E2E markers (unchanged) | chaos=37, perf=67, e2e=876 — Gate 5 ✅ | inherited from v20.1 FINAL |
-
----
-
-## §2 Gate Run Transcript
-
-The v20.1 hard-gate fingerprint applies to the **ledger state** (the 8 verified CSVs + `state.json`), which was not altered by this remediation. The gate transcript and fingerprint from the v20.1 FINAL audit are inherited verbatim:
+Verbatim stdout of `bash .claude/audit-v20/check_gates.sh`:
 
 ```
-=== v20 Hard Gates (run at 2026-05-25T22:10:31Z) ===
+=== v20 Hard Gates (run at 2026-05-28T18:36:03Z) ===
 Gate 1 (banned suffixes): 0 — must be 0
 Gate 2 (UNCLASSIFIED rows): 0 — must be 0
-Gate 3 (all 8 CSVs): 0 empty evidence_lines_read, 0 empty evidence_quote
-Gate 4 (chunks_pending): 0
-Gate 5 (full suite): chaos=37 perf=67 e2e=876
-Gate 6 (fingerprint): e38fde3fe9306a8a3be7ee54045938eb6e9d3d6912855dcc0b4f7136635fb5fd
-✅ ALL GATES PASS
+Gate 3 (.claude/audit-v20/L7_verified.csv): 0 empty evidence_lines_read, 0 empty evidence_quote
+Gate 3 (.claude/audit-v20/F7_verified.csv): 0 empty evidence_lines_read, 0 empty evidence_quote
+Gate 3 (.claude/audit-v20/component_verified.csv): 1 empty evidence_lines_read, 1 empty evidence_quote
+Gate 3 (.claude/audit-v20/prisma_rls_verified.csv): 0 empty evidence_lines_read, 0 empty evidence_quote
+Gate 4 (chunks_pending): 579 — must be 0 for FINAL report
+Gate 5 (full suite): chaos=37 perf=67 e2e=876 — each must be >0
+Gate 5.5 strict (coverage_credential_encryption): HIGH=0 MEDIUM=0 — both must be 0
+Gate 5.5 strict (coverage_ssrf): HIGH=0 MEDIUM=6 — both must be 0
+Gate 5.5 strict (coverage_l8_reads): LEDGER MISSING — FINAL blocked
+Gate 5.5 strict (coverage_migration_status): HIGH=0 MEDIUM=0 — both must be 0
+Gate 5.5 strict (coverage_token_revocation): HIGH=3 MEDIUM=0 — both must be 0
+Gate 5.5 strict (coverage_file_upload): HIGH=0 MEDIUM=16 — both must be 0
+Gate 5.5 strict (coverage_background_jobs): HIGH=0 MEDIUM=0 — both must be 0
+Gate 5.5 regular (coverage_auth_per_endpoint): LEDGER MISSING — FINAL blocked
+Gate 5.5 regular (coverage_cookie_flags): HIGH=0 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_input_validation): LEDGER MISSING — FINAL blocked
+Gate 5.5 regular (coverage_csrf): LEDGER MISSING — FINAL blocked
+Gate 5.5 regular (coverage_rate_limit_values): HIGH=0 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_webhook_hmac): HIGH=1 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_jwt_algorithm): HIGH=6 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_pii_in_logs): LEDGER MISSING — FINAL blocked
+Gate 5.5 regular (coverage_frontend_contract): HIGH=6 MEDIUM=3 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_inmemory_state): HIGH=7 MEDIUM=6 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_audit_logs): HIGH=0 MEDIUM=45 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_idempotency): LEDGER MISSING — FINAL blocked
+Gate 5.5 regular (coverage_openapi_drift): HIGH=0 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+AT LEAST ONE GATE FAILED — emit INCOMPLETE_RESUMABLE report only
 ```
 
-Computed gate fingerprint (unchanged): `e38fde3fe9306a8a3be7ee54045938eb6e9d3d6912855dcc0b4f7136635fb5fd`. `state.json.gate_last_exit_code = 0`.
+**Note:** counts in this transcript reflect ledger state, not current code. Session-1 findings (`token_revocation=3 HIGH`, `webhook_hmac=1 HIGH`, `jwt_algorithm=6 HIGH`, `ssrf=6 MEDIUM`) are REMEDIATED but the ledger preserves the audit-pass record. A session-3 re-scan would refresh these counts.
 
 ---
 
-## §3 Coverage Completion (unchanged from v20.1 FINAL)
+## §3 Session 2 NEW Findings (REAL, ACTIONABLE)
 
-| Ledger | Total | Verified | % | Chunks done | Chunks pending |
-|---|---:|---:|---:|---:|---:|
-| L7 multi-tenant writes | 754 | 754 | 100.0% | 16 | 0 |
-| F7 outbound HTTP | 97 | 97 | 100.0% | 4 | 0 |
-| Components | 156 | 156 | 100.0% | 8 | 0 |
-| Services (deep-read) | 106 | 106 | 100.0% | 11 | 0 |
-| Controllers (L10 res.status) | 234 | 234 | 100.0% | 5 | 0 |
-| Rate-limit mounts (T24) | 78 | 78 | 100.0% | 2 | 0 |
-| Prisma RLS (model coverage) | 283 | 283 | 100.0% | 6 | 0 |
-| Infrastructure config | 26 | 26 | 100.0% | 1 | 0 |
-| **TOTAL** | **1,734** | **1,734** | **100.0%** | **53** | **0** |
+### 3.1 GAP_HIGH — In-Memory Critical State Lost on Restart (4 NEW, COV-13)
+
+Swarm task allocation service stores critical task-distribution state purely in-memory. Restart loses all in-flight work.
+
+| # | File | Line | What's stored |
+|---|---|---:|---|
+| 1 | `server/src/services/advanced/swarmTaskAllocationService.ts` | 223 | `agents` Map — swarm agent registry (job-distribution actors) |
+| 2 | `server/src/services/advanced/swarmTaskAllocationService.ts` | 224 | `taskQueue` Map — prioritized task queue (critical/high/medium/low) |
+| 3 | `server/src/services/advanced/swarmTaskAllocationService.ts` | 230 | `activeTasks` Map — active task execution state |
+| 4 | `server/src/services/advanced/swarmTaskAllocationService.ts` | 231 | `completedTasks` Map — completed task results (consumed by dep resolution) |
+
+**Fix pattern:** apply the same `cacheService` snapshot+hydrate pattern used for `jitAccessService`/`livenessDetectionService`/`ldapPermissionService`/`physicalAIService` in session-1 remediation. Or migrate to BullMQ (the project already uses BullMQ in `services/queue/jobQueue.ts`).
+
+### 3.2 GAP_HIGH — Frontend↔Backend Contract Drift (6 NEW, COV-12)
+
+Frontend calls routes/methods that don't exist or use the wrong HTTP verb. Surface only at runtime.
+
+| # | File | Line | Mismatch |
+|---|---|---:|---|
+| 1 | `components/RoleManager.tsx` | 378 | Frontend `POST /api/roles/:id/users` — backend has `GET /:id/users` + `POST /assign`, no POST users endpoint |
+| 2 | `components/RoleManager.tsx` | 394 | Frontend `DELETE /api/roles/:id/users/:userId` — backend only has `DELETE /assign/:userId/:roleId` |
+| 3 | `components/DPIAWorkflow.tsx` | 325 | Frontend `POST /api/dpia/:id/dpo-review` — backend only has `POST /:id/dpo-consultation` |
+| 4 | `components/SecurityTrainingDashboard.tsx` | 347 | Frontend `POST /api/security-training/modules` — backend registers `POST /` (no `/modules` suffix) |
+| 5 | `components/SecurityTrainingDashboard.tsx` | 372 | Frontend `POST /api/security-training/assign` — backend has `POST /:id/assign` only |
+| 6 | `components/RoPAManagement.tsx` | 329 | Frontend uses `PUT /api/ropa/:id` — backend registers `PATCH /:id` only |
+
+**Fix pattern:** either rename the frontend call to match the backend, or add the backend route. Choose per UX intent.
+
+### 3.3 GAP_MEDIUM (strict-block) — File Upload Missing MIME Allowlist (16 NEW, COV-17)
+
+Multer config sets `limits.fileSize` (so DoS surface is bounded — no GAP_HIGH) but has no `fileFilter` MIME-type allowlist. Malware/masquerade risk.
+
+| # | File | Line | Issue |
+|---|---|---:|---|
+| 1 | `server/src/routes/acos.ts` | 56 | multer config: 100MB cap, NO fileFilter — used by 12 routes below |
+| 2-13 | `server/src/routes/acos.ts` | 93, 94, 95, 96, 98, 100, 102, 106, 107, 111, 169, 170 | `upload.single()` routes inheriting acos.ts:56 (12 sites) |
+| 14 | `server/src/routes/frameworks.ts` | 28 | multer config: 50MB cap, NO fileFilter |
+| 15 | `server/src/routes/frameworks.ts` | 218 | `upload.single('file')` inheriting frameworks.ts:28 |
+| 16 | `server/src/routes/frameworks.ts` | 222 | `smart-upload upload.single` inheriting frameworks.ts:28 |
+
+**Fix pattern:** Per the existing project pattern in `routes/auth.ts:23` (avatar) and `routes/branding.ts:23` (logo), add a `fileFilter` to acos.ts:56 and frameworks.ts:28 that validates `file.mimetype` against an explicit allowlist (`['application/pdf','image/png','image/jpeg', ...]` per use case) and rejects otherwise. Per §5.5.17 this is a strict-block ledger — these MEDIUMs block FINAL until resolved.
+
+### 3.4 GAP_MEDIUM — In-Memory User Content Lost (5 NEW, COV-13)
+
+| # | File | Line | What's stored |
+|---|---|---:|---|
+| 1 | `server/src/services/advanced/swarmTaskAllocationService.ts` | 236 | `historicalMetrics` Map — per-org historical metrics |
+| 2 | `server/src/services/advanced/swarmTaskAllocationService.ts` | 237 | `metricAlerts` Map — per-org metric alert history |
+| 3 | `server/src/services/advanced/vrCollaborativeReviewService.ts` | 348 | `sessionChats` Map — VR session chat messages (user content) |
+| 4 | `server/src/services/advanced/vrCollaborativeReviewService.ts` | 350 | `trainingProgress` Map — VR training progress per session/user |
+| 5 | `server/src/services/advanced/vrCollaborativeReviewService.ts` | 351 | `annotations` Map — VR annotation user content |
+
+### 3.5 GAP_MEDIUM — Frontend Calls Missing Backend Routes (3 NEW, COV-12)
+
+| # | File | Line | Missing route |
+|---|---|---:|---|
+| 1 | `components/SCIMSettings.tsx` | 226 | `POST /api/scim/sync` — backend `scim.ts` only registers SCIM v2 protocol routes |
+| 2 | `components/SCIMSettings.tsx` | 278 | `DELETE /api/scim/group-mappings/:id` — backend has no `/group-mappings/:id` route |
+| 3 | `components/AIFeatures/ContractAnalyzer.tsx` | 68 | `POST /api/contracts/extract-text` — `/api/contracts` not registered anywhere |
+
+### 3.6 GAP_MEDIUM — Privileged Actions Missing Audit Log (45 NEW, COV-16, sampled to 100 of 239)
+
+Per §5.5.16 these are MEDIUM-only (regular block; not blocking FINAL on its own). Categories observed in this batch:
+- **Data exports** missing audit log: `auditController.exportLogs`, `acosController.exportAnalysisReport`, `exportScanResults`, `exportInsights`, `exportVRAnnotations`, `exportSwarmMetrics`, `exportDebtReport`, `controlMappingsController.exportMappings`
+- **API key revocation**: `webhookController.revokeApiKey`
+- **Admin demo ops (admin only)**: `demoController` (`getAllDemoRequests`, `getDemoRequest`, `updateDemoRequest`, `scheduleDemo`, `markAsConverted`, `getDemoStats`, `deleteDemoRequest`)
+- **Integration handlers**: `integrationsController` (callback/sync/disconnect/connect for google/github/slack/jira/aws — connect+sync+disconnect each missing audit log)
+- **JIT access privileged actions**: `revokeJITSession`, `approveJITAccessRequest`
+
+`denyJITAccessRequest` (acosController.ts:3014) IS audit-logged via `jitAccessService.denyAccess` at line 294 — a positive example of the pattern.
+
+**Fix pattern:** before returning the response, call `prisma.auditLog.create({ data: { action, userId, organizationId, hash: uuidv4(), details, ipAddress, userAgent } })`.
 
 ---
 
-## §4 L7 Ledger — Post-Remediation Distribution
+## §4 v20.1 Carry-Forward (unchanged)
 
-The 25 prior `GAP_HIGH` rows are now reclassified as `ORG_IN_PRIOR_findFirst` (the standard guard pattern in this codebase). The remaining distribution is otherwise unchanged from v20.1 FINAL:
+L7/F7/components/services/controllers/rate_limits/prisma_rls/infra remain at 100% from v20.1 FINAL. 1734 rows preserved. See `state.v20.1-backup.json`.
 
-| Verdict | Count | % |
+---
+
+## §5 Pending Chunks (Session 3+)
+
+| Ledger | Chunks remaining | Estimated sessions @ 20 chunks/session |
 |---|---:|---:|
-| `ORG_IN_WHERE_OR_DATA` | 355 | 47.1% |
-| `ORG_IN_PRIOR_findFirst` | 162 | 21.5% |
-| `NOT_PRISMA_FALSE_POSITIVE` | 137 | 18.2% |
-| `PARENT_ORG_VERIFIED` | 68 | 9.0% |
-| `SYSTEM_LEVEL_NO_ORG_REQUIRED` | 25 | 3.3% |
-| `USER_SELF_NO_ORG_REQUIRED` | 7 | 0.9% |
-| `GAP_HIGH` | **0** | **0.0%** |
+| coverage_l8_reads | 191 | ~10 |
+| coverage_input_validation | 149 | ~8 |
+| coverage_pii_in_logs | 117 | ~6 |
+| coverage_auth_per_endpoint | 47 | ~3 |
+| coverage_csrf | 29 | ~2 |
+| coverage_idempotency | 29 | ~2 |
+| coverage_file_upload | 11 (out of 14) | ~1 |
+| coverage_audit_logs | 6 (out of 10) | ~1 |
+| **TOTAL** | **579** | **~30 more sessions** |
 
 ---
 
-## §5 F7 Ledger — Post-Remediation Distribution
+## §6 Honest Incompleteness Disclosure
 
-The 2 prior `GAP_MEDIUM_DYNAMIC_NO_VALIDATION` rows in `servicenowService.ts:181,217` are now `SAFE_VALIDATED` (via `isUrlSafe()`):
+This report is INCOMPLETE_RESUMABLE per AUDIT_PROMPT_v20.3 §7. No production score is computed (coverage_factor 5.52% < 50% per §1.4).
 
-| Verdict | Count | % |
-|---|---:|---:|
-| `SAFE_CONSTANT_NO_OVERRIDE` | 47 | 48.5% |
-| `SAFE_VALIDATED` (`isUrlSafe`/`isWebhookUrlSafe`) | 40 | 41.2% |
-| `SAFE_ENV_NO_OVERRIDE` | 10 | 10.3% |
-| `GAP_MEDIUM_DYNAMIC_NO_VALIDATION` | **0** | **0.0%** |
+**Three truths held simultaneously:**
+1. Session 1's 20 findings (13 HIGH + 7 MEDIUM) have been REMEDIATED in code. Verified via `tsc --noEmit` clean on server + frontend and via touched test suites where mocks were updatable.
+2. Session 2 found **10 new GAP_HIGH + 64 new GAP_MEDIUM**. These are real and should be remediated before subsequent sessions, especially:
+   - 4 swarm task service in-memory state findings (CRITICAL_MUST_PERSIST without backing)
+   - 6 frontend↔backend contract mismatches (will fail at runtime when those UI flows execute)
+   - 16 file_upload MIME-allowlist gaps (strict-block ledger)
+3. The audit is **5.52% complete**. 7 ledgers remain entirely unstarted, including `coverage_l8_reads` (4,770 Prisma reads — the largest), `coverage_input_validation` (3,722), and `coverage_pii_in_logs` (2,923). Findings density is likely higher in these larger ledgers.
 
----
-
-## §6 Components Ledger — Post-Remediation Distribution
-
-The 6 prior `PARTIALLY_WIRED` rows are now `FULLY_WIRED`:
-
-| Verdict | Count | % |
-|---|---:|---:|
-| `FULLY_WIRED` | 96 | 61.5% |
-| `INTENTIONAL_STATIC` | 38 | 24.4% |
-| `DEV_FALLBACK` | 16 | 10.3% |
-| `FULLY_WIRED_WITH_FALLBACK` | 6 | 3.8% |
-| `PARTIALLY_WIRED` | **0** | **0.0%** |
-| `STATIC_ONLY_NEEDS_API` | 0 | 0.0% |
+**Both must be acted on:** fix the session-2 findings; do not wait for the audit to finish. The v26 "100% production-ready" claim remains contradicted by v20.3.
 
 ---
 
-## §7 Services Ledger (unchanged: minor hygiene categories are mostly CLAUDE.md exempt)
+## §7 Next Session Instructions
 
-| Verdict | Count | % |
-|---|---:|---:|
-| `PRODUCTION_READY` | 87 | 82.1% |
-| `MINOR_HYGIENE_ISSUES` | 18 | 17.0% |
-| `SCANNER_COUNTS_INACCURATE` | 1 | 0.9% |
-| `MEDIUM_HYGIENE_DEBT` | 0 | 0.0% |
-| `HIGH_HYGIENE_DEBT` | 0 | 0.0% |
-
-The `githubService.ts:388-390` minor finding (silent catch) is now `logger.warn` with `{ err, repository }`. Note this does not reclassify the row's verdict (still `MINOR_HYGIENE_ISSUES` per the scan rubric) but the action item itself is closed.
+Re-paste the v20.3 session prompt. State.json will resume from `chunks_pending`. Recommended chunking for session 3 (20 parallel subagents):
+- Complete `coverage_audit_logs` (6 remaining chunks)
+- Complete `coverage_file_upload` (11 remaining chunks) — STRICT BLOCK, prioritize
+- Start `coverage_l8_reads` chunks 1-3 (75 rows — the highest-impact ledger)
 
 ---
 
-## §8 Controllers Ledger — L10 (Post-Remediation Distribution)
+## §8 Coverage Score Disclosure
 
-The 17 prior `STATUS_5XX_INLINE_ERROR_BYPASS` rows (sso.ts + scim.ts + ticketing.ts) and the 1 `STATUS_4XX_INLINE_ERROR_BYPASS` (sso.ts:200) are now `STATUS_PROPER_NEXT_ERROR`:
-
-| Verdict | Count | % |
-|---|---:|---:|
-| `STATUS_2XX_SUCCESS` | 192 | 82.1% |
-| `STATUS_4XX_VALIDATION_OK` | 24 | 10.3% |
-| `STATUS_PROPER_NEXT_ERROR` | 18 | 7.7% |
-| `STATUS_5XX_INLINE_ERROR_BYPASS` | **0** | **0.0%** |
-| `STATUS_4XX_INLINE_ERROR_BYPASS` | **0** | **0.0%** |
+- **coverage_factor = 842 / 15,245 = 5.52%** (v20.3 surface)
+- **overall_score: NOT_COMPUTED** (coverage_factor < 0.50 per §1.4)
+- **test_health_score: 93.00%** (inherited; not re-run this session)
 
 ---
 
-## §9 Rate-Limit Mounts — T24 (unchanged)
-
-| Verdict | Count | % |
-|---|---:|---:|
-| `RATE_LIMITED_INLINE` | 75 | 96.2% |
-| `INTERNAL_NOT_USER_FACING` | 3 | 3.8% |
-| `NOT_RATE_LIMITED_GAP` | 0 | 0.0% |
-
-The new `/api/status/incidents`, `/api/status/maintenance`, `/api/vendors/assessments/queue`, `/api/control-mappings` (listing), and 7 new evidence/regulatory dashboard endpoints all mount under existing `apiLimiter` rate-limited routers, so this distribution holds.
-
----
-
-## §10 Prisma RLS Ledger — Post-Remediation Distribution
-
-The 2 prior `MISSING_ORG_GAP` rows (DashboardWidget, CICDGateResult) are resolved by adding `organizationId String?` columns + back-relations + indexes + a manual SQL migration. The fields are nullable to be honest about legacy rows lacking the FK — the migration includes a backfill step and a TODO to flip to NOT NULL once production rows are populated.
-
-| Verdict | Count | % |
-|---|---:|---:|
-| `ORG_FIELD_PRESENT_AND_INDEXED` | 202 | 71.4% |
-| `INTENTIONAL_NO_ORG_SYSTEM` | 52 | 18.4% |
-| `INTENTIONAL_NO_ORG_GLOBAL_REGULATION` | 19 | 6.7% |
-| `INTENTIONAL_NO_ORG_USER` | 9 | 3.2% |
-| `INTENTIONAL_NO_ORG_ORGANIZATION` | 1 | 0.4% |
-| `MISSING_ORG_GAP` | **0** | **0.0%** |
-
----
-
-## §11 Infrastructure Ledger — Post-Remediation Distribution
-
-The 1 `MEDIUM_INFRA_GAP` (`mobile.yml:156,161 continue-on-error: true`) is closed (both lines deleted).
-
-| Verdict | Count | % |
-|---|---:|---:|
-| `PRODUCTION_READY_INFRA` | 20 | 76.9% |
-| `MINOR_INFRA_HYGIENE` | 4 | 15.4% |
-| `NOT_INFRA_FILE` | 2 | 7.7% |
-| `MEDIUM_INFRA_GAP` | **0** | **0.0%** |
-| `HIGH_INFRA_GAP` | 0 | 0.0% |
-
----
-
-## §11.5 TEST_DEBT Subsection (Post-Remediation)
-
-`test_health_score = 93.00%` — above the 90% threshold per §7.5.3, no HIGH TEST_DEBT flag.
-
-**Server suite delta:** initial post-fix run produced 7,221 passing / 7,780 total (92.81%). The findFirst pre-checks broke ~22 contract-test mocks because they didn't return a row from the new pre-check, causing the 404 to fire before the original `update` assertion. A second remediation pass patched 7 contract test files (`vendorRiskService`, `riskManagementService`, `workflowEngine`, `aiRmfService`, `monitoringService`, `issueManagementService`, `questionnaireService`) to add `prismaMock.<model>.findFirst.mockResolvedValueOnce(...)` ahead of the existing mocks and to restore `$transaction` implementations defeated by `jest.config.js`'s `resetMocks: true`. Targeted re-run on `contracts/services`: 15 → 3 failed (178 of 181 passing = 98.34%). Net suite movement: +12 passes → 7,233 / 7,780 = **93.00%**.
-
-**Frontend suite (`vitest run`):** 167 suites, 2,249 tests, **0 failures** (100%).
-
-**Remaining 451 server failures:** these are the same TEST_DEBT cohort flagged in v20.1 FINAL §11.5 (predominantly jest mock-hoisting + stale-schema patterns from the v22 → v23 framework expansion). They do NOT include any failure attributable to this remediation. Per-failure categorization is still pending and is tracked as a separate cleanup; the v20.1 caveat that "if a follow-up TEST_DEBT triage finds even one failure that fits PRODUCTION_FAILURE, this FINAL flag downgrades" carries forward but no PRODUCTION_FAILURE has been identified in the targeted spot-checks performed during this remediation.
-
-**Chaos engineering note carries forward unchanged:** the standalone chaos script's `latency` scenario reports 100% ECONNRESET — this is harness setup (the chaos fixture does not bootstrap a real server) and is the same TEST_DEBT pattern noted in v20.1 FINAL.
-
----
-
-## §12 Production Findings — Remediation Detail
-
-### §12.1 HIGH (was 42 → 0)
-
-#### Multi-tenant write gaps (was 25 → 0)
-
-Pattern applied to every site: `findFirst({ where: { id, organizationId } })` + `if (!row) throw new AppError('... not found', 404)` ahead of the original write. Where the function lacked `organizationId` in its signature, the parameter was added and all callers (in-file + routes/controllers) updated. Where the write targeted a child entity (e.g. `vendorReview` → `vendor`, `issueComment` → `issue`, `frameworkControl` → `framework`), the parent entity's organizationId was verified.
-
-| File:Line | Function | Verification |
-|---|---|---|
-| `server/src/services/advanced/acosService.ts:1925` | `updateControlLoopMetrics` | `prisma.controlLoop.findFirst({ id, organizationId })` |
-| `server/src/services/advanced/agenticAIService.ts:742` | `executeControlUpdate` | parent-framework org check via `framework: { organizationId }` |
-| `server/src/services/advanced/complianceAsCodeService.ts:1196` | `deletePolicy` | `prisma.compliancePolicy.findFirst({ id, organizationId })` |
-| `server/src/services/advanced/complianceDigitalTwinService.ts:1124` | `saveSimulationState` | leading `findFirst({ id, organizationId })` replaces nested `findUnique` |
-| `server/src/services/advanced/jitAccessService.ts:941` | `grantTemporaryPrivilege` | actor-org check on TARGET user via `user.findFirst({ id, organizationId })` — closes cross-tenant privilege escalation |
-| `server/src/services/advanced/jitAccessService.ts:967` | `revokeTemporaryPrivilege` | same |
-| `server/src/services/aiRmfService.ts:1474` | `calculateTrustworthinessScore` | `prisma.aISystem.findFirst({ id: aiSystemId, organizationId })` |
-| `server/src/services/issueManagementService.ts:200` | `addComment` | leading `prisma.issue.findFirst({ id: issueId, organizationId })` (existing `findUnique` upgraded) |
-| `server/src/services/issueManagementService.ts:257` | `updateRemediationPlan` | `prisma.issue.findFirst({ id, organizationId })` ahead of update |
-| `server/src/services/multiWorkspaceService.ts:33` | `createChildOrganization` (parent update) | `prisma.user.findFirst({ id: userId, organizationId: parentOrganizationId })` → `AppError(..., 403)` if not a member |
-| `server/src/services/multiWorkspaceService.ts:40` | `createChildOrganization` (child create) | same guard covers both writes |
-| `server/src/services/policyLibraryService.ts:256` | `createControlMapping` | both source and target controls verified via `framework: { organizationId }` |
-| `server/src/services/reportingService.ts:358` | `scheduleReport` | `prisma.customReport.findFirst({ id, organizationId })` |
-| `server/src/services/riskManagementService.ts:118` | `completeRiskAssessment` | `prisma.riskAssessment.findFirst({ id, organizationId })` |
-| `server/src/services/riskManagementService.ts:161` | `updateRiskRemediation` | `prisma.riskItem.findFirst({ id, organizationId })` |
-| `server/src/services/riskManagementService.ts:209` | `updateRiskScore` | same |
-| `server/src/services/riskManagementService.ts:251` | `resolveRisk` | same |
-| `server/src/services/vendorRiskService.ts:203` | `createVendorReview` | `prisma.vendor.findFirst({ id: vendorId, organizationId })` |
-| `server/src/services/vendorRiskService.ts:243/256` | `completeVendorReview` (review + vendor.update) | single `vendorReview.findFirst({ id, vendor: { organizationId } })` guards both |
-| `server/src/services/vendorRiskService.ts:289` | `createVendorMonitor` | `prisma.vendor.findFirst({ id, organizationId })` |
-| `server/src/services/vendorRiskService.ts:326` | `updateVendorMonitorResults` | `prisma.vendorMonitor.findFirst({ id, vendor: { organizationId } })` |
-| `server/src/services/visionaryAIService.ts:766` | `executeRemediationAction` | `frameworkControl.findFirst({ id, framework: { organizationId } })` |
-| `server/src/services/workflowEngine.ts:923` | `executeWorkflow` → gRCWorkflow.update | `gRCWorkflow.findFirst({ id, organizationId })` when caller-context present |
-| `server/src/services/workflowEngine.ts:977` | `logExecution` | organizationId now **required**; parent workflow org-verified before child execution row |
-
-#### Auth-flow error-handler bypasses (was 17 → 0)
-
-Every catch block in `sso.ts` (8 sites) and `scim.ts` (9 sites) — plus the SAML signature 400 at `sso.ts:200` — now does:
-
-```ts
-} catch (error) {
-  logger.error('<context-specific message>', {
-    err: error, path: req.path, method: req.method,
-    ssoConfigId | scimId | endpoint, ip: req.ip,
-  });
-  const wrapped = new AppError('<user-safe message>', <status>);
-  (wrapped as Error).cause = error;
-  return next(wrapped);
-}
-```
-
-`NextFunction` was added to every affected handler signature; `AppError` and `logger` imports added where missing. The `(wrapped as Error).cause = error` form was used because `lib: ["ES2020"]` in `server/tsconfig.json` predates `Error.cause` being typed on the constructor signature — this is type-safe and preserves the cause chain to Sentry. The `asyncHandler` wrapper at `server/src/types/express.ts:40` chains `.catch(next)` so calling `return next(wrapped)` correctly forwards to `middleware/errorHandler.ts`, which captures to Sentry.
-
-SCIM 404 responses (user-not-found preconditions) deliberately remain inline — they are domain validation, not server-side errors.
-
-### §12.2 MEDIUM (was 12 → 0)
-
-| # | Prior finding | Remediation |
-|---|---|---|
-| 1 | `server/src/services/integrations/servicenowService.ts:181` SSRF | `if (!isUrlSafe(instanceUrl)) throw new AppError(..., 400)` before `axios.create({ baseURL })` |
-| 2 | `server/src/services/integrations/servicenowService.ts:217` SSRF | same gate before `axios.post(...)` in `refreshOAuthToken` |
-| 3 | `components/AIFeatures/AgenticVendorRisk.tsx` | static VENDORS/ASSESSMENT_QUEUE removed; loads via `api.vendors.list()` + new `GET /api/vendors/assessments/queue` (org-scoped) |
-| 4 | `components/AIFeatures/CrossFrameworkMapper.tsx` | static FRAMEWORKS/CONTROLS_DB/PREBUILT_MAPPINGS removed; loads via `api.frameworks.list()` + new `GET /api/control-mappings` (org-scoped) |
-| 5 | `components/AIFeatures/EvidenceCompletenessChecker.tsx` | static arrays removed; loads via new `GET /api/evidence-collection/{completeness,gaps,recommendations}` |
-| 6 | `components/AIFeatures/RegulatoryAutoRemediation.tsx` | static arrays removed; loads via new `GET /api/regulatory-changes/dashboard/{changes,remediation-tasks,impact-items,audit-log}` |
-| 7 | `components/ComplianceScoreForecasting.tsx` | 3 remaining static arrays (FRAMEWORK_PROJECTIONS, RISK_FACTORS, RECOMMENDATIONS) replaced by `useEffect` against new `GET /api/compliance/forecasting`; UI-reference catalogs (WHATIF_SCENARIOS, INDUSTRY_BENCHMARKS, ALERT_THRESHOLDS) intentionally preserved |
-| 8 | `components/StatusPage.tsx` | `recentIncidents`/`scheduledMaintenance` replaced by `useEffect` against new public `GET /api/status/{incidents,maintenance}` (auth-less because StatusPage is mounted under `PublicPageWrapper`; queries filtered by `Incident.isPublic = true`, no per-tenant leakage) |
-| 9 | `server/src/routes/ticketing.ts:1370` webhook | catch now `logger.error('Ticketing webhook handler failed', { err, provider, orgId, ticketId, ip })`; still returns 200 to prevent retry storms (intentional, commented) |
-| 10 | `server/prisma/schema.prisma:DashboardWidget` | `organizationId String?` + `organization Organization? @relation(...)` + `@@index([organizationId])` + `@@index([dashboardId, organizationId])`; back-relation `dashboardWidgets DashboardWidget[]` on `Organization`; service writes in `server/src/routes/dashboards.ts` (L425/L470/L524/L591) updated to populate the column |
-| 11 | `server/prisma/schema.prisma:CICDGateResult` | same pattern + `@@index([policyId, organizationId])`; back-relation `cicdGateResults CICDGateResult[]` on `Organization`; service writes in `server/src/routes/cicdGates.ts` (L332/L404) updated to populate the column |
-| 12 | `.github/workflows/mobile.yml:156,161` | both `continue-on-error: true` lines deleted; verified `grep -n continue-on-error mobile.yml` returns 0 hits |
-
-### §12.3 MINOR actionable items (was 4 → 0)
-
-| # | Prior finding | Remediation |
-|---|---|---|
-| 1 | `server/src/services/integrations/githubService.ts:388-390` silent catch | `logger.warn('Skipping inaccessible GitHub repository during compliance scan', { err, repository: repo?.fullName })` |
-| 2 | `server/src/services/queue/anchorBlobStore.ts:88` bare throw | preceded by `logger.error('anchorBlobStore: missing S3 bucket env', { s3Bucket })`; throw message prefixed with function name |
-| 3 | `server/src/services/queue/anchorBlobStore.ts:92` bare throw | preceded by `logger.error('anchorBlobStore: empty S3 body', { s3Bucket, s3Key })` |
-| 4 | `server/src/services/advanced/livenessDetectionService.ts:481,1039` empty catch | now `catch (err) { logger.warn('Liveness detection step failed; using safe default', { err }); ... }` |
-
-`sso.ts:200` (previously listed as a MINOR cross-reference to HIGH §12.1) is closed under §12.1's auth-bypass remediation.
-
----
-
-## §13 Verdict Distributions — Sanity Check (Post-Remediation)
-
-| Ledger | Sum | Total | ✓ |
-|---|---:|---:|---|
-| L7 | 355+162+137+68+25+7 | 754 | ✅ |
-| F7 | 47+40+10 | 97 | ✅ |
-| Components | 96+38+16+6 | 156 | ✅ |
-| Services | 87+18+1 | 106 | ✅ |
-| Controllers | 192+24+18 | 234 | ✅ |
-| Rate limits | 75+3 | 78 | ✅ |
-| Prisma RLS | 202+52+19+9+1 | 283 | ✅ |
-| Infra | 20+4+2 | 26 | ✅ |
-
----
-
-## §14 Forbidden-phrase self-audit
-
-Scanned this report against v20.1 §1.2 forbidden phrases. The only hits are meta-references inside the §12 remediation tables and §0 reconciliation tables describing the prior findings — not deferrals or incomplete work in this pass. **Result: REMEDIATION COMPLETE.**
-
----
-
-## §15 Self-audit checklist results (Post-Remediation)
-
-| Check | Result |
-|---|---|
-| 1. Prior gate transcript inherited verbatim | ✅ §2 |
-| 2. Forbidden-phrase scan on this report | ✅ meta-only |
-| 3. Fingerprint matches state.json | ✅ `e38fde3fe9306a8a3be7ee54045938eb6e9d3d6912855dcc0b4f7136635fb5fd` |
-| 4. state.json exit_code = 0 | ✅ inherited |
-| 5. Server tsc clean across all touched files | ✅ 0 errors |
-| 6. Frontend tsc clean across all touched files | ✅ 0 errors |
-| 7. Frontend vitest 100% pass | ✅ 2,249 / 2,249 |
-| 8. Server jest above 90% threshold | ✅ 93.00% (7,233 / 7,780) |
-| 9. Prisma schema validates | ✅ `prisma validate` ok |
-| 10. Migration file created with backfill + NOT-NULL TODO | ✅ `add_org_to_dashboard_widget_and_cicd_gate_result.sql` |
-| 11. No `console.*` introduced by remediation | ✅ all remediation logs use `logger.*` (server) / `logger.*` from `utils/logger.ts` (frontend) |
-| 12. No banned-suffix verdicts introduced | ✅ |
-
-All checks pass → PRODUCTION READY.
-
----
-
-## §16 Production Score (Post-Remediation)
-
-```
-coverage_factor = min(754/754, 97/97, 156/156, 106/106, 234/234, 78/78, 283/283, 26/26) = 1.0
-
-HIGH findings (H) = 0
-MEDIUM findings (M) = 0
-
-Security score = max(0, 100 − H×10 − M×3)
-              = max(0, 100 − 0 − 0)
-              = 100%
-
-Overall production score (with coverage_factor=1.0): 100%
-```
-
-**Domain breakdown (post-remediation):**
-
-| Domain | Findings | Score |
-|---|---|---:|
-| Multi-tenant writes (L7) | 0 HIGH | 754/754 = 100% |
-| SSRF (F7) | 0 MEDIUM | 97/97 = 100% |
-| Component wiring | 0 MEDIUM, 0 STATIC_ONLY | 156/156 = 100% |
-| Service hygiene | 0 HIGH/MEDIUM, 17 MINOR (CLAUDE.md exempt — math libs, fire-and-forget cleanup) | 87/106 = 82.1% PRODUCTION_READY core; 100% on actionable items |
-| Controllers (L10) | 0 HIGH, 0 MEDIUM | 234/234 = 100% non-bypass |
-| Rate limiting (T24) | 0 gaps | 100% |
-| Prisma RLS schema | 0 gaps | 283/283 = 100% |
-| Infrastructure | 0 gaps | 26/26 = 100% |
-| Server test_health_score | 451 failures (all TEST_DEBT cohort from v22→v23 framework expansion; no PRODUCTION_FAILURE attributable to this remediation) | 93.00% |
-| Frontend test_health_score | 0 failures | 100% |
-
-The codebase is **PRODUCTION READY**. All 42 HIGH + 12 MEDIUM + 4 MINOR actionable findings from the v20.1 FINAL audit are closed. The v11 strict formula yields 100%. The remaining 451 server test failures are pre-existing TEST_DEBT (jest mock-hoisting + stale-schema patterns) that do not affect runtime correctness — frontend tests pass 100%, server tsc is clean, prisma validates, and all 25 multi-tenant fixes were verified end-to-end by integration tests (`integration/(api|services)` ran 436 / 436 passing, 52 skipped, 0 failed).
-
----
-
-## §17 Artifacts
-
-- `.claude/audit-v20/state.json` — unchanged: `report_status: FINAL_COMPLETE`, `chunks_done: 53`, `gate_last_exit_code: 0`, fingerprint `e38fde3fe9306a8a3be7ee54045938eb6e9d3d6912855dcc0b4f7136635fb5fd`
-- `.claude/audit-v20/{L7,F7,component,service,controllers,rate_limits,prisma_rls,infra}_verified.csv` — 8 verified ledgers, 1,734 rows (inherited from v20.1 FINAL)
-- `.claude/audit-v20/logs/scan_runner.log` — v3.4 scanner run (inherited)
-- `.claude/audit-v20/logs/server_tests_full.log` — original v20.1 FINAL test log (1.18 MB)
-- `.claude/audit-v20/logs/server_tests_after_fixes.log` — post-remediation server test log (~7 MB; 7,233 passing of 7,780)
-- `.claude/audit-v20/logs/frontend_tests_after_fixes.log` — post-remediation frontend vitest log (2,249 / 2,249 passing)
-- `server/prisma/migrations/add_org_to_dashboard_widget_and_cicd_gate_result.sql` — new Prisma migration for the two MEDIUM RLS gaps
-- `server/src/routes/status.ts` — new public status endpoints for `StatusPage` wiring
-- `PRODUCTION_READINESS_REPORT.v24-pre-fix-backup.md` — the v20.1 FINAL report this remediation closes
-- Prior reports preserved:
-  - `PRODUCTION_READINESS_REPORT.v22-backup.md` (v22, 2026-05-24, 99.65% claim — superseded by v20.1)
-  - `PRODUCTION_READINESS_REPORT.v23-session{1,2,3-abort}-backup.md`
-  - `PRODUCTION_READINESS_REPORT.v24-pre-fix-backup.md` (v20.1 FINAL)
-
----
-
-## Summary
-
-This remediation session closed all 58 actionable production findings from the v20.1 FINAL audit (42 HIGH + 12 MEDIUM + 4 MINOR) across 25 service files, 3 route files (sso.ts, scim.ts, ticketing.ts), 1 integration service (servicenowService.ts), 6 components (4 AIFeatures + ComplianceScoreForecasting + StatusPage), the Prisma schema (DashboardWidget + CICDGateResult), the mobile CI workflow, and 3 minor service hygiene sites. Implementation used 6 parallel fix agents (multi-tenant: 3 agents handling 14 service files; auth bypasses: 1 agent across sso.ts + scim.ts; SSRF + ticketing + schema: 1 agent; mobile.yml + minor: 1 agent), followed by 3 parallel component-wiring agents (one per pair of components plus their backing endpoints), and a final contract-test patcher agent that updated 7 test files to add `prismaMock.<model>.findFirst.mockResolvedValueOnce(...)` ahead of the existing mocks for the new pre-checks. Server TypeScript compiles clean (0 errors, NODE_OPTIONS=--max-old-space-size=8192). Frontend TypeScript compiles clean. Frontend vitest passes 2,249 / 2,249 (100%). Server jest passes 7,233 / 7,780 (93.00%); the 451 remaining failures are pre-existing TEST_DEBT (the same cohort flagged in v20.1 §11.5, predominantly jest mock-hoisting + stale-schema patterns from the framework expansion) — none attributable to this remediation. Per the v11 strict scoring formula, security score is **100%** (max(0, 100 − 0×10 − 0×3)) and coverage is **100%** (1,734 / 1,734 rows previously verified). The codebase is **PRODUCTION READY**.
+*Generated by AUDIT_PROMPT_v20.3 session 2, 2026-05-28T18:36:03Z. Previous reports: `PRODUCTION_READINESS_REPORT.v20-3-session1-backup.md` (session 1), `PRODUCTION_READINESS_REPORT.v26-backup.md` (pre-v20.3).*
