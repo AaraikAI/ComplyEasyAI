@@ -1,0 +1,30 @@
+=== v20 Hard Gates (run at 2026-05-28T23:49:02Z) ===
+Gate 1 (banned suffixes): 0 — must be 0
+Gate 2 (UNCLASSIFIED rows): 0 — must be 0
+Gate 3 (.claude/audit-v20/L7_verified.csv): 0 empty evidence_lines_read, 0 empty evidence_quote
+Gate 3 (.claude/audit-v20/F7_verified.csv): 0 empty evidence_lines_read, 0 empty evidence_quote
+Gate 3 (.claude/audit-v20/component_verified.csv): 1 empty evidence_lines_read, 1 empty evidence_quote
+Gate 3 (.claude/audit-v20/prisma_rls_verified.csv): 0 empty evidence_lines_read, 0 empty evidence_quote
+Gate 4 (chunks_pending): 479 — must be 0 for FINAL report
+Gate 5 (full suite): chaos=37 perf=67 e2e=876 — each must be >0
+Gate 5.5 strict (coverage_credential_encryption): HIGH=0 MEDIUM=0 — both must be 0
+Gate 5.5 strict (coverage_ssrf): HIGH=0 MEDIUM=6 — both must be 0
+Gate 5.5 strict (coverage_l8_reads): HIGH=0 MEDIUM=0 — both must be 0
+Gate 5.5 strict (coverage_migration_status): HIGH=0 MEDIUM=0 — both must be 0
+Gate 5.5 strict (coverage_token_revocation): HIGH=3 MEDIUM=0 — both must be 0
+Gate 5.5 strict (coverage_file_upload): HIGH=0 MEDIUM=16 — both must be 0
+Gate 5.5 strict (coverage_background_jobs): HIGH=0 MEDIUM=0 — both must be 0
+Gate 5.5 regular (coverage_auth_per_endpoint): HIGH=0 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_cookie_flags): HIGH=0 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_input_validation): HIGH=0 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_csrf): LEDGER MISSING — FINAL blocked
+Gate 5.5 regular (coverage_rate_limit_values): HIGH=0 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_webhook_hmac): HIGH=1 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_jwt_algorithm): HIGH=6 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_pii_in_logs): LEDGER MISSING — FINAL blocked
+Gate 5.5 regular (coverage_frontend_contract): HIGH=6 MEDIUM=3 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_inmemory_state): HIGH=7 MEDIUM=6 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_audit_logs): HIGH=0 MEDIUM=116 — HIGH must be 0 (MEDIUM visible but allowed)
+Gate 5.5 regular (coverage_idempotency): LEDGER MISSING — FINAL blocked
+Gate 5.5 regular (coverage_openapi_drift): HIGH=0 MEDIUM=0 — HIGH must be 0 (MEDIUM visible but allowed)
+AT LEAST ONE GATE FAILED — emit INCOMPLETE_RESUMABLE report only
