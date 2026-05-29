@@ -15,6 +15,7 @@ import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment, Prisma } from '../../generated/prisma/client';
 import ldapPermissionService, { ADUser, PermissionEvaluationResult, RoleMapping } from './ldapPermissionService';
+import { isUrlSafe } from '../../utils/urlValidator';
 
 // --- Safe regex helpers (ReDoS protection) ---
 const REDOS_PATTERNS = [
@@ -521,6 +522,9 @@ class ZeroTrustService {
       if (abuseIPDBKey) {
         try {
           const axios = require('axios');
+          if (!isUrlSafe('https://api.abuseipdb.com/api/v2/check')) {
+            throw new AppError('AbuseIPDB URL is unsafe', 400);
+          }
           const response = await axios.get('https://api.abuseipdb.com/api/v2/check', {
             params: {
               ipAddress,
@@ -571,6 +575,9 @@ class ZeroTrustService {
       if (virusTotalKey) {
         try {
           const axios = require('axios');
+          if (!isUrlSafe('https://www.virustotal.com/vtapi/v2/ip-address/report')) {
+            throw new AppError('VirusTotal URL is unsafe', 400);
+          }
           const response = await axios.get(`https://www.virustotal.com/vtapi/v2/ip-address/report`, {
             params: {
               apikey: virusTotalKey,

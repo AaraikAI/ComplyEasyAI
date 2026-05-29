@@ -105,6 +105,8 @@ export const QUEUE_NAMES = {
   CLEANUP: 'cleanup',
   /** Blockchain anchor retries (evidence hash → on-chain) */
   BLOCKCHAIN_ANCHOR: 'blockchain-anchor',
+  /** Dead-letter queue — receives jobs that exhaust all retries */
+  DEAD_LETTER: 'dead-letter',
 } as const;
 
 export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
@@ -437,6 +439,31 @@ class JobQueueService extends EventEmitter {
           }
           logger.error(`[JobQueue] Job ${job?.id} (${job?.name}) failed in ${queueName} (BullMQ): ${err.message}`);
           this.emit('job:failed', { queueName, jobId: job?.id, error: err });
+
+          // Route exhausted-retry jobs to dead-letter queue (skip DLQ itself to avoid infinite loop)
+          if (job && queueName !== QUEUE_NAMES.DEAD_LETTER) {
+            const maxAttempts = job.opts?.attempts ?? DEFAULT_JOB_OPTIONS.attempts;
+            if ((job.attemptsMade ?? 0) >= maxAttempts) {
+              const dlq = this.bullQueues.get(QUEUE_NAMES.DEAD_LETTER);
+              if (dlq) {
+                dlq.add(
+                  `exhausted:${queueName}:${job.name ?? 'unknown'}`,
+                  {
+                    originalQueue: queueName,
+                    originalJobName: job.name,
+                    originalJobId: job.id,
+                    payload: job.data,
+                    failureReason: err.message,
+                    attemptsMade: job.attemptsMade,
+                    failedAt: new Date().toISOString(),
+                  },
+                  { removeOnFail: false, attempts: 1 }
+                ).catch((dlqErr) => {
+                  logger.error(`[JobQueue] Failed to enqueue dead-letter for ${queueName}`, dlqErr);
+                });
+              }
+            }
+          }
         });
 
         worker.on('error', (err: Error) => {
