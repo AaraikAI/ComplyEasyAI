@@ -1,13 +1,19 @@
 import sgMail from '@sendgrid/mail';
+import { createHash } from 'crypto';
 import config from '../config';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
+
+// Hash email for pseudonymous log correlation without leaking the address.
+function hashEmail(email: string): string {
+  return createHash('sha256').update(email.toLowerCase().trim()).digest('hex').slice(0, 16);
+}
 
 // Validate and set SendGrid API key
 if (!config.sendgrid.apiKey) {
   logger.error('SENDGRID_API_KEY is not configured');
 } else if (!config.sendgrid.apiKey.startsWith('SG.')) {
-  logger.error(`Invalid SendGrid API key format. Key should start with "SG." but got: ${config.sendgrid.apiKey.substring(0, 10)}...`);
+  logger.error('Invalid SendGrid API key format. Key should start with "SG."');
   logger.error('Please check your SENDGRID_API_KEY in the .env file. SendGrid API keys start with "SG."');
 } else {
   sgMail.setApiKey(config.sendgrid.apiKey);
@@ -51,14 +57,14 @@ class EmailService {
       };
 
       await sgMail.send(msg);
-      logger.info(`Email sent successfully to ${options.to}`);
+      logger.info('Email sent successfully', { to_hash: hashEmail(options.to) });
       return true;
     } catch (error: any) {
       logger.error('Failed to send email', {
         error: error.message,
         code: error.code,
         response: error.response?.body,
-        to: options.to,
+        to_hash: hashEmail(options.to),
       });
       
       // Provide more specific error messages

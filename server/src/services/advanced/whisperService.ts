@@ -173,7 +173,7 @@ class WhisperService {
           },
         });
 
-        logger.info(`[Whisper] Transcription completed: ${result.text.substring(0, 50)}...`);
+        logger.info('[Whisper] Transcription completed', { charCount: result.text.length, durationSec: result.duration, language: result.language });
 
         return result;
       } catch (error) {
@@ -314,7 +314,7 @@ class WhisperService {
         },
       });
 
-      logger.info(`[Whisper] Video transcription completed: ${result.text.substring(0, 50)}...`);
+      logger.info('[Whisper] Video transcription completed', { charCount: result.text.length, durationSec: result.duration, language: result.language });
       return result;
     } catch (error: any) {
       logger.error('[Whisper] Error transcribing video', error);

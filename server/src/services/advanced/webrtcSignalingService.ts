@@ -516,7 +516,6 @@ class WebRTCSignalingService {
     logger.info('[WebRTC Signaling] Peer connected', {
       userId,
       socketId: socket.id,
-      email: userEmail,
     });
 
     socket.emit('authenticated', {
