@@ -409,9 +409,10 @@ app.use((req: Request, res: Response, next) => {
   next();
 });
 
-// Request logging middleware
+// Request logging middleware (IP truncated to /24 to satisfy GDPR Recital 30)
 app.use((req: Request, res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.path} - ${req.ip}`);
+  const truncatedIp = (req.ip || '').replace(/\d+$/, '0');
+  logger.info(`${req.method} ${req.path} - ${truncatedIp}`);
   next();
 });
 
