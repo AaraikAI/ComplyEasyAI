@@ -1,7 +1,7 @@
 {
   "audit_version": "v20.4",
   "started_at": "2026-05-28T20:58:00Z",
-  "current_session": 10,
+  "current_session": 11,
   "scan_fingerprints": {
     "1": "947c79eb1e3c1638dc59f80e92be257ccc2df5baceed9fc16c2fd2ee826274c1",
     "2": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
@@ -12,7 +12,8 @@
     "7": "387763f33b5db4c09e152b23948ba0167bd57161e11d5406b6b43dd8af401175",
     "8": "4bc30758cf4fb0db682f6a7cbb2a5123166856377783f3fad549eb6336d54e72",
     "9": "c94c9ba9151dd41b6ec50d16c02bcb5e1bdf397461f0147488bacd5ac0b2a511",
-    "10": "c94c9ba9151dd41b6ec50d16c02bcb5e1bdf397461f0147488bacd5ac0b2a511"
+    "10": "c94c9ba9151dd41b6ec50d16c02bcb5e1bdf397461f0147488bacd5ac0b2a511",
+    "11": "e616cce7d09aa2f4137e64278baf8472b5d84b52df96aeaa3447273f88b8c07e"
   },
   "previous_audit_state": ".claude/audit-v20/state.v20.3-backup.json (v20.3 session 8 baseline)",
   "ledgers": {
@@ -102,7 +103,7 @@
     },
     "coverage_pii_in_logs": {
       "total": 2942,
-      "verified": 2475,
+      "verified": 2942,
       "tier": 3,
       "strict_block": false
     },
@@ -232,6 +233,117 @@
       "report_status": "INCOMPLETE_RESUMABLE",
       "notes": "coverage_csrf 100% complete (719/719) — 13 of 20 ledgers now at 100%. pii_in_logs 475/2942 = 16.15%. 2 GAP_MEDIUM PII leaks found: authController.ts:798 logs raw email in registration-email-failure path; demoController.ts:110 logs company name on demo submission. Both FIXED in commit 7df2dc8 between s6 and s7. Scan fingerprint unchanged from s2-s5 — no source drift.",
       "scan_fingerprint": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64"
+    },
+    "11": {
+      "timestamp": "2026-05-29T23:30:00Z",
+      "chunks_dispatched": 19,
+      "chunks_completed": 19,
+      "rows_verified": 467,
+      "ledger_targeted": "Final pii_in_logs chunks (rows 2476-2942) — completes ledger at 100%",
+      "findings_high_new": 5,
+      "findings_medium_new": 7,
+      "findings_low_new": 0,
+      "report_status": "INCOMPLETE_RESUMABLE",
+      "notes": "coverage_pii_in_logs reached 100% (2942/2942). 14 of 20 ledgers at 100%. Drift detected at scan re-run (fingerprint moved from c94c9ba9 to e616cce7) from 4 fix files in commit c7b6354. 5 GAP_HIGH: notificationService.ts 4 sites (email + phoneNumber leaks); stripeService.ts:936 logs raw userEmail. 7 GAP_MEDIUM: slack chat-message body leaks (2 sites); mdmService user display names; sodService userName; websocket userEmail (2 sites); workflowEngine email recipient. Subagents hit Anthropic session limit on 6 of 19 chunks; all redispatched after reset and completed cleanly.",
+      "scan_fingerprint": "e616cce7d09aa2f4137e64278baf8472b5d84b52df96aeaa3447273f88b8c07e",
+      "open_findings": [
+        {
+          "file": "server/src/services/notificationService.ts",
+          "line": 357,
+          "severity": "GAP_HIGH",
+          "rule": "COV-10",
+          "description": "logger.info(`[Notification] Email sent to ${user.email}`) — logs raw user email on every notification send",
+          "fix": "Replace ${user.email} with userId or hashed email"
+        },
+        {
+          "file": "server/src/services/notificationService.ts",
+          "line": 519,
+          "severity": "GAP_HIGH",
+          "rule": "COV-10",
+          "description": "logger.warn(`[Notification] Invalid phone number format for user ${userId}: ${phoneNumber}`) — logs raw phoneNumber",
+          "fix": "Drop ${phoneNumber}; userId is already there for traceability"
+        },
+        {
+          "file": "server/src/services/notificationService.ts",
+          "line": 534,
+          "severity": "GAP_HIGH",
+          "rule": "COV-10",
+          "description": "logger.info(`[Notification] SMS sent to ${phoneNumber} for user ${userId} (SID: ${message.sid})`) — logs raw phoneNumber",
+          "fix": "Drop ${phoneNumber}; keep SID and userId for correlation"
+        },
+        {
+          "file": "server/src/services/notificationService.ts",
+          "line": 556,
+          "severity": "GAP_HIGH",
+          "rule": "COV-10",
+          "description": "logger.error(`[Notification] Error sending SMS to ${phoneNumber} for user ${userId}`, error) — logs raw phoneNumber on SMS failure",
+          "fix": "Drop ${phoneNumber}; keep userId only"
+        },
+        {
+          "file": "server/src/services/stripeService.ts",
+          "line": 936,
+          "severity": "GAP_HIGH",
+          "rule": "COV-10",
+          "description": "logger.info(`Payment confirmation email sent to ${userEmail}`) — logs raw user email on every payment confirmation",
+          "fix": "Replace ${userEmail} with { organizationId, tier: tierName }"
+        },
+        {
+          "file": "server/src/services/integrations/slackService.ts",
+          "line": 830,
+          "severity": "GAP_MEDIUM",
+          "rule": "COV-10",
+          "description": "logger.info(`[Slack] Compliance message received: ${slackEvent.text?.substring(0, 100)}`) — logs first 100 chars of user-supplied Slack chat content (potential PII)",
+          "fix": "Demote to debug or drop the text; log message_id + channel_id only"
+        },
+        {
+          "file": "server/src/services/integrations/slackService.ts",
+          "line": 836,
+          "severity": "GAP_MEDIUM",
+          "rule": "COV-10",
+          "description": "logger.info(`[Slack] Bot mentioned: ${slackEvent.text?.substring(0, 100)}`) — same as line 830, app_mention webhook path",
+          "fix": "Same as line 830"
+        },
+        {
+          "file": "server/src/services/mdmService.ts",
+          "line": 384,
+          "severity": "GAP_MEDIUM",
+          "rule": "COV-10",
+          "description": "logger.info(`[MDM] Device ${existing.deviceName} reassigned from ${previousUserName || previousUserId} to ${data.newUserName || data.newUserId}`) — logs raw display names",
+          "fix": "Drop the userName fallbacks; use only userId values"
+        },
+        {
+          "file": "server/src/services/sodService.ts",
+          "line": 307,
+          "severity": "GAP_MEDIUM",
+          "rule": "COV-10",
+          "description": "logger.warn(`[SoD] Violation detected: rule ${data.ruleId} for user ${data.userName}`) — logs human-readable userName instead of opaque userId",
+          "fix": "Replace ${data.userName} with ${data.userId}"
+        },
+        {
+          "file": "server/src/services/websocketService.ts",
+          "line": 119,
+          "severity": "GAP_MEDIUM",
+          "rule": "COV-10",
+          "description": "logger.info(`WebSocket connected: ${userEmail} (${socket.id})`) — logs full user email on every WebSocket connection",
+          "fix": "Replace ${userEmail} with ${userId}"
+        },
+        {
+          "file": "server/src/services/websocketService.ts",
+          "line": 177,
+          "severity": "GAP_MEDIUM",
+          "rule": "COV-10",
+          "description": "logger.info(`WebSocket disconnected: ${userEmail} (${socket.id})`) — same as line 119, disconnect path",
+          "fix": "Same as line 119"
+        },
+        {
+          "file": "server/src/services/workflowEngine.ts",
+          "line": 382,
+          "severity": "GAP_MEDIUM",
+          "rule": "COV-10",
+          "description": "logger.error('Workflow email action failed', { to, subject, error: emailError.message }) — logs recipient email (to) on workflow-email failure",
+          "fix": "Replace `to` with hashed email; keep `subject` for triage"
+        }
+      ]
     },
     "10": {
       "timestamp": "2026-05-29T22:00:00Z",
