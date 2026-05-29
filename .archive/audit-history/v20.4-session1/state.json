@@ -1,0 +1,146 @@
+{
+  "audit_version": "v20.4",
+  "started_at": "2026-05-28T20:58:00Z",
+  "current_session": 1,
+  "scan_fingerprints": {
+    "1": "947c79eb1e3c1638dc59f80e92be257ccc2df5baceed9fc16c2fd2ee826274c1"
+  },
+  "previous_audit_state": ".claude/audit-v20/state.v20.3-backup.json (v20.3 session 8 baseline)",
+  "ledgers": {
+    "coverage_cookie_flags": {
+      "total": 6,
+      "verified": 6,
+      "tier": 1,
+      "strict_block": false
+    },
+    "coverage_rate_limit_values": {
+      "total": 16,
+      "verified": 16,
+      "tier": 2,
+      "strict_block": false
+    },
+    "coverage_webhook_hmac": {
+      "total": 20,
+      "verified": 20,
+      "tier": 2,
+      "strict_block": false
+    },
+    "coverage_jwt_algorithm": {
+      "total": 6,
+      "verified": 6,
+      "tier": 3,
+      "strict_block": false
+    },
+    "coverage_migration_status": {
+      "total": 2,
+      "verified": 2,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_token_revocation": {
+      "total": 17,
+      "verified": 17,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_openapi_drift": {
+      "total": 1,
+      "verified": 1,
+      "tier": 4,
+      "strict_block": false
+    },
+    "coverage_background_jobs": {
+      "total": 28,
+      "verified": 28,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_credential_encryption": {
+      "total": 113,
+      "verified": 113,
+      "tier": 1,
+      "strict_block": true
+    },
+    "coverage_ssrf": {
+      "total": 97,
+      "verified": 97,
+      "tier": 1,
+      "strict_block": true
+    },
+    "coverage_inmemory_state": {
+      "total": 121,
+      "verified": 50,
+      "tier": 4,
+      "strict_block": false
+    },
+    "coverage_input_validation": {
+      "total": 3723,
+      "verified": 0,
+      "tier": 2,
+      "strict_block": false
+    },
+    "coverage_csrf": {
+      "total": 719,
+      "verified": 0,
+      "tier": 2,
+      "strict_block": false
+    },
+    "coverage_auth_per_endpoint": {
+      "total": 1178,
+      "verified": 0,
+      "tier": 1,
+      "strict_block": false
+    },
+    "coverage_pii_in_logs": {
+      "total": 2942,
+      "verified": 0,
+      "tier": 3,
+      "strict_block": false
+    },
+    "coverage_l8_reads": {
+      "total": 4778,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_frontend_contract": {
+      "total": 1178,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": false
+    },
+    "coverage_audit_logs": {
+      "total": 252,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": false
+    },
+    "coverage_file_upload": {
+      "total": 328,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_idempotency": {
+      "total": 719,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": false
+    }
+  },
+  "sessions": {
+    "1": {
+      "timestamp": "2026-05-28T22:00:00Z",
+      "chunks_dispatched": 20,
+      "chunks_completed": 20,
+      "rows_verified": 356,
+      "findings_high_new": 0,
+      "findings_medium_new": 7,
+      "findings_low_new": 20,
+      "report_status": "INCOMPLETE_RESUMABLE",
+      "notes": "10 smallest ledgers verified (cookies, rate_limit, webhook_hmac, jwt, migration, token_revocation, openapi, background_jobs, credential_encryption, ssrf) + 50 of 121 inmemory_state rows. v20.4 ALL CSVs include file_hash_at_verify column for drift detection.",
+      "scan_fingerprint": "947c79eb1e3c1638dc59f80e92be257ccc2df5baceed9fc16c2fd2ee826274c1"
+    }
+  },
+  "report_status": "INCOMPLETE_RESUMABLE"
+}
