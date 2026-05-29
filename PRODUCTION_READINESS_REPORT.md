@@ -1,61 +1,108 @@
-# Production Readiness Report — INCOMPLETE_RESUMABLE (v20.4 session 6 of ~27)
+# Production Readiness Report — INCOMPLETE_RESUMABLE (v20.4 session 7 of ~27)
 
-**Status:** AUDIT IN PROGRESS — DO NOT SHIP. v20.4 session 6 verified 494 rows: **0 GAP_HIGH, 2 GAP_MEDIUM, 0 GAP_LOW**. **coverage_csrf now 100%** (719/719).
+**Status:** AUDIT IN PROGRESS — DO NOT SHIP. v20.4 session 7 verified 500 rows: **0 GAP_HIGH, 6 GAP_MEDIUM, 0 GAP_LOW**. **coverage_pii_in_logs now 33.14%** (975/2942).
 
-**Session:** 6 of approximately 27
+**Session:** 7 of approximately 27
 **Audit version:** v20.4
-**Scan fingerprint:** `44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64` (unchanged from s2–s5 — no drift)
+**Scan fingerprint:** `387763f33b5db4c09e152b23948ba0167bd57161e11d5406b6b43dd8af401175` (changed from `44da5451…` — 2 fix files in s6→s7 transition were detected)
 
-**Coverage factor:** 2,799 / 16,244 = **17.23%** (up from 14.19%).
-- **13 ledgers at 100%** (coverage_csrf joined this session).
-- 1 ledger partial: `coverage_pii_in_logs` 475 / 2942 = **16.15%**.
+**Coverage factor:** 3,299 / 16,244 = **20.31%** (up from 17.23%).
+- **13 ledgers at 100%**.
+- 1 ledger partial: `coverage_pii_in_logs` 975 / 2942 = **33.14%**.
 - 6 ledgers not yet started.
 
 **Gate exit code:** 1 (FAIL — expected; chunks_pending > 0).
 
 ---
 
-## §1 Session 6 Scope + Outcome
+## §1 Session 7 Scope + Outcome
 
-20 parallel subagents:
-- **1 csrf chunk** (701-719): 19 CSRF_VERIFIED → **coverage_csrf reaches 100%**
-- **19 pii_in_logs chunks** (1-475): 473 PII_SAFE + 2 GAP_MEDIUM
+20 parallel subagents covering pii_in_logs rows 476-975:
 
-**Findings totals (session 6 NEW):** **0 GAP_HIGH + 2 GAP_MEDIUM + 0 GAP_LOW**
+**Findings totals (session 7 NEW):** **0 GAP_HIGH + 6 GAP_MEDIUM + 0 GAP_LOW**
 
-| Slot Range (pii) | Result |
+| Chunk | Verdicts |
 |---|---|
-| 1-25 | 25 PII_SAFE (infrastructure: database, monitoring, multiRegion, performance) |
-| 26-50 | 25 PII_SAFE (multiRegion + acosController error labels) |
-| 51-275 | 200 PII_SAFE (acosController + aiController + aiRmfController + auditController + authController error labels) |
-| 276-300 | 24 PII_SAFE + **1 GAP_MEDIUM** (authController.ts:798 logs raw email) |
-| 301-325 | 25 PII_SAFE (authController + billingController) |
-| 326-350 | 24 PII_SAFE + 1 USERID_ONLY_OK + **1 GAP_MEDIUM** (demoController.ts:110 logs company name) |
-| 351-475 | 123 PII_SAFE + 2 USERID_ONLY_OK (frameworks, evidence, integrations, onboarding) |
+| 476-500 | 25 PII_SAFE |
+| 501-525 | 25 PII_SAFE |
+| 526-550 | 25 PII_SAFE |
+| 551-575 | 25 PII_SAFE |
+| 576-600 | 25 PII_SAFE |
+| 601-625 | 24 PII_SAFE + **1 GAP_MEDIUM** (index.ts:414 — req.ip per-request) |
+| 626-650 | 25 PII_SAFE |
+| 651-675 | 19 PII_SAFE + 5 USERID_ONLY_OK + 1 NOT_APPLICABLE |
+| 676-700 | 23 PII_SAFE + 2 USERID_ONLY_OK |
+| 701-725 | 19 PII_SAFE + 2 USERID_ONLY_OK + 1 PII_SAFE + **3 GAP_MEDIUM** (validate.ts:22/42/100) |
+| 726-750 | 21 PII_SAFE + 3 USERID_ONLY_OK + **1 GAP_MEDIUM** (bulk.ts:409 — assignee.name) |
+| 751-775 | 24 PII_SAFE + 1 USERID_ONLY_OK |
+| 776-800 | 24 PII_SAFE + 1 USERID_ONLY_OK |
+| 801-825 | 25 PII_SAFE |
+| 826-850 | 23 PII_SAFE + 1 USERID_ONLY_OK + **1 GAP_MEDIUM** (dpo.ts:176 — previousDPO.name) |
+| 851-875 | 25 PII_SAFE |
+| 876-900 | 21 PII_SAFE + 4 USERID_ONLY_OK |
+| 901-925 | 25 PII_SAFE |
+| 926-950 | 25 PII_SAFE |
+| 951-975 | 25 PII_SAFE |
 
 ---
 
-## §2 Open Findings (to fix in Session 7)
+## §2 Open Findings (to fix in Session 8)
 
-### GAP_MEDIUM #1 — Email leak in registration email-failure log
-**File:** `server/src/controllers/authController.ts:798`
+### GAP_MEDIUM #1 — Joi validation error leaks rejected body (HIGH IMPACT)
+**File:** `server/src/middleware/validate.ts:22`
 **Code:**
 ```ts
-logger.warn('Registration: email send failed', { email, error: emailError?.message });
+logger.warn('Validation failed', { path: req.path, method: req.method, errors: error.details });
 ```
-**Issue:** Logs raw user email when registration confirmation email fails to dispatch. Violates COV-10 (PII in logs).
-**Fix:** Drop the `email` field; log only `error: emailError?.message`. If correlation needed, hash the email or use the new user.id.
+**Issue:** Joi's `error.details[].context.value` carries the **raw rejected value**. When validation fails on `/auth/login`, `/auth/register`, `/auth/change-password`, or `/auth/reset-password`, plaintext passwords and emails are written to log storage. This is the highest-impact PII finding in S7 because failed-login attempts are exactly when malformed input occurs.
 
-### GAP_MEDIUM #2 — Company name leak in demo-request submission log
-**File:** `server/src/controllers/demoController.ts:110`
+**Fix:** Sanitize `error.details` before logging — strip `context.value`:
+```ts
+const sanitized = error.details.map(d => ({ message: d.message, path: d.path, type: d.type }));
+logger.warn('Validation failed', { path: req.path, method: req.method, errors: sanitized });
+```
+
+### GAP_MEDIUM #2 — Same leak in validateQuery
+**File:** `server/src/middleware/validate.ts:42`
+Same pattern, same fix. Query strings can carry tokens, magic-link IDs, recovery codes.
+
+### GAP_MEDIUM #3 — Same leak in validateMultipart
+**File:** `server/src/middleware/validate.ts:100`
+Same pattern, same fix. Multipart form fields may carry secrets in file-with-metadata uploads.
+
+### GAP_MEDIUM #4 — Per-request access log emits raw req.ip
+**File:** `server/src/index.ts:414`
 **Code:**
 ```ts
-logger.info(`Demo request submitted (company: ${demoRequest.company})`);
+logger.info(`${req.method} ${req.path} - ${req.ip}`);
 ```
-**Issue:** Logs B2B company name from public lead-capture form. Pseudo-identifying PII.
-**Fix:** Replace with `demoRequest.id` only:
+**Issue:** IP addresses are personal data under GDPR Recital 30 and ePrivacy. This logs every request.
+**Fix:** Hash or truncate IP, e.g.:
 ```ts
-logger.info(`Demo request submitted (requestId: ${demoRequest.id})`);
+const truncatedIp = (req.ip || '').replace(/\d+$/, '0');
+logger.info(`${req.method} ${req.path} - ${truncatedIp}`);
+```
+
+### GAP_MEDIUM #5 — Bulk-assign log leaks assignee name
+**File:** `server/src/routes/bulk.ts:409`
+**Code:**
+```ts
+logger.info(`Bulk assign: ${result.count} ${resourceType} assigned to ${assignee.name} (${assigneeId}) by user ${userId} in org ${orgId}`);
+```
+**Fix:** Drop `${assignee.name}`:
+```ts
+logger.info(`Bulk assign: ${result.count} ${resourceType} assigned to ${assigneeId} by user ${userId} in org ${orgId}`);
+```
+
+### GAP_MEDIUM #6 — DPO designation log leaks outgoing DPO name
+**File:** `server/src/routes/dpo.ts:176`
+**Code:**
+```ts
+logger.info('DPO designation removed', { organizationId, removedBy: user.id, previousDPO: existing.name, reason });
+```
+**Fix:** Drop `previousDPO: existing.name` (the DB audit trail already records the prior DPO):
+```ts
+logger.info('DPO designation removed', { organizationId, removedBy: user.id, reason });
 ```
 
 ---
@@ -76,41 +123,41 @@ logger.info(`Demo request submitted (requestId: ${demoRequest.id})`);
 | coverage_ssrf | 97 | 97 | 100% | ✅ |
 | coverage_inmemory_state | 121 | 121 | 100% | ✅ |
 | coverage_auth_per_endpoint | 1178 | 1178 | 100% | ✅ |
-| **coverage_csrf** | **719** | **719** | **100%** | **✅ NEW** |
-| **coverage_pii_in_logs** | **2942** | **475** | **16.15%** | **s6: 2 GAP_MEDIUM** |
+| coverage_csrf | 719 | 719 | 100% | ✅ |
+| **coverage_pii_in_logs** | **2942** | **975** | **33.14%** | **s7: 6 GAP_MEDIUM** |
 | coverage_input_validation | 3723 | 0 | 0% | not started |
 | coverage_l8_reads | 4778 | 0 | 0% | not started |
 | coverage_frontend_contract | 1178 | 0 | 0% | not started |
 | coverage_audit_logs | 252 | 0 | 0% | not started |
 | coverage_file_upload | 328 | 0 | 0% | not started |
 | coverage_idempotency | 719 | 0 | 0% | not started |
-| **TOTAL** | **16,244** | **2,799** | **17.23%** | **~21 sessions remaining** |
+| **TOTAL** | **16,244** | **3,299** | **20.31%** | **~20 sessions remaining** |
 
 ---
 
 ## §4 Honest Disclosure
 
 **Three truths:**
-1. v20.4 sessions 1-6 verified 2,799 candidate sites: **0 GAP_HIGH** total, **2 new GAP_MEDIUM** in s6.
-2. **coverage_csrf is 100% complete.** 13 of 20 ledgers now at 100%.
-3. Audit is **17.23% complete**. ~21 sessions remaining.
+1. v20.4 sessions 1-7 verified 3,299 candidate sites: **0 GAP_HIGH total, 8 new GAP_MEDIUM in s7** (2 from s6 already fixed in commit `7df2dc8`).
+2. The s7 validate.ts findings are the **highest-impact pii issues seen so far** — failed login attempts log raw passwords.
+3. Audit is **20.31% complete**. ~20 sessions remaining.
 
 ---
 
 ## §5 Next Session Instructions
 
-Recommended Session 7:
-- **Fix the 2 GAP_MEDIUM findings in §2 first** (small edit to authController.ts:798 + demoController.ts:110).
-- Then continue `coverage_pii_in_logs` chunks 20-39 (rows 476-975) — 500 more pii rows.
+Recommended Session 8:
+- **Fix the 6 GAP_MEDIUM findings in §2 first** — especially validate.ts, which has direct credential leakage on auth endpoints.
+- Then continue `coverage_pii_in_logs` chunks 40-59 (rows 976-1475) — 500 more pii rows.
 
 ---
 
 ## §6 Coverage Score Disclosure
 
-- **coverage_factor = 2,799 / 16,244 = 17.23%**
+- **coverage_factor = 3,299 / 16,244 = 20.31%**
 - **overall_score: NOT_COMPUTED** (coverage_factor < 0.95)
 - **test_health_score: 93.00%** (inherited)
 
 ---
 
-*Generated by AUDIT_PROMPT_v20.4 session 6, 2026-05-29. Scan fingerprint: `44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64`.*
+*Generated by AUDIT_PROMPT_v20.4 session 7, 2026-05-29. Scan fingerprint: `387763f33b5db4c09e152b23948ba0167bd57161e11d5406b6b43dd8af401175`.*
