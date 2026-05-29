@@ -1,108 +1,98 @@
-# Production Readiness Report — INCOMPLETE_RESUMABLE (v20.4 session 7 of ~27)
+# Production Readiness Report — INCOMPLETE_RESUMABLE (v20.4 session 8 of ~27)
 
-**Status:** AUDIT IN PROGRESS — DO NOT SHIP. v20.4 session 7 verified 500 rows: **0 GAP_HIGH, 6 GAP_MEDIUM, 0 GAP_LOW**. **coverage_pii_in_logs now 33.14%** (975/2942).
+**Status:** AUDIT IN PROGRESS — DO NOT SHIP. v20.4 session 8 verified 500 rows: **3 GAP_HIGH, 1 GAP_MEDIUM, 0 GAP_LOW**. **coverage_pii_in_logs now 50.14%** (1475/2942).
 
-**Session:** 7 of approximately 27
+**Session:** 8 of approximately 27
 **Audit version:** v20.4
-**Scan fingerprint:** `387763f33b5db4c09e152b23948ba0167bd57161e11d5406b6b43dd8af401175` (changed from `44da5451…` — 2 fix files in s6→s7 transition were detected)
+**Scan fingerprint:** `4bc30758cf4fb0db682f6a7cbb2a5123166856377783f3fad549eb6336d54e72` (changed from `387763f3…` — drift detected from the 4 fix files in s7→s8 transition)
 
-**Coverage factor:** 3,299 / 16,244 = **20.31%** (up from 17.23%).
+**Coverage factor:** 3,799 / 16,244 = **23.39%** (up from 20.31%).
 - **13 ledgers at 100%**.
-- 1 ledger partial: `coverage_pii_in_logs` 975 / 2942 = **33.14%**.
+- 1 ledger partial: `coverage_pii_in_logs` 1475 / 2942 = **50.14%**.
 - 6 ledgers not yet started.
 
 **Gate exit code:** 1 (FAIL — expected; chunks_pending > 0).
 
 ---
 
-## §1 Session 7 Scope + Outcome
+## §1 Session 8 Scope + Outcome
 
-20 parallel subagents covering pii_in_logs rows 476-975:
+20 parallel subagents covering pii_in_logs rows 976-1475:
 
-**Findings totals (session 7 NEW):** **0 GAP_HIGH + 6 GAP_MEDIUM + 0 GAP_LOW**
+**Findings totals (session 8 NEW):** **3 GAP_HIGH + 1 GAP_MEDIUM + 0 GAP_LOW**
+
+Note: subagents initially hit Anthropic session limit; all 20 were redispatched after reset and completed cleanly. No work lost.
 
 | Chunk | Verdicts |
 |---|---|
-| 476-500 | 25 PII_SAFE |
-| 501-525 | 25 PII_SAFE |
-| 526-550 | 25 PII_SAFE |
-| 551-575 | 25 PII_SAFE |
-| 576-600 | 25 PII_SAFE |
-| 601-625 | 24 PII_SAFE + **1 GAP_MEDIUM** (index.ts:414 — req.ip per-request) |
-| 626-650 | 25 PII_SAFE |
-| 651-675 | 19 PII_SAFE + 5 USERID_ONLY_OK + 1 NOT_APPLICABLE |
-| 676-700 | 23 PII_SAFE + 2 USERID_ONLY_OK |
-| 701-725 | 19 PII_SAFE + 2 USERID_ONLY_OK + 1 PII_SAFE + **3 GAP_MEDIUM** (validate.ts:22/42/100) |
-| 726-750 | 21 PII_SAFE + 3 USERID_ONLY_OK + **1 GAP_MEDIUM** (bulk.ts:409 — assignee.name) |
-| 751-775 | 24 PII_SAFE + 1 USERID_ONLY_OK |
-| 776-800 | 24 PII_SAFE + 1 USERID_ONLY_OK |
-| 801-825 | 25 PII_SAFE |
-| 826-850 | 23 PII_SAFE + 1 USERID_ONLY_OK + **1 GAP_MEDIUM** (dpo.ts:176 — previousDPO.name) |
-| 851-875 | 25 PII_SAFE |
-| 876-900 | 21 PII_SAFE + 4 USERID_ONLY_OK |
-| 901-925 | 25 PII_SAFE |
-| 926-950 | 25 PII_SAFE |
-| 951-975 | 25 PII_SAFE |
+| 976-1000 | 25 PII_SAFE (reports.ts, roles.ts, ropa.ts, scim.ts) |
+| 1001-1025 | 16 PII_SAFE + 9 USERID_ONLY_OK (SCIM auth errors) |
+| 1026-1050 | 23 PII_SAFE + 1 USERID_ONLY_OK + **1 GAP_MEDIUM** (sso.ts:249 — raw email in SSO auto-provision) |
+| 1051-1075 | 11 PII_SAFE + 11 USERID_ONLY_OK + **3 GAP_HIGH** (team.ts:137/266/283 — raw emails in team-invitation flow) |
+| 1076-1100 | 24 PII_SAFE + 1 USERID_ONLY_OK |
+| 1101-1125 | 25 PII_SAFE (acosService + performance-test) |
+| 1126-1150 | 25 PII_SAFE (acosService) |
+| 1151-1175 | 25 PII_SAFE (acosService + agenticAIService) |
+| 1176-1200 | 24 PII_SAFE + 1 USERID_ONLY_OK (agenticAIService + blockchain) |
+| 1201-1225 | 25 PII_SAFE (blockchainService) |
+| 1226-1250 | 25 PII_SAFE (blockchainService) |
+| 1251-1275 | 25 PII_SAFE (blockchainService) |
+| 1276-1300 | 22 PII_SAFE + 3 USERID_ONLY_OK (blockchain event listeners + byok) |
+| 1301-1325 | 15 PII_SAFE + 10 USERID_ONLY_OK (byokService — KMS key IDs only) |
+| 1326-1350 | 24 PII_SAFE + 1 USERID_ONLY_OK (byokService + complianceAsCode) |
+| 1351-1375 | 24 PII_SAFE + 1 USERID_ONLY_OK (complianceAsCodeService) |
+| 1376-1400 | 25 PII_SAFE (complianceAsCode + digitalTwin + deepfake) |
+| 1401-1425 | 23 PII_SAFE + 2 USERID_ONLY_OK (deepfake + dp + evidenceTruth) |
+| 1426-1450 | 24 PII_SAFE + 1 USERID_ONLY_OK (evidenceTruthLayerService) |
+| 1451-1475 | 25 PII_SAFE (evidenceTruth + federatedSwarm) |
 
 ---
 
-## §2 Open Findings (to fix in Session 8)
+## §2 Open Findings (to fix in Session 9)
 
-### GAP_MEDIUM #1 — Joi validation error leaks rejected body (HIGH IMPACT)
-**File:** `server/src/middleware/validate.ts:22`
+### GAP_HIGH #1 — Raw email logged on single team invite
+**File:** `server/src/routes/team.ts:137`
 **Code:**
 ```ts
-logger.warn('Validation failed', { path: req.path, method: req.method, errors: error.details });
+logger.info(`Team member invited: ${email} to organization ${organizationId}`);
 ```
-**Issue:** Joi's `error.details[].context.value` carries the **raw rejected value**. When validation fails on `/auth/login`, `/auth/register`, `/auth/change-password`, or `/auth/reset-password`, plaintext passwords and emails are written to log storage. This is the highest-impact PII finding in S7 because failed-login attempts are exactly when malformed input occurs.
-
-**Fix:** Sanitize `error.details` before logging — strip `context.value`:
+**Issue:** Logs the invitee's raw email address on every successful invitation. Direct PII in logs.
+**Fix:** Replace the email with the newly-created user's id:
 ```ts
-const sanitized = error.details.map(d => ({ message: d.message, path: d.path, type: d.type }));
-logger.warn('Validation failed', { path: req.path, method: req.method, errors: sanitized });
+logger.info(`Team member invited: user ${newUser.id} to organization ${organizationId}`);
 ```
 
-### GAP_MEDIUM #2 — Same leak in validateQuery
-**File:** `server/src/middleware/validate.ts:42`
-Same pattern, same fix. Query strings can carry tokens, magic-link IDs, recovery codes.
-
-### GAP_MEDIUM #3 — Same leak in validateMultipart
-**File:** `server/src/middleware/validate.ts:100`
-Same pattern, same fix. Multipart form fields may carry secrets in file-with-metadata uploads.
-
-### GAP_MEDIUM #4 — Per-request access log emits raw req.ip
-**File:** `server/src/index.ts:414`
+### GAP_HIGH #2 — Raw email in failed-email-send warning
+**File:** `server/src/routes/team.ts:266`
 **Code:**
 ```ts
-logger.info(`${req.method} ${req.path} - ${req.ip}`);
+logger.warn(`Failed to send invitation email to ${invite.email}`, emailError);
 ```
-**Issue:** IP addresses are personal data under GDPR Recital 30 and ePrivacy. This logs every request.
-**Fix:** Hash or truncate IP, e.g.:
+**Fix:** Drop `${invite.email}`. Log the invitation id (or the new user.id) for correlation:
 ```ts
-const truncatedIp = (req.ip || '').replace(/\d+$/, '0');
-logger.info(`${req.method} ${req.path} - ${truncatedIp}`);
+logger.warn(`Failed to send invitation email for invite ${invitation.id}`, emailError);
 ```
 
-### GAP_MEDIUM #5 — Bulk-assign log leaks assignee name
-**File:** `server/src/routes/bulk.ts:409`
+### GAP_HIGH #3 — Raw email in bulk-invite error
+**File:** `server/src/routes/team.ts:283`
 **Code:**
 ```ts
-logger.info(`Bulk assign: ${result.count} ${resourceType} assigned to ${assignee.name} (${assigneeId}) by user ${userId} in org ${orgId}`);
+logger.error(`Failed to invite ${invite.email}`, error);
 ```
-**Fix:** Drop `${assignee.name}`:
+**Fix:** Drop `${invite.email}`. Log the batch index or invite id:
 ```ts
-logger.info(`Bulk assign: ${result.count} ${resourceType} assigned to ${assigneeId} by user ${userId} in org ${orgId}`);
+logger.error(`Failed to invite at index ${i}`, error);
 ```
 
-### GAP_MEDIUM #6 — DPO designation log leaks outgoing DPO name
-**File:** `server/src/routes/dpo.ts:176`
+### GAP_MEDIUM #4 — Raw email in SSO auto-provision info log
+**File:** `server/src/routes/sso.ts:249`
 **Code:**
 ```ts
-logger.info('DPO designation removed', { organizationId, removedBy: user.id, previousDPO: existing.name, reason });
+logger.info(`SSO ACS: Auto-provisioned user ${email} for org ${ssoConfig.organizationId}`);
 ```
-**Fix:** Drop `previousDPO: existing.name` (the DB audit trail already records the prior DPO):
+**Fix:** Replace `${email}` with the new user.id after creation:
 ```ts
-logger.info('DPO designation removed', { organizationId, removedBy: user.id, reason });
+logger.info(`SSO ACS: Auto-provisioned user ${newUser.id} for org ${ssoConfig.organizationId}`);
 ```
 
 ---
@@ -124,40 +114,40 @@ logger.info('DPO designation removed', { organizationId, removedBy: user.id, rea
 | coverage_inmemory_state | 121 | 121 | 100% | ✅ |
 | coverage_auth_per_endpoint | 1178 | 1178 | 100% | ✅ |
 | coverage_csrf | 719 | 719 | 100% | ✅ |
-| **coverage_pii_in_logs** | **2942** | **975** | **33.14%** | **s7: 6 GAP_MEDIUM** |
+| **coverage_pii_in_logs** | **2942** | **1475** | **50.14%** | **s8: 3 GAP_HIGH + 1 GAP_MEDIUM** |
 | coverage_input_validation | 3723 | 0 | 0% | not started |
 | coverage_l8_reads | 4778 | 0 | 0% | not started |
 | coverage_frontend_contract | 1178 | 0 | 0% | not started |
 | coverage_audit_logs | 252 | 0 | 0% | not started |
 | coverage_file_upload | 328 | 0 | 0% | not started |
 | coverage_idempotency | 719 | 0 | 0% | not started |
-| **TOTAL** | **16,244** | **3,299** | **20.31%** | **~20 sessions remaining** |
+| **TOTAL** | **16,244** | **3,799** | **23.39%** | **~19 sessions remaining** |
 
 ---
 
 ## §4 Honest Disclosure
 
 **Three truths:**
-1. v20.4 sessions 1-7 verified 3,299 candidate sites: **0 GAP_HIGH total, 8 new GAP_MEDIUM in s7** (2 from s6 already fixed in commit `7df2dc8`).
-2. The s7 validate.ts findings are the **highest-impact pii issues seen so far** — failed login attempts log raw passwords.
-3. Audit is **20.31% complete**. ~20 sessions remaining.
+1. v20.4 sessions 1-8 verified 3,799 candidate sites: **3 GAP_HIGH (new in s8) + 4 GAP_MEDIUM open** (10 prior MEDIUMs all closed in commits `7df2dc8` and `9f6b4f5`).
+2. The s8 team.ts findings are the first GAP_HIGH of the audit — every team invite logs the invitee's email plaintext. Operational logs of B2B SaaS team invites are not low-volume.
+3. Audit is **23.39% complete**. ~19 sessions remaining.
 
 ---
 
 ## §5 Next Session Instructions
 
-Recommended Session 8:
-- **Fix the 6 GAP_MEDIUM findings in §2 first** — especially validate.ts, which has direct credential leakage on auth endpoints.
-- Then continue `coverage_pii_in_logs` chunks 40-59 (rows 976-1475) — 500 more pii rows.
+Recommended Session 9:
+- **Fix the 3 GAP_HIGH + 1 GAP_MEDIUM findings in §2 first** — team.ts is the most impactful (every invite logs an email).
+- Then continue `coverage_pii_in_logs` chunks 60-79 (rows 1476-1975) — 500 more pii rows.
 
 ---
 
 ## §6 Coverage Score Disclosure
 
-- **coverage_factor = 3,299 / 16,244 = 20.31%**
+- **coverage_factor = 3,799 / 16,244 = 23.39%**
 - **overall_score: NOT_COMPUTED** (coverage_factor < 0.95)
 - **test_health_score: 93.00%** (inherited)
 
 ---
 
-*Generated by AUDIT_PROMPT_v20.4 session 7, 2026-05-29. Scan fingerprint: `387763f33b5db4c09e152b23948ba0167bd57161e11d5406b6b43dd8af401175`.*
+*Generated by AUDIT_PROMPT_v20.4 session 8, 2026-05-29. Scan fingerprint: `4bc30758cf4fb0db682f6a7cbb2a5123166856377783f3fad549eb6336d54e72`.*
