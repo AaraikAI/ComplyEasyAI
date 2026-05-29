@@ -1,13 +1,14 @@
 {
   "audit_version": "v20.4",
   "started_at": "2026-05-28T20:58:00Z",
-  "current_session": 5,
+  "current_session": 6,
   "scan_fingerprints": {
     "1": "947c79eb1e3c1638dc59f80e92be257ccc2df5baceed9fc16c2fd2ee826274c1",
     "2": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
     "3": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
     "4": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
-    "5": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64"
+    "5": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
+    "6": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64"
   },
   "previous_audit_state": ".claude/audit-v20/state.v20.3-backup.json (v20.3 session 8 baseline)",
   "ledgers": {
@@ -85,7 +86,7 @@
     },
     "coverage_csrf": {
       "total": 719,
-      "verified": 700,
+      "verified": 719,
       "tier": 2,
       "strict_block": false
     },
@@ -97,7 +98,7 @@
     },
     "coverage_pii_in_logs": {
       "total": 2942,
-      "verified": 0,
+      "verified": 475,
       "tier": 3,
       "strict_block": false
     },
@@ -214,6 +215,37 @@
       "report_status": "INCOMPLETE_RESUMABLE",
       "notes": "Verdict mix: ~470 CSRF_VERIFIED (global app.use('/api', csrfProtection)); 8 SAMESITE_STRICT_PROTECTED (pre-login auth.ts endpoints exempted by csrf.ts:233-242 — sameSite:'strict' cookies block CSRF); 5 INTENTIONALLY_NO_CSRF (Stripe billing webhook + ticketing per-provider HMAC + CICD webhook + SAML ACS); 7 BEARER_AUTH_NOT_APPLICABLE (SCIM /v2/Users + /v2/Groups bearer-token endpoints). 0 GAP findings. Scan fingerprint unchanged from s4 — no source drift between sessions.",
       "scan_fingerprint": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64"
+    },
+    "6": {
+      "timestamp": "2026-05-29T16:30:00Z",
+      "chunks_dispatched": 20,
+      "chunks_completed": 20,
+      "rows_verified": 494,
+      "ledger_targeted": "Final csrf chunk (701-719) finishes csrf ledger + 19 pii_in_logs chunks (1-475)",
+      "findings_high_new": 0,
+      "findings_medium_new": 2,
+      "findings_low_new": 0,
+      "report_status": "INCOMPLETE_RESUMABLE",
+      "notes": "coverage_csrf 100% complete (719/719) — 13 of 20 ledgers now at 100%. pii_in_logs 475/2942 = 16.15%. 2 GAP_MEDIUM PII leaks found: authController.ts:798 logs raw email in registration-email-failure path; demoController.ts:110 logs company name on demo submission. Both are pre-existing patterns the v20.3 PII sweep missed because the source was at the controller boundary, not inside the catch chain. Scan fingerprint unchanged from s2-s5 — no source drift.",
+      "scan_fingerprint": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
+      "open_findings": [
+        {
+          "file": "server/src/controllers/authController.ts",
+          "line": 798,
+          "severity": "GAP_MEDIUM",
+          "rule": "COV-10",
+          "description": "logger.warn logs raw email in registration-email-failure path: { email, error: emailError?.message }",
+          "fix": "Drop email field; log only sanitized error.message or hashed email"
+        },
+        {
+          "file": "server/src/controllers/demoController.ts",
+          "line": 110,
+          "severity": "GAP_MEDIUM",
+          "rule": "COV-10",
+          "description": "logger.info logs ${demoRequest.company} on demo submission",
+          "fix": "Replace with demoRequest.id only (UUID trace identifier)"
+        }
+      ]
     }
   },
   "report_status": "INCOMPLETE_RESUMABLE",
