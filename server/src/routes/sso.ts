@@ -246,7 +246,7 @@ router.post(
             active: true,
           },
         });
-        logger.info(`SSO ACS: Auto-provisioned user ${email} for org ${ssoConfig.organizationId}`);
+        logger.info(`SSO ACS: Auto-provisioned user ${user.id} for org ${ssoConfig.organizationId}`);
       }
 
       if (!user) {
