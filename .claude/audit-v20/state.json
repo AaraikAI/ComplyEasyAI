@@ -1,7 +1,7 @@
 {
   "audit_version": "v20.4",
   "started_at": "2026-05-28T20:58:00Z",
-  "current_session": 8,
+  "current_session": 9,
   "scan_fingerprints": {
     "1": "947c79eb1e3c1638dc59f80e92be257ccc2df5baceed9fc16c2fd2ee826274c1",
     "2": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
@@ -10,7 +10,8 @@
     "5": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
     "6": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
     "7": "387763f33b5db4c09e152b23948ba0167bd57161e11d5406b6b43dd8af401175",
-    "8": "4bc30758cf4fb0db682f6a7cbb2a5123166856377783f3fad549eb6336d54e72"
+    "8": "4bc30758cf4fb0db682f6a7cbb2a5123166856377783f3fad549eb6336d54e72",
+    "9": "c94c9ba9151dd41b6ec50d16c02bcb5e1bdf397461f0147488bacd5ac0b2a511"
   },
   "previous_audit_state": ".claude/audit-v20/state.v20.3-backup.json (v20.3 session 8 baseline)",
   "ledgers": {
@@ -100,7 +101,7 @@
     },
     "coverage_pii_in_logs": {
       "total": 2942,
-      "verified": 1475,
+      "verified": 1975,
       "tier": 3,
       "strict_block": false
     },
@@ -230,6 +231,19 @@
       "report_status": "INCOMPLETE_RESUMABLE",
       "notes": "coverage_csrf 100% complete (719/719) — 13 of 20 ledgers now at 100%. pii_in_logs 475/2942 = 16.15%. 2 GAP_MEDIUM PII leaks found: authController.ts:798 logs raw email in registration-email-failure path; demoController.ts:110 logs company name on demo submission. Both FIXED in commit 7df2dc8 between s6 and s7. Scan fingerprint unchanged from s2-s5 — no source drift.",
       "scan_fingerprint": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64"
+    },
+    "9": {
+      "timestamp": "2026-05-29T20:30:00Z",
+      "chunks_dispatched": 20,
+      "chunks_completed": 20,
+      "rows_verified": 500,
+      "ledger_targeted": "20 pii_in_logs chunks (rows 1476-1975) — drives pii ledger to 67.13%",
+      "findings_high_new": 0,
+      "findings_medium_new": 0,
+      "findings_low_new": 0,
+      "report_status": "INCOMPLETE_RESUMABLE",
+      "notes": "Drift detected at scanner re-run (commit 9f55604 fixed 4 s8 findings — fingerprint moved from 4bc30758 to c94c9ba9). CLEANEST SESSION OF V20.4 — 0 GAP findings across 500 rows. All advanced services verified: federatedSwarm/homomorphicAI/GNN/mlModels/MQTT/multimodalIntake/neuroSymbolic/physicalAI/redTeam/RIF/jitAccess/LDAP/livenessDetection/byok/blockchain. Pattern: advanced services log only error objects, internal UUIDs (modelId, deviceId, scenarioId, regulatoryChangeId), aggregate metrics (counts, training loss, signal strength, latency), and pseudonymous organizationId/userId — never req.body, full req.user, raw email, password, or token.",
+      "scan_fingerprint": "c94c9ba9151dd41b6ec50d16c02bcb5e1bdf397461f0147488bacd5ac0b2a511"
     },
     "8": {
       "timestamp": "2026-05-29T19:00:00Z",

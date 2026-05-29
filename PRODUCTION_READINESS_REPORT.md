@@ -1,99 +1,56 @@
-# Production Readiness Report — INCOMPLETE_RESUMABLE (v20.4 session 8 of ~27)
+# Production Readiness Report — INCOMPLETE_RESUMABLE (v20.4 session 9 of ~27)
 
-**Status:** AUDIT IN PROGRESS — DO NOT SHIP. v20.4 session 8 verified 500 rows: **3 GAP_HIGH, 1 GAP_MEDIUM, 0 GAP_LOW**. **coverage_pii_in_logs now 50.14%** (1475/2942).
+**Status:** AUDIT IN PROGRESS — DO NOT SHIP. v20.4 session 9 verified 500 rows: **0 GAP_HIGH, 0 GAP_MEDIUM, 0 GAP_LOW** — cleanest session of v20.4. **coverage_pii_in_logs now 67.13%** (1975/2942).
 
-**Session:** 8 of approximately 27
+**Session:** 9 of approximately 27
 **Audit version:** v20.4
-**Scan fingerprint:** `4bc30758cf4fb0db682f6a7cbb2a5123166856377783f3fad549eb6336d54e72` (changed from `387763f3…` — drift detected from the 4 fix files in s7→s8 transition)
+**Scan fingerprint:** `c94c9ba9151dd41b6ec50d16c02bcb5e1bdf397461f0147488bacd5ac0b2a511` (changed from `4bc30758…` — drift detected from the 2 fix files in s8→s9 transition)
 
-**Coverage factor:** 3,799 / 16,244 = **23.39%** (up from 20.31%).
+**Coverage factor:** 4,299 / 16,244 = **26.47%** (up from 23.39%).
 - **13 ledgers at 100%**.
-- 1 ledger partial: `coverage_pii_in_logs` 1475 / 2942 = **50.14%**.
+- 1 ledger partial: `coverage_pii_in_logs` 1975 / 2942 = **67.13%**.
 - 6 ledgers not yet started.
 
 **Gate exit code:** 1 (FAIL — expected; chunks_pending > 0).
 
 ---
 
-## §1 Session 8 Scope + Outcome
+## §1 Session 9 Scope + Outcome
 
-20 parallel subagents covering pii_in_logs rows 976-1475:
+20 parallel subagents covering pii_in_logs rows 1476-1975:
 
-**Findings totals (session 8 NEW):** **3 GAP_HIGH + 1 GAP_MEDIUM + 0 GAP_LOW**
+**Findings totals (session 9 NEW):** **0 GAP_HIGH + 0 GAP_MEDIUM + 0 GAP_LOW** ✅
 
-Note: subagents initially hit Anthropic session limit; all 20 were redispatched after reset and completed cleanly. No work lost.
+Session 9 covered the `server/src/services/advanced/` directory which holds the most complex ML/crypto/blockchain code in the system. Across 14 advanced services, all 500 log sites were verified clean. Pattern: error objects, internal UUIDs, aggregate metrics, and pseudonymous org/user IDs only.
 
-| Chunk | Verdicts |
+| Slot Range | Files |
 |---|---|
-| 976-1000 | 25 PII_SAFE (reports.ts, roles.ts, ropa.ts, scim.ts) |
-| 1001-1025 | 16 PII_SAFE + 9 USERID_ONLY_OK (SCIM auth errors) |
-| 1026-1050 | 23 PII_SAFE + 1 USERID_ONLY_OK + **1 GAP_MEDIUM** (sso.ts:249 — raw email in SSO auto-provision) |
-| 1051-1075 | 11 PII_SAFE + 11 USERID_ONLY_OK + **3 GAP_HIGH** (team.ts:137/266/283 — raw emails in team-invitation flow) |
-| 1076-1100 | 24 PII_SAFE + 1 USERID_ONLY_OK |
-| 1101-1125 | 25 PII_SAFE (acosService + performance-test) |
-| 1126-1150 | 25 PII_SAFE (acosService) |
-| 1151-1175 | 25 PII_SAFE (acosService + agenticAIService) |
-| 1176-1200 | 24 PII_SAFE + 1 USERID_ONLY_OK (agenticAIService + blockchain) |
-| 1201-1225 | 25 PII_SAFE (blockchainService) |
-| 1226-1250 | 25 PII_SAFE (blockchainService) |
-| 1251-1275 | 25 PII_SAFE (blockchainService) |
-| 1276-1300 | 22 PII_SAFE + 3 USERID_ONLY_OK (blockchain event listeners + byok) |
-| 1301-1325 | 15 PII_SAFE + 10 USERID_ONLY_OK (byokService — KMS key IDs only) |
-| 1326-1350 | 24 PII_SAFE + 1 USERID_ONLY_OK (byokService + complianceAsCode) |
-| 1351-1375 | 24 PII_SAFE + 1 USERID_ONLY_OK (complianceAsCodeService) |
-| 1376-1400 | 25 PII_SAFE (complianceAsCode + digitalTwin + deepfake) |
-| 1401-1425 | 23 PII_SAFE + 2 USERID_ONLY_OK (deepfake + dp + evidenceTruth) |
-| 1426-1450 | 24 PII_SAFE + 1 USERID_ONLY_OK (evidenceTruthLayerService) |
-| 1451-1475 | 25 PII_SAFE (evidenceTruth + federatedSwarm) |
+| 1476-1500 | federatedSwarmService |
+| 1501-1525 | federatedSwarm + graphNeuralNetwork |
+| 1526-1550 | graphNeuralNetwork |
+| 1551-1575 | homomorphicAIService |
+| 1576-1600 | homomorphicAI + jitAccessService |
+| 1601-1625 | jitAccessService |
+| 1626-1650 | jitAccess + ldapPermission |
+| 1651-1675 | ldapPermission + livenessDetection + mlModels |
+| 1676-1700 | mlModels + mqttService |
+| 1701-1725 | mqttService + multimodalIntake |
+| 1726-1750 | multimodalIntake |
+| 1751-1775 | multimodalIntake |
+| 1776-1800 | multimodalIntake + neuroSymbolicAI |
+| 1801-1825 | neuroSymbolicAI + physicalAI |
+| 1826-1850 | physicalAIService |
+| 1851-1875 | physicalAIService |
+| 1876-1900 | physicalAI + redTeamService |
+| 1901-1925 | redTeam + regulatoryIntelligenceFabric |
+| 1926-1950 | regulatoryIntelligenceFabricService |
+| 1951-1975 | regulatoryIntelligenceFabricService |
 
 ---
 
-## §2 Open Findings (to fix in Session 9)
+## §2 Open Findings
 
-### GAP_HIGH #1 — Raw email logged on single team invite
-**File:** `server/src/routes/team.ts:137`
-**Code:**
-```ts
-logger.info(`Team member invited: ${email} to organization ${organizationId}`);
-```
-**Issue:** Logs the invitee's raw email address on every successful invitation. Direct PII in logs.
-**Fix:** Replace the email with the newly-created user's id:
-```ts
-logger.info(`Team member invited: user ${newUser.id} to organization ${organizationId}`);
-```
-
-### GAP_HIGH #2 — Raw email in failed-email-send warning
-**File:** `server/src/routes/team.ts:266`
-**Code:**
-```ts
-logger.warn(`Failed to send invitation email to ${invite.email}`, emailError);
-```
-**Fix:** Drop `${invite.email}`. Log the invitation id (or the new user.id) for correlation:
-```ts
-logger.warn(`Failed to send invitation email for invite ${invitation.id}`, emailError);
-```
-
-### GAP_HIGH #3 — Raw email in bulk-invite error
-**File:** `server/src/routes/team.ts:283`
-**Code:**
-```ts
-logger.error(`Failed to invite ${invite.email}`, error);
-```
-**Fix:** Drop `${invite.email}`. Log the batch index or invite id:
-```ts
-logger.error(`Failed to invite at index ${i}`, error);
-```
-
-### GAP_MEDIUM #4 — Raw email in SSO auto-provision info log
-**File:** `server/src/routes/sso.ts:249`
-**Code:**
-```ts
-logger.info(`SSO ACS: Auto-provisioned user ${email} for org ${ssoConfig.organizationId}`);
-```
-**Fix:** Replace `${email}` with the new user.id after creation:
-```ts
-logger.info(`SSO ACS: Auto-provisioned user ${newUser.id} for org ${ssoConfig.organizationId}`);
-```
+**None.** Session 9 introduced zero new findings. All prior open findings from sessions 1-8 have been fixed (see §4).
 
 ---
 
@@ -114,40 +71,39 @@ logger.info(`SSO ACS: Auto-provisioned user ${newUser.id} for org ${ssoConfig.or
 | coverage_inmemory_state | 121 | 121 | 100% | ✅ |
 | coverage_auth_per_endpoint | 1178 | 1178 | 100% | ✅ |
 | coverage_csrf | 719 | 719 | 100% | ✅ |
-| **coverage_pii_in_logs** | **2942** | **1475** | **50.14%** | **s8: 3 GAP_HIGH + 1 GAP_MEDIUM** |
+| **coverage_pii_in_logs** | **2942** | **1975** | **67.13%** | **s9: 0 GAPs ✅** |
 | coverage_input_validation | 3723 | 0 | 0% | not started |
 | coverage_l8_reads | 4778 | 0 | 0% | not started |
 | coverage_frontend_contract | 1178 | 0 | 0% | not started |
 | coverage_audit_logs | 252 | 0 | 0% | not started |
 | coverage_file_upload | 328 | 0 | 0% | not started |
 | coverage_idempotency | 719 | 0 | 0% | not started |
-| **TOTAL** | **16,244** | **3,799** | **23.39%** | **~19 sessions remaining** |
+| **TOTAL** | **16,244** | **4,299** | **26.47%** | **~18 sessions remaining** |
 
 ---
 
 ## §4 Honest Disclosure
 
 **Three truths:**
-1. v20.4 sessions 1-8 verified 3,799 candidate sites: **3 GAP_HIGH (new in s8) + 4 GAP_MEDIUM open** (10 prior MEDIUMs all closed in commits `7df2dc8` and `9f6b4f5`).
-2. The s8 team.ts findings are the first GAP_HIGH of the audit — every team invite logs the invitee's email plaintext. Operational logs of B2B SaaS team invites are not low-volume.
-3. Audit is **23.39% complete**. ~19 sessions remaining.
+1. v20.4 sessions 1-9 verified 4,299 candidate sites. Cumulative open findings: **0 GAP_HIGH, 0 GAP_MEDIUM, 0 GAP_LOW** (all 13 s1-s8 findings closed by commits `33ca8e3`, `7df2dc8`, `9f6b4f5`, `9f55604`).
+2. Session 9 found **zero new gaps** — strong signal that the `server/src/services/advanced/` directory is well-disciplined w.r.t. PII hygiene.
+3. Audit is **26.47% complete**. ~18 sessions remaining.
 
 ---
 
 ## §5 Next Session Instructions
 
-Recommended Session 9:
-- **Fix the 3 GAP_HIGH + 1 GAP_MEDIUM findings in §2 first** — team.ts is the most impactful (every invite logs an email).
-- Then continue `coverage_pii_in_logs` chunks 60-79 (rows 1476-1975) — 500 more pii rows.
+Recommended Session 10:
+- Continue `coverage_pii_in_logs` chunks 80-99 (rows 1976-2475) — 500 more pii rows. Remaining ledger size: 967 rows; should complete in 2 more sessions.
 
 ---
 
 ## §6 Coverage Score Disclosure
 
-- **coverage_factor = 3,799 / 16,244 = 23.39%**
+- **coverage_factor = 4,299 / 16,244 = 26.47%**
 - **overall_score: NOT_COMPUTED** (coverage_factor < 0.95)
 - **test_health_score: 93.00%** (inherited)
 
 ---
 
-*Generated by AUDIT_PROMPT_v20.4 session 8, 2026-05-29. Scan fingerprint: `4bc30758cf4fb0db682f6a7cbb2a5123166856377783f3fad549eb6336d54e72`.*
+*Generated by AUDIT_PROMPT_v20.4 session 9, 2026-05-29. Scan fingerprint: `c94c9ba9151dd41b6ec50d16c02bcb5e1bdf397461f0147488bacd5ac0b2a511`.*
