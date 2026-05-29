@@ -1309,7 +1309,10 @@ class ZeroTrustService {
     try {
       return await ldapPermissionService.authenticateUser(username, password);
     } catch (error: any) {
-      logger.error(`[ZeroTrust] AD authentication error for ${username}`, error);
+      logger.error('[ZeroTrust] AD authentication error', {
+        username_hash: crypto.createHash('sha256').update(username).digest('hex').slice(0, 16),
+        error,
+      });
       return { authenticated: false, error: error.message };
     }
   }
