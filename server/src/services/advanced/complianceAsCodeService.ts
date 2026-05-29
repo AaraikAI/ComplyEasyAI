@@ -162,8 +162,12 @@ class ComplianceAsCodeService {
   private async validateRegoSyntax(rego: string): Promise<boolean> {
     try {
       // Use OPA compile API to validate syntax
+      const compileUrl = `${this.opaEndpoint}/v1/compile`;
+      if (!isUrlSafe(compileUrl)) {
+        throw new AppError('OPA endpoint URL is unsafe', 400);
+      }
       const response = await axios.post(
-        `${this.opaEndpoint}/v1/compile`,
+        compileUrl,
         {
           query: 'data.compliance.allow',
           input: {},
@@ -193,8 +197,12 @@ class ComplianceAsCodeService {
    */
   private async uploadPolicyToOPA(policyId: string, rego: string): Promise<void> {
     try {
+      const policyUrl = `${this.opaEndpoint}/v1/policies/${encodeURIComponent(policyId)}`;
+      if (!isUrlSafe(policyUrl)) {
+        throw new AppError('OPA policy URL is unsafe', 400);
+      }
       await axios.put(
-        `${this.opaEndpoint}/v1/policies/${policyId}`,
+        policyUrl,
         rego,
         {
           headers: { 
@@ -228,8 +236,12 @@ class ComplianceAsCodeService {
     try {
       // Query OPA for policy decision
       // Production: Fail fast if OPA unavailable
+      const dataUrl = `${this.opaEndpoint}/v1/data/compliance/${encodeURIComponent(policyId)}`;
+      if (!isUrlSafe(dataUrl)) {
+        throw new AppError('OPA data URL is unsafe', 400);
+      }
       const response = await axios.post(
-        `${this.opaEndpoint}/v1/data/compliance/${policyId}`,
+        dataUrl,
         { input },
         {
           headers: { 
@@ -1202,12 +1214,16 @@ allow {
       }
 
       // Delete from OPA - Required in production
+      const deleteUrl = `${this.opaEndpoint}/v1/policies/${encodeURIComponent(policyId)}`;
+      if (!isUrlSafe(deleteUrl)) {
+        throw new AppError('OPA policy delete URL is unsafe', 400);
+      }
       if (process.env.NODE_ENV === 'production') {
-        await axios.delete(`${this.opaEndpoint}/v1/policies/${policyId}`, {
+        await axios.delete(deleteUrl, {
           headers: process.env.OPA_AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {},
         });
       } else {
-        await axios.delete(`${this.opaEndpoint}/v1/policies/${policyId}`).catch(() => {
+        await axios.delete(deleteUrl).catch(() => {
           logger.warn('OPA server not available, policy deleted from database only');
         });
       }

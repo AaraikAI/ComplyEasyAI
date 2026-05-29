@@ -171,6 +171,7 @@ class PATValidationService {
    */
   private async validateGitHubToken(token: string): Promise<ValidationResult> {
     try {
+      this.assertSafeOutbound('https://api.github.com/user', 'GitHub');
       const response = await axios.get('https://api.github.com/user', {
         headers: {
           Authorization: `token ${token}`,
@@ -243,6 +244,7 @@ class PATValidationService {
   private async validateBitbucketToken(token: string): Promise<ValidationResult> {
     try {
       // Bitbucket uses App Passwords, validate by checking user info
+      this.assertSafeOutbound('https://api.bitbucket.org/2.0/user', 'Bitbucket');
       const response = await axios.get('https://api.bitbucket.org/2.0/user', {
         auth: {
           username: token.split(':')[0] || '',
@@ -276,6 +278,7 @@ class PATValidationService {
   private async validateTravisToken(token: string): Promise<ValidationResult> {
     try {
       // Travis CI API v3 uses Authorization header
+      this.assertSafeOutbound('https://api.travis-ci.com/user', 'Travis');
       const response = await axios.get('https://api.travis-ci.com/user', {
         headers: {
           Authorization: `token ${token}`,
@@ -313,6 +316,7 @@ class PATValidationService {
    */
   private async validateCircleCIToken(token: string): Promise<ValidationResult> {
     try {
+      this.assertSafeOutbound('https://circleci.com/api/v2/me', 'CircleCI');
       const response = await axios.get('https://circleci.com/api/v2/me', {
         headers: {
           'Circle-Token': token,
@@ -391,6 +395,7 @@ class PATValidationService {
       }
 
       // Validate by making a test API call to Stripe
+      this.assertSafeOutbound('https://api.stripe.com/v1/account', 'Stripe');
       const response = await axios.get('https://api.stripe.com/v1/account', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -432,6 +437,7 @@ class PATValidationService {
       }
 
       // Validate by making a test API call to SendGrid
+      this.assertSafeOutbound('https://api.sendgrid.com/v3/user/profile', 'SendGrid');
       const response = await axios.get('https://api.sendgrid.com/v3/user/profile', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -521,6 +527,7 @@ class PATValidationService {
    */
   private async validateDigitalOceanToken(token: string): Promise<ValidationResult> {
     try {
+      this.assertSafeOutbound('https://api.digitalocean.com/v2/account', 'DigitalOcean');
       const response = await axios.get('https://api.digitalocean.com/v2/account', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -556,6 +563,7 @@ class PATValidationService {
    */
   private async validateDockerHubToken(token: string): Promise<ValidationResult> {
     try {
+      this.assertSafeOutbound('https://hub.docker.com/v2/users/me', 'DockerHub');
       const response = await axios.get('https://hub.docker.com/v2/users/me', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1692,6 +1700,7 @@ class PATValidationService {
    */
   private async validateHubSpotToken(token: string): Promise<ValidationResult> {
     try {
+      this.assertSafeOutbound('https://api.hubapi.com/contacts/v1/lists/all/contacts/all', 'HubSpot');
       const response = await axios.get('https://api.hubapi.com/contacts/v1/lists/all/contacts/all', {
         params: {
           count: 1,
@@ -1783,8 +1792,9 @@ class PATValidationService {
         ? 'https://api.sandbox.paypal.com/v1/oauth2/token'
         : 'https://api.paypal.com/v1/oauth2/token';
 
+      this.assertSafeOutbound(apiUrl, 'PayPal');
       // Get OAuth token
-      const oauthResponse = await axios.post(apiUrl, 
+      const oauthResponse = await axios.post(apiUrl,
         new URLSearchParams({
           grant_type: 'client_credentials',
         }),

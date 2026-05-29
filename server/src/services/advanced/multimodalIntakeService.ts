@@ -372,7 +372,12 @@ class MultimodalIntakeService {
           const formData = new FormData();
           formData.append('audio', audioBuffer, { filename: 'audio.wav' });
           
-          const response = await axios.post(`${pyannoteServiceUrl}/diarize`, formData, {
+          const diarizeUrl = `${pyannoteServiceUrl}/diarize`;
+          const { isUrlSafe } = await import('../../utils/urlValidator');
+          if (!isUrlSafe(diarizeUrl)) {
+            throw new AppError('Pyannote service URL is unsafe', 400);
+          }
+          const response = await axios.post(diarizeUrl, formData, {
             headers: formData.getHeaders(),
             timeout: 30000,
           });

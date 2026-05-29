@@ -5,6 +5,7 @@ import config from '../config';
 import logger from '../config/logger';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
+import { isUrlSafe } from '../utils/urlValidator';
 
 // Multer file interface to avoid Express.Multer namespace issues
 interface MulterFile {
@@ -340,8 +341,12 @@ class S3Service {
         const form = new FormData();
         form.append('file', fileBuffer, { filename: 'scan-file' });
 
+        const clamavUrl = `${process.env.CLAMAV_HOST}/scan`;
+        if (!isUrlSafe(clamavUrl)) {
+          throw new AppError('ClamAV scanner URL is unsafe', 400);
+        }
         const response = await axios.post(
-          `${process.env.CLAMAV_HOST}/scan`,
+          clamavUrl,
           form,
           { headers: form.getHeaders() }
         );

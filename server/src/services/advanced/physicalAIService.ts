@@ -2732,7 +2732,12 @@ class PhysicalAIService {
       if (firmwareRegistry) {
         try {
           const safeDeviceType = encodeURIComponent(deviceType);
-          const response = await axios.get(`${firmwareRegistry}/firmware/${safeDeviceType}/latest`, {
+          const firmwareUrl = `${firmwareRegistry}/firmware/${safeDeviceType}/latest`;
+          if (!isUrlSafe(firmwareUrl)) {
+            logger.warn('[Physical AI] Firmware registry URL rejected by isUrlSafe');
+            return undefined;
+          }
+          const response = await axios.get(firmwareUrl, {
             timeout: 5000,
             headers: {
               'User-Agent': 'ComplyEasyAI-PhysicalAI/1.0',
@@ -2786,6 +2791,10 @@ class PhysicalAIService {
       for (const [manufacturer, apiUrl] of Object.entries(manufacturerApis)) {
         if (deviceType.toLowerCase().includes(manufacturer)) {
           try {
+            if (!isUrlSafe(apiUrl)) {
+              logger.warn(`[Physical AI] Manufacturer API URL rejected by isUrlSafe: ${manufacturer}`);
+              continue;
+            }
             const response = await axios.get(apiUrl, {
               timeout: 5000,
               headers: {

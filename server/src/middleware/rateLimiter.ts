@@ -68,7 +68,7 @@ export const apiLimiter = rateLimit({
 
 export const frameworkLimiter = rateLimit({
   windowMs: 10 * 1000,
-  max: isDev ? 500 : 100,
+  max: isDev ? 500 : 50,
   message: 'Too many framework requests. Please slow down.',
   standardHeaders: true,
   legacyHeaders: false,
