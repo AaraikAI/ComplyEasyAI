@@ -107,7 +107,7 @@ class DemoController {
         },
       });
 
-      logger.info(`Demo request submitted (company: ${demoRequest.company})`);
+      logger.info(`Demo request submitted (requestId: ${demoRequest.id})`);
 
       // Send email notification to contact@complyeasyai.com
       await this.sendDemoRequestEmail(demoRequest);

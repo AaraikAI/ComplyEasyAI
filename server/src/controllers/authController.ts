@@ -795,7 +795,7 @@ class AuthController {
         await emailService.sendWelcomeEmail(email, name);
         await emailService.sendMagicLink(email, token);
       } catch (emailError: any) {
-        logger.warn('Registration: email send failed', { email, error: emailError?.message });
+        logger.warn('Registration: email send failed', { userId: user.id, error: emailError?.message });
         if (process.env.NODE_ENV !== 'development') {
           throw new AppError('Failed to send welcome email. Please try again or contact support.', 500);
         }
