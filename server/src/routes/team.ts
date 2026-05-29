@@ -134,7 +134,7 @@ router.post(
       },
     });
 
-    logger.info(`Team member invited: ${email} to organization ${organizationId}`);
+    logger.info(`Team member invited: user ${newUser.id} to organization ${organizationId}`);
 
     res.status(201).json(newUser);
   })
@@ -211,7 +211,7 @@ router.post(
     }
 
     // Process invites
-    for (const invite of invites) {
+    for (const [i, invite] of invites.entries()) {
       try {
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
@@ -263,7 +263,7 @@ router.post(
         try {
           await emailService.sendMagicLink(invite.email, token);
         } catch (emailError) {
-          logger.warn(`Failed to send invitation email to ${invite.email}`, emailError);
+          logger.warn(`Failed to send invitation email for user ${newUser.id}`, emailError);
         }
 
         results.successful.push(newUser);
@@ -280,7 +280,7 @@ router.post(
           },
         });
       } catch (error: any) {
-        logger.error(`Failed to invite ${invite.email}`, error);
+        logger.error(`Failed to invite at index ${i}`, error);
         results.failed.push({
           email: invite.email,
           name: invite.name,
