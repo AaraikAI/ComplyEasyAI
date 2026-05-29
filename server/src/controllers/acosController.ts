@@ -2854,12 +2854,10 @@ class ACOSController {
       const { privilege, reason, justification, duration } = req.body;
       
       logger.info('JIT Access request received', {
-        userId: authReq.user!.id,
         privilege,
-        reason,
         duration,
       });
-      
+
       const request = await jitAccessService.requestAccess(
         authReq.user!.id,
         authReq.user!.organizationId,
@@ -2868,13 +2866,12 @@ class ACOSController {
         justification,
         duration || 30
       );
-      
+
       res.json(request);
     } catch (error: any) {
       logger.error('Request JIT access error', {
         error: error.message || error,
         stack: error.stack,
-        body: req.body,
       });
       throw new AppError(error.message || 'Failed to request JIT access', 500);
     }
@@ -3085,7 +3082,7 @@ class ACOSController {
       const keys = await homomorphicAIService.generateKeys(scheme as 'BFV' | 'CKKS', securityLevel as 128 | 192 | 256);
       
       // Store keys securely (use proper key management (e.g., AWS KMS, HashiCorp Vault))
-      logger.info(`Generated ${scheme} homomorphic keys for user ${authReq.user!.id}`);
+      logger.info(`Generated ${scheme} homomorphic keys`);
       
       res.json(keys);
     } catch (error: any) {

@@ -1436,7 +1436,6 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
 
           logger.info(`API key validated successfully for ${provider}`, {
             organizationId,
-            userInfo: validation.userInfo,
           });
         } catch (validationError: any) {
           if (validationError instanceof AppError) throw validationError;
@@ -1550,7 +1549,6 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
 
         logger.info(`PAT validated successfully for ${provider}`, {
           organizationId,
-          userInfo: validation.userInfo,
         });
       } catch (validationError: any) {
         if (validationError instanceof AppError) throw validationError;
