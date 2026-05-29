@@ -175,7 +175,7 @@ class AuthController {
           return newUser;
         });
 
-        logger.info(`New user registered: ${email}`);
+        logger.info('New user registered');
       }
 
       // Generate magic link token
@@ -195,11 +195,11 @@ class AuthController {
       try {
         const emailSent = await emailService.sendMagicLink(email, token);
         if (!emailSent) {
-          logger.warn(`Failed to send magic link email to ${email}, but continuing with token generation`);
+          logger.warn('Failed to send magic link email, but continuing with token generation');
           // In development, we still return the token even if email fails
         }
       } catch (error: any) {
-        logger.error(`Failed to send magic link email to ${email}:`, error.message);
+        logger.error('Failed to send magic link email', error.message);
         // In development mode, we still return the token for testing
         if (process.env.NODE_ENV !== 'development') {
           throw new AppError(`Failed to send email: ${error.message}`, 500);
@@ -215,7 +215,6 @@ class AuthController {
       // This allows the "Simulate Click" button to work without checking emails
       if (process.env.NODE_ENV === 'development') {
         response.devToken = token;
-        logger.debug(`[DEV] Magic link token for ${response.email || 'user'}: ${token}`);
       }
 
       res.json(response);
@@ -225,7 +224,6 @@ class AuthController {
         stack: error?.stack,
         code: error?.code,
         meta: error?.meta,
-        email: req.body?.email,
       });
       if (error instanceof AppError) throw error;
       
@@ -391,7 +389,7 @@ class AuthController {
         organizationId: user.organizationId,
       });
 
-      logger.info(`User logged in: ${user.email}`);
+      logger.info('User logged in');
     } catch (error) {
       logger.error('Verify magic link error', error);
       if (error instanceof AppError) throw error;
@@ -551,7 +549,7 @@ class AuthController {
             where: { id: user.id },
             data: { passwordHash: newHash },
           });
-          logger.info(`[Auth] Migrated password hash to PBKDF2-SHA256 for user ${user.id}`);
+          logger.info('[Auth] Migrated password hash to PBKDF2-SHA256');
         } catch (err: any) {
           logger.warn('[Auth] Failed to rehash password during login', err?.message);
         }
@@ -703,7 +701,7 @@ class AuthController {
 
       if (existingUser) {
         // User already exists - send them a magic link instead of error
-        logger.info(`User ${email} already exists, sending magic link for login`);
+        logger.info('User already exists, sending magic link for login');
         
         // Generate magic link token
         const token = uuidv4();
@@ -722,10 +720,10 @@ class AuthController {
         try {
           const emailSent = await emailService.sendMagicLink(email, token);
           if (!emailSent) {
-            logger.warn(`Failed to send magic link email to ${email}, but continuing with token generation`);
+            logger.warn('Failed to send magic link email, but continuing with token generation');
           }
         } catch (error: any) {
-          logger.error(`Failed to send magic link email to ${email}:`, error.message);
+          logger.error('Failed to send magic link email', error.message);
           if (process.env.NODE_ENV !== 'development') {
             throw new AppError(`Failed to send email: ${error.message}`, 500);
           }
@@ -741,7 +739,6 @@ class AuthController {
         // In development mode, include the token for testing
         if (process.env.NODE_ENV === 'development') {
           response.devToken = token;
-          logger.debug(`[Dev] Magic link token for existing user ${email}: ${token}`);
         }
 
         res.status(200).json(response);
@@ -816,12 +813,11 @@ class AuthController {
       // In development mode, include the token for testing
       if (process.env.NODE_ENV === 'development') {
         response.devToken = token;
-        logger.debug(`[DEV] Magic link token for ${email}: ${token}`);
       }
 
       res.status(201).json(response);
 
-      logger.info(`New user registered: ${email}`);
+      logger.info('New user registered');
     } catch (error) {
       logger.error('Registration error', error);
       if (error instanceof AppError) throw error;
@@ -960,7 +956,7 @@ class AuthController {
         organizationId: user.organizationId,
       });
 
-      logger.info(`User completed 2FA login: ${user.email}`);
+      logger.info('User completed 2FA login');
     } catch (error) {
       logger.error('Complete 2FA login error', error);
       if (error instanceof AppError) throw error;
@@ -1056,7 +1052,7 @@ class AuthController {
       });
 
       res.json(updatedUser);
-      logger.info(`User profile updated: ${userId}`);
+      logger.info('User profile updated');
     } catch (error) {
       logger.error('Update profile error', error);
       if (error instanceof AppError) throw error;
@@ -1148,7 +1144,7 @@ class AuthController {
       clearAuthCookies(res);
 
       res.json({ message: 'Password changed successfully' });
-      logger.info(`Password changed for user: ${userId}`);
+      logger.info('Password changed');
     } catch (error) {
       logger.error('Change password error', error);
       if (error instanceof AppError) throw error;
@@ -1215,7 +1211,7 @@ class AuthController {
       });
 
       res.json({ user: updatedUser, avatarUrl: uploadResult.url });
-      logger.info(`Avatar uploaded for user: ${userId}`);
+      logger.info('Avatar uploaded');
     } catch (error) {
       logger.error('Upload avatar error', error);
       if (error instanceof AppError) throw error;
@@ -1322,9 +1318,9 @@ class AuthController {
         });
 
         await emailService.sendPasswordReset(email, resetToken);
-        logger.info(`[Auth] Password reset requested for ${email}`);
+        logger.info('[Auth] Password reset requested');
       } else {
-        logger.info(`[Auth] Password reset requested for unknown/inactive email: ${email}`);
+        logger.info('[Auth] Password reset requested for unknown/inactive account');
       }
     } catch (error) {
       logger.error('[Auth] Error processing forgot password', error);
@@ -1380,7 +1376,7 @@ class AuthController {
       logger.warn('[Auth] Failed to purge sessions after password reset', err);
     });
 
-    logger.info(`[Auth] Password reset completed for user ${user.email}`);
+    logger.info('[Auth] Password reset completed');
     res.json({ message: 'Password has been reset successfully' });
   }
 }

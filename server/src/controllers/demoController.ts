@@ -107,7 +107,7 @@ class DemoController {
         },
       });
 
-      logger.info(`Demo request submitted: ${demoRequest.email} (${demoRequest.company})`);
+      logger.info(`Demo request submitted (company: ${demoRequest.company})`);
 
       // Send email notification to contact@complyeasyai.com
       await this.sendDemoRequestEmail(demoRequest);
@@ -320,7 +320,7 @@ class DemoController {
         },
       });
 
-      logger.info(`Demo scheduled for ${demoRequest.email} at ${scheduledAt}`);
+      logger.info(`Demo scheduled (requestId: ${demoRequest.id}) at ${scheduledAt}`);
 
       // Send confirmation email via webhook
       if (sendConfirmation) {
@@ -674,7 +674,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         `.trim(),
       });
 
-      logger.info(`Demo request email sent to contact@complyeasyai.com for ${demoRequest.email}`);
+      logger.info(`Demo request email sent (requestId: ${demoRequest.id})`);
     } catch (error: any) {
       logger.error('Failed to send demo request email', error);
       // Log detailed error for debugging
@@ -737,7 +737,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         data: { welcomeEmailSentAt: new Date() },
       });
 
-      logger.info(`Welcome email webhook dispatched for ${demoRequest.email}`);
+      logger.info(`Welcome email webhook dispatched (requestId: ${demoRequest.id})`);
     } catch (error) {
       logger.error('Failed to dispatch welcome email webhook', error);
       // Don't throw - this is a non-critical operation
@@ -788,7 +788,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         );
       }
 
-      logger.info(`Demo request notification webhook dispatched for ${demoRequest.email}`);
+      logger.info(`Demo request notification webhook dispatched (requestId: ${demoRequest.id})`);
     } catch (error) {
       logger.error('Failed to dispatch demo request notification webhook', error);
     }
@@ -870,7 +870,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         );
       }
 
-      logger.info(`Schedule confirmation webhook dispatched for ${demoRequest.email}`);
+      logger.info(`Schedule confirmation webhook dispatched (requestId: ${demoRequest.id})`);
     } catch (error) {
       logger.error('Failed to dispatch schedule confirmation webhook', error);
     }
@@ -912,7 +912,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         );
       }
 
-      logger.info(`Conversion webhook dispatched for ${demoRequest.email}`);
+      logger.info(`Conversion webhook dispatched (requestId: ${demoRequest.id})`);
     } catch (error) {
       logger.error('Failed to dispatch conversion webhook', error);
     }

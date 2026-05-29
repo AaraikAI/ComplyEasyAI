@@ -27,7 +27,6 @@ class AIController {
       logger.error('Generate report error', {
         error: error.message,
         stack: error.stack,
-        userId: (req as AuthRequest).user?.id,
       });
 
       if (error instanceof AppError) {
@@ -57,7 +56,6 @@ class AIController {
       logger.error('Generate policy error', {
         error: error.message,
         stack: error.stack,
-        userId: (req as AuthRequest).user?.id,
       });
 
       if (error instanceof AppError) {
@@ -198,7 +196,6 @@ class AIController {
       logger.error('Chat error', {
         error: error.message,
         stack: error.stack,
-        userId: (req as AuthRequest).user?.id,
       });
 
       if (error instanceof AppError) {
@@ -232,7 +229,7 @@ class AIController {
 
       res.json(result);
     } catch (error: any) {
-      logger.error('Cross-framework mapping error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      logger.error('Cross-framework mapping error', { error: error.message });
       if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to perform cross-framework mapping', 500);
     }
@@ -256,7 +253,7 @@ class AIController {
 
       res.json(result);
     } catch (error: any) {
-      logger.error('Auto-remediation error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      logger.error('Auto-remediation error', { error: error.message });
       if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to generate remediation plan', 500);
     }
@@ -279,7 +276,7 @@ class AIController {
 
       res.json(result);
     } catch (error: any) {
-      logger.error('Evidence completeness error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      logger.error('Evidence completeness error', { error: error.message });
       if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to check evidence completeness', 500);
     }
@@ -302,7 +299,7 @@ class AIController {
 
       res.json(result);
     } catch (error: any) {
-      logger.error('Agentic vendor risk error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      logger.error('Agentic vendor risk error', { error: error.message });
       if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to assess vendor risk', 500);
     }
@@ -327,7 +324,7 @@ class AIController {
 
       res.json(result);
     } catch (error: any) {
-      logger.error('Audit simulation error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      logger.error('Audit simulation error', { error: error.message });
       if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to simulate audit', 500);
     }
@@ -350,7 +347,7 @@ class AIController {
 
       res.json(result);
     } catch (error: any) {
-      logger.error('NL query error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      logger.error('NL query error', { error: error.message });
       if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to process query', 500);
     }
@@ -374,7 +371,7 @@ class AIController {
 
       res.json(result);
     } catch (error: any) {
-      logger.error('Copilot error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      logger.error('Copilot error', { error: error.message });
       if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to get copilot response', 500);
     }
@@ -398,7 +395,7 @@ class AIController {
 
       res.json(result);
     } catch (error: any) {
-      logger.error('Forecasting error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      logger.error('Forecasting error', { error: error.message });
       if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to forecast compliance score', 500);
     }
@@ -422,7 +419,7 @@ class AIController {
 
       res.json(result);
     } catch (error: any) {
-      logger.error('Process analysis error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      logger.error('Process analysis error', { error: error.message });
       if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to analyze process', 500);
     }
