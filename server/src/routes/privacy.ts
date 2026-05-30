@@ -212,6 +212,7 @@ router.get(
 router.post(
   '/dsar',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   validateBody(createDSARSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -286,6 +287,7 @@ router.get(
 router.patch(
   '/dsar/:id',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   validateBody(updateDSARSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -339,6 +341,7 @@ router.patch(
 router.post(
   '/dsar/:id/verify-identity',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -384,6 +387,7 @@ router.post(
 router.post(
   '/dsar/:id/complete',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -470,6 +474,7 @@ router.get(
 router.post(
   '/consent',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   validateBody(createConsentRecordSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -509,6 +514,7 @@ router.post(
 router.patch(
   '/consent/:id',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   validateBody(updateConsentRecordSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -792,6 +798,7 @@ router.get(
 router.post(
   '/retention',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   validateBody(createRetentionPolicySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -828,6 +835,7 @@ router.post(
 router.patch(
   '/retention/:id',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   validateBody(updateRetentionPolicySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -1018,6 +1026,7 @@ router.get(
 router.post(
   '/scc-tia',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1056,6 +1065,7 @@ router.post(
 router.patch(
   '/scc-tia/:id',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1224,6 +1234,7 @@ router.get(
 router.post(
   '/bcr',
   authorize('admin'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1264,6 +1275,7 @@ router.post(
 router.patch(
   '/bcr/:id',
   authorize('admin'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1558,6 +1570,7 @@ router.get(
 router.post(
   '/deletion',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1620,6 +1633,7 @@ router.get(
 router.patch(
   '/deletion/:id',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1671,6 +1685,7 @@ router.patch(
 router.post(
   '/deletion/:id/verify',
   authorize('admin'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1789,6 +1804,7 @@ router.get(
 router.post(
   '/restrictions',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1820,6 +1836,7 @@ router.post(
 router.patch(
   '/restrictions/:id',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1857,6 +1874,7 @@ router.patch(
 router.post(
   '/restrictions/:id/lift',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -2002,6 +2020,7 @@ router.patch(
 
 router.post(
   '/ai-transparency/:id/publish',
+  idempotencyKey(),
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -2147,6 +2166,7 @@ router.patch(
 
 router.post(
   '/jit-notices/:id/impression',
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -2174,6 +2194,7 @@ router.post(
 
 router.post(
   '/jit-notices/:id/accept',
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -2201,6 +2222,7 @@ router.post(
 
 router.post(
   '/jit-notices/:id/dismiss',
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -2295,7 +2317,7 @@ router.delete('/notices/:id', asyncHandler(async (req: Request, res: Response) =
 }));
 
 // Track impression
-router.post('/notices/:id/impression', asyncHandler(async (req: Request, res: Response) => {
+router.post('/notices/:id/impression', idempotencyKey(), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const notice = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
@@ -2309,7 +2331,7 @@ router.post('/notices/:id/impression', asyncHandler(async (req: Request, res: Re
 }));
 
 // Track acceptance
-router.post('/notices/:id/accept', asyncHandler(async (req: Request, res: Response) => {
+router.post('/notices/:id/accept', idempotencyKey(), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const notice = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
@@ -2323,7 +2345,7 @@ router.post('/notices/:id/accept', asyncHandler(async (req: Request, res: Respon
 }));
 
 // Track dismissal
-router.post('/notices/:id/dismiss', asyncHandler(async (req: Request, res: Response) => {
+router.post('/notices/:id/dismiss', idempotencyKey(), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const notice = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
@@ -2436,7 +2458,7 @@ router.post('/child-consent/verify-age', asyncHandler(async (req: Request, res: 
 }));
 
 // Record parental consent
-router.post('/child-consent/parental-consent', asyncHandler(async (req: Request, res: Response) => {
+router.post('/child-consent/parental-consent', idempotencyKey(), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const orgId = user.organizationId;
   const { consentRecordId, parentalConsentEmail, parentalConsentMethod } = req.body;

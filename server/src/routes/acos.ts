@@ -113,7 +113,7 @@ router.delete('/goals/:goalId', ...requireAcosFeature('acosGoals'), authorize('a
 router.post('/goals/:goalId/restore', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), asyncHandler(acosController.restoreGoal));
 
 // Control Loops (Growth+)
-router.post('/control-loops', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), validateBody(createControlLoopSchema), asyncHandler(acosController.createControlLoop));
+router.post('/control-loops', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), idempotencyKey(), validateBody(createControlLoopSchema), asyncHandler(acosController.createControlLoop));
 router.get('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), asyncHandler(acosController.getControlLoop));
 router.get('/control-loops/:loopId/history', ...requireAcosFeature('acosControlLoops'), asyncHandler(acosController.getControlLoopHistory));
 router.post('/control-loops/:loopId/execute', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), idempotencyKey(), asyncHandler(acosController.executeControlLoop));
@@ -124,7 +124,7 @@ router.delete('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'
 
 // Agentic AI (Growth+)
 router.post('/agentic/estimate-blast-radius', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), validateBody(estimateBlastRadiusSchema), asyncHandler(acosController.estimateBlastRadius));
-router.post('/agentic/execute-action', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), validateBody(executeActionSchema), asyncHandler(acosController.executeAction));
+router.post('/agentic/execute-action', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), idempotencyKey(), validateBody(executeActionSchema), asyncHandler(acosController.executeAction));
 router.post('/agentic/rollback/:actionId', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), asyncHandler(acosController.rollbackAction));
 router.post('/agentic/rollback-multiple', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), validateBody(rollbackMultipleSchema), asyncHandler(acosController.rollbackMultipleActions));
 
