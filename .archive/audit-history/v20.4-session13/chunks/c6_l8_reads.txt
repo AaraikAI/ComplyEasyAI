@@ -1,0 +1,25 @@
+./server/src/controllers/featureModulesController.ts:630:    const passport = await prisma.digitalProductPassport.findFirst({
+./server/src/controllers/frameworksController.ts:44:      const frameworks = await prisma.complianceFramework.findMany({
+./server/src/controllers/frameworksController.ts:453:      const control = await prisma.frameworkControl.findFirst({
+./server/src/controllers/frameworksController.ts:516:      const framework = await prisma.complianceFramework.findFirst({
+./server/src/controllers/frameworksController.ts:581:      const framework = await prisma.complianceFramework.findFirst({
+./server/src/controllers/frameworksController.ts:590:      const existingControl = await prisma.frameworkControl.findUnique({
+./server/src/controllers/frameworksController.ts:66:      const framework = await prisma.complianceFramework.findFirst({
+./server/src/controllers/frameworksController.ts:709:      const framework = await prisma.complianceFramework.findFirst({
+./server/src/controllers/frameworksController.ts:765:      const framework = await prisma.complianceFramework.findFirst({
+./server/src/controllers/frameworksController.ts:774:      const control = await prisma.frameworkControl.findFirst({
+./server/src/controllers/frameworksController.ts:879:      const framework = await prisma.complianceFramework.findFirst({
+./server/src/controllers/frameworksController.ts:887:      const control = await prisma.frameworkControl.findFirst({
+./server/src/controllers/frameworksController.ts:89:        prisma.frameworkControl.findMany({
+./server/src/controllers/frameworksController.ts:949:      const framework = await prisma.complianceFramework.findFirst({
+./server/src/controllers/integrationsController.ts:1006:    const integration = await prisma.integration.findUnique({
+./server/src/controllers/integrationsController.ts:1116:    const integration = await prisma.integration.findUnique({
+./server/src/controllers/integrationsController.ts:1203:      prisma.azureResource.findMany({
+./server/src/controllers/integrationsController.ts:1209:      prisma.azureResource.count({ where }),
+./server/src/controllers/integrationsController.ts:1231:      prisma.azureSecurityFinding.findMany({
+./server/src/controllers/integrationsController.ts:1237:      prisma.azureSecurityFinding.count({ where }),
+./server/src/controllers/integrationsController.ts:1259:      prisma.azureSecurityAlert.findMany({
+./server/src/controllers/integrationsController.ts:1265:      prisma.azureSecurityAlert.count({ where }),
+./server/src/controllers/integrationsController.ts:1287:      prisma.azureUser.findMany({
+./server/src/controllers/integrationsController.ts:1293:      prisma.azureUser.count({ where }),
+./server/src/controllers/integrationsController.ts:1314:      prisma.azurePolicyCompliance.findMany({

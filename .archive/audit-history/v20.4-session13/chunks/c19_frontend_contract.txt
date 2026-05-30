@@ -1,0 +1,25 @@
+services/api.ts:1461:    createControlLoop: async (data: any) => fetchAPI('/acos/control-loops', { method: 'POST', body: JSON.stringify(data) }),
+services/api.ts:1462:    updateControlLoop: async (loopId: string, data: any) => fetchAPI(`/acos/control-loops/${loopId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+services/api.ts:1463:    pauseControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}/pause`, { method: 'POST' }),
+services/api.ts:1464:    resumeControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}/resume`, { method: 'POST' }),
+services/api.ts:1465:    deleteControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}`, { method: 'DELETE' }),
+services/api.ts:1466:    executeControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}/execute`, { method: 'POST' }),
+services/api.ts:1471:      return fetchAPI(`/acos/compliance-debts${query ? `?${query}` : ''}`);
+services/api.ts:1473:    trackComplianceDebt: async (data: any) => fetchAPI('/acos/compliance-debts', { method: 'POST', body: JSON.stringify(data) }),
+services/api.ts:1474:    calculateDebtFromGapAnalysis: async (frameworkId: string) => fetchAPI('/acos/compliance-debts/calculate-from-gap', { method: 'POST', body: JSON.stringify({ frameworkId }) }),
+services/api.ts:1475:    resolveComplianceDebt: async (debtId: string) => fetchAPI(`/acos/compliance-debts/${debtId}/resolve`, { method: 'POST' }),
+services/api.ts:1476:    exportDebtReport: async (format: 'csv' | 'json' = 'json') => fetchAPI(`/acos/compliance-debts/export?format=${format}`),
+services/api.ts:1479:    getChangeImpacts: async (pending?: boolean) => fetchAPI(`/acos/change-impacts${pending ? '?pending=true' : ''}`),
+services/api.ts:1480:    forecastChangeImpact: async (data: any) => fetchAPI('/acos/change-impacts/forecast', { method: 'POST', body: JSON.stringify(data) }),
+services/api.ts:1481:    resolveChangeImpact: async (impactId: string) => fetchAPI(`/acos/change-impacts/${impactId}/resolve`, { method: 'POST' }),
+services/api.ts:1484:    estimateBlastRadius: async (data: any) => fetchAPI('/acos/agentic/estimate-blast-radius', { method: 'POST', body: JSON.stringify(data) }),
+services/api.ts:1485:    executeAction: async (data: any) => fetchAPI('/acos/agentic/execute-action', { method: 'POST', body: JSON.stringify(data) }),
+services/api.ts:1486:    rollbackAction: async (actionId: string) => fetchAPI(`/acos/agentic/rollback/${actionId}`, { method: 'POST' }),
+services/api.ts:1487:    rollbackMultipleActions: async (actionIds: string[]) => fetchAPI('/acos/agentic/rollback-multiple', { method: 'POST', body: JSON.stringify({ actionIds }) }),
+services/api.ts:1493:      return fetchAPI(`/acos/evidence/${evidenceId}/analyze`, {
+services/api.ts:1510:      return fetchAPI(`/acos/evidence/${evidenceId}/analyze-and-anchor`, {
+services/api.ts:1519:      return fetchAPI(`/acos/evidence/${evidenceId}/verify-integrity`, {
+services/api.ts:1526:      fetchAPI(`/acos/evidence/${evidenceId}/provenance`),
+services/api.ts:1528:      fetchAPI(`/acos/evidence/${evidenceId}/analysis`),
+services/api.ts:1530:      fetchAPI(`/acos/evidence/${evidenceId}/analysis/history`),
+services/api.ts:1531:    getAnchorSLA: async () => fetchAPI('/acos/evidence/anchor-sla'),

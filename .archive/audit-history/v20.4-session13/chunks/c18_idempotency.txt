@@ -1,0 +1,25 @@
+server/src/routes/privacy.ts:1925:router.post(
+server/src/routes/privacy.ts:1964:router.patch(
+server/src/routes/privacy.ts:2003:router.post(
+server/src/routes/privacy.ts:2069:router.post(
+server/src/routes/privacy.ts:2112:router.patch(
+server/src/routes/privacy.ts:2148:router.post(
+server/src/routes/privacy.ts:2175:router.post(
+server/src/routes/privacy.ts:2202:router.post(
+server/src/routes/privacy.ts:2253:router.post('/notices', idempotencyKey(), asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/privacy.ts:2273:router.patch('/notices/:id', asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/privacy.ts:2287:router.delete('/notices/:id', asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/privacy.ts:2298:router.post('/notices/:id/impression', asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/privacy.ts:2312:router.post('/notices/:id/accept', asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/privacy.ts:2326:router.post('/notices/:id/dismiss', asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/privacy.ts:2385:router.post('/child-consent/verify-age', asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/privacy.ts:2439:router.post('/child-consent/parental-consent', asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/acos.ts:108:router.post('/goals', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), idempotencyKey(), validateBody(createGoalSchema), asyncHandler(acosController.createGoal));
+server/src/routes/acos.ts:113:router.post('/goals/:goalId/restore', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), asyncHandler(acosController.restoreGoal));
+server/src/routes/acos.ts:116:router.post('/control-loops', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), validateBody(createControlLoopSchema), asyncHandler(acosController.createControlLoop));
+server/src/routes/acos.ts:122:router.patch('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), validateBody(updateControlLoopSchema), asyncHandler(acosController.updateControlLoop));
+server/src/routes/acos.ts:123:router.delete('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.deleteControlLoop));
+server/src/routes/acos.ts:126:router.post('/agentic/estimate-blast-radius', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), validateBody(estimateBlastRadiusSchema), asyncHandler(acosController.estimateBlastRadius));
+server/src/routes/acos.ts:127:router.post('/agentic/execute-action', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), validateBody(executeActionSchema), asyncHandler(acosController.executeAction));
+server/src/routes/acos.ts:128:router.post('/agentic/rollback/:actionId', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), asyncHandler(acosController.rollbackAction));
+server/src/routes/acos.ts:129:router.post('/agentic/rollback-multiple', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), validateBody(rollbackMultipleSchema), asyncHandler(acosController.rollbackMultipleActions));
