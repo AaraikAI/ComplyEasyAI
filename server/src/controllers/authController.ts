@@ -11,6 +11,7 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import tokenBlacklist from '../services/tokenBlacklistService';
 import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
+import { logControllerAction } from '../services/auditLogService';
 import DOMPurify from 'isomorphic-dompurify';
 
 // Cookie configuration for httpOnly secure token storage
@@ -409,6 +410,30 @@ class AuthController {
       // Check if the refresh token has been revoked
       const isRevoked = await tokenBlacklist.isRevoked(refreshToken);
       if (isRevoked) {
+        try {
+          const revokedUserId = verifyRefreshToken(refreshToken);
+          if (revokedUserId) {
+            const revokedUser = await prisma.user.findUnique({
+              where: { id: revokedUserId },
+              select: { id: true, organizationId: true },
+            });
+            if (revokedUser) {
+              await prisma.auditLog.create({
+                data: {
+                  action: 'auth.refresh_denied_revoked',
+                  userId: revokedUser.id,
+                  organizationId: revokedUser.organizationId,
+                  hash: uuidv4(),
+                  details: JSON.stringify({ reason: 'refresh_token_revoked' }),
+                  ipAddress: req.ip || undefined,
+                  userAgent: req.headers['user-agent'] || undefined,
+                },
+              });
+            }
+          }
+        } catch (auditErr) {
+          logger.warn('[Auth] Failed to write refresh-denied audit log', auditErr);
+        }
         throw new AppError('Refresh token has been revoked', 401);
       }
 
@@ -428,6 +453,22 @@ class AuthController {
 
       // Blacklist the old refresh token (rotation)
       await tokenBlacklist.revoke(refreshToken, 'token_rotation');
+
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'auth.refresh_rotated',
+            userId: user.id,
+            organizationId: user.organizationId,
+            hash: uuidv4(),
+            details: JSON.stringify({ reason: 'token_rotation' }),
+            ipAddress: req.ip || undefined,
+            userAgent: req.headers['user-agent'] || undefined,
+          },
+        });
+      } catch (auditErr) {
+        logger.warn('[Auth] Failed to write refresh-rotated audit log', auditErr);
+      }
 
       // Generate new tokens
       const accessToken = generateToken({
@@ -784,6 +825,19 @@ class AuthController {
             email,
             token,
             expiresAt,
+          },
+        });
+
+        // Audit log: account creation (inside transaction so it rolls back with the user)
+        await tx.auditLog.create({
+          data: {
+            action: 'auth.user_registered',
+            userId: newUser.id,
+            organizationId: organization.id,
+            hash: uuidv4(),
+            details: JSON.stringify({ role: newUser.role, organizationName: organization.name }),
+            ipAddress: req.ip || undefined,
+            userAgent: req.headers['user-agent'] || undefined,
           },
         });
 
@@ -1257,6 +1311,11 @@ class AuthController {
       // Read access token from header or httpOnly cookie
       const accessToken = req.headers.authorization?.substring(7) || req.cookies?.access_token;
 
+      // Capture user context BEFORE token revocation for the audit log entry
+      const authReq = req as any;
+      const actorUserId: string | undefined = authReq.user?.id;
+      const actorOrgId: string | undefined = authReq.user?.organizationId;
+
       // Blacklist the access token so it cannot be reused
       if (accessToken) {
         await tokenBlacklist.revoke(accessToken, 'logout');
@@ -1266,6 +1325,28 @@ class AuthController {
       const refreshToken = req.body?.refreshToken || req.cookies?.refresh_token;
       if (refreshToken) {
         await tokenBlacklist.revoke(refreshToken, 'logout');
+      }
+
+      // Audit log: emit one entry summarising which tokens were revoked
+      if (actorUserId && actorOrgId && (accessToken || refreshToken)) {
+        try {
+          await prisma.auditLog.create({
+            data: {
+              action: 'auth.logout',
+              userId: actorUserId,
+              organizationId: actorOrgId,
+              hash: uuidv4(),
+              details: JSON.stringify({
+                accessTokenRevoked: !!accessToken,
+                refreshTokenRevoked: !!refreshToken,
+              }),
+              ipAddress: req.ip || undefined,
+              userAgent: req.headers['user-agent'] || undefined,
+            },
+          });
+        } catch (auditErr) {
+          logger.warn('[Auth] Failed to write logout audit log', auditErr);
+        }
       }
 
       // Terminate session if session management is enabled
@@ -1375,6 +1456,22 @@ class AuthController {
     }).catch((err) => {
       logger.warn('[Auth] Failed to purge sessions after password reset', err);
     });
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: 'auth.password_reset',
+          userId: user.id,
+          organizationId: user.organizationId,
+          hash: uuidv4(),
+          details: JSON.stringify({ sessionsTerminated: true, tokensRevoked: true }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+    } catch (auditErr) {
+      logger.warn('[Auth] Failed to write password-reset audit log', auditErr);
+    }
 
     logger.info('[Auth] Password reset completed');
     res.json({ message: 'Password has been reset successfully' });
