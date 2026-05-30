@@ -18,6 +18,7 @@ import homomorphicAIService from '../services/advanced/homomorphicAIService';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import prisma from '../config/database';
+import { logControllerAction } from '../services/auditLogService';
 
 class ACOSController {
   // aCOS Goals
@@ -2955,6 +2956,8 @@ class ACOSController {
         })
       );
 
+      await logControllerAction(req, 'jit.pending_requests_viewed', { count: enrichedRequests.length });
+
       res.json(enrichedRequests);
     } catch (error: any) {
       logger.error('Get pending JIT access requests error', error);
@@ -2966,7 +2969,7 @@ class ACOSController {
     try {
       const authReq = req as AuthRequest;
       const { status } = req.query;
-      
+
       // Only admins can view all requests
       if (authReq.user!.role !== 'admin') {
         throw new AppError('Insufficient privileges. Admin access required.', 403);
@@ -2976,7 +2979,7 @@ class ACOSController {
         authReq.user!.organizationId,
         status as string | undefined
       );
-      
+
       // Enrich with user information
       const enrichedRequests = await Promise.all(
         requests.map(async (request) => {
@@ -2995,6 +2998,11 @@ class ACOSController {
           };
         })
       );
+
+      await logControllerAction(req, 'jit.all_requests_viewed', {
+        count: enrichedRequests.length,
+        statusFilter: typeof status === 'string' ? status : null,
+      });
 
       res.json(enrichedRequests);
     } catch (error: any) {
@@ -3058,6 +3066,11 @@ class ACOSController {
         authReq.user!.id,
         reason.trim()
       );
+
+      await logControllerAction(req, 'jit.access_denied', {
+        requestId,
+        reasonLength: reason.trim().length,
+      });
 
       res.json({ success: true });
     } catch (error: any) {

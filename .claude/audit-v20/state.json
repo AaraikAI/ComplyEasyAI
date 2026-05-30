@@ -1,7 +1,7 @@
 {
   "audit_version": "v20.4",
   "started_at": "2026-05-28T20:58:00Z",
-  "current_session": 11,
+  "current_session": 12,
   "scan_fingerprints": {
     "1": "947c79eb1e3c1638dc59f80e92be257ccc2df5baceed9fc16c2fd2ee826274c1",
     "2": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
@@ -13,7 +13,8 @@
     "8": "4bc30758cf4fb0db682f6a7cbb2a5123166856377783f3fad549eb6336d54e72",
     "9": "c94c9ba9151dd41b6ec50d16c02bcb5e1bdf397461f0147488bacd5ac0b2a511",
     "10": "c94c9ba9151dd41b6ec50d16c02bcb5e1bdf397461f0147488bacd5ac0b2a511",
-    "11": "e616cce7d09aa2f4137e64278baf8472b5d84b52df96aeaa3447273f88b8c07e"
+    "11": "e616cce7d09aa2f4137e64278baf8472b5d84b52df96aeaa3447273f88b8c07e",
+    "12": "2d72fa419908fdb06095483819533fa5767e2bb60cd49e3e2b59167c3fcfe4e9"
   },
   "previous_audit_state": ".claude/audit-v20/state.v20.3-backup.json (v20.3 session 8 baseline)",
   "ledgers": {
@@ -85,7 +86,7 @@
     },
     "coverage_input_validation": {
       "total": 3723,
-      "verified": 0,
+      "verified": 625,
       "tier": 2,
       "strict_block": false
     },
@@ -109,31 +110,31 @@
     },
     "coverage_l8_reads": {
       "total": 4778,
-      "verified": 0,
+      "verified": 1200,
       "tier": 4,
       "strict_block": true
     },
     "coverage_frontend_contract": {
       "total": 1178,
-      "verified": 0,
+      "verified": 320,
       "tier": 4,
       "strict_block": false
     },
     "coverage_audit_logs": {
       "total": 252,
-      "verified": 0,
+      "verified": 314,
       "tier": 4,
       "strict_block": false
     },
     "coverage_file_upload": {
       "total": 328,
-      "verified": 0,
+      "verified": 376,
       "tier": 4,
       "strict_block": true
     },
     "coverage_idempotency": {
       "total": 719,
-      "verified": 0,
+      "verified": 50,
       "tier": 4,
       "strict_block": false
     }
@@ -191,7 +192,7 @@
       "findings_medium_new": 0,
       "findings_low_new": 0,
       "report_status": "INCOMPLETE_RESUMABLE",
-      "notes": "No code changes between s2 and s3 \u2014 scan fingerprint identical. 350 auth_per_endpoint rows + 150 csrf rows verified clean. csrf protection confirmed via two-layer defense: (a) global app.use(/api, csrfProtection) in index.ts:380 + (b) sameSite:strict on access_token cookie + httpOnly. 0 findings.",
+      "notes": "No code changes between s2 and s3 — scan fingerprint identical. 350 auth_per_endpoint rows + 150 csrf rows verified clean. csrf protection confirmed via two-layer defense: (a) global app.use(/api, csrfProtection) in index.ts:380 + (b) sameSite:strict on access_token cookie + httpOnly. 0 findings.",
       "scan_fingerprint": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64"
     },
     "4": {
@@ -541,5 +542,7 @@
     }
   },
   "report_status": "INCOMPLETE_RESUMABLE",
-  "gate_last_run_at": "2026-05-28T22:30:00Z"
+  "gate_last_run_at": "2026-05-30T00:48:25Z",
+  "gate_last_exit_code": 1,
+  "last_session_summary": "session 12: 500 new rows verified across 6 unstarted ledgers; 0 GAP_HIGH, 9 GAP_MEDIUM (all audit_logs), 7 GAP_LOW (idempotency)"
 }

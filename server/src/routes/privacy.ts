@@ -18,6 +18,7 @@ import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
+import { idempotencyKey } from '../middleware/idempotencyKey';
 
 const router = Router();
 router.use(authenticate);
@@ -925,6 +926,7 @@ router.get(
 router.post(
   '/retention/jobs/:id/run',
   authorize('admin'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1712,6 +1714,7 @@ router.post(
 router.post(
   '/deletion/:id/execute',
   authorize('admin'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -1922,6 +1925,7 @@ router.get(
 router.post(
   '/ai-transparency',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -2065,6 +2069,7 @@ router.get(
 router.post(
   '/jit-notices',
   authorize('admin', 'editor'),
+  idempotencyKey(),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -2245,7 +2250,7 @@ router.get('/notices', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Create privacy notice
-router.post('/notices', asyncHandler(async (req: Request, res: Response) => {
+router.post('/notices', idempotencyKey(), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const orgId = user.organizationId;
   const notice = await prisma.jITPrivacyNotice.create({

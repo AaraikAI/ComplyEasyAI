@@ -3,6 +3,7 @@ import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { validateBody, validateMultipartBody, validateParams } from '../middleware/validate';
 import { AppError } from '../middleware/errorHandler';
+import { idempotencyKey } from '../middleware/idempotencyKey';
 import {
   createGoalSchema,
   updateGoalSchema,
@@ -104,7 +105,7 @@ const upload = multer({
 router.use(authenticate);
 
 // aCOS Goals (Growth+)
-router.post('/goals', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), validateBody(createGoalSchema), asyncHandler(acosController.createGoal));
+router.post('/goals', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), idempotencyKey(), validateBody(createGoalSchema), asyncHandler(acosController.createGoal));
 router.get('/goals', ...requireAcosFeature('acosGoals'), asyncHandler(acosController.getGoals));
 router.get('/goals/:goalId', ...requireAcosFeature('acosGoals'), asyncHandler(acosController.getGoal));
 router.patch('/goals/:goalId', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), validateBody(updateGoalSchema), asyncHandler(acosController.updateGoal));
@@ -115,7 +116,7 @@ router.post('/goals/:goalId/restore', ...requireAcosFeature('acosGoals'), author
 router.post('/control-loops', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), validateBody(createControlLoopSchema), asyncHandler(acosController.createControlLoop));
 router.get('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), asyncHandler(acosController.getControlLoop));
 router.get('/control-loops/:loopId/history', ...requireAcosFeature('acosControlLoops'), asyncHandler(acosController.getControlLoopHistory));
-router.post('/control-loops/:loopId/execute', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.executeControlLoop));
+router.post('/control-loops/:loopId/execute', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), idempotencyKey(), asyncHandler(acosController.executeControlLoop));
 router.post('/control-loops/:loopId/pause', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.pauseControlLoop));
 router.post('/control-loops/:loopId/resume', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.resumeControlLoop));
 router.patch('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), validateBody(updateControlLoopSchema), asyncHandler(acosController.updateControlLoop));
