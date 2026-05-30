@@ -1,0 +1,25 @@
+server/src/routes/acos.ts:246:router.post('/vr/sessions/:sessionId/chat', validateBody(vrChatMessageSchema), asyncHandler(acosController.sendVRChatMessage));
+server/src/routes/acos.ts:258:router.post('/vr/training/scenarios', authorize('admin'), validateBody(createVRTrainingScenarioSchema), asyncHandler(acosController.createVRTrainingScenario));
+server/src/routes/acos.ts:266:router.post('/jit/request', ...requireVisionaryFeature('acosJitCompliance'), authorize('admin', 'editor'), validateBody(requestJITAccessSchema), asyncHandler(acosController.requestJITAccess));
+server/src/routes/acos.ts:278:router.post('/swarm-tasks/agents', authorize('admin'), validateBody(registerSwarmAgentSchema), asyncHandler(acosController.registerSwarmAgent));
+server/src/routes/acos.ts:281:router.put('/swarm-tasks/agents/:agentId/status', authorize('admin'), validateBody(updateSwarmAgentStatusSchema), asyncHandler(acosController.updateSwarmAgentStatus));
+server/src/routes/acos.ts:312:router.post('/compliance-debts/calculate-from-gap', authorize('admin', 'editor'), validateBody(calculateDebtFromGapSchema), asyncHandler(acosController.calculateDebtFromGapAnalysis));
+server/src/routes/acos.ts:316:router.post('/change-impacts/forecast', authorize('admin', 'editor'), validateBody(forecastChangeImpactSchema), asyncHandler(acosController.forecastChangeImpact));
+server/src/routes/acos.ts:320:router.post('/neuro-symbolic/hybrid-reasoning', ...requireVisionaryFeature('acosNeuroSymbolic'), authorize('admin', 'editor'), validateBody(hybridReasoningSchema), asyncHandler(acosController.performHybridReasoning));
+server/src/routes/acos.ts:330:router.post('/homomorphic/decrypt', authorize('admin', 'editor'), validateBody(decryptDataSchema), asyncHandler(acosController.decryptData));
+server/src/routes/frameworks.ts:192:router.post('/:id/apply-template', authorize('admin', 'editor'), validateBody(applyTemplateSchema), asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/frameworks.ts:236:router.post('/', authorize('admin', 'editor'), enforceLimit('maxFrameworks'), validateBody(createFrameworkSchema), asyncHandler(frameworksController.create.bind(frameworksController)));
+server/src/routes/frameworks.ts:237:router.patch('/:id', authorize('admin', 'editor'), validateBody(updateFrameworkSchema), asyncHandler(frameworksController.update.bind(frameworksController)));
+server/src/routes/frameworks.ts:242:router.post('/:frameworkId/controls', authorize('admin', 'editor'), validateBody(createControlSchema), asyncHandler(frameworksController.createControl.bind(frameworksController)));
+server/src/routes/frameworks.ts:243:router.patch('/:frameworkId/controls/:controlId', authorize('admin', 'editor'), validateBody(updateControlSchema), asyncHandler(frameworksController.updateControl.bind(frameworksController)));
+server/src/routes/frameworks.ts:244:router.post('/:frameworkId/controls/bulk-update', authorize('admin', 'editor'), validateBody(bulkUpdateControlsSchema), asyncHandler(frameworksController.bulkUpdateControls.bind(frameworksController)));
+server/src/routes/frameworks.ts:257:router.post('/suggestions/:suggestionId/reject', authorize('admin', 'editor'), validateBody(rejectSuggestionSchema), asyncHandler(frameworksController.rejectSuggestion.bind(frameworksController)));
+server/src/routes/ropa.ts:434:  validateBody(updateProcessingActivitySchema),
+server/src/routes/ropa.ts:440:  validateBody(updateProcessingActivitySchema),
+server/src/routes/dpia.ts:604:  validateBody(dpoConsultationSchema),
+server/src/routes/dpia.ts:685:  validateBody(rejectDPIASchema),
+server/src/routes/scim.ts:422:  validateBody(scimCreateUserSchema),
+server/src/routes/scim.ts:530:  validateBody(scimReplaceUserSchema),
+server/src/routes/scim.ts:591:  validateBody(scimPatchUserSchema),
+server/src/routes/scim.ts:826:  validateBody(scimCreateGroupSchema),
+server/src/routes/securityTraining.ts:287:  validateBody(createSecurityTrainingSchema),

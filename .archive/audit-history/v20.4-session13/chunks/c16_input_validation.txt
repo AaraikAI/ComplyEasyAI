@@ -1,0 +1,25 @@
+server/src/routes/dora.ts:210:  validateBody(escalateIncidentSchema),
+server/src/routes/dora.ts:288:  validateBody(createThirdPartyProviderSchema),
+server/src/routes/dora.ts:302:  validateBody(updateThirdPartyProviderSchema),
+server/src/routes/dora.ts:364:  validateBody(createResilienceTestSchema),
+server/src/routes/dora.ts:379:  validateBody(updateResilienceTestSchema),
+server/src/routes/dora.ts:407:  validateBody(executeResilienceTestSchema),
+server/src/routes/dora.ts:462:  validateBody(createInformationRegisterEntrySchema),
+server/src/routes/dora.ts:476:  validateBody(updateInformationRegisterEntrySchema),
+server/src/routes/bia.ts:10:import { validateBody } from '../middleware/validate';
+server/src/routes/bia.ts:221:  validateBody(createBusinessProcessSchema),
+server/src/routes/bia.ts:297:  validateBody(updateBusinessProcessSchema),
+server/src/routes/bia.ts:402:  validateBody(createProcessDependencySchema),
+server/src/middleware/validate.ts:2: * Request-body validation middleware using Joi.
+server/src/middleware/validate.ts:10:type SchemaLike = Joi.ObjectSchema | Joi.ArraySchema;
+server/src/middleware/validate.ts:13:function sanitizeDetails(details: Joi.ValidationErrorItem[]) {
+server/src/middleware/validate.ts:17:export function validateBody(schema: SchemaLike) {
+server/src/middleware/validate.ts:37:export function validateQuery(schema: SchemaLike) {
+server/src/middleware/validate.ts:57:export function validateParams(schema: SchemaLike) {
+server/src/validators/nistCsfSchemas.ts:14:export const createProfileSchema = Joi.object({
+server/src/validators/nistCsfSchemas.ts:15:  name: Joi.string().trim().min(1).max(200).required(),
+server/src/validators/nistCsfSchemas.ts:16:  profileType: Joi.string().valid(...PROFILE_TYPES).required(),
+server/src/validators/nistCsfSchemas.ts:17:  profileYear: Joi.number().integer().min(2020).max(2100).required(),
+server/src/validators/nistCsfSchemas.ts:18:  businessContext: Joi.object().unknown(true).optional(),
+server/src/validators/nistCsfSchemas.ts:19:  missionObjectives: Joi.string().trim().max(4000).optional(),
+server/src/validators/nistCsfSchemas.ts:20:  riskTolerance: Joi.string().valid(...RISK_TOLERANCES).optional(),

@@ -1,0 +1,25 @@
+./server/src/controllers/integrationsController.ts:1320:      prisma.azurePolicyCompliance.count({ where }),
+./server/src/controllers/integrationsController.ts:1724:    const integration = await prisma.integration.findFirst({
+./server/src/controllers/integrationsController.ts:1838:    const integration = await prisma.integration.findFirst({
+./server/src/controllers/integrationsController.ts:1897:    const integration = await prisma.integration.findFirst({
+./server/src/controllers/integrationsController.ts:1961:    const integrations = await prisma.integration.findMany({
+./server/src/controllers/integrationsController.ts:2068:    const integration = await prisma.integration.findFirst({
+./server/src/controllers/integrationsController.ts:817:    const integrations = await prisma.integration.findMany({
+./server/src/controllers/integrationsController.ts:845:    const integration = await prisma.integration.findUnique({
+./server/src/controllers/onboardingController.ts:316:      const existing = await prisma.onboardingProgress.findUnique({
+./server/src/controllers/onboardingController.ts:38:      const organization = await prisma.organization.findUnique({
+./server/src/controllers/organizationController.ts:14:      const organization = await prisma.organization.findUnique({
+./server/src/controllers/risksController.ts:181:      const existingRisk = await prisma.riskItem.findFirst({
+./server/src/controllers/risksController.ts:294:      const risk = await prisma.riskItem.findFirst({
+./server/src/controllers/risksController.ts:332:      const risks = await prisma.riskItem.findMany({
+./server/src/controllers/risksController.ts:384:      const risk = await prisma.riskItem.findFirst({
+./server/src/controllers/risksController.ts:428:      const frameworks = await prisma.complianceFramework.findMany({
+./server/src/controllers/risksController.ts:441:          const existingRisk = await prisma.riskItem.findFirst({
+./server/src/controllers/risksController.ts:470:          const existingRisk = await prisma.riskItem.findFirst({
+./server/src/controllers/risksController.ts:497:          const existingRisk = await prisma.riskItem.findFirst({
+./server/src/controllers/risksController.ts:49:      const risks = await prisma.riskItem.findMany({
+./server/src/controllers/risksController.ts:522:      const integrations = await prisma.integration.findMany({
+./server/src/controllers/risksController.ts:535:        const existingRisk = await prisma.riskItem.findFirst({
+./server/src/controllers/risksController.ts:561:          const existingRisk = await prisma.riskItem.findFirst({
+./server/src/controllers/risksController.ts:77:      const risk = await prisma.riskItem.findFirst({
+./server/src/controllers/securityController.ts:1182:      const log = await prisma.auditLog.findFirst({

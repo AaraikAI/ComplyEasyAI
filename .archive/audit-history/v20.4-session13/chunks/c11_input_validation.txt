@@ -1,0 +1,25 @@
+server/src/routes/privacy.ts:215:  validateBody(createDSARSchema),
+server/src/routes/privacy.ts:289:  validateBody(updateDSARSchema),
+server/src/routes/privacy.ts:473:  validateBody(createConsentRecordSchema),
+server/src/routes/privacy.ts:512:  validateBody(updateConsentRecordSchema),
+server/src/routes/privacy.ts:705:  validateBody(upsertConsentPreferenceSchema),
+server/src/routes/privacy.ts:795:  validateBody(createRetentionPolicySchema),
+server/src/routes/privacy.ts:831:  validateBody(updateRetentionPolicySchema),
+server/src/routes/acos.ts:111:router.patch('/goals/:goalId', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), validateBody(updateGoalSchema), asyncHandler(acosController.updateGoal));
+server/src/routes/acos.ts:116:router.post('/control-loops', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), validateBody(createControlLoopSchema), asyncHandler(acosController.createControlLoop));
+server/src/routes/acos.ts:122:router.patch('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), validateBody(updateControlLoopSchema), asyncHandler(acosController.updateControlLoop));
+server/src/routes/acos.ts:127:router.post('/agentic/execute-action', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), validateBody(executeActionSchema), asyncHandler(acosController.executeAction));
+server/src/routes/acos.ts:129:router.post('/agentic/rollback-multiple', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), validateBody(rollbackMultipleSchema), asyncHandler(acosController.rollbackMultipleActions));
+server/src/routes/acos.ts:135:router.post('/evidence/bulk-analyze', ...requireAcosFeature('acosEvidenceTruth'), authorize('admin', 'editor'), validateBody(bulkAnalyzeEvidenceSchema), asyncHandler(acosController.bulkAnalyzeEvidence));
+server/src/routes/acos.ts:140:router.post('/evidence/chain-of-custody', ...requireAcosFeature('acosEvidenceTruth'), authorize('admin', 'editor'), validateBody(chainOfCustodySchema), asyncHandler(acosController.createChainOfCustody));
+server/src/routes/acos.ts:147:router.get('/evidence/:evidenceId/analysis/export', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), asyncHandler(acosController.exportAnalysisReport));
+server/src/routes/acos.ts:151:router.get('/evidence/:evidenceId/provenance', ...requireAcosFeature('acosEvidenceTruth'), validateParams(evidenceIdParamSchema), asyncHandler(acosController.getProvenance));
+server/src/routes/acos.ts:162:router.post('/rif/feeds', authorize('admin'), validateBody(addFeedSchema), asyncHandler(acosController.addFeed));
+server/src/routes/acos.ts:177:router.post('/digital-twin/compare-scenarios', authorize('admin', 'editor'), validateBody(compareScenariosSchema), asyncHandler(acosController.compareScenarios));
+server/src/routes/acos.ts:181:router.post('/digital-twin/monte-carlo', authorize('admin', 'editor'), validateBody(runMonteCarloSchema), asyncHandler(acosController.runMonteCarlo));
+server/src/routes/acos.ts:185:router.post('/red-team/automated-scan', authorize('admin'), validateBody(runAutomatedScanSchema), asyncHandler(acosController.runAutomatedScan));
+server/src/routes/acos.ts:192:router.post('/red-team/mark-false-positive', authorize('admin'), validateBody(markFalsePositiveSchema), asyncHandler(acosController.markFalsePositive));
+server/src/routes/acos.ts:195:router.post('/swarm/join', ...requireAcosFeature('acosFederatedLearning'), authorize('admin'), validateBody(joinFederationSchema), asyncHandler(acosController.joinFederation));
+server/src/routes/acos.ts:217:router.post('/physical-ai/bulk-register', authorize('admin'), validateBody(bulkRegisterDevicesSchema), asyncHandler(acosController.bulkRegisterDevices));
+server/src/routes/acos.ts:232:router.post('/vr/sessions', ...requireVisionaryFeature('acosVrTraining'), authorize('admin', 'editor'), validateBody(createVRSessionSchema), asyncHandler(acosController.createVRSession));
+server/src/routes/acos.ts:240:router.post('/vr/sessions/:sessionId/annotations', validateBody(vrAnnotationSchema), asyncHandler(acosController.addVRAnnotation));
