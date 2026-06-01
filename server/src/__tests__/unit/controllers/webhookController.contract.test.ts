@@ -55,6 +55,12 @@ describe('WebhookController Contract Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // The shared prisma mock does not declare updateMany on apiKey; the
+    // controller's org-scoped revoke uses it, so provide a local jest.fn.
+    if (typeof (prismaMock.apiKey as any).updateMany !== 'function') {
+      (prismaMock.apiKey as any).updateMany = jest.fn();
+    }
+
     // Re-establish mock implementations cleared by resetMocks: true in jest config
     mockWebhookService.getWebhooks.mockResolvedValue([{ id: 'wh-1' }] as never);
     mockWebhookService.getWebhook.mockResolvedValue({ id: 'wh-1', events: [] } as never);
@@ -381,11 +387,13 @@ describe('WebhookController Contract Tests', () => {
     it('should revoke API key', async () => {
       mockReq.params = { keyId: 'key-1' };
 
-      (prismaMock.apiKey.update as jest.Mock<any>).mockResolvedValue({} as never);
+      // Controller org-scopes the revoke via updateMany and checks count.
+      (prismaMock.apiKey.updateMany as jest.Mock<any>).mockResolvedValue({ count: 1 } as never);
+      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as never);
 
       await webhookController.revokeApiKey(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(prismaMock.apiKey.update).toHaveBeenCalledWith(
+      expect(prismaMock.apiKey.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             id: 'key-1',
@@ -404,9 +412,8 @@ describe('WebhookController Contract Tests', () => {
     it('should throw 404 when key not found', async () => {
       mockReq.params = { keyId: 'key-missing' };
 
-      const error: any = new Error('Not found');
-      error.code = 'P2025';
-      (prismaMock.apiKey.update as jest.Mock<any>).mockRejectedValue(error as never);
+      // Cross-tenant / missing key: org-scoped updateMany affects no rows.
+      (prismaMock.apiKey.updateMany as jest.Mock<any>).mockResolvedValue({ count: 0 } as never);
 
       await expect(
         webhookController.revokeApiKey(mockReq as Request, mockRes as Response, mockNext)

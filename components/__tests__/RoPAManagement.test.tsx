@@ -33,65 +33,73 @@ describe('RoPAManagement', () => {
     mockDel.mockResolvedValue({});
   });
 
-  it('renders without crashing', () => {
+  it('renders the RoPA header and Article 30 label', async () => {
     render(<RoPAManagement onBack={mockOnBack} />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    // Header title comes from the i18n key (mock returns the key verbatim).
+    expect(await screen.findByText('ropa.title')).toBeInTheDocument();
+    expect(screen.getByText('GDPR Article 30')).toBeInTheDocument();
   });
 
-  it('displays RoPA-related content', () => {
+  it('renders the statistics summary cards', async () => {
     render(<RoPAManagement onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content.length).toBeGreaterThan(0);
+    // Stat cards render once the (empty) activity list has loaded.
+    expect(await screen.findByText('Total Activities')).toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.getByText('Special Categories')).toBeInTheDocument();
+    expect(screen.getByText('International Transfers')).toBeInTheDocument();
   });
 
-  it('calls onBack when back button clicked', () => {
+  it('calls onBack when back button clicked', async () => {
     render(<RoPAManagement onBack={mockOnBack} />);
-    const backBtn = screen.getByTestId('icon-ArrowLeft')?.closest('button');
-    if (backBtn) {
-      fireEvent.click(backBtn);
-      expect(mockOnBack).toHaveBeenCalled();
-    }
+    const backBtn = (await screen.findByTestId('icon-ArrowLeft')).closest('button');
+    expect(backBtn).not.toBeNull();
+    fireEvent.click(backBtn!);
+    expect(mockOnBack).toHaveBeenCalled();
   });
 
-  it('shows processing activities table', () => {
+  it('shows the processing activities table with empty-state copy', async () => {
     render(<RoPAManagement onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    // Column header is i18n-keyed; the empty list shows the no-match message.
+    expect(await screen.findByText('Activity Name')).toBeInTheDocument();
+    expect(screen.getByText('No activities match the current filters.')).toBeInTheDocument();
   });
 
-  it('shows create/add button', () => {
+  it('shows the create-record button', async () => {
     render(<RoPAManagement onBack={mockOnBack} />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    expect(await screen.findByText('ropa.createRecord')).toBeInTheDocument();
   });
 
-  it('renders stat cards', () => {
+  it('renders the legal-basis breakdown panel', async () => {
     render(<RoPAManagement onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    expect(await screen.findByText('By Legal Basis')).toBeInTheDocument();
   });
 
-  it('handles empty data', () => {
+  it('renders zero totals when there are no activities', async () => {
     render(<RoPAManagement onBack={mockOnBack} />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    await screen.findByText('Total Activities');
+    // Total Activities count is rendered as a large number; with no data it is 0.
+    const totalLabel = screen.getByText('Total Activities').closest('div');
+    expect(totalLabel?.parentElement?.textContent).toContain('0');
   });
 
-  it('handles API errors', () => {
-    mockGet.mockRejectedValue(new Error('API Error'));
+  it('surfaces a retry banner when the load fails', async () => {
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockImplementationOnce(() => Promise.resolve({ ok: false, status: 500, text: () => Promise.resolve('boom') }));
     render(<RoPAManagement onBack={mockOnBack} />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    expect(await screen.findByText(/Failed to load processing activities/i)).toBeInTheDocument();
   });
 
-  it('shows export functionality', () => {
+  it('renders an export control', async () => {
     render(<RoPAManagement onBack={mockOnBack} />);
-    const buttons = screen.getAllByRole('button');
-    const exportBtn = buttons.find(b => b.textContent?.includes('Export') || b.textContent?.includes('Download') || b.textContent?.includes('common.export'));
-    expect(buttons.length).toBeGreaterThan(0);
+    await screen.findByText('Total Activities');
+    // Export menu trigger uses the common.export i18n key.
+    expect(screen.getByText('common.export')).toBeInTheDocument();
   });
 
-  it('renders search input', () => {
+  it('renders the search input', async () => {
     render(<RoPAManagement onBack={mockOnBack} />);
+    await screen.findByText('Total Activities');
     const searchInputs = document.querySelectorAll('input[type="text"]');
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    expect(searchInputs.length).toBeGreaterThan(0);
   });
 });

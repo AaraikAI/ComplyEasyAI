@@ -63,6 +63,12 @@ describe('E2E: Authentication Flow', () => {
       const mockUser = createMockUser();
 
       // Step 1: Register new user
+      // The global resetMocks clears mock implementations between tests, including the
+      // shared prismaMock.$transaction passthrough. Re-establish it so register's
+      // prisma.$transaction(async (tx) => {...}) executes against the mocked models.
+      (prismaMock as any).$transaction.mockImplementation((arg: any) =>
+        typeof arg === 'function' ? arg(prismaMock) : Promise.all(arg)
+      );
       prismaMock.user.findUnique.mockResolvedValue(null);
       prismaMock.organization.create.mockResolvedValue(mockOrg);
       prismaMock.user.create.mockResolvedValue(mockUser);
@@ -79,6 +85,7 @@ describe('E2E: Authentication Flow', () => {
         .send({
           name: 'Test User',
           email: 'test@example.com',
+          password: 'SecurePass123!',
           organizationName: 'Test Org',
         })
         .expect(201);
@@ -109,8 +116,12 @@ describe('E2E: Authentication Flow', () => {
         .send({ token: 'verify-token' })
         .expect(200);
 
-      expect(verifyResponse.body).toHaveProperty('accessToken');
-      expect(verifyResponse.body).toHaveProperty('refreshToken');
+      // Tokens are issued via httpOnly cookies (not the JSON body) for security.
+      const setCookies = verifyResponse.headers['set-cookie'] as unknown as string[];
+      expect(setCookies.some((c) => c.startsWith('access_token='))).toBe(true);
+      expect(setCookies.some((c) => c.startsWith('refresh_token='))).toBe(true);
+      expect(setCookies.some((c) => c.startsWith('access_token=') && /HttpOnly/i.test(c))).toBe(true);
+      expect(verifyResponse.body).toHaveProperty('twoFactorRequired', false);
       expect(verifyResponse.body).toHaveProperty('user');
       expect(verifyResponse.body.user).toHaveProperty('email', 'test@example.com');
     });
@@ -171,22 +182,28 @@ describe('E2E: Authentication Flow', () => {
 
       const verifyResponse = await request(app)
         .post('/api/auth/verify')
-        .send({ token: 'refresh-test-token' });
+        .send({ token: 'refresh-test-token' })
+        .expect(200);
 
-      if (verifyResponse.body.refreshToken) {
-        const refreshToken = verifyResponse.body.refreshToken;
+      // The refresh token is delivered as an httpOnly cookie; extract it to drive refresh.
+      const setCookies = verifyResponse.headers['set-cookie'] as unknown as string[];
+      const refreshCookie = setCookies.find((c) => c.startsWith('refresh_token='));
+      expect(refreshCookie).toBeDefined();
+      const refreshToken = decodeURIComponent(refreshCookie!.split(';')[0].split('=')[1]);
 
-        // Setup mock for refresh flow
-        prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
+      // Setup mock for refresh flow (refresh looks up the user by id from the token)
+      prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
 
-        // Refresh access token
-        const refreshResponse = await request(app)
-          .post('/api/auth/refresh')
-          .send({ refreshToken });
+      // Refresh access token (token accepted from body for backward compatibility)
+      const refreshResponse = await request(app)
+        .post('/api/auth/refresh')
+        .send({ refreshToken })
+        .expect(200);
 
-        expect(refreshResponse.status).toBe(200);
-        expect(refreshResponse.body).toHaveProperty('accessToken');
-      }
+      expect(refreshResponse.body).toHaveProperty('message', 'Token refreshed successfully');
+      const refreshSetCookies = refreshResponse.headers['set-cookie'] as unknown as string[];
+      expect(refreshSetCookies.some((c) => c.startsWith('access_token='))).toBe(true);
+      expect(refreshSetCookies.some((c) => c.startsWith('refresh_token='))).toBe(true);
     });
   });
 });

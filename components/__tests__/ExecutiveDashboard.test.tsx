@@ -77,9 +77,11 @@ describe('ExecutiveDashboard', () => {
 
   it('shows framework compliance scores', async () => {
     await renderAndWait(<ExecutiveDashboard />);
-    // Scores may or may not be rendered as standalone text nodes
-    const content = document.body.textContent || '';
-    expect(content.length).toBeGreaterThan(0);
+    // Each framework card renders its progress as "<score>%"; assert the mocked
+    // values are surfaced so a regression that drops scores fails the test.
+    expect(screen.getAllByText('92%').length).toBeGreaterThan(0); // SOC 2
+    expect(screen.getAllByText('85%').length).toBeGreaterThan(0); // ISO 27001
+    expect(screen.getAllByText('78%').length).toBeGreaterThan(0); // GDPR
   });
 
   it('displays top risks section', async () => {

@@ -160,7 +160,7 @@ class EndpointOptimizer {
     fs.writeFileSync(textFilepath, textReport);
 
     logger.info(`Optimization report saved to ${filepath}`);
-    console.log('\n' + textReport);
+    logger.info('\n' + textReport);
   }
 
   /**

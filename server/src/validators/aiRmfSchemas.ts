@@ -16,4 +16,8 @@ export const createAISystemSchema = Joi.object({
   status: Joi.string().optional(),
 }).unknown(false);
 
-export const updateAISystemSchema = createAISystemSchema.min(1);
+// Partial updates (PATCH/PUT): relax `name` to optional so callers may update
+// any subset of fields. `.min(1)` still requires at least one property be present.
+export const updateAISystemSchema = createAISystemSchema
+  .fork(['name'], (s) => s.optional())
+  .min(1);

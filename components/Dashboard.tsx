@@ -174,6 +174,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
     return [{ name: 'Jan', score: 0 }, { name: 'Feb', score: 0 }, { name: 'Mar', score: 0 }, { name: 'Apr', score: 0 }, { name: 'May', score: 0 }, { name: 'Jun', score: 0 }];
   }, [trendData]);
 
+  // Month-over-month compliance-score delta, derived from the last two trend points.
+  const scoreTrend = React.useMemo<{ delta: number; direction: 'up' | 'down' | 'flat' } | null>(() => {
+    if (chartTrendData.length < 2) return null;
+    const latest = chartTrendData[chartTrendData.length - 1].score;
+    const previous = chartTrendData[chartTrendData.length - 2].score;
+    const delta = latest - previous;
+    return { delta, direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat' };
+  }, [chartTrendData]);
+
   const activeCount = frameworks.length;
   const criticalRiskCount = risks.filter(r => r.severity === 'High' && r.status !== 'Resolved').length;
 
@@ -345,11 +354,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
             {/* Text */}
             <div className="min-w-0">
               <p className="text-sm font-medium text-surface-500">{t('dashboard.complianceScore')}</p>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <TrendingUp size={14} className="text-accent-500" />
-                <span className="text-sm font-semibold text-accent-600">+4%</span>
-                <span className="text-xs text-surface-400">vs last month</span>
-              </div>
+              {scoreTrend && scoreTrend.direction !== 'flat' ? (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  {scoreTrend.direction === 'up' ? (
+                    <TrendingUp size={14} className="text-accent-500" />
+                  ) : (
+                    <TrendingUp size={14} className="text-red-500 rotate-180" />
+                  )}
+                  <span className={`text-sm font-semibold ${scoreTrend.direction === 'up' ? 'text-accent-600' : 'text-red-600'}`}>
+                    {scoreTrend.delta > 0 ? '+' : ''}{scoreTrend.delta}%
+                  </span>
+                  <span className="text-xs text-surface-400">vs last month</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className="text-sm font-medium text-surface-400">No change</span>
+                  <span className="text-xs text-surface-400">vs last month</span>
+                </div>
+              )}
               <p className="text-xs text-surface-400 mt-1 truncate">
                 {frameworks.length > 0 ? `Across ${frameworks.length} framework${frameworks.length !== 1 ? 's' : ''}` : 'No frameworks yet'}
               </p>

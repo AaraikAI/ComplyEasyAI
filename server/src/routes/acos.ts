@@ -286,16 +286,19 @@ router.post('/swarm-tasks', authorize('admin', 'editor'), validateBody(submitSwa
 router.post('/swarm-tasks/bulk', authorize('admin', 'editor'), validateBody(bulkSubmitSwarmTasksSchema), asyncHandler(acosController.bulkSubmitSwarmTasks));
 router.get('/swarm-tasks', asyncHandler(acosController.getAllSwarmTasks));
 router.get('/swarm-tasks/active', asyncHandler(acosController.getActiveSwarmTasks));
-router.get('/swarm-tasks/:taskId', asyncHandler(acosController.getSwarmTaskStatus));
-router.post('/swarm-tasks/:taskId/cancel', authorize('admin'), asyncHandler(acosController.cancelSwarmTask));
-router.post('/swarm-tasks/:taskId/agents/:agentId/progress', asyncHandler(acosController.reportSwarmTaskProgress));
-router.post('/swarm-tasks/:taskId/agents/:agentId/complete', asyncHandler(acosController.completeSwarmTask));
+// Static GET segments must precede the parameterized /:taskId route below so they are
+// not shadowed (Express matches in registration order; /:taskId would otherwise capture
+// "metrics" / "dashboard" and surface a spurious 404).
 router.get('/swarm-tasks/metrics', asyncHandler(acosController.getSwarmMetrics));
 router.get('/swarm-tasks/metrics/history', asyncHandler(acosController.getSwarmHistoricalMetrics));
 router.get('/swarm-tasks/metrics/alerts', asyncHandler(acosController.getSwarmMetricAlerts));
 router.post('/swarm-tasks/metrics/alerts/:alertId/resolve', authorize('admin'), asyncHandler(acosController.resolveSwarmMetricAlert));
 router.get('/swarm-tasks/metrics/export', asyncHandler(acosController.exportSwarmMetrics));
 router.get('/swarm-tasks/dashboard', asyncHandler(acosController.getSwarmDashboard));
+router.get('/swarm-tasks/:taskId', asyncHandler(acosController.getSwarmTaskStatus));
+router.post('/swarm-tasks/:taskId/cancel', authorize('admin'), asyncHandler(acosController.cancelSwarmTask));
+router.post('/swarm-tasks/:taskId/agents/:agentId/progress', asyncHandler(acosController.reportSwarmTaskProgress));
+router.post('/swarm-tasks/:taskId/agents/:agentId/complete', asyncHandler(acosController.completeSwarmTask));
 
 // Federated Swarm Extended
 router.get('/swarm/federation-status', asyncHandler(acosController.getFederationStatus));

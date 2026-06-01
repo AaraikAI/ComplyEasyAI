@@ -3,13 +3,77 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { escapeCsvCell } from './csvExport';
 
 /**
- * Generate a unique hash for audit log entry
+ * Canonical, deterministically-serializable fields that define an audit entry.
+ * Every value here is persisted on the row, so the hash can be recomputed and
+ * verified after the fact.
  */
-function generateAuditHash(data: Record<string, unknown>): string {
-  const content = JSON.stringify(data) + Date.now() + Math.random();
+interface AuditHashInput {
+  userId: string | null;
+  organizationId: string;
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  metadata: unknown;
+  ipAddress: string | null;
+  userAgent: string | null;
+  timestamp: string; // ISO-8601
+  prevHash: string; // hash of the previous entry in this organization's chain
+}
+
+/**
+ * Produce a stable JSON string with sorted keys so equal inputs always yield an
+ * identical digest regardless of property insertion order.
+ */
+function canonicalize(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value ?? null);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalize).join(',')}]`;
+  }
+  const keys = Object.keys(value as Record<string, unknown>).sort();
+  return `{${keys
+    .map((k) => `${JSON.stringify(k)}:${canonicalize((value as Record<string, unknown>)[k])}`)
+    .join(',')}}`;
+}
+
+/**
+ * Deterministically derive a tamper-evident hash for an audit entry. The digest
+ * covers the canonical entry fields and is chained to the previous entry's hash,
+ * so the full ledger can be re-verified later (no time/random salt).
+ */
+function generateAuditHash(input: AuditHashInput): string {
+  const content = canonicalize({
+    userId: input.userId,
+    organizationId: input.organizationId,
+    action: input.action,
+    resourceType: input.resourceType,
+    resourceId: input.resourceId,
+    metadata: input.metadata ?? null,
+    ipAddress: input.ipAddress,
+    userAgent: input.userAgent,
+    timestamp: input.timestamp,
+    prevHash: input.prevHash,
+  });
   return crypto.createHash('sha256').update(content).digest('hex');
+}
+
+const GENESIS_HASH = '0'.repeat(64);
+
+/**
+ * Fetch the most recent audit entry's hash for an organization to chain the next
+ * entry to it. Returns the genesis value when no prior entry exists.
+ */
+async function getPreviousHash(organizationId: string): Promise<string> {
+  const last = await prisma.auditLog.findFirst({
+    where: { organizationId },
+    orderBy: { timestamp: 'desc' },
+    select: { hash: true },
+  });
+  return last?.hash || GENESIS_HASH;
 }
 
 /**
@@ -32,22 +96,34 @@ export class AuditLogger {
     userAgent?: string;
   }): Promise<void> {
     try {
-      const logData = {
+      const timestamp = new Date();
+      const metadata = params.metadata ?? {};
+      const prevHash = await getPreviousHash(params.organizationId);
+      const hash = generateAuditHash({
         userId: params.userId,
         organizationId: params.organizationId,
         action: params.action,
         resourceType: params.resourceType,
         resourceId: params.resourceId,
-      };
+        metadata,
+        ipAddress: params.ipAddress ?? null,
+        userAgent: params.userAgent ?? null,
+        timestamp: timestamp.toISOString(),
+        prevHash,
+      });
 
       await prisma.auditLog.create({
         data: {
-          ...logData,
-          metadata: params.metadata || {},
+          userId: params.userId,
+          organizationId: params.organizationId,
+          action: params.action,
+          resourceType: params.resourceType,
+          resourceId: params.resourceId,
+          metadata,
           ipAddress: params.ipAddress,
           userAgent: params.userAgent,
-          hash: generateAuditHash(logData),
-          timestamp: new Date(),
+          hash,
+          timestamp,
         },
       });
 
@@ -83,23 +159,47 @@ export class AuditLogger {
     }>
   ): Promise<void> {
     try {
-      await prisma.auditLog.createMany({
-        data: events.map((event) => {
-          const logData = {
-            userId: event.userId,
-            organizationId: event.organizationId,
-            action: event.action,
-            resourceType: event.resourceType,
-            resourceId: event.resourceId,
-          };
-          return {
-            ...logData,
-            metadata: event.metadata || {},
-            hash: generateAuditHash(logData),
-            timestamp: new Date(),
-          };
-        }),
+      // Seed a per-organization running hash from the last persisted entry so
+      // batch entries chain correctly both to the existing ledger and to each
+      // other (entries are chained in array order within the batch).
+      const orgIds = Array.from(new Set(events.map((e) => e.organizationId)));
+      const runningHash = new Map<string, string>();
+      await Promise.all(
+        orgIds.map(async (orgId) => {
+          runningHash.set(orgId, await getPreviousHash(orgId));
+        })
+      );
+
+      const data = events.map((event) => {
+        const timestamp = new Date();
+        const metadata = event.metadata ?? {};
+        const prevHash = runningHash.get(event.organizationId) || GENESIS_HASH;
+        const hash = generateAuditHash({
+          userId: event.userId,
+          organizationId: event.organizationId,
+          action: event.action,
+          resourceType: event.resourceType,
+          resourceId: event.resourceId,
+          metadata,
+          ipAddress: null,
+          userAgent: null,
+          timestamp: timestamp.toISOString(),
+          prevHash,
+        });
+        runningHash.set(event.organizationId, hash);
+        return {
+          userId: event.userId,
+          organizationId: event.organizationId,
+          action: event.action,
+          resourceType: event.resourceType,
+          resourceId: event.resourceId,
+          metadata,
+          hash,
+          timestamp,
+        };
       });
+
+      await prisma.auditLog.createMany({ data });
 
       logger.info(`Batch audit log: ${events.length} events`);
     } catch (error) {
@@ -311,7 +411,10 @@ export class AuditLogger {
         JSON.stringify(log.metadata),
       ]);
 
-      const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+      // RFC 4180 quoting + formula-injection neutralization on every cell.
+      const csv = [headers, ...rows]
+        .map((row) => row.map((cell) => escapeCsvCell(cell)).join(','))
+        .join('\n');
 
       return {
         format: 'csv',

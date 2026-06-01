@@ -19,9 +19,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'processing' | 'success'>('form');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
   const { isSubmitting, guard } = useSubmitGuard();
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -49,11 +46,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
       }
     });
   };
-
-  // Basic formatting for visual realism
-  const formatCard = (val: string) => {
-    return val.replace(/\s?/g, '').replace(/(\d{4})/g, '$1 ').trim();
-  }
 
   return (
     <div className="fixed inset-0 z-[100] bg-black bg-opacity-60 flex items-center justify-center p-4 backdrop-blur-sm">

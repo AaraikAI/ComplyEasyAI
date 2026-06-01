@@ -297,6 +297,17 @@ router.post(
         throw new AppError(`testType must be one of: ${VALID_TEST_TYPES.join(', ')}`, 400);
       }
 
+      // Verify the referenced control belongs to the caller's organization
+      // (FrameworkControl is org-scoped through its parent framework). This
+      // prevents creating a test bound to a control owned by another tenant.
+      const control = await prisma.frameworkControl.findFirst({
+        where: { id: controlId, framework: { organizationId: orgId } },
+        select: { id: true },
+      });
+      if (!control) {
+        throw new AppError('Control not found in your organization', 404);
+      }
+
       const test = await prisma.controlTest.create({
         data: {
           organizationId: orgId,
@@ -349,7 +360,18 @@ router.patch(
       if (testConfig !== undefined) updateData.testConfig = testConfig;
       if (schedule !== undefined) updateData.schedule = schedule;
       if (isActive !== undefined) updateData.isActive = isActive;
-      if (controlId !== undefined) updateData.controlId = controlId;
+      if (controlId !== undefined) {
+        // Verify the reassigned control belongs to the caller's organization
+        // before rebinding the test, so it cannot be linked to a foreign control.
+        const control = await prisma.frameworkControl.findFirst({
+          where: { id: controlId, framework: { organizationId: orgId } },
+          select: { id: true },
+        });
+        if (!control) {
+          throw new AppError('Control not found in your organization', 404);
+        }
+        updateData.controlId = controlId;
+      }
 
       const test = await prisma.controlTest.update({
         where: { id: req.params.id },
@@ -422,17 +444,23 @@ router.post(
         throw new AppError('Cannot run an inactive test', 400);
       }
 
-      // Create a new result entry representing this test run
+      // Record the run as dispatched and awaiting automated evaluation. The
+      // result status is left as SKIPPED rather than asserting an outcome,
+      // because no automated engine has evaluated this control yet. An outcome
+      // (PASS/FAIL/PARTIAL/ERROR) must only be written by the engine/integration
+      // that actually performs the testType-specific check, so the recorded
+      // result never overstates compliance.
       const result = await prisma.controlTestResult.create({
         data: {
           testId: test.id,
-          status: 'PASS',
+          status: 'SKIPPED',
           details: {
             triggeredBy: userId,
             triggeredAt: new Date().toISOString(),
             testType: test.testType,
             controlId: test.controlId,
-            message: `Test run initiated for ${test.testType} on control ${test.controlId}`,
+            evaluation: 'awaiting_automated_engine',
+            message: `Run dispatched for ${test.testType} on control ${test.controlId}; outcome pending automated evaluation`,
           },
           evidence: null,
         },
@@ -445,7 +473,7 @@ router.post(
       });
 
       logger.info(
-        `Control test ${test.id} (${test.testType}) run triggered by user ${userId}`
+        `Control test ${test.id} (${test.testType}) run dispatched by user ${userId}; outcome pending automated evaluation`
       );
 
       res.status(201).json({ status: 'success', data: result });

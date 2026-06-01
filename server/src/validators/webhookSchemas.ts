@@ -5,6 +5,7 @@
 import Joi from 'joi';
 
 export const createWebhookSchema = Joi.object({
+  name: Joi.string().max(200).required(),
   url: Joi.string().uri().required().max(2000),
   events: Joi.array().items(Joi.string().max(200)).min(1).required(),
   description: Joi.string().max(2000).allow('', null).optional(),
@@ -13,6 +14,7 @@ export const createWebhookSchema = Joi.object({
 }).unknown(false);
 
 export const updateWebhookSchema = Joi.object({
+  name: Joi.string().max(200).optional(),
   url: Joi.string().uri().max(2000).optional(),
   events: Joi.array().items(Joi.string().max(200)).min(1).optional(),
   description: Joi.string().max(2000).allow('', null).optional(),

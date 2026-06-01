@@ -93,10 +93,17 @@ describe('E2E: GraphQL Flow', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({ query: '{ nonExistentField }' });
 
-      // graphql-js returns validation errors in the body with status 400
-      // but our implementation may return 200 with errors array
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors.length).toBeGreaterThan(0);
+      // graphqlMiddleware's pre-execution validate() (server/src/graphql/index.ts:283)
+      // runs ONLY the depthLimit rule, so unknown-field selections are not rejected there.
+      // They reach graphql() execute (line 313), whose built-in default rules surface a
+      // "Cannot query field" error inside the result, returned with HTTP 200 (line 323).
+      // Pin that deterministic contract: 200 + a single execution error naming the field.
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.errors)).toBe(true);
+      expect(res.body.errors).toHaveLength(1);
+      expect(res.body.errors[0].message).toMatch(/Cannot query field ["']nonExistentField["']/);
+      // No data should be returned for a query that fails field validation.
+      expect(res.body.data == null).toBe(true);
     });
   });
 

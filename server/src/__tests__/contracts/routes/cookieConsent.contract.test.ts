@@ -31,6 +31,11 @@ jest.mock('../../../config/logger', () => ({
 }));
 jest.mock('../../../utils/auditLogger', () => ({ AuditLogger: { log: jest.fn() } }));
 
+// Cookie-consent routes are auth-only by design: routes/cookieConsent.ts guards
+// every endpoint with `router.use(authenticate)` plus per-route `validateBody`,
+// and does NOT apply `authorize(...)` role gating. Any authenticated org member
+// may read/record consent for their org. The authorize mock therefore only
+// enforces authentication; there is no role-rejection (403) path to cover.
 jest.mock('../../../middleware/auth', () => ({
   authenticate: (req: any, res: any, next: any) => {
     if ((req as any).user) return next();

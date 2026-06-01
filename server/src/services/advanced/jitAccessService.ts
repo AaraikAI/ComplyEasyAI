@@ -55,6 +55,9 @@ interface JITSession {
   extendedCount: number;
   actionsPerformed: string[];
   active: boolean;
+  // Role the user held before this JIT grant elevated them. Captured at grant time
+  // and restored verbatim on revoke/expiry so a standing 'admin' is not downgraded.
+  originalRole?: string;
 }
 
 interface AccessApprovalPolicy {
@@ -219,9 +222,15 @@ class JITAccessService {
     organizationId: string
   ): Promise<JITSession> {
     try {
-      const request = await this.getAccessRequest(requestId);
+      // Scope the lookup to the approver's org so cross-tenant requests are invisible.
+      const request = await this.getAccessRequest(requestId, organizationId);
 
       if (!request) {
+        throw new AppError('Access request not found', 404);
+      }
+
+      // Multi-tenant guard: the request must belong to the approver's organization.
+      if (request.organizationId !== organizationId) {
         throw new AppError('Access request not found', 404);
       }
 
@@ -229,12 +238,12 @@ class JITAccessService {
         throw new AppError('Access request is not pending', 400);
       }
 
-      // Verify approver has sufficient privileges
+      // Verify approver belongs to this organization and has sufficient privileges.
       const approver = await prisma.user.findUnique({
         where: { id: approverId },
       });
 
-      if (!approver || approver.role !== 'admin') {
+      if (!approver || approver.role !== 'admin' || approver.organizationId !== organizationId) {
         throw new AppError('Insufficient privileges to approve request', 403);
       }
 
@@ -267,23 +276,30 @@ class JITAccessService {
     reason: string
   ): Promise<void> {
     try {
-      const request = await this.getAccessRequest(requestId);
+      // Resolve the approver first so the request lookup can be scoped to their org.
+      const approver = await prisma.user.findUnique({
+        where: { id: approverId },
+        select: { id: true, role: true, organizationId: true },
+      });
+
+      if (!approver || approver.role !== 'admin') {
+        throw new AppError('Insufficient privileges to deny request', 403);
+      }
+
+      // Scope the lookup to the approver's org so cross-tenant requests are invisible.
+      const request = await this.getAccessRequest(requestId, approver.organizationId);
 
       if (!request) {
         throw new AppError('Access request not found', 404);
       }
 
-      if (request.status !== 'pending') {
-        throw new AppError('Access request is not pending', 400);
+      // Multi-tenant guard: the request must belong to the approver's organization.
+      if (request.organizationId !== approver.organizationId) {
+        throw new AppError('Access request not found', 404);
       }
 
-      // Verify approver has sufficient privileges
-      const approver = await prisma.user.findUnique({
-        where: { id: approverId },
-      });
-
-      if (!approver || approver.role !== 'admin') {
-        throw new AppError('Insufficient privileges to deny request', 403);
+      if (request.status !== 'pending') {
+        throw new AppError('Access request is not pending', 400);
       }
 
       request.status = 'denied';
@@ -334,11 +350,17 @@ class JITAccessService {
         active: true,
       };
 
+      // Grant temporary privilege to user — scoped to request.organizationId.
+      // Capture the user's pre-grant role so it can be restored exactly on revoke.
+      const previousRole = await this.grantTemporaryPrivilege(
+        request.userId,
+        request.requestedPrivilege,
+        request.organizationId
+      );
+      session.originalRole = previousRole;
+
       this.activeSessions.set(sessionId, session);
       await this.persistActiveSessions();
-
-      // Grant temporary privilege to user — scoped to request.organizationId
-      await this.grantTemporaryPrivilege(request.userId, request.requestedPrivilege, request.organizationId);
 
       // Store session in database
       await this.storeSession(session);
@@ -409,8 +431,14 @@ class JITAccessService {
         throw new AppError('Session not found', 404);
       }
 
-      // Revoke privilege immediately — scoped to session.organizationId
-      await this.revokeTemporaryPrivilege(session.userId, session.privilege, session.organizationId);
+      // Revoke privilege immediately — scoped to session.organizationId.
+      // Restore the role captured at grant time so prior standing privileges are not lost.
+      await this.revokeTemporaryPrivilege(
+        session.userId,
+        session.privilege,
+        session.organizationId,
+        session.originalRole
+      );
 
       session.active = false;
       session.endTime = new Date();
@@ -900,6 +928,8 @@ class JITAccessService {
         }
       }
     }, 30000);
+    // Do not keep the event loop alive solely for this background timer.
+    this.sessionCheckInterval.unref?.();
   }
 
   /**
@@ -979,16 +1009,19 @@ class JITAccessService {
     userId: string,
     privilege: PrivilegeLevel,
     organizationId: string
-  ): Promise<void> {
+  ): Promise<string> {
     try {
       // Multi-tenant guard: ensure target user is in the same org as the access request.
+      // Read the current role so it can be restored exactly on revoke/expiry.
       const targetUser = await prisma.user.findFirst({
         where: { id: userId, organizationId },
-        select: { id: true },
+        select: { id: true, role: true },
       });
       if (!targetUser) {
         throw new AppError('Target user not found in organization', 404);
       }
+
+      const previousRole = targetUser.role as string;
 
       // Map PrivilegeLevel to database Role values
       const roleMap: Record<string, string> = {
@@ -1008,8 +1041,10 @@ class JITAccessService {
       });
 
       logger.info(
-        `Granted temporary ${privilege} (role: ${targetRole}) to user ${userId} in org ${organizationId}`
+        `Granted temporary ${privilege} (role: ${targetRole}) to user ${userId} in org ${organizationId}; prior role=${previousRole}`
       );
+
+      return previousRole;
     } catch (error) {
       logger.error(
         `Failed to grant temporary ${privilege} to user ${userId}`,
@@ -1026,7 +1061,8 @@ class JITAccessService {
   private async revokeTemporaryPrivilege(
     userId: string,
     privilege: PrivilegeLevel,
-    organizationId: string
+    organizationId: string,
+    restoreRole?: string
   ): Promise<void> {
     try {
       // Multi-tenant guard: ensure target user is in the same org as the session.
@@ -1038,14 +1074,17 @@ class JITAccessService {
         throw new AppError('Target user not found in organization', 404);
       }
 
-      // Revert to default base role
+      // Restore the exact role the user held before the JIT grant. When the prior
+      // role was not captured (legacy session), fall back to the least-privilege role.
+      const roleToRestore = restoreRole && restoreRole.trim().length > 0 ? restoreRole : 'viewer';
+
       await prisma.user.update({
         where: { id: userId },
-        data: { role: 'viewer' as any },
+        data: { role: roleToRestore as any },
       });
 
       logger.info(
-        `Revoked temporary ${privilege} from user ${userId} in org ${organizationId}, reverted to base role`
+        `Revoked temporary ${privilege} from user ${userId} in org ${organizationId}, restored role=${roleToRestore}`
       );
     } catch (error) {
       logger.error(
@@ -1083,13 +1122,19 @@ class JITAccessService {
   }
 
   /**
-   * Get access request by ID (finds the most recent entry including updates)
+   * Get access request by ID (finds the most recent entry including updates).
+   * When `organizationId` is supplied the lookup is constrained to that tenant so a
+   * caller in one org cannot read another org's JIT request via a guessed requestId.
    */
-  private async getAccessRequest(requestId: string): Promise<JITAccessRequest | null> {
+  private async getAccessRequest(
+    requestId: string,
+    organizationId?: string
+  ): Promise<JITAccessRequest | null> {
     try {
-      // Search for both original requests and updates
+      // Search for both original requests and updates, scoped to the tenant when known.
       const logs = await prisma.auditLog.findMany({
         where: {
+          ...(organizationId ? { organizationId } : {}),
           OR: [
             {
               action: {
@@ -1151,9 +1196,9 @@ class JITAccessService {
    */
   private async updateAccessRequest(request: JITAccessRequest): Promise<void> {
     try {
-      // Get the original request to preserve all original data if needed
-      const originalRequest = await this.getAccessRequest(request.id);
-      
+      // Get the original request (scoped to its org) to preserve all original data if needed
+      const originalRequest = await this.getAccessRequest(request.id, request.organizationId);
+
       // Use original request data if available, otherwise use the passed request
       const baseRequest = originalRequest || request;
 
@@ -1193,7 +1238,7 @@ class JITAccessService {
    */
   private async updateAccessRequestStatus(requestId: string, status: string, organizationId: string): Promise<void> {
     try {
-      const request = await this.getAccessRequest(requestId);
+      const request = await this.getAccessRequest(requestId, organizationId);
       if (request) {
         request.status = status as any;
         await this.updateAccessRequest(request);

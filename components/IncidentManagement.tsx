@@ -392,8 +392,11 @@ const IncidentManagement: React.FC = () => {
         credentials: 'include',
       });
       if (!res.ok) throw new Error(`Failed to delete incident (${res.status})`);
-    } catch {
-      // Continue with local removal even if API call fails
+    } catch (err) {
+      // Keep the incident in the list when the server delete fails — removing it
+      // locally would falsely imply success while the record still exists in the DB.
+      setFetchError(err instanceof Error ? err.message : 'Failed to delete incident');
+      return;
     }
     setIncidents(prev => prev.filter(i => i.id !== id));
     if (selectedIncident?.id === id) setSelectedIncident(null);

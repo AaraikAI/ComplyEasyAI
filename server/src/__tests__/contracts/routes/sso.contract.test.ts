@@ -67,7 +67,16 @@ describe('SSO API — Contract Tests', () => {
       expect(res.status).toBe(400);
     });
 
-    it('should return 400 when NameID not found in SAML', async () => {
+    it('should return 400 for a SAML response that fails signature verification', async () => {
+      // A matching, enabled config (by issuer/entityId) with a certificate is
+      // found, so the handler proceeds to signature verification. This minimal
+      // unsigned response fails verification and is rejected with 400 before any
+      // claims (NameID) are trusted — the XML-signature-wrapping guard.
+      prismaMock.sSOConfiguration.findFirst.mockResolvedValue({
+        id: 'sso-1', organizationId: 'org-123', enabled: true,
+        entityId: 'idp', certificate: 'CERT_DATA',
+        organization: { id: 'org-123', name: 'Test Org' },
+      });
       const saml = Buffer.from('<Response><Issuer>idp</Issuer></Response>').toString('base64');
       const res = await request(app).post('/api/sso/acs').send({ SAMLResponse: saml });
       expect(res.status).toBe(400);
@@ -135,7 +144,12 @@ describe('SSO API — Contract Tests', () => {
   // POST /config (admin)
   describe('POST /api/sso/config', () => {
     it('should create/update SSO config', async () => {
-      prismaMock.sSOConfiguration.upsert.mockResolvedValue({
+      // The config POST uses sSOConfiguration.upsert; the shared prisma mock
+      // predates that and omits the method, so define it here.
+      if (!(prismaMock.sSOConfiguration as any).upsert) {
+        (prismaMock.sSOConfiguration as any).upsert = jest.fn();
+      }
+      (prismaMock.sSOConfiguration as any).upsert.mockResolvedValue({
         organizationId: 'org-123', provider: 'SAML', enabled: true, certificate: 'cert',
       });
 

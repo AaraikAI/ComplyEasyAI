@@ -640,6 +640,7 @@ class JobQueueService extends EventEmitter {
         repeat: undefined, // Don't repeat the repeat
       });
     }, intervalMs);
+    interval.unref?.();
 
     this.scheduledJobs.set(repeatKey, interval);
     logger.info(`[JobQueue] Repeatable job scheduled: ${name} in ${queueName} (${options.repeat.cron})`);

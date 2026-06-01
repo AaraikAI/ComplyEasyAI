@@ -72,9 +72,42 @@ export class MultiWorkspaceService {
   }
 
   /**
+   * Defense-in-depth: when a caller userId is supplied, assert the caller is a
+   * member of the organization being queried (or its parent, for hierarchy reads).
+   * Routes pass the trusted req.user.organizationId; this guards against any future
+   * caller that supplies a non-self organizationId.
+   */
+  private async assertCallerInOrg(
+    organizationId: string,
+    callerUserId: string | undefined,
+    { allowParent = false }: { allowParent?: boolean } = {}
+  ): Promise<void> {
+    if (!callerUserId) return;
+    const caller = await prisma.user.findFirst({
+      where: { id: callerUserId },
+      select: { organizationId: true },
+    });
+    if (!caller) {
+      throw new AppError('Caller not found', 403);
+    }
+    if (caller.organizationId === organizationId) return;
+    if (allowParent) {
+      // Allow a parent-org member to read a child org's hierarchy.
+      const child = await prisma.organization.findFirst({
+        where: { id: organizationId, parentOrganizationId: caller.organizationId },
+        select: { id: true },
+      });
+      if (child) return;
+    }
+    throw new AppError('Not authorized for this organization', 403);
+  }
+
+  /**
    * Get organization hierarchy
    */
-  async getOrganizationHierarchy(organizationId: string) {
+  async getOrganizationHierarchy(organizationId: string, callerUserId?: string) {
+    await this.assertCallerInOrg(organizationId, callerUserId, { allowParent: true });
+
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },
       include: {
@@ -123,7 +156,9 @@ export class MultiWorkspaceService {
   /**
    * Get consolidated metrics across workspace
    */
-  async getConsolidatedMetrics(organizationId: string) {
+  async getConsolidatedMetrics(organizationId: string, callerUserId?: string) {
+    await this.assertCallerInOrg(organizationId, callerUserId, { allowParent: true });
+
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },
       include: {
@@ -308,6 +343,15 @@ export class MultiWorkspaceService {
     targetOrganizationIds: string[],
     userId: string
   ) {
+    // Multi-tenant guard: the caller must belong to the source organization.
+    const caller = await prisma.user.findFirst({
+      where: { id: userId, organizationId: sourceOrganizationId },
+      select: { id: true },
+    });
+    if (!caller) {
+      throw new AppError('Not authorized to clone frameworks for this organization', 403);
+    }
+
     const framework = await prisma.complianceFramework.findFirst({
       where: {
         id: frameworkId,
@@ -322,32 +366,54 @@ export class MultiWorkspaceService {
       throw new AppError('Framework not found', 404);
     }
 
+    // Multi-tenant guard: every target MUST be a direct child of the source org.
+    // Without this, an arbitrary organizationId could be written into.
+    const uniqueTargetIds = [...new Set(targetOrganizationIds)];
+    const validChildren = await prisma.organization.findMany({
+      where: {
+        id: { in: uniqueTargetIds },
+        parentOrganizationId: sourceOrganizationId,
+      },
+      select: { id: true },
+    });
+    const validChildIds = new Set(validChildren.map((c) => c.id));
+    const invalidTargets = uniqueTargetIds.filter((id) => !validChildIds.has(id));
+    if (invalidTargets.length > 0) {
+      throw new AppError(
+        'One or more target organizations are not children of the source organization',
+        403
+      );
+    }
+
     const cloned = await Promise.all(
-      targetOrganizationIds.map(async (targetOrgId) => {
-        const newFramework = await prisma.complianceFramework.create({
-          data: {
-            name: framework.name,
-            region: framework.region,
-            organizationId: targetOrgId,
-            nextAuditDate: framework.nextAuditDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-          },
+      uniqueTargetIds.map(async (targetOrgId) => {
+        // Create the framework and its controls atomically so a failure cannot
+        // leave a child org with a framework that has no controls.
+        return prisma.$transaction(async (tx) => {
+          const newFramework = await tx.complianceFramework.create({
+            data: {
+              name: framework.name,
+              region: framework.region,
+              organizationId: targetOrgId,
+              nextAuditDate: framework.nextAuditDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            },
+          });
+
+          if (framework.controls.length > 0) {
+            await tx.frameworkControl.createMany({
+              data: framework.controls.map(
+                (control: { name: string; description: string | null; status: string }) => ({
+                  frameworkId: newFramework.id,
+                  name: control.name,
+                  description: control.description,
+                  status: 'Pending',
+                })
+              ),
+            });
+          }
+
+          return newFramework;
         });
-
-        // Clone controls
-        await Promise.all(
-          framework.controls.map((control: { name: string; description: string | null; status: string }) =>
-            prisma.frameworkControl.create({
-              data: {
-                frameworkId: newFramework.id,
-                name: control.name,
-                description: control.description,
-                status: 'Pending',
-              },
-            })
-          )
-        );
-
-        return newFramework;
       })
     );
 
@@ -357,7 +423,7 @@ export class MultiWorkspaceService {
       action: 'framework.cloned_to_children',
       resourceType: 'Framework',
       resourceId: frameworkId,
-      metadata: { targetOrganizations: targetOrganizationIds.length },
+      metadata: { targetOrganizations: uniqueTargetIds.length },
     });
 
     return cloned;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { scoreVendorRisk } from '../../services/geminiService';
-import { ShieldAlert, Loader2, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export const VendorScorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -9,13 +9,26 @@ export const VendorScorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [data, setData] = useState('');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleScore = async () => {
-    if(!vendor) return;
+    if (!vendor) return;
     setLoading(true);
-    const text = await scoreVendorRisk(vendor, service, data);
-    setResult(text);
-    setLoading(false);
+    setError(null);
+    setResult('');
+    try {
+      const text = await scoreVendorRisk(vendor, service, data);
+      // scoreVendorRisk resolves to a sentinel string when the AI service fails.
+      if (!text || text.trim() === 'Error.') {
+        setError('Unable to score this vendor right now. Please try again in a moment.');
+        return;
+      }
+      setResult(text);
+    } catch (err: any) {
+      setError(err?.message || 'Unable to score this vendor right now. Please try again in a moment.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,7 +62,12 @@ export const VendorScorer: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </button>
          </div>
          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            {result ? (
+            {error ? (
+               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+                  <AlertTriangle className="text-red-600 mr-3 flex-shrink-0 mt-0.5" size={20} />
+                  <p className="text-red-800 font-medium">{error}</p>
+               </div>
+            ) : result ? (
                <div className="prose prose-sm max-w-none">
                   <ReactMarkdown>{result}</ReactMarkdown>
                </div>

@@ -975,6 +975,7 @@ describe('AIRMFService', () => {
   // ======================================================================
   describe('calculateTrustworthinessScore()', () => {
     it('should calculate average score from characteristics', async () => {
+      (prismaMock as any).aISystem.findFirst.mockResolvedValue({ id: 'ai-1', organizationId: 'org-123' });
       (prismaMock as any).aIRMFTrustworthinessCharacteristic.findMany.mockResolvedValue([
         { score: 80 }, { score: 60 }, { score: 70 },
       ]);
@@ -990,6 +991,7 @@ describe('AIRMFService', () => {
     });
 
     it('should return 0 when no characteristics exist', async () => {
+      (prismaMock as any).aISystem.findFirst.mockResolvedValue({ id: 'ai-1', organizationId: 'org-123' });
       (prismaMock as any).aIRMFTrustworthinessCharacteristic.findMany.mockResolvedValue([]);
 
       const score = await aiRmfService.calculateTrustworthinessScore('org-123', 'ai-1');
@@ -998,6 +1000,7 @@ describe('AIRMFService', () => {
     });
 
     it('should handle null scores', async () => {
+      (prismaMock as any).aISystem.findFirst.mockResolvedValue({ id: 'ai-1', organizationId: 'org-123' });
       (prismaMock as any).aIRMFTrustworthinessCharacteristic.findMany.mockResolvedValue([
         { score: null }, { score: 100 }, { score: null },
       ]);

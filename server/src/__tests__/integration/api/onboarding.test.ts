@@ -163,7 +163,9 @@ describe('Onboarding Routes Integration', () => {
           .post('/api/onboarding/event')
           .send({
             eventType: 'step_viewed',
-            eventData: { stepId: 'team', source: 'dashboard' },
+            flowName: 'tier_tour',
+            stepIndex: 1,
+            metadata: { stepId: 'team', source: 'dashboard' },
           })
           .expect(200);
 
@@ -222,7 +224,7 @@ describe('Onboarding Routes Integration', () => {
         const response = await request(app)
           .post('/api/onboarding/skip-flow')
           .send({
-            flow: 'tier_tour',
+            flowName: 'tier_tour',
           })
           .expect(200);
 
@@ -274,8 +276,7 @@ describe('Onboarding Routes Integration', () => {
         const response = await request(app)
           .put('/api/onboarding/checklist')
           .send({
-            itemId: 'item-1',
-            completed: true,
+            profileCompleted: true,
           })
           .expect(200);
 

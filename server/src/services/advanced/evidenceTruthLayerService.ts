@@ -13,6 +13,7 @@ import prisma from '../../config/database';
 import logger from '../../config/logger';
 import crypto from 'crypto';
 import { AppError } from '../../middleware/errorHandler';
+import { encryptField, decryptField } from '../../utils/credentialEncryption';
 import mlModelsService from './mlModelsService';
 import NTPClient from 'ntp-client';
 import byokService from './byokService';
@@ -635,7 +636,7 @@ class EvidenceTruthLayerService {
 
       if (existingKeyPolicy) {
         try {
-          // Retrieve encrypted key material from BYOK using stored key ID
+          // Retrieve encrypted key material using stored key ID
           const encryptedPayload = await prisma.keyUsage.findFirst({
             where: {
               organizationId,
@@ -646,7 +647,20 @@ class EvidenceTruthLayerService {
             orderBy: { timestamp: 'desc' },
           });
 
-          if (encryptedPayload) {
+          // Locally-managed key: decrypt the PEM stored encrypted-at-rest in
+          // the usage metadata (used when no external BYOK provider is wired).
+          if (existingKeyPolicy.provider === 'local') {
+            const material = (encryptedPayload?.metadata as any)?.encryptedKeyMaterial;
+            if (material) {
+              const keyData = JSON.parse(decryptField(material));
+              if (keyData.privateKey && keyData.publicKey) {
+                logger.debug(`[Evidence Truth Layer] Retrieved locally-persisted signing key for ${organizationId}`);
+                return keyData;
+              }
+            }
+          }
+
+          if (existingKeyPolicy.provider !== 'local' && encryptedPayload) {
             const decryptedData = await byokService.decryptData(
               {
                 ciphertext: '',
@@ -745,24 +759,69 @@ class EvidenceTruthLayerService {
           },
         });
       } catch (storeError) {
-        logger.warn(`[Evidence Truth Layer] Failed to store signing key in BYOK: ${storeError}`);
-        // Continue with in-memory key if BYOK storage fails
+        // BYOK persistence failed. A signing key that is never persisted would
+        // produce signatures that can never be re-verified (the private/public
+        // key would be discarded). Persist the generated keypair encrypted at
+        // rest locally so it can be retrieved for later verification. Only
+        // return the key if this local persistence succeeds.
+        logger.warn(`[Evidence Truth Layer] BYOK storage unavailable, persisting signing key encrypted-at-rest locally: ${storeError}`);
+        await this.persistLocalSigningKey(organizationId, privateKey, publicKey);
       }
 
       return { privateKey, publicKey };
     } catch (error) {
       logger.error('[Evidence Truth Layer] Error getting organization signing key', error);
-      // Fallback: generate temporary key (configure SIGNING_KEY for persistent keys)
-      if (process.env.NODE_ENV === 'production') {
-        throw new AppError('Failed to retrieve signing key from secure key store', 500);
-      }
-      const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-        modulusLength: 2048,
-        publicKeyEncoding: { type: 'spki', format: 'pem' },
-        privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-      });
-      return { privateKey, publicKey };
+      throw new AppError('Failed to obtain a persisted signing key; signatures would be unverifiable', 500);
     }
+  }
+
+  /**
+   * Persist a generated RSA signing keypair encrypted at rest in the local
+   * key store (used as a fallback when an external BYOK provider is
+   * unavailable). The private key is encrypted with the application key via
+   * encryptField() before any DB write; the public key is stored alongside.
+   * A KeyRotationPolicy row with provider 'local' marks the key as
+   * locally-managed so getOrganizationSigningKey can retrieve it.
+   */
+  private async persistLocalSigningKey(
+    organizationId: string,
+    privateKey: string,
+    publicKey: string
+  ): Promise<void> {
+    const localKeyId = `local_${organizationId}_${crypto.randomBytes(8).toString('hex')}`;
+    const encryptedMaterial = encryptField(JSON.stringify({ privateKey, publicKey }));
+
+    await prisma.$transaction(async (tx) => {
+      await tx.keyRotationPolicy.create({
+        data: {
+          organizationId,
+          keyId: localKeyId,
+          provider: 'local',
+          rotationIntervalDays: 90,
+          nextRotation: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+          autoRotate: false,
+          enabled: true,
+        },
+      });
+      await tx.keyUsage.create({
+        data: {
+          organizationId,
+          keyId: localKeyId,
+          provider: 'local',
+          operation: 'generate',
+          success: true,
+          metadata: {
+            purpose: 'evidence_signing',
+            keyType: 'RSA-2048',
+            publicKey,
+            encryptedKeyMaterial: encryptedMaterial,
+            createdAt: new Date().toISOString(),
+          },
+        },
+      });
+    });
+
+    logger.info(`[Evidence Truth Layer] Persisted local signing key ${localKeyId} for ${organizationId}`);
   }
 
   /**

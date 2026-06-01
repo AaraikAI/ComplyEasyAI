@@ -93,20 +93,33 @@ interface DashboardMetrics {
 
 type ViewMode = 'dashboard' | 'rules' | 'create' | 'edit' | 'detail';
 
-const INTEGRATION_SOURCES: IntegrationSource[] = [
-  { id: 'aws_config', name: 'AWS Config', icon: <Cloud className="w-5 h-5" />, category: 'Cloud', connected: true },
-  { id: 'github_actions', name: 'GitHub Actions', icon: <GitBranch className="w-5 h-5" />, category: 'CI/CD', connected: true },
-  { id: 'jira', name: 'Jira', icon: <FileText className="w-5 h-5" />, category: 'Project Management', connected: true },
-  { id: 'slack', name: 'Slack', icon: <MessageSquare className="w-5 h-5" />, category: 'Communication', connected: false },
-  { id: 'google_drive', name: 'Google Drive', icon: <FolderOpen className="w-5 h-5" />, category: 'Storage', connected: true },
-  { id: 'azure_devops', name: 'Azure DevOps', icon: <Server className="w-5 h-5" />, category: 'CI/CD', connected: false },
-  { id: 'confluence', name: 'Confluence', icon: <FileText className="w-5 h-5" />, category: 'Documentation', connected: true },
-  { id: 'datadog', name: 'Datadog', icon: <Activity className="w-5 h-5" />, category: 'Monitoring', connected: false },
-  { id: 'aws_cloudtrail', name: 'AWS CloudTrail', icon: <HardDrive className="w-5 h-5" />, category: 'Cloud', connected: true },
-  { id: 'okta', name: 'Okta', icon: <Shield className="w-5 h-5" />, category: 'Identity', connected: true },
-  { id: 'gcp_security', name: 'GCP Security Command', icon: <Cloud className="w-5 h-5" />, category: 'Cloud', connected: false },
-  { id: 'servicenow', name: 'ServiceNow', icon: <Database className="w-5 h-5" />, category: 'ITSM', connected: false },
+// Catalog of supported evidence sources (icons/labels/categories are static metadata).
+// Connection state is resolved at runtime from the integrations API; see loadIntegrationStatus.
+const INTEGRATION_SOURCE_CATALOG: Omit<IntegrationSource, 'connected'>[] = [
+  { id: 'aws_config', name: 'AWS Config', icon: <Cloud className="w-5 h-5" />, category: 'Cloud' },
+  { id: 'github_actions', name: 'GitHub Actions', icon: <GitBranch className="w-5 h-5" />, category: 'CI/CD' },
+  { id: 'jira', name: 'Jira', icon: <FileText className="w-5 h-5" />, category: 'Project Management' },
+  { id: 'slack', name: 'Slack', icon: <MessageSquare className="w-5 h-5" />, category: 'Communication' },
+  { id: 'google_drive', name: 'Google Drive', icon: <FolderOpen className="w-5 h-5" />, category: 'Storage' },
+  { id: 'azure_devops', name: 'Azure DevOps', icon: <Server className="w-5 h-5" />, category: 'CI/CD' },
+  { id: 'confluence', name: 'Confluence', icon: <FileText className="w-5 h-5" />, category: 'Documentation' },
+  { id: 'datadog', name: 'Datadog', icon: <Activity className="w-5 h-5" />, category: 'Monitoring' },
+  { id: 'aws_cloudtrail', name: 'AWS CloudTrail', icon: <HardDrive className="w-5 h-5" />, category: 'Cloud' },
+  { id: 'okta', name: 'Okta', icon: <Shield className="w-5 h-5" />, category: 'Identity' },
+  { id: 'gcp_security', name: 'GCP Security Command', icon: <Cloud className="w-5 h-5" />, category: 'Cloud' },
+  { id: 'servicenow', name: 'ServiceNow', icon: <Database className="w-5 h-5" />, category: 'ITSM' },
 ];
+
+// Maps an evidence-source id to the integration provider id(s) that satisfy it.
+const SOURCE_PROVIDER_ALIASES: Record<string, string[]> = {
+  aws_config: ['aws', 'aws_config', 'aws-config'],
+  aws_cloudtrail: ['aws', 'aws_cloudtrail', 'aws-cloudtrail'],
+  github_actions: ['github', 'github_actions', 'github-actions'],
+  google_drive: ['google', 'google_workspace', 'google-drive', 'gdrive'],
+  azure_devops: ['azure', 'azure_devops', 'azure-devops'],
+  gcp_security: ['gcp', 'gcp_security', 'google_cloud'],
+  microsoft_teams: ['microsoft-teams', 'msteams'],
+};
 
 const CRON_PRESETS: { label: string; frequency: ScheduleFrequency; cron: string }[] = [
   { label: 'Every hour', frequency: 'hourly', cron: '0 * * * *' },
@@ -139,6 +152,9 @@ const EvidenceCollectionRules: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [integrationSources, setIntegrationSources] = useState<IntegrationSource[]>(
+    () => INTEGRATION_SOURCE_CATALOG.map(s => ({ ...s, connected: false }))
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSource, setFilterSource] = useState('all');
   const [filterStatus, setFilterStatus] = useState<RuleStatus | 'all'>('all');
@@ -163,7 +179,30 @@ const EvidenceCollectionRules: React.FC = () => {
     loadRules();
     loadMetrics();
     loadControls();
+    loadIntegrationStatus();
   }, []);
+
+  const loadIntegrationStatus = async () => {
+    try {
+      const connected = await api.integrations.list();
+      // Build a set of connected provider ids reported by the backend.
+      const connectedIds = new Set<string>(
+        (Array.isArray(connected) ? connected : [])
+          .filter((i: any) => i?.connected !== false && (i?.status ? i.status === 'connected' : true))
+          .map((i: any) => String(i.provider ?? i.id ?? i.name ?? '').toLowerCase())
+      );
+      setIntegrationSources(
+        INTEGRATION_SOURCE_CATALOG.map(s => {
+          const aliases = SOURCE_PROVIDER_ALIASES[s.id] ?? [s.id, s.id.replace(/_/g, '-'), s.id.replace(/_/g, '')];
+          const isConnected = aliases.some(a => connectedIds.has(a.toLowerCase()));
+          return { ...s, connected: isConnected };
+        })
+      );
+    } catch {
+      // On failure, leave sources marked not-connected rather than asserting a false positive.
+      setIntegrationSources(INTEGRATION_SOURCE_CATALOG.map(s => ({ ...s, connected: false })));
+    }
+  };
 
   const loadRules = async () => {
     setLoading(true);
@@ -292,7 +331,7 @@ const EvidenceCollectionRules: React.FC = () => {
     });
   }, [rules, filterSource, filterStatus, searchQuery]);
 
-  const getSourceInfo = (sourceId: string) => INTEGRATION_SOURCES.find(s => s.id === sourceId);
+  const getSourceInfo = (sourceId: string) => integrationSources.find(s => s.id === sourceId);
 
   const filteredControls = useMemo(() => {
     if (!controlSearch) return availableControls.slice(0, 20);
@@ -463,7 +502,7 @@ const EvidenceCollectionRules: React.FC = () => {
         </div>
         <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white">
           <option value="all">All Sources</option>
-          {INTEGRATION_SOURCES.map(s => (<option key={s.id} value={s.id}>{s.name}</option>))}
+          {integrationSources.map(s => (<option key={s.id} value={s.id}>{s.name}</option>))}
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)} className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white">
           <option value="all">All Status</option>
@@ -569,7 +608,7 @@ const EvidenceCollectionRules: React.FC = () => {
           <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
             <h3 className="font-semibold text-gray-900 dark:text-white">Integration Source</h3>
             <div className="grid grid-cols-3 gap-3">
-              {INTEGRATION_SOURCES.map(source => (
+              {integrationSources.map(source => (
                 <button
                   key={source.id}
                   onClick={() => setForm({ ...form, integrationSource: source.id })}

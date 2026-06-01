@@ -124,11 +124,9 @@ describe('OnboardingTooltip', () => {
         isLast={false}
       />
     );
-    await waitFor(() => {
-      const nextButton = screen.getByText(/Next/i);
-      fireEvent.click(nextButton);
-      expect(mockOnNext).toHaveBeenCalled();
-    });
+    const nextButton = await screen.findByText(/Next/i);
+    fireEvent.click(nextButton);
+    expect(mockOnNext).toHaveBeenCalled();
   });
 
   it('calls onSkip when close button is clicked', async () => {
@@ -147,11 +145,9 @@ describe('OnboardingTooltip', () => {
         isLast={false}
       />
     );
-    await waitFor(() => {
-      const skipButton = screen.getByLabelText('Skip tour');
-      fireEvent.click(skipButton);
-      expect(mockOnSkip).toHaveBeenCalled();
-    });
+    const skipButton = await screen.findByLabelText('Skip tour');
+    fireEvent.click(skipButton);
+    expect(mockOnSkip).toHaveBeenCalled();
   });
 
   it('shows Finish button on last step', async () => {

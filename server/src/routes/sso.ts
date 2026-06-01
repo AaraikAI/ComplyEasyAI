@@ -19,6 +19,8 @@ import crypto from 'crypto';
 import { SignedXml } from 'xml-crypto';
 import { XMLParser } from 'fast-xml-parser';
 import { encryptField, decryptField } from '../utils/credentialEncryption';
+import { isWebhookUrlSafe } from '../utils/urlValidator';
+import axios from 'axios';
 
 const router = Router();
 
@@ -49,9 +51,12 @@ function isSafeRedirect(url: string): boolean {
 /**
  * Verify the XML signature on a SAML response using the IdP's X.509 certificate.
  * Uses xml-crypto for cryptographic verification (not just structural checks).
- * Returns true if valid, throws on invalid or missing signature.
+ * On success, returns the canonicalized XML of the references that were validly
+ * signed, so callers can read claims ONLY from signed content (defends against
+ * XML Signature Wrapping, where an attacker appends an unsigned malicious
+ * assertion alongside a validly-signed one). Throws on invalid/missing signature.
  */
-function verifySamlSignature(xml: string, certificate: string): boolean {
+function verifySamlSignature(xml: string, certificate: string): string[] {
   // Normalize the certificate to PEM format
   let pemCert = certificate.trim();
   if (!pemCert.startsWith('-----BEGIN CERTIFICATE-----')) {
@@ -84,8 +89,15 @@ function verifySamlSignature(xml: string, certificate: string): boolean {
     throw new Error(`SAML signature cryptographic verification failed: ${errors.join('; ')}`);
   }
 
+  // The canonicalized content of every reference that passed verification. Claims
+  // must be sourced from here, not from the raw (attacker-influenced) document.
+  const signedContent = sig.getSignedReferences();
+  if (!signedContent || signedContent.length === 0) {
+    throw new Error('SAML signature verified but exposed no signed references to bind claims to');
+  }
+
   logger.info('SAML signature cryptographic verification passed');
-  return true;
+  return signedContent;
 }
 
 /**
@@ -109,9 +121,11 @@ function extractSamlClaims(samlResponseXml: string): {
 } {
   const parsed = samlXmlParser.parse(samlResponseXml);
 
-  // Navigate the SAML response structure (handles both saml: and saml2: prefixes via removeNSPrefix)
+  // Navigate the SAML response structure (handles both saml: and saml2: prefixes
+  // via removeNSPrefix). The input may be a full Response, or — when called on a
+  // signed-reference fragment — an Assertion element at the root.
   const response = parsed.Response || parsed.SAMLResponse || parsed;
-  const assertion = response?.Assertion;
+  const assertion = response?.Assertion || (response?.Subject ? response : parsed.Assertion) || null;
 
   // Extract Issuer
   const issuer = response?.Issuer || assertion?.Issuer || null;
@@ -148,6 +162,85 @@ function extractSamlClaims(samlResponseXml: string): {
 // ============================================================================
 
 /**
+ * POST /parse-metadata - fetch a SAML IdP metadata URL and extract config.
+ * Admin-only. The URL is SSRF-validated and fetched without following redirects;
+ * the XML is parsed namespace-agnostically to return the fields the UI prefills.
+ */
+router.post(
+  '/parse-metadata',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { metadataUrl } = req.body as { metadataUrl?: string };
+    if (!metadataUrl || typeof metadataUrl !== 'string') {
+      throw new AppError('metadataUrl is required', 400);
+    }
+    if (!isWebhookUrlSafe(metadataUrl)) {
+      throw new AppError('metadataUrl failed SSRF validation', 400);
+    }
+
+    let xml: string;
+    try {
+      const resp = await axios.get(metadataUrl, {
+        timeout: 8000,
+        maxContentLength: 2 * 1024 * 1024,
+        maxRedirects: 0,
+        responseType: 'text',
+        headers: { Accept: 'application/samlmetadata+xml, application/xml, text/xml' },
+      });
+      xml = typeof resp.data === 'string' ? resp.data : String(resp.data);
+    } catch (error) {
+      logger.warn('SSO metadata fetch failed', { error: (error as Error).message });
+      throw new AppError('Failed to fetch metadata from the provided URL', 502);
+    }
+
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '@_',
+      removeNSPrefix: true,
+    });
+    let parsed: any;
+    try {
+      parsed = parser.parse(xml);
+    } catch {
+      throw new AppError('Metadata URL did not return valid XML', 422);
+    }
+
+    const edRaw = parsed?.EntityDescriptor ?? parsed?.EntitiesDescriptor?.EntityDescriptor;
+    const entity = Array.isArray(edRaw) ? edRaw[0] : edRaw;
+    if (!entity) {
+      throw new AppError('No EntityDescriptor found in metadata', 422);
+    }
+    const idpRaw = entity.IDPSSODescriptor;
+    const idp = Array.isArray(idpRaw) ? idpRaw[0] : idpRaw;
+
+    const asArray = (v: any): any[] => (Array.isArray(v) ? v : v ? [v] : []);
+    const pickLocation = (svcs: any[], binding: string): string | null =>
+      svcs.find((s) => String(s?.['@_Binding'] || '').includes(binding))?.['@_Location'] ||
+      svcs[0]?.['@_Location'] ||
+      null;
+
+    const ssoServices = asArray(idp?.SingleSignOnService);
+    const sloServices = asArray(idp?.SingleLogoutService);
+
+    const keyDescriptors = asArray(idp?.KeyDescriptor);
+    const signingKey =
+      keyDescriptors.find((k) => String(k?.['@_use'] || '') === 'signing') || keyDescriptors[0];
+    const certRaw = signingKey?.KeyInfo?.X509Data?.X509Certificate;
+    const certificate = certRaw
+      ? String(Array.isArray(certRaw) ? certRaw[0] : certRaw).replace(/\s+/g, '')
+      : null;
+
+    res.json({
+      entityId: entity['@_entityID'] || null,
+      ssoUrl: pickLocation(ssoServices, 'HTTP-Redirect') || pickLocation(ssoServices, 'HTTP-POST'),
+      sloUrl: pickLocation(sloServices, 'HTTP-Redirect') || pickLocation(sloServices, 'HTTP-POST'),
+      certificate,
+    });
+  })
+);
+
+/**
  * POST /acs - SAML Assertion Consumer Service callback
  * Called by the Identity Provider after user authenticates.
  * No JWT auth required -- the IdP posts the SAML response here.
@@ -170,11 +263,21 @@ router.post(
       const samlClaims = extractSamlClaims(samlResponseXml);
       const issuer = samlClaims.issuer;
 
-      // Find SSO config matching the issuer
+      // A SAMLResponse with no Issuer cannot be matched to a specific org's
+      // certificate. Reject rather than selecting an arbitrary enabled config,
+      // which would let an unsigned/foreign assertion be validated against an
+      // unrelated org's certificate.
+      if (!issuer) {
+        logger.warn('SSO ACS: SAML response missing Issuer — rejecting', { ip: req.ip });
+        res.status(401).json({ error: 'SAML response is missing a valid Issuer' });
+        return;
+      }
+
+      // Find the enabled SSO config whose entityId matches the (required) issuer.
       const ssoConfig = await prisma.sSOConfiguration.findFirst({
         where: {
           enabled: true,
-          ...(issuer ? { entityId: issuer } : {}),
+          entityId: issuer,
         },
         include: { organization: { select: { id: true, name: true } } },
       });
@@ -195,9 +298,10 @@ router.post(
         return;
       }
 
+      let signedReferences: string[];
       try {
         // Certificate is encrypted at rest — decrypt before passing to signature verifier.
-        verifySamlSignature(samlResponseXml, decryptField(ssoConfig.certificate));
+        signedReferences = verifySamlSignature(samlResponseXml, decryptField(ssoConfig.certificate));
       } catch (sigError: any) {
         logger.error('SSO ACS: SAML signature verification failed', {
           err: sigError,
@@ -211,15 +315,42 @@ router.post(
         return next(wrapped);
       }
 
-      // Extract NameID from parsed SAML claims (already parsed above)
-      if (!samlClaims.nameId) {
-        logger.warn('SSO ACS: Could not extract NameID from SAML response');
-        res.status(400).json({ error: 'Invalid SAML response: NameID not found' });
+      // Re-extract claims from the validly-SIGNED content only. Reading NameID/
+      // attributes from the raw document would let an attacker who appended an
+      // unsigned assertion control the identity (XML Signature Wrapping). Find the
+      // signed reference that actually carries a NameID and use that one.
+      let signedClaims: ReturnType<typeof extractSamlClaims> | null = null;
+      for (const fragment of signedReferences) {
+        const candidate = extractSamlClaims(fragment);
+        if (candidate.nameId) {
+          signedClaims = candidate;
+          break;
+        }
+      }
+
+      if (!signedClaims || !signedClaims.nameId) {
+        logger.warn('SSO ACS: No NameID found within the signed SAML assertion', {
+          ssoConfigId: ssoConfig.id,
+          ip: req.ip,
+        });
+        res.status(400).json({ error: 'Invalid SAML response: NameID not found in signed assertion' });
         return;
       }
 
-      const email = samlClaims.nameId;
-      const attributes = samlClaims.attributes;
+      // The signed assertion's Issuer (when present) must also match the selected
+      // org's entityId, so a validly-signed assertion from one org cannot be
+      // wrapped/replayed against a different org's configuration.
+      if (signedClaims.issuer && signedClaims.issuer !== ssoConfig.entityId) {
+        logger.warn('SSO ACS: Signed assertion Issuer does not match the selected SSO configuration', {
+          ssoConfigId: ssoConfig.id,
+          ip: req.ip,
+        });
+        res.status(401).json({ error: 'SAML assertion Issuer mismatch' });
+        return;
+      }
+
+      const email = signedClaims.nameId;
+      const attributes = signedClaims.attributes;
 
       // Map attributes using the SSO config's attribute mapping
       const mapping = (ssoConfig.attributeMapping as Record<string, string>) || {};

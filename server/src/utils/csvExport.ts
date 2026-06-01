@@ -15,6 +15,43 @@ export interface CsvExportOptions {
 }
 
 /**
+ * Neutralize CSV formula injection (CWE-1236). A cell whose first character is one of
+ * = + - @ (or a leading tab / carriage return) can be interpreted as a formula by
+ * spreadsheet software; prefixing a single quote forces it to be treated as text.
+ */
+export function neutralizeCsvFormula(value: string): string {
+  if (value && /^[=+\-@\t\r]/.test(value)) {
+    return `'${value}`;
+  }
+  return value;
+}
+
+/**
+ * Escape a single value for safe CSV output: neutralizes formula injection, then applies
+ * RFC 4180 quoting (double internal quotes; wrap when the cell contains the delimiter,
+ * a quote, or a newline). Use this in handlers that assemble CSV rows by hand.
+ */
+export function escapeCsvCell(value: unknown, delimiter = ','): string {
+  if (value === null || value === undefined) return '';
+  let cell: string;
+  if (typeof value === 'object') {
+    cell = value instanceof Date ? value.toISOString() : JSON.stringify(value);
+  } else {
+    cell = String(value);
+  }
+  cell = neutralizeCsvFormula(cell);
+  if (
+    cell.includes('"') ||
+    cell.includes(delimiter) ||
+    cell.includes('\n') ||
+    cell.includes('\r')
+  ) {
+    cell = `"${cell.replace(/"/g, '""')}"`;
+  }
+  return cell;
+}
+
+/**
  * Converts an array of objects to CSV format
  * Handles nested objects, arrays, nulls, and special characters
  */
@@ -55,6 +92,9 @@ export function convertToCSV<T extends Record<string, any>>(
 
       // Convert to string
       let cellValue = String(value);
+
+      // Neutralize spreadsheet formula injection before any quoting
+      cellValue = neutralizeCsvFormula(cellValue);
 
       // Escape quotes if needed
       if (escapeQuotes && cellValue.includes('"')) {
@@ -130,12 +170,12 @@ export function sendCsvResponse(
       'Content-Disposition',
       `attachment; filename="${fullFilename}"`
     );
-    res.setHeader('Content-Length', Buffer.byteLength(csv, 'utf8'));
-
-    // Add UTF-8 BOM for Excel compatibility
-    res.write('\ufeff');
-    res.write(csv);
-    res.end();
+    // Prepend a UTF-8 BOM for Excel compatibility and declare the byte length of
+    // the full payload (BOM included) so strict HTTP clients do not see a body
+    // longer than the advertised Content-Length.
+    const body = '\ufeff' + csv;
+    res.setHeader('Content-Length', Buffer.byteLength(body, 'utf8'));
+    res.end(body);
 
     logger.info(`CSV export generated: ${fullFilename} (${data.length} rows)`);
   } catch (error) {
@@ -269,14 +309,17 @@ export function streamToCsv<T extends Record<string, any>>(
           // Write header on first item
           if (!headerWritten) {
             const csvHeaders = headers || Object.keys(item);
-            this.push(csvHeaders.join(delimiter) + '\n');
+            this.push(
+              csvHeaders.map((h: unknown) => escapeCsvCell(h, delimiter)).join(delimiter) + '\n'
+            );
             headerWritten = true;
           }
 
-          // Write data row
-          const row = Object.values(item)
-            .map((v) => (v === null || v === undefined ? '' : String(v)))
-            .join(delimiter);
+          // Write data row — same RFC 4180 quoting + formula-injection guard as convertToCSV.
+          const values = headers
+            ? headers.map((h) => (item as Record<string, unknown>)[h])
+            : Object.values(item as Record<string, unknown>);
+          const row = values.map((v) => escapeCsvCell(v, delimiter)).join(delimiter);
           this.push(row + '\n');
         }
 

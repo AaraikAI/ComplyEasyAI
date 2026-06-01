@@ -2,6 +2,12 @@ import Joi from 'joi';
 
 // ---------------------------------------------------------------------------
 // Per-endpoint AI validation schemas
+//
+// These intentionally omit `.unknown(false)`: every route here is wired through
+// `validateBody` (server/src/middleware/validate.ts), which runs Joi with
+// `stripUnknown: true`. Unknown keys are therefore removed from the validated
+// body before it reaches the controller, so extra fields are neither passed
+// through nor cause a rejection. Free-form AI request bodies rely on this.
 // ---------------------------------------------------------------------------
 
 export const aiReportSchema = Joi.object({
@@ -92,6 +98,23 @@ export const aiAuditSimulationSchema = Joi.object({
   controlsToAudit: Joi.array().items(Joi.any()).optional(),
   previousAnswers: Joi.any().optional(),
 });
+
+// Audit-readiness simulation persistence. `run` and `findings` carry the full
+// client run snapshot; Joi.any() preserves their nested structure (validateBody
+// strips unknown keys, so the run/findings payloads are passed through verbatim).
+export const aiSaveAuditSimulationSchema = Joi.object({
+  name: Joi.string().max(500).optional(),
+  description: Joi.string().max(2000).optional(),
+  run: Joi.any().optional(),
+  findings: Joi.array().items(Joi.any()).optional(),
+});
+
+export const aiUpdateAuditSimulationSchema = Joi.object({
+  name: Joi.string().max(500).optional(),
+  description: Joi.string().max(2000).optional(),
+  run: Joi.any().optional(),
+  findings: Joi.array().items(Joi.any()).optional(),
+}).min(1);
 
 export const aiNlQuerySchema = Joi.object({
   query: Joi.string().min(1).max(10000).required(),

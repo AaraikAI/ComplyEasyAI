@@ -18,7 +18,11 @@ vi.mock('@/services/api', () => ({
     put: apiPut,
     delete: apiDelete,
     modules: {
-      productLifecycle: { listProducts: apiGet },
+      productLifecycle: {
+        listProducts: apiGet,
+        createProduct: apiPost,
+        updateProduct: apiPut,
+      },
     },
   },
   getAuthToken: vi.fn().mockReturnValue('test-token'),
@@ -45,16 +49,28 @@ describe('ProductLifecycleTracker', () => {
     expect(rows.length).toBeGreaterThanOrEqual(0);
   });
 
-  it('opens create product form', () => {
+  it('creates a product via the New Product action', async () => {
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('Widget X');
     render(<ProductLifecycleTracker />);
-    const addBtn = screen.queryAllByText(/Create|New|Add/i)[0] ?? null;
-    if (addBtn) fireEvent.click(addBtn);
+    const addBtn = screen.getByText(/New Product/i);
+    expect(addBtn).toBeInTheDocument();
+    fireEvent.click(addBtn);
+    // The handler prompts for a name then persists via the create endpoint.
+    expect(promptSpy).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(apiPost).toHaveBeenCalledWith(
+        expect.objectContaining({ productName: 'Widget X' })
+      );
+    });
+    promptSpy.mockRestore();
   });
 
   it('filters by search', () => {
     render(<ProductLifecycleTracker />);
-    const searchInput = screen.queryByPlaceholderText(/search/i);
-    if (searchInput) fireEvent.change(searchInput, { target: { value: 'widget' } });
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    expect(searchInput).toBeInTheDocument();
+    fireEvent.change(searchInput, { target: { value: 'widget' } });
+    expect((searchInput as HTMLInputElement).value).toBe('widget');
   });
 
   it('shows stat cards', () => {
@@ -63,10 +79,15 @@ describe('ProductLifecycleTracker', () => {
     expect(stats.length).toBeGreaterThanOrEqual(0);
   });
 
-  it('shows product detail view', () => {
+  it('shows product detail view when a product card is clicked', () => {
     render(<ProductLifecycleTracker />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) fireEvent.click(rows[0]);
+    const cards = document.querySelectorAll('div[class*="cursor-pointer"]');
+    expect(cards.length).toBeGreaterThan(0);
+    fireEvent.click(cards[0]);
+    // Selecting a product switches to the details tab, which is no longer the
+    // empty "No Product Selected" state and shows a stage-advance control.
+    expect(screen.queryByText(/No Product Selected/i)).toBeNull();
+    expect(screen.getByTitle(/Advance to next lifecycle stage/i)).toBeInTheDocument();
   });
 
   it('calls API on mount', async () => {
@@ -91,16 +112,21 @@ describe('ProductLifecycleTracker', () => {
 
   it('shows stage requirements', () => {
     render(<ProductLifecycleTracker />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) {
-      fireEvent.click(rows[0]);
-      expect(screen.queryAllByText(/completed|Regulatory|Security|Privacy/i).length).toBeGreaterThan(0);
-    }
+    const rows = document.querySelectorAll('div[class*="cursor-pointer"]');
+    expect(rows.length).toBeGreaterThan(0);
+    fireEvent.click(rows[0]);
+    expect(screen.queryAllByText(/completed|Regulatory|Security|Privacy/i).length).toBeGreaterThan(0);
   });
 
-  it('filters by stage', () => {
+  it('filters by stage via the lifecycle stage buttons', () => {
     render(<ProductLifecycleTracker />);
-    const stageSelect = screen.queryByDisplayValue(/All/i);
-    if (stageSelect) fireEvent.change(stageSelect, { target: { value: 'production' } });
+    // The portfolio exposes a stage-distribution button group; clicking one
+    // activates the corresponding stage filter and reveals "Clear Filters".
+    const stageButton = screen
+      .getAllByRole('button')
+      .find(b => /production/i.test(b.textContent || ''));
+    expect(stageButton).toBeTruthy();
+    fireEvent.click(stageButton!);
+    expect(screen.getByText(/Clear Filters/i)).toBeInTheDocument();
   });
 });

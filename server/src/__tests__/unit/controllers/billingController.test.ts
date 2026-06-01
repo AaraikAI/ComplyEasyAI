@@ -626,10 +626,13 @@ describe('BillingController', () => {
   describe('requestQuote()', () => {
     it('should create custom quote for large organization', async () => {
       mockRequest.body = {
-        userCount: 2000,
-        features: ['feature-1', 'feature-2'],
-        addOns: ['addon-1'],
-        billingCycle: 'annual',
+        tier: 'Growth',
+        requirements: {
+          userCount: 2000,
+          features: ['feature-1', 'feature-2'],
+          addOns: ['addon-1'],
+          billingCycle: 'annual',
+        },
       };
 
       mockCreateQuote.mockResolvedValue({
@@ -652,7 +655,7 @@ describe('BillingController', () => {
     });
 
     it('should throw error if user count too low', async () => {
-      mockRequest.body = { userCount: 500 };
+      mockRequest.body = { tier: 'Growth', requirements: { userCount: 500 } };
 
       await expect(
         billingController.requestQuote(mockRequest as Request, mockResponse as Response, mockNext)

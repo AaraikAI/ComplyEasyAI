@@ -97,10 +97,17 @@ test.describe('Reporting', () => {
       });
 
       const genBtn = page.getByRole('button', { name: /generate|create/i }).first();
-      if (await genBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await genBtn.click();
-        await page.waitForTimeout(3000);
-      }
+      const hasGenBtn = await genBtn.isVisible({ timeout: 5000 }).catch(() => false);
+
+      // If the generate affordance is absent, skip so its absence is surfaced
+      // rather than passing vacuously.
+      if (!hasGenBtn) test.skip();
+
+      await genBtn.click();
+      await page.waitForTimeout(3000);
+
+      // Triggering report generation must dispatch a report-generation POST.
+      expect(apiCalled).toBeTruthy();
     });
   });
 

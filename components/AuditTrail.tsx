@@ -9,9 +9,13 @@ import { getBlockchainExplorerUrl } from '../utils/blockchain';
 import { logger } from '../utils/logger';
 
 // Extended type for transformed audit logs with Date timestamp and additional blockchain properties
+type HashVerification = 'verified' | 'format' | 'invalid';
+
 interface TransformedAuditLog extends Omit<AuditLog, 'timestamp'> {
   timestamp: Date;
   userId?: string;
+  // 'verified' = cryptographic recompute matched; 'format' = structure/format valid only; 'invalid' = bad/missing hash.
+  verification: HashVerification;
   transactionHash?: string | null;
   network?: string | null;
   blockNumber?: number | null;
@@ -57,7 +61,8 @@ export const AuditTrail: React.FC = () => {
           user: log.user?.name || log.user?.email || (typeof log.user === 'string' ? log.user : 'System'),
           timestamp: new Date(log.timestamp || log.createdAt || Date.now()),
           hash: log.hash || '',
-          verified: log.hash ? verifyHash(log.hash, log) : false,
+          verification: log.hash ? verifyHash(log.hash, log) : 'invalid',
+          verified: log.hash ? verifyHash(log.hash, log) === 'verified' : false,
           userId: log.userId,
           organizationId: log.organizationId,
           transactionHash: log.transactionHash || log.blockchainRecord?.transactionHash || (log.metadata as any)?.blockchain?.transactionHash || null,
@@ -83,33 +88,33 @@ export const AuditTrail: React.FC = () => {
     loadAuditLogs();
   }, []);
 
-  // Verify hash integrity by recomputing from audit log fields
-  const verifyHash = (hash: string, log: any): boolean => {
-    if (!hash || hash.length === 0) return false;
+  // Classify a hash: 'verified' only when a SHA-256 recompute of the log's immutable
+  // fields matches; 'format' when the value is well-formed but cannot be cryptographically
+  // recomputed (e.g. UUID/server-side scheme); 'invalid' when missing or malformed.
+  const verifyHash = (hash: string, log: any): HashVerification => {
+    if (!hash || hash.length === 0) return 'invalid';
 
     try {
-      // Validate format: must be a valid UUID v4 or hex hash (16+ chars)
       const isValidUuid = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(hash);
       const isValidHex = /^[a-f0-9]{16,}$/i.test(hash);
-      if (!isValidUuid && !isValidHex) return false;
+      if (!isValidUuid && !isValidHex) return 'invalid';
 
-      // Recompute integrity check: hash must match a deterministic hash of the log's immutable fields
-      // This verifies the audit log has not been tampered with since creation
+      // Recompute a deterministic hash of the log's immutable fields. A match proves the
+      // entry has not been tampered with since creation.
       const payload = [log.action, log.userId || log.user, log.timestamp || log.createdAt]
         .filter(Boolean)
         .join('|');
-      if (!payload) return isValidUuid || isValidHex;
 
-      const recomputedHash = crypto.createHash('sha256').update(payload).digest('hex');
-      // For UUID-based hashes (from uuidv4), only format validation is possible
-      // For SHA-based hashes, verify the recomputed hash matches
-      if (isValidHex && hash.length >= 64) {
-        return hash === recomputedHash;
+      if (payload && isValidHex && hash.length >= 64) {
+        const recomputedHash = crypto.createHash('sha256').update(payload).digest('hex');
+        return hash === recomputedHash ? 'verified' : 'invalid';
       }
-      // UUID hashes are format-verified only (generated at creation time by server)
-      return isValidUuid || isValidHex;
+
+      // Well-formed but not cryptographically recomputable here (UUID or server-only scheme):
+      // report as a format check rather than implying integrity verification.
+      return 'format';
     } catch {
-      return false;
+      return 'invalid';
     }
   };
 
@@ -122,8 +127,10 @@ export const AuditTrail: React.FC = () => {
     
     const matchesUser = !filterUser || log.user === filterUser;
     const matchesAction = !filterAction || log.action === filterAction;
-    
-    // Admin can see all logs, non-admin only see their own
+
+    // Admin sees all org logs; non-admins see only their own. This is a UI-layer
+    // refinement on top of the server's organization scoping; the authoritative
+    // per-user restriction for non-admins is enforced server-side in auditController.list.
     const matchesAccess = user?.role === 'admin' || log.userId === user?.id;
 
     return matchesText && matchesUser && matchesAction && matchesAccess;
@@ -168,7 +175,7 @@ export const AuditTrail: React.FC = () => {
         `"${log.user}"`,
         `"${log.action}"`,
         log.hash || '',
-        log.verified ? 'Verified' : 'Invalid'
+        log.verification === 'verified' ? 'Verified' : log.verification === 'format' ? 'Format check' : 'Invalid'
       ].join(','))
     ].join('\n');
 
@@ -365,9 +372,13 @@ export const AuditTrail: React.FC = () => {
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    {log.verified ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {log.verification === 'verified' ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" title="Hash recomputed and matched (integrity verified)">
                         <ShieldCheck size={12} className="mr-1" /> Verified
+                      </span>
+                    ) : log.verification === 'format' ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800" title="Hash is well-formed but not cryptographically recomputed in the browser">
+                        <ShieldCheck size={12} className="mr-1" /> Format check
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">

@@ -14,8 +14,15 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.complyeasy.
 const API_VERSION = 'v2';
 
 // ============================================================================
-// CERTIFICATE PINNING — prevents MITM attacks on mobile
+// CERTIFICATE PINNING — configuration + pin-format validation only
 // ============================================================================
+// NOTE: This module does NOT itself terminate or inspect the TLS connection,
+// so on its own it does not stop a MITM attack. Effective pinning requires a
+// native layer (react-native-ssl-pinning / TrustKit / OkHttp CertificatePinner)
+// that compares the SERVER's presented leaf-cert SPKI hash against the pins
+// below and rejects mismatches. The helpers here validate that valid pins are
+// configured and gate startup in production; treat the native integration as
+// the actual enforcement point. See ESCALATION note in validateCertificatePin.
 // Public key hashes (SPKI SHA-256) for api.complyeasy.ai.
 // To obtain your pin: openssl s_client -connect api.complyeasy.ai:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64
 // Always include a backup pin (e.g. an intermediate CA or next-rotation key).
@@ -40,15 +47,19 @@ const CERTIFICATE_PINS = {
 };
 
 /**
- * Validate that the connection to the API host uses a pinned certificate.
- * On React Native, full native pinning requires a library like react-native-ssl-pinning
- * or TrustKit. This implementation provides application-layer pin validation that works
- * with expo-based projects and logs violations for monitoring.
+ * Validate the certificate-pinning CONFIGURATION for the given API host.
  *
- * For full native-level pinning, integrate one of:
+ * This checks that well-formed SPKI SHA-256 pins are configured and, in
+ * production, refuses to proceed when none are present. It does NOT compare
+ * against the server's actually-presented certificate — that comparison must
+ * be performed by a native pinning layer (see header note). Until that native
+ * layer is wired, this function is a configuration guard, not a live MITM
+ * defense, and callers must not rely on it as the sole transport-security control.
+ *
+ * ESCALATION (tracked separately): integrate native enforcement via one of
  *   - react-native-ssl-pinning (Android + iOS)
  *   - TrustKit (iOS) + OkHttp CertificatePinner (Android)
- *   - expo-network with custom native module
+ *   - expo-network with a custom native module
  */
 function validateCertificatePin(hostname: string): void {
   const pinConfig = CERTIFICATE_PINS[hostname as keyof typeof CERTIFICATE_PINS];
@@ -72,13 +83,12 @@ function validateCertificatePin(hostname: string): void {
     return;
   }
 
-  // Application-layer certificate pinning validation is performed by the
-  // native SSL pinning library (react-native-ssl-pinning / TrustKit).
-  // This function serves as configuration and enforcement policy.
-  // When enforce=true, the native pinning library will reject connections
-  // with mismatched pins. When enforce=false, violations are logged only.
+  // Enforcement policy is consumed by the native pinning layer once integrated:
+  // when enforce=true that layer must reject connections whose presented leaf
+  // cert does not match `pinConfig.pins`. With no native layer wired yet, this
+  // flag currently only records intent; it does not by itself block a mismatch.
   if (!pinConfig.enforce) {
-    console.info('[CertPin] Certificate pinning is in monitor-only mode. Set EXPO_PUBLIC_CERT_PIN_ENFORCE=true to enforce.');
+    console.info('[CertPin] Pin enforcement flag is off. Set EXPO_PUBLIC_CERT_PIN_ENFORCE=true once native pinning is integrated.');
   }
 }
 
@@ -224,9 +234,9 @@ async function fetchApi<T = any>(
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  // Validate certificate pin before making request.
-  // In production, this will throw if no valid pins are configured — intentionally
-  // preventing API calls without proper MITM protection.
+  // Validate the certificate-pinning configuration before making the request.
+  // In production this throws if no valid pins are configured, so the app fails
+  // closed rather than shipping without the pin set the native layer will enforce.
   const apiHostname = new URL(API_BASE_URL).hostname;
   validateCertificatePin(apiHostname);
 
@@ -271,23 +281,41 @@ async function fetchApi<T = any>(
 
 async function refreshAccessToken(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    // Use the same versioned base path as every other client call so the
+    // request passes through the v2 response envelope and rate limiter.
+    const response = await fetch(`${API_BASE_URL}/api/${API_VERSION}/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Version': API_VERSION,
+      },
       body: JSON.stringify({ refreshToken }),
     });
 
     if (response.ok) {
-      const data = await response.json();
-      accessToken = data.accessToken || data.token;
-      if (data.refreshToken) refreshToken = data.refreshToken;
-      return true;
+      const body = await response.json().catch(() => ({}));
+      // v2 wraps the controller payload under `data`; fall back to the root for
+      // any unversioned/raw shape. Read the same token field names the login
+      // path uses so both flows stay aligned.
+      const payload = body?.data ?? body;
+      const nextAccess = payload?.token ?? payload?.accessToken;
+      const nextRefresh = payload?.refreshToken;
+      if (nextAccess) {
+        accessToken = nextAccess;
+        if (nextRefresh) refreshToken = nextRefresh;
+        // Persist the rotated tokens so a restart after refresh keeps the session.
+        await setTokens({ accessToken: nextAccess, refreshToken: refreshToken || '' });
+        return true;
+      }
+      // A 2xx with no token in the body means the server only rotated the
+      // httpOnly cookie (browser-oriented). Treat as unusable for the mobile
+      // Bearer flow and fall through to clearing tokens.
     }
 
-    clearTokens();
+    await clearTokens();
     return false;
   } catch {
-    clearTokens();
+    await clearTokens();
     return false;
   }
 }
@@ -306,12 +334,16 @@ export const api = {
   // Authentication
   auth: {
     login: async (credentials: LoginCredentials) => {
-      const result = await fetchApi<{ token: string; refreshToken: string; user: any }>('/auth/login', {
+      const result = await fetchApi<{ token?: string; accessToken?: string; refreshToken?: string; user: any }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
-      if (result.data?.token) {
-        setTokens({ accessToken: result.data.token, refreshToken: result.data.refreshToken });
+      // Accept either token field name so this stays aligned with the refresh path.
+      const access = result.data?.token ?? result.data?.accessToken;
+      if (access) {
+        // Await the secure-store write so a fast restart after login still
+        // finds the persisted token.
+        await setTokens({ accessToken: access, refreshToken: result.data?.refreshToken || '' });
       }
       return result;
     },
@@ -320,6 +352,22 @@ export const api = {
       clearTokens();
     },
     me: () => fetchApi<any>('/auth/me'),
+    forgotPassword: (email: string) =>
+      fetchApi<{ message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+    updateProfile: (data: { name?: string; email?: string }) =>
+      fetchApi<any>('/auth/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    changePassword: (currentPassword: string, newPassword: string) =>
+      fetchApi<{ message: string }>('/auth/password', {
+        method: 'PATCH',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      }),
+    twoFactorStatus: () => fetchApi<{ enabled: boolean }>('/2fa/status'),
   },
 
   // Vendors

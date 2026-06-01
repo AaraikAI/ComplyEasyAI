@@ -4,6 +4,10 @@
  * Exposes per-operation histograms and counters for the Evidence Truth Layer
  * and general HTTP request flow. Scraped at GET /metrics (no auth — restrict
  * via network/firewall as is standard for Prometheus exporters).
+ *
+ * Deployment requirement: the /metrics route MUST be network-restricted
+ * (private network / ingress allowlist / firewall) so it is not publicly
+ * reachable. Only non-sensitive process + operation telemetry is exported here.
  */
 
 import client from 'prom-client';

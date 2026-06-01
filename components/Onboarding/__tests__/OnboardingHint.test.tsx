@@ -9,6 +9,6 @@ describe('OnboardingHint', () => {
 
   it('should render message when visible', () => { render(<OnboardingHint {...defaultProps} />); expect(screen.getByText('Try clicking here!')).toBeTruthy(); });
   it('should not render when not visible', () => { render(<OnboardingHint {...defaultProps} isVisible={false} />); expect(screen.queryByText('Try clicking here!')).toBeNull(); });
-  it('should call onDismiss when dismissed', () => { render(<OnboardingHint {...defaultProps} />); const dismissBtn = screen.getByTestId('icon-X') || document.querySelector('button'); if (dismissBtn) { fireEvent.click(dismissBtn); expect(defaultProps.onDismiss).toHaveBeenCalled(); } });
+  it('should call onDismiss when dismissed', () => { render(<OnboardingHint {...defaultProps} />); const dismissBtn = screen.getByRole('button', { name: /dismiss hint/i }); fireEvent.click(dismissBtn); expect(defaultProps.onDismiss).toHaveBeenCalled(); });
   it('should handle null position', () => { render(<OnboardingHint {...defaultProps} position={null} />); });
 });

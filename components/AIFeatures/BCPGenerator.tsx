@@ -112,8 +112,8 @@ export const BCPGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             planText = parsed.plan;
           }
         } catch (e) {
-          // If all parsing fails, keep original but log warning
-          console.warn('Could not fully parse BCP response, displaying as-is');
+          // If all parsing fails, keep the original text and surface a warning.
+          logger.warn('Could not fully parse BCP response, displaying as-is');
         }
       }
       

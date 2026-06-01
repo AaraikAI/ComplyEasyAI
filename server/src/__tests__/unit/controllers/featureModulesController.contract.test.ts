@@ -146,37 +146,86 @@ describe('FeatureModulesController Contract Tests', () => {
   });
 
   describe('updateGovernanceBody()', () => {
-    it('should update body and return result', async () => {
+    it('should verify org ownership before updating and strip organizationId from the patch', async () => {
       mockReq.params = { id: 'gb-1' };
-      mockReq.body = { name: 'Updated Committee' };
+      mockReq.body = { name: 'Updated Committee', organizationId: 'org-EVIL' };
 
+      // Ownership guard (assertOrgOwned → governanceBody.findFirst) must pass.
+      (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue({ id: 'gb-1' } as never);
       const updated = { id: 'gb-1', name: 'Updated Committee' };
       (prismaMock.governanceBody.update as jest.Mock<any>).mockResolvedValue(updated as never);
 
       await updateGovernanceBody(mockReq as Request, mockRes as Response, mockNext);
 
+      // The mutation must be preceded by an organization-scoped ownership lookup.
+      expect(prismaMock.governanceBody.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'gb-1', organizationId: 'org-123' },
+        })
+      );
+      // The caller-supplied organizationId must not be allowed to reassign tenancy.
       expect(prismaMock.governanceBody.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gb-1' },
-          data: mockReq.body,
+          data: expect.objectContaining({ name: 'Updated Committee' }),
         })
       );
+      const updateArg = (prismaMock.governanceBody.update as jest.Mock<any>).mock.calls[0][0] as {
+        data: Record<string, unknown>;
+      };
+      expect(updateArg.data.organizationId).toBeUndefined();
       expect(mockRes.json).toHaveBeenCalledWith(updated);
+    });
+
+    it('should throw AppError(404) and not update when the body belongs to another org', async () => {
+      mockReq.params = { id: 'gb-cross-tenant' };
+      mockReq.body = { name: 'Updated Committee' };
+
+      // Cross-tenant id: ownership lookup finds nothing.
+      (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
+
+      const err = await captureThrown(() =>
+        updateGovernanceBody(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(prismaMock.governanceBody.update).not.toHaveBeenCalled();
     });
   });
 
   describe('deleteGovernanceBody()', () => {
-    it('should delete body and return success', async () => {
+    it('should verify org ownership before deleting and return success', async () => {
       mockReq.params = { id: 'gb-1' };
 
+      (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue({ id: 'gb-1' } as never);
       (prismaMock.governanceBody.delete as jest.Mock<any>).mockResolvedValue({} as never);
 
       await deleteGovernanceBody(mockReq as Request, mockRes as Response, mockNext);
 
+      expect(prismaMock.governanceBody.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'gb-1', organizationId: 'org-123' },
+        })
+      );
       expect(prismaMock.governanceBody.delete).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'gb-1' } })
       );
       expect(mockRes.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('should throw AppError(404) and not delete when the body belongs to another org', async () => {
+      mockReq.params = { id: 'gb-cross-tenant' };
+
+      (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
+
+      const err = await captureThrown(() =>
+        deleteGovernanceBody(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(prismaMock.governanceBody.delete).not.toHaveBeenCalled();
     });
   });
 
@@ -184,18 +233,25 @@ describe('FeatureModulesController Contract Tests', () => {
   // Governance Meetings
   // ===========================================================================
   describe('createMeeting()', () => {
-    it('should create meeting with status 201', async () => {
+    it('should verify the parent body org ownership before creating with status 201', async () => {
       mockReq.body = {
         governanceBodyId: 'gb-1',
         title: 'Q1 Review',
         date: '2026-04-01T10:00:00Z',
       };
 
+      // Parent governanceBody ownership check (assertOrgOwned) must pass first.
+      (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue({ id: 'gb-1' } as never);
       const created = { id: 'mtg-1', title: 'Q1 Review' };
       (prismaMock.governanceMeeting.create as jest.Mock<any>).mockResolvedValue(created as never);
 
       await createMeeting(mockReq as Request, mockRes as Response, mockNext);
 
+      expect(prismaMock.governanceBody.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'gb-1', organizationId: 'org-123' },
+        })
+      );
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(prismaMock.governanceMeeting.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -206,6 +262,24 @@ describe('FeatureModulesController Contract Tests', () => {
           }),
         })
       );
+    });
+
+    it('should throw AppError(404) and not create when the parent body is in another org', async () => {
+      mockReq.body = {
+        governanceBodyId: 'gb-cross-tenant',
+        title: 'Q1 Review',
+        date: '2026-04-01T10:00:00Z',
+      };
+
+      (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
+
+      const err = await captureThrown(() =>
+        createMeeting(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(prismaMock.governanceMeeting.create).not.toHaveBeenCalled();
     });
 
     it('should throw AppError(400) for missing required fields', async () => {
@@ -222,28 +296,70 @@ describe('FeatureModulesController Contract Tests', () => {
   });
 
   describe('updateMeeting()', () => {
-    it('should update meeting', async () => {
+    it('should verify org ownership through the parent body before updating', async () => {
       mockReq.params = { id: 'mtg-1' };
       mockReq.body = { title: 'Updated Meeting' };
 
+      // assertOwnedByOrg scopes the meeting through its governanceBody → organizationId.
+      (prismaMock.governanceMeeting.findFirst as jest.Mock<any>).mockResolvedValue({ id: 'mtg-1' } as never);
       const updated = { id: 'mtg-1', title: 'Updated Meeting' };
       (prismaMock.governanceMeeting.update as jest.Mock<any>).mockResolvedValue(updated as never);
 
       await updateMeeting(mockReq as Request, mockRes as Response, mockNext);
 
+      expect(prismaMock.governanceMeeting.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'mtg-1', governanceBody: { organizationId: 'org-123' } },
+        })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(updated);
+    });
+
+    it('should throw AppError(404) and not update a meeting owned by another org', async () => {
+      mockReq.params = { id: 'mtg-cross-tenant' };
+      mockReq.body = { title: 'Updated Meeting' };
+
+      (prismaMock.governanceMeeting.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
+
+      const err = await captureThrown(() =>
+        updateMeeting(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(prismaMock.governanceMeeting.update).not.toHaveBeenCalled();
     });
   });
 
   describe('deleteMeeting()', () => {
-    it('should delete meeting', async () => {
+    it('should verify org ownership through the parent body before deleting', async () => {
       mockReq.params = { id: 'mtg-1' };
 
+      (prismaMock.governanceMeeting.findFirst as jest.Mock<any>).mockResolvedValue({ id: 'mtg-1' } as never);
       (prismaMock.governanceMeeting.delete as jest.Mock<any>).mockResolvedValue({} as never);
 
       await deleteMeeting(mockReq as Request, mockRes as Response, mockNext);
 
+      expect(prismaMock.governanceMeeting.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'mtg-1', governanceBody: { organizationId: 'org-123' } },
+        })
+      );
       expect(mockRes.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('should throw AppError(404) and not delete a meeting owned by another org', async () => {
+      mockReq.params = { id: 'mtg-cross-tenant' };
+
+      (prismaMock.governanceMeeting.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
+
+      const err = await captureThrown(() =>
+        deleteMeeting(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(prismaMock.governanceMeeting.delete).not.toHaveBeenCalled();
     });
   });
 
@@ -251,19 +367,43 @@ describe('FeatureModulesController Contract Tests', () => {
   // Governance Decisions
   // ===========================================================================
   describe('createDecision()', () => {
-    it('should create decision with status 201', async () => {
+    it('should verify the parent body org ownership before creating with status 201', async () => {
       mockReq.body = {
         governanceBodyId: 'gb-1',
         title: 'Approve Policy',
         decisionType: 'approval',
       };
 
+      (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue({ id: 'gb-1' } as never);
       const created = { id: 'dec-1', title: 'Approve Policy' };
       (prismaMock.governanceDecision.create as jest.Mock<any>).mockResolvedValue(created as never);
 
       await createDecision(mockReq as Request, mockRes as Response, mockNext);
 
+      expect(prismaMock.governanceBody.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'gb-1', organizationId: 'org-123' },
+        })
+      );
       expect(mockRes.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should throw AppError(404) and not create when the parent body is in another org', async () => {
+      mockReq.body = {
+        governanceBodyId: 'gb-cross-tenant',
+        title: 'Approve Policy',
+        decisionType: 'approval',
+      };
+
+      (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
+
+      const err = await captureThrown(() =>
+        createDecision(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(prismaMock.governanceDecision.create).not.toHaveBeenCalled();
     });
 
     it('should throw AppError(400) for missing required fields', async () => {
@@ -280,16 +420,37 @@ describe('FeatureModulesController Contract Tests', () => {
   });
 
   describe('updateDecision()', () => {
-    it('should update decision', async () => {
+    it('should verify org ownership through the parent body before updating', async () => {
       mockReq.params = { id: 'dec-1' };
       mockReq.body = { status: 'approved' };
 
+      (prismaMock.governanceDecision.findFirst as jest.Mock<any>).mockResolvedValue({ id: 'dec-1' } as never);
       const updated = { id: 'dec-1', status: 'approved' };
       (prismaMock.governanceDecision.update as jest.Mock<any>).mockResolvedValue(updated as never);
 
       await updateDecision(mockReq as Request, mockRes as Response, mockNext);
 
+      expect(prismaMock.governanceDecision.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'dec-1', governanceBody: { organizationId: 'org-123' } },
+        })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(updated);
+    });
+
+    it('should throw AppError(404) and not update a decision owned by another org', async () => {
+      mockReq.params = { id: 'dec-cross-tenant' };
+      mockReq.body = { status: 'approved' };
+
+      (prismaMock.governanceDecision.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
+
+      const err = await captureThrown(() =>
+        updateDecision(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(404);
+      expect(prismaMock.governanceDecision.update).not.toHaveBeenCalled();
     });
   });
 });

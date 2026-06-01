@@ -145,6 +145,7 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
   const [isTesting, setIsTesting] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showCert, setShowCert] = useState(false);
+  const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const certFileInputRef = useRef<HTMLInputElement>(null);
   // serverReachable mirrors API load success; when false DEFAULT_MAPPINGS stays as the editable starting point
@@ -278,6 +279,36 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
       });
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  // ── Fetch IdP Metadata ────────────────────────────────────────────────
+  // Resolves the provided metadata URL on the server (which performs SSRF-safe fetching and XML
+  // parsing) and auto-populates Entity ID, SSO URL, SLO URL, and the signing certificate.
+
+  const fetchMetadata = async () => {
+    if (!formMetadataUrl.trim()) {
+      setError('Enter a metadata URL before fetching.');
+      return;
+    }
+    setIsFetchingMetadata(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const parsed = await apiFetch<Partial<SSOConfig>>(`${API_BASE}/parse-metadata`, {
+        method: 'POST',
+        body: JSON.stringify({ metadataUrl: formMetadataUrl.trim() }),
+      });
+      if (parsed.entityId) setFormEntityId(parsed.entityId);
+      if (parsed.ssoUrl) setFormSSOUrl(parsed.ssoUrl);
+      if (parsed.sloUrl) setFormSLOUrl(parsed.sloUrl);
+      if (parsed.certificate) setFormCertificate(parsed.certificate);
+      setSuccessMsg('Metadata fetched. Review the auto-populated fields and save.');
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch {
+      setError('Failed to fetch or parse metadata from the provided URL.');
+    } finally {
+      setIsFetchingMetadata(false);
     }
   };
 
@@ -558,8 +589,13 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
                 placeholder="https://idp.example.com/saml/metadata.xml"
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <button className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                Fetch
+              <button
+                onClick={fetchMetadata}
+                disabled={isFetchingMetadata}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors inline-flex items-center gap-1.5"
+              >
+                {isFetchingMetadata && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isFetchingMetadata ? 'Fetching...' : 'Fetch'}
               </button>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

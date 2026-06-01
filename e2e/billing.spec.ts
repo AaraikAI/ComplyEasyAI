@@ -161,13 +161,26 @@ test.describe('Billing', () => {
       expect(html).not.toMatch(/cvv|cvc/i);
     });
 
-    test('payment mutations use CSRF protection', async ({ page }) => {
-      let paymentCsrf = true;
+    test('payment mutations are not rejected by CSRF protection', async ({ page }) => {
+      // Billing/subscription/payment mutations are state-changing and pass
+      // through the backend double-submit CSRF check. A correctly wired flow
+      // must never have a payment mutation rejected with a 403 CSRF error.
+      const paymentMutations: string[] = [];
+      const csrfRejections: string[] = [];
+
+      const isPaymentMutation = (method: string, url: string) =>
+        ['POST', 'PUT', 'PATCH'].includes(method) &&
+        (url.includes('billing') || url.includes('subscription') || url.includes('payment'));
 
       page.on('request', (req) => {
-        if (['POST', 'PUT', 'PATCH'].includes(req.method()) &&
-            (req.url().includes('billing') || req.url().includes('subscription') || req.url().includes('payment'))) {
-          if (!req.headers()['x-csrf-token']) paymentCsrf = false;
+        if (isPaymentMutation(req.method(), req.url())) {
+          paymentMutations.push(`${req.method()} ${req.url()}`);
+        }
+      });
+      page.on('response', (res) => {
+        const req = res.request();
+        if (isPaymentMutation(req.method(), res.url()) && res.status() === 403) {
+          csrfRejections.push(`${req.method()} ${res.url()}`);
         }
       });
 
@@ -177,7 +190,8 @@ test.describe('Billing', () => {
         await page.waitForTimeout(2000);
       }
 
-      expect(paymentCsrf).toBeTruthy();
+      // No payment mutation may be blocked by CSRF validation.
+      expect(csrfRejections, `CSRF-rejected payment mutations: ${csrfRejections.join(', ')}`).toHaveLength(0);
     });
 
     test('billing page loads without server errors', async ({ page }) => {

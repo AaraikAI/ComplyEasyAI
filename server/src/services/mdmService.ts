@@ -381,7 +381,7 @@ export class MDMService {
       },
     });
 
-    logger.info(`[MDM] Device ${existing.deviceName} reassigned from ${previousUserName || previousUserId} to ${data.newUserName || data.newUserId}`);
+    logger.info(`[MDM] Device ${id} reassigned from user ${previousUserId} to user ${data.newUserId}`);
     return updated as unknown as ManagedDeviceRecord;
   }
 

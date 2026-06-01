@@ -38,10 +38,13 @@ describe('DPIAWorkflow', () => {
     expect(document.body.innerHTML.length).toBeGreaterThan(0);
   });
 
-  it('displays DPIA-related content', () => {
+  it('displays DPIA workflow tab navigation', () => {
     render(<DPIAWorkflow onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content.length).toBeGreaterThan(0);
+    // Tabs render independently of data loading.
+    expect(screen.getByText('Overview')).toBeInTheDocument();
+    expect(screen.getByText('Screening')).toBeInTheDocument();
+    expect(screen.getByText('Risk Assessment')).toBeInTheDocument();
+    expect(screen.getByText('DPO Review')).toBeInTheDocument();
   });
 
   it('calls onBack when back button clicked', () => {
@@ -71,9 +74,12 @@ describe('DPIAWorkflow', () => {
     expect(document.body.textContent).toBeTruthy();
   });
 
-  it('handles empty DPIA list', () => {
+  it('handles empty DPIA list', async () => {
+    // Global fetch mock returns []; once loading resolves the overview shows the
+    // stat cards and the empty-state row rather than a blank shell.
     render(<DPIAWorkflow onBack={mockOnBack} />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    await waitFor(() => { expect(screen.getByText('Total DPIAs')).toBeInTheDocument(); });
+    expect(screen.getByText('No DPIAs match the current filters.')).toBeInTheDocument();
   });
 
   it('handles API errors', () => {
@@ -88,10 +94,11 @@ describe('DPIAWorkflow', () => {
     expect(content).toBeTruthy();
   });
 
-  it('shows create DPIA button', () => {
+  it('shows create DPIA button', async () => {
     render(<DPIAWorkflow onBack={mockOnBack} />);
-    const buttons = screen.getAllByRole('button');
-    const createBtn = buttons.find(b => b.textContent?.includes('New') || b.textContent?.includes('Create') || b.textContent?.includes('common.create'));
-    expect(buttons.length).toBeGreaterThan(0);
+    // The create action lives in the overview toolbar (rendered after load) and is
+    // labelled via t('dpia.createDPIA'), which this suite stubs to return the key.
+    const createBtn = await screen.findByText('dpia.createDPIA');
+    expect(createBtn.closest('button')).toBeInTheDocument();
   });
 });

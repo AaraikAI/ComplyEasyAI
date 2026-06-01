@@ -45,8 +45,40 @@ router.post('/dsar-export', authorize('Admin', 'Owner'), validateBody(dsarExport
     ipAddress: { method: 'pseudonymization' as const },
   };
 
-  logger.info(`Anonymization job started for DSAR ${dsarId} in org ${orgId}`);
-  return res.json({ message: 'Anonymization job started', dsarId, fieldConfig: defaultConfig });
+  // Resolve the DSAR within the caller's organization. The org filter ensures a
+  // request can never reach another tenant's record even if ids collide.
+  const dsar = await prisma.dSARRequest.findFirst({
+    where: { id: dsarId, organizationId: orgId },
+  });
+
+  if (!dsar) {
+    // No matching record to operate on in this organization. Return the planned
+    // field configuration so callers can confirm the intended treatment.
+    return res.json({ message: 'No matching DSAR record found for this organization', dsarId, anonymized: null, fieldConfig: defaultConfig });
+  }
+
+  // Build the personal-data record from the DSAR and any captured subject data,
+  // then run the configured anonymization treatment over it.
+  const dataFound = (dsar.dataFound && typeof dsar.dataFound === 'object' && !Array.isArray(dsar.dataFound))
+    ? (dsar.dataFound as Record<string, unknown>)
+    : {};
+  const subjectRecord: Record<string, unknown> = {
+    name: dsar.dataSubjectName,
+    email: dsar.dataSubjectEmail,
+    phone: dsar.dataSubjectPhone ?? null,
+    ...dataFound,
+  };
+
+  const anonymized = await dataAnonymizationService.anonymizeRecord(subjectRecord, defaultConfig);
+
+  // Persist the anonymized snapshot so the export reflects the redacted values.
+  await prisma.dSARRequest.update({
+    where: { id: dsar.id },
+    data: { dataFound: anonymized as any },
+  });
+
+  logger.info(`Anonymization completed for DSAR ${dsarId} in org ${orgId}`);
+  return res.json({ message: 'Anonymization job completed', dsarId, anonymized, fieldConfig: defaultConfig });
 }));
 
 // Get supported anonymization methods

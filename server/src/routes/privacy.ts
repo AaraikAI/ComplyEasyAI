@@ -2275,8 +2275,33 @@ router.get('/notices', asyncHandler(async (req: Request, res: Response) => {
 router.post('/notices', idempotencyKey(), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const orgId = user.organizationId;
+  // Explicit field allowlist: counters are forced to 0 and organizationId is
+  // server-controlled so callers cannot seed metrics or move the row.
   const notice = await prisma.jITPrivacyNotice.create({
-    data: { ...req.body, organizationId: orgId },
+    data: {
+      organizationId: orgId,
+      name: req.body.name,
+      triggerContext: req.body.triggerContext,
+      noticeContent: req.body.noticeContent,
+      shortNotice: req.body.shortNotice,
+      dataCollected: req.body.dataCollected,
+      purposes: req.body.purposes || [],
+      legalBasis: req.body.legalBasis,
+      retentionPeriod: req.body.retentionPeriod,
+      thirdPartyRecipients: req.body.thirdPartyRecipients,
+      dataSubjectRights: req.body.dataSubjectRights,
+      contactInfo: req.body.contactInfo,
+      displayType: req.body.displayType || 'Banner',
+      position: req.body.position || 'Bottom',
+      requiresAction: req.body.requiresAction ?? true,
+      version: req.body.version || '1.0',
+      language: req.body.language || 'en',
+      translations: req.body.translations,
+      status: req.body.status || 'Draft',
+      impressions: 0,
+      acceptances: 0,
+      dismissals: 0,
+    },
   });
   res.status(201).json(notice);
 }));
@@ -2298,9 +2323,18 @@ router.patch('/notices/:id', asyncHandler(async (req: Request, res: Response) =>
     where: { id: req.params.id, organizationId: user.organizationId },
   });
   if (!existing) throw new AppError('Notice not found', 404);
+  // Allowlist updatable fields so organizationId and counters
+  // (impressions/acceptances/dismissals) cannot be overwritten by the caller.
+  const { pick } = await import('../utils/pick');
+  const updateData = pick(req.body, [
+    'name', 'triggerContext', 'noticeContent', 'shortNotice', 'dataCollected',
+    'purposes', 'legalBasis', 'retentionPeriod', 'thirdPartyRecipients',
+    'dataSubjectRights', 'contactInfo', 'displayType', 'position', 'requiresAction',
+    'version', 'language', 'translations', 'status',
+  ]);
   const notice = await prisma.jITPrivacyNotice.update({
     where: { id: req.params.id },
-    data: req.body,
+    data: updateData,
   });
   return res.json(notice);
 }));

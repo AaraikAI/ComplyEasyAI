@@ -115,9 +115,15 @@ describe('ControlMappingsController', () => {
       expect(mockControlMapping.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            OR: [
-              { sourceControlId: 'ctrl-1', targetControlId: 'ctrl-2' },
-              { sourceControlId: 'ctrl-2', targetControlId: 'ctrl-1' },
+            AND: [
+              { sourceControl: { framework: { organizationId: 'org-1' } } },
+              { targetControl: { framework: { organizationId: 'org-1' } } },
+              {
+                OR: [
+                  { sourceControlId: 'ctrl-1', targetControlId: 'ctrl-2' },
+                  { sourceControlId: 'ctrl-2', targetControlId: 'ctrl-1' },
+                ],
+              },
             ],
           },
         })
@@ -511,7 +517,7 @@ describe('ControlMappingsController', () => {
       expect(mockControlMapping.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            OR: [
+            AND: [
               { sourceControl: { framework: { organizationId: 'org-1' } } },
               { targetControl: { framework: { organizationId: 'org-1' } } },
             ],

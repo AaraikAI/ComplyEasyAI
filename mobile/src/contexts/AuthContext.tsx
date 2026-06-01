@@ -223,8 +223,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (result.data) {
         dispatch({ type: 'AUTH_SUCCESS', payload: normalizeUser(result.data) });
       }
-    } catch {
-      // Silently fail - user data will be stale but app continues
+    } catch (error: any) {
+      // A 401 means the session is no longer valid (token expired/revoked) and
+      // the refresh flow could not recover it — tear down the stale authenticated
+      // state so the user is routed back to login instead of seeing stale data.
+      if (error?.status === 401) {
+        await clearStoredTokens();
+        dispatch({ type: 'AUTH_LOGOUT' });
+        return;
+      }
+      // Transient/network errors: keep the existing session and last-known user;
+      // the next refresh attempt will reconcile.
     }
   }, []);
 

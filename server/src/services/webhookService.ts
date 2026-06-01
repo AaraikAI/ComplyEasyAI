@@ -139,6 +139,42 @@ class WebhookService {
   private readonly MAX_RETRIES = 5;
   private readonly RETRY_DELAYS = [60, 300, 900, 3600, 7200]; // 1m, 5m, 15m, 1h, 2h
 
+  // Durable retry poller: drains DB-backed pending/failed events whose nextAttemptAt has passed.
+  // This is the single source of truth for retries (restart-safe — it re-reads the table each tick).
+  private retryPoller: NodeJS.Timeout | null = null;
+  private readonly RETRY_POLL_INTERVAL_MS = parseInt(
+    process.env.WEBHOOK_RETRY_POLL_INTERVAL_MS || '30000',
+    10
+  );
+
+  /**
+   * Start the durable retry poller (idempotent). Reads due events from the database on each
+   * tick, so pending retries survive process restarts without relying on in-memory timers.
+   */
+  startRetryPoller(): void {
+    if (this.retryPoller) return;
+    this.retryPoller = setInterval(() => {
+      this.processPendingEvents().catch((error) => {
+        logger.error('Webhook retry poller failed to process pending events', error);
+      });
+    }, this.RETRY_POLL_INTERVAL_MS);
+    // Do not keep the event loop alive solely for this timer.
+    if (typeof this.retryPoller.unref === 'function') {
+      this.retryPoller.unref();
+    }
+    logger.info(`Webhook retry poller started (interval ${this.RETRY_POLL_INTERVAL_MS}ms)`);
+  }
+
+  /**
+   * Stop the durable retry poller.
+   */
+  stopRetryPoller(): void {
+    if (this.retryPoller) {
+      clearInterval(this.retryPoller);
+      this.retryPoller = null;
+    }
+  }
+
   /**
    * Create a new webhook
    */
@@ -379,6 +415,10 @@ class WebhookService {
         return events;
       });
 
+      // Ensure the durable retry poller is running so failed deliveries are retried from the DB
+      // even across process restarts (idempotent — only spins up once).
+      this.startRetryPoller();
+
       // Attempt immediate delivery for each event (outside transaction)
       for (const webhookEvent of createdEvents) {
         this.processWebhookEvent(webhookEvent.id).catch(err => {
@@ -482,12 +522,9 @@ class WebhookService {
           },
         });
 
-        // Schedule retry processing
-        setTimeout(() => {
-          this.processWebhookEvent(eventId).catch(err => {
-            logger.error(`Retry failed for webhook event ${eventId}`, err);
-          });
-        }, delaySeconds * 1000);
+        // Retry scheduling is durable: the persisted nextAttemptAt is the single source of truth.
+        // processPendingEvents() (the DB-backed poller/cron) picks the event up once
+        // nextAttemptAt <= now, so retries survive process restarts without in-memory timers.
       }
     }
   }

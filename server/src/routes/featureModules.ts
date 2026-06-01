@@ -52,6 +52,8 @@ import {
   updateProductRecallSchema,
   createProductDecommissionSchema,
   updateProductDecommissionSchema,
+  createDecommissionNotificationSchema,
+  updateDecommissionNotificationSchema,
   createLifecycleAssessmentSchema,
   updateLifecycleAssessmentSchema,
   createProductLifecycleSchema,
@@ -198,6 +200,10 @@ router.get('/decommission/products', requireFeature('productDecommissioning'), a
 router.post('/decommission/products', requireFeature('productDecommissioning'), authorize('admin', 'editor'), validateBody(createProductDecommissionSchema), asyncHandler(fm.createProductDecommission));
 router.patch('/decommission/products/:id', requireFeature('productDecommissioning'), authorize('admin', 'editor'), validateBody(updateProductDecommissionSchema), asyncHandler(fm.updateProductDecommission));
 router.delete('/decommission/products/:id', requireFeature('productDecommissioning'), authorize('admin'), asyncHandler(fm.deleteProductDecommission));
+// Customer notifications are persisted inside each decommission record's customerNotifications JSON array.
+router.get('/decommission/notifications', requireFeature('productDecommissioning'), asyncHandler(fm.listDecommissionNotifications));
+router.post('/decommission/notifications', requireFeature('productDecommissioning'), authorize('admin', 'editor'), validateBody(createDecommissionNotificationSchema), asyncHandler(fm.createDecommissionNotification));
+router.patch('/decommission/notifications/:id', requireFeature('productDecommissioning'), authorize('admin', 'editor'), validateBody(updateDecommissionNotificationSchema), asyncHandler(fm.updateDecommissionNotification));
 
 // ============================================================================
 // ENVIRONMENTAL LIFECYCLE (Visionary)

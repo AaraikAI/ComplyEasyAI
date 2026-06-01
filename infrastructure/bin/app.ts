@@ -20,6 +20,10 @@ const apiCertificateArn = app.node.tryGetContext('apiCertificateArn');
 const cloudfrontCertificateArn = app.node.tryGetContext('cloudfrontCertificateArn');
 const domainName = app.node.tryGetContext('domainName');
 
+// Immutable ECR image tag (git SHA / semver) to deploy. Pass via
+// `-c imageTag=<sha>` or the IMAGE_TAG env var — 'latest' is rejected.
+const imageTag = app.node.tryGetContext('imageTag') ?? process.env.IMAGE_TAG;
+
 const env: cdk.Environment = { account, region };
 
 // ---------------------------------------------------------------------------
@@ -55,7 +59,9 @@ const backend = new BackendStack(app, `ComplyEasy-Backend`, {
   ecsSecurityGroup: network.ecsSecurityGroup,
   redisEndpoint: cache.redisEndpoint,
   redisPort: cache.redisPort,
+  redisAuthTokenSecret: cache.authTokenSecret,
   certificateArn: apiCertificateArn,
+  imageTag,
   description: 'ComplyEasyAI — ECS Fargate API + ALB',
 });
 

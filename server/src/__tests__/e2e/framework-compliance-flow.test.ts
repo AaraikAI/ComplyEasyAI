@@ -42,6 +42,24 @@ jest.mock('../../middleware/rateLimiter', () => ({
   frameworkLimiter: (req: any, res: any, next: any) => next(),
 }));
 
+// The frameworks route gates creation with enforceLimit('maxFrameworks');
+// without a mock the real tier middleware queries tierService and returns 429.
+jest.mock('../../middleware/tierMiddleware', () => {
+  const passthrough = (_req: any, _res: any, next: any) => next();
+  return {
+    enforceLimit: () => passthrough,
+    requireFeature: () => passthrough,
+    requireTier: () => passthrough,
+    attachTierInfo: () => passthrough,
+    trackUsage: () => passthrough,
+    requireActiveSubscription: () => passthrough,
+    requireAiFeature: () => [passthrough],
+    requireResourceCreation: () => [passthrough],
+    requireEnterpriseFeature: () => [passthrough],
+    requireVisionaryFeature: () => [passthrough],
+  };
+});
+
 jest.mock('../../services/geminiService', () => ({
   __esModule: true,
   default: {
@@ -70,260 +88,237 @@ app.use('/api/control-mappings', controlMappingsRoutes);
 app.use(errorHandler);
 
 describe('E2E: Framework Compliance Flow', () => {
+  // Prisma model is `complianceFramework`; controls are `frameworkControl`.
   const mockFramework = {
     id: 'fw-123',
     name: 'SOC 2 Type II',
     organizationId: 'org-123',
-    type: 'SOC2',
-    status: 'Active',
+    region: 'US',
+    status: 'In_Review',
     progress: 0,
+    version: 1,
+    lastModifiedBy: 'user-123',
+    nextAuditDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
-  const mockRequirement = {
-    id: 'req-123',
-    frameworkId: 'fw-123',
-    code: 'CC1.1',
-    title: 'Control Environment',
-    description: 'Management commitment to integrity',
-    status: 'Not Started',
-    progress: 0,
-  };
-
   const mockControl = {
     id: 'ctrl-123',
-    name: 'Access Control Policy',
-    description: 'Policy for access management',
-    status: 'Draft',
-    organizationId: 'org-123',
-  };
-
-  const mockEvidence = {
-    id: 'ev-123',
-    controlId: 'ctrl-123',
-    type: 'Document',
-    title: 'Access Control Policy Document',
+    frameworkId: 'fw-123',
+    name: 'CC1.1 - Control Environment',
+    description: 'Management commitment to integrity',
     status: 'Pending',
-    organizationId: 'org-123',
+    category: 'Governance',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Audit logging fires on most mutations.
+    prismaMock.auditLog.create.mockResolvedValue({} as any);
   });
 
-  describe('Complete SOC 2 Compliance Workflow', () => {
-    it('should complete full framework compliance lifecycle', async () => {
-      // Step 1: Start framework onboarding
-      prismaMock.framework.create.mockResolvedValue(mockFramework as any);
-      prismaMock.requirement.createMany.mockResolvedValue({ count: 100 } as any);
+  describe('Framework lifecycle', () => {
+    it('should create a framework', async () => {
+      prismaMock.complianceFramework.create.mockResolvedValue(mockFramework as any);
 
-      const onboardResponse = await request(app)
+      const response = await request(app)
         .post('/api/frameworks')
         .send({
-          type: 'SOC2',
           name: 'SOC 2 Type II',
-          targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+          region: 'US',
+          nextAuditDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .expect(201);
 
-      expect(onboardResponse.body).toHaveProperty('id');
-      const frameworkId = onboardResponse.body.id;
-
-      // Step 2: Get framework requirements
-      prismaMock.framework.findFirst.mockResolvedValue(mockFramework as any);
-      prismaMock.requirement.findMany.mockResolvedValue([mockRequirement] as any);
-
-      const reqResponse = await request(app)
-        .get(`/api/frameworks/${frameworkId}/requirements`)
-        .expect(200);
-
-      expect(Array.isArray(reqResponse.body)).toBe(true);
-
-      // Step 3: Create control for requirement
-      prismaMock.control.create.mockResolvedValue(mockControl as any);
-
-      const controlResponse = await request(app)
-        .post('/api/control-mappings')
-        .send({
-          requirementId: 'req-123',
-          controlId: 'ctrl-123',
-          mappingType: 'Primary',
-        })
-        .expect(201);
-
-      expect(controlResponse.body).toHaveProperty('id');
-
-      // Step 4: Update requirement status
-      prismaMock.requirement.findFirst.mockResolvedValue(mockRequirement as any);
-      prismaMock.requirement.update.mockResolvedValue({
-        ...mockRequirement,
-        status: 'In Progress',
-      } as any);
-
-      const updateReqResponse = await request(app)
-        .patch(`/api/frameworks/${frameworkId}/requirements/req-123`)
-        .send({ status: 'In Progress' })
-        .expect(200);
-
-      expect(updateReqResponse.body.status).toBe('In Progress');
-
-      // Step 5: Get framework progress
-      prismaMock.framework.findFirst.mockResolvedValue({
-        ...mockFramework,
-        progress: 45,
-        requirements: [{ ...mockRequirement, status: 'In Progress' }],
-      } as any);
-
-      const progressResponse = await request(app)
-        .get(`/api/frameworks/${frameworkId}`)
-        .expect(200);
-
-      expect(progressResponse.body).toHaveProperty('progress');
+      expect(response.body).toHaveProperty('id', 'fw-123');
+      expect(response.body).toHaveProperty('name', 'SOC 2 Type II');
     });
 
-    it('should handle multi-framework compliance', async () => {
-      const frameworks = [
-        { ...mockFramework, id: 'fw-1', type: 'SOC2', name: 'SOC 2' },
-        { ...mockFramework, id: 'fw-2', type: 'ISO27001', name: 'ISO 27001' },
-        { ...mockFramework, id: 'fw-3', type: 'HIPAA', name: 'HIPAA' },
-      ];
+    it('should reject framework creation without required fields', async () => {
+      const response = await request(app)
+        .post('/api/frameworks')
+        .send({ region: 'US' })
+        .expect(400);
 
-      prismaMock.framework.findMany.mockResolvedValue(frameworks as any);
+      expect(response.body).toHaveProperty('error');
+    });
 
-      const listResponse = await request(app)
+    it('should list frameworks for the organization', async () => {
+      prismaMock.complianceFramework.findMany.mockResolvedValue([
+        { ...mockFramework, controls: [] },
+        { ...mockFramework, id: 'fw-2', name: 'ISO 27001', controls: [] },
+      ] as any);
+
+      const response = await request(app)
         .get('/api/frameworks')
         .expect(200);
 
-      expect(Array.isArray(listResponse.body)).toBe(true);
-    });
-  });
-
-  describe('Control Mapping Workflow', () => {
-    it('should map controls across frameworks', async () => {
-      const mappings = [
-        { id: 'm1', controlId: 'ctrl-123', requirementId: 'req-1', frameworkId: 'fw-1' },
-        { id: 'm2', controlId: 'ctrl-123', requirementId: 'req-2', frameworkId: 'fw-2' },
-      ];
-
-      prismaMock.controlMapping.findMany.mockResolvedValue(mappings as any);
-
-      const response = await request(app)
-        .get('/api/control-mappings')
-        .query({ controlId: 'ctrl-123' })
-        .expect(200);
-
       expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveLength(2);
     });
 
-    it('should get cross-framework coverage', async () => {
-      prismaMock.controlMapping.groupBy.mockResolvedValue([
-        { frameworkId: 'fw-1', _count: { id: 50 } },
-        { frameworkId: 'fw-2', _count: { id: 45 } },
-      ] as any);
+    it('should get a framework by id with paginated controls', async () => {
+      prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework as any);
+      prismaMock.frameworkControl.findMany.mockResolvedValue([mockControl] as any);
+      prismaMock.frameworkControl.count.mockResolvedValue(1);
 
       const response = await request(app)
-        .get('/api/control-mappings/coverage')
+        .get('/api/frameworks/fw-123')
         .expect(200);
 
-      expect(response.body).toHaveProperty('coverage');
-    });
-  });
-
-  describe('Evidence Collection Workflow', () => {
-    it('should collect and validate evidence', async () => {
-      prismaMock.evidence.create.mockResolvedValue(mockEvidence as any);
-      prismaMock.evidence.findMany.mockResolvedValue([mockEvidence] as any);
-
-      // Create evidence
-      const createResponse = await request(app)
-        .post('/api/frameworks/fw-123/evidence')
-        .send({
-          controlId: 'ctrl-123',
-          type: 'Document',
-          title: 'Access Control Policy',
-          fileUrl: 'https://storage.example.com/evidence/policy.pdf',
-        })
-        .expect(201);
-
-      expect(createResponse.body).toHaveProperty('id');
-
-      // List evidence
-      const listResponse = await request(app)
-        .get('/api/frameworks/fw-123/evidence')
-        .expect(200);
-
-      expect(Array.isArray(listResponse.body)).toBe(true);
+      expect(response.body).toHaveProperty('id', 'fw-123');
+      expect(Array.isArray(response.body.controls)).toBe(true);
+      expect(response.body).toHaveProperty('pagination');
     });
 
-    it('should track evidence freshness', async () => {
-      const staleEvidence = {
-        ...mockEvidence,
-        collectedAt: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000), // 100 days old
-        isFresh: false,
-      };
-
-      prismaMock.evidence.findMany.mockResolvedValue([staleEvidence] as any);
+    it('should return 404 for a framework from another organization', async () => {
+      prismaMock.complianceFramework.findFirst.mockResolvedValue(null as any);
 
       const response = await request(app)
-        .get('/api/frameworks/fw-123/evidence')
-        .query({ checkFreshness: true })
-        .expect(200);
+        .get('/api/frameworks/fw-999')
+        .expect(404);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('error');
     });
-  });
 
-  describe('Audit Preparation Workflow', () => {
-    it('should prepare audit package', async () => {
-      prismaMock.framework.findFirst.mockResolvedValue({
+    it('should update a framework', async () => {
+      prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework as any);
+      prismaMock.complianceFramework.update.mockResolvedValue({
         ...mockFramework,
-        requirements: [mockRequirement],
-        controls: [mockControl],
-        evidence: [mockEvidence],
+        notes: 'Kickoff complete',
+        version: 2,
       } as any);
 
       const response = await request(app)
-        .post('/api/frameworks/fw-123/prepare-audit')
-        .send({
-          auditType: 'External',
-          auditorName: 'Big Four Auditor',
-          startDate: new Date(),
-        })
+        .patch('/api/frameworks/fw-123')
+        .send({ notes: 'Kickoff complete' })
         .expect(200);
 
-      expect(response.body).toHaveProperty('auditPackage');
-    });
-
-    it('should identify gaps before audit', async () => {
-      const incompleteReqs = [
-        { ...mockRequirement, status: 'Not Started' },
-        { ...mockRequirement, id: 'req-2', status: 'In Progress' },
-      ];
-
-      prismaMock.requirement.findMany.mockResolvedValue(incompleteReqs as any);
-
-      const response = await request(app)
-        .get('/api/frameworks/fw-123/gaps')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('gaps');
+      expect(response.body).toHaveProperty('id', 'fw-123');
     });
   });
 
-  describe('Framework Dashboard', () => {
-    it('should get compliance dashboard metrics', async () => {
-      prismaMock.framework.findMany.mockResolvedValue([
-        { ...mockFramework, progress: 85 },
-        { ...mockFramework, id: 'fw-2', progress: 60 },
+  describe('Control management', () => {
+    it('should create a control under a framework', async () => {
+      // createControl verifies framework ownership, then recalculates progress.
+      prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework as any);
+      prismaMock.frameworkControl.create.mockResolvedValue(mockControl as any);
+      prismaMock.frameworkControl.findMany.mockResolvedValue([mockControl] as any);
+      prismaMock.complianceFramework.update.mockResolvedValue(mockFramework as any);
+
+      const response = await request(app)
+        .post('/api/frameworks/fw-123/controls')
+        .send({ name: 'CC1.1 - Control Environment', category: 'Governance' })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id', 'ctrl-123');
+    });
+
+    it('should update a control status and recalc progress', async () => {
+      prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework as any);
+      prismaMock.frameworkControl.findUnique.mockResolvedValue({
+        ownerId: null,
+        evidenceRequired: false,
+        status: 'Pending',
+      } as any);
+      prismaMock.frameworkControl.update.mockResolvedValue({
+        ...mockControl,
+        status: 'Implemented',
+      } as any);
+      prismaMock.frameworkControl.findMany.mockResolvedValue([
+        { ...mockControl, status: 'Implemented' },
+      ] as any);
+      prismaMock.complianceFramework.update.mockResolvedValue({
+        ...mockFramework,
+        progress: 100,
+      } as any);
+
+      const response = await request(app)
+        .patch('/api/frameworks/fw-123/controls/ctrl-123')
+        .send({ status: 'Implemented' })
+        .expect(200);
+
+      expect(response.body.status).toBe('Implemented');
+    });
+
+    it('should return 404 creating a control under a framework not owned by the org', async () => {
+      prismaMock.complianceFramework.findFirst.mockResolvedValue(null as any);
+
+      const response = await request(app)
+        .post('/api/frameworks/fw-999/controls')
+        .send({ name: 'Orphan Control' })
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error');
+    });
+  });
+
+  describe('Framework templates', () => {
+    it('should list available framework templates', async () => {
+      const response = await request(app)
+        .get('/api/frameworks/templates')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('templates');
+      expect(Array.isArray(response.body.templates)).toBe(true);
+    });
+  });
+
+  describe('Cross-framework control mappings', () => {
+    const sourceControl = {
+      id: 'ctrl-src',
+      name: 'AC-1',
+      framework: { id: 'fw-1', name: 'NIST', organizationId: 'org-123' },
+    };
+    const targetControl = {
+      id: 'ctrl-tgt',
+      name: 'CC6.1',
+      framework: { id: 'fw-2', name: 'SOC 2', organizationId: 'org-123' },
+    };
+
+    it('should create a control mapping between two owned controls', async () => {
+      // createMapping resolves both controls (Promise.all), checks for an existing
+      // mapping, then creates the new one.
+      prismaMock.frameworkControl.findFirst
+        .mockResolvedValueOnce(sourceControl as any)
+        .mockResolvedValueOnce(targetControl as any);
+      prismaMock.controlMapping.findFirst.mockResolvedValue(null as any);
+      prismaMock.controlMapping.create.mockResolvedValue({
+        id: 'map-1',
+        sourceControlId: 'ctrl-src',
+        targetControlId: 'ctrl-tgt',
+        mappingType: 'equivalent',
+        sourceControl,
+        targetControl,
+      } as any);
+
+      const response = await request(app)
+        .post('/api/control-mappings')
+        .send({
+          sourceControlId: 'ctrl-src',
+          targetControlId: 'ctrl-tgt',
+          mappingType: 'equivalent',
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('mapping');
+      expect(response.body.mapping).toHaveProperty('id', 'map-1');
+    });
+
+    it('should list all control mappings for the organization', async () => {
+      prismaMock.controlMapping.findMany.mockResolvedValue([
+        { id: 'map-1', sourceControl, targetControl },
       ] as any);
 
       const response = await request(app)
-        .get('/api/frameworks/dashboard')
+        .get('/api/control-mappings')
         .expect(200);
 
-      expect(response.body).toHaveProperty('overallProgress');
-      expect(response.body).toHaveProperty('frameworkStats');
+      expect(response.body).toHaveProperty('mappings');
+      expect(Array.isArray(response.body.mappings)).toBe(true);
     });
   });
 });

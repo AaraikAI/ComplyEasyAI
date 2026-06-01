@@ -17,6 +17,7 @@ import axios from 'axios';
 import * as crypto from 'crypto';
 import notificationService from '../notificationService';
 import config from '../../config';
+import { encryptConfigSecrets, decryptConfigSecrets } from '../../utils/credentialEncryption';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -1490,10 +1491,11 @@ Return only the resolution text, no JSON or formatting.`;
       for (const pair of contradictionPairs) {
         if (lowerReq.includes(pair.require.split(' ')[0]) ||
             lowerReq.includes(pair.conflict.split(' ')[0])) {
-          // Check if affected frameworks have conflicting controls
+          // Check if affected frameworks have conflicting controls (org-scoped)
           const frameworks = await prisma.complianceFramework.findMany({
             where: {
               id: { in: affectedFrameworks },
+              organizationId,
             },
             include: { controls: true },
           });
@@ -2269,16 +2271,7 @@ Return only the resolution text, no JSON or formatting.`;
             status: 'active',
           },
         });
-        feedsToMonitor = dbFeeds.map((f): RegulatoryFeed => ({
-          id: f.id,
-          name: f.name,
-          url: f.url,
-          feedType: f.feedType as 'rss' | 'api' | 'website',
-          jurisdiction: f.jurisdiction,
-          pollingInterval: f.pollingInterval,
-          organizationId: f.organizationId,
-          status: f.status as 'active' | 'inactive' | 'error',
-        }));
+        feedsToMonitor = dbFeeds.map((f): RegulatoryFeed => this.mapDbFeedToRegulatoryFeed(f));
       } else {
         // Get all active feeds for organization
         const dbFeeds = await prisma.regulatoryFeed.findMany({
@@ -2287,16 +2280,7 @@ Return only the resolution text, no JSON or formatting.`;
             status: 'active',
           },
         });
-        feedsToMonitor = dbFeeds.map((f): RegulatoryFeed => ({
-          id: f.id,
-          name: f.name,
-          url: f.url,
-          feedType: f.feedType as 'rss' | 'api' | 'website',
-          jurisdiction: f.jurisdiction,
-          pollingInterval: f.pollingInterval,
-          organizationId: f.organizationId,
-          status: f.status as 'active' | 'inactive' | 'error',
-        }));
+        feedsToMonitor = dbFeeds.map((f): RegulatoryFeed => this.mapDbFeedToRegulatoryFeed(f));
       }
 
       // If no custom feeds, use default feeds (for backward compatibility)
@@ -2344,15 +2328,11 @@ Return only the resolution text, no JSON or formatting.`;
           await this.updateFeedStatus(feed.id, organizationId, 'active', null);
         } catch (error: any) {
           logger.error(`[RIF] Error monitoring feed ${feed.name}`, error);
+          // Persist the failure state durably (status='error' + incremented errorCount +
+          // lastError) on the RegulatoryFeed row. The next monitoring cycle re-processes
+          // feeds in this state, so the retry survives a process restart — no volatile
+          // in-memory timer that would be lost on restart.
           await this.updateFeedStatus(feed.id, organizationId, 'error', error.message);
-          
-          // Retry logic (uses exponential backoff when REDIS_URL is configured)
-          if (feed.lastError && feed.lastError.includes('timeout')) {
-            // Retry after delay
-            setTimeout(() => {
-              this.monitorRegulatoryFeeds(organizationId, [feed.id]).catch((err) => { logger.error('Regulatory feed retry failed', { error: err.message, feedId: feed.id }); });
-            }, feed.pollingInterval * 60 * 1000);
-          }
         }
       }
 
@@ -2750,6 +2730,38 @@ Return only the resolution text, no JSON or formatting.`;
   }
 
   /**
+   * Map a persisted RegulatoryFeed row to the in-memory shape, decrypting any
+   * credential material stored (encrypted at rest) in metadata.authentication so
+   * outbound feed requests can build their auth headers.
+   */
+  private mapDbFeedToRegulatoryFeed(f: any): RegulatoryFeed {
+    let authentication: RegulatoryFeed['authentication'];
+    const storedAuth = (f.metadata as any)?.authentication;
+    if (storedAuth) {
+      authentication = {
+        type: storedAuth.type,
+        credentials:
+          storedAuth.credentials && typeof storedAuth.credentials === 'object'
+            ? decryptConfigSecrets(storedAuth.credentials, ['accessToken', 'refreshToken'])
+            : storedAuth.credentials,
+      };
+    }
+
+    return {
+      id: f.id,
+      name: f.name,
+      url: f.url,
+      feedType: f.feedType as 'rss' | 'api' | 'website',
+      jurisdiction: f.jurisdiction,
+      pollingInterval: f.pollingInterval,
+      lastError: f.lastError || undefined,
+      organizationId: f.organizationId,
+      status: f.status as 'active' | 'inactive' | 'error',
+      authentication,
+    };
+  }
+
+  /**
    * Add new feed (Production-ready: stores in database)
    */
   async addFeed(
@@ -2768,6 +2780,16 @@ Return only the resolution text, no JSON or formatting.`;
     userId: string
   ): Promise<RegulatoryFeed> {
     try {
+      // Encrypt feed credential material at rest before persisting to metadata.
+      // Covers api_key/apiKey/password (known sensitive keys) plus oauth accessToken.
+      let storedAuthentication = feed.authentication;
+      if (feed.authentication?.credentials && typeof feed.authentication.credentials === 'object') {
+        storedAuthentication = {
+          ...feed.authentication,
+          credentials: encryptConfigSecrets(feed.authentication.credentials, ['accessToken', 'refreshToken']),
+        };
+      }
+
       // Store in database
       const dbFeed = await prisma.regulatoryFeed.create({
         data: {
@@ -2778,7 +2800,7 @@ Return only the resolution text, no JSON or formatting.`;
           jurisdiction: feed.jurisdiction,
           pollingInterval: feed.pollingInterval,
           status: 'active',
-          metadata: feed.authentication ? { authentication: feed.authentication } : undefined,
+          metadata: storedAuthentication ? { authentication: storedAuthentication } : undefined,
         },
       });
 

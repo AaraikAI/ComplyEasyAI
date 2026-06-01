@@ -235,6 +235,50 @@ describe('BIA API', () => {
       expect(response.status).toBe(400);
     });
 
+    it('should 404 when an INTERNAL_PROCESS dependency targets a process in another org', async () => {
+      // The route verifies the parent process (1st findFirst → owned) and then,
+      // for INTERNAL_PROCESS dependencies, the dependsOn target (2nd findFirst).
+      // A target owned by a different tenant resolves to null → cross-tenant 404.
+      prismaMock.businessProcess.findFirst
+        .mockResolvedValueOnce(mockProcess()) // parent process, owned by caller
+        .mockResolvedValueOnce(null); // dependsOn target NOT in caller's org
+
+      const response = await request(app)
+        .post('/api/bia/processes/bp-123/dependencies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ dependsOn: 'bp-foreign', type: 'INTERNAL_PROCESS' });
+
+      expect(response.status).toBe(404);
+      // The target lookup must AND-scope by both the referenced id and the org,
+      // so a foreign process id cannot be linked as a dependency.
+      expect(prismaMock.businessProcess.findFirst).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'bp-foreign', organizationId: 'org-123' }),
+        }),
+      );
+      // The dependency row must NOT be created when the target is foreign.
+      expect(prismaMock.processDependency.create).not.toHaveBeenCalled();
+    });
+
+    it('should create an INTERNAL_PROCESS dependency when the target is in the same org', async () => {
+      // Parent and target are both owned by the caller; the dependency persists.
+      prismaMock.businessProcess.findFirst
+        .mockResolvedValueOnce(mockProcess()) // parent
+        .mockResolvedValueOnce(mockProcess({ id: 'bp-456' })); // target, same org
+      prismaMock.processDependency.findFirst.mockResolvedValue(null);
+      prismaMock.processDependency.create.mockResolvedValue({
+        id: 'dep-2', processId: 'bp-123', dependsOn: 'bp-456', type: 'INTERNAL_PROCESS', isCritical: false,
+      });
+
+      const response = await request(app)
+        .post('/api/bia/processes/bp-123/dependencies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ dependsOn: 'bp-456', type: 'INTERNAL_PROCESS' });
+
+      expect(response.status).toBe(201);
+      expect(prismaMock.processDependency.create).toHaveBeenCalled();
+    });
+
     it('should validate required fields', async () => {
       prismaMock.businessProcess.findFirst.mockResolvedValue(mockProcess());
 

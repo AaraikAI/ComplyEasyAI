@@ -189,6 +189,39 @@ beforeEach(async () => {
   prismaMock.auditLog.findFirst.mockResolvedValue(null as any);
   prismaMock.auditLog.update.mockResolvedValue({} as any);
 
+  // Zero Trust policy + network segment operations now persist via prisma
+  // (org-scoped). Provide org-owned records so the mutating routes succeed.
+  if (typeof (prismaMock.zeroTrustPolicy as any).deleteMany !== 'function') {
+    (prismaMock.zeroTrustPolicy as any).deleteMany = jest.fn();
+  }
+  prismaMock.zeroTrustPolicy.findFirst.mockResolvedValue({
+    id: 'policy-123',
+    name: 'Default Policy',
+    organizationId: 'org-123',
+    rules: JSON.stringify([]),
+  } as any);
+  prismaMock.zeroTrustPolicy.update.mockResolvedValue({
+    id: 'policy-123',
+    name: 'Default Policy',
+    organizationId: 'org-123',
+    rules: JSON.stringify([]),
+  } as any);
+  (prismaMock.zeroTrustPolicy as any).deleteMany.mockResolvedValue({ count: 1 } as any);
+  prismaMock.networkSegment.create.mockResolvedValue({
+    id: 'seg-123',
+    organizationId: 'org-123',
+    name: 'Production Segment',
+    cidr: '10.0.0.0/24',
+    trustLevel: 'medium',
+    resources: [],
+    policies: [],
+  } as any);
+  prismaMock.networkSegment.findMany.mockResolvedValue([] as any);
+  // The update path persists policy + audit log in an array-form $transaction.
+  (prismaMock.$transaction as jest.Mock<any>).mockImplementation(
+    async (ops: any) => (Array.isArray(ops) ? Promise.all(ops) : ops)
+  );
+
   app = express();
   app.use(express.json());
 

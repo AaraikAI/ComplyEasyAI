@@ -34,54 +34,74 @@ describe('WorkflowBuilder', () => {
 
   it('renders without crashing', () => {
     render(<WorkflowBuilder />);
-    expect(screen.queryAllByText(/Workflow|workflow/i).length).toBeGreaterThan(0);
+    // Header title renders immediately (before data finishes loading).
+    expect(screen.getByText('Workflow Builder')).toBeInTheDocument();
   });
 
   it('shows tab navigation', () => {
     render(<WorkflowBuilder />);
-    expect(screen.queryAllByText(/Workflows|workflows/i).length).toBeGreaterThan(0);
+    ['My Workflows', 'Templates', 'Builder', 'Runs', 'Automation Rules'].forEach(label => {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    });
   });
 
-  it('shows templates tab', () => {
+  it('shows templates tab', async () => {
     render(<WorkflowBuilder />);
-    const templatesTab = screen.queryAllByText(/Templates|templates/i)[0] ?? null;
-    if (templatesTab) fireEvent.click(templatesTab);
+    fireEvent.click(screen.getByText('Templates'));
+    // Templates tab renders its own search box and empty state once loaded.
+    expect(await screen.findByPlaceholderText('Search templates...')).toBeInTheDocument();
+    expect(screen.getByText('No templates match your filters.')).toBeInTheDocument();
   });
 
-  it('shows builder tab', () => {
+  it('shows builder tab', async () => {
     render(<WorkflowBuilder />);
-    const builderTab = screen.queryAllByText(/Builder|builder/i)[0] ?? null;
-    if (builderTab) fireEvent.click(builderTab);
+    fireEvent.click(screen.getByText('Builder'));
+    // Builder tab renders the node palette and an Add Node affordance.
+    expect(await screen.findByText('Node Palette')).toBeInTheDocument();
+    expect(screen.getByText('Add Node')).toBeInTheDocument();
   });
 
-  it('shows runs tab', () => {
+  it('shows runs tab', async () => {
     render(<WorkflowBuilder />);
-    const runsTab = screen.queryAllByText(/Runs|runs|History|history/i)[0] ?? null;
-    if (runsTab) fireEvent.click(runsTab);
+    fireEvent.click(screen.getByText('Runs'));
+    // Runs tab renders the summary stat cards.
+    expect(await screen.findByText('Total Runs')).toBeInTheDocument();
+    expect(screen.getByText('No runs match your filters.')).toBeInTheDocument();
   });
 
-  it('shows rules tab', () => {
+  it('shows rules tab', async () => {
     render(<WorkflowBuilder />);
-    const rulesTab = screen.queryAllByText(/Rules|rules/i)[0] ?? null;
-    if (rulesTab) fireEvent.click(rulesTab);
+    fireEvent.click(screen.getByText('Automation Rules'));
+    // Rules tab renders the New Rule action and empty state.
+    expect(await screen.findByText('New Rule')).toBeInTheDocument();
+    expect(screen.getByText('No rules match your filters.')).toBeInTheDocument();
   });
 
-  it('opens create workflow form', () => {
+  it('opens create workflow form', async () => {
     render(<WorkflowBuilder />);
-    const addBtn = screen.queryAllByText(/Create Workflow|New Workflow|Add/i)[0] ?? null;
-    if (addBtn) fireEvent.click(addBtn);
+    // Wait for the workflows tab to load, then open the create modal.
+    const addBtn = await screen.findByText('Create Workflow');
+    fireEvent.click(addBtn);
+    expect(screen.getByPlaceholderText('e.g. Quarterly Compliance Review')).toBeInTheDocument();
   });
 
-  it('filters workflows by search', () => {
+  it('filters workflows by search', async () => {
     render(<WorkflowBuilder />);
-    const searchInput = screen.queryByPlaceholderText(/search/i);
-    if (searchInput) fireEvent.change(searchInput, { target: { value: 'risk' } });
+    const searchInput = await screen.findByPlaceholderText('Search workflows...');
+    fireEvent.change(searchInput, { target: { value: 'risk' } });
+    expect((searchInput as HTMLInputElement).value).toBe('risk');
+    // No workflows loaded, so the empty state remains.
+    expect(screen.getByText('No workflows match your filters.')).toBeInTheDocument();
   });
 
-  it('shows stat cards', () => {
+  it('shows stat cards', async () => {
     render(<WorkflowBuilder />);
-    const statCards = document.querySelectorAll('[class*="rounded-xl"]');
-    expect(statCards.length).toBeGreaterThanOrEqual(0);
+    fireEvent.click(screen.getByText('Runs'));
+    // The runs tab exposes labelled summary stat cards. 'Failed'/'Running' also
+    // appear as status-filter options, so assert at least one of each.
+    expect(await screen.findByText('Total Runs')).toBeInTheDocument();
+    expect(screen.getAllByText('Failed').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Running').length).toBeGreaterThan(0);
   });
 
   it('calls API on mount', async () => {

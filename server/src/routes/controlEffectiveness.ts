@@ -415,6 +415,17 @@ router.post(
         throw new AppError(`rating must be one of: ${validRatings.join(', ')}`, 400);
       }
 
+      // Verify the referenced control belongs to the caller's organization
+      // (FrameworkControl is org-scoped through its parent framework). This
+      // prevents stamping a record against a control owned by another tenant.
+      const control = await prisma.frameworkControl.findFirst({
+        where: { id: controlId, framework: { organizationId: user.organizationId } },
+        select: { id: true },
+      });
+      if (!control) {
+        throw new AppError('Control not found in your organization', 404);
+      }
+
       const record = await prisma.controlEffectivenessRecord.create({
         data: {
           organizationId: user.organizationId,

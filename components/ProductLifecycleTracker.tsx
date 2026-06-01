@@ -402,6 +402,71 @@ const getMilestoneStyles = (status: string): string => {
 };
 
 // ---------------------------------------------------------------------------
+// API mapping
+// ---------------------------------------------------------------------------
+
+const VALID_STAGES = new Set<string>(STAGE_ORDER);
+
+const riskLevelFromClassification = (cls?: string | null): Product['riskLevel'] => {
+  switch ((cls || '').toLowerCase()) {
+    case 'class_iii': return 'critical';
+    case 'class_ii': return 'high';
+    case 'class_i': return 'medium';
+    default: return 'low';
+  }
+};
+
+const ceStatusFromApi = (v?: string | null): Product['ceMarkingStatus'] => {
+  const s = (v || '').toLowerCase();
+  if (s === 'approved' || s === 'in_progress' || s === 'expired' || s === 'not_started') {
+    return s as Product['ceMarkingStatus'];
+  }
+  return 'not_started';
+};
+
+/** Map a ProductLifecycle API record onto the view-model used by this screen. */
+const mapApiProduct = (p: any): Product => {
+  const stage = VALID_STAGES.has(p?.currentStage) ? (p.currentStage as LifecycleStage) : 'concept';
+  return {
+    id: String(p?.id ?? ''),
+    name: p?.productName ?? 'Untitled Product',
+    sku: p?.productCode ?? '—',
+    version: p?.version ?? '—',
+    type: p?.productType ?? p?.type ?? 'Product',
+    stage,
+    complianceScore: typeof p?.complianceScore === 'number' ? Math.round(p.complianceScore) : 0,
+    ceMarkingStatus: ceStatusFromApi(p?.ceMarkingStatus),
+    dppId: p?.dppId ?? null,
+    sbomVersion: p?.sbomVersion ?? null,
+    owner: p?.owner ?? p?.createdBy ?? '—',
+    team: p?.team ?? '—',
+    createdAt: (p?.createdAt ?? '').toString().split('T')[0] || '',
+    updatedAt: (p?.updatedAt ?? '').toString().split('T')[0] || '',
+    targetLaunch: (p?.marketEntry ?? '').toString().split('T')[0] || '—',
+    description: p?.description ?? '',
+    riskLevel: riskLevelFromClassification(p?.riskClassification),
+    tags: Array.isArray(p?.tags) ? p.tags : [],
+  };
+};
+
+/** Extract product-scoped documents from the API record's JSON `documents` field. */
+const mapApiDocuments = (p: any): ProductDocument[] => {
+  if (!Array.isArray(p?.documents)) return [];
+  return p.documents.map((d: any, i: number): ProductDocument => ({
+    id: String(d?.id ?? `${p.id}-doc-${i}`),
+    productId: String(p?.id ?? ''),
+    name: d?.name ?? 'Document',
+    type: d?.type ?? 'FILE',
+    stage: VALID_STAGES.has(d?.stage) ? (d.stage as LifecycleStage) : (VALID_STAGES.has(p?.currentStage) ? p.currentStage : 'concept'),
+    version: d?.version ?? '1.0',
+    uploadedBy: d?.uploadedBy ?? '—',
+    uploadedAt: (d?.uploadDate ?? d?.uploadedAt ?? '').toString().split('T')[0] || '',
+    size: d?.size ?? '—',
+    status: d?.status ?? 'draft',
+  }));
+};
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -419,25 +484,43 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [extraDocs, setExtraDocs] = useState<ProductDocument[]>([]);
+  const [apiProducts, setApiProducts] = useState<Product[] | null>(null);
+  const [apiDocuments, setApiDocuments] = useState<ProductDocument[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.modules.productLifecycle.listProducts();
-        // Only update if we got real data — demo data is used as fallback
-        setLoadError(null);
-      } catch (err: any) {
-        setLoadError('Unable to connect to server. Showing demo data.');
-      } finally {
-        setIsLoading(false);
+  const loadProducts = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.modules.productLifecycle.listProducts();
+      if (Array.isArray(data) && data.length > 0) {
+        setApiProducts(data.map(mapApiProduct));
+        setApiDocuments(data.flatMap(mapApiDocuments));
+      } else {
+        // No products on record yet — fall back to the reference catalog.
+        setApiProducts(null);
+        setApiDocuments([]);
       }
-    })();
+      setLoadError(null);
+    } catch (err: any) {
+      setApiProducts(null);
+      setApiDocuments([]);
+      setLoadError('Unable to load products from the server. Showing reference catalog.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  // Active dataset: real products when available, reference catalog otherwise.
+  const activeProducts = apiProducts ?? PRODUCTS;
+  const usingApiData = apiProducts !== null;
 
   // Computed
   const filteredProducts = useMemo(() => {
-    let list = [...PRODUCTS];
+    let list = [...activeProducts];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.type.toLowerCase().includes(q));
@@ -445,19 +528,24 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
     if (stageFilter !== 'all') list = list.filter(p => p.stage === stageFilter);
     if (typeFilter !== 'all') list = list.filter(p => p.type === typeFilter);
     return list;
-  }, [searchQuery, stageFilter, typeFilter]);
+  }, [activeProducts, searchQuery, stageFilter, typeFilter]);
 
-  const productTypes = useMemo(() => [...new Set(PRODUCTS.map(p => p.type))], []);
+  const productTypes = useMemo(() => [...new Set(activeProducts.map(p => p.type))], [activeProducts]);
 
   const portfolioStats = useMemo(() => {
-    const total = PRODUCTS.length;
-    const avgScore = Math.round(PRODUCTS.reduce((a, p) => a + p.complianceScore, 0) / total);
-    const highRisk = PRODUCTS.filter(p => p.riskLevel === 'high' || p.riskLevel === 'critical').length;
-    const ceMarked = PRODUCTS.filter(p => p.ceMarkingStatus === 'approved').length;
+    const total = activeProducts.length;
+    const avgScore = total > 0 ? Math.round(activeProducts.reduce((a, p) => a + p.complianceScore, 0) / total) : 0;
+    const highRisk = activeProducts.filter(p => p.riskLevel === 'high' || p.riskLevel === 'critical').length;
+    const ceMarked = activeProducts.filter(p => p.ceMarkingStatus === 'approved').length;
     return { total, avgScore, highRisk, ceMarked };
-  }, []);
+  }, [activeProducts]);
 
-  const allDocuments = useMemo(() => [...DOCUMENTS, ...extraDocs], [extraDocs]);
+  // Documents: API-provided when real data is loaded (plus session uploads),
+  // otherwise the reference catalog.
+  const allDocuments = useMemo(
+    () => [...extraDocs, ...(usingApiData ? apiDocuments : DOCUMENTS)],
+    [extraDocs, usingApiData, apiDocuments],
+  );
 
   const selectedProductDocs = useMemo(() => {
     if (!selectedProduct) return allDocuments;
@@ -466,11 +554,14 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
     return docs;
   }, [selectedProduct, docStageFilter, allDocuments]);
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const productId = selectedProduct?.id || PRODUCTS[0]?.id || 'unknown';
-    const stage = selectedProduct?.stage || 'concept';
+    const targetProduct = selectedProduct || activeProducts[0] || null;
+    const productId = targetProduct?.id || 'unknown';
+    const stage = targetProduct?.stage || 'concept';
+    const uploadDate = new Date().toISOString().split('T')[0];
+    const size = file.size < 1024 ? `${file.size} B` : file.size < 1048576 ? `${(file.size / 1024).toFixed(0)} KB` : `${(file.size / 1048576).toFixed(1)} MB`;
     const newDoc: ProductDocument = {
       id: `doc-${Date.now()}`,
       productId,
@@ -479,23 +570,66 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
       stage: stage as any,
       version: '1.0',
       uploadedBy: 'Current User',
-      uploadedAt: new Date().toISOString().split('T')[0],
-      size: file.size < 1024 ? `${file.size} B` : file.size < 1048576 ? `${(file.size / 1024).toFixed(0)} KB` : `${(file.size / 1048576).toFixed(1)} MB`,
+      uploadedAt: uploadDate,
+      size,
       status: 'draft',
     };
+
+    // Show the uploaded document immediately for a responsive UI.
     setExtraDocs(prev => [newDoc, ...prev]);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [selectedProduct]);
+
+    // Persist document metadata to the product-lifecycle record's `documents` JSON
+    // field. The raw file bytes are not uploaded to object storage (no such endpoint
+    // exists); only the descriptive metadata is stored, matching the model's shape.
+    if (!usingApiData || !targetProduct) return;
+    try {
+      const existingForProduct = apiDocuments.filter(d => d.productId === productId);
+      const documents = [
+        {
+          id: newDoc.id,
+          name: newDoc.name,
+          type: newDoc.type,
+          version: newDoc.version,
+          uploadDate,
+          uploadedBy: newDoc.uploadedBy,
+          stage: newDoc.stage,
+          status: newDoc.status,
+          size: newDoc.size,
+        },
+        ...existingForProduct.map(d => ({
+          id: d.id,
+          name: d.name,
+          type: d.type,
+          version: d.version,
+          uploadDate: d.uploadedAt,
+          uploadedBy: d.uploadedBy,
+          stage: d.stage,
+          status: d.status,
+          size: d.size,
+        })),
+      ];
+      await api.modules.productLifecycle.updateProduct(productId, { documents });
+      // Reload so the persisted documents (read back via mapApiDocuments) replace the
+      // session-only entry and stay consistent across remounts.
+      setExtraDocs(prev => prev.filter(d => d.id !== newDoc.id));
+      await loadProducts();
+    } catch {
+      setLoadError('Failed to persist document metadata to the server. The entry is retained for this session only.');
+    }
+  }, [selectedProduct, activeProducts, usingApiData, apiDocuments, loadProducts]);
 
   const selectedProductMilestones = useMemo(() => {
+    if (usingApiData) return MILESTONES.filter(m => m.productId === (selectedProduct?.id ?? ''));
     if (!selectedProduct) return MILESTONES;
     return MILESTONES.filter(m => m.productId === selectedProduct.id);
-  }, [selectedProduct]);
+  }, [selectedProduct, usingApiData]);
 
   const selectedProductReqs = useMemo(() => {
+    if (usingApiData) return REGULATORY_REQUIREMENTS.filter(r => r.productTypes.includes(selectedProduct?.type ?? ''));
     if (!selectedProduct) return REGULATORY_REQUIREMENTS;
     return REGULATORY_REQUIREMENTS.filter(r => r.productTypes.includes(selectedProduct.type));
-  }, [selectedProduct]);
+  }, [selectedProduct, usingApiData]);
 
   const toggleMilestone = useCallback((id: string) => {
     setExpandedMilestones(prev => {
@@ -508,6 +642,60 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
   const selectProduct = useCallback((product: Product) => {
     setSelectedProduct(product);
     setActiveTab('details');
+  }, []);
+
+  // Export the current product portfolio as a JSON file.
+  const handleExportProducts = useCallback(() => {
+    const payload = { exportedAt: new Date().toISOString(), products: activeProducts };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `product-lifecycle-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [activeProducts]);
+
+  // Create a new product record, then refresh the portfolio from the server.
+  const handleNewProduct = useCallback(async () => {
+    const name = window.prompt('Product name');
+    if (!name || !name.trim()) return;
+    try {
+      await api.modules.productLifecycle.createProduct({ productName: name.trim(), currentStage: 'concept' });
+      await loadProducts();
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError('Unable to create the product. Please try again.');
+    }
+  }, [loadProducts]);
+
+  // Persist a stage change for the selected product (the update contract supports currentStage).
+  const handleAdvanceStage = useCallback(async (product: Product) => {
+    const idx = STAGE_ORDER.indexOf(product.stage);
+    const nextStage = STAGE_ORDER[Math.min(idx + 1, STAGE_ORDER.length - 1)];
+    if (!usingApiData) {
+      setSelectedProduct({ ...product, stage: nextStage });
+      return;
+    }
+    try {
+      await api.modules.productLifecycle.updateProduct(product.id, { currentStage: nextStage });
+      await loadProducts();
+      setSelectedProduct(prev => (prev ? { ...prev, stage: nextStage } : prev));
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError('Unable to update the product stage. Please try again.');
+    }
+  }, [usingApiData, loadProducts]);
+
+  // Open a document's source URL when one is available.
+  const handleOpenDocument = useCallback((doc: ProductDocument & { url?: string }) => {
+    if (doc.url) {
+      window.open(doc.url, '_blank', 'noopener,noreferrer');
+    } else {
+      setLoadError(`No stored file is available for "${doc.name}".`);
+    }
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -561,7 +749,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
         </h3>
         <div className="flex gap-2 flex-wrap">
           {STAGE_ORDER.map(stage => {
-            const count = PRODUCTS.filter(p => p.stage === stage).length;
+            const count = activeProducts.filter(p => p.stage === stage).length;
             return (
               <button key={stage} onClick={() => setStageFilter(stageFilter === stage ? 'all' : stage)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
@@ -692,10 +880,12 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
               <p className="text-sm text-gray-500 dark:text-gray-400">{product.sku} | Version {product.version} | {product.type}</p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <button onClick={() => handleAdvanceStage(product)} title="Advance to next lifecycle stage"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <Edit3 className="w-4 h-4 text-gray-500" />
               </button>
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <button onClick={() => setActiveTab('lifecycle')} title="Open lifecycle map"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <ExternalLink className="w-4 h-4 text-gray-500" />
               </button>
             </div>
@@ -946,7 +1136,15 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
   // Tab: Lifecycle Map
   // ---------------------------------------------------------------------------
   const renderLifecycleMap = () => {
-    const product = selectedProduct || PRODUCTS[0];
+    const product = selectedProduct || activeProducts[0];
+    if (!product) {
+      return (
+        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <Workflow className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">No products available to map.</p>
+        </div>
+      );
+    }
     const currentStageIdx = STAGE_ORDER.indexOf(product.stage);
     const stageReqs = (stage: LifecycleStage) => STAGE_REQUIREMENTS.filter(r => r.stage === stage);
 
@@ -956,9 +1154,9 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Product:</span>
-            <select value={product.id} onChange={e => { const p = PRODUCTS.find(pr => pr.id === e.target.value); if (p) setSelectedProduct(p); }}
+            <select value={product.id} onChange={e => { const p = activeProducts.find(pr => pr.id === e.target.value); if (p) setSelectedProduct(p); }}
               className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm flex-1">
-              {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name} ({STAGE_LABELS[p.stage]})</option>)}
+              {activeProducts.map(p => <option key={p.id} value={p.id}>{p.name} ({STAGE_LABELS[p.stage]})</option>)}
             </select>
           </div>
         </div>
@@ -1065,10 +1263,10 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Product:</span>
-            <select value={product?.id || ''} onChange={e => { const p = PRODUCTS.find(pr => pr.id === e.target.value); setSelectedProduct(p || null); }}
+            <select value={product?.id || ''} onChange={e => { const p = activeProducts.find(pr => pr.id === e.target.value); setSelectedProduct(p || null); }}
               className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm flex-1">
               <option value="">{t('common.all')} Products</option>
-              {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name} ({p.type})</option>)}
+              {activeProducts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.type})</option>)}
             </select>
           </div>
         </div>
@@ -1174,8 +1372,8 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
   // ---------------------------------------------------------------------------
   const renderDocuments = () => {
     const docs = selectedProduct
-      ? DOCUMENTS.filter(d => d.productId === selectedProduct.id)
-      : DOCUMENTS;
+      ? allDocuments.filter(d => d.productId === selectedProduct.id)
+      : allDocuments;
     const filteredDocs = docStageFilter !== 'all'
       ? docs.filter(d => d.stage === docStageFilter)
       : docs;
@@ -1186,10 +1384,10 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Product:</span>
-            <select value={selectedProduct?.id || ''} onChange={e => { const p = PRODUCTS.find(pr => pr.id === e.target.value); setSelectedProduct(p || null); }}
+            <select value={selectedProduct?.id || ''} onChange={e => { const p = activeProducts.find(pr => pr.id === e.target.value); setSelectedProduct(p || null); }}
               className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
               <option value="">{t('common.all')} Products</option>
-              {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {activeProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-2">
@@ -1248,7 +1446,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {filteredDocs.map(doc => {
-                  const product = PRODUCTS.find(p => p.id === doc.productId);
+                  const product = activeProducts.find(p => p.id === doc.productId);
                   return (
                     <tr key={doc.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <td className="px-5 py-3">
@@ -1271,10 +1469,10 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
                       <td className="px-5 py-3 text-center text-xs text-gray-500 dark:text-gray-400">{doc.size}</td>
                       <td className="px-5 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors" title="View">
+                          <button onClick={() => handleOpenDocument(doc as ProductDocument & { url?: string })} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors" title="View">
                             <Eye className="w-3.5 h-3.5 text-gray-500" />
                           </button>
-                          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors" title="Download">
+                          <button onClick={() => handleOpenDocument(doc as ProductDocument & { url?: string })} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors" title="Download">
                             <Download className="w-3.5 h-3.5 text-gray-500" />
                           </button>
                         </div>
@@ -1318,10 +1516,10 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-1.5">
+              <button onClick={handleExportProducts} className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-1.5">
                 <Download className="w-4 h-4" /> Export
               </button>
-              <button className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5">
+              <button onClick={handleNewProduct} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5">
                 <Plus className="w-4 h-4" /> New Product
               </button>
             </div>

@@ -60,6 +60,9 @@ const mockController = {
   complianceCopilot: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ result: 'copilot' })),
   forecastComplianceScore: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ result: 'forecast' })),
   analyzeProcess: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ result: 'process' })),
+  listAuditSimulations: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ simulations: [] })),
+  saveAuditSimulation: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ id: 'sim-1' })),
+  updateAuditSimulation: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ id: 'sim-1' })),
 };
 
 jest.mock('../../../controllers/aiController', () => ({
@@ -85,10 +88,24 @@ app.use(errorHandler);
 const generateToken = (role = 'Admin') =>
   jwt.sign({ id: 'user-1', organizationId: 'org-1', role, email: 't@t.com', name: 'T' }, 'test-secret', { expiresIn: '1h' });
 
+// The jest config sets resetMocks + restoreMocks, which wipes every mock's
+// implementation before each test. Re-establish the controller handlers here so
+// each request reaches a responding handler (otherwise the request hangs until
+// the 30s timeout). The handlers simply echo a 200/JSON body — these are
+// contract tests for routing/validation, not controller behavior.
+const applyControllerMocks = (): void => {
+  for (const key of Object.keys(mockController) as (keyof typeof mockController)[]) {
+    mockController[key].mockImplementation((_req: any, res: any) => res.json({ result: key }));
+  }
+};
+
 describe('AI Routes Contract Tests', () => {
   const token = generateToken();
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    applyControllerMocks();
+  });
 
   // Helper for testing validation endpoints
   const testEndpoint = (
@@ -127,25 +144,27 @@ describe('AI Routes Contract Tests', () => {
   testEndpoint('/chat', { message: 'What is SOC 2?' }, {});
   testEndpoint('/contract', { text: 'Contract text here' }, {});
   testEndpoint('/rfp', { question: 'Describe your security posture' }, {});
-  testEndpoint('/phishing', {}, {}); // phishing has all optional fields — still valid empty
+  // phishing fields are all optional, so a valid request can be empty; an invalid
+  // request must violate a constraint — difficulty is a restricted enum.
+  testEndpoint('/phishing', {}, { difficulty: 'Impossible' });
   testEndpoint('/vendor-score', { vendor: 'AWS', service: 'Cloud', dataAccess: 'PII data' }, {});
   testEndpoint('/data-map', { process: 'Employee onboarding' }, {});
   testEndpoint('/bcp', { scenario: 'Data center outage' }, {});
 
-  // Cross-framework needs current + target
-  testEndpoint('/cross-framework-mapping', { current: 'SOC2', target: 'ISO27001' }, {});
+  // Cross-framework needs sourceFramework + targetFramework
+  testEndpoint('/cross-framework-mapping', { sourceFramework: 'SOC2', targetFramework: 'ISO27001' }, {});
 
   // Auto-remediation
   testEndpoint('/auto-remediation', { framework: 'SOC2', gaps: ['CC1.1'] }, {});
 
-  // Evidence completeness
-  testEndpoint('/evidence-completeness', { controlId: 'ctrl-1', evidence: ['doc1'] }, {});
+  // Evidence completeness needs framework + controls
+  testEndpoint('/evidence-completeness', { framework: 'SOC2', controls: ['ctrl-1'] }, {});
 
-  // Agentic vendor risk
-  testEndpoint('/agentic-vendor-risk', { vendorName: 'AWS', vendorId: 'v-1' }, {});
+  // Agentic vendor risk needs vendor.name
+  testEndpoint('/agentic-vendor-risk', { vendor: { name: 'AWS' } }, {});
 
-  // Audit simulation
-  testEndpoint('/audit-simulation', { framework: 'SOC2', scope: 'Full' }, {});
+  // Audit simulation needs framework + controlDomain
+  testEndpoint('/audit-simulation', { framework: 'SOC2', controlDomain: 'Access Control' }, {});
 
   // NL Query
   testEndpoint('/nl-query', { query: 'Show me all critical risks' }, {});
@@ -153,8 +172,8 @@ describe('AI Routes Contract Tests', () => {
   // Copilot
   testEndpoint('/copilot', { message: 'Help me fix this gap' }, {});
 
-  // Forecast
-  testEndpoint('/forecast', { framework: 'SOC2', timeframe: '6months' }, {});
+  // Forecast needs currentScores
+  testEndpoint('/forecast', { currentScores: [{ framework: 'SOC2', score: 80 }] }, {});
 
   // Analyze process
   testEndpoint('/analyze-process', { processDescription: 'PII collection flow' }, {});

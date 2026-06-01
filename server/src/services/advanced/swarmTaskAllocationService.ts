@@ -357,18 +357,21 @@ class SwarmTaskAllocationService extends EventEmitter {
         () => this.performHealthChecks(),
         this.config.healthCheckInterval
       );
+      this.healthCheckInterval?.unref?.();
 
       // Start task processor
       this.taskProcessorInterval = setInterval(
         () => this.processTaskQueue(),
         1000
       );
+      this.taskProcessorInterval?.unref?.();
 
       // Start timeout checker
       this.timeoutCheckInterval = setInterval(
         () => this.checkTaskTimeouts(),
         5000 // Check every 5 seconds
       );
+      this.timeoutCheckInterval?.unref?.();
 
       // Periodic snapshot to Redis as a safety net (covers any mutation sites
       // that don't call schedulePersist explicitly — e.g., timeout/cleanup paths).
@@ -376,6 +379,7 @@ class SwarmTaskAllocationService extends EventEmitter {
         () => this.schedulePersist(),
         10000 // every 10 seconds
       );
+      this.persistInterval?.unref?.();
 
       logger.info('[Swarm Tasks] Task allocation service initialized');
     } catch (error) {

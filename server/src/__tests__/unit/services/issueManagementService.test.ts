@@ -152,6 +152,10 @@ describe('IssueManagementService', () => {
         updatedAt: new Date(),
       };
 
+      // addComment now verifies org ownership of the parent issue first.
+      prismaMock.issue.findFirst.mockResolvedValue(
+        createMockIssue({ id: 'issue-123', assignedToId: null, createdById: 'user-123' })
+      );
       prismaMock.issueComment.create.mockResolvedValue(mockComment);
 
       const result = await issueManagementService.addComment(
@@ -171,6 +175,8 @@ describe('IssueManagementService', () => {
         remediationPlan: 'Fixed in version 2.1.0',
       });
 
+      // updateRemediationPlan now verifies org ownership before mutating.
+      prismaMock.issue.findFirst.mockResolvedValue(createMockIssue({ id: 'issue-123' }));
       prismaMock.issue.update.mockResolvedValue(updatedIssue);
 
       const result = await issueManagementService.updateRemediationPlan(

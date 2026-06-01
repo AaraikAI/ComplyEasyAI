@@ -241,6 +241,7 @@ try {
 let entropyMonitorInterval: ReturnType<typeof setInterval> | null = null;
 if (config.server.env === 'production') {
   entropyMonitorInterval = startPeriodicHealthMonitoring(3600000); // 1 hour
+  entropyMonitorInterval?.unref?.();
   logger.info('✓ FIPS 140-3 entropy health monitoring started (hourly)');
 }
 
@@ -371,6 +372,9 @@ app.use(helmet({
 app.use('/api/billing/webhook', apiLimiter, express.raw({ type: 'application/json' }));
 // Ticketing webhooks need the raw body for per-provider HMAC verification (jira/servicenow/azure_devops)
 app.use('/api/ticketing/webhook', apiLimiter, express.raw({ type: '*/*', limit: '5mb' }));
+// Incoming external webhooks verify an HMAC over the exact bytes; capture the raw body
+// before the JSON parser consumes the stream (mirrors the ticketing receiver above).
+app.use('/api/webhooks/incoming', apiLimiter, express.raw({ type: '*/*', limit: '5mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());

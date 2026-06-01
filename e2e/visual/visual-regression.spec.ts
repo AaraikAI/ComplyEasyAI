@@ -60,26 +60,28 @@ test.describe('Visual Regression - Dashboard', () => {
   test('Dashboard - Welcome Banner', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
 
-    // Capture just the welcome banner
-    const welcomeBanner = page.locator('.bg-gradient-to-br').first();
-    if (await welcomeBanner.isVisible()) {
-      await expect(welcomeBanner).toHaveScreenshot('welcome-banner.png', {
-        maxDiffPixelRatio: 0.05,
-        mask: [page.locator('h1:has-text("Good")'), page.locator('text=/\\d{1,2}.*\\d{4}/')],
-      });
-    }
+    // The HomeOS dashboard renders a greeting header (h1) — the welcome banner.
+    // Assert it is present first so a missing/broken header fails the test rather
+    // than silently skipping the screenshot comparison.
+    const greeting = page.locator('h1').first();
+    await expect(greeting).toBeVisible({ timeout: 10000 });
+    await expect(greeting).toHaveScreenshot('welcome-banner.png', {
+      maxDiffPixelRatio: 0.05,
+      // Mask the time-based greeting text and any rendered date.
+      mask: [page.locator('h1:has-text("Good")'), page.locator('text=/\\d{1,2}.*\\d{4}/')],
+    });
   });
 
   test('Dashboard - Compliance Score Ring', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
 
-    // Capture compliance score card with SVG ring
-    const scoreCard = page.locator('[data-onboarding="compliance-score"]');
-    if (await scoreCard.isVisible()) {
-      await expect(scoreCard).toHaveScreenshot('compliance-score-ring.png', {
-        maxDiffPixelRatio: 0.05,
-      });
-    }
+    // HomeOS renders the compliance gauge card (data-onboarding="compliance-gauge").
+    // Assert it is present so a missing gauge fails the test instead of no-op'ing.
+    const scoreCard = page.locator('[data-onboarding="compliance-gauge"]');
+    await expect(scoreCard).toBeVisible({ timeout: 10000 });
+    await expect(scoreCard).toHaveScreenshot('compliance-score-ring.png', {
+      maxDiffPixelRatio: 0.05,
+    });
   });
 
   test('Dashboard - Quick Actions dropdown', async ({ page }) => {

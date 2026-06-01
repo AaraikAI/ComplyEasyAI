@@ -18,6 +18,7 @@ import {
   Alert,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
 import { Button, colors, spacing, fontSize, borderRadius } from '../components/shared';
 
 export default function LoginScreen() {
@@ -28,6 +29,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   const passwordInputRef = useRef<TextInput>(null);
 
@@ -77,6 +79,67 @@ export default function LoginScreen() {
         );
       }
     }
+  };
+
+  const submitPasswordReset = async (resetEmail: string) => {
+    setResetSubmitting(true);
+    try {
+      await api.auth.forgotPassword(resetEmail.trim());
+      // The endpoint always responds the same way to avoid email enumeration.
+      Alert.alert(
+        'Check your email',
+        'If an account with that email exists, a password reset link has been sent.',
+        [{ text: 'OK' }]
+      );
+    } catch (err: any) {
+      Alert.alert(
+        'Request Failed',
+        err.message || 'Unable to start the password reset. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = () => {
+    clearError();
+    // Prefer the address already typed in the email field.
+    if (validateEmail(email)) {
+      submitPasswordReset(email);
+      return;
+    }
+    // Otherwise collect the email inline where Alert.prompt is available (iOS).
+    if (Platform.OS === 'ios' && typeof Alert.prompt === 'function') {
+      Alert.prompt(
+        'Reset Password',
+        'Enter the email address for your account and we will send a reset link.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Send Link',
+            onPress: (value?: string) => {
+              const candidate = (value || '').trim();
+              if (!candidate || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate)) {
+                Alert.alert('Invalid Email', 'Please enter a valid email address.');
+                return;
+              }
+              submitPasswordReset(candidate);
+            },
+          },
+        ],
+        'plain-text',
+        '',
+        'email-address'
+      );
+      return;
+    }
+    // Platforms without Alert.prompt: ask the user to fill the email field first.
+    Alert.alert(
+      'Enter your email',
+      'Type the email address for your account in the field above, then tap "Forgot your password?" again.',
+      [{ text: 'OK' }]
+    );
   };
 
   return (
@@ -182,8 +245,14 @@ export default function LoginScreen() {
           />
 
           {/* Forgot Password */}
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+          <TouchableOpacity
+            style={styles.forgotPassword}
+            onPress={handleForgotPassword}
+            disabled={isLoading || resetSubmitting}
+          >
+            <Text style={styles.forgotPasswordText}>
+              {resetSubmitting ? 'Sending reset link…' : 'Forgot your password?'}
+            </Text>
           </TouchableOpacity>
         </View>
 

@@ -124,6 +124,7 @@ const createStripeEventMockFn = (): jest.Mock<(...args: any[]) => any> => jest.f
 (prismaMock as any).stripeEvent = {
   create: createStripeEventMockFn(),
   update: createStripeEventMockFn(),
+  upsert: createStripeEventMockFn(),
   findUnique: createStripeEventMockFn(),
 };
 (prismaMock as any).featureSubscription = {
@@ -1183,12 +1184,58 @@ describe('StripeService', () => {
       };
 
       mockWebhooksConstructEvent.mockReturnValue(mockEvent);
-      (prismaMock as any).stripeEvent.create.mockResolvedValue({});
+      (prismaMock as any).stripeEvent.findUnique.mockResolvedValue(null);
+      (prismaMock as any).stripeEvent.upsert.mockResolvedValue({});
       (prismaMock as any).stripeEvent.update.mockResolvedValue({});
 
       const result = await stripeService.handleWebhook(Buffer.from('test'), 'signature');
 
       expect(result.processed).toBe(true);
+    });
+
+    it('is idempotent: a redelivered already-processed event is a no-op', async () => {
+      // Stripe retries deliveries. If the event id is already recorded as processed,
+      // handleWebhook must short-circuit and NOT mutate the organization again.
+      const mockEvent = {
+        id: 'evt_dup_1',
+        type: 'customer.subscription.updated',
+        data: { object: { id: 'sub_1', customer: 'cus_1' } },
+      };
+      mockWebhooksConstructEvent.mockReturnValue(mockEvent);
+      // The dedup lookup reports the event was already processed.
+      (prismaMock as any).stripeEvent.findUnique.mockResolvedValue({ eventId: 'evt_dup_1', processed: true });
+
+      const result = await stripeService.handleWebhook(Buffer.from('test'), 'signature');
+
+      expect(result.processed).toBe(true);
+      // No new event record is written and no org/billing mutation occurs on replay.
+      expect((prismaMock as any).stripeEvent.upsert).not.toHaveBeenCalled();
+      expect((prismaMock as any).stripeEvent.create).not.toHaveBeenCalled();
+      expect(prismaMock.organization.update).not.toHaveBeenCalled();
+    });
+
+    it('processes a first-delivery event and records it via upsert', async () => {
+      const mockEvent = {
+        id: 'evt_first_1',
+        type: 'unknown.event.type',
+        data: { object: {} },
+      };
+      mockWebhooksConstructEvent.mockReturnValue(mockEvent);
+      // No prior record -> not yet processed -> proceed.
+      (prismaMock as any).stripeEvent.findUnique.mockResolvedValue(null);
+      (prismaMock as any).stripeEvent.upsert.mockResolvedValue({});
+      (prismaMock as any).stripeEvent.update.mockResolvedValue({});
+
+      const result = await stripeService.handleWebhook(Buffer.from('test'), 'signature');
+
+      expect(result.processed).toBe(true);
+      // First delivery records the event and marks it processed.
+      expect((prismaMock as any).stripeEvent.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { eventId: 'evt_first_1' } })
+      );
+      expect((prismaMock as any).stripeEvent.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { eventId: 'evt_first_1' }, data: { processed: true } })
+      );
     });
   });
 
@@ -1196,8 +1243,14 @@ describe('StripeService', () => {
   // Edge Cases and Error Handling
   // ===========================================================================
   describe('Edge Cases', () => {
-    it('should handle concurrent tier changes gracefully', async () => {
-      const mockOrg = createMockOrganization();
+    it('completes each tier change through Stripe + an atomic DB transaction', async () => {
+      // NOTE: changeTier has no cross-call row-level lock, so with fully independent
+      // mocked Prisma/Stripe calls this cannot detect a true concurrency race. It instead
+      // asserts the observable per-call contract: BOTH calls resolve true, each issues a
+      // Stripe subscription update, and each records exactly one subscriptionHistory entry
+      // inside changeTier's $transaction (stripeService.ts:510-531). A genuine
+      // double-upgrade guard would require row-level locking, which is not implemented.
+      const mockOrg = createMockOrganization({ stripeSubscriptionId: 'sub_test123', plan: 'Essentials' });
       const mockSub = createMockSubscription();
 
       prismaMock.organization.findUnique.mockResolvedValue(mockOrg as any);
@@ -1206,14 +1259,16 @@ describe('StripeService', () => {
       prismaMock.organization.update.mockResolvedValue({} as any);
       prismaMock.subscriptionHistory.create.mockResolvedValue({} as any);
 
-      // Simulate concurrent calls
       const results = await Promise.all([
         stripeService.changeTier('org-123', 'Growth'),
         stripeService.changeTier('org-123', 'Growth'),
       ]);
 
-      // Both should succeed
-      expect(results.every(r => r === true)).toBe(true);
+      expect(results).toEqual([true, true]);
+      // Each call performs the Stripe-side update and one DB history write.
+      expect(mockSubscriptionsUpdate).toHaveBeenCalledTimes(2);
+      expect(prismaMock.organization.update).toHaveBeenCalledTimes(2);
+      expect(prismaMock.subscriptionHistory.create).toHaveBeenCalledTimes(2);
     });
 
     it('should handle Stripe API rate limits', async () => {

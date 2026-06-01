@@ -7,7 +7,22 @@
 import { User, RiskItem, ComplianceFramework, AuditLog, Organization, Integration, ComplianceStatus, FrameworkType } from '../types';
 import { MOCK_USERS, MOCK_RISKS, INITIAL_FRAMEWORKS, MOCK_AUDIT_LOGS, MOCK_INTEGRATIONS } from '../constants';
 
-const IS_PRODUCTION = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+// Prefer the build-time mode flag (Vite sets import.meta.env.PROD) so staging,
+// preview, and custom-host dev builds are classified by how they were built
+// rather than by the hostname they happen to be served on. The hostname check
+// is retained only as a fallback for environments where the build flag is
+// unavailable (e.g. non-Vite test/SSR contexts).
+const BUILD_IS_PROD =
+  typeof import.meta !== 'undefined' &&
+  typeof import.meta.env !== 'undefined' &&
+  import.meta.env.PROD === true;
+
+const HOST_LOOKS_PROD =
+  typeof window !== 'undefined' &&
+  window.location.hostname !== 'localhost' &&
+  window.location.hostname !== '127.0.0.1';
+
+const IS_PRODUCTION = BUILD_IS_PROD || HOST_LOOKS_PROD;
 
 // --- LocalStorage Database Keys ---
 const DB_KEYS = {
@@ -135,7 +150,10 @@ export const db = {
     }
   },
   org: {
-    get: () => getTable<Organization>(DB_KEYS.ORGS)[0], // Single tenant simulation
+    // Offline single-organization simulation only. Production multi-tenant
+    // scoping (organizationId on every query) is enforced server-side via the
+    // REST API; this deprecated localStorage shim is never reached in prod.
+    get: () => getTable<Organization>(DB_KEYS.ORGS)[0],
     updatePlan: (plan: 'Foundation' | 'Essentials' | 'Growth' | 'Visionary') => {
       const orgs = getTable<Organization>(DB_KEYS.ORGS);
       if (orgs[0]) {

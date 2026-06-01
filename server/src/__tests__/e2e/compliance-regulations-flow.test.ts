@@ -1,18 +1,16 @@
 /**
  * E2E Tests - Compliance Regulations Flow
- * Tests complete compliance workflows for DORA, SOX, SOD, MDM, and Personnel.
+ * Tests DORA, SOX, SoD, MDM, and Personnel compliance modules.
+ *
+ * Exercises the real routes in src/routes/{dora,sox,sod,mdm,personnel}.ts. Each
+ * route module delegates to its service layer, which is mocked here so the
+ * assertions verify route wiring (path + method + status + response shape)
+ * deterministically. Request bodies satisfy the real Joi validation schemas.
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import { prismaMock } from '../mocks/prisma';
-
-jest.mock('../../config/database', () => ({
-  __esModule: true,
-  default: prismaMock,
-  testConnection: jest.fn().mockResolvedValue(true),
-}));
 
 jest.mock('../../config/logger', () => ({
   __esModule: true,
@@ -24,22 +22,61 @@ jest.mock('../../config/logger', () => ({
   },
 }));
 
-jest.mock('../../utils/auditLogger', () => ({
-  AuditLogger: { log: jest.fn() },
-}));
-
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req: any, res: any, next: any) => next(),
-  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => next(),
+  authenticate: (req: any, _res: any, next: any) => next(),
+  authorize: (..._roles: string[]) => (req: any, _res: any, next: any) => next(),
   AuthRequest: {},
 }));
 
-jest.mock('../../middleware/rateLimiter', () => ({
-  authLimiter: (req: any, res: any, next: any) => next(),
-  apiLimiter: (req: any, res: any, next: any) => next(),
-  aiLimiter: (req: any, res: any, next: any) => next(),
-  frameworkLimiter: (req: any, res: any, next: any) => next(),
+// Personnel routes are gated by requireEnterpriseFeature; provide all exports.
+jest.mock('../../middleware/tierMiddleware', () => {
+  const pass = (_req: any, _res: any, next: any) => next();
+  const passArr = () => [pass];
+  return {
+    __esModule: true,
+    requireFeature: () => pass,
+    requireTier: () => pass,
+    enforceLimit: () => pass,
+    attachTierInfo: () => pass,
+    trackUsage: () => pass,
+    requireFeatureAndLimit: () => pass,
+    requireActiveSubscription: () => pass,
+    requireAiFeature: passArr,
+    requireResourceCreation: passArr,
+    requireEnterpriseFeature: passArr,
+    requireAcosFeature: passArr,
+    requireVisionaryFeature: passArr,
+    default: {},
+  };
+});
+
+// doraService is a namespace import (import * as doraService).
+jest.mock('../../services/doraService', () => ({
+  __esModule: true,
+  getDORADashboard: jest.fn(),
+  createICTRiskAssessment: jest.fn(),
+  listICTRiskAssessments: jest.fn(),
+  createICTIncident: jest.fn(),
+  getICTIncident: jest.fn(),
+  updateICTIncident: jest.fn(),
+  createThirdPartyProvider: jest.fn(),
+  createResilienceTest: jest.fn(),
 }));
+
+const defaultSvc = (methods: string[]) => {
+  const obj: Record<string, jest.Mock> = {};
+  for (const m of methods) obj[m] = jest.fn();
+  return { __esModule: true, default: obj };
+};
+
+jest.mock('../../services/soxService', () =>
+  defaultSvc(['getSOXDashboard', 'getSOXControls', 'createSOXControl', 'getSOXTestResults', 'createSOXTestResult', 'getSOXAssessments', 'createSOXAssessment', 'generateSOXReport']));
+jest.mock('../../services/sodService', () =>
+  defaultSvc(['getSoDDashboard', 'getSoDRules', 'createSoDRule', 'getSoDViolations', 'getSoDMatrix', 'runSoDAnalysis']));
+jest.mock('../../services/mdmService', () =>
+  defaultSvc(['getMDMDashboard', 'getDevices', 'enrollDevice', 'getPolicies', 'createPolicy', 'checkDeviceCompliance', 'getDeviceActions', 'createDeviceAction']));
+jest.mock('../../services/personnelService', () =>
+  defaultSvc(['createPersonnel', 'getPersonnelByOrganization', 'getComplianceSummary', 'startOffboarding', 'createAccessReview']));
 
 import doraRoutes from '../../routes/dora';
 import soxRoutes from '../../routes/sox';
@@ -47,6 +84,17 @@ import sodRoutes from '../../routes/sod';
 import mdmRoutes from '../../routes/mdm';
 import personnelRoutes from '../../routes/personnel';
 import { errorHandler } from '../../middleware/errorHandler';
+import * as doraServiceImport from '../../services/doraService';
+import soxService from '../../services/soxService';
+import sodService from '../../services/sodService';
+import mdmService from '../../services/mdmService';
+import personnelService from '../../services/personnelService';
+
+const dora = doraServiceImport as unknown as Record<string, jest.Mock>;
+const sox = soxService as unknown as Record<string, jest.Mock>;
+const sod = sodService as unknown as Record<string, jest.Mock>;
+const mdm = mdmService as unknown as Record<string, jest.Mock>;
+const personnel = personnelService as unknown as Record<string, jest.Mock>;
 
 const app = express();
 app.use(express.json());
@@ -54,7 +102,7 @@ app.use((req, _res, next) => {
   (req as any).user = {
     id: 'user-123',
     organizationId: 'org-123',
-    role: 'Admin',
+    role: 'admin',
     email: 'admin@example.com',
   };
   next();
@@ -72,215 +120,98 @@ describe('E2E: Compliance Regulations Flow', () => {
   });
 
   // ===========================================================================
-  // DORA (Digital Operational Resilience Act) Flow
+  // DORA
   // ===========================================================================
   describe('DORA Compliance Flow', () => {
-    const mockICTAsset = {
-      id: 'ict-123',
-      name: 'Core Banking System',
-      type: 'Application',
-      criticality: 'Critical',
-      organizationId: 'org-123',
-      riskLevel: 'High',
-    };
-
-    const mockICTIncident = {
-      id: 'incident-123',
-      title: 'Database Outage',
-      severity: 'Major',
-      status: 'Open',
-      ictAssetId: 'ict-123',
-      organizationId: 'org-123',
-      reportedAt: new Date(),
-    };
-
-    const mockICTProvider = {
-      id: 'provider-123',
-      name: 'Cloud Provider',
-      type: 'Critical',
-      services: ['Infrastructure', 'Storage'],
-      organizationId: 'org-123',
-    };
-
-    it('should complete ICT asset registration', async () => {
-      prismaMock.ictAsset.create.mockResolvedValue(mockICTAsset as any);
+    it('should create an ICT risk assessment', async () => {
+      dora.createICTRiskAssessment.mockResolvedValue({ id: 'ra-123', title: 'Core Banking Risk' });
 
       const response = await request(app)
-        .post('/api/dora/ict-assets')
-        .send({
-          name: 'Core Banking System',
-          type: 'Application',
-          criticality: 'Critical',
-          owner: 'user-123',
-        })
+        .post('/api/dora/risk-assessments')
+        .send({ title: 'Core Banking Risk', assessmentType: 'Initial', riskLevel: 'High' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'ra-123');
+      expect(dora.createICTRiskAssessment).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org-123', assessedBy: 'user-123' })
+      );
     });
 
-    it('should report and track ICT incident', async () => {
-      // Report incident
-      prismaMock.ictIncident.create.mockResolvedValue(mockICTIncident as any);
+    it('should report and update an ICT incident', async () => {
+      dora.createICTIncident.mockResolvedValue({ id: 'inc-123', title: 'Database Outage', status: 'Open' });
 
       const reportResponse = await request(app)
         .post('/api/dora/incidents')
-        .send({
-          title: 'Database Outage',
-          severity: 'Major',
-          ictAssetId: 'ict-123',
-          description: 'Primary database became unavailable',
-        })
+        .send({ title: 'Database Outage', severity: 'Major', description: 'Primary DB unavailable' })
         .expect(201);
 
-      expect(reportResponse.body).toHaveProperty('id');
+      expect(reportResponse.body).toHaveProperty('id', 'inc-123');
 
-      // Update incident
-      prismaMock.ictIncident.findFirst.mockResolvedValue(mockICTIncident as any);
-      prismaMock.ictIncident.update.mockResolvedValue({
-        ...mockICTIncident,
-        status: 'Resolved',
-        resolvedAt: new Date(),
-      } as any);
+      dora.updateICTIncident.mockResolvedValue({ id: 'inc-123', status: 'Resolved' });
 
       const updateResponse = await request(app)
-        .patch(`/api/dora/incidents/${reportResponse.body.id}`)
-        .send({ status: 'Resolved', resolution: 'Failover completed' })
+        .patch('/api/dora/incidents/inc-123')
+        .send({ status: 'Resolved' })
         .expect(200);
 
-      expect(updateResponse.body.status).toBe('Resolved');
+      expect(updateResponse.body).toHaveProperty('status', 'Resolved');
     });
 
-    it('should manage ICT third-party providers', async () => {
-      prismaMock.ictProvider.create.mockResolvedValue(mockICTProvider as any);
+    it('should register an ICT third-party provider', async () => {
+      dora.createThirdPartyProvider.mockResolvedValue({ id: 'prov-123', name: 'Cloud Provider' });
 
       const response = await request(app)
-        .post('/api/dora/providers')
-        .send({
-          name: 'Cloud Provider',
-          type: 'Critical',
-          services: ['Infrastructure', 'Storage'],
-          contractStart: new Date(),
-          contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        })
+        .post('/api/dora/third-party-providers')
+        .send({ name: 'Cloud Provider', providerType: 'CloudService', criticality: 'Critical' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'prov-123');
     });
 
-    it('should perform operational resilience testing', async () => {
-      prismaMock.resilienceTest.create.mockResolvedValue({
-        id: 'test-123',
-        type: 'TLPT',
-        status: 'Completed',
-        results: { passed: true, findings: [] },
-      } as any);
-
-      const response = await request(app)
-        .post('/api/dora/resilience-tests')
-        .send({
-          type: 'TLPT',
-          scope: ['ict-123'],
-          scheduledDate: new Date(),
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should get DORA compliance dashboard', async () => {
-      prismaMock.ictAsset.findMany.mockResolvedValue([mockICTAsset] as any);
-      prismaMock.ictIncident.findMany.mockResolvedValue([mockICTIncident] as any);
+    it('should get the DORA dashboard', async () => {
+      dora.getDORADashboard.mockResolvedValue({ ictAssets: 5, openIncidents: 1 });
 
       const response = await request(app)
         .get('/api/dora/dashboard')
         .expect(200);
 
-      expect(response.body).toHaveProperty('ictAssets');
-      expect(response.body).toHaveProperty('openIncidents');
+      expect(response.body).toHaveProperty('ictAssets', 5);
+      expect(response.body).toHaveProperty('openIncidents', 1);
     });
   });
 
   // ===========================================================================
-  // SOX (Sarbanes-Oxley) Flow
+  // SOX
   // ===========================================================================
   describe('SOX Compliance Flow', () => {
-    const mockSOXControl = {
-      id: 'sox-ctrl-123',
-      name: 'Financial Reporting Controls',
-      type: 'Key',
-      status: 'Effective',
-      organizationId: 'org-123',
-    };
-
-    const mockSOXTest = {
-      id: 'sox-test-123',
-      controlId: 'sox-ctrl-123',
-      type: 'Design',
-      result: 'Effective',
-      testedAt: new Date(),
-      testedBy: 'user-123',
-    };
-
-    it('should manage SOX controls', async () => {
-      prismaMock.soxControl.create.mockResolvedValue(mockSOXControl as any);
+    it('should create a SOX control', async () => {
+      sox.createSOXControl.mockResolvedValue({ id: 'sox-ctrl-123', name: 'Financial Reporting Controls' });
 
       const response = await request(app)
         .post('/api/sox/controls')
-        .send({
-          name: 'Financial Reporting Controls',
-          type: 'Key',
-          frequency: 'Quarterly',
-          owner: 'user-123',
-        })
+        .send({ name: 'Financial Reporting Controls', type: 'Key', frequency: 'Quarterly' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'sox-ctrl-123');
     });
 
-    it('should perform control testing', async () => {
-      prismaMock.soxControl.findFirst.mockResolvedValue(mockSOXControl as any);
-      prismaMock.soxTest.create.mockResolvedValue(mockSOXTest as any);
+    it('should create a SOX test result', async () => {
+      sox.createSOXTestResult.mockResolvedValue({ id: 'sox-test-123', result: 'Effective' });
 
       const response = await request(app)
-        .post('/api/sox/controls/sox-ctrl-123/test')
-        .send({
-          type: 'Design',
-          sampleSize: 25,
-          evidence: ['ev-1', 'ev-2'],
-        })
+        .post('/api/sox/test-results')
+        .send({ controlId: 'sox-ctrl-123', testType: 'Design', sampleSize: 25 })
         .expect(201);
 
-      expect(response.body).toHaveProperty('result');
+      expect(response.body).toHaveProperty('result', 'Effective');
     });
 
-    it('should track material weakness', async () => {
-      prismaMock.materialWeakness.create.mockResolvedValue({
-        id: 'mw-123',
-        title: 'Revenue Recognition Issue',
-        status: 'Open',
-        severity: 'Material',
-        remediationPlan: 'Implement new controls',
-      } as any);
+    it('should generate the full SOX report', async () => {
+      sox.generateSOXReport.mockResolvedValue({ controls: [], testResults: [] });
 
       const response = await request(app)
-        .post('/api/sox/material-weaknesses')
-        .send({
-          title: 'Revenue Recognition Issue',
-          description: 'Controls over revenue recognition are inadequate',
-          affectedControls: ['sox-ctrl-123'],
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should generate SOX compliance report', async () => {
-      prismaMock.soxControl.findMany.mockResolvedValue([mockSOXControl] as any);
-      prismaMock.soxTest.findMany.mockResolvedValue([mockSOXTest] as any);
-
-      const response = await request(app)
-        .get('/api/sox/report')
-        .query({ period: 'Q1-2024' })
+        .get('/api/sox/reports/full')
+        .query({ fiscalYear: '2024' })
         .expect(200);
 
       expect(response.body).toHaveProperty('controls');
@@ -289,84 +220,48 @@ describe('E2E: Compliance Regulations Flow', () => {
   });
 
   // ===========================================================================
-  // SOD (Segregation of Duties) Flow
+  // SoD
   // ===========================================================================
-  describe('SOD Compliance Flow', () => {
-    const mockSODRule = {
-      id: 'sod-rule-123',
-      name: 'Payment Processing Segregation',
-      conflictingRoles: ['Payment Approver', 'Payment Initiator'],
-      severity: 'High',
-      organizationId: 'org-123',
-    };
-
-    const mockSODViolation = {
-      id: 'sod-viol-123',
-      ruleId: 'sod-rule-123',
-      userId: 'user-456',
-      conflictingRoles: ['Payment Approver', 'Payment Initiator'],
-      status: 'Open',
-      detectedAt: new Date(),
-    };
-
-    it('should create SOD rule', async () => {
-      prismaMock.sodRule.create.mockResolvedValue(mockSODRule as any);
+  describe('SoD Compliance Flow', () => {
+    it('should create a SoD rule', async () => {
+      sod.createSoDRule.mockResolvedValue({ id: 'sod-rule-123', name: 'Payment Segregation' });
 
       const response = await request(app)
         .post('/api/sod/rules')
         .send({
-          name: 'Payment Processing Segregation',
-          conflictingRoles: ['Payment Approver', 'Payment Initiator'],
+          name: 'Payment Segregation',
           severity: 'High',
+          conflictingRoles: ['Payment Approver', 'Payment Initiator'],
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'sod-rule-123');
     });
 
-    it('should analyze SOD conflicts', async () => {
-      prismaMock.sodRule.findMany.mockResolvedValue([mockSODRule] as any);
-      prismaMock.user.findMany.mockResolvedValue([
-        { id: 'user-456', roles: ['Payment Approver', 'Payment Initiator'] },
-      ] as any);
+    it('should run a SoD analysis', async () => {
+      sod.runSoDAnalysis.mockResolvedValue({ violations: [], scanned: 42 });
 
       const response = await request(app)
         .post('/api/sod/analyze')
         .expect(200);
 
       expect(response.body).toHaveProperty('violations');
+      expect(sod.runSoDAnalysis).toHaveBeenCalledWith('org-123', 'user-123');
     });
 
-    it('should manage SOD violations', async () => {
-      prismaMock.sodViolation.findMany.mockResolvedValue([mockSODViolation] as any);
+    it('should list SoD violations', async () => {
+      sod.getSoDViolations.mockResolvedValue([{ id: 'sod-viol-123', status: 'Open' }]);
 
-      const listResponse = await request(app)
+      const response = await request(app)
         .get('/api/sod/violations')
         .expect(200);
 
-      expect(Array.isArray(listResponse.body)).toBe(true);
-
-      // Resolve violation
-      prismaMock.sodViolation.findFirst.mockResolvedValue(mockSODViolation as any);
-      prismaMock.sodViolation.update.mockResolvedValue({
-        ...mockSODViolation,
-        status: 'Resolved',
-        resolution: 'Role removed',
-      } as any);
-
-      const resolveResponse = await request(app)
-        .patch('/api/sod/violations/sod-viol-123')
-        .send({
-          status: 'Resolved',
-          resolution: 'Removed conflicting role',
-        })
-        .expect(200);
-
-      expect(resolveResponse.body.status).toBe('Resolved');
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body[0]).toHaveProperty('status', 'Open');
     });
 
-    it('should get SOD matrix', async () => {
-      prismaMock.sodRule.findMany.mockResolvedValue([mockSODRule] as any);
+    it('should get the SoD matrix', async () => {
+      sod.getSoDMatrix.mockResolvedValue({ matrix: [], systems: [] });
 
       const response = await request(app)
         .get('/api/sod/matrix')
@@ -377,195 +272,117 @@ describe('E2E: Compliance Regulations Flow', () => {
   });
 
   // ===========================================================================
-  // MDM (Master Data Management) Flow
+  // MDM
   // ===========================================================================
   describe('MDM Compliance Flow', () => {
-    const mockDataEntity = {
-      id: 'entity-123',
-      name: 'Customer',
-      type: 'Master',
-      status: 'Active',
-      schema: { fields: ['id', 'name', 'email'] },
-      organizationId: 'org-123',
-    };
-
-    const mockDataQualityRule = {
-      id: 'dq-rule-123',
-      entityId: 'entity-123',
-      name: 'Email Validation',
-      type: 'Format',
-      rule: 'email LIKE %@%.%',
-      severity: 'High',
-    };
-
-    it('should register data entity', async () => {
-      prismaMock.dataEntity.create.mockResolvedValue(mockDataEntity as any);
+    it('should enroll a device', async () => {
+      mdm.enrollDevice.mockResolvedValue({ id: 'dev-123', deviceName: 'iPhone 15' });
 
       const response = await request(app)
-        .post('/api/mdm/entities')
-        .send({
-          name: 'Customer',
-          type: 'Master',
-          schema: { fields: ['id', 'name', 'email'] },
-          owner: 'user-123',
-        })
+        .post('/api/mdm/devices')
+        .send({ deviceName: 'iPhone 15', platform: 'iOS', ownershipType: 'Corporate' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'dev-123');
+      expect(mdm.enrollDevice).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org-123', enrolledBy: 'user-123' })
+      );
     });
 
-    it('should define data quality rules', async () => {
-      prismaMock.dataQualityRule.create.mockResolvedValue(mockDataQualityRule as any);
+    it('should create an MDM policy', async () => {
+      mdm.createPolicy.mockResolvedValue({ id: 'pol-123', name: 'Encryption Required' });
 
       const response = await request(app)
-        .post('/api/mdm/entities/entity-123/quality-rules')
-        .send({
-          name: 'Email Validation',
-          type: 'Format',
-          rule: 'email LIKE %@%.%',
-          severity: 'High',
-        })
+        .post('/api/mdm/policies')
+        .send({ name: 'Encryption Required', platform: 'iOS', enforced: true })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'pol-123');
     });
 
-    it('should run data quality assessment', async () => {
-      prismaMock.dataEntity.findFirst.mockResolvedValue(mockDataEntity as any);
-      prismaMock.dataQualityRule.findMany.mockResolvedValue([mockDataQualityRule] as any);
+    it('should evaluate device compliance', async () => {
+      mdm.checkDeviceCompliance.mockResolvedValue({ compliant: 8, nonCompliant: 2 });
 
       const response = await request(app)
-        .post('/api/mdm/entities/entity-123/assess')
+        .get('/api/mdm/compliance')
         .expect(200);
 
-      expect(response.body).toHaveProperty('qualityScore');
-      expect(response.body).toHaveProperty('issues');
+      expect(response.body).toHaveProperty('compliant', 8);
     });
 
-    it('should get data lineage', async () => {
-      prismaMock.dataLineage.findMany.mockResolvedValue([
-        { sourceEntity: 'entity-123', targetEntity: 'entity-456', transformationType: 'ETL' },
-      ] as any);
+    it('should lock a device', async () => {
+      mdm.createDeviceAction.mockResolvedValue({ id: 'act-1' });
 
       const response = await request(app)
-        .get('/api/mdm/entities/entity-123/lineage')
+        .post('/api/mdm/devices/dev-123/lock')
         .expect(200);
 
-      expect(response.body).toHaveProperty('upstream');
-      expect(response.body).toHaveProperty('downstream');
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.message).toContain('lock');
     });
   });
 
   // ===========================================================================
-  // Personnel Compliance Flow
+  // Personnel
   // ===========================================================================
   describe('Personnel Compliance Flow', () => {
-    const mockEmployee = {
-      id: 'emp-123',
-      userId: 'user-456',
-      name: 'John Doe',
-      department: 'Engineering',
-      status: 'Active',
-      organizationId: 'org-123',
-    };
-
-    const mockTraining = {
-      id: 'train-123',
-      name: 'Security Awareness',
-      type: 'Mandatory',
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    };
-
-    const mockBackgroundCheck = {
-      id: 'bg-123',
-      employeeId: 'emp-123',
-      type: 'Criminal',
-      status: 'Completed',
-      result: 'Clear',
-      completedAt: new Date(),
-    };
-
-    it('should manage employee records', async () => {
-      prismaMock.employee.create.mockResolvedValue(mockEmployee as any);
+    it('should create a personnel record', async () => {
+      personnel.createPersonnel.mockResolvedValue({ id: 'pers-123', firstName: 'John', lastName: 'Doe' });
 
       const response = await request(app)
-        .post('/api/personnel/employees')
-        .send({
-          userId: 'user-456',
-          name: 'John Doe',
-          department: 'Engineering',
-          startDate: new Date(),
-        })
+        .post('/api/personnel')
+        .send({ firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', department: 'Engineering' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'pers-123');
+      expect(personnel.createPersonnel).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user-123' })
+      );
     });
 
-    it('should track training compliance', async () => {
-      prismaMock.training.findMany.mockResolvedValue([mockTraining] as any);
-      prismaMock.trainingCompletion.findMany.mockResolvedValue([
-        { trainingId: 'train-123', employeeId: 'emp-123', completedAt: new Date() },
-      ] as any);
+    it('should list personnel for the organization', async () => {
+      personnel.getPersonnelByOrganization.mockResolvedValue([{ id: 'pers-123' }]);
 
       const response = await request(app)
-        .get('/api/personnel/employees/emp-123/training')
+        .get('/api/personnel')
         .expect(200);
 
-      expect(response.body).toHaveProperty('completed');
-      expect(response.body).toHaveProperty('pending');
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
-    it('should manage background checks', async () => {
-      prismaMock.backgroundCheck.create.mockResolvedValue(mockBackgroundCheck as any);
+    it('should create an access review', async () => {
+      personnel.createAccessReview.mockResolvedValue({ id: 'rev-123', reviewType: 'Periodic' });
 
       const response = await request(app)
-        .post('/api/personnel/employees/emp-123/background-checks')
-        .send({
-          type: 'Criminal',
-          provider: 'CheckProvider',
-        })
+        .post('/api/personnel/access-reviews')
+        .send({ personnelId: 'pers-123', reviewType: 'Periodic' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'rev-123');
+      expect(personnel.createAccessReview).toHaveBeenCalledWith(
+        expect.objectContaining({ reviewerId: 'user-123', organizationId: 'org-123' })
+      );
     });
 
-    it('should track access certifications', async () => {
-      prismaMock.accessCertification.create.mockResolvedValue({
-        id: 'cert-123',
-        employeeId: 'emp-123',
-        certifiedBy: 'user-123',
-        certifiedAt: new Date(),
-        status: 'Certified',
-      } as any);
+    it('should get the personnel compliance summary', async () => {
+      personnel.getComplianceSummary.mockResolvedValue({ totalPersonnel: 10, trainingCompliant: 9 });
 
       const response = await request(app)
-        .post('/api/personnel/employees/emp-123/certify-access')
-        .send({
-          accessRights: ['system-a', 'system-b'],
-          certifiedBy: 'user-123',
-        })
-        .expect(201);
-
-      expect(response.body.status).toBe('Certified');
-    });
-
-    it('should handle employee offboarding', async () => {
-      prismaMock.employee.findFirst.mockResolvedValue(mockEmployee as any);
-      prismaMock.employee.update.mockResolvedValue({
-        ...mockEmployee,
-        status: 'Offboarded',
-        offboardedAt: new Date(),
-      } as any);
-
-      const response = await request(app)
-        .post('/api/personnel/employees/emp-123/offboard')
-        .send({
-          lastDay: new Date(),
-          reason: 'Resignation',
-        })
+        .get('/api/personnel/compliance-summary')
         .expect(200);
 
-      expect(response.body.status).toBe('Offboarded');
+      expect(response.body).toHaveProperty('totalPersonnel', 10);
+    });
+
+    it('should start offboarding for a personnel record', async () => {
+      personnel.startOffboarding.mockResolvedValue({ id: 'pers-123', status: 'Offboarding' });
+
+      const response = await request(app)
+        .post('/api/personnel/pers-123/start-offboarding')
+        .send({ reason: 'Resignation' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('status', 'Offboarding');
     });
   });
 });

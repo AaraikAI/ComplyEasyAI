@@ -685,6 +685,143 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
   };
 
   // ---------------------------------------------------------------------------
+  // Document / label generation + upload handlers
+  // ---------------------------------------------------------------------------
+  // Product selected inside the Generate-DoC modal (defaults to first product).
+  const [docModalProductId, setDocModalProductId] = useState<string>('');
+  const [docModalLanguage, setDocModalLanguage] = useState<string>('English');
+  const uploadInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [detailNotifiedBody, setDetailNotifiedBody] = useState<NotifiedBody | null>(null);
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Build an EU Declaration of Conformity document from real product data.
+  const buildDoCHtml = (product: CEProduct, language: string): string => {
+    const directiveNames = product.applicableDirectives
+      .map(id => EU_DIRECTIVES.find(d => d.id === id)?.name || id);
+    const nb = product.notifiedBodyId ? notifiedBodies.find(n => n.id === product.notifiedBodyId) : undefined;
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>EU Declaration of Conformity - ${esc(product.name)}</title></head>
+<body style="font-family:Arial,sans-serif;max-width:800px;margin:40px auto;color:#111">
+<h1 style="text-align:center">EU DECLARATION OF CONFORMITY</h1>
+<p style="text-align:center">No. DoC-${esc(product.modelNumber)}-${new Date().getFullYear()}</p>
+<p><strong>Document language:</strong> ${esc(language)}</p>
+<p><strong>1. Product:</strong> ${esc(product.name)} (Model ${esc(product.modelNumber)}, category ${esc(product.category)})</p>
+<p><strong>2. Manufacturer:</strong> [Manufacturer name and registered address]</p>
+<p><strong>3. This declaration of conformity is issued under the sole responsibility of the manufacturer.</strong></p>
+<p><strong>4. Object of the declaration:</strong> ${esc(product.name)} / ${esc(product.modelNumber)}</p>
+<p><strong>5. The object described above is in conformity with the relevant Union harmonisation legislation:</strong></p>
+<ul>${directiveNames.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+<p><strong>6. Conformity assessment module:</strong> ${esc(product.assessmentModule)} - ${esc(ASSESSMENT_MODULES[product.assessmentModule]?.name || '')}</p>
+<p><strong>7. Notified body:</strong> ${nb ? esc(nb.name + ' (' + nb.notifiedBodyNumber + ')') : 'Not applicable'}</p>
+<p><strong>8. Additional information:</strong> Testing status ${esc(product.testingStatus)}; documentation completeness ${product.docCompleteness}%.</p>
+<p style="margin-top:40px">Signed for and on behalf of: [Place, Date] &nbsp;&nbsp; [Name, Function] &nbsp;&nbsp; [Signature]</p>
+</body></html>`;
+  };
+
+  const handleGenerateDoC = () => {
+    const product = products.find(p => p.id === (docModalProductId || products[0]?.id));
+    if (!product) {
+      setLoadError('Select a product to generate a Declaration of Conformity.');
+      return;
+    }
+    const html = buildDoCHtml(product, docModalLanguage);
+    triggerDownload(new Blob([html], { type: 'text/html;charset=utf-8;' }), `DoC-${product.modelNumber}-${new Date().toISOString().slice(0, 10)}.html`);
+    setShowDocModal(false);
+  };
+
+  const handleDownloadDocument = (doc: TechnicalDocument) => {
+    const product = products.find(p => p.id === doc.productId);
+    // Document binaries are not yet served by the backend; export the available
+    // metadata so the action produces a real artifact for the operator.
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      document: doc,
+      product: product ? { id: product.id, name: product.name, modelNumber: product.modelNumber } : undefined,
+    };
+    triggerDownload(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `${doc.title.replace(/[^a-z0-9]+/gi, '-')}-v${doc.version}.json`);
+  };
+
+  // Render the CE mark as a standalone SVG and download it.
+  const buildCeLabelSvg = (product: CEProduct): string => {
+    const nb = product.notifiedBodyId ? notifiedBodies.find(n => n.id === product.notifiedBodyId) : undefined;
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">
+<rect width="320" height="200" fill="#ffffff"/>
+<text x="20" y="120" font-family="Arial, sans-serif" font-size="96" font-weight="bold" fill="#111">CE</text>
+${nb ? `<text x="150" y="120" font-family="Arial, sans-serif" font-size="28" fill="#111">${esc(nb.notifiedBodyNumber.replace(/[^0-9]/g, ''))}</text>` : ''}
+<text x="20" y="160" font-family="Arial, sans-serif" font-size="14" fill="#333">${esc(product.name)}</text>
+<text x="20" y="180" font-family="Arial, sans-serif" font-size="12" fill="#666">${esc(product.modelNumber)}</text>
+</svg>`;
+  };
+
+  const handleDownloadCeSvg = () => {
+    if (!selectedProduct) return;
+    triggerDownload(new Blob([buildCeLabelSvg(selectedProduct)], { type: 'image/svg+xml;charset=utf-8;' }), `ce-label-${selectedProduct.modelNumber}.svg`);
+  };
+
+  // Produce a downloadable verification payload (model/identity + verification URL)
+  // for the product label. A scannable QR raster is rendered by the QR primitive
+  // once available; this guarantees the action yields a real artifact today.
+  const handleGenerateQr = () => {
+    if (!selectedProduct) return;
+    const verifyUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/verify/product/${encodeURIComponent(selectedProduct.id)}`;
+    const payload = {
+      product: selectedProduct.name,
+      modelNumber: selectedProduct.modelNumber,
+      directives: selectedProduct.applicableDirectives,
+      verifyUrl,
+    };
+    triggerDownload(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `ce-verify-${selectedProduct.modelNumber}.json`);
+  };
+
+  const handleUploadFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const maxBytes = 25 * 1024 * 1024;
+    const accepted = Array.from(files).filter(f => (allowed.includes(f.type) || /\.(pdf|docx|png|jpe?g)$/i.test(f.name)) && f.size <= maxBytes);
+    if (accepted.length === 0) {
+      setLoadError('Unsupported file type or file exceeds 25MB. Supported: PDF, DOCX, PNG, JPG.');
+      return;
+    }
+    const targetProduct = selectedProduct || products[0];
+    const newDocs: TechnicalDocument[] = accepted.map((f, i) => ({
+      id: `doc-${Date.now()}-${i}`,
+      productId: targetProduct?.id || '',
+      documentType: 'Technical File',
+      title: f.name,
+      version: '1.0',
+      status: 'draft',
+      uploadDate: new Date().toISOString().slice(0, 10),
+      lastModified: new Date().toISOString().slice(0, 10),
+      fileSize: `${Math.max(1, Math.round(f.size / 1024))} KB`,
+    }));
+    setDocuments(prev => [...newDocs, ...prev]);
+  };
+
+  const handleSendInquiry = (nb: NotifiedBody) => {
+    // Optimistically advance engagement state; persistence/email dispatch is handled
+    // by the notified-body engagement endpoint once available.
+    setNotifiedBodies(prev => prev.map(b => b.id === nb.id
+      ? { ...b, engagementStatus: 'inquiry_sent', lastInteraction: new Date().toISOString().slice(0, 10) }
+      : b));
+    if (nb.contactEmail && typeof window !== 'undefined') {
+      const subject = encodeURIComponent(`Conformity assessment inquiry - notified body ${nb.notifiedBodyNumber}`);
+      window.open(`mailto:${nb.contactEmail}?subject=${subject}`, '_blank');
+    }
+  };
+
+  // ---------------------------------------------------------------------------
   // Tab definitions
   // ---------------------------------------------------------------------------
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
@@ -1064,7 +1201,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Declaration of Conformity Template</h3>
-            <button onClick={() => setShowDocModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
+            <button onClick={() => { setDocModalProductId(products[0]?.id || ''); setShowDocModal(true); }} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
               <Download size={14} /> Generate DoC
             </button>
           </div>
@@ -1119,7 +1256,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
                     <div className="flex items-center gap-3">
                       <StatusBadge status={doc.status} />
                       <span className="text-xs text-gray-400">{doc.lastModified}</span>
-                      <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                      <button onClick={() => handleDownloadDocument(doc)} title={`${t('common.download')} ${doc.title}`} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                         <Download size={14} className="text-gray-500" />
                       </button>
                     </div>
@@ -1131,10 +1268,22 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
         ))}
 
         {/* Upload area */}
-        <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+        <div
+          onClick={() => uploadInputRef.current?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); handleUploadFiles(e.dataTransfer.files); }}
+          className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+          <input
+            ref={uploadInputRef}
+            type="file"
+            multiple
+            accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+            className="hidden"
+            onChange={e => { handleUploadFiles(e.target.files); e.target.value = ''; }}
+          />
           <Upload size={32} className="mx-auto text-gray-400 mb-3" />
           <p className="text-sm font-medium text-gray-700">{t('common.upload')} Technical Documentation</p>
-          <p className="text-xs text-gray-500 mt-1">Drop files here or click to browse. Supports PDF, DOCX, and image formats.</p>
+          <p className="text-xs text-gray-500 mt-1">Drop files here or click to browse. Supports PDF, DOCX, and image formats (max 25MB).</p>
         </div>
       </div>
     );
@@ -1191,11 +1340,11 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
                   {nb.lastInteraction && <span className="flex items-center gap-1"><Clock size={12} />Last contact: {nb.lastInteraction}</span>}
                 </div>
                 <div className="flex gap-2">
-                  <button className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                  <button onClick={() => setDetailNotifiedBody(nb)} className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
                     View Details
                   </button>
                   {nb.engagementStatus === 'not_engaged' && (
-                    <button className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                    <button onClick={() => handleSendInquiry(nb)} className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
                       Send Inquiry
                     </button>
                   )}
@@ -1285,13 +1434,48 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
             )}
           </div>
           <div className="mt-6 flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
+            <button onClick={handleDownloadCeSvg} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
               <Download size={14} /> Download SVG
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+            <button onClick={handleGenerateQr} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">
               <QrCode size={14} /> Generate QR
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderNotifiedBodyDetailModal = () => detailNotifiedBody && (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{detailNotifiedBody.name}</h3>
+            <p className="text-sm text-gray-500 font-mono">{detailNotifiedBody.notifiedBodyNumber} | {detailNotifiedBody.country}</p>
+          </div>
+          <button onClick={() => setDetailNotifiedBody(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} className="text-gray-500" /></button>
+        </div>
+        <div className="p-6 space-y-4 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <div><p className="text-gray-500 text-xs">Accreditation</p><StatusBadge status={detailNotifiedBody.accreditationStatus} /></div>
+            <div><p className="text-gray-500 text-xs">Engagement</p><p className="font-medium capitalize">{detailNotifiedBody.engagementStatus.replace(/_/g, ' ')}</p></div>
+            {detailNotifiedBody.contactEmail && <div><p className="text-gray-500 text-xs">Contact</p><p className="font-medium">{detailNotifiedBody.contactEmail}</p></div>}
+            {detailNotifiedBody.contactPhone && <div><p className="text-gray-500 text-xs">Phone</p><p className="font-medium">{detailNotifiedBody.contactPhone}</p></div>}
+            {detailNotifiedBody.lastInteraction && <div><p className="text-gray-500 text-xs">Last Interaction</p><p className="font-medium">{detailNotifiedBody.lastInteraction}</p></div>}
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs mb-1">Directives Covered</p>
+            <div className="flex flex-wrap gap-1.5">
+              {detailNotifiedBody.directives.map(d => <span key={d} className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs rounded-full">{d}</span>)}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+          {detailNotifiedBody.engagementStatus === 'not_engaged' && (
+            <button onClick={() => { handleSendInquiry(detailNotifiedBody); setDetailNotifiedBody(null); }} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Send Inquiry</button>
+          )}
+          <button onClick={() => setDetailNotifiedBody(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.close')}</button>
         </div>
       </div>
     </div>
@@ -1307,13 +1491,13 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Select Product</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <select value={docModalProductId} onChange={e => setDocModalProductId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.modelNumber})</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Document Language</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <select value={docModalLanguage} onChange={e => setDocModalLanguage(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               <option>English</option>
               <option>German</option>
               <option>French</option>
@@ -1328,7 +1512,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
           <button onClick={() => setShowDocModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
-          <button onClick={() => setShowDocModal(false)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Generate DoC</button>
+          <button onClick={handleGenerateDoC} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Generate DoC</button>
         </div>
       </div>
     </div>
@@ -1418,6 +1602,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
       {renderAddProductModal()}
       {renderCELabelModal()}
       {renderDocGenerateModal()}
+      {renderNotifiedBodyDetailModal()}
     </div>
   );
 };

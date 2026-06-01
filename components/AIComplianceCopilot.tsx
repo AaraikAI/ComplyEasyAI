@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../services/api';
+import { logger } from '../utils/logger';
 import { useI18n } from '../contexts/I18nContext';
 import {
   X,
@@ -86,175 +87,31 @@ interface AIComplianceCopilotProps {
 
 // ─── Context Engine Data ────────────────────────────────────────────────────────
 
-const CONTEXT_SUGGESTIONS: Record<string, CopilotSuggestion[]> = {
-  dashboard: [
-    {
-      id: 'dash-1',
-      title: 'Complete SOC 2 Evidence Collection',
-      description: 'You have 12 controls missing evidence for your upcoming SOC 2 Type II audit. Prioritize CC6.1 and CC7.2 which are critical path items.',
-      priority: 'critical',
-      category: 'action',
-      actionLabel: 'View Missing Evidence',
-      actionTarget: 'evidence-checker',
-      confidence: 0.95,
-      source: 'Control Assessment Engine',
-    },
-    {
-      id: 'dash-2',
-      title: 'GDPR Data Mapping Gap Detected',
-      description: 'Your data processing inventory is missing 3 new data flows added in the last 30 days. This may affect your Article 30 compliance.',
-      priority: 'high',
-      category: 'gap',
-      actionLabel: 'Run Data Mapper',
-      actionTarget: 'ai-data-map',
-      confidence: 0.88,
-      source: 'Data Flow Monitor',
-    },
-    {
-      id: 'dash-3',
-      title: 'ISO 27001 Surveillance Audit in 45 Days',
-      description: 'Based on your current readiness score of 78%, I recommend focusing on Annex A.12 (Operations Security) where you have the most gaps.',
-      priority: 'high',
-      category: 'deadline',
-      actionLabel: 'View Readiness Report',
-      actionTarget: 'audit-simulator',
-      confidence: 0.92,
-      source: 'Audit Calendar',
-    },
-    {
-      id: 'dash-4',
-      title: 'Vendor Risk Score Degradation',
-      description: 'CloudSync Analytics vendor risk score dropped from 72 to 58 due to recent security incident reports. Consider initiating a reassessment.',
-      priority: 'medium',
-      category: 'insight',
-      actionLabel: 'Review Vendor',
-      actionTarget: 'vendors',
-      confidence: 0.85,
-      source: 'Vendor Monitoring',
-    },
-  ],
-  frameworks: [
-    {
-      id: 'fw-1',
-      title: 'Cross-Framework Control Mapping Opportunity',
-      description: 'I found 23 controls shared between SOC 2 and ISO 27001. Mapping these could reduce your compliance workload by ~35%.',
-      priority: 'high',
-      category: 'insight',
-      actionLabel: 'Run Gap Analysis',
-      actionTarget: 'ai-gap',
-      confidence: 0.91,
-      source: 'Control Mapping Engine',
-    },
-    {
-      id: 'fw-2',
-      title: 'New NIST CSF 2.0 Controls Available',
-      description: 'NIST CSF 2.0 was released with 6 new subcategories. Your current mapping needs updating to reflect the Govern function additions.',
-      priority: 'medium',
-      category: 'action',
-      actionLabel: 'View Changes',
-      actionTarget: 'regulatory-changes',
-      confidence: 0.94,
-      source: 'Regulatory Intelligence',
-    },
-    {
-      id: 'fw-3',
-      title: 'Framework Coverage Below Target',
-      description: 'Your HIPAA framework has only 64% control implementation. Focus on Administrative Safeguards (45 CFR 164.308) for maximum impact.',
-      priority: 'critical',
-      category: 'gap',
-      actionLabel: 'View Controls',
-      confidence: 0.89,
-      source: 'Coverage Analyzer',
-    },
-  ],
-  risks: [
-    {
-      id: 'risk-1',
-      title: 'Emerging Risk: Supply Chain Attack Vector',
-      description: 'Based on recent threat intelligence, software supply chain attacks increased 142% this quarter. Review your third-party dependency controls.',
-      priority: 'critical',
-      category: 'insight',
-      actionLabel: 'Assess Impact',
-      confidence: 0.87,
-      source: 'Threat Intelligence Feed',
-    },
-    {
-      id: 'risk-2',
-      title: '3 Risks Missing Mitigation Plans',
-      description: 'High-severity risks R-2024-089, R-2024-092, and R-2024-095 have been open for over 30 days without remediation plans.',
-      priority: 'high',
-      category: 'action',
-      actionLabel: 'Create Plans',
-      confidence: 0.96,
-      source: 'Risk Register Analysis',
-    },
-    {
-      id: 'risk-3',
-      title: 'Risk Appetite Threshold Breach',
-      description: 'Your aggregate residual risk score (73) exceeds your defined risk appetite threshold (65). Consider escalating to the risk committee.',
-      priority: 'high',
-      category: 'gap',
-      actionLabel: 'View Risk Dashboard',
-      confidence: 0.93,
-      source: 'Risk Appetite Monitor',
-    },
-  ],
-  vendors: [
-    {
-      id: 'vend-1',
-      title: '4 Vendor Assessments Due This Month',
-      description: 'Annual reassessments for DataFlow Inc, SecureHost Pro, CloudSync Analytics, and PaymentGate are due within the next 30 days.',
-      priority: 'high',
-      category: 'deadline',
-      actionLabel: 'Start Assessments',
-      confidence: 0.97,
-      source: 'Vendor Calendar',
-    },
-    {
-      id: 'vend-2',
-      title: 'New Fourth-Party Risk Identified',
-      description: 'Your vendor CloudSync Analytics recently onboarded a new sub-processor in a jurisdiction without adequacy decisions. Review data flows.',
-      priority: 'medium',
-      category: 'insight',
-      actionLabel: 'Review Sub-Processors',
-      confidence: 0.82,
-      source: 'Fourth-Party Monitor',
-    },
-  ],
-  default: [
-    {
-      id: 'def-1',
-      title: 'Weekly Compliance Summary Available',
-      description: 'Your organization completed 8 of 12 planned compliance tasks this week. Overall compliance posture improved by 2.3%.',
-      priority: 'low',
-      category: 'insight',
-      actionLabel: 'View Summary',
-      confidence: 0.98,
-      source: 'Weekly Digest',
-    },
-    {
-      id: 'def-2',
-      title: 'Policy Review Cycle Starting',
-      description: '5 policies are due for annual review in the next 60 days. Start the review process to maintain compliance status.',
-      priority: 'medium',
-      category: 'action',
-      actionLabel: 'View Policies',
-      actionTarget: 'policies',
-      confidence: 0.95,
-      source: 'Policy Lifecycle Manager',
-    },
-    {
-      id: 'def-3',
-      title: 'Training Compliance at 82%',
-      description: '18% of employees have not completed required security awareness training. Send reminders to maintain compliance.',
-      priority: 'medium',
-      category: 'gap',
-      actionLabel: 'Send Reminders',
-      confidence: 0.91,
-      source: 'Training Tracker',
-    },
-  ],
-};
+// Maps the backend visionary-AI recommendation priority/impact to a UI category
+// so live recommendations render with the right icon and accent.
+function mapRecommendationToSuggestion(rec: any, idx: number): CopilotSuggestion {
+  const rawPriority = String(rec?.priority || 'medium').toLowerCase();
+  const priority: CopilotSuggestion['priority'] =
+    rawPriority === 'critical' ? 'critical' :
+    rawPriority === 'high' ? 'high' :
+    rawPriority === 'low' ? 'low' : 'medium';
+  const cat = String(rec?.category || '').toLowerCase();
+  const category: CopilotSuggestion['category'] =
+    cat.includes('risk') ? 'gap' :
+    cat.includes('deadline') || cat.includes('audit') ? 'deadline' :
+    cat.includes('insight') || cat.includes('benchmark') ? 'insight' : 'action';
+  return {
+    id: rec?.id || `rec-${idx + 1}`,
+    title: rec?.title || 'Recommendation',
+    description: rec?.description || rec?.recommendation || '',
+    priority,
+    category,
+    actionLabel: rec?.actionLabel,
+    actionTarget: rec?.actionTarget,
+    confidence: typeof rec?.confidence === 'number' ? rec.confidence : 0.9,
+    source: rec?.source || rec?.category || 'Compliance Co-Pilot',
+  };
+}
 
 const QUICK_ACTIONS: QuickAction[] = [
   { id: 'qa-1', label: 'Run Gap Analysis', icon: <Target size={14} />, description: 'Identify compliance gaps across frameworks', action: 'ai-gap' },
@@ -265,13 +122,23 @@ const QUICK_ACTIONS: QuickAction[] = [
   { id: 'qa-6', label: 'View Deadlines', icon: <Calendar size={14} />, description: 'See upcoming compliance deadlines', action: 'deadlines' },
 ];
 
-const UPCOMING_DEADLINES: DeadlineItem[] = [
-  { id: 'dl-1', title: 'SOC 2 Type II Audit', framework: 'SOC 2', dueDate: '2026-04-15', daysRemaining: 57, status: 'at-risk' },
-  { id: 'dl-2', title: 'GDPR Annual DPA Review', framework: 'GDPR', dueDate: '2026-03-20', daysRemaining: 31, status: 'on-track' },
-  { id: 'dl-3', title: 'ISO 27001 Surveillance Audit', framework: 'ISO 27001', dueDate: '2026-04-03', daysRemaining: 45, status: 'at-risk' },
-  { id: 'dl-4', title: 'PCI DSS SAQ Submission', framework: 'PCI DSS', dueDate: '2026-05-01', daysRemaining: 73, status: 'on-track' },
-  { id: 'dl-5', title: 'HIPAA Risk Assessment', framework: 'HIPAA', dueDate: '2026-03-01', daysRemaining: 12, status: 'overdue' },
-];
+// Maps a backend complianceDeadline record to the UI DeadlineItem shape,
+// deriving days-remaining and on-track/at-risk/overdue status from the due date.
+function mapDeadline(d: any): DeadlineItem {
+  const due = new Date(d?.dueDate);
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysRemaining = Math.ceil((due.getTime() - Date.now()) / msPerDay);
+  const status: DeadlineItem['status'] =
+    daysRemaining < 0 ? 'overdue' : daysRemaining <= 30 ? 'at-risk' : 'on-track';
+  return {
+    id: d?.id || String(d?.dueDate),
+    title: d?.title || 'Compliance Deadline',
+    framework: d?.framework || d?.type || 'General',
+    dueDate: d?.dueDate,
+    daysRemaining,
+    status,
+  };
+}
 
 const EXAMPLE_QUERIES = [
   'Am I GDPR compliant in France?',
@@ -281,125 +148,6 @@ const EXAMPLE_QUERIES = [
   'How do I improve my ISO 27001 score?',
   'What evidence is stale or missing?',
 ];
-
-const MOCK_RESPONSES: Record<string, { content: string; confidence: number; sources: Array<{ title: string; reference: string }>; followUps: string[] }> = {
-  'gdpr': {
-    content: `Based on my analysis of your current compliance posture, here is your GDPR compliance status for France:
-
-**Overall GDPR Readiness: 76%**
-
-**Compliant Areas:**
-- Article 6: Lawful basis for processing is documented for 94% of data flows
-- Article 13/14: Privacy notices are current and accessible
-- Article 25: Data protection by design principles are embedded in your SDLC
-- Article 32: Technical security measures meet the required standard
-
-**Gaps Identified:**
-- **Article 30 (Records of Processing):** 3 new data processing activities detected in the last 30 days are not yet documented. This is a regulatory requirement with potential fines up to 2% of annual turnover.
-- **Article 33 (Breach Notification):** Your incident response playbook does not include specific CNIL notification procedures for the French supervisory authority.
-- **Article 35 (DPIA):** 2 high-risk processing activities lack completed Data Protection Impact Assessments.
-
-**Recommendations:**
-1. Update your Article 30 records immediately (estimated 2-3 hours)
-2. Add CNIL-specific notification templates to your breach response plan
-3. Complete DPIAs for the identified high-risk activities
-
-The French data protection authority (CNIL) has been particularly active in enforcement, issuing EUR 101M in fines in 2025. I recommend prioritizing these gaps.`,
-    confidence: 0.89,
-    sources: [
-      { title: 'GDPR Framework Controls', reference: 'Framework: GDPR v2.0 - 87 controls mapped' },
-      { title: 'Data Processing Inventory', reference: 'Last updated: 2026-02-10' },
-      { title: 'CNIL Enforcement Database', reference: 'Regulatory Intelligence Feed' },
-      { title: 'Incident Response Policy', reference: 'Policy ID: IR-2025-003' },
-    ],
-    followUps: [
-      'What specific DPIAs do I need to complete?',
-      'Show me the undocumented data flows',
-      'How do I notify CNIL in case of a breach?',
-      'Compare my GDPR status across all EU jurisdictions',
-    ],
-  },
-  'soc2': {
-    content: `Here is your SOC 2 Type II compliance gap assessment:
-
-**Overall SOC 2 Readiness: 71%**
-
-**Missing Controls by Trust Service Criteria:**
-
-**Security (CC6 - Logical and Physical Access):**
-- CC6.1: Missing multi-factor authentication logs for 2 production systems
-- CC6.3: User access review evidence is 45 days stale
-- CC6.6: Encryption key management policy needs updating
-
-**Availability (A1):**
-- A1.2: Business continuity plan has not been tested in 8 months
-- A1.3: Disaster recovery RTO/RPO metrics are not documented
-
-**Confidentiality (C1):**
-- C1.1: Data classification policy missing for 4 data repositories
-- C1.2: Confidential data encryption at rest not verified for staging environment
-
-**Processing Integrity (PI1):**
-- All controls met - good job!
-
-**Privacy (P1-P8):**
-- P6.1: Data retention schedules not enforced for 3 systems
-- P8.1: Privacy notice does not cover latest data collection practices
-
-**Priority Remediation Path:**
-1. Address CC6.1 (MFA logs) - Critical path for audit
-2. Update CC6.3 (Access reviews) - Quick win
-3. Test BCP (A1.2) - Schedule within 2 weeks
-4. Complete data classification (C1.1) - Medium effort`,
-    confidence: 0.92,
-    sources: [
-      { title: 'SOC 2 Control Matrix', reference: 'Framework: SOC 2 TSC 2017 - 64 controls' },
-      { title: 'Evidence Repository', reference: 'Last scan: 2026-02-15' },
-      { title: 'Control Testing Results', reference: 'Audit Period: 2025-03 to 2026-02' },
-    ],
-    followUps: [
-      'Generate remediation tasks for all gaps',
-      'What is the estimated effort to reach 90% readiness?',
-      'Show me the critical path items for the audit',
-      'Who are the control owners for the missing items?',
-    ],
-  },
-  'default': {
-    content: `I've analyzed your compliance data to answer your question. Here's what I found:
-
-Based on your current compliance posture across all active frameworks, your organization maintains an overall readiness score of **74%**.
-
-**Key Highlights:**
-- 5 active frameworks with varying levels of maturity
-- 23 controls require attention across all frameworks
-- 8 evidence items are stale (older than 90 days)
-- 4 vendor assessments are due within 30 days
-
-**Areas of Strength:**
-- Strong technical security controls (85% implementation)
-- Good policy documentation coverage (91%)
-- Active risk management program
-
-**Areas for Improvement:**
-- Evidence collection cadence needs improvement
-- Third-party risk management program maturing
-- Business continuity testing frequency below target
-
-I can provide more specific details on any of these areas. What would you like to explore further?`,
-    confidence: 0.84,
-    sources: [
-      { title: 'Compliance Dashboard', reference: 'Aggregate metrics as of 2026-02-17' },
-      { title: 'Risk Register', reference: '47 active risks tracked' },
-      { title: 'Evidence Repository', reference: '312 evidence items cataloged' },
-    ],
-    followUps: [
-      'Show me the 23 controls that need attention',
-      'Which evidence items are stale?',
-      'What is my risk exposure breakdown?',
-      'Generate a board-level compliance report',
-    ],
-  },
-};
 
 // ─── Helper Components ──────────────────────────────────────────────────────────
 
@@ -491,24 +239,74 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [suggestions, setSuggestions] = useState<CopilotSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up' | 'down'>>({});
   const [bookmarkedQueries, setBookmarkedQueries] = useState<string[]>([]);
   const [showExamples, setShowExamples] = useState(true);
-  const [deadlinesExpanded, setDeadlinesExpanded] = useState(true);
+  const [deadlines, setDeadlines] = useState<DeadlineItem[]>([]);
+  const [deadlinesLoading, setDeadlinesLoading] = useState(false);
+  const [deadlinesError, setDeadlinesError] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const [auditReadinessScore] = useState(74);
+  const [auditReadinessScore, setAuditReadinessScore] = useState(0);
   const [isApiAvailable, setIsApiAvailable] = useState<boolean>(true);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Adaptive context engine - updates suggestions based on currentView
+  // Load proactive recommendations from the backend visionary-AI co-pilot.
   useEffect(() => {
-    const viewKey = currentView?.split('-')[0] || 'default';
-    const contextSuggestions = CONTEXT_SUGGESTIONS[viewKey] || CONTEXT_SUGGESTIONS[currentView] || CONTEXT_SUGGESTIONS['default'];
-    setSuggestions(contextSuggestions);
-  }, [currentView]);
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      setSuggestionsLoading(true);
+      setSuggestionsError(null);
+      try {
+        const result = await api.enterprise.visionaryAI.getCoPilotRecommendations();
+        if (cancelled) return;
+        const recs: any[] = Array.isArray(result?.recommendations)
+          ? result.recommendations
+          : Array.isArray(result) ? result : [];
+        setSuggestions(recs.map(mapRecommendationToSuggestion));
+        if (typeof result?.overallScore === 'number') {
+          setAuditReadinessScore(Math.round(result.overallScore));
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        logger.error('Failed to load co-pilot recommendations', err);
+        setSuggestionsError(err?.message || 'Unable to load recommendations right now.');
+        setSuggestions([]);
+      } finally {
+        if (!cancelled) setSuggestionsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen]);
+
+  // Load upcoming compliance deadlines from the calendar service.
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      setDeadlinesLoading(true);
+      setDeadlinesError(null);
+      try {
+        const data = await api.calendar.getUpcoming(90);
+        if (cancelled) return;
+        const rows: any[] = Array.isArray(data) ? data : data?.data ?? [];
+        setDeadlines(rows.map(mapDeadline));
+      } catch (err: any) {
+        if (cancelled) return;
+        logger.error('Failed to load upcoming deadlines', err);
+        setDeadlinesError(err?.message || 'Unable to load deadlines right now.');
+        setDeadlines([]);
+      } finally {
+        if (!cancelled) setDeadlinesLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -523,17 +321,6 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
       inputRef.current.focus();
     }
   }, [activeSection]);
-
-  const getMockFallbackResponse = useCallback((query: string): { content: string; confidence: number; sources: Array<{ title: string; reference: string }>; followUps: string[] } => {
-    const lowerQuery = query.toLowerCase();
-    if (lowerQuery.includes('gdpr') || lowerQuery.includes('france') || lowerQuery.includes('data protection')) {
-      return MOCK_RESPONSES['gdpr'];
-    }
-    if (lowerQuery.includes('soc 2') || lowerQuery.includes('soc2') || lowerQuery.includes('missing control')) {
-      return MOCK_RESPONSES['soc2'];
-    }
-    return MOCK_RESPONSES['default'];
-  }, []);
 
   const handleSendMessage = useCallback(async (messageText?: string) => {
     const text = messageText || inputValue.trim();
@@ -593,7 +380,7 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
     } finally {
       setIsTyping(false);
     }
-  }, [inputValue, messages, currentView, getMockFallbackResponse]);
+  }, [inputValue, messages, currentView]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -721,7 +508,21 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
                 <span className="text-xs text-gray-400">{suggestions.length} items</span>
               </div>
 
-              {suggestions.map(suggestion => (
+              {suggestionsLoading && (
+                <div className="flex items-center gap-2 text-gray-500 text-sm py-6 justify-center">
+                  <Loader2 size={16} className="animate-spin" />
+                  Analyzing your compliance posture...
+                </div>
+              )}
+
+              {suggestionsError && !suggestionsLoading && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 text-red-700 text-sm">
+                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                  {suggestionsError}
+                </div>
+              )}
+
+              {!suggestionsLoading && suggestions.map(suggestion => (
                 <div
                   key={suggestion.id}
                   className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-brand-200 transition-colors shadow-sm"
@@ -793,11 +594,11 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
                 </div>
               ))}
 
-              {suggestions.length === 0 && (
+              {!suggestionsLoading && !suggestionsError && suggestions.length === 0 && (
                 <div className="text-center py-8">
                   <CheckCircle2 size={32} className="text-green-500 mx-auto mb-2" />
                   <p className="text-sm font-medium text-gray-700">All caught up!</p>
-                  <p className="text-xs text-gray-500 mt-1">No proactive suggestions for the current view.</p>
+                  <p className="text-xs text-gray-500 mt-1">No proactive suggestions right now.</p>
                 </div>
               )}
             </div>
@@ -997,7 +798,29 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
                 </h4>
               </div>
 
-              {UPCOMING_DEADLINES.sort((a, b) => a.daysRemaining - b.daysRemaining).map(deadline => (
+              {deadlinesLoading && (
+                <div className="flex items-center gap-2 text-gray-500 text-sm py-6 justify-center">
+                  <Loader2 size={16} className="animate-spin" />
+                  Loading deadlines...
+                </div>
+              )}
+
+              {deadlinesError && !deadlinesLoading && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 text-red-700 text-sm">
+                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                  {deadlinesError}
+                </div>
+              )}
+
+              {!deadlinesLoading && !deadlinesError && deadlines.length === 0 && (
+                <div className="text-center py-8">
+                  <CheckCircle2 size={32} className="text-green-500 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700">No upcoming deadlines</p>
+                  <p className="text-xs text-gray-500 mt-1">Nothing due in the next 90 days.</p>
+                </div>
+              )}
+
+              {!deadlinesLoading && [...deadlines].sort((a, b) => a.daysRemaining - b.daysRemaining).map(deadline => (
                 <div
                   key={deadline.id}
                   className={`bg-white border rounded-lg p-3 shadow-sm ${
@@ -1046,22 +869,27 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
                 </div>
               ))}
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-                <div className="flex items-start gap-2">
-                  <Info size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs font-medium text-blue-800">AI Recommendation</p>
-                    <p className="text-xs text-blue-700 mt-0.5">
-                      Based on your current readiness scores and deadline proximity, I recommend prioritizing the HIPAA Risk Assessment
-                      (12 days remaining) and the ISO 27001 Surveillance Audit preparation. Running an audit simulation now could
-                      help identify critical gaps.
-                    </p>
-                    <button className="mt-2 text-xs text-blue-800 font-medium hover:underline flex items-center gap-1">
-                      Run Audit Simulation <ArrowRight size={10} />
-                    </button>
+              {!deadlinesLoading && !deadlinesError && deadlines.length > 0 && (() => {
+                const nearest = [...deadlines].sort((a, b) => a.daysRemaining - b.daysRemaining)[0];
+                return (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                    <div className="flex items-start gap-2">
+                      <Info size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-blue-800">AI Recommendation</p>
+                        <p className="text-xs text-blue-700 mt-0.5">
+                          Based on deadline proximity, prioritize <span className="font-medium">{nearest.title}</span>
+                          {' '}({nearest.daysRemaining < 0 ? 'overdue' : `${nearest.daysRemaining} days remaining`}).
+                          Running an audit simulation now could help identify critical gaps before it is due.
+                        </p>
+                        <button className="mt-2 text-xs text-blue-800 font-medium hover:underline flex items-center gap-1">
+                          Run Audit Simulation <ArrowRight size={10} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
           )}
 

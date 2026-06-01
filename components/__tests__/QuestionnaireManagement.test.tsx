@@ -97,17 +97,26 @@ describe('QuestionnaireManagement', () => {
     });
   });
 
-  it('shows dashboard view by default', async () => {
+  it('loads questionnaires, metrics and templates from the API on mount', async () => {
     render(<QuestionnaireManagement />);
+    const { api } = await import('@/services/api');
     await waitFor(() => {
-      expect(screen.getAllByText(/Questionnaire/i).length).toBeGreaterThan(0);
+      expect(api.enterprise.questionnaires.list).toHaveBeenCalled();
+      expect(api.enterprise.questionnaires.getMetrics).toHaveBeenCalled();
+      expect(api.enterprise.questionnaires.getTemplates).toHaveBeenCalled();
     });
   });
 
-  it('displays key metric cards', async () => {
+  it('displays the metric summary cards from loaded metrics', async () => {
     render(<QuestionnaireManagement />);
+    // The dashboard renders a metric grid (Total / Draft / In Progress / …)
+    // once getMetrics resolves; assert several of those labels are present.
     await waitFor(() => {
-      expect(screen.getAllByText(/Questionnaire/i).length).toBeGreaterThan(0);
+      expect(screen.getByText('Total')).toBeInTheDocument();
     });
+    expect(screen.getByText('Draft')).toBeInTheDocument();
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
+    expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(screen.getByText('Completion')).toBeInTheDocument();
   });
 });

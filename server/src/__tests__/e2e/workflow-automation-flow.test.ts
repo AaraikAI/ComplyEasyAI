@@ -67,21 +67,19 @@ app.use('/api/workflows', workflowRoutes);
 app.use(errorHandler);
 
 describe('E2E: Workflow Automation Flow', () => {
+  // Prisma model is `gRCWorkflow`; executions are `workflowExecution`.
   const mockWorkflow = {
     id: 'wf-123',
     name: 'Risk Escalation Workflow',
     description: 'Escalate high risks to management',
     status: 'Active',
+    workflowType: 'Custom',
     organizationId: 'org-123',
-    trigger: {
-      type: 'event',
-      event: 'risk.created',
-      conditions: [{ field: 'severity', operator: 'equals', value: 'Critical' }],
-    },
-    actions: [
-      { type: 'notification', config: { channel: 'email', recipients: ['admin@example.com'] } },
-      { type: 'assignTask', config: { assignTo: 'manager', dueInDays: 1 } },
-    ],
+    trigger: { type: 'event', config: {} },
+    nodes: [],
+    edges: [],
+    variables: {},
+    createdBy: 'user-123',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -89,87 +87,96 @@ describe('E2E: Workflow Automation Flow', () => {
   const mockExecution = {
     id: 'exec-123',
     workflowId: 'wf-123',
-    status: 'Completed',
-    triggeredBy: 'system',
-    triggerData: { riskId: 'risk-123', severity: 'Critical' },
+    status: 'Running',
+    triggeredBy: 'user-123',
+    triggerType: 'manual',
+    completedNodes: [],
+    nodeResults: {},
+    variables: {},
     startedAt: new Date(),
-    completedAt: new Date(),
-    steps: [
-      { action: 'notification', status: 'Success', duration: 150 },
-      { action: 'assignTask', status: 'Success', duration: 50 },
-    ],
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('Workflow Builder Flow', () => {
-    it('should create new workflow', async () => {
-      prismaMock.workflow.create.mockResolvedValue(mockWorkflow as any);
+  describe('Workflow CRUD', () => {
+    it('should create a new workflow', async () => {
+      prismaMock.gRCWorkflow.create.mockResolvedValue(mockWorkflow as any);
 
       const response = await request(app)
         .post('/api/workflows')
         .send({
           name: 'Risk Escalation Workflow',
           description: 'Escalate high risks to management',
-          trigger: {
-            type: 'event',
-            event: 'risk.created',
-            conditions: [{ field: 'severity', operator: 'equals', value: 'Critical' }],
-          },
-          actions: [
-            { type: 'notification', config: { channel: 'email', recipients: ['admin@example.com'] } },
-          ],
+          workflowType: 'Custom',
+          trigger: { type: 'event', config: {} },
+          status: 'Active',
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'wf-123');
       expect(response.body.name).toBe('Risk Escalation Workflow');
     });
 
-    it('should update workflow definition', async () => {
-      prismaMock.workflow.findFirst.mockResolvedValue(mockWorkflow as any);
-      prismaMock.workflow.update.mockResolvedValue({
+    it('should reject creating a workflow without a name', async () => {
+      const response = await request(app)
+        .post('/api/workflows')
+        .send({ description: 'no name' })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should list workflows (paginated envelope)', async () => {
+      prismaMock.gRCWorkflow.findMany.mockResolvedValue([mockWorkflow] as any);
+      prismaMock.gRCWorkflow.count.mockResolvedValue(1);
+
+      const response = await request(app)
+        .get('/api/workflows')
+        .query({ status: 'Active' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('workflows');
+      expect(Array.isArray(response.body.workflows)).toBe(true);
+      expect(response.body).toHaveProperty('total', 1);
+    });
+
+    it('should get a single workflow with recent executions', async () => {
+      prismaMock.gRCWorkflow.findFirst.mockResolvedValue({
         ...mockWorkflow,
-        actions: [
-          ...mockWorkflow.actions,
-          { type: 'createTask', config: { title: 'Review risk' } },
-        ],
+        executions: [mockExecution],
+      } as any);
+
+      const response = await request(app)
+        .get('/api/workflows/wf-123')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', 'wf-123');
+    });
+
+    it('should update a workflow definition', async () => {
+      prismaMock.gRCWorkflow.findFirst.mockResolvedValue(mockWorkflow as any);
+      prismaMock.gRCWorkflow.update.mockResolvedValue({
+        ...mockWorkflow,
+        status: 'Draft',
       } as any);
 
       const response = await request(app)
         .patch('/api/workflows/wf-123')
-        .send({
-          actions: [
-            { type: 'notification', config: { channel: 'email' } },
-            { type: 'createTask', config: { title: 'Review risk' } },
-          ],
-        })
+        .send({ status: 'Draft' })
         .expect(200);
 
-      expect(response.body.actions).toHaveLength(2);
+      expect(response.body.status).toBe('Draft');
     });
 
-    it('should validate workflow before save', async () => {
-      const response = await request(app)
-        .post('/api/workflows/validate')
-        .send({
-          trigger: { type: 'event', event: 'risk.created' },
-          actions: [{ type: 'notification', config: {} }],
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('valid');
-      expect(response.body).toHaveProperty('errors');
-    });
-
-    it('should duplicate workflow', async () => {
-      prismaMock.workflow.findFirst.mockResolvedValue(mockWorkflow as any);
-      prismaMock.workflow.create.mockResolvedValue({
+    it('should duplicate a workflow', async () => {
+      prismaMock.gRCWorkflow.findFirst.mockResolvedValue(mockWorkflow as any);
+      prismaMock.gRCWorkflow.create.mockResolvedValue({
         ...mockWorkflow,
         id: 'wf-124',
         name: 'Risk Escalation Workflow (Copy)',
+        status: 'Draft',
       } as any);
 
       const response = await request(app)
@@ -180,254 +187,120 @@ describe('E2E: Workflow Automation Flow', () => {
     });
   });
 
-  describe('Workflow Triggers', () => {
-    it('should configure event-based trigger', async () => {
-      prismaMock.workflow.findFirst.mockResolvedValue(mockWorkflow as any);
-      prismaMock.workflow.update.mockResolvedValue({
-        ...mockWorkflow,
-        trigger: {
-          type: 'event',
-          event: 'control.status_changed',
-          conditions: [
-            { field: 'oldStatus', operator: 'equals', value: 'Draft' },
-            { field: 'newStatus', operator: 'equals', value: 'Active' },
-          ],
-        },
-      } as any);
-
-      const response = await request(app)
-        .patch('/api/workflows/wf-123/trigger')
-        .send({
-          type: 'event',
-          event: 'control.status_changed',
-          conditions: [
-            { field: 'oldStatus', operator: 'equals', value: 'Draft' },
-            { field: 'newStatus', operator: 'equals', value: 'Active' },
-          ],
-        })
-        .expect(200);
-
-      expect(response.body.trigger.event).toBe('control.status_changed');
-    });
-
-    it('should configure scheduled trigger', async () => {
-      prismaMock.workflow.findFirst.mockResolvedValue(mockWorkflow as any);
-      prismaMock.workflow.update.mockResolvedValue({
-        ...mockWorkflow,
-        trigger: {
-          type: 'schedule',
-          cron: '0 9 * * 1', // Every Monday at 9 AM
-          timezone: 'America/New_York',
-        },
-      } as any);
-
-      const response = await request(app)
-        .patch('/api/workflows/wf-123/trigger')
-        .send({
-          type: 'schedule',
-          cron: '0 9 * * 1',
-          timezone: 'America/New_York',
-        })
-        .expect(200);
-
-      expect(response.body.trigger.type).toBe('schedule');
-    });
-
-    it('should configure webhook trigger', async () => {
-      prismaMock.workflow.findFirst.mockResolvedValue(mockWorkflow as any);
-      prismaMock.workflow.update.mockResolvedValue({
-        ...mockWorkflow,
-        trigger: {
-          type: 'webhook',
-          webhookUrl: 'https://api.example.com/workflows/wf-123/trigger',
-          secret: 'webhook-secret',
-        },
-      } as any);
-
-      const response = await request(app)
-        .patch('/api/workflows/wf-123/trigger')
-        .send({
-          type: 'webhook',
-        })
-        .expect(200);
-
-      expect(response.body.trigger.type).toBe('webhook');
-      expect(response.body.trigger).toHaveProperty('webhookUrl');
-    });
-  });
-
   describe('Workflow Execution', () => {
-    it('should manually trigger workflow', async () => {
-      prismaMock.workflow.findFirst.mockResolvedValue(mockWorkflow as any);
+    it('should manually run a workflow', async () => {
+      prismaMock.gRCWorkflow.findFirst.mockResolvedValue(mockWorkflow as any);
       prismaMock.workflowExecution.create.mockResolvedValue(mockExecution as any);
+      prismaMock.gRCWorkflow.update.mockResolvedValue(mockWorkflow as any);
 
       const response = await request(app)
-        .post('/api/workflows/wf-123/execute')
-        .send({
-          inputData: { riskId: 'risk-123', severity: 'Critical' },
-        })
+        .post('/api/workflows/wf-123/run')
         .expect(200);
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('status');
+      expect(response.body).toHaveProperty('id', 'exec-123');
+      expect(response.body).toHaveProperty('status', 'Running');
     });
 
-    it('should get execution history', async () => {
-      prismaMock.workflowExecution.findMany.mockResolvedValue([mockExecution] as any);
+    it('should return 404 running a workflow that is not owned', async () => {
+      prismaMock.gRCWorkflow.findFirst.mockResolvedValue(null as any);
 
       const response = await request(app)
-        .get('/api/workflows/wf-123/executions')
-        .expect(200);
+        .post('/api/workflows/wf-999/run')
+        .expect(404);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body[0]).toHaveProperty('status');
+      expect(response.body).toHaveProperty('error');
     });
 
-    it('should get execution details', async () => {
-      prismaMock.workflowExecution.findFirst.mockResolvedValue(mockExecution as any);
+    it('should list execution runs (paginated envelope)', async () => {
+      prismaMock.gRCWorkflow.findMany.mockResolvedValue([{ id: 'wf-123' }] as any);
+      prismaMock.workflowExecution.findMany.mockResolvedValue([
+        { ...mockExecution, workflow: { id: 'wf-123', name: 'WF', workflowType: 'Custom' } },
+      ] as any);
+      prismaMock.workflowExecution.count.mockResolvedValue(1);
 
       const response = await request(app)
-        .get('/api/workflows/wf-123/executions/exec-123')
+        .get('/api/workflows/runs/list')
         .expect(200);
 
-      expect(response.body).toHaveProperty('steps');
-      expect(response.body.steps).toHaveLength(2);
-    });
-
-    it('should retry failed execution', async () => {
-      const failedExecution = {
-        ...mockExecution,
-        status: 'Failed',
-        steps: [
-          { action: 'notification', status: 'Failed', error: 'Email service unavailable' },
-        ],
-      };
-      prismaMock.workflowExecution.findFirst.mockResolvedValue(failedExecution as any);
-      prismaMock.workflowExecution.create.mockResolvedValue({
-        ...mockExecution,
-        id: 'exec-124',
-        status: 'Running',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/workflows/wf-123/executions/exec-123/retry')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should cancel running execution', async () => {
-      const runningExecution = { ...mockExecution, status: 'Running' };
-      prismaMock.workflowExecution.findFirst.mockResolvedValue(runningExecution as any);
-      prismaMock.workflowExecution.update.mockResolvedValue({
-        ...mockExecution,
-        status: 'Cancelled',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/workflows/wf-123/executions/exec-123/cancel')
-        .expect(200);
-
-      expect(response.body.status).toBe('Cancelled');
+      expect(response.body).toHaveProperty('runs');
+      expect(Array.isArray(response.body.runs)).toBe(true);
+      expect(response.body).toHaveProperty('total', 1);
     });
   });
 
   describe('Workflow Templates', () => {
-    it('should list workflow templates', async () => {
+    it('should list built-in workflow templates', async () => {
       const response = await request(app)
-        .get('/api/workflows/templates')
+        .get('/api/workflows/templates/list')
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body[0]).toHaveProperty('id');
     });
 
-    it('should create workflow from template', async () => {
-      prismaMock.workflow.create.mockResolvedValue({
+    it('should create a workflow from a template', async () => {
+      prismaMock.gRCWorkflow.create.mockResolvedValue({
         ...mockWorkflow,
         id: 'wf-125',
-        name: 'Risk Escalation (from template)',
+        name: 'Vendor Risk Assessment',
+        status: 'Draft',
       } as any);
 
       const response = await request(app)
-        .post('/api/workflows/templates/risk-escalation/create')
-        .send({
-          name: 'Risk Escalation (from template)',
-          customizations: {
-            'actions.0.config.recipients': ['custom@example.com'],
-          },
-        })
+        .post('/api/workflows/templates/tpl-vendor-risk/use')
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'wf-125');
     });
   });
 
   describe('Workflow Automation Rules', () => {
-    it('should create automation rule', async () => {
-      prismaMock.automationRule.create.mockResolvedValue({
+    it('should create an automation rule (event-triggered workflow)', async () => {
+      prismaMock.gRCWorkflow.create.mockResolvedValue({
+        ...mockWorkflow,
         id: 'rule-123',
         name: 'Auto-assign high risks',
-        workflowId: 'wf-123',
-        enabled: true,
-        conditions: [{ field: 'severity', operator: 'equals', value: 'High' }],
       } as any);
 
       const response = await request(app)
         .post('/api/workflows/rules')
         .send({
           name: 'Auto-assign high risks',
-          workflowId: 'wf-123',
+          trigger: { event: 'risk.created' },
           conditions: [{ field: 'severity', operator: 'equals', value: 'High' }],
+          actions: [{ type: 'assign' }],
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'rule-123');
     });
 
-    it('should toggle automation rule', async () => {
-      prismaMock.automationRule.findFirst.mockResolvedValue({
-        id: 'rule-123',
-        enabled: true,
+    it('should list automation rules', async () => {
+      prismaMock.gRCWorkflow.findMany.mockResolvedValue([mockWorkflow] as any);
+      prismaMock.gRCWorkflow.count.mockResolvedValue(1);
+
+      const response = await request(app)
+        .get('/api/workflows/rules/list')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('rules');
+      expect(Array.isArray(response.body.rules)).toBe(true);
+    });
+
+    it('should update an automation rule', async () => {
+      prismaMock.gRCWorkflow.findFirst.mockResolvedValue(mockWorkflow as any);
+      prismaMock.gRCWorkflow.update.mockResolvedValue({
+        ...mockWorkflow,
+        status: 'Disabled',
       } as any);
-      prismaMock.automationRule.update.mockResolvedValue({
-        id: 'rule-123',
-        enabled: false,
-      } as any);
 
       const response = await request(app)
-        .patch('/api/workflows/rules/rule-123/toggle')
+        .patch('/api/workflows/rules/wf-123')
+        .send({ status: 'Disabled' })
         .expect(200);
 
-      expect(response.body.enabled).toBe(false);
-    });
-  });
-
-  describe('Workflow Dashboard', () => {
-    it('should get workflow statistics', async () => {
-      prismaMock.workflow.count.mockResolvedValue(10);
-      prismaMock.workflowExecution.count.mockResolvedValue(150);
-      prismaMock.workflowExecution.groupBy.mockResolvedValue([
-        { status: 'Completed', _count: { id: 140 } },
-        { status: 'Failed', _count: { id: 10 } },
-      ] as any);
-
-      const response = await request(app)
-        .get('/api/workflows/dashboard')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('totalWorkflows');
-      expect(response.body).toHaveProperty('executionStats');
-    });
-
-    it('should get active workflows', async () => {
-      prismaMock.workflow.findMany.mockResolvedValue([mockWorkflow] as any);
-
-      const response = await request(app)
-        .get('/api/workflows')
-        .query({ status: 'Active' })
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.status).toBe('Disabled');
     });
   });
 });

@@ -49,7 +49,10 @@ export function validateQuery(schema: SchemaLike) {
       return;
     }
 
-    req.query = value;
+    // Express 5 exposes req.query via a getter with no setter, so a direct
+    // assignment throws. Shadow it with the validated/coerced value as an own
+    // data property instead.
+    Object.defineProperty(req, 'query', { value, writable: true, configurable: true, enumerable: true });
     next();
   };
 }
@@ -69,7 +72,8 @@ export function validateParams(schema: SchemaLike) {
       return;
     }
 
-    req.params = value as Record<string, string>;
+    // Same Express 5 getter caveat as req.query — define an own data property.
+    Object.defineProperty(req, 'params', { value: value as Record<string, string>, writable: true, configurable: true, enumerable: true });
     next();
   };
 }

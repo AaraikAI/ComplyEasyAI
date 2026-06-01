@@ -5,6 +5,16 @@
 
 import { test, expect } from '@playwright/test';
 
+// Paths the server intentionally exempts from CSRF validation (pre-login auth
+// endpoints and HMAC-verified webhook receivers — see server/src/middleware/csrf.ts).
+const CSRF_EXEMPT = [
+  '/auth/login', '/auth/register', '/auth/refresh', '/auth/magic-link',
+  '/auth/verify', '/auth/2fa/complete', '/webhook', '/csrf-token',
+];
+function isCsrfExempt(url: string): boolean {
+  return CSRF_EXEMPT.some((p) => url.includes(p));
+}
+
 test.describe('Questionnaire Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/enterprise/questionnaires');
@@ -90,11 +100,13 @@ test.describe('Questionnaire Management', () => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
-      let postCsrf = false;
-
+      // Any mutating /api/ request the create flow fires must carry an
+      // x-csrf-token (the frontend attaches it for all mutations — services/api.ts).
+      // A mutation without the token is a regression and fails the test.
+      const mutationsWithoutCsrf: string[] = [];
       page.on('request', (req) => {
-        if (req.method() === 'POST' && req.url().includes('/api/')) {
-          postCsrf = !!req.headers()['x-csrf-token'];
+        if (req.method() === 'POST' && req.url().includes('/api/') && !isCsrfExempt(req.url())) {
+          if (!req.headers()['x-csrf-token']) mutationsWithoutCsrf.push(req.url());
         }
       });
 
@@ -114,9 +126,7 @@ test.describe('Questionnaire Management', () => {
         }
       }
 
-      if (postCsrf) {
-        expect(postCsrf).toBeTruthy();
-      }
+      expect(mutationsWithoutCsrf, `mutating requests missing CSRF: ${mutationsWithoutCsrf.join(', ')}`).toHaveLength(0);
     });
   });
 
@@ -213,15 +223,24 @@ test.describe('Questionnaire Management', () => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
-      const approveBtn = page.getByRole('button', { name: /approve|accept/i });
-      const rejectBtn = page.getByRole('button', { name: /reject|decline/i });
+      const approveBtn = page.getByRole('button', { name: /approve|accept/i }).first();
+      const rejectBtn = page.getByRole('button', { name: /reject|decline/i }).first();
 
       const hasApprove = await approveBtn.isVisible({ timeout: 5000 }).catch(() => false);
       const hasReject = await rejectBtn.isVisible({ timeout: 3000 }).catch(() => false);
 
-      // At least one review action should exist if in review state
-      // (may not be visible if no questionnaires are in review)
-      expect(true).toBeTruthy();
+      // Review actions only render when an item is in the "In Review" state. If no
+      // such item exists, skip so the absence is surfaced rather than passing
+      // silently. When the review UI is present, both controls must be available
+      // so a reviewer can take an explicit approve/reject decision.
+      const inReview = page.locator(':text("In Review"), :text("Submitted"), :text("Pending")').first();
+      const hasInReviewItem = await inReview.isVisible({ timeout: 3000 }).catch(() => false);
+
+      if (!hasInReviewItem && !hasApprove && !hasReject) {
+        test.skip();
+      }
+
+      expect(hasApprove || hasReject).toBeTruthy();
     });
   });
 

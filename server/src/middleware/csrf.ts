@@ -46,6 +46,7 @@ class InMemoryTokenStore implements TokenStore {
   constructor() {
     // Cleanup expired tokens every 15 minutes
     this.cleanupTimer = setInterval(() => this.cleanup(), 15 * 60 * 1000);
+    this.cleanupTimer?.unref?.();
   }
 
   async get(token: string): Promise<TokenData | undefined> {
@@ -81,73 +82,91 @@ class InMemoryTokenStore implements TokenStore {
 class RedisTokenStore implements TokenStore {
   private redisUrl: string;
   private prefix = 'csrf:';
+  // Single long-lived client reused across all CSRF operations. A fresh
+  // connection per validate/set/delete would exhaust connections and add
+  // latency to every mutating request under load.
+  private client: any = null;
+  private clientPromise: Promise<any> | null = null;
 
   constructor(redisUrl: string) {
     this.redisUrl = redisUrl;
     logger.info('[CSRF] Using Redis token store for multi-instance scalability');
   }
 
-  private async getRedisClient() {
-    // Lazy import to avoid requiring ioredis when not using Redis
-    const { default: Redis } = await import('ioredis' as string);
-    return new Redis(this.redisUrl, {
-      maxRetriesPerRequest: 1,
-      lazyConnect: true,
-      connectTimeout: 5000,
-    });
+  /**
+   * Return the shared ioredis client, creating and connecting it once.
+   * Subsequent calls reuse the same connection (lazyConnect singleton).
+   */
+  private async getClient(): Promise<any> {
+    if (this.client) return this.client;
+    if (this.clientPromise) return this.clientPromise;
+
+    this.clientPromise = (async () => {
+      // Lazy import to avoid requiring ioredis when not using Redis
+      const { default: Redis } = await import('ioredis' as string);
+      const client = new Redis(this.redisUrl, {
+        maxRetriesPerRequest: 2,
+        lazyConnect: true,
+        connectTimeout: 5000,
+      });
+      // Prevent unhandled 'error' events from crashing the process; reset the
+      // cached client so the next operation re-establishes the connection.
+      client.on('error', (err: Error) => {
+        logger.warn('[CSRF] Redis connection error', err.message);
+      });
+      client.on('end', () => {
+        this.client = null;
+        this.clientPromise = null;
+      });
+      await client.connect();
+      this.client = client;
+      return client;
+    })();
+
+    try {
+      return await this.clientPromise;
+    } catch (error) {
+      this.client = null;
+      this.clientPromise = null;
+      throw error;
+    }
   }
 
   async get(token: string): Promise<TokenData | undefined> {
-    let client;
     try {
-      client = await this.getRedisClient();
-      await client.connect();
+      const client = await this.getClient();
       const data = await client.get(this.prefix + token);
-      await client.quit();
       return data ? JSON.parse(data) : undefined;
     } catch (error) {
-      if (client) await client.quit().catch(() => {});
       logger.warn('[CSRF] Redis get failed, token not found');
       return undefined;
     }
   }
 
   async set(token: string, data: TokenData): Promise<void> {
-    let client;
     try {
-      client = await this.getRedisClient();
-      await client.connect();
+      const client = await this.getClient();
       await client.setex(this.prefix + token, CSRF_TOKEN_EXPIRY_SECONDS, JSON.stringify(data));
-      await client.quit();
     } catch (error) {
-      if (client) await client.quit().catch(() => {});
       logger.error('[CSRF] Redis set failed', error);
     }
   }
 
   async delete(token: string): Promise<void> {
-    let client;
     try {
-      client = await this.getRedisClient();
-      await client.connect();
+      const client = await this.getClient();
       await client.del(this.prefix + token);
-      await client.quit();
     } catch (error) {
-      if (client) await client.quit().catch(() => {});
       logger.warn('[CSRF] Redis delete failed');
     }
   }
 
   async size(): Promise<number> {
-    let client;
     try {
-      client = await this.getRedisClient();
-      await client.connect();
+      const client = await this.getClient();
       const keys = await client.keys(this.prefix + '*');
-      await client.quit();
       return keys.length;
     } catch (error) {
-      if (client) await client.quit().catch(() => {});
       return 0;
     }
   }

@@ -46,6 +46,7 @@ import {
   ArrowDownRight,
   Minus,
   Circle,
+  Globe,
 } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -240,6 +241,11 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [reassigningTaskId, setReassigningTaskId] = useState<string | null>(null);
   const [reassignValue, setReassignValue] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [taskActionId, setTaskActionId] = useState<string | null>(null);
+  const [taskActionError, setTaskActionError] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string }>>([]);
 
   // Live API-backed dashboard data
   const [regulatoryChanges, setRegulatoryChanges] = useState<RegulatoryChange[]>([]);
@@ -248,6 +254,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [dataLoading, setDataLoading] = useState<boolean>(true);
   const [dataError, setDataError] = useState<string | null>(null);
+  const [lastScanAt, setLastScanAt] = useState<Date | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setDataLoading(true);
@@ -263,6 +270,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
       setRemediationTasks((tRes?.tasks as RemediationTask[]) || []);
       setImpactItems((iRes?.items as ImpactItem[]) || []);
       setAuditLog((lRes?.entries as AuditLogEntry[]) || []);
+      setLastScanAt(new Date());
     } catch (err: any) {
       logger.error('Failed to load regulatory dashboard data:', err);
       setDataError(err?.message || 'Failed to load regulatory data.');
@@ -279,11 +287,106 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
     void loadDashboard();
   }, [loadDashboard]);
 
+  // Load assignable team members for the Reassign action (resolves name -> id)
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const members = await api.team.list();
+        if (active && Array.isArray(members)) {
+          setTeamMembers(members.map((m: any) => ({ id: m.id, name: m.name })));
+        }
+      } catch (err: any) {
+        logger.warn('Failed to load team members for reassignment:', err);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
   // Helper to get effective task status (accounting for locally started tasks)
   const getEffectiveTaskStatus = (task: RemediationTask) => {
     if (startedTasks.has(task.id) && task.status === 'pending') return 'in-progress';
     return task.status;
   };
+
+  // Persist "Start Task": move the backing issue into the In Progress state.
+  const handleStartTask = useCallback(async (task: RemediationTask) => {
+    setTaskActionId(task.id);
+    setTaskActionError(null);
+    // Optimistically reflect the change while the request is in flight
+    setStartedTasks(prev => {
+      const next = new Set(prev);
+      next.add(task.id);
+      return next;
+    });
+    try {
+      await api.enterprise.issues.updateStatus(task.id, 'In_Progress');
+      await loadDashboard();
+    } catch (err: any) {
+      logger.error('Failed to start remediation task:', err);
+      setTaskActionError(err?.message || 'Could not start this task. Please try again.');
+      // Roll back the optimistic update so the UI matches the server
+      setStartedTasks(prev => {
+        const next = new Set(prev);
+        next.delete(task.id);
+        return next;
+      });
+    } finally {
+      setTaskActionId(null);
+    }
+  }, [loadDashboard]);
+
+  // Begin editing: seed the controlled inputs from the current task values.
+  const handleBeginEdit = useCallback((task: RemediationTask) => {
+    if (editingTaskId === task.id) {
+      setEditingTaskId(null);
+      return;
+    }
+    setEditingTaskId(task.id);
+    setEditTitle(task.title);
+    setEditDescription(task.description);
+    setTaskActionError(null);
+  }, [editingTaskId]);
+
+  // Persist edited title/description back to the backing issue.
+  const handleSaveEdit = useCallback(async (task: RemediationTask) => {
+    setTaskActionId(task.id);
+    setTaskActionError(null);
+    try {
+      await api.enterprise.issues.update(task.id, {
+        title: editTitle,
+        description: editDescription,
+      });
+      setEditingTaskId(null);
+      await loadDashboard();
+    } catch (err: any) {
+      logger.error('Failed to save task edits:', err);
+      setTaskActionError(err?.message || 'Could not save changes. Please try again.');
+    } finally {
+      setTaskActionId(null);
+    }
+  }, [editTitle, editDescription, loadDashboard]);
+
+  // Persist a reassignment: map the selected member to the issue assignee.
+  const handleConfirmReassign = useCallback(async (task: RemediationTask) => {
+    if (!reassignValue) {
+      setTaskActionError('Select a team member to assign.');
+      return;
+    }
+    setTaskActionId(task.id);
+    setTaskActionError(null);
+    try {
+      await api.enterprise.issues.assign(task.id, reassignValue);
+      setReassigningTaskId(null);
+      setReassignValue('');
+      await loadDashboard();
+    } catch (err: any) {
+      logger.error('Failed to reassign task:', err);
+      setTaskActionError(err?.message || 'Could not reassign this task. Please try again.');
+    } finally {
+      setTaskActionId(null);
+    }
+  }, [reassignValue, loadDashboard]);
 
   // Summary stats
   const pendingCount = regulatoryChanges.filter(c => c.status === 'pending').length;
@@ -292,6 +395,14 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
   const totalTasks = remediationTasks.length;
   const completedTasks = remediationTasks.filter(t => t.status === 'completed').length;
   const criticalChanges = regulatoryChanges.filter(c => c.severity === 'critical' && c.status !== 'completed').length;
+
+  // Distinct monitored sources / jurisdictions derived from the live change feed
+  const monitoredSourceCount = new Set(
+    regulatoryChanges.map(c => c.source).filter(Boolean)
+  ).size;
+  const jurisdictionCount = new Set(
+    regulatoryChanges.map(c => c.jurisdiction).filter(Boolean)
+  ).size;
 
   const filteredChanges = regulatoryChanges.filter(change => {
     if (searchQuery && !change.title.toLowerCase().includes(searchQuery.toLowerCase()) && !change.source.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -800,28 +911,24 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                       {getEffectiveTaskStatus(task) !== 'completed' && (
                         <>
                           <button
-                            onClick={() => {
-                              setStartedTasks(prev => {
-                                const next = new Set(prev);
-                                next.add(task.id);
-                                return next;
-                              });
-                            }}
-                            disabled={startedTasks.has(task.id) || task.status === 'in-progress'}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                            onClick={() => void handleStartTask(task)}
+                            disabled={startedTasks.has(task.id) || task.status === 'in-progress' || taskActionId === task.id}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-60 ${
                               startedTasks.has(task.id) || task.status === 'in-progress'
                                 ? 'bg-green-100 text-green-700 cursor-default'
                                 : 'bg-brand-600 text-white hover:bg-brand-700'
                             }`}
                           >
-                            {startedTasks.has(task.id) || task.status === 'in-progress' ? (
+                            {taskActionId === task.id && !startedTasks.has(task.id) ? (
+                              <><Loader2 size={12} className="animate-spin" /> Starting...</>
+                            ) : startedTasks.has(task.id) || task.status === 'in-progress' ? (
                               <><CheckCircle2 size={12} /> In Progress</>
                             ) : (
                               <><Play size={12} /> Start Task</>
                             )}
                           </button>
                           <button
-                            onClick={() => setEditingTaskId(editingTaskId === task.id ? null : task.id)}
+                            onClick={() => handleBeginEdit(task)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium rounded-lg transition-colors ${
                               editingTaskId === task.id
                                 ? 'border-brand-300 bg-brand-50 text-brand-700'
@@ -829,7 +936,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                             }`}
                           >
                             <Edit3 size={12} />
-                            {editingTaskId === task.id ? 'Done Editing' : 'Edit'}
+                            {editingTaskId === task.id ? 'Close' : 'Edit'}
                           </button>
                           <button
                             onClick={() => {
@@ -866,17 +973,29 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                             <label className="text-xs text-blue-700 font-medium">Title</label>
                             <input
                               type="text"
-                              defaultValue={task.title}
+                              value={editTitle}
+                              onChange={e => setEditTitle(e.target.value)}
                               className="mt-0.5 w-full text-sm border border-blue-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             />
                           </div>
                           <div>
                             <label className="text-xs text-blue-700 font-medium">Description</label>
                             <textarea
-                              defaultValue={task.description}
+                              value={editDescription}
+                              onChange={e => setEditDescription(e.target.value)}
                               rows={2}
                               className="mt-0.5 w-full text-sm border border-blue-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             />
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => void handleSaveEdit(task)}
+                              disabled={taskActionId === task.id || !editTitle.trim()}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-md hover:bg-brand-700 disabled:opacity-60 transition-colors"
+                            >
+                              {taskActionId === task.id ? <Loader2 size={12} className="animate-spin" /> : <CheckSquare size={12} />}
+                              Save Changes
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -890,23 +1009,36 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                           Reassign Task
                         </p>
                         <div className="flex items-center gap-2">
-                          <input
-                            type="text"
+                          <select
                             value={reassignValue}
                             onChange={e => setReassignValue(e.target.value)}
-                            placeholder="Enter new assignee name"
                             className="flex-1 text-sm border border-orange-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
-                          />
-                          <button
-                            onClick={() => {
-                              setReassigningTaskId(null);
-                              setReassignValue('');
-                            }}
-                            className="px-3 py-1 bg-brand-600 text-white text-xs font-medium rounded-md hover:bg-brand-700 transition-colors"
                           >
+                            <option value="">Select a team member...</option>
+                            {teamMembers.map(m => (
+                              <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => void handleConfirmReassign(task)}
+                            disabled={taskActionId === task.id || !reassignValue}
+                            className="flex items-center gap-1.5 px-3 py-1 bg-brand-600 text-white text-xs font-medium rounded-md hover:bg-brand-700 disabled:opacity-60 transition-colors"
+                          >
+                            {taskActionId === task.id ? <Loader2 size={12} className="animate-spin" /> : null}
                             Confirm
                           </button>
                         </div>
+                        {teamMembers.length === 0 && (
+                          <p className="text-xs text-orange-600 mt-1.5">No assignable team members are available.</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Task action error */}
+                    {taskActionError && (editingTaskId === task.id || reassigningTaskId === task.id || taskActionId === task.id) && (
+                      <div className="mt-2 flex items-center gap-1.5 text-xs text-red-600">
+                        <AlertCircle size={12} />
+                        {taskActionError}
                       </div>
                     )}
                   </div>
@@ -1083,12 +1215,13 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
           <div>
             <h4 className="text-sm font-semibold text-purple-900">Regulatory Intelligence Fabric (RIF) Active</h4>
             <p className="text-xs text-purple-700 mt-0.5">
-              Continuously monitoring 47 regulatory sources across 12 jurisdictions. Last scan: {new Date().toLocaleString()}.
-              RIF scores reflect the urgency and relevance of each change to your compliance posture.
+              Monitoring {monitoredSourceCount} regulatory {monitoredSourceCount === 1 ? 'source' : 'sources'} across {jurisdictionCount} {jurisdictionCount === 1 ? 'jurisdiction' : 'jurisdictions'}.
+              {lastScanAt ? ` Last scan: ${lastScanAt.toLocaleString()}.` : ''}
+              {' '}RIF scores reflect the urgency and relevance of each change to your compliance posture.
             </p>
             <div className="flex items-center gap-4 mt-2">
-              <span className="text-xs text-purple-600 flex items-center gap-1"><CheckCircle2 size={10} />47 sources active</span>
-              <span className="text-xs text-purple-600 flex items-center gap-1"><Globe size={10} />12 jurisdictions</span>
+              <span className="text-xs text-purple-600 flex items-center gap-1"><CheckCircle2 size={10} />{monitoredSourceCount} sources active</span>
+              <span className="text-xs text-purple-600 flex items-center gap-1"><Globe size={10} />{jurisdictionCount} {jurisdictionCount === 1 ? 'jurisdiction' : 'jurisdictions'}</span>
               <span className="text-xs text-purple-600 flex items-center gap-1"><RefreshCw size={10} />Real-time scanning</span>
             </div>
           </div>
@@ -1097,12 +1230,3 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
     </div>
   );
 };
-
-// Globe icon isn't imported from lucide, define inline
-const Globe: React.FC<{ size: number; className?: string }> = ({ size, className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <circle cx="12" cy="12" r="10" />
-    <line x1="2" y1="12" x2="22" y2="12" />
-    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-  </svg>
-);

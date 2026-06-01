@@ -1,8 +1,12 @@
 /**
  * OWASP Top 10 Contract Tests
  *
- * Tests the application against the OWASP Top 10 (2021) vulnerabilities using
- * supertest against a mounted Express app with mocked Prisma.
+ * Drives the REAL `/api/risks` router — including the production
+ * `authenticate` + `authorize` middleware and the global error handler —
+ * via supertest against a mounted Express app with mocked Prisma. No auth
+ * logic is reimplemented inline: the real middleware verifies the JWT (pinned
+ * to HS256), consults the revocation blacklist, and logs security events, so a
+ * genuine regression in any of those controls fails this suite.
  *
  * Categories covered:
  *   A01 - Broken Access Control
@@ -62,12 +66,24 @@ jest.mock('../../config/monitoring', () => ({
   default: { setUserContext: jest.fn(), captureException: jest.fn() },
 }));
 
+jest.mock('../../config/database', () => ({
+  __esModule: true,
+  default: prismaMock,
+}));
+
+const mockIsRevoked = jest.fn<() => Promise<boolean>>();
+const mockIsRevokedByUserReset = jest.fn<() => Promise<boolean>>();
 jest.mock('../../services/tokenBlacklistService', () => ({
   __esModule: true,
   default: {
-    isRevoked: jest.fn().mockResolvedValue(false),
-    isRevokedByUserReset: jest.fn().mockResolvedValue(false),
+    isRevoked: (...args: unknown[]) => mockIsRevoked(...(args as [])),
+    isRevokedByUserReset: (...args: unknown[]) => mockIsRevokedByUserReset(...(args as [])),
   },
+}));
+
+jest.mock('../../services/sessionManagementService', () => ({
+  __esModule: true,
+  default: { updateSessionActivity: jest.fn().mockResolvedValue(undefined) },
 }));
 
 jest.mock('../../config', () => ({
@@ -82,26 +98,6 @@ jest.mock('../../config', () => ({
     },
     security: { rateLimitWindowMs: 60000, rateLimitMaxRequests: 100 },
   },
-}));
-
-jest.mock('../../middleware/auth', () => ({
-  authenticate: (req: any, res: any, next: any) => {
-    if ((req as any).user) {
-      next();
-      return;
-    }
-    res.status(401).json({ error: 'No token provided' });
-  },
-  authorize:
-    (..._roles: string[]) =>
-    (req: any, res: any, next: any) => {
-      if (!(req as any).user) {
-        res.status(401).json({ error: 'Authentication required' });
-        return;
-      }
-      next();
-    },
-  AuthRequest: {},
 }));
 
 jest.mock('../../services/geminiService', () => ({
@@ -134,41 +130,26 @@ import { errorHandler } from '../../middleware/errorHandler';
 
 const JWT_SECRET = 'test-jwt-secret-for-owasp-tests';
 
+// REAL router => REAL authenticate + authorize run for every request.
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '1mb' }));
-
-// Simulated auth middleware
-app.use((req, _res, next): void => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, JWT_SECRET) as Record<string, unknown>;
-      (req as any).user = decoded;
-    } catch {
-      // leave req.user undefined — route-level middleware will reject
-    }
-  }
-  next();
-});
-
 app.use('/api/risks', risksRoutes);
 app.use(errorHandler);
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers — the real middleware reads `userId` from the token and pins HS256.
 // ---------------------------------------------------------------------------
 
 const generateToken = (
   userId = 'user-123',
   organizationId = 'org-123',
-  role = 'Admin',
+  role = 'admin',
 ) =>
   jwt.sign(
-    { id: userId, organizationId, role, email: 'test@example.com', name: 'Test User' },
+    { userId, organizationId, role, email: 'test@example.com', name: 'Test User' },
     JWT_SECRET,
-    { expiresIn: '1h' },
+    { algorithm: 'HS256', expiresIn: '1h' },
   );
 
 // ---------------------------------------------------------------------------
@@ -177,13 +158,26 @@ const generateToken = (
 
 describe('OWASP Top 10 Contract Tests', () => {
   const authToken = generateToken();
-  const otherOrgToken = generateToken('user-999', 'org-999', 'Admin');
+  const otherOrgToken = generateToken('user-999', 'org-999', 'admin');
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // clearAllMocks wipes mockReturnValue, so re-establish the uuid stub used
+    // by the controller for the audit-log hash.
+    require('uuid').v4.mockReturnValue('mock-uuid-1234');
     const geminiService = require('../../services/geminiService').default;
     geminiService.prioritizeRisks.mockResolvedValue([]);
     geminiService.generateRemediationPlan.mockResolvedValue('plan');
+    // Collaborators of the REAL authenticate middleware.
+    mockIsRevoked.mockResolvedValue(false);
+    mockIsRevokedByUserReset.mockResolvedValue(false);
+    // authenticate hydrates req.user from the DB record keyed by decoded.userId.
+    prismaMock.user.findUnique.mockResolvedValue(
+      createMockUser({ id: 'user-123', organizationId: 'org-123', role: 'admin' }),
+    );
+    prismaMock.riskItem.findMany.mockResolvedValue([]);
+    prismaMock.riskItem.findFirst.mockResolvedValue(null);
+    prismaMock.auditLog.create.mockResolvedValue({} as never);
   });
 
   // =========================================================================
@@ -196,23 +190,26 @@ describe('OWASP Top 10 Contract Tests', () => {
     });
 
     it('should not expose data from another organization (IDOR)', async () => {
-      const otherOrgRisk = createMockRiskItem({
-        id: 'risk-other',
-        organizationId: 'org-999',
-      });
-
-      // Simulate that findMany filters by org — mock returns empty for wrong org
+      // The enforced org is the DB user's, not the token claim — hydrate the
+      // org-999 caller so the controller scopes the query to org-999.
+      prismaMock.user.findUnique.mockResolvedValue(
+        createMockUser({ id: 'user-999', organizationId: 'org-999', role: 'admin' }),
+      );
       prismaMock.riskItem.findMany.mockResolvedValue([]);
 
       const res = await request(app)
         .get('/api/risks')
-        .set('Authorization', `Bearer ${authToken}`);
+        .set('Authorization', `Bearer ${otherOrgToken}`);
 
       expect(res.status).toBe(200);
-      // Should not contain cross-org data
+      // The controller must filter by the caller's own organization id.
+      expect(prismaMock.riskItem.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ organizationId: 'org-999' }) }),
+      );
+      // Response must not leak any other org's rows.
       const body = Array.isArray(res.body) ? res.body : res.body.data ?? [];
       const leaked = body.filter(
-        (r: any) => r.organizationId && r.organizationId !== 'org-123',
+        (r: any) => r.organizationId && r.organizationId !== 'org-999',
       );
       expect(leaked).toHaveLength(0);
     });
@@ -523,11 +520,10 @@ describe('OWASP Top 10 Contract Tests', () => {
   // A08 - Software and Data Integrity (Audit Logging)
   // =========================================================================
   describe('A08 - Data Integrity / Audit Logging', () => {
-    it('should create audit log on risk creation', async () => {
-      const { AuditLogger } = require('../../utils/auditLogger');
+    it('should write an immutable audit log on risk creation', async () => {
       prismaMock.riskItem.create.mockResolvedValue(createMockRiskItem());
 
-      await request(app)
+      const res = await request(app)
         .post('/api/risks')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
@@ -539,10 +535,29 @@ describe('OWASP Top 10 Contract Tests', () => {
           impact: 3,
         });
 
-      // Audit logging should have been invoked (or at least attempted)
-      // The exact assertion depends on whether the route calls AuditLogger
-      // We verify the mock is in place and accessible
-      expect(AuditLogger.log).toBeDefined();
+      expect(res.status).toBe(201);
+      // The controller MUST persist a tamper-evident audit log (hash + actor +
+      // tenant) for the create action — assert the real DB write happened.
+      expect(prismaMock.auditLog.create).toHaveBeenCalledTimes(1);
+      const auditArg = (prismaMock.auditLog.create.mock.calls[0] as any[])[0];
+      expect(auditArg.data.organizationId).toBe('org-123');
+      expect(auditArg.data.userId).toBe('user-123');
+      expect(auditArg.data.action).toMatch(/created/i);
+      // A non-empty tamper-evidence hash is recorded with the entry.
+      expect(typeof auditArg.data.hash).toBe('string');
+      expect(auditArg.data.hash.length).toBeGreaterThan(0);
+      expect(auditArg.data.hash).toBe('mock-uuid-1234');
+    });
+
+    it('should not write an audit log when creation is rejected by validation', async () => {
+      const res = await request(app)
+        .post('/api/risks')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ description: 'no title field' });
+
+      expect(res.status).toBe(400);
+      expect(prismaMock.riskItem.create).not.toHaveBeenCalled();
+      expect(prismaMock.auditLog.create).not.toHaveBeenCalled();
     });
   });
 
@@ -550,10 +565,45 @@ describe('OWASP Top 10 Contract Tests', () => {
   // A09 - Security Logging & Monitoring
   // =========================================================================
   describe('A09 - Security Logging & Monitoring', () => {
-    it('should log security events on authentication failure', async () => {
-      // A failed auth attempt via the real middleware would trigger logSecurityEvent
-      // Since we mock auth, we verify the mock setup is correct
-      expect(mockLogSecurityEvent).toBeDefined();
+    it('should log a security event on a no-token authentication failure', async () => {
+      await request(app).get('/api/risks');
+
+      // The real authenticate middleware fires an AUTHENTICATION_FAILURE event.
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'AUTHENTICATION_FAILURE' }),
+      );
+    });
+
+    it('should log a security event when a JWT fails verification', async () => {
+      const badToken = jwt.sign(
+        { userId: 'user-123', organizationId: 'org-123', role: 'admin' },
+        'a-different-secret',
+        { algorithm: 'HS256', expiresIn: '1h' },
+      );
+
+      const res = await request(app)
+        .get('/api/risks')
+        .set('Authorization', `Bearer ${badToken}`);
+
+      expect(res.status).toBe(401);
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'AUTHENTICATION_FAILURE' }),
+      );
+    });
+
+    it('should log an authorization failure when a viewer is denied a write', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(
+        createMockUser({ id: 'user-123', organizationId: 'org-123', role: 'viewer' }),
+      );
+
+      const res = await request(app)
+        .delete('/api/risks/risk-123')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(403);
+      expect(mockLogSecurityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'AUTHORIZATION_FAILURE' }),
+      );
     });
 
     it('should return proper error structure without sensitive details', async () => {

@@ -587,10 +587,11 @@ Format your response as JSON:
    */
   async exportQuestionnaire(
     questionnaireId: string,
-    format: 'pdf' | 'docx' | 'json'
+    format: 'pdf' | 'docx' | 'json',
+    organizationId: string
   ) {
-    const questionnaire = await prisma.questionnaire.findUnique({
-      where: { id: questionnaireId },
+    const questionnaire = await prisma.questionnaire.findFirst({
+      where: { id: questionnaireId, organizationId },
       include: {
         questions: {
           orderBy: { order: 'asc' },
@@ -670,7 +671,17 @@ Format your response as JSON:
       try {
         // Use docx library for DOCX generation
         const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = require('docx');
-        
+
+        // Map answers to their question via questionId (same join the PDF branch relies on).
+        const responsesByQuestion = new Map<string, string>();
+        for (const r of questionnaire.responses) {
+          if (r.responseText) {
+            responsesByQuestion.set(r.questionId, r.responseText);
+          } else if (r.responseData != null) {
+            responsesByQuestion.set(r.questionId, JSON.stringify(r.responseData));
+          }
+        }
+
         const doc = new Document({
           sections: [{
             properties: {},
@@ -685,35 +696,44 @@ Format your response as JSON:
                 alignment: AlignmentType.CENTER,
               }),
               new Paragraph({ text: '' }), // Spacing
-              ...questionnaire.questions.map((q: any, index: number) => [
-                new Paragraph({
-                  text: `Question ${index + 1}`,
-                  heading: HeadingLevel.HEADING_2,
-                }),
-                new Paragraph({
-                  text: q.question,
-                  spacing: { after: 200 },
-                }),
-                ...(q.options && q.options.length > 0 ? [
+              ...questionnaire.questions.map((q, index: number) => {
+                // options is a JSON value (object/array/null); normalize to a list of labels.
+                const optionList: string[] = Array.isArray(q.options)
+                  ? q.options.map((opt) => String(opt))
+                  : q.options && typeof q.options === 'object'
+                    ? Object.values(q.options as Record<string, unknown>).map((opt) => String(opt))
+                    : [];
+                const answer = responsesByQuestion.get(q.id);
+                return [
                   new Paragraph({
-                    text: 'Options:',
-                    spacing: { before: 100 },
+                    text: `Question ${index + 1}`,
+                    heading: HeadingLevel.HEADING_2,
                   }),
-                  ...q.options.map((opt: string) => 
+                  new Paragraph({
+                    text: q.questionText,
+                    spacing: { after: 200 },
+                  }),
+                  ...(optionList.length > 0 ? [
                     new Paragraph({
-                      text: `  • ${opt}`,
-                      indent: { left: 400 },
-                    })
-                  ),
-                ] : []),
-                ...(q.answer ? [
-                  new Paragraph({
-                    text: `Answer: ${q.answer}`,
-                    spacing: { before: 100 },
-                  }),
-                ] : []),
-                new Paragraph({ text: '' }), // Spacing between questions
-              ]).flat(),
+                      text: 'Options:',
+                      spacing: { before: 100 },
+                    }),
+                    ...optionList.map((opt: string) =>
+                      new Paragraph({
+                        text: `  • ${opt}`,
+                        indent: { left: 400 },
+                      })
+                    ),
+                  ] : []),
+                  ...(answer ? [
+                    new Paragraph({
+                      text: `Answer: ${answer}`,
+                      spacing: { before: 100 },
+                    }),
+                  ] : []),
+                  new Paragraph({ text: '' }), // Spacing between questions
+                ];
+              }).flat(),
             ],
           }],
         });

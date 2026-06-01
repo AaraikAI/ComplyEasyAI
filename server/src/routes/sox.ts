@@ -31,17 +31,9 @@ router.get(
       const dashboard = await soxService.getSOXDashboard(user.organizationId);
       res.json(dashboard);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching SOX dashboard:', error);
-      res.json({
-        complianceScore: 0,
-        totalControls: 0,
-        testedControls: 0,
-        deficiencies: 0,
-        materialWeaknesses: 0,
-        controlsByEffectiveness: {},
-        recentActivity: [],
-        upcomingDeadlines: [],
-      });
+      throw new AppError('Failed to fetch SOX dashboard', 500);
     }
   })
 );
@@ -58,8 +50,9 @@ router.get(
       const controls = await soxService.getSOXControls(user.organizationId);
       res.json(controls);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching SOX controls:', error);
-      res.json([]);
+      throw new AppError('Failed to fetch SOX controls', 500);
     }
   })
 );
@@ -124,8 +117,9 @@ router.get(
       const tests = await soxService.getSOXTestResults(user.organizationId);
       res.json(tests);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching SOX tests:', error);
-      res.json([]);
+      throw new AppError('Failed to fetch SOX tests', 500);
     }
   })
 );
@@ -190,8 +184,9 @@ router.get(
       const assessments = await soxService.getSOXAssessments(user.organizationId);
       res.json(assessments);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching SOX assessments:', error);
-      res.json([]);
+      throw new AppError('Failed to fetch SOX assessments', 500);
     }
   })
 );

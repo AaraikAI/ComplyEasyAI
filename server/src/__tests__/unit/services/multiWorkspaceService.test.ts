@@ -34,6 +34,8 @@ describe('MultiWorkspaceService', () => {
         plan: 'Pro',
       };
 
+      // Caller must be a member of the parent org to pass the authorization guard.
+      prismaMock.user.findFirst.mockResolvedValue({ id: 'user-123' } as any);
       prismaMock.organization.findUnique.mockResolvedValue({
         id: parentId,
         isParent: false,
@@ -55,6 +57,7 @@ describe('MultiWorkspaceService', () => {
     it('should mark parent as parent if not already', async () => {
       const parentId = 'parent-123';
 
+      prismaMock.user.findFirst.mockResolvedValue({ id: 'user-123' } as any);
       prismaMock.organization.findUnique.mockResolvedValue({
         id: parentId,
         isParent: false,
@@ -75,6 +78,8 @@ describe('MultiWorkspaceService', () => {
     });
 
     it('should throw error if parent not found', async () => {
+      // Caller passes the authorization guard so the parent-existence check is reached.
+      prismaMock.user.findFirst.mockResolvedValue({ id: 'user-123' } as any);
       prismaMock.organization.findUnique.mockResolvedValue(null);
 
       await expect(

@@ -161,7 +161,7 @@ describe('DORA Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/dora/risk-assessments')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ title: 'Test RA', assessmentType: 'Annual' });
+        .send({ title: 'Test RA', assessmentType: 'Periodic' });
       expect(res.status).toBe(201);
     });
 
@@ -255,7 +255,7 @@ describe('DORA Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/dora/incidents')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ title: 'Test Incident', severity: 'High' });
+        .send({ title: 'Test Incident', severity: 'Major' });
       expect(res.status).toBe(201);
     });
 
@@ -344,7 +344,7 @@ describe('DORA Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/dora/third-party-providers')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ name: 'Cloud Provider', providerType: 'IaaS' });
+        .send({ name: 'Cloud Provider', providerType: 'CloudService' });
       expect(res.status).toBe(201);
     });
 
@@ -448,7 +448,7 @@ describe('DORA Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/dora/resilience-tests/rt-1/execute')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ testScenarios: ['Scenario A'] });
+        .send({ testScenarios: [{ name: 'Scenario A' }] });
       expect(res.status).toBe(200);
     });
 
@@ -483,7 +483,7 @@ describe('DORA Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/dora/information-register')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ assetName: 'CRM System', assetType: 'Application' });
+        .send({ name: 'CRM System', assetType: 'Application' });
       expect(res.status).toBe(201);
     });
 

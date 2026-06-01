@@ -68,6 +68,9 @@ jest.mock('../../../controllers/aiController', () => ({
     complianceCopilot: jest.fn(),
     forecastComplianceScore: jest.fn(),
     analyzeProcess: jest.fn(),
+    listAuditSimulations: jest.fn(),
+    saveAuditSimulation: jest.fn(),
+    updateAuditSimulation: jest.fn(),
   },
 }));
 
@@ -124,8 +127,10 @@ describe('AI Routes', () => {
     }
   });
 
-  it('should have exactly 19 routes', () => {
+  it('should have exactly 22 routes', () => {
     const routes = router.stack.filter((layer: any) => layer.route);
-    expect(routes.length).toBe(19);
+    // 19 original AI endpoints + 3 audit-simulation persistence routes
+    // (GET/POST /audit-simulations, PATCH /audit-simulations/:id).
+    expect(routes.length).toBe(22);
   });
 });

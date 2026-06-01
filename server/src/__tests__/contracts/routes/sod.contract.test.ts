@@ -32,24 +32,48 @@ jest.mock('../../../middleware/auth', () => ({
 }));
 
 const mockSodService = {
-  getSoDDashboard: jest.fn<any>().mockResolvedValue({ totalViolations: 5, rules: 10 }),
-  getSoDRules: jest.fn<any>().mockResolvedValue([]),
-  createSoDRule: jest.fn<any>().mockResolvedValue({ id: 'rule-1' }),
-  getSoDRuleById: jest.fn<any>().mockResolvedValue({ id: 'rule-1' }),
-  updateSoDRule: jest.fn<any>().mockResolvedValue({ id: 'rule-1', updated: true }),
-  deleteSoDRule: jest.fn<any>().mockResolvedValue(undefined),
-  importSoDRules: jest.fn<any>().mockResolvedValue({ imported: 3 }),
-  getSoDViolations: jest.fn<any>().mockResolvedValue([]),
-  getSoDViolationById: jest.fn<any>().mockResolvedValue({ id: 'viol-1' }),
-  mitigateViolation: jest.fn<any>().mockResolvedValue({ id: 'viol-1', status: 'Mitigated' }),
-  acceptViolation: jest.fn<any>().mockResolvedValue({ id: 'viol-1', status: 'Accepted' }),
-  remediateViolation: jest.fn<any>().mockResolvedValue({ id: 'viol-1', status: 'Remediated' }),
-  getCompensatingControls: jest.fn<any>().mockResolvedValue([]),
-  addCompensatingControl: jest.fn<any>().mockResolvedValue({ id: 'cc-1' }),
-  updateCompensatingControl: jest.fn<any>().mockResolvedValue({ id: 'cc-1', updated: true }),
-  deleteCompensatingControl: jest.fn<any>().mockResolvedValue(undefined),
-  getSoDMatrix: jest.fn<any>().mockResolvedValue({ functions: [], conflicts: [] }),
-  runSoDAnalysis: jest.fn<any>().mockResolvedValue({ violations: 3 }),
+  getSoDDashboard: jest.fn<any>(),
+  getSoDRules: jest.fn<any>(),
+  createSoDRule: jest.fn<any>(),
+  getSoDRuleById: jest.fn<any>(),
+  updateSoDRule: jest.fn<any>(),
+  deleteSoDRule: jest.fn<any>(),
+  importSoDRules: jest.fn<any>(),
+  getSoDViolations: jest.fn<any>(),
+  getSoDViolationById: jest.fn<any>(),
+  mitigateViolation: jest.fn<any>(),
+  acceptViolation: jest.fn<any>(),
+  remediateViolation: jest.fn<any>(),
+  getCompensatingControls: jest.fn<any>(),
+  addCompensatingControl: jest.fn<any>(),
+  updateCompensatingControl: jest.fn<any>(),
+  deleteCompensatingControl: jest.fn<any>(),
+  getSoDMatrix: jest.fn<any>(),
+  runSoDAnalysis: jest.fn<any>(),
+};
+
+// jest.config sets resetMocks:true, which clears these implementations before
+// each test. Re-install the default resolved values in beforeEach so handlers
+// receive a record (otherwise getById returns undefined → 404).
+const installSodDefaults = () => {
+  mockSodService.getSoDDashboard.mockResolvedValue({ totalViolations: 5, rules: 10 });
+  mockSodService.getSoDRules.mockResolvedValue([]);
+  mockSodService.createSoDRule.mockResolvedValue({ id: 'rule-1' });
+  mockSodService.getSoDRuleById.mockResolvedValue({ id: 'rule-1' });
+  mockSodService.updateSoDRule.mockResolvedValue({ id: 'rule-1', updated: true });
+  mockSodService.deleteSoDRule.mockResolvedValue(undefined);
+  mockSodService.importSoDRules.mockResolvedValue({ imported: 3 });
+  mockSodService.getSoDViolations.mockResolvedValue([]);
+  mockSodService.getSoDViolationById.mockResolvedValue({ id: 'viol-1' });
+  mockSodService.mitigateViolation.mockResolvedValue({ id: 'viol-1', status: 'Mitigated' });
+  mockSodService.acceptViolation.mockResolvedValue({ id: 'viol-1', status: 'Accepted' });
+  mockSodService.remediateViolation.mockResolvedValue({ id: 'viol-1', status: 'Remediated' });
+  mockSodService.getCompensatingControls.mockResolvedValue([]);
+  mockSodService.addCompensatingControl.mockResolvedValue({ id: 'cc-1' });
+  mockSodService.updateCompensatingControl.mockResolvedValue({ id: 'cc-1', updated: true });
+  mockSodService.deleteCompensatingControl.mockResolvedValue(undefined);
+  mockSodService.getSoDMatrix.mockResolvedValue({ functions: [], conflicts: [] });
+  mockSodService.runSoDAnalysis.mockResolvedValue({ violations: 3 });
 };
 
 jest.mock('../../../services/sodService', () => ({ __esModule: true, default: mockSodService }));
@@ -77,7 +101,10 @@ describe('SoD Routes Contract Tests', () => {
   const editorToken = generateToken('editor');
   const viewerToken = generateToken('viewer');
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installSodDefaults();
+  });
 
   // ── Dashboard ────────────────────────────────────────────────────
 
@@ -107,7 +134,8 @@ describe('SoD Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/sod/rules')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ name: 'AP-AR Conflict', conflictType: 'Direct' });
+        // schema field is ruleType (not conflictType); unknown fields rejected
+        .send({ name: 'AP-AR Conflict', ruleType: 'Direct' });
       expect(res.status).toBe(201);
     });
 
@@ -217,7 +245,8 @@ describe('SoD Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/sod/violations/viol-1/accept')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ reason: 'Accepted risk' });
+        // acceptSoDViolationSchema requires `justification`
+        .send({ justification: 'Accepted risk' });
       expect(res.status).toBe(200);
     });
 
@@ -234,7 +263,8 @@ describe('SoD Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/sod/violations/viol-1/remediate')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ plan: 'Role reassignment' });
+        // remediateSoDViolationSchema field is remediationPlan; `plan` unknown
+        .send({ remediationPlan: 'Role reassignment' });
       expect(res.status).toBe(200);
     });
   });
@@ -255,7 +285,8 @@ describe('SoD Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/sod/violations/viol-1/compensation')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ controlName: 'Dual sign-off' });
+        // createCompensatingControlSchema requires `name` (not controlName)
+        .send({ name: 'Dual sign-off' });
       expect(res.status).toBe(201);
     });
 

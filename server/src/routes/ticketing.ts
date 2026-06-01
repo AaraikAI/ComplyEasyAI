@@ -10,7 +10,7 @@ import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
-import { decryptField } from '../utils/credentialEncryption';
+import { encryptField, decryptField } from '../utils/credentialEncryption';
 import {
   saveTicketingConfigSchema, testTicketingConnectionSchema,
   syncTicketingSchema, createTicketSchema, bulkTicketSyncSchema,
@@ -195,7 +195,8 @@ router.post(
                   instanceUrl: config.instanceUrl,
                   authType: 'basic',
                   username: config.username,
-                  apiToken: config.password,
+                  // Encrypt the Jira API token at rest (mirrors jiraService OAuth token handling).
+                  apiToken: config.password ? encryptField(config.password) : null,
                   projectKey: config.projectKey,
                   defaultIssueType: config.defaultIssueType || 'Task',
                   syncEnabled: config.syncEnabled ?? false,
@@ -210,7 +211,8 @@ router.post(
                   instanceUrl: config.instanceUrl,
                   authType: 'basic',
                   username: config.username,
-                  apiToken: config.password,
+                  // Encrypt the Jira API token at rest (mirrors jiraService OAuth token handling).
+                  apiToken: config.password ? encryptField(config.password) : null,
                   projectKey: config.projectKey,
                   defaultIssueType: config.defaultIssueType || 'Task',
                   syncEnabled: config.syncEnabled ?? false,
@@ -800,7 +802,8 @@ router.post(
                   instanceUrl: config.instanceUrl,
                   authType: 'basic',
                   username: config.username,
-                  apiToken: config.password,
+                  // Encrypt the Jira API token at rest (mirrors jiraService OAuth token handling).
+                  apiToken: config.password ? encryptField(config.password) : null,
                   projectKey: config.projectKey,
                   defaultIssueType: config.defaultIssueType || 'Task',
                   syncEnabled: config.syncEnabled ?? false,
@@ -815,7 +818,8 @@ router.post(
                   instanceUrl: config.instanceUrl,
                   authType: 'basic',
                   username: config.username,
-                  apiToken: config.password,
+                  // Encrypt the Jira API token at rest (mirrors jiraService OAuth token handling).
+                  apiToken: config.password ? encryptField(config.password) : null,
                   projectKey: config.projectKey,
                   defaultIssueType: config.defaultIssueType || 'Task',
                   syncEnabled: config.syncEnabled ?? false,

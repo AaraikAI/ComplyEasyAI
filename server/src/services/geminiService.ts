@@ -3,6 +3,7 @@ import config from '../config';
 import logger from '../config/logger';
 import { redactPII, rehydratePII } from '../utils/piiRedaction';
 import { AppError } from '../middleware/errorHandler';
+import cacheService from './cache/redisCacheService';
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
@@ -14,22 +15,42 @@ interface AIRequestOptions {
 }
 
 class GeminiService {
-  private rateLimitMap: Map<string, number[]> = new Map();
   private readonly MAX_REQUESTS_PER_MINUTE = 60;
+  private readonly RATE_WINDOW_MS = 60000;
+  private readonly RATE_NAMESPACE = 'gemini-ratelimit';
 
-  private checkRateLimit(userId: string): boolean {
+  /**
+   * Sliding-window per-user rate limit backed by the shared cache (Redis with
+   * in-memory fallback) so the cap holds across all server instances and
+   * survives restarts, rather than a per-process Map that load-balancing bypasses.
+   */
+  private async checkRateLimit(userId: string): Promise<boolean> {
     const now = Date.now();
-    const userRequests = this.rateLimitMap.get(userId) || [];
-
-    // Filter requests from the last minute
-    const recentRequests = userRequests.filter(time => now - time < 60000);
+    let recentRequests: number[];
+    try {
+      const stored = await cacheService.get<number[]>(userId, { namespace: this.RATE_NAMESPACE });
+      recentRequests = (stored || []).filter(time => now - time < this.RATE_WINDOW_MS);
+    } catch (error) {
+      // If the shared store is unreachable, fail closed on quota rather than
+      // letting unlimited requests through.
+      logger.error('[AI Rate Limit] Cache read failed, denying request', error);
+      return false;
+    }
 
     if (recentRequests.length >= this.MAX_REQUESTS_PER_MINUTE) {
       return false;
     }
 
     recentRequests.push(now);
-    this.rateLimitMap.set(userId, recentRequests);
+    try {
+      // TTL slightly above the window so stale buckets self-expire.
+      await cacheService.set(userId, recentRequests, {
+        namespace: this.RATE_NAMESPACE,
+        ttl: Math.ceil(this.RATE_WINDOW_MS / 1000) + 5,
+      });
+    } catch (error) {
+      logger.warn('[AI Rate Limit] Cache write failed', error);
+    }
     return true;
   }
 
@@ -81,7 +102,7 @@ class GeminiService {
   ): Promise<string> {
     try {
       // Rate limiting
-      if (!this.checkRateLimit(userId)) {
+      if (!(await this.checkRateLimit(userId))) {
         throw new AppError('Rate limit exceeded. Maximum 60 requests per minute. Please try again later.', 429);
       }
 

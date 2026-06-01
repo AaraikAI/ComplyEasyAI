@@ -141,16 +141,6 @@ const services: ServiceStatus[] = [
   },
 ];
 
-const uptimeHistory: UptimeData[] = Array.from({ length: 90 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (89 - i));
-  return {
-    date: date.toISOString().split('T')[0],
-    uptime: 99.9 + Math.random() * 0.1,
-    incidents: Math.random() > 0.95 ? 1 : 0,
-  };
-});
-
 export const StatusPage: React.FC = () => {
   const { t } = useI18n();
   const [expandedIncident, setExpandedIncident] = useState<string | null>(null);
@@ -165,6 +155,8 @@ export const StatusPage: React.FC = () => {
   const [maintenanceLoading, setMaintenanceLoading] = useState(true);
   const [incidentsError, setIncidentsError] = useState<string | null>(null);
   const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
+  const [uptimeHistory, setUptimeHistory] = useState<UptimeData[]>([]);
+  const [uptimeLoading, setUptimeLoading] = useState(true);
 
   // Map backend incident status enum to the UI-friendly union used in this file.
   const mapIncidentStatus = (s: string): Incident['status'] => {
@@ -253,9 +245,31 @@ export const StatusPage: React.FC = () => {
       }
     };
 
+    const fetchUptime = async () => {
+      try {
+        const response = await fetch('/api/status/uptime?days=90', { credentials: 'include' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const body = await response.json();
+        const list = Array.isArray(body?.data) ? body.data : [];
+        if (cancelled) return;
+        setUptimeHistory(list.map((d: any) => ({
+          date: typeof d.date === 'string' ? d.date.split('T')[0] : String(d.date),
+          uptime: typeof d.uptime === 'number' ? d.uptime : Number(d.uptime) || 0,
+          incidents: typeof d.incidents === 'number' ? d.incidents : Number(d.incidents) || 0,
+        })));
+      } catch {
+        // No uptime-history feed available; the chart is hidden rather than
+        // rendering synthetic availability numbers on the public page.
+        if (!cancelled) setUptimeHistory([]);
+      } finally {
+        if (!cancelled) setUptimeLoading(false);
+      }
+    };
+
     void fetchStatus();
     void fetchIncidents();
     void fetchMaintenance();
+    void fetchUptime();
 
     return () => { cancelled = true; };
   }, []);
@@ -326,7 +340,11 @@ export const StatusPage: React.FC = () => {
   };
 
   const overall = getOverallStatus();
-  const overallUptime = (services.reduce((acc, s) => acc + s.uptime, 0) / services.length).toFixed(3);
+  // Derive headline metrics from the live service set when available so the
+  // public page reflects real data instead of the static fallback list.
+  const overallUptime = activeServices.length > 0
+    ? (activeServices.reduce((acc, s) => acc + s.uptime, 0) / activeServices.length).toFixed(3)
+    : '—';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -417,7 +435,7 @@ export const StatusPage: React.FC = () => {
                 <div className="text-slate-400 text-sm">Overall Uptime</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">{services.length}</div>
+                <div className="text-3xl font-bold text-white">{activeServices.length}</div>
                 <div className="text-slate-400 text-sm">Services Monitored</div>
               </div>
             </div>
@@ -471,12 +489,18 @@ export const StatusPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 90-Day Uptime */}
+        {/* 90-Day Uptime — rendered only when a real uptime feed is available */}
+        {(uptimeLoading || uptimeHistory.length > 0) && (
         <section className="mb-12">
           <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-brand-400" />
             90-Day Uptime History
           </h2>
+          {uptimeLoading ? (
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 text-center text-slate-400">
+              Loading uptime history...
+            </div>
+          ) : (
           <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
             <div className="flex items-end gap-0.5 h-20 mb-4">
               {uptimeHistory.map((day, index) => (
@@ -529,7 +553,9 @@ export const StatusPage: React.FC = () => {
               </div>
             </div>
           </div>
+          )}
         </section>
+        )}
 
         {/* Scheduled Maintenance */}
         {(scheduledMaintenance.length > 0 || maintenanceLoading || maintenanceError) && (

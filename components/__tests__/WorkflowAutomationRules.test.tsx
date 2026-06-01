@@ -41,60 +41,73 @@ describe('WorkflowAutomationRules', () => {
 
   it('renders without crashing', () => {
     render(<WorkflowAutomationRules />);
-    expect(screen.queryAllByText(/Workflow|Automation|workflow|automation/i).length).toBeGreaterThan(0);
+    // Header title and create button render synchronously.
+    expect(screen.getByText('Automation')).toBeInTheDocument();
+    expect(screen.getByText('Create Workflow')).toBeInTheDocument();
   });
 
   it('shows workflows tab', () => {
     render(<WorkflowAutomationRules />);
-    expect(screen.queryAllByText(/Workflows|workflows/i).length).toBeGreaterThan(0);
+    // The three tab labels and the workflows stat card are present.
+    expect(screen.getByText('Workflows')).toBeInTheDocument();
+    expect(screen.getByText('Templates')).toBeInTheDocument();
+    expect(screen.getByText('History')).toBeInTheDocument();
+    expect(screen.getByText('Total Workflows')).toBeInTheDocument();
   });
 
   it('shows templates tab', () => {
     render(<WorkflowAutomationRules />);
-    const tab = screen.queryAllByText(/Templates|templates/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    fireEvent.click(screen.getByText('Templates'));
+    // The templates tab lists the built-in templates with Use Template actions.
+    expect(screen.getByText('Auto-escalate SEV1 Incidents')).toBeInTheDocument();
+    expect(screen.getAllByText('Use Template').length).toBeGreaterThan(0);
   });
 
   it('shows history tab', () => {
     render(<WorkflowAutomationRules />);
-    const tab = screen.queryAllByText(/History|history/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    fireEvent.click(screen.getByText('History'));
+    // With no executions the history tab shows its empty state.
+    expect(screen.getByText('No execution history yet')).toBeInTheDocument();
   });
 
   it('opens create workflow form', () => {
     render(<WorkflowAutomationRules />);
-    const addBtn = screen.queryAllByText(/Create|New|Add/i)[0] ?? null;
-    if (addBtn) fireEvent.click(addBtn);
+    fireEvent.click(screen.getByText('Create Workflow'));
+    // The create modal renders its name field placeholder.
+    expect(screen.getByPlaceholderText('e.g. Auto-escalate critical risks')).toBeInTheDocument();
   });
 
-  it('filters by search', () => {
+  it('filters by search', async () => {
     render(<WorkflowAutomationRules />);
-    const searchInput = screen.queryByPlaceholderText(/search/i);
-    if (searchInput) fireEvent.change(searchInput, { target: { value: 'compliance' } });
+    // Workflows tab finishes loading to its empty state.
+    expect(await screen.findByText('No results found')).toBeInTheDocument();
+    const searchInput = screen.getByPlaceholderText('Search workflows...');
+    fireEvent.change(searchInput, { target: { value: 'compliance' } });
+    expect((searchInput as HTMLInputElement).value).toBe('compliance');
+    // Still empty (no fixtures) — the empty state is retained.
+    expect(screen.getByText('No results found')).toBeInTheDocument();
   });
 
   it('shows stat cards', () => {
     render(<WorkflowAutomationRules />);
-    const stats = document.querySelectorAll('[class*="rounded-xl"]');
-    expect(stats.length).toBeGreaterThanOrEqual(0);
+    // All four dashboard stat labels render.
+    ['Total Workflows', 'Active', 'Total Executions', 'Success Rate'].forEach(label => {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    });
   });
 
-  it('toggles workflow status', () => {
+  it('renders empty workflow list without toggle controls', async () => {
     render(<WorkflowAutomationRules />);
-    const toggleBtns = document.querySelectorAll('[data-testid="icon-ToggleLeft"], [data-testid="icon-ToggleRight"]');
-    if (toggleBtns.length > 0) {
-      const btn = toggleBtns[0].closest('button');
-      if (btn) fireEvent.click(btn);
-    }
+    // No workflows -> no per-row toggle/delete controls and the empty state shows.
+    expect(await screen.findByText('No results found')).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-testid="icon-ToggleLeft"], [data-testid="icon-ToggleRight"]').length).toBe(0);
+    expect(document.querySelectorAll('[data-testid="icon-Trash2"]').length).toBe(0);
   });
 
-  it('deletes a workflow', () => {
+  it('offers to create a first workflow from the empty state', async () => {
     render(<WorkflowAutomationRules />);
-    const deleteBtns = document.querySelectorAll('[data-testid="icon-Trash2"]');
-    if (deleteBtns.length > 0) {
-      const btn = deleteBtns[0].closest('button');
-      if (btn) fireEvent.click(btn);
-    }
+    // The empty state offers an inline create affordance.
+    expect(await screen.findByText('Create your first workflow')).toBeInTheDocument();
   });
 
   it('calls API on mount', async () => {

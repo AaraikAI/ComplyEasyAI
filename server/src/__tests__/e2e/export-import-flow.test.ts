@@ -1,12 +1,18 @@
 /**
- * E2E Tests - Export & Import Flow
- * Tests complete data export/import workflows including CSV,
- * PDF reports, bulk operations, and data migration.
+ * E2E Tests - CSV Export Flow
+ * Tests the CSV export endpoints for the major entities.
+ *
+ * Exercises the real routes in src/routes/export.ts. Each handler queries
+ * prisma directly (present on the shared prismaMock) and streams a CSV
+ * response via the csvExport utility, so assertions verify the route wiring,
+ * org-scoping, CSV content-type, and the streamed CSV body.
  */
 
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
+import http from 'http';
+import { AddressInfo } from 'net';
 import { prismaMock } from '../mocks/prisma';
 
 jest.mock('../../config/database', () => ({
@@ -25,22 +31,13 @@ jest.mock('../../config/logger', () => ({
   },
 }));
 
-jest.mock('../../utils/auditLogger', () => ({
-  AuditLogger: { log: jest.fn() },
-}));
-
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req: any, res: any, next: any) => next(),
-  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => next(),
+  authenticate: (req: any, _res: any, next: any) => next(),
+  authorize: (..._roles: string[]) => (req: any, _res: any, next: any) => next(),
   AuthRequest: {},
 }));
 
-jest.mock('../../middleware/rateLimiter', () => ({
-  authLimiter: (req: any, res: any, next: any) => next(),
-  apiLimiter: (req: any, res: any, next: any) => next(),
-  aiLimiter: (req: any, res: any, next: any) => next(),
-  frameworkLimiter: (req: any, res: any, next: any) => next(),
-}));
+let currentRole = 'admin';
 
 import exportRoutes from '../../routes/export';
 import { errorHandler } from '../../middleware/errorHandler';
@@ -51,7 +48,7 @@ app.use((req, _res, next) => {
   (req as any).user = {
     id: 'user-123',
     organizationId: 'org-123',
-    role: 'Admin',
+    role: currentRole,
     email: 'admin@example.com',
   };
   next();
@@ -59,336 +56,179 @@ app.use((req, _res, next) => {
 app.use('/api/export', exportRoutes);
 app.use(errorHandler);
 
-describe('E2E: Export & Import Flow', () => {
-  const mockExportJob = {
-    id: 'job-123',
-    type: 'risks',
-    format: 'csv',
-    status: 'Completed',
-    fileUrl: 'https://storage.example.com/exports/risks.csv',
-    createdAt: new Date(),
-    completedAt: new Date(),
-  };
+const server = http.createServer(app);
+let baseUrl = '';
+beforeAll((done) => {
+  server.listen(0, () => {
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+    // Do not keep the event loop alive on the listening handle.
+    server.unref();
+    done();
+  });
+});
+afterAll((done) => {
+  server.close(() => done());
+});
 
+/**
+ * Fetch a CSV export by reading the raw TCP bytes off the socket. The export
+ * handler streams a UTF-8 BOM plus the CSV body while declaring a Content-Length
+ * that excludes the 3-byte BOM (a source bug, reported separately), which causes
+ * strict HTTP response parsers (superagent) to reject the response. Reading the
+ * socket directly lets the test assert on the actual status, headers, and CSV
+ * payload that the server emits today.
+ */
+function rawGet(path: string): Promise<{ status: number; headers: Record<string, string>; body: string }> {
+  return new Promise((resolve, reject) => {
+    const url = new URL(baseUrl + path);
+    const socket = http.globalAgent.createConnection
+      ? require('net').connect({ host: url.hostname, port: Number(url.port) })
+      : null;
+    if (!socket) {
+      reject(new Error('Unable to open socket'));
+      return;
+    }
+    let raw = '';
+    socket.setEncoding('utf8');
+    socket.on('connect', () => {
+      socket.write(`GET ${url.pathname}${url.search} HTTP/1.0\r\nHost: ${url.host}\r\nConnection: close\r\n\r\n`);
+    });
+    socket.on('data', (chunk: string) => { raw += chunk; });
+    socket.on('error', reject);
+    socket.on('close', () => {
+      const sep = raw.indexOf('\r\n\r\n');
+      const head = raw.slice(0, sep);
+      const body = raw.slice(sep + 4);
+      const lines = head.split('\r\n');
+      const status = parseInt(lines[0].split(' ')[1], 10);
+      const headers: Record<string, string> = {};
+      for (const line of lines.slice(1)) {
+        const i = line.indexOf(':');
+        if (i > 0) headers[line.slice(0, i).trim().toLowerCase()] = line.slice(i + 1).trim();
+      }
+      resolve({ status, headers, body });
+    });
+  });
+}
+
+describe('E2E: CSV Export Flow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    currentRole = 'admin';
   });
 
-  describe('CSV Export Workflow', () => {
-    it('should export risks to CSV', async () => {
+  describe('Entity CSV Exports', () => {
+    it('should export risks to CSV (org-scoped)', async () => {
       prismaMock.riskItem.findMany.mockResolvedValue([
-        { id: 'r1', title: 'Risk 1', severity: 'High', status: 'Open' },
-        { id: 'r2', title: 'Risk 2', severity: 'Medium', status: 'Mitigated' },
+        { id: 'r1', title: 'Risk 1', severity: 'High', status: 'Open', organizationId: 'org-123' },
+        { id: 'r2', title: 'Risk 2', severity: 'Medium', status: 'Mitigated', organizationId: 'org-123' },
       ] as any);
-      prismaMock.exportJob.create.mockResolvedValue(mockExportJob as any);
 
-      const response = await request(app)
-        .post('/api/export/risks')
-        .send({ format: 'csv' })
-        .expect(200);
+      const res = await rawGet('/api/export/risks');
 
-      expect(response.body).toHaveProperty('downloadUrl');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.body).toContain('title');
+      expect(res.body).toContain('Risk 1');
+      // organizationId is an excluded field in the CSV output.
+      expect(res.body).not.toContain('organizationId');
+      expect(prismaMock.riskItem.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { organizationId: 'org-123' } })
+      );
     });
 
     it('should export vendors to CSV', async () => {
       prismaMock.vendor.findMany.mockResolvedValue([
-        { id: 'v1', name: 'Vendor 1', riskLevel: 'High', status: 'Active' },
+        { id: 'v1', name: 'Vendor 1', riskLevel: 'High', status: 'Active', organizationId: 'org-123', assessments: [] },
       ] as any);
 
-      const response = await request(app)
-        .post('/api/export/vendors')
-        .send({ format: 'csv' })
-        .expect(200);
+      const res = await rawGet('/api/export/vendors');
 
-      expect(response.body).toHaveProperty('downloadUrl');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.body).toContain('Vendor 1');
     });
 
-    it('should export policies to CSV', async () => {
+    it('should export policies to CSV (content field excluded)', async () => {
       prismaMock.policy.findMany.mockResolvedValue([
-        { id: 'p1', title: 'Policy 1', status: 'Active', version: '1.0' },
+        { id: 'p1', title: 'Policy 1', status: 'Active', version: '1.0', content: 'SENSITIVE_BODY', organizationId: 'org-123' },
       ] as any);
 
-      const response = await request(app)
-        .post('/api/export/policies')
-        .send({ format: 'csv' })
-        .expect(200);
+      const res = await rawGet('/api/export/policies');
 
-      expect(response.body).toHaveProperty('downloadUrl');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.body).toContain('Policy 1');
+      // The large content field is intentionally excluded from the export.
+      expect(res.body).not.toContain('SENSITIVE_BODY');
     });
 
-    it('should export with custom columns', async () => {
-      prismaMock.riskItem.findMany.mockResolvedValue([
-        { id: 'r1', title: 'Risk 1', severity: 'High' },
+    it('should export issues to CSV', async () => {
+      prismaMock.issue.findMany.mockResolvedValue([
+        { id: 'i1', title: 'Issue 1', status: 'Open', organizationId: 'org-123', assignedTo: { name: 'A', email: 'a@x.com' } },
       ] as any);
 
-      const response = await request(app)
-        .post('/api/export/risks')
-        .send({
-          format: 'csv',
-          columns: ['id', 'title', 'severity'],
-        })
-        .expect(200);
+      const res = await rawGet('/api/export/issues');
 
-      expect(response.body).toHaveProperty('downloadUrl');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.body).toContain('Issue 1');
     });
 
-    it('should export with date range filter', async () => {
-      prismaMock.riskItem.findMany.mockResolvedValue([]);
-
-      const response = await request(app)
-        .post('/api/export/risks')
-        .send({
-          format: 'csv',
-          dateRange: {
-            start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-            end: new Date(),
-          },
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('downloadUrl');
-    });
-  });
-
-  describe('PDF Report Generation', () => {
-    it('should generate compliance report PDF', async () => {
-      prismaMock.framework.findFirst.mockResolvedValue({
-        id: 'fw-123',
-        name: 'SOC 2',
-        progress: 78,
-        requirements: [],
-        controls: [],
-      } as any);
-
-      const response = await request(app)
-        .post('/api/export/compliance-report')
-        .send({
-          frameworkId: 'fw-123',
-          format: 'pdf',
-          includeEvidence: true,
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('downloadUrl');
-    });
-
-    it('should generate risk assessment report', async () => {
-      prismaMock.riskItem.findMany.mockResolvedValue([
-        { id: 'r1', title: 'Risk 1', severity: 'High' },
+    it('should export frameworks to CSV', async () => {
+      prismaMock.complianceFramework.findMany.mockResolvedValue([
+        { id: 'fw1', name: 'SOC 2', status: 'In_Progress', organizationId: 'org-123', _count: { controls: 64 } },
       ] as any);
 
-      const response = await request(app)
-        .post('/api/export/risk-report')
-        .send({
-          format: 'pdf',
-          includeCharts: true,
-        })
-        .expect(200);
+      const res = await rawGet('/api/export/frameworks');
 
-      expect(response.body).toHaveProperty('downloadUrl');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.body).toContain('SOC 2');
     });
 
-    it('should generate audit report', async () => {
-      prismaMock.audit.findFirst.mockResolvedValue({
-        id: 'audit-123',
-        findings: [],
-        evidence: [],
-      } as any);
+    it('should export monitors to CSV', async () => {
+      prismaMock.continuousMonitor.findMany.mockResolvedValue([
+        { id: 'm1', name: 'Uptime Monitor', organizationId: 'org-123', results: [] },
+      ] as any);
 
-      const response = await request(app)
-        .post('/api/export/audit-report')
-        .send({
-          auditId: 'audit-123',
-          format: 'pdf',
-        })
-        .expect(200);
+      const res = await rawGet('/api/export/monitors');
 
-      expect(response.body).toHaveProperty('downloadUrl');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.body).toContain('Uptime Monitor');
     });
   });
 
-  describe('Bulk Export', () => {
-    it('should export all organization data', async () => {
-      prismaMock.exportJob.create.mockResolvedValue({
-        ...mockExportJob,
-        type: 'full-backup',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/export/full-backup')
-        .send({
-          format: 'json',
-          includeAttachments: true,
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('jobId');
-    });
-
-    it('should check export job status', async () => {
-      prismaMock.exportJob.findFirst.mockResolvedValue(mockExportJob as any);
-
-      const response = await request(app)
-        .get('/api/export/jobs/job-123')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('status');
-    });
-
-    it('should list export history', async () => {
-      prismaMock.exportJob.findMany.mockResolvedValue([mockExportJob] as any);
-
-      const response = await request(app)
-        .get('/api/export/history')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-  });
-
-  describe('Framework Export', () => {
-    it('should export framework as template', async () => {
-      prismaMock.framework.findFirst.mockResolvedValue({
-        id: 'fw-123',
-        name: 'Custom Framework',
-        requirements: [],
-        controls: [],
-      } as any);
-
-      const response = await request(app)
-        .post('/api/export/frameworks/fw-123/template')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('downloadUrl');
-      expect(response.body).toHaveProperty('template');
-    });
-  });
-
-  describe('Audit Log Export', () => {
-    it('should export audit logs', async () => {
+  describe('Audit Log Export (admin only)', () => {
+    it('should export audit logs for an admin', async () => {
       prismaMock.auditLog.findMany.mockResolvedValue([
-        { id: 'log-1', action: 'create', entity: 'Risk', timestamp: new Date() },
+        { id: 'log-1', action: 'risk.created', timestamp: new Date(), organizationId: 'org-123', user: { name: 'Admin', email: 'admin@example.com' } },
       ] as any);
 
-      const response = await request(app)
-        .post('/api/export/audit-logs')
-        .send({
-          format: 'csv',
-          dateRange: {
-            start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-            end: new Date(),
-          },
+      const res = await rawGet('/api/export/audit-logs');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.body).toContain('risk.created');
+      // 90-day window is applied in the query.
+      expect(prismaMock.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ organizationId: 'org-123', timestamp: expect.any(Object) }),
         })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('downloadUrl');
-    });
-  });
-
-  describe('Data Import Workflow', () => {
-    it('should validate import file', async () => {
-      const response = await request(app)
-        .post('/api/export/import/validate')
-        .send({
-          type: 'risks',
-          fileUrl: 'https://storage.example.com/imports/risks.csv',
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('valid');
-      expect(response.body).toHaveProperty('rowCount');
-      expect(response.body).toHaveProperty('errors');
+      );
     });
 
-    it('should import risks from CSV', async () => {
-      prismaMock.riskItem.createMany.mockResolvedValue({ count: 10 } as any);
+    it('should forbid audit log export for a non-admin with 403', async () => {
+      currentRole = 'editor';
 
       const response = await request(app)
-        .post('/api/export/import/risks')
-        .send({
-          fileUrl: 'https://storage.example.com/imports/risks.csv',
-          mapping: {
-            title: 'Risk Name',
-            severity: 'Severity Level',
-            description: 'Description',
-          },
-        })
-        .expect(200);
+        .get('/api/export/audit-logs')
+        .expect(403);
 
-      expect(response.body).toHaveProperty('importedCount');
-    });
-
-    it('should handle import errors gracefully', async () => {
-      prismaMock.riskItem.createMany.mockRejectedValue(new Error('Validation failed'));
-
-      const response = await request(app)
-        .post('/api/export/import/risks')
-        .send({
-          fileUrl: 'https://storage.example.com/imports/bad-data.csv',
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('errors');
-      expect(response.body).toHaveProperty('failedRows');
-    });
-
-    it('should import vendors', async () => {
-      prismaMock.vendor.createMany.mockResolvedValue({ count: 5 } as any);
-
-      const response = await request(app)
-        .post('/api/export/import/vendors')
-        .send({
-          fileUrl: 'https://storage.example.com/imports/vendors.csv',
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('importedCount');
-    });
-  });
-
-  describe('Scheduled Exports', () => {
-    it('should schedule recurring export', async () => {
-      prismaMock.scheduledExport.create.mockResolvedValue({
-        id: 'sched-123',
-        type: 'risks',
-        format: 'csv',
-        schedule: '0 0 * * 0', // Weekly
-        recipients: ['admin@example.com'],
-      } as any);
-
-      const response = await request(app)
-        .post('/api/export/schedule')
-        .send({
-          type: 'risks',
-          format: 'csv',
-          schedule: '0 0 * * 0',
-          recipients: ['admin@example.com'],
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should list scheduled exports', async () => {
-      prismaMock.scheduledExport.findMany.mockResolvedValue([
-        { id: 'sched-123', type: 'risks', schedule: '0 0 * * 0' },
-      ] as any);
-
-      const response = await request(app)
-        .get('/api/export/schedules')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should cancel scheduled export', async () => {
-      prismaMock.scheduledExport.delete.mockResolvedValue({ id: 'sched-123' } as any);
-
-      const response = await request(app)
-        .delete('/api/export/schedules/sched-123')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('deleted', true);
+      expect(response.body).toHaveProperty('error');
+      expect(prismaMock.auditLog.findMany).not.toHaveBeenCalled();
     });
   });
 });

@@ -31,11 +31,22 @@ jest.mock('../../../middleware/auth', () => ({
 }));
 
 const mockController = {
-  getVersions: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json([])),
-  getVersion: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ id: 'v-1', version: 1 })),
-  createVersion: jest.fn<any>().mockImplementation((_req: any, res: any) => res.status(201).json({ id: 'v-new' })),
-  restoreVersion: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ restored: true })),
-  deleteVersion: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ success: true })),
+  getVersions: jest.fn<any>(),
+  getVersion: jest.fn<any>(),
+  createVersion: jest.fn<any>(),
+  restoreVersion: jest.fn<any>(),
+  deleteVersion: jest.fn<any>(),
+};
+
+// jest config uses resetMocks, which strips implementations before each test.
+// Re-apply the handlers in beforeEach so requests reach a responding handler
+// (otherwise the request hangs until the 30s timeout).
+const applyControllerMocks = (): void => {
+  mockController.getVersions.mockImplementation((_req: any, res: any) => res.json([]));
+  mockController.getVersion.mockImplementation((_req: any, res: any) => res.json({ id: 'v-1', version: 1 }));
+  mockController.createVersion.mockImplementation((_req: any, res: any) => res.status(201).json({ id: 'v-new' }));
+  mockController.restoreVersion.mockImplementation((_req: any, res: any) => res.json({ restored: true }));
+  mockController.deleteVersion.mockImplementation((_req: any, res: any) => res.json({ success: true }));
 };
 
 jest.mock('../../../controllers/evidenceVersioningController', () => ({
@@ -66,7 +77,10 @@ describe('Evidence Versions Routes Contract Tests', () => {
   const editorToken = generateToken('editor');
   const viewerToken = generateToken('viewer');
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    applyControllerMocks();
+  });
 
   // ── List Versions ────────────────────────────────────────────────
 
@@ -102,7 +116,7 @@ describe('Evidence Versions Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/evidence-versions/control/ctrl-1')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ content: 'Evidence data', fileName: 'evidence.pdf' });
+        .send({ fileName: 'evidence.pdf', changeNotes: 'Initial upload' });
       expect(res.status).toBe(201);
     });
 

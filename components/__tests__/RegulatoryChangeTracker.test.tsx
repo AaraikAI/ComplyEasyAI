@@ -103,21 +103,22 @@ describe('RegulatoryChangeTracker', () => {
     });
   });
 
-  it('shows affected controls in detail', () => {
+  it('shows affected controls in detail', async () => {
     render(<RegulatoryChangeTracker />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) {
-      fireEvent.click(rows[0]);
-      expect(screen.queryAllByText(/Affected|affected|Controls|controls|Impact|impact/i).length).toBeGreaterThan(0);
-    }
+    // The mocked change renders as a clickable row once the list has loaded.
+    await waitFor(() => expect(screen.getByText('GDPR Update 2025')).toBeInTheDocument());
+    const rows = document.querySelectorAll('div[class*="cursor-pointer"]');
+    expect(rows.length).toBeGreaterThan(0);
+    fireEvent.click(rows[0]);
+    expect(screen.getByText(/Affected Controls/i)).toBeInTheDocument();
   });
 
-  it('shows remediation suggestions', () => {
+  it('shows remediation suggestions', async () => {
     render(<RegulatoryChangeTracker />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) {
-      fireEvent.click(rows[0]);
-      expect(screen.queryAllByText(/Remediation|remediation|Suggestion|suggestion|Action/i).length).toBeGreaterThan(0);
-    }
+    await waitFor(() => expect(screen.getByText('GDPR Update 2025')).toBeInTheDocument());
+    const rows = document.querySelectorAll('div[class*="cursor-pointer"]');
+    expect(rows.length).toBeGreaterThan(0);
+    fireEvent.click(rows[0]);
+    expect(screen.getByText(/Remediation Suggestions/i)).toBeInTheDocument();
   });
 });

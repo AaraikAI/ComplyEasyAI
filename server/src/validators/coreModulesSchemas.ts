@@ -1040,6 +1040,10 @@ const ticketingProviders = ['jira', 'servicenow', 'azure_devops'] as const;
 const ticketingAuthTypes = ['basic', 'oauth', 'pat'] as const;
 const syncDirections = ['push', 'pull', 'bidirectional'] as const;
 
+// Validates request SHAPE only. Secret fields (password, pat, clientSecret,
+// accessToken, refreshToken) arrive in plaintext over TLS and are encrypted at
+// rest by the consuming route/services (routes/ticketing.ts via encryptField;
+// jira/servicenow/azureDevOps saveIntegration) before any DB write.
 export const saveTicketingConfigSchema = Joi.object({
   provider: Joi.string().valid(...ticketingProviders).required(),
   instanceUrl: Joi.string().uri().max(500).allow('', null).optional(),
@@ -1236,7 +1240,9 @@ export const updateOnboardingProgressSchema = Joi.object({
 
 export const trackOnboardingEventSchema = Joi.object({
   eventType: Joi.string().required().min(1).max(100),
-  eventData: Joi.object().allow(null).optional(),
+  flowName: Joi.string().max(200).allow('', null).optional(),
+  stepIndex: Joi.number().integer().min(0).allow(null).optional(),
+  metadata: Joi.object().allow(null).optional(),
 }).unknown(false);
 
 export const completeMilestoneSchema = Joi.object({
@@ -1250,13 +1256,29 @@ export const updateOnboardingPreferencesSchema = Joi.object({
 }).unknown(false);
 
 export const skipFlowSchema = Joi.object({
-  flow: Joi.string().required().min(1).max(200),
+  flowName: Joi.string().required().min(1).max(200),
 }).unknown(false);
 
 export const updateChecklistSchema = Joi.object({
-  itemId: Joi.string().required().min(1).max(200),
-  completed: Joi.boolean().required(),
-}).unknown(false);
+  profileCompleted: Joi.boolean().optional(),
+  teamInvited: Joi.boolean().optional(),
+  firstFrameworkAdded: Joi.boolean().optional(),
+  firstEvidenceUploaded: Joi.boolean().optional(),
+  firstControlPassed: Joi.boolean().optional(),
+  integrationConnected: Joi.boolean().optional(),
+  aiFeatureUsed: Joi.boolean().optional(),
+  firstReportGenerated: Joi.boolean().optional(),
+  acosConfigured: Joi.boolean().optional(),
+  digitalTwinActivated: Joi.boolean().optional(),
+  riskHeatmapViewed: Joi.boolean().optional(),
+  regulatoryTrackerViewed: Joi.boolean().optional(),
+  vendorMonitoringConfigured: Joi.boolean().optional(),
+  privacyPlatformViewed: Joi.boolean().optional(),
+  incidentManagementViewed: Joi.boolean().optional(),
+  controlTestingConfigured: Joi.boolean().optional(),
+  auditPrepStarted: Joi.boolean().optional(),
+  workflowAutomationConfigured: Joi.boolean().optional(),
+}).unknown(false).min(1);
 
 // ============================================================================
 // ROPA (Records of Processing Activities)

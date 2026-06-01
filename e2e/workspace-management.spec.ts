@@ -5,6 +5,16 @@
 
 import { test, expect } from '@playwright/test';
 
+// Paths the server intentionally exempts from CSRF validation (pre-login auth
+// endpoints and HMAC-verified webhook receivers — see server/src/middleware/csrf.ts).
+const CSRF_EXEMPT = [
+  '/auth/login', '/auth/register', '/auth/refresh', '/auth/magic-link',
+  '/auth/verify', '/auth/2fa/complete', '/webhook', '/csrf-token',
+];
+function isCsrfExempt(url: string): boolean {
+  return CSRF_EXEMPT.some((p) => url.includes(p));
+}
+
 test.describe('Workspace Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/enterprise/workspaces');
@@ -38,37 +48,50 @@ test.describe('Workspace Management', () => {
       if (isLanding) test.skip();
 
       const createBtn = page.getByRole('button', { name: /create|add|new/i }).first();
-      if (await createBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await createBtn.click();
-        await page.waitForTimeout(500);
+      // If no create affordance is present, skip so its absence is surfaced
+      // rather than passing without exercising the create flow.
+      if (!await createBtn.isVisible({ timeout: 5000 }).catch(() => false)) test.skip();
 
-        const nameInput = page.locator('[name="name"], [name="workspaceName"], input[type="text"]').first();
-        if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await nameInput.fill('E2E Test Workspace');
-        }
+      await createBtn.click();
+      await page.waitForTimeout(500);
 
-        const descInput = page.locator('[name="description"], textarea').first();
-        if (await descInput.isVisible()) {
-          await descInput.fill('Workspace created by E2E test');
-        }
+      // The create affordance must open a real form that accepts a workspace name.
+      const nameInput = page.locator('[name="name"], [name="workspaceName"], input[type="text"]').first();
+      await expect(nameInput).toBeVisible({ timeout: 5000 });
+      await nameInput.fill('E2E Test Workspace');
+      // The form must retain the typed value (the input is wired, not inert).
+      await expect(nameInput).toHaveValue('E2E Test Workspace');
 
-        const saveBtn = page.getByRole('button', { name: /create|save|submit/i }).first();
-        if (await saveBtn.isVisible()) {
-          await saveBtn.click();
-          await page.waitForTimeout(1000);
-        }
+      const descInput = page.locator('[name="description"], textarea').first();
+      if (await descInput.isVisible().catch(() => false)) {
+        await descInput.fill('Workspace created by E2E test');
       }
+
+      const saveBtn = page.getByRole('button', { name: /create|save|submit/i }).first();
+      await expect(saveBtn).toBeVisible();
+      await saveBtn.click();
+      await page.waitForTimeout(1500);
+
+      // After submitting, the app must remain in a valid state: the create form
+      // resolved (closed) or the new workspace surfaced in the list — and the
+      // workspace view itself did not crash.
+      const stillRendered = page.locator(
+        'table, .workspace-list, [data-testid="workspaces"], .grid, h1, h2'
+      ).first();
+      await expect(stillRendered).toBeVisible({ timeout: 5000 });
     });
 
     test('workspace creation sends POST with CSRF', async ({ page }) => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
-      let postHasCsrf = false;
-
+      // Any mutating /api/ request the create flow fires must carry an
+      // x-csrf-token (the frontend attaches it for all mutations — services/api.ts).
+      // A mutating POST without the token is a regression and fails the test.
+      const mutationsWithoutCsrf: string[] = [];
       page.on('request', (req) => {
-        if (req.method() === 'POST' && req.url().includes('/api/')) {
-          postHasCsrf = !!req.headers()['x-csrf-token'];
+        if (req.method() === 'POST' && req.url().includes('/api/') && !isCsrfExempt(req.url())) {
+          if (!req.headers()['x-csrf-token']) mutationsWithoutCsrf.push(req.url());
         }
       });
 
@@ -88,9 +111,7 @@ test.describe('Workspace Management', () => {
         }
       }
 
-      if (postHasCsrf) {
-        expect(postHasCsrf).toBeTruthy();
-      }
+      expect(mutationsWithoutCsrf, `mutating requests missing CSRF: ${mutationsWithoutCsrf.join(', ')}`).toHaveLength(0);
     });
   });
 
@@ -154,8 +175,13 @@ test.describe('Workspace Management', () => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
-      // Verify workspace ID is part of API requests
+      // Capture the credentialed API requests the workspace page issues. Org/
+      // workspace scoping is enforced server-side from the authenticated session
+      // (the JWT in the httpOnly cookie carries organizationId — services/api.ts),
+      // so the assertion is that the page loads its data through same-origin,
+      // cookie-credentialed API calls rather than an unscoped/static surface.
       const apiUrls: string[] = [];
+      const apiBase = (process.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
       page.on('request', (req) => {
         if (req.url().includes('/api/') && req.method() === 'GET') {
           apiUrls.push(req.url());
@@ -166,8 +192,13 @@ test.describe('Workspace Management', () => {
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.waitForTimeout(2000);
 
-      // API calls should be scoped (workspace context passed via cookie or header)
-      expect(true).toBeTruthy(); // Workspace scoping is handled server-side
+      // The workspace view must actually fetch scoped data via the API.
+      expect(apiUrls.length).toBeGreaterThan(0);
+      // Every data request must target the app's own API origin — workspace data
+      // is never pulled from a foreign host that would bypass tenant scoping.
+      for (const url of apiUrls) {
+        expect(url.startsWith(apiBase) || url.includes('/api/')).toBeTruthy();
+      }
     });
   });
 

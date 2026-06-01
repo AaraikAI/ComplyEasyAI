@@ -294,7 +294,7 @@ describe('E2E: Security Settings Flow', () => {
     it('should evaluate access request', async () => {
       const response = await request(app)
         .post('/api/security/zero-trust/evaluate-access')
-        .send({ resourceId: 'res-1', deviceId: 'dev-1', action: 'read' });
+        .send({ resource: 'res-1', deviceId: 'dev-1', action: 'read' });
 
       expect([200, 201]).toContain(response.status);
       expect(response.body).toHaveProperty('allowed');
@@ -352,10 +352,9 @@ describe('E2E: Security Settings Flow', () => {
       const response = await request(app)
         .post('/api/security/byok/config')
         .send({
-          enabled: true,
-          defaultProvider: 'aws_kms',
+          defaultKeyId: 'key-123',
           autoRotation: true,
-          rotationIntervalDays: 60,
+          rotationInterval: 60,
         });
 
       expect([200, 201]).toContain(response.status);
@@ -365,7 +364,8 @@ describe('E2E: Security Settings Flow', () => {
     it('should generate a local BYOK key', async () => {
       const response = await request(app)
         .post('/api/security/byok/keys/generate')
-        .send({ provider: 'local' });
+        // Schema requires keyType + label; provider defaults to 'local' server-side.
+        .send({ keyType: 'AES-256', label: 'Local Key' });
 
       expect([200, 201]).toContain(response.status);
       expect(response.body).toHaveProperty('keyId');

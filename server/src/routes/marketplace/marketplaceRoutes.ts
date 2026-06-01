@@ -14,6 +14,7 @@ import { installIntegrationSchema, configureIntegrationSchema } from '../../vali
 import { AppError } from '../../middleware/errorHandler';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { encryptConfigSecrets, decryptConfigSecrets } from '../../utils/credentialEncryption';
 
 const marketplaceRouter = Router();
 
@@ -402,6 +403,18 @@ function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => P
   };
 }
 
+/**
+ * Derive the set of secret config field names for an integration from its catalog schema.
+ * Any field declared as a 'password' input is treated as a secret to encrypt at rest, in
+ * addition to the standard SENSITIVE_CONFIG_KEYS handled by encryptConfigSecrets.
+ */
+function secretFieldNames(integration?: MarketplaceIntegration): string[] {
+  if (!integration) return [];
+  return Object.entries(integration.configSchema)
+    .filter(([, schema]) => (schema as any)?.type === 'password')
+    .map(([field]) => field);
+}
+
 // ============================================================================
 // ROUTES
 // ============================================================================
@@ -520,6 +533,11 @@ marketplaceRouter.post('/:slug/install', validateBody(installIntegrationSchema),
     throw new AppError(`Missing required configuration fields: ${missingFields.join(', ')}`, 400);
   }
 
+  // Encrypt secret config fields at rest before persisting (AES-256-GCM via credentialEncryption).
+  // Secret field names are derived from the catalog schema (any 'password'-typed field) plus the
+  // standard sensitive keys, so provider tokens/keys are never written to the DB in cleartext.
+  const encryptedConfig = encryptConfigSecrets(config, secretFieldNames(integration));
+
   // Create integration record
   const installed = await prisma.integration.create({
     data: {
@@ -527,7 +545,7 @@ marketplaceRouter.post('/:slug/install', validateBody(installIntegrationSchema),
       category: integration.category,
       provider: req.params.slug,
       connected: true,
-      config: config,
+      config: encryptedConfig,
       organizationId: user.organizationId,
     },
   });
@@ -554,9 +572,13 @@ marketplaceRouter.put('/:slug/configure', validateBody(configureIntegrationSchem
     throw new AppError('Integration not installed', 404);
   }
 
+  const catalogEntry = MARKETPLACE_CATALOG.find(i => i.slug === req.params.slug);
+  // Encrypt secret config fields before overwriting the stored configuration.
+  const encryptedConfig = encryptConfigSecrets(req.body.config || {}, secretFieldNames(catalogEntry));
+
   const updated = await prisma.integration.update({
     where: { id: installed.id },
-    data: { config: req.body.config || {} },
+    data: { config: encryptedConfig },
   });
 
   logger.info(`[Marketplace] Integration ${req.params.slug} configuration updated for org ${user.organizationId}`);
@@ -623,16 +645,38 @@ marketplaceRouter.post('/:slug/test', asyncHandler(async (req: Request, res: Res
     throw new AppError('Integration not installed', 404);
   }
 
-  // Perform actual connection test by checking integration status
-  const startTime = Date.now();
-  const isConnected = installed.connected === true;
-  const latencyMs = Date.now() - startTime;
+  const catalogEntry = MARKETPLACE_CATALOG.find(i => i.slug === req.params.slug);
+
+  // Issue a live connection check against the provider using the stored (decrypted) credentials.
+  // The integration registry performs the real outbound call and returns { success, latencyMs, error }.
+  // Providers without a registered connector report success:false with an explanatory error.
+  const storedConfig = decryptConfigSecrets((installed.config as Record<string, any>) || {});
+  const integrationRegistry = (await import('../../services/integrations/providers/integrationRegistry')).default;
+  await integrationRegistry.initialise();
+
+  let result: { success: boolean; latencyMs: number; error?: string };
+  try {
+    result = await integrationRegistry.testConnection(req.params.slug, storedConfig as any);
+  } catch (error) {
+    logger.error(`[Marketplace] Connection test threw for ${req.params.slug}`, error);
+    result = { success: false, latencyMs: 0, error: 'Connection test failed' };
+  }
+
+  // Reflect the live result back onto the stored connection state.
+  if (installed.connected !== result.success) {
+    await prisma.integration.update({
+      where: { id: installed.id },
+      data: { connected: result.success },
+    });
+  }
 
   const testResult = {
-    connected: isConnected,
-    latencyMs,
-    message: isConnected ? 'Connection successful' : 'Integration is disconnected',
-    capabilities: MARKETPLACE_CATALOG.find(i => i.slug === req.params.slug)?.features || [],
+    connected: result.success,
+    latencyMs: result.latencyMs,
+    message: result.success
+      ? 'Connection successful'
+      : result.error || 'Connection failed',
+    capabilities: catalogEntry?.features || [],
     testedAt: new Date().toISOString(),
   };
 

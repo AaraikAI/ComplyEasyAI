@@ -30,13 +30,18 @@ jest.mock('../../../middleware/auth', () => ({
   AuthRequest: {},
 }));
 
-// Mock dataAnonymizationService
+// Mock dataAnonymizationService. Implementations are (re)applied in beforeEach
+// because the jest config uses resetMocks, which strips the resolved value set
+// here before each test runs.
 jest.mock('../../../services/dataAnonymizationService', () => ({
   __esModule: true,
   default: {
-    anonymizeBatch: jest.fn().mockResolvedValue([{ email: 'j***@e***.com', name: 'J*** D***' }]),
+    anonymizeBatch: jest.fn(),
+    anonymizeRecord: jest.fn(),
   },
 }));
+
+import dataAnonymizationService from '../../../services/dataAnonymizationService';
 
 import anonymizationRoutes from '../../../routes/anonymization';
 import { errorHandler } from '../../../middleware/errorHandler';
@@ -64,7 +69,15 @@ const viewerToken = jwt.sign(
 
 describe('Anonymization API — Contract Tests', () => {
   const authToken = generateTestToken();
-  beforeEach(() => { jest.clearAllMocks(); });
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (dataAnonymizationService.anonymizeBatch as jest.Mock).mockResolvedValue([
+      { email: 'j***@e***.com', name: 'J*** D***' },
+    ]);
+    (dataAnonymizationService.anonymizeRecord as jest.Mock).mockResolvedValue({
+      email: 'j***@e***.com', name: 'J*** D***',
+    });
+  });
 
   // POST /preview
   describe('POST /api/anonymization/preview', () => {

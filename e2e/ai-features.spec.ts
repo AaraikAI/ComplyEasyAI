@@ -101,8 +101,12 @@ test.describe('AI Features', () => {
           await page.waitForTimeout(3000);
 
           if (apiCalled) {
-            // Verify CSRF on POST/PUT
-            expect(apiMethod).toBeTruthy();
+            // A mutating AI request must carry the double-submit CSRF token.
+            // The frontend api wrapper attaches X-CSRF-Token to every
+            // POST/PUT/PATCH/DELETE (services/api.ts), so an observed mutation
+            // without it indicates a CSRF-protection regression.
+            expect(['POST', 'PUT']).toContain(apiMethod);
+            expect(hasCsrf).toBeTruthy();
           }
         }
       });

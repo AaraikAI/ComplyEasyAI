@@ -86,8 +86,11 @@ router.get(
 router.get(
   '/',
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    // Pass query for both filtering (riskLevel/status/hasDataAccess) and as the
+    // pagination params arg so the service returns the paginated envelope.
     const vendors = await vendorRiskService.getVendorsByOrganization(
       req.user.organizationId,
+      req.query as any,
       req.query as any
     );
     res.json(vendors);

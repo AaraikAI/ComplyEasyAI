@@ -162,6 +162,27 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [showAddIncident, setShowAddIncident] = useState(false);
   const [selectedRisk, setSelectedRisk] = useState<ICTRisk | null>(null);
   const [selectedIncident, setSelectedIncident] = useState<ICTIncident | null>(null);
+  const [editingRisk, setEditingRisk] = useState<ICTRisk | null>(null);
+  const [editingIncident, setEditingIncident] = useState<ICTIncident | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Controlled form state for the Add Risk / Report Incident modals
+  const [riskForm, setRiskForm] = useState<{ title: string; category: RiskCategory; likelihood: Likelihood; impact: Impact; owner: string; description: string }>({
+    title: '', category: 'Cyber', likelihood: 'Medium', impact: 'Moderate', owner: '', description: '',
+  });
+  const [incidentForm, setIncidentForm] = useState<{ title: string; type: IncidentType; severity: IncidentSeverity; affectedServices: string; description: string }>({
+    title: '', type: 'Cyber Attack', severity: 'Medium', affectedServices: '', description: '',
+  });
+  const [showAddProvider, setShowAddProvider] = useState(false);
+  const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
+  const [providerForm, setProviderForm] = useState<{ providerName: string; serviceType: string; criticality: Criticality; country: string; exitStrategyExists: boolean }>({
+    providerName: '', serviceType: '', criticality: 'Standard', country: '', exitStrategyExists: false,
+  });
+  const [showAddTest, setShowAddTest] = useState(false);
+  const [editingTestId, setEditingTestId] = useState<string | null>(null);
+  const [testForm, setTestForm] = useState<{ testName: string; type: TestType; scope: string; nextScheduled: string }>({
+    testName: '', type: 'Vulnerability Scan', scope: '', nextScheduled: '',
+  });
 
   // API-loaded data
   const [risks, setRisks] = useState<ICTRisk[]>([]);
@@ -172,34 +193,210 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [dashboard, assessments, incidentRes, providerRes, testRes] = await Promise.allSettled([
-          api.dora.getDashboard(),
-          api.dora.listAssessments(),
-          api.dora.listIncidents(),
-          api.dora.listProviders(),
-          api.dora.listTests(),
-        ]);
-        if (cancelled) return;
-        if (dashboard.status === 'fulfilled') setDashboardData(dashboard.value);
-        if (assessments.status === 'fulfilled') setRisks((assessments.value.data || assessments.value || []).map(mapApiRisk));
-        if (incidentRes.status === 'fulfilled') setIncidents((incidentRes.value.data || incidentRes.value || []).map(mapApiIncident));
-        if (providerRes.status === 'fulfilled') setProviders((providerRes.value.data || providerRes.value || []).map(mapApiProvider));
-        if (testRes.status === 'fulfilled') setTests((testRes.value.data || testRes.value || []).map(mapApiTest));
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Failed to load DORA data');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    load();
-    return () => { cancelled = true; };
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [dashboard, assessments, incidentRes, providerRes, testRes] = await Promise.allSettled([
+        api.dora.getDashboard(),
+        api.dora.listAssessments(),
+        api.dora.listIncidents(),
+        api.dora.listProviders(),
+        api.dora.listTests(),
+      ]);
+      if (dashboard.status === 'fulfilled') setDashboardData(dashboard.value);
+      if (assessments.status === 'fulfilled') setRisks((assessments.value.data || assessments.value || []).map(mapApiRisk));
+      if (incidentRes.status === 'fulfilled') setIncidents((incidentRes.value.data || incidentRes.value || []).map(mapApiIncident));
+      if (providerRes.status === 'fulfilled') setProviders((providerRes.value.data || providerRes.value || []).map(mapApiProvider));
+      if (testRes.status === 'fulfilled') setTests((testRes.value.data || testRes.value || []).map(mapApiTest));
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load DORA data');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  // ── Mutations ────────────────────────────────────────────────────────
+  const handleCreateRisk = useCallback(async () => {
+    if (!riskForm.title.trim()) { setError('Risk title is required'); return; }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.dora.createAssessment({
+        title: riskForm.title.trim(),
+        category: riskForm.category,
+        likelihood: riskForm.likelihood,
+        impact: riskForm.impact,
+        owner: riskForm.owner.trim() || undefined,
+        description: riskForm.description.trim() || undefined,
+      });
+      setShowAddRisk(false);
+      setRiskForm({ title: '', category: 'Cyber', likelihood: 'Medium', impact: 'Moderate', owner: '', description: '' });
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to create ICT risk');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [riskForm, loadAll]);
+
+  const handleUpdateRisk = useCallback(async (id: string, updates: Partial<ICTRisk>) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.dora.updateAssessment(id, updates);
+      setEditingRisk(null);
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to update ICT risk');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [loadAll]);
+
+  const handleDeleteRisk = useCallback(async (id: string) => {
+    setError(null);
+    const previous = risks;
+    setRisks(prev => prev.filter(r => r.id !== id));
+    try {
+      await api.delete(`/dora/risk-assessments/${id}`);
+    } catch (e: any) {
+      setRisks(previous);
+      setError(e?.message || 'Failed to delete ICT risk');
+    }
+  }, [risks]);
+
+  const handleCreateIncident = useCallback(async () => {
+    if (!incidentForm.title.trim()) { setError('Incident title is required'); return; }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.dora.createIncident({
+        title: incidentForm.title.trim(),
+        type: incidentForm.type,
+        severity: incidentForm.severity,
+        affectedServices: incidentForm.affectedServices.split(',').map(s => s.trim()).filter(Boolean),
+        description: incidentForm.description.trim() || undefined,
+      });
+      setShowAddIncident(false);
+      setIncidentForm({ title: '', type: 'Cyber Attack', severity: 'Medium', affectedServices: '', description: '' });
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to report ICT incident');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [incidentForm, loadAll]);
+
+  const handleUpdateIncident = useCallback(async (id: string, updates: Partial<ICTIncident>) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.dora.updateIncident(id, updates);
+      setEditingIncident(null);
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to update incident');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [loadAll]);
+
+  const handleDeleteProvider = useCallback(async (id: string) => {
+    setError(null);
+    const previous = providers;
+    setProviders(prev => prev.filter(p => p.id !== id));
+    try {
+      await api.delete(`/dora/third-party-providers/${id}`);
+    } catch (e: any) {
+      setProviders(previous);
+      setError(e?.message || 'Failed to delete provider');
+    }
+  }, [providers]);
+
+  const handleDeleteTest = useCallback(async (id: string) => {
+    setError(null);
+    const previous = tests;
+    setTests(prev => prev.filter(tst => tst.id !== id));
+    try {
+      await api.delete(`/dora/resilience-tests/${id}`);
+    } catch (e: any) {
+      setTests(previous);
+      setError(e?.message || 'Failed to delete resilience test');
+    }
+  }, [tests]);
+
+  // Export the resilience-testing programme as a downloadable CSV (client-side).
+  const handleExportTests = useCallback(() => {
+    const headers = ['Test Name', 'Type', 'Scope', 'Last Executed', 'Result', 'Findings', 'Next Scheduled', 'Tested By'];
+    const escape = (v: string | number) => {
+      const s = String(v ?? '');
+      const safe = /^[=+\-@]/.test(s) ? `'${s}` : s;
+      return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+    };
+    const rows = tests.map(tst => [tst.testName, tst.type, tst.scope, tst.lastExecuted, tst.result, tst.findingsCount, tst.nextScheduled, tst.testedBy].map(escape).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dora-resilience-tests-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [tests]);
+
+  const handleSaveProvider = useCallback(async () => {
+    if (!providerForm.providerName.trim()) { setError('Provider name is required'); return; }
+    setSubmitting(true);
+    setError(null);
+    const payload = {
+      providerName: providerForm.providerName.trim(),
+      serviceType: providerForm.serviceType.trim() || undefined,
+      criticality: providerForm.criticality,
+      country: providerForm.country.trim() || undefined,
+      exitStrategyExists: providerForm.exitStrategyExists,
+    };
+    try {
+      if (editingProviderId) await api.dora.updateProvider(editingProviderId, payload);
+      else await api.dora.createProvider(payload);
+      setShowAddProvider(false);
+      setEditingProviderId(null);
+      setProviderForm({ providerName: '', serviceType: '', criticality: 'Standard', country: '', exitStrategyExists: false });
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to save provider');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [providerForm, editingProviderId, loadAll]);
+
+  const handleSaveTest = useCallback(async () => {
+    if (!testForm.testName.trim()) { setError('Test name is required'); return; }
+    setSubmitting(true);
+    setError(null);
+    const payload = {
+      testName: testForm.testName.trim(),
+      type: testForm.type,
+      scope: testForm.scope.trim() || undefined,
+      nextScheduled: testForm.nextScheduled || undefined,
+    };
+    try {
+      if (editingTestId) await api.dora.updateTest(editingTestId, payload);
+      else await api.dora.createTest(payload);
+      setShowAddTest(false);
+      setEditingTestId(null);
+      setTestForm({ testName: '', type: 'Vulnerability Scan', scope: '', nextScheduled: '' });
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to save resilience test');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [testForm, editingTestId, loadAll]);
 
   // ── Derived Metrics ──────────────────────────────────────────────────
   const rawComplianceScore = dashboardData?.complianceScore;
@@ -460,8 +657,8 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <td className="p-3">
                     <div className="flex items-center gap-1">
                       <button onClick={() => setSelectedRisk(risk)} className="p-1.5 hover:bg-slate-600 rounded" title="View"><Eye size={14} className="text-slate-400" /></button>
-                      <button className="p-1.5 hover:bg-slate-600 rounded" title="Edit"><Edit3 size={14} className="text-slate-400" /></button>
-                      <button className="p-1.5 hover:bg-slate-600 rounded" title="Delete"><Trash2 size={14} className="text-red-400" /></button>
+                      <button onClick={() => setEditingRisk(risk)} className="p-1.5 hover:bg-slate-600 rounded" title="Edit"><Edit3 size={14} className="text-slate-400" /></button>
+                      <button onClick={() => { if (window.confirm(`Delete risk "${risk.title}"? This cannot be undone.`)) handleDeleteRisk(risk.id); }} className="p-1.5 hover:bg-slate-600 rounded" title="Delete"><Trash2 size={14} className="text-red-400" /></button>
                     </div>
                   </td>
                 </tr>
@@ -553,7 +750,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <td className="p-3">
                     <div className="flex items-center gap-1">
                       <button onClick={() => setSelectedIncident(inc)} className="p-1.5 hover:bg-slate-600 rounded" title="View"><Eye size={14} className="text-slate-400" /></button>
-                      <button className="p-1.5 hover:bg-slate-600 rounded" title="Edit"><Edit3 size={14} className="text-slate-400" /></button>
+                      <button onClick={() => setEditingIncident(inc)} className="p-1.5 hover:bg-slate-600 rounded" title="Edit"><Edit3 size={14} className="text-slate-400" /></button>
                     </div>
                   </td>
                 </tr>
@@ -570,7 +767,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-lg font-semibold text-white">ICT Third-Party Service Provider Register</h3>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+        <button onClick={() => setShowAddProvider(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
           <Plus size={16} />Add Provider
         </button>
       </div>
@@ -628,9 +825,10 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <td className="p-3 text-slate-400 whitespace-nowrap">{p.nextReview}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
-                      <button className="p-1.5 hover:bg-slate-600 rounded" title="View"><Eye size={14} className="text-slate-400" /></button>
-                      <button className="p-1.5 hover:bg-slate-600 rounded" title="Edit"><Edit3 size={14} className="text-slate-400" /></button>
-                      <button className="p-1.5 hover:bg-slate-600 rounded" title="Delete"><Trash2 size={14} className="text-red-400" /></button>
+                      <button
+                        onClick={() => { setProviderForm({ providerName: p.providerName, serviceType: p.serviceType, criticality: p.criticality, country: p.country, exitStrategyExists: p.exitStrategyExists }); setEditingProviderId(p.id); setShowAddProvider(true); }}
+                        className="p-1.5 hover:bg-slate-600 rounded" title="Edit"><Edit3 size={14} className="text-slate-400" /></button>
+                      <button onClick={() => { if (window.confirm(`Delete provider "${p.providerName}"? This cannot be undone.`)) handleDeleteProvider(p.id); }} className="p-1.5 hover:bg-slate-600 rounded" title="Delete"><Trash2 size={14} className="text-red-400" /></button>
                     </div>
                   </td>
                 </tr>
@@ -668,10 +866,10 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-lg font-semibold text-white">Digital Operational Resilience Testing Programme</h3>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-3 py-2 bg-slate-700 text-white rounded-lg text-sm hover:bg-slate-600">
+          <button onClick={handleExportTests} disabled={tests.length === 0} className="flex items-center gap-2 px-3 py-2 bg-slate-700 text-white rounded-lg text-sm hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">
             <Download size={16} />Export Report
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+          <button onClick={() => { setEditingTestId(null); setTestForm({ testName: '', type: 'Vulnerability Scan', scope: '', nextScheduled: '' }); setShowAddTest(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
             <Plus size={16} />Schedule Test
           </button>
         </div>
@@ -734,8 +932,10 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <td className="p-3 text-slate-300 max-w-[150px] truncate">{tst.testedBy}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
-                      <button className="p-1.5 hover:bg-slate-600 rounded" title="View Report"><Eye size={14} className="text-slate-400" /></button>
-                      <button className="p-1.5 hover:bg-slate-600 rounded" title="Download"><Download size={14} className="text-slate-400" /></button>
+                      <button
+                        onClick={() => { setTestForm({ testName: tst.testName, type: tst.type, scope: tst.scope, nextScheduled: '' }); setEditingTestId(tst.id); setShowAddTest(true); }}
+                        className="p-1.5 hover:bg-slate-600 rounded" title="View / Edit"><Eye size={14} className="text-slate-400" /></button>
+                      <button onClick={handleExportTests} className="p-1.5 hover:bg-slate-600 rounded" title="Export"><Download size={14} className="text-slate-400" /></button>
                     </div>
                   </td>
                 </tr>
@@ -809,7 +1009,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
           <button onClick={() => setSelectedRisk(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Close</button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Edit Risk</button>
+          <button onClick={() => { setEditingRisk(selectedRisk); setSelectedRisk(null); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Edit Risk</button>
         </div>
       </div>
     </div>
@@ -867,7 +1067,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
           <button onClick={() => setSelectedIncident(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Close</button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Update Status</button>
+          <button onClick={() => { setEditingIncident(selectedIncident); setSelectedIncident(null); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Update Status</button>
         </div>
       </div>
     </div>
@@ -883,40 +1083,40 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="p-5 space-y-4">
           <div>
             <label className="block text-sm text-slate-400 mb-1">Risk Title</label>
-            <input type="text" placeholder="Enter risk title..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <input type="text" value={riskForm.title} onChange={e => setRiskForm(f => ({ ...f, title: e.target.value }))} placeholder="Enter risk title..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Category</label>
-            <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
-              {(['Cyber', 'Infrastructure', 'Software', 'Cloud', 'Data'] as RiskCategory[]).map(c => <option key={c}>{c}</option>)}
+            <select value={riskForm.category} onChange={e => setRiskForm(f => ({ ...f, category: e.target.value as RiskCategory }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              {(['Cyber', 'Infrastructure', 'Software', 'Cloud', 'Data'] as RiskCategory[]).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400 mb-1">Likelihood</label>
-              <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
-                {(['Very Low', 'Low', 'Medium', 'High', 'Very High'] as Likelihood[]).map(l => <option key={l}>{l}</option>)}
+              <select value={riskForm.likelihood} onChange={e => setRiskForm(f => ({ ...f, likelihood: e.target.value as Likelihood }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['Very Low', 'Low', 'Medium', 'High', 'Very High'] as Likelihood[]).map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Impact</label>
-              <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
-                {(['Negligible', 'Minor', 'Moderate', 'Major', 'Severe'] as Impact[]).map(i => <option key={i}>{i}</option>)}
+              <select value={riskForm.impact} onChange={e => setRiskForm(f => ({ ...f, impact: e.target.value as Impact }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['Negligible', 'Minor', 'Moderate', 'Major', 'Severe'] as Impact[]).map(i => <option key={i} value={i}>{i}</option>)}
               </select>
             </div>
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Owner</label>
-            <input type="text" placeholder="Risk owner..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <input type="text" value={riskForm.owner} onChange={e => setRiskForm(f => ({ ...f, owner: e.target.value }))} placeholder="Risk owner..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Description</label>
-            <textarea placeholder="Describe the risk..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
+            <textarea value={riskForm.description} onChange={e => setRiskForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the risk..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
           </div>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
           <button onClick={() => setShowAddRisk(false)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
-          <button onClick={() => setShowAddRisk(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Add Risk</button>
+          <button onClick={handleCreateRisk} disabled={submitting || !riskForm.title.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : 'Add Risk'}</button>
         </div>
       </div>
     </div>
@@ -932,34 +1132,190 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="p-5 space-y-4">
           <div>
             <label className="block text-sm text-slate-400 mb-1">Incident Title</label>
-            <input type="text" placeholder="Enter incident title..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <input type="text" value={incidentForm.title} onChange={e => setIncidentForm(f => ({ ...f, title: e.target.value }))} placeholder="Enter incident title..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400 mb-1">Type</label>
-              <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
-                {(['Cyber Attack', 'System Failure', 'Data Breach', 'Third-Party Outage'] as IncidentType[]).map(it => <option key={it}>{it}</option>)}
+              <select value={incidentForm.type} onChange={e => setIncidentForm(f => ({ ...f, type: e.target.value as IncidentType }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['Cyber Attack', 'System Failure', 'Data Breach', 'Third-Party Outage'] as IncidentType[]).map(it => <option key={it} value={it}>{it}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Severity</label>
-              <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
-                {(['Low', 'Medium', 'High', 'Critical'] as IncidentSeverity[]).map(s => <option key={s}>{s}</option>)}
+              <select value={incidentForm.severity} onChange={e => setIncidentForm(f => ({ ...f, severity: e.target.value as IncidentSeverity }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['Low', 'Medium', 'High', 'Critical'] as IncidentSeverity[]).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Affected Services</label>
-            <input type="text" placeholder="Comma-separated services..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <input type="text" value={incidentForm.affectedServices} onChange={e => setIncidentForm(f => ({ ...f, affectedServices: e.target.value }))} placeholder="Comma-separated services..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Description</label>
-            <textarea placeholder="Describe the incident..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
+            <textarea value={incidentForm.description} onChange={e => setIncidentForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the incident..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
           </div>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
           <button onClick={() => setShowAddIncident(false)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
-          <button onClick={() => setShowAddIncident(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Report Incident</button>
+          <button onClick={handleCreateIncident} disabled={submitting || !incidentForm.title.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : 'Report Incident'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderEditRiskModal = () => editingRisk && (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setEditingRisk(null)}>
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-700">
+          <h3 className="text-lg font-semibold text-white">Edit ICT Risk</h3>
+          <button onClick={() => setEditingRisk(null)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Risk Title</label>
+            <input type="text" value={editingRisk.title} onChange={e => setEditingRisk(r => r ? { ...r, title: e.target.value } : r)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Risk Level</label>
+              <select value={editingRisk.riskLevel} onChange={e => setEditingRisk(r => r ? { ...r, riskLevel: e.target.value as RiskLevel } : r)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['Low', 'Medium', 'High', 'Critical'] as RiskLevel[]).map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Mitigation Status</label>
+              <select value={editingRisk.mitigationStatus} onChange={e => setEditingRisk(r => r ? { ...r, mitigationStatus: e.target.value as MitigationStatus } : r)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['Not Started', 'In Progress', 'Implemented', 'Verified'] as MitigationStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Owner</label>
+            <input type="text" value={editingRisk.owner} onChange={e => setEditingRisk(r => r ? { ...r, owner: e.target.value } : r)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
+          <button onClick={() => setEditingRisk(null)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
+          <button onClick={() => editingRisk && handleUpdateRisk(editingRisk.id, { title: editingRisk.title, riskLevel: editingRisk.riskLevel, mitigationStatus: editingRisk.mitigationStatus, owner: editingRisk.owner })} disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">{submitting ? 'Saving...' : 'Save Changes'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderEditIncidentModal = () => editingIncident && (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setEditingIncident(null)}>
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-700">
+          <h3 className="text-lg font-semibold text-white">Update ICT Incident</h3>
+          <button onClick={() => setEditingIncident(null)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Incident Title</label>
+            <input type="text" value={editingIncident.title} onChange={e => setEditingIncident(i => i ? { ...i, title: e.target.value } : i)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Status</label>
+              <select value={editingIncident.status} onChange={e => setEditingIncident(i => i ? { ...i, status: e.target.value as IncidentStatus } : i)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['Open', 'Investigating', 'Resolved', 'Reported to Authority'] as IncidentStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Notification Status</label>
+              <select value={editingIncident.notificationStatus} onChange={e => setEditingIncident(i => i ? { ...i, notificationStatus: e.target.value as NotificationStatus } : i)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['Not Required', 'Pending', 'Initial Sent', 'Intermediate Sent', 'Final Sent'] as NotificationStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Root Cause</label>
+            <textarea value={editingIncident.rootCause} onChange={e => setEditingIncident(i => i ? { ...i, rootCause: e.target.value } : i)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
+          <button onClick={() => setEditingIncident(null)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
+          <button onClick={() => editingIncident && handleUpdateIncident(editingIncident.id, { title: editingIncident.title, status: editingIncident.status, notificationStatus: editingIncident.notificationStatus, rootCause: editingIncident.rootCause })} disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">{submitting ? 'Saving...' : 'Save Changes'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderProviderModal = () => showAddProvider && (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => { setShowAddProvider(false); setEditingProviderId(null); }}>
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-700">
+          <h3 className="text-lg font-semibold text-white">{editingProviderId ? 'Edit' : 'Add'} ICT Third-Party Provider</h3>
+          <button onClick={() => { setShowAddProvider(false); setEditingProviderId(null); }} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Provider Name</label>
+            <input type="text" value={providerForm.providerName} onChange={e => setProviderForm(f => ({ ...f, providerName: e.target.value }))} placeholder="Provider name..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Service Type</label>
+            <input type="text" value={providerForm.serviceType} onChange={e => setProviderForm(f => ({ ...f, serviceType: e.target.value }))} placeholder="e.g., Cloud Hosting (IaaS)" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Criticality</label>
+              <select value={providerForm.criticality} onChange={e => setProviderForm(f => ({ ...f, criticality: e.target.value as Criticality }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['Critical', 'Important', 'Standard'] as Criticality[]).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Country</label>
+              <input type="text" value={providerForm.country} onChange={e => setProviderForm(f => ({ ...f, country: e.target.value }))} placeholder="Country" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input type="checkbox" checked={providerForm.exitStrategyExists} onChange={e => setProviderForm(f => ({ ...f, exitStrategyExists: e.target.checked }))} className="w-4 h-4 rounded border-slate-600 bg-slate-700" />
+            Exit strategy documented (DORA Article 28)
+          </label>
+        </div>
+        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
+          <button onClick={() => { setShowAddProvider(false); setEditingProviderId(null); }} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
+          <button onClick={handleSaveProvider} disabled={submitting || !providerForm.providerName.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : editingProviderId ? 'Save Changes' : 'Add Provider'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTestModal = () => showAddTest && (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => { setShowAddTest(false); setEditingTestId(null); }}>
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-700">
+          <h3 className="text-lg font-semibold text-white">{editingTestId ? 'Edit' : 'Schedule'} Resilience Test</h3>
+          <button onClick={() => { setShowAddTest(false); setEditingTestId(null); }} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Test Name</label>
+            <input type="text" value={testForm.testName} onChange={e => setTestForm(f => ({ ...f, testName: e.target.value }))} placeholder="Test name..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Type</label>
+              <select value={testForm.type} onChange={e => setTestForm(f => ({ ...f, type: e.target.value as TestType }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                {(['TLPT', 'Scenario', 'Vulnerability Scan', 'Penetration Test'] as TestType[]).map(t2 => <option key={t2} value={t2}>{t2}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Next Scheduled</label>
+              <input type="date" value={testForm.nextScheduled} onChange={e => setTestForm(f => ({ ...f, nextScheduled: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Scope</label>
+            <textarea value={testForm.scope} onChange={e => setTestForm(f => ({ ...f, scope: e.target.value }))} placeholder="Scope of the test..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
+          <button onClick={() => { setShowAddTest(false); setEditingTestId(null); }} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
+          <button onClick={handleSaveTest} disabled={submitting || !testForm.testName.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : editingTestId ? 'Save Changes' : 'Schedule Test'}</button>
         </div>
       </div>
     </div>
@@ -1003,6 +1359,10 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {renderIncidentDetailModal()}
       {renderAddRiskModal()}
       {renderAddIncidentModal()}
+      {renderEditRiskModal()}
+      {renderEditIncidentModal()}
+      {renderProviderModal()}
+      {renderTestModal()}
     </div>
   );
 };

@@ -793,13 +793,27 @@ class StripeService {
       throw new AppError('Invalid webhook signature', 401);
     }
 
-    // Log the event
-    await prisma.stripeEvent.create({
-      data: {
+    // Idempotency: Stripe retries deliveries, so an event id already recorded as
+    // processed must be a no-op. Returning early prevents double-applying a tier change
+    // or billing mutation on a redelivered event.
+    const existing = await prisma.stripeEvent.findUnique({
+      where: { eventId: event.id },
+    });
+    if (existing?.processed) {
+      logger.info(`Skipping already-processed Stripe webhook: ${event.id}`);
+      return { event, processed: true };
+    }
+
+    // Log the event (upsert so a redelivery that was recorded-but-not-yet-processed
+    // does not collide on the unique eventId).
+    await prisma.stripeEvent.upsert({
+      where: { eventId: event.id },
+      create: {
         eventId: event.id,
         type: event.type,
         data: event.data as any,
       },
+      update: {},
     });
 
     logger.info(`Processing Stripe webhook: ${event.type}`);
@@ -933,7 +947,7 @@ class StripeService {
 
         const emailService = (await import('./emailService')).default;
         await emailService.sendPaymentConfirmation(userEmail, tierName, amount);
-        logger.info(`Payment confirmation email sent to ${userEmail}`);
+        logger.info('Payment confirmation email sent', { organizationId, tier: tierName });
       } catch (error) {
         logger.error('Failed to send payment confirmation email', error);
       }
@@ -1464,6 +1478,7 @@ class StripeService {
   async createQuote(
     organizationId: string,
     options: {
+      tier?: string;
       userCount: number;
       features: string[];
       addOns: string[];
@@ -1501,11 +1516,13 @@ class StripeService {
       );
 
       // Create a product for this custom quote first
+      const tierLabel = options.tier || 'Visionary';
       const product = await stripe.products.create({
-        name: `ComplyEasyAI Visionary Plan - Custom`,
+        name: `ComplyEasyAI ${tierLabel} Plan - Custom`,
         description: `Custom enterprise plan for ${options.userCount} users`,
         metadata: {
           organizationId,
+          tier: tierLabel,
           userCount: options.userCount.toString(),
         },
       });
