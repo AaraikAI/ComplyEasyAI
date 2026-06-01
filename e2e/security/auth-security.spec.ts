@@ -70,25 +70,26 @@ test.describe('Login Security', () => {
   });
 
   test('should rate-limit login attempts', async ({ request }) => {
-    const attempts = [];
-    for (let i = 0; i < 20; i++) {
-      attempts.push(
-        request.post(`${API_BASE}/api/auth/login`, {
-          data: {
-            email: 'ratelimit-test@example.com',
-            password: `WrongPass${i}!`,
-          },
-        }),
-      );
+    // authLimiter is configured with max 5 failed attempts per 15-minute window
+    // (skipSuccessfulRequests: true) — see server/src/middleware/rateLimiter.ts.
+    // 30 sequential failing logins comfortably exceed that threshold so the
+    // brute-force protection must return 429 responses.
+    const statuses: number[] = [];
+    for (let i = 0; i < 30; i++) {
+      const res = await request.post(`${API_BASE}/api/auth/login`, {
+        data: {
+          email: 'ratelimit-test@example.com',
+          password: `WrongPass${i}!`,
+        },
+      });
+      statuses.push(res.status());
     }
 
-    const responses = await Promise.all(attempts);
-    const statuses = responses.map((r) => r.status());
-
-    // At least some should be 429 (rate-limited)
+    // Brute-force protection must engage: at least one attempt is rate-limited.
     const rateLimited = statuses.filter((s) => s === 429);
-    // Rate limit may not kick in for all 20 if the window is large,
-    // but at least verify no 500s occurred
+    expect(rateLimited.length).toBeGreaterThan(0);
+
+    // And the limiter must not produce server errors while doing so.
     const serverErrors = statuses.filter((s) => s >= 500);
     expect(serverErrors).toHaveLength(0);
   });

@@ -176,4 +176,45 @@ describe('Billing Routes Integration', () => {
       expect(response.body).toHaveProperty('url');
     });
   });
+
+  // ===========================================================================
+  // Stripe Webhook (signature verification is security-critical)
+  // ===========================================================================
+  describe('POST /api/billing/webhook', () => {
+    it('should reject a webhook with no stripe-signature header (400)', async () => {
+      const stripeService = require('../../../services/stripeService').default;
+
+      const response = await request(app)
+        .post('/api/billing/webhook')
+        .set('Content-Type', 'application/json')
+        .send({ id: 'evt_test', type: 'checkout.session.completed' })
+        .expect(400);
+
+      expect(response.body.error).toMatch(/signature/i);
+      // The controller must refuse to process before signature verification,
+      // so the (mocked) handler is never invoked for an unsigned payload.
+      expect(stripeService.handleWebhook).not.toHaveBeenCalled();
+    });
+
+    it('should reject a webhook whose signature fails verification (does not process)', async () => {
+      const stripeService = require('../../../services/stripeService').default;
+      // Simulate Stripe SDK constructEvent() rejecting a tampered/invalid signature.
+      stripeService.handleWebhook.mockRejectedValueOnce(
+        new Error('No signatures found matching the expected signature for payload')
+      );
+
+      const response = await request(app)
+        .post('/api/billing/webhook')
+        .set('stripe-signature', 't=123,v1=deadbeef')
+        .set('Content-Type', 'application/json')
+        .send({ id: 'evt_test', type: 'checkout.session.completed' });
+
+      // A non-AppError from the verification layer surfaces as a 500 "Webhook processing failed".
+      expect(response.status).toBe(500);
+      // The signature header must be forwarded to the verification routine.
+      expect(stripeService.handleWebhook).toHaveBeenCalledTimes(1);
+      const sigArg = stripeService.handleWebhook.mock.calls[0][1];
+      expect(sigArg).toBe('t=123,v1=deadbeef');
+    });
+  });
 });

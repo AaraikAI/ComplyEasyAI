@@ -5,6 +5,17 @@
 
 import { test, expect } from '@playwright/test';
 
+// Paths the server intentionally exempts from CSRF validation (pre-login auth
+// endpoints and HMAC-verified webhook receivers — see server/src/middleware/csrf.ts).
+// Mutating requests to these legitimately omit the x-csrf-token header.
+const CSRF_EXEMPT = [
+  '/auth/login', '/auth/register', '/auth/refresh', '/auth/magic-link',
+  '/auth/verify', '/auth/2fa/complete', '/webhook', '/csrf-token',
+];
+function isCsrfExempt(url: string): boolean {
+  return CSRF_EXEMPT.some((p) => url.includes(p));
+}
+
 test.describe('Privacy Management', () => {
   test.describe('Privacy Platform Hub', () => {
     test.beforeEach(async ({ page }) => {
@@ -95,13 +106,14 @@ test.describe('Privacy Management', () => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
-      let postMade = false;
-      let hasCsrf = false;
-
+      // Every mutating /api/ request (excluding CSRF-exempt auth/webhook paths) must
+      // carry an x-csrf-token header — the frontend attaches it for all
+      // POST/PUT/PATCH/DELETE calls (services/api.ts). A mutation without the token
+      // is a regression and must fail the test rather than be skipped.
+      const mutationsWithoutCsrf: string[] = [];
       page.on('request', (req) => {
-        if (req.method() === 'POST' && req.url().includes('/api/')) {
-          postMade = true;
-          hasCsrf = !!req.headers()['x-csrf-token'];
+        if (req.method() === 'POST' && req.url().includes('/api/') && !isCsrfExempt(req.url())) {
+          if (!req.headers()['x-csrf-token']) mutationsWithoutCsrf.push(req.url());
         }
       });
 
@@ -109,11 +121,9 @@ test.describe('Privacy Management', () => {
       if (await startBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
         await startBtn.click();
         await page.waitForTimeout(2000);
-
-        if (postMade) {
-          expect(hasCsrf).toBeTruthy();
-        }
       }
+
+      expect(mutationsWithoutCsrf, `mutating requests missing CSRF: ${mutationsWithoutCsrf.join(', ')}`).toHaveLength(0);
     });
   });
 
@@ -192,20 +202,24 @@ test.describe('Privacy Management', () => {
   });
 
   test.describe('Cookie Consent', () => {
-    test('cookie consent banner appears on first visit', async ({ page, context }) => {
-      // Clear cookies to simulate first visit
+    test('cookie consent banner is scoped to the authenticated app shell', async ({ page, context }) => {
+      // The CookieConsentBanner is a global banner mounted inside the
+      // authenticated MainApp shell (App.tsx) and only renders when no consent is
+      // stored. An unauthenticated visitor to '/' sees the public LandingPage,
+      // which must NOT carry the consent dialog. This asserts the banner is not
+      // leaked onto the public surface while confirming the landing page renders.
       await context.clearCookies();
       await page.goto('/');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(2000);
 
-      const cookieBanner = page.locator(
-        '[data-testid="cookie-banner"], .cookie-consent, [class*="cookie"], :text("cookie")'
-      ).first();
-      // Cookie banner may or may not appear depending on config
-      const hasBanner = await cookieBanner.isVisible({ timeout: 5000 }).catch(() => false);
-      // Just verify no errors
-      expect(true).toBeTruthy();
+      // Landing page is reached: the sign-in affordance is present.
+      await expect(page.locator('button:has-text("Sign In")').first()).toBeVisible({ timeout: 10000 });
+
+      // The cookie consent dialog (role="dialog" aria-label="Cookie consent preferences")
+      // must not be present on the unauthenticated landing page.
+      const consentDialog = page.getByRole('dialog', { name: /cookie consent/i });
+      await expect(consentDialog).toHaveCount(0);
     });
 
     test('accepting cookies dismisses the banner', async ({ page, context }) => {

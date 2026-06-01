@@ -31,7 +31,8 @@ router.get(
       res.json(dashboard);
     } catch (error) {
       logger.error('Error fetching MDM dashboard:', error);
-      res.json({ totalDevices: 0, compliant: 0, nonCompliant: 0 });
+      // Surface the failure to the global error handler/Sentry instead of masking an outage as zeroed data.
+      throw new AppError('Failed to load MDM dashboard', 500);
     }
   })
 );
@@ -49,7 +50,8 @@ router.get(
       res.json(devices);
     } catch (error) {
       logger.error('Error fetching devices:', error);
-      res.json([]);
+      // Re-throw so a real query/DB failure is reported rather than presented as an empty device list.
+      throw new AppError('Failed to load devices', 500);
     }
   })
 );
@@ -167,7 +169,8 @@ router.get(
       res.json(policies);
     } catch (error) {
       logger.error('Error fetching MDM policies:', error);
-      res.json([]);
+      // Re-throw so a real failure is reported rather than presented as an empty policy list.
+      throw new AppError('Failed to load MDM policies', 500);
     }
   })
 );
@@ -233,7 +236,8 @@ router.get(
       res.json(compliance);
     } catch (error) {
       logger.error('Error fetching MDM compliance:', error);
-      res.json({ compliant: 0, nonCompliant: 0, violations: [] });
+      // Re-throw so a real failure is reported rather than masked as a fully-compliant zeroed result.
+      throw new AppError('Failed to evaluate MDM compliance', 500);
     }
   })
 );
@@ -251,7 +255,8 @@ router.get(
       res.json(actions);
     } catch (error) {
       logger.error('Error fetching device actions:', error);
-      res.json([]);
+      // Re-throw so a real failure is reported rather than presented as an empty action history.
+      throw new AppError('Failed to load device actions', 500);
     }
   })
 );

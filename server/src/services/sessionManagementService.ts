@@ -119,6 +119,7 @@ class SessionManagementService extends EventEmitter {
           logger.error('[Session Management] Cleanup error', error);
         });
       }, this.config.cleanupInterval);
+      this.cleanupInterval?.unref?.();
 
       // Start warning interval
       this.warningInterval = setInterval(() => {
@@ -126,6 +127,7 @@ class SessionManagementService extends EventEmitter {
           logger.error('[Session Management] Warning check error', error);
         });
       }, 30000); // Check every 30 seconds
+      this.warningInterval?.unref?.();
 
       logger.info('[Session Management] Service initialized (Redis-backed)');
     } catch (error) {
@@ -245,6 +247,16 @@ class SessionManagementService extends EventEmitter {
         return;
       }
 
+      // Warnings are delivered per-session on access: if this session was idle long enough
+      // to fall inside the warning window before this activity, notify once.
+      const timeUntilExpiry = new Date(session.expiresAt).getTime() - Date.now();
+      if (
+        !session.timeoutWarningSent &&
+        timeUntilExpiry <= this.config.warningTimeBeforeTimeout
+      ) {
+        await this.sendTimeoutWarning(session);
+      }
+
       // Update last activity
       session.lastActivityAt = new Date();
 
@@ -326,19 +338,25 @@ class SessionManagementService extends EventEmitter {
   }
 
   /**
-   * Check and send timeout warnings
+   * Check and send timeout warnings.
+   * Warning delivery is driven per-session from updateSessionActivity (each instance handles
+   * the sessions it serves), since Redis TTL — not a central scan — owns expiry. This periodic
+   * hook is retained as a best-effort no-op for the local instance.
    */
   private async checkAndSendTimeoutWarnings(): Promise<void> {
-    // With Redis-backed sessions, warnings are handled per-session on access.
-    // This interval-based check is best-effort for the local instance.
-    // In a multi-replica setup, each instance handles warnings for sessions it accesses.
+    // Intentionally a no-op: warnings are emitted on session access (see updateSessionActivity);
+    // there is no cluster-wide session scan because Redis TTL handles expiration.
   }
 
   /**
-   * Send timeout warning to user
+   * Send timeout warning to user. Invoked from updateSessionActivity when an accessed session
+   * is inside the warning window and has not yet been warned for the current idle cycle.
    */
   private async sendTimeoutWarning(session: UserSession): Promise<void> {
     try {
+      // Mark first so concurrent accesses within the same window do not double-emit.
+      session.timeoutWarningSent = true;
+
       // Emit warning event (frontend can listen and show notification)
       this.emit('sessionTimeoutWarning', {
         sessionId: session.id,

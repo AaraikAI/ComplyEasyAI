@@ -213,15 +213,19 @@ export class MonitoringService {
       severity: index >= passedTests ? (index % 2 === 0 ? 'High' : 'Medium') : null,
     }));
 
-    // Auto-remediation for simple failures
-    const autoRemediated = failedTests > 0 && failedTests <= 2;
-    const remediationActions = autoRemediated
+    // Surface remediation suggestions for a small number of simple failures.
+    // These are recommendations only — nothing is auto-applied here — so the
+    // persisted autoRemediated flag stays false and dashboards do not report
+    // these as automatically fixed.
+    const hasRemediationSuggestions = failedTests > 0 && failedTests <= 2;
+    const autoRemediated = false;
+    const remediationActions = hasRemediationSuggestions
       ? findings
           .filter((f) => !f.passed)
           .map((f) => ({
             test: f.test,
-            action: `Automatically ${f.test.toLowerCase()}`,
-            status: 'Applied',
+            action: `Suggested remediation: ${f.test.toLowerCase()}`,
+            status: 'Suggested',
           }))
       : null;
 
@@ -361,10 +365,14 @@ export class MonitoringService {
         (sum, m) => sum + ((m.alerts as any)?.critical || 0),
         0
       ),
-      autoRemediatedCount: monitors.reduce(
-        (sum, m) =>
-          sum +
-          (m.results[0]?.autoRemediated ? 1 : 0),
+      // Count monitors whose latest run produced remediation suggestions.
+      // Nothing is auto-applied, so this is a "suggestions available" count, not
+      // a count of automatically fixed issues.
+      remediationSuggestionsCount: monitors.reduce(
+        (sum, m) => {
+          const actions = (m.results[0]?.remediationActions as unknown[] | null) || null;
+          return sum + (actions && actions.length > 0 ? 1 : 0);
+        },
         0
       ),
       failingMonitors: monitors
@@ -1156,14 +1164,17 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
         ? 'Failing'
         : 'Warning';
 
-    const autoRemediated = failedTests > 0 && failedTests <= 2;
-    const remediationActions = autoRemediated
+    // Remediation suggestions only — no action is auto-applied, so autoRemediated
+    // is persisted as false to avoid misreporting issues as automatically fixed.
+    const hasRemediationSuggestions = failedTests > 0 && failedTests <= 2;
+    const autoRemediated = false;
+    const remediationActions = hasRemediationSuggestions
       ? findings
           .filter((f) => !f.passed)
           .map((f) => ({
             test: f.test,
-            action: `Auto-remediation triggered for ${f.test}`,
-            status: 'Applied',
+            action: `Suggested remediation for ${f.test}`,
+            status: 'Suggested',
           }))
       : null;
 

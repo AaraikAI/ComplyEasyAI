@@ -67,49 +67,64 @@ test.describe('Incident Management', () => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
-      let postRequest: { url: string; method: string; hasCsrf: boolean } | null = null;
+      // Track the incident create POST and its response so we can assert that
+      // submitting the form actually fires the mutation and that the mutation
+      // is not rejected by CSRF (response 403).
+      let postRequest: { url: string; method: string } | null = null;
+      let postRejectedByCsrf = false;
 
       page.on('request', (req) => {
-        if (req.method() === 'POST' && req.url().includes('/api/')) {
-          postRequest = {
-            url: req.url(),
-            method: req.method(),
-            hasCsrf: !!req.headers()['x-csrf-token'],
-          };
+        if (req.method() === 'POST' && req.url().includes('/api/incidents')) {
+          postRequest = { url: req.url(), method: req.method() };
+        }
+      });
+      page.on('response', (res) => {
+        const req = res.request();
+        if (req.method() === 'POST' && res.url().includes('/api/incidents') && res.status() === 403) {
+          postRejectedByCsrf = true;
         }
       });
 
+      // IncidentManagement renders either the incident register (with a create
+      // control) or a "Failed to Load Incidents" error panel. The create flow
+      // requires the register UI.
       const createBtn = page.getByRole('button', { name: /create|add|new|report/i }).first();
-      if (await createBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await createBtn.click();
-        await page.waitForTimeout(500);
+      const loadError = page.getByText('Failed to Load Incidents');
+      const createVisible = await createBtn.isVisible({ timeout: 5000 }).catch(() => false);
 
-        const titleField = page.locator('[name="title"], [name="name"], input[type="text"]').first();
-        if (await titleField.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await titleField.fill('E2E Incident - Security Breach Detected');
-        }
-
-        const descField = page.locator('[name="description"], textarea').first();
-        if (await descField.isVisible()) {
-          await descField.fill('Unauthorized access detected in production environment');
-        }
-
-        const severitySelect = page.locator('select[name="severity"]');
-        if (await severitySelect.isVisible().catch(() => false)) {
-          const options = await severitySelect.locator('option').all();
-          if (options.length > 1) await severitySelect.selectOption({ index: 1 });
-        }
-
-        const submitBtn = page.getByRole('button', { name: /create|save|submit/i }).first();
-        if (await submitBtn.isVisible()) {
-          await submitBtn.click();
-          await page.waitForTimeout(2000);
-        }
-
-        if (postRequest) {
-          expect(postRequest.hasCsrf).toBeTruthy();
-        }
+      if (!createVisible) {
+        await expect(loadError).toBeVisible({ timeout: 3000 });
+        return;
       }
+
+      await createBtn.click();
+      await page.waitForTimeout(500);
+
+      // The create form must open with a title field.
+      const titleField = page.locator('[name="title"], [name="name"], input[type="text"]').first();
+      await expect(titleField).toBeVisible({ timeout: 5000 });
+      await titleField.fill('E2E Incident - Security Breach Detected');
+
+      const descField = page.locator('[name="description"], textarea').first();
+      if (await descField.isVisible()) {
+        await descField.fill('Unauthorized access detected in production environment');
+      }
+
+      const severitySelect = page.locator('select[name="severity"]');
+      if (await severitySelect.isVisible().catch(() => false)) {
+        const options = await severitySelect.locator('option').all();
+        if (options.length > 1) await severitySelect.selectOption({ index: 1 });
+      }
+
+      const submitBtn = page.getByRole('button', { name: /create|save|submit/i }).last();
+      await expect(submitBtn).toBeVisible();
+      await submitBtn.click();
+      await page.waitForTimeout(2000);
+
+      // Submitting the completed form must issue the create POST, and that POST
+      // must not be blocked by CSRF validation.
+      expect(postRequest, 'submitting the incident form should POST to /api/incidents').not.toBeNull();
+      expect(postRejectedByCsrf, 'incident create POST was rejected by CSRF').toBe(false);
     });
   });
 

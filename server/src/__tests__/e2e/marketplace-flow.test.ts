@@ -54,16 +54,30 @@ jest.mock('../../middleware/rateLimiter', () => ({
   frameworkLimiter: (req: any, res: any, next: any) => next(),
 }));
 
-// Mock credential encryption
+// Mock credential encryption (the marketplace routes use encryptConfigSecrets /
+// decryptConfigSecrets, so those must be provided or the handlers throw at runtime).
 jest.mock('../../utils/credentialEncryption', () => ({
   encryptField: jest.fn((val: string) => `enc_${val}`),
   decryptField: jest.fn((val: string) => val.replace('enc_', '')),
   encryptConfigFields: jest.fn((obj: any) => obj),
   decryptConfigFields: jest.fn((obj: any) => obj),
+  encryptConfigSecrets: jest.fn((obj: any) => obj),
+  decryptConfigSecrets: jest.fn((obj: any) => obj),
+}));
+
+// Mock the integration registry so the connection-test endpoint returns a
+// deterministic result instead of performing a live outbound HTTP call.
+jest.mock('../../services/integrations/providers/integrationRegistry', () => ({
+  __esModule: true,
+  default: {
+    initialise: jest.fn().mockResolvedValue(undefined),
+    testConnection: jest.fn().mockResolvedValue({ success: true, latencyMs: 42 }),
+  },
 }));
 
 import marketplaceRoutes from '../../routes/marketplace/marketplaceRoutes';
 import { errorHandler } from '../../middleware/errorHandler';
+import integrationRegistry from '../../services/integrations/providers/integrationRegistry';
 
 const app = express();
 app.use(express.json());
@@ -121,6 +135,10 @@ const jiraIntegration = {
 describe('E2E: Marketplace Integration Flow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Jest is configured with resetMocks:true, which wipes mock implementations
+    // before each test — re-establish the registry's deterministic test result.
+    (integrationRegistry.initialise as jest.Mock).mockResolvedValue(undefined);
+    (integrationRegistry.testConnection as jest.Mock).mockResolvedValue({ success: true, latencyMs: 42 });
   });
 
   // ============================================================================
@@ -166,7 +184,6 @@ describe('E2E: Marketplace Integration Flow', () => {
       const res = await request(app)
         .post('/api/marketplace/slack/install')
         .send({
-          accessToken: 'xoxb-new-token',
           config: { webhookUrl: 'https://hooks.slack.com/services/test', defaultChannel: '#alerts' },
         });
 
@@ -180,7 +197,7 @@ describe('E2E: Marketplace Integration Flow', () => {
       const res = await request(app)
         .post('/api/marketplace/slack/install')
         .send({
-          accessToken: 'xoxb-token',
+          config: { webhookUrl: 'https://hooks.slack.com/services/test' },
         });
 
       expect(res.status).toBe(409);
@@ -297,6 +314,10 @@ describe('E2E: Marketplace Integration Flow', () => {
 
   describe('Complete Integration Lifecycle', () => {
     it('should complete full install → configure → test → uninstall flow', async () => {
+      // Reset the shared findFirst mock so persistent return values configured by
+      // earlier tests do not bleed into this multi-step flow.
+      prismaMock.integration.findFirst.mockReset();
+
       // Step 1: Install
       prismaMock.integration.findFirst.mockResolvedValueOnce(null); // not installed yet
       prismaMock.integration.create.mockResolvedValue({
@@ -306,7 +327,7 @@ describe('E2E: Marketplace Integration Flow', () => {
 
       const installRes = await request(app)
         .post('/api/marketplace/slack/install')
-        .send({ accessToken: 'xoxb-lifecycle-token', config: { webhookUrl: 'https://hooks.slack.com/test' } });
+        .send({ config: { webhookUrl: 'https://hooks.slack.com/test' } });
 
       expect(installRes.status).toBe(201);
 

@@ -42,50 +42,76 @@ describe('SecurityTrainingDashboard', () => {
     expect(stats.length).toBeGreaterThanOrEqual(0);
   });
 
-  it('opens create module form', () => {
+  it('opens create module form', async () => {
     render(<SecurityTrainingDashboard onBack={vi.fn()} />);
-    const addBtn = screen.queryAllByText(/Create|New|Add/i)[0] ?? null;
-    if (addBtn) fireEvent.click(addBtn);
+    // Wait for the modules tab to finish loading, then open the create modal.
+    const addBtn = await screen.findByText('New Module');
+    fireEvent.click(addBtn);
+    expect(await screen.findByText('Create Training Module')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
 
-  it('filters by search', () => {
+  it('filters by search', async () => {
     render(<SecurityTrainingDashboard onBack={vi.fn()} />);
-    const searchInput = screen.queryByPlaceholderText(/search/i);
-    if (searchInput) fireEvent.change(searchInput, { target: { value: 'phishing' } });
+    // Both modules render once loaded.
+    expect(await screen.findByText('Phishing 101')).toBeInTheDocument();
+    expect(screen.getByText('Data Protection')).toBeInTheDocument();
+    const searchInput = screen.getByPlaceholderText('Search modules...');
+    fireEvent.change(searchInput, { target: { value: 'phishing' } });
+    // Search narrows the list to the matching module only.
+    expect(screen.getByText('Phishing 101')).toBeInTheDocument();
+    expect(screen.queryByText('Data Protection')).not.toBeInTheDocument();
   });
 
-  it('switches to assignments tab', () => {
+  it('switches to assignments tab', async () => {
     render(<SecurityTrainingDashboard onBack={vi.fn()} />);
-    const tab = screen.queryAllByText(/Assignments|assignments/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    const tab = await screen.findByText('Assignments');
+    fireEvent.click(tab);
+    // Assignments tab shows the assignment summary cards.
+    expect(await screen.findByText('Total Assignments')).toBeInTheDocument();
   });
 
-  it('switches to reports tab', () => {
+  it('switches to reports tab', async () => {
     render(<SecurityTrainingDashboard onBack={vi.fn()} />);
-    const tab = screen.queryAllByText(/Reports|reports/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    const tab = await screen.findByText('Compliance Reports');
+    fireEvent.click(tab);
+    // Reports tab shows the overall-compliance summary card.
+    expect(await screen.findByText('Overall Compliance')).toBeInTheDocument();
   });
 
-  it('switches between admin and employee view', () => {
+  it('switches between admin and employee view', async () => {
     render(<SecurityTrainingDashboard onBack={vi.fn()} />);
-    const viewToggle = screen.queryAllByText(/Employee|employee/i)[0] ?? null;
-    if (viewToggle) fireEvent.click(viewToggle);
+    // Modules render in the default admin view.
+    expect(await screen.findByText('Phishing 101')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Employee'));
+    // Employee view replaces the module list with the personal trainings header.
+    expect(await screen.findByText('My Trainings')).toBeInTheDocument();
+    expect(screen.queryByText('Training Modules')).not.toBeInTheDocument();
   });
 
   it('shows training categories', async () => {
     render(<SecurityTrainingDashboard onBack={vi.fn()} />);
-    await waitFor(() => expect(screen.queryAllByText(/Security Awareness|Data Privacy|Incident Response|Phishing/i).length).toBeGreaterThan(0));
+    await screen.findByText('Phishing 101');
+    // Category labels render on the module card badges (and the filter options).
+    expect(screen.getAllByText('Security Awareness').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Data Privacy').length).toBeGreaterThan(0);
   });
 
-  it('shows module detail', () => {
+  it('shows module detail', async () => {
     render(<SecurityTrainingDashboard onBack={vi.fn()} />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) fireEvent.click(rows[0]);
+    // Each module card renders its detail fields (title, duration, pass threshold).
+    expect(await screen.findByText('Phishing 101')).toBeInTheDocument();
+    expect(screen.getByText('30 min')).toBeInTheDocument();
+    expect(screen.getByText('80% to pass')).toBeInTheDocument();
   });
 
-  it('filters by category', () => {
+  it('filters by category', async () => {
     render(<SecurityTrainingDashboard onBack={vi.fn()} />);
-    const catFilter = screen.queryByDisplayValue(/All/i);
-    if (catFilter) fireEvent.change(catFilter, { target: { value: 'SecurityAwareness' } });
+    expect(await screen.findByText('Data Protection')).toBeInTheDocument();
+    const catFilter = screen.getByDisplayValue('All Categories');
+    fireEvent.change(catFilter, { target: { value: 'SecurityAwareness' } });
+    // Only the SecurityAwareness module survives the category filter.
+    expect(screen.getByText('Phishing 101')).toBeInTheDocument();
+    expect(screen.queryByText('Data Protection')).not.toBeInTheDocument();
   });
 });

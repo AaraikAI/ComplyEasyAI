@@ -441,12 +441,42 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   const socMetrics = useMemo(() => metrics.filter(m => m.category === 'social'), [metrics]);
   const govMetrics = useMemo(() => metrics.filter(m => m.category === 'governance'), [metrics]);
 
-  const esgScore = useMemo(() => {
-    const envScore = 72;
-    const socScore = 68;
-    const govScore = 78;
-    return { overall: Math.round((envScore * 0.4 + socScore * 0.3 + govScore * 0.3)), envScore, socScore, govScore };
+  // Derive a 0–100 performance score for a set of metrics from their values vs.
+  // targets, using each metric's trend/trendIsPositive to infer the desired
+  // direction (lower-is-better vs higher-is-better). Returns the score plus the
+  // point delta vs the prior reporting year.
+  const scoreMetricGroup = useCallback((group: ESGMetric[]): { score: number; delta: number } => {
+    if (group.length === 0) return { score: 0, delta: 0 };
+    const attainment = (m: ESGMetric, value: number): number => {
+      const lowerIsBetter = (m.trend === 'down' && m.trendIsPositive) || (m.trend === 'up' && !m.trendIsPositive);
+      if (typeof m.target === 'number' && m.target > 0 && value >= 0) {
+        const ratio = lowerIsBetter ? m.target / Math.max(value, 1e-9) : value / m.target;
+        return Math.max(0, Math.min(1, ratio));
+      }
+      // No usable target: fall back to whether the latest movement is favourable.
+      return m.trendIsPositive ? 0.75 : 0.5;
+    };
+    const current = group.reduce((s, m) => s + attainment(m, m.value), 0) / group.length;
+    const withPrev = group.filter(m => typeof m.previousYear === 'number');
+    let delta = 0;
+    if (withPrev.length > 0) {
+      const prev = withPrev.reduce((s, m) => s + attainment(m, m.previousYear as number), 0) / withPrev.length;
+      const curForPrev = withPrev.reduce((s, m) => s + attainment(m, m.value), 0) / withPrev.length;
+      delta = Math.round((curForPrev - prev) * 100);
+    }
+    return { score: Math.round(current * 100), delta };
   }, []);
+
+  const esgScore = useMemo(() => {
+    const env = scoreMetricGroup(envMetrics);
+    const soc = scoreMetricGroup(socMetrics);
+    const gov = scoreMetricGroup(govMetrics);
+    return {
+      overall: Math.round(env.score * 0.4 + soc.score * 0.3 + gov.score * 0.3),
+      envScore: env.score, socScore: soc.score, govScore: gov.score,
+      envDelta: env.delta, socDelta: soc.delta, govDelta: gov.delta,
+    };
+  }, [envMetrics, socMetrics, govMetrics, scoreMetricGroup]);
 
   const esrsProgress = useMemo(() => {
     const totalDisclosures = esrsStandards.reduce((s, e) => s + e.disclosureRequirements, 0);
@@ -477,9 +507,9 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           <p className="text-sm opacity-70 mt-1">out of 100</p>
           <p className="text-xs opacity-60 mt-3">Industry benchmark: 62</p>
         </div>
-        <StatCard icon={<Leaf size={20} className="text-green-600" />} label="Environmental Score" value={esgScore.envScore} subLabel="Weight: 40%" color="bg-green-50" trend={{ direction: 'up', isPositive: true, value: '+4pts' }} />
-        <StatCard icon={<Users size={20} className="text-blue-600" />} label="Social Score" value={esgScore.socScore} subLabel="Weight: 30%" color="bg-blue-50" trend={{ direction: 'up', isPositive: true, value: '+3pts' }} />
-        <StatCard icon={<Shield size={20} className="text-purple-600" />} label="Governance Score" value={esgScore.govScore} subLabel="Weight: 30%" color="bg-purple-50" trend={{ direction: 'up', isPositive: true, value: '+5pts' }} />
+        <StatCard icon={<Leaf size={20} className="text-green-600" />} label="Environmental Score" value={esgScore.envScore} subLabel="Weight: 40%" color="bg-green-50" trend={esgScore.envDelta !== 0 ? { direction: esgScore.envDelta > 0 ? 'up' : 'down', isPositive: esgScore.envDelta > 0, value: `${esgScore.envDelta > 0 ? '+' : ''}${esgScore.envDelta}pts` } : undefined} />
+        <StatCard icon={<Users size={20} className="text-blue-600" />} label="Social Score" value={esgScore.socScore} subLabel="Weight: 30%" color="bg-blue-50" trend={esgScore.socDelta !== 0 ? { direction: esgScore.socDelta > 0 ? 'up' : 'down', isPositive: esgScore.socDelta > 0, value: `${esgScore.socDelta > 0 ? '+' : ''}${esgScore.socDelta}pts` } : undefined} />
+        <StatCard icon={<Shield size={20} className="text-purple-600" />} label="Governance Score" value={esgScore.govScore} subLabel="Weight: 30%" color="bg-purple-50" trend={esgScore.govDelta !== 0 ? { direction: esgScore.govDelta > 0 ? 'up' : 'down', isPositive: esgScore.govDelta > 0, value: `${esgScore.govDelta > 0 ? '+' : ''}${esgScore.govDelta}pts` } : undefined} />
       </div>
 
       {/* ESRS Compliance Progress */}

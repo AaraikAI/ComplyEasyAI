@@ -24,13 +24,13 @@ PROJECT_ROOT="${1:-.}"
 cd "$PROJECT_ROOT"
 
 echo "============================================"
-echo "  PRODUCTION READINESS AUDIT — VISIONARY v3.4"
+echo "  PRODUCTION READINESS AUDIT — VISIONARY v3.6"
 echo "  v12: Cross-Audit & Depth Gap Scans (T16-T25)"
-echo "  v3.3 fixes: shell-quoting in extractors;"
-echo "             worktree/archive/AppleDouble exclusion"
-echo "  v3.4 fixes: FP suppression for E1 unlink-catch,"
-echo "             C1 enum status values, F11 math-lib"
-echo "             throws, F11 in comments (v22 lesson)"
+echo "  v3.3: shell-quoting fixes; worktree exclusion"
+echo "  v3.4: FP suppression for E1/C1/F11"
+echo "  v3.5: 20 coverage-ledger enumerations (COV1-COV20)"
+echo "  v3.6 ADDS: per-file SHA-256 hashes + scan fingerprint"
+echo "             for Gate 7 drift detection across sessions"
 echo "============================================"
 echo "Project: $(pwd)"
 echo "Started: $(date)"
@@ -248,6 +248,8 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx"
   -not -path "*/coverage/*" \
   -not -path "*/.claude/worktrees/*" \
   -not -path "*/.archive/*" \
+  -not -path "*/generated/*" \
+  -not -path "*/server/src/generated/*" \
   -not -name "._*" \
   | sort > /tmp/audit_all_source.txt
 
@@ -1190,6 +1192,168 @@ fi
 echo "    → $(wc -l < /tmp/audit_T25.txt | tr -d ' ') ReDoS wrapper analysis lines"
 
 # ─────────────────────────────────────
+# STEP 6.10: v3.5 Coverage Ledger Candidate Enumeration
+# Pre-built scan outputs for AUDIT_PROMPT_v20.3 §5.5 coverage ledgers.
+# These produce raw candidate lists that subagents pre-populate as UNCLASSIFIED.
+# ─────────────────────────────────────
+
+echo ""
+echo "[6.10/8] v3.5 Coverage Ledger Enumeration (§5.5 in AUDIT_PROMPT_v20.3)..."
+
+# 5.5.1 Credential Encryption candidates
+echo "  [COV-1] Credential encryption write sites..."
+{
+  xargs grep -nE 'prisma\.(integration|credential|oAuth|apiKey|webhook|sso|scim|smtp|integrationLog)[A-Za-z]*\.(create|update|upsert|updateMany)' \
+    < /tmp/audit_source_services.txt 2>/dev/null
+  xargs grep -nE '(accessToken|refreshToken|clientSecret|apiKey|bearerToken|webhookSecret|privateKey|tenantId|smtpPassword|scimToken|patToken)[[:space:]]*:[[:space:]]*[^,}\n]+' \
+    < /tmp/audit_source_services.txt 2>/dev/null
+} | sort -u > /tmp/audit_COV1_credential_encryption.txt || true
+echo "    → $(wc -l < /tmp/audit_COV1_credential_encryption.txt | tr -d ' ') candidate sites"
+
+# 5.5.2 SSRF Per-Call (reuses F7 raw data)
+echo "  [COV-2] SSRF per-call candidates (uses F7)..."
+cp /tmp/audit_F7.txt /tmp/audit_COV2_ssrf.txt 2>/dev/null || touch /tmp/audit_COV2_ssrf.txt
+echo "    → $(wc -l < /tmp/audit_COV2_ssrf.txt | tr -d ' ') candidate sites"
+
+# 5.5.3 Auth Middleware Per-Endpoint candidates
+echo "  [COV-3] Endpoint enumeration for auth coverage..."
+safe_grep -rn -E '(router|app)\.(get|post|put|patch|delete|options)\(' server/src/routes/ 2>/dev/null \
+  > /tmp/audit_COV3_endpoints.txt || true
+echo "    → $(wc -l < /tmp/audit_COV3_endpoints.txt | tr -d ' ') endpoints"
+
+# 5.5.4 Cookie Security Flags candidates
+echo "  [COV-4] res.cookie() call sites..."
+{
+  xargs grep -nE 'res\.cookie\(|response\.cookie\(' < /tmp/audit_source_server.txt 2>/dev/null
+} > /tmp/audit_COV4_cookies.txt || true
+echo "    → $(wc -l < /tmp/audit_COV4_cookies.txt | tr -d ' ') cookie sets"
+
+# 5.5.5 Input Validation Per-Endpoint candidates (reuses COV-3 + validation refs)
+echo "  [COV-5] Validation middleware references..."
+safe_grep -rn -E 'validateBody|validateQuery|validateParams|Joi\.|zod\.|schema\.parse' server/src/routes/ server/src/middleware/ server/src/validators/ 2>/dev/null \
+  > /tmp/audit_COV5_validation_refs.txt || true
+echo "    → $(wc -l < /tmp/audit_COV5_validation_refs.txt | tr -d ' ') validation references"
+
+# 5.5.6 CSRF Per Mutating Endpoint candidates
+echo "  [COV-6] Mutating endpoints..."
+safe_grep -rn -E '(router|app)\.(post|put|patch|delete)\(' server/src/routes/ 2>/dev/null \
+  > /tmp/audit_COV6_mutating_endpoints.txt || true
+echo "    → $(wc -l < /tmp/audit_COV6_mutating_endpoints.txt | tr -d ' ') mutating endpoints"
+
+# 5.5.7 Rate Limiter VALUE candidates (already enumerated in L9; need limiter definitions)
+echo "  [COV-7] Rate limiter definitions..."
+safe_grep -rn -E 'rateLimit\({|RateLimit\({|rateLimiter\s*=|Limiter\s*=' server/src/ 2>/dev/null \
+  > /tmp/audit_COV7_rate_limit_defs.txt || true
+echo "    → $(wc -l < /tmp/audit_COV7_rate_limit_defs.txt | tr -d ' ') limiter definitions"
+
+# 5.5.8 Webhook HMAC candidates
+echo "  [COV-8] Webhook handler enumeration..."
+safe_grep -rn -E '/webhook|/hooks?/|/events?/|webhookHandler|webhook.*controller' server/src/routes/ server/src/controllers/ 2>/dev/null \
+  > /tmp/audit_COV8_webhooks.txt || true
+echo "    → $(wc -l < /tmp/audit_COV8_webhooks.txt | tr -d ' ') webhook handler candidates"
+
+# 5.5.9 JWT verify call sites
+echo "  [COV-9] JWT verify call sites..."
+{
+  xargs grep -nE 'jwt\.verify\(|jsonwebtoken\.verify\(' < /tmp/audit_source_server.txt 2>/dev/null
+} > /tmp/audit_COV9_jwt_verifies.txt || true
+echo "    → $(wc -l < /tmp/audit_COV9_jwt_verifies.txt | tr -d ' ') JWT verifies"
+
+# 5.5.10 Logger calls (PII candidates)
+echo "  [COV-10] Logger call sites..."
+{
+  xargs grep -nE 'logger\.(info|warn|error|debug)\(' < /tmp/audit_source_server.txt 2>/dev/null
+} > /tmp/audit_COV10_logger_calls.txt || true
+echo "    → $(wc -l < /tmp/audit_COV10_logger_calls.txt | tr -d ' ') logger calls"
+
+# 5.5.11 Multi-Tenant READS (L8)
+echo "  [COV-11] L8 — Prisma read call sites..."
+{
+  xargs grep -nE 'prisma\.\w+\.(findFirst|findMany|findUnique|count|aggregate|groupBy)' \
+    < /tmp/audit_source_services.txt 2>/dev/null
+  xargs grep -nE 'prisma\.\w+\.(findFirst|findMany|findUnique|count|aggregate|groupBy)' \
+    < /tmp/audit_source_server.txt 2>/dev/null
+} | sort -u > /tmp/audit_COV11_l8_reads.txt || true
+echo "    → $(wc -l < /tmp/audit_COV11_l8_reads.txt | tr -d ' ') read sites"
+
+# 5.5.12 Frontend ↔ Backend Contract Drift
+# FRONTEND PATHS: this project keeps frontend at repo root (services/, hooks/) NOT src/.
+echo "  [COV-12] Frontend API call enumeration..."
+{
+  safe_grep -rn -E 'api\.[a-zA-Z]+\.(get|post|put|patch|delete|create|update|list|find|fetch)\(' \
+    services/ hooks/ src/services/ src/hooks/ 2>/dev/null
+  # Also catch fetchAPI() / apiFetch() / fetch('/api/...') patterns
+  safe_grep -rn -E "fetchAPI\(|apiFetch\(|fetch\(['\"]?/api/" \
+    services/ hooks/ components/ src/ 2>/dev/null
+} | safe_grep -v '__tests__\|\.test\.\|\.spec\.' > /tmp/audit_COV12_frontend_calls.txt || true
+echo "    → $(wc -l < /tmp/audit_COV12_frontend_calls.txt | tr -d ' ') frontend API calls"
+echo "  [COV-12b] Backend routes (for cross-reference)..."
+cp /tmp/audit_COV3_endpoints.txt /tmp/audit_COV12_backend_routes.txt
+
+# 5.5.13 In-Memory State Criticality
+echo "  [COV-13] In-memory state instances..."
+{
+  xargs grep -nE 'new (Map|Set|WeakMap|WeakSet)\(|global\.\w+\s*=|app\.locals\.' \
+    < /tmp/audit_source_services.txt 2>/dev/null
+} > /tmp/audit_COV13_inmemory_state.txt || true
+echo "    → $(wc -l < /tmp/audit_COV13_inmemory_state.txt | tr -d ' ') in-memory state instances"
+
+# 5.5.14 Migration-Status Verification
+echo "  [COV-14] Migration-dependency comments..."
+{
+  xargs grep -nE 'requires migration|needs migration|migration required|TODO.*migrat|FIXME.*migrat|after migration' \
+    < /tmp/audit_source_server.txt 2>/dev/null
+} > /tmp/audit_COV14_migration_deps.txt || true
+echo "    → $(wc -l < /tmp/audit_COV14_migration_deps.txt | tr -d ' ') migration-dependent comments"
+find server/prisma/migrations -type f \( -name "*.sql" -o -name "migration.sql" \) 2>/dev/null \
+  | sort > /tmp/audit_COV14_migration_files.txt
+echo "    → $(wc -l < /tmp/audit_COV14_migration_files.txt | tr -d ' ') migration files"
+
+# 5.5.15 Token Revocation on Auth Events
+echo "  [COV-15] Auth-event handlers (logout/password-change/account-delete)..."
+safe_grep -rn -E 'logout|signOut|signout|revokeToken|invalidateSession|password.*(change|reset|update)|deleteAccount|account.*delet' \
+  server/src/controllers/ server/src/routes/auth.ts server/src/services/authService.ts 2>/dev/null \
+  > /tmp/audit_COV15_auth_events.txt || true
+echo "    → $(wc -l < /tmp/audit_COV15_auth_events.txt | tr -d ' ') auth-event handler references"
+
+# 5.5.16 Audit Log Per Privileged Action
+echo "  [COV-16] Privileged-action controller methods..."
+safe_grep -rn -E '(admin|exportData|downloadReport|deleteUser|changeRole|impersonate|elevate|grant|revoke|approve|export)' \
+  server/src/controllers/ 2>/dev/null \
+  | safe_grep -v 'test\|spec\|//' \
+  > /tmp/audit_COV16_privileged_actions.txt || true
+echo "    → $(wc -l < /tmp/audit_COV16_privileged_actions.txt | tr -d ' ') privileged-action candidates"
+
+# 5.5.17 File Upload Safety
+echo "  [COV-17] Multer/upload configurations..."
+{
+  xargs grep -nE 'multer\(|\.single\(|\.array\(|\.fields\(|upload\.|fileUpload' \
+    < /tmp/audit_source_server.txt 2>/dev/null
+} > /tmp/audit_COV17_uploads.txt || true
+echo "    → $(wc -l < /tmp/audit_COV17_uploads.txt | tr -d ' ') upload-handler references"
+
+# 5.5.18 Idempotency Per Mutating POST (reuses COV-6)
+echo "  [COV-18] Idempotency candidates (reuses COV-6)..."
+cp /tmp/audit_COV6_mutating_endpoints.txt /tmp/audit_COV18_idempotency.txt
+
+# 5.5.19 OpenAPI / Swagger Drift
+echo "  [COV-19] OpenAPI/Swagger source files..."
+find . -maxdepth 5 -type f \( -name "swagger.json" -o -name "swagger.yaml" -o -name "swagger.yml" \
+  -o -name "openapi.json" -o -name "openapi.yaml" -o -name "openapi.yml" \
+  -o -path "*/docs/api*" \) \
+  -not -path "*/node_modules/*" -not -path "*/.archive/*" -not -path "*/.claude/worktrees/*" 2>/dev/null \
+  > /tmp/audit_COV19_openapi_files.txt || true
+echo "    → $(wc -l < /tmp/audit_COV19_openapi_files.txt | tr -d ' ') OpenAPI/Swagger source files"
+
+# 5.5.20 Background Job Dead-Letter Handling
+echo "  [COV-20] Background job definitions..."
+{
+  xargs grep -nE 'new Queue\(|BullMQ|new Worker\(|Agenda\(|cron\.schedule|jobQueue|defineJob|registerJob' \
+    < /tmp/audit_source_services.txt 2>/dev/null
+} > /tmp/audit_COV20_jobs.txt || true
+echo "    → $(wc -l < /tmp/audit_COV20_jobs.txt | tr -d ' ') background job definitions"
+
+# ─────────────────────────────────────
 # STEP 7: Env prep for Chaos & VLM (informational)
 # ─────────────────────────────────────
 
@@ -1234,6 +1398,55 @@ fi
 # ─────────────────────────────────────
 # FINAL SUMMARY
 # ─────────────────────────────────────
+
+echo ""
+echo "============================================"
+echo "  v3.6: per-file SHA-256 fingerprints for drift detection"
+echo "============================================"
+echo ""
+# v3.6 ADDITION (2026-05-24): write file hashes for every source file in the
+# enumeration scope. The audit prompt's Gate 7 (drift detection) compares
+# these hashes between sessions; if a file's hash changed, every verdict
+# citing that file is STALE and must be re-verified.
+#
+# Why this matters: check_gates.sh by itself only counts CSV cells. It can't
+# tell whether the verdict still matches current code. File hashing closes
+# that gap mechanically.
+if command -v shasum >/dev/null 2>&1; then
+  HASHER="shasum -a 256"
+elif command -v sha256sum >/dev/null 2>&1; then
+  HASHER="sha256sum"
+else
+  HASHER=""
+fi
+
+if [ -n "$HASHER" ]; then
+  > /tmp/audit_file_hashes.txt
+  # Hash every file in the master source list + every file referenced by any COV-* output.
+  # This is the set of files any verdict could possibly cite.
+  {
+    cat /tmp/audit_all_source.txt 2>/dev/null
+    for f in /tmp/audit_COV*.txt; do
+      [ -f "$f" ] && awk -F: '{print $1}' "$f"
+    done
+    # Also hash schema.prisma and migration files (referenced by COV-14)
+    find server/prisma -type f \( -name "*.prisma" -o -name "*.sql" \) 2>/dev/null
+    # And the supabase_schema.sql if present (referenced by RLS ledger)
+    [ -f supabase_schema.sql ] && echo supabase_schema.sql
+  } | sort -u | while IFS= read -r path; do
+    [ -f "$path" ] && $HASHER "$path" 2>/dev/null
+  done > /tmp/audit_file_hashes.txt
+
+  HASH_COUNT=$(wc -l < /tmp/audit_file_hashes.txt | tr -d ' ')
+  echo "  ✓ Hashed $HASH_COUNT files → /tmp/audit_file_hashes.txt"
+  # Also compute a combined fingerprint for the scan-run as a whole
+  SCAN_FINGERPRINT=$($HASHER /tmp/audit_file_hashes.txt | awk '{print $1}')
+  echo "$SCAN_FINGERPRINT" > /tmp/audit_scan_fingerprint.txt
+  echo "  ✓ Combined scan fingerprint: $SCAN_FINGERPRINT"
+else
+  echo "  ✗ No shasum/sha256sum available — drift detection will be DISABLED"
+  echo "DRIFT_DETECTION_DISABLED" > /tmp/audit_scan_fingerprint.txt
+fi
 
 echo ""
 echo "============================================"
@@ -1321,7 +1534,7 @@ METRICS_CATEGORIES_CLEAN=$(printf '%b' "$METRICS_CATEGORIES" | sed '$ s/,$//')
 cat > /tmp/audit_metrics.json << METRICS_EOF
 {
   "scan_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "scanner_version": "3.4-v13",
+  "scanner_version": "3.6-v13",
   "total_source_files": $TOTAL_FILES,
   "production_files_scanned": $LEAN_FILES,
   "total_grep_findings": $TOTAL_FINDINGS,

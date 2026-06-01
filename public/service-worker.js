@@ -31,6 +31,12 @@ const APP_SHELL_ASSETS = [
 const API_URL_PATTERN = /\/api\//;
 const STATIC_ASSET_PATTERN = /\/assets\/.*\.(js|css|woff2?|ttf|eot|png|jpe?g|gif|svg|ico|webp)(\?.*)?$/;
 
+// API endpoints that must never be persisted to Cache Storage because they
+// return per-user credentials or auth/session state. These are always served
+// network-only (no offline copy) regardless of response headers.
+const NON_CACHEABLE_API_PATTERN =
+  /\/api\/(auth|sso|session|two-factor|2fa|magic-link|verify|refresh|logout|csrf-token|billing|payment|stripe|subscription)\b/;
+
 // Background sync configuration
 const SYNC_TAG = 'complyeasyai-offline-sync';
 const SYNC_DB_NAME = 'complyeasyai-offline-queue';
@@ -114,6 +120,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Sensitive API endpoints (auth/session/billing): never touch Cache Storage.
+  if (NON_CACHEABLE_API_PATTERN.test(url.pathname)) {
+    event.respondWith(networkOnlyStrategy(request));
+    return;
+  }
+
   // API calls: network-first with cache fallback
   if (API_URL_PATTERN.test(url.pathname)) {
     event.respondWith(networkFirstStrategy(request));
@@ -161,12 +173,49 @@ async function cacheFirstStrategy(request) {
   }
 }
 
+// ─── Network-Only Strategy (sensitive endpoints) ────────────────────────────
+
+// Used for auth/session/billing endpoints. Always goes to the network and never
+// reads from or writes to Cache Storage, so per-user credentials and session
+// state are never persisted on shared devices.
+async function networkOnlyStrategy(request) {
+  try {
+    return await fetchWithTimeout(request, 8000);
+  } catch {
+    return new Response(
+      JSON.stringify({
+        error: 'offline',
+        message: 'You are currently offline. This action requires a connection.',
+        offline: true,
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+}
+
+// Respect server caching directives: never persist a response that the server
+// marks no-store / private / no-cache (e.g. authenticated, org-scoped data).
+function isResponseCacheable(response) {
+  const cacheControl = (response.headers.get('Cache-Control') || '').toLowerCase();
+  if (
+    cacheControl.includes('no-store') ||
+    cacheControl.includes('private') ||
+    cacheControl.includes('no-cache')
+  ) {
+    return false;
+  }
+  return true;
+}
+
 // ─── Network-First Strategy ─────────────────────────────────────────────────
 
 async function networkFirstStrategy(request) {
   try {
     const networkResponse = await fetchWithTimeout(request, 8000);
-    if (networkResponse.ok) {
+    if (networkResponse.ok && isResponseCacheable(networkResponse)) {
       const cache = await caches.open(API_CACHE);
       cache.put(request, networkResponse.clone());
       await trimCache(API_CACHE, MAX_API_CACHE_ENTRIES);
@@ -376,6 +425,12 @@ self.addEventListener('message', (event) => {
           Promise.all(names.map((name) => caches.delete(name)))
         )
       );
+      break;
+
+    case 'CLEAR_API_CACHE':
+      // Purge cached, org-scoped API responses (e.g. on logout) so a subsequent
+      // user on a shared device cannot be served the prior user's data offline.
+      event.waitUntil(caches.delete(API_CACHE));
       break;
 
     case 'QUEUE_REQUEST':

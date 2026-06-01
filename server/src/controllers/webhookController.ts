@@ -409,20 +409,24 @@ class WebhookController {
       const { keyId } = req.params;
       const organizationId = authReq.user!.organizationId;
 
-      await prisma.apiKey.update({
-        where: {
-          id: keyId,
-          organizationId,
-        },
+      // Org-scoped revoke: updateMany filters by both id AND organizationId so a
+      // cross-tenant keyId cannot be revoked (and tenant isolation does not depend
+      // on the keyId being unguessable). A miss yields count === 0 → 404.
+      const result = await prisma.apiKey.updateMany({
+        where: { id: keyId, organizationId },
         data: { revokedAt: new Date() },
       });
+
+      if (result.count === 0) {
+        throw new AppError('API key not found', 404);
+      }
 
       await prisma.auditLog.create({
         data: {
           action: 'api_key.revoked',
           userId: authReq.user!.id,
           organizationId,
-          hash: require('uuid').v4(),
+          hash: crypto.randomUUID(),
           details: JSON.stringify({ keyId }),
           ipAddress: req.ip || undefined,
           userAgent: req.headers['user-agent'] || undefined,
@@ -432,9 +436,7 @@ class WebhookController {
       res.json({ success: true, message: 'API key revoked' });
     } catch (error: unknown) {
       logger.error('Revoke API key error', error);
-      if (error instanceof Error && (error as Error & { code?: string }).code === 'P2025') {
-        throw new AppError('API key not found', 404);
-      }
+      if (error instanceof AppError) throw error;
       throw new AppError('Failed to revoke API key', 500);
     }
   };
@@ -608,12 +610,10 @@ class WebhookController {
   receiveIncomingWebhook: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const { organizationId, action } = req.params;
-      const signature = req.headers['x-webhook-signature'] as string;
 
-      // Find organization's incoming webhook configuration
-      // This would typically be stored in a separate model
-      // For now, we'll validate using API key auth
-
+      // The per-organization HMAC signature (x-webhook-signature) is verified
+      // fail-closed by the route middleware (verifyWebhookSignature) before this
+      // handler runs. This handler additionally enforces a scoped API key.
       const apiKey = req.headers['x-api-key'] as string;
       if (!apiKey) {
         throw new AppError('API key required', 401);
@@ -624,7 +624,11 @@ class WebhookController {
         where: { keyHash },
       });
 
-      if (!validKey || validKey.organizationId !== organizationId) {
+      // Reject unknown keys, keys belonging to another org, revoked keys, and
+      // expired keys so a stale credential cannot dispatch internal events.
+      const isRevoked = !!validKey?.revokedAt;
+      const isExpired = !!validKey?.expiresAt && validKey.expiresAt.getTime() <= Date.now();
+      if (!validKey || validKey.organizationId !== organizationId || isRevoked || isExpired) {
         throw new AppError('Invalid API key', 401);
       }
 

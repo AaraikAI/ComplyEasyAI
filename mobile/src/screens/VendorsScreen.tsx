@@ -13,6 +13,7 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  Platform,
   RefreshControl,
 } from 'react-native';
 import { usePaginatedApi, useMutation } from '../hooks/useApi';
@@ -107,6 +108,47 @@ export default function VendorsScreen({ navigation }: any) {
   const { mutate: deleteVendor, loading: deleting } = useMutation(
     (id: string) => api.vendors.delete(id) as any
   );
+
+  const { mutate: createVendor } = useMutation(
+    (data: { name: string }) => api.vendors.create(data)
+  );
+
+  const handleAddVendor = useCallback(() => {
+    const submit = async (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        Alert.alert('Name Required', 'Please enter a vendor name.');
+        return;
+      }
+      try {
+        await createVendor({ name: trimmed });
+        refetch();
+      } catch (err: any) {
+        Alert.alert('Error', err.message || 'Failed to add vendor');
+      }
+    };
+
+    // Collect the vendor name inline where Alert.prompt is available (iOS);
+    // `name` is the only required field for vendor creation.
+    if (Platform.OS === 'ios' && typeof Alert.prompt === 'function') {
+      Alert.prompt(
+        'Add Vendor',
+        'Enter the vendor name to create. You can add more details afterwards.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Create', onPress: (value?: string) => submit(value || '') },
+        ],
+        'plain-text'
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Add Vendor',
+      'Vendor creation from this view is available on iOS. Use the web app to add vendors with full details.',
+      [{ text: 'OK' }]
+    );
+  }, [createVendor, refetch]);
 
   // Client-side filtering on loaded data
   const filteredVendors = useMemo(() => {
@@ -223,7 +265,7 @@ export default function VendorsScreen({ navigation }: any) {
                 : 'Add your first vendor to get started'
             }
             actionLabel={!search && riskFilter === 'all' ? 'Add Vendor' : undefined}
-            onAction={() => {}}
+            onAction={handleAddVendor}
           />
         }
       />

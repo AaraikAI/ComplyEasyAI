@@ -13,6 +13,46 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
+// The component loads notices, consent stats, templates and version history
+// through `api.privacy.*` on mount. Mock that surface so the test can assert
+// the component is wired to the backend and renders live API data.
+const privacy = vi.hoisted(() => ({
+  listNotices: vi.fn(),
+  getConsentStats: vi.fn(),
+  listNoticeTemplates: vi.fn(),
+  listNoticeVersionHistory: vi.fn(),
+  createNotice: vi.fn(),
+  updateNotice: vi.fn(),
+  deleteNotice: vi.fn(),
+}));
+
+vi.mock('@/services/api', () => ({
+  api: { privacy },
+  getAuthToken: vi.fn().mockReturnValue('test-token'),
+  clearAuthToken: vi.fn(),
+}));
+
+// Build a complete notice record matching the component's PrivacyNotice shape.
+const makeNotice = (over: Record<string, unknown> = {}) => ({
+  id: 'PN-API-1',
+  title: 'Live API Notice',
+  type: 'Website',
+  status: 'Published',
+  version: '1.0',
+  content: 'Served from the privacy API.',
+  effectiveDate: '2026-01-01',
+  lastUpdated: '2026-01-02',
+  createdAt: '2026-01-01',
+  createdBy: 'tester',
+  versionNotes: '',
+  language: 'en',
+  jurisdiction: 'Global',
+  viewCount: 0,
+  acceptanceCount: 0,
+  acceptanceRate: 0,
+  ...over,
+});
+
 import PrivacyNoticeServing from '../PrivacyNoticeServing';
 
 describe('PrivacyNoticeServing', () => {
@@ -20,11 +60,24 @@ describe('PrivacyNoticeServing', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: the API returns no notices so the component keeps its local set.
+    privacy.listNotices.mockResolvedValue({ notices: [] });
+    privacy.getConsentStats.mockResolvedValue([]);
+    privacy.listNoticeTemplates.mockResolvedValue(null);
+    privacy.listNoticeVersionHistory.mockResolvedValue(null);
   });
 
   it('renders without crashing', () => {
     render(<PrivacyNoticeServing onBack={mockOnBack} />);
     expect(document.body.innerHTML.length).toBeGreaterThan(0);
+  });
+
+  it('loads notices from the privacy API on mount', async () => {
+    render(<PrivacyNoticeServing onBack={mockOnBack} />);
+    await waitFor(() => {
+      expect(privacy.listNotices).toHaveBeenCalled();
+      expect(privacy.getConsentStats).toHaveBeenCalled();
+    });
   });
 
   it('displays privacy notices content', () => {
@@ -35,11 +88,10 @@ describe('PrivacyNoticeServing', () => {
 
   it('calls onBack when back button clicked', () => {
     render(<PrivacyNoticeServing onBack={mockOnBack} />);
-    const backBtn = screen.getByTestId('icon-ArrowLeft')?.closest('button');
-    if (backBtn) {
-      fireEvent.click(backBtn);
-      expect(mockOnBack).toHaveBeenCalled();
-    }
+    const backBtn = screen.getByTestId('icon-ArrowLeft').closest('button');
+    expect(backBtn).not.toBeNull();
+    fireEvent.click(backBtn!);
+    expect(mockOnBack).toHaveBeenCalled();
   });
 
   it('shows tab navigation for notices, templates, analytics', () => {
@@ -68,11 +120,14 @@ describe('PrivacyNoticeServing', () => {
     }
   });
 
-  it('shows notice list with mock data', () => {
+  it('renders live notices returned by the API', async () => {
+    privacy.listNotices.mockResolvedValue({
+      notices: [makeNotice({ id: 'PN-API-1', title: 'Live API Notice' })],
+    });
     render(<PrivacyNoticeServing onBack={mockOnBack} />);
-    // Component has built-in mock data
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    // The notices tab is the default view; the API-provided title must render,
+    // proving the component displays live data rather than only its local set.
+    expect(await screen.findByText('Live API Notice')).toBeInTheDocument();
   });
 
   it('renders search functionality', () => {

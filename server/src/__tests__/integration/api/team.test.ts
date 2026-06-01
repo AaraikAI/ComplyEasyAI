@@ -56,6 +56,16 @@ jest.mock('../../../services/emailService', () => ({
   },
 }));
 
+// bulk-invite enforces the maxUsers tier quota for the whole batch via
+// tierService.checkLimit; mock it so the quota check resolves deterministically.
+const mockCheckLimit = jest.fn<any>();
+jest.mock('../../../services/tierService', () => ({
+  __esModule: true,
+  default: {
+    checkLimit: mockCheckLimit,
+  },
+}));
+
 // Mock uuid
 jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('mock-uuid-123'),
@@ -90,6 +100,18 @@ let app: Express;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+
+  // The invite / bulk-invite routes create the user and its magic link atomically
+  // via the array form of $transaction; resolve each operation in array order.
+  (prismaMock.$transaction as jest.Mock<any>).mockImplementation(
+    async (ops: any) => (Array.isArray(ops) ? Promise.all(ops) : ops(prismaMock))
+  );
+
+  // bulk-invite projects the post-invite user total against the maxUsers quota.
+  // Default to "under quota" (allowed) and no pre-existing users for the batch.
+  mockCheckLimit.mockResolvedValue({ allowed: true, limit: 100, current: 0 });
+  prismaMock.user.findMany.mockResolvedValue([] as any);
+  prismaMock.user.count.mockResolvedValue(0 as any);
 
   app = express();
   app.use(express.json());

@@ -37,6 +37,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
+import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
@@ -203,6 +204,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
 const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { t } = useI18n();
+  const { user: currentUser } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('admin');
   const [adminTab, setAdminTab] = useState<AdminTab>('modules');
   const [searchQuery, setSearchQuery] = useState('');
@@ -333,11 +335,16 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
     });
   }, [assignments, searchQuery, categoryFilter, statusFilter]);
 
-  // My trainings for employee view
+  // My trainings for employee view — scope the org-wide assignment list down to
+  // the signed-in user so an employee only sees their own training records.
   const myAssignments = useMemo(() => {
-    // In a real app, filter by current user ID
-    return assignments;
-  }, [assignments]);
+    if (!currentUser) return [];
+    const uid = currentUser.id;
+    const email = (currentUser.email || '').toLowerCase();
+    return assignments.filter(
+      a => a.userId === uid || (email !== '' && a.userEmail?.toLowerCase() === email),
+    );
+  }, [assignments, currentUser]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 

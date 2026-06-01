@@ -242,6 +242,28 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
   const totalGaps = evidenceGaps.length;
   const criticalGaps = evidenceGaps.filter(g => g.severity === 'critical').length;
 
+  // Top priority actions derived from live data: prefer prioritized recommendations,
+  // otherwise fall back to the highest-severity evidence gaps.
+  const severityRank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+  const priorityActions: Array<{ key: string; label: string; emphasis: 'high' | 'medium' }> =
+    recommendations.length > 0
+      ? [...recommendations]
+          .sort((a, b) => a.priority - b.priority)
+          .slice(0, 3)
+          .map(rec => ({
+            key: rec.id,
+            label: rec.title,
+            emphasis: rec.impact === 'high' ? 'high' : 'medium',
+          }))
+      : [...evidenceGaps]
+          .sort((a, b) => (severityRank[a.severity] ?? 9) - (severityRank[b.severity] ?? 9))
+          .slice(0, 3)
+          .map(gap => ({
+            key: gap.id,
+            label: `${gap.controlId} (${gap.framework}): ${gap.aiSuggestion || gap.controlName}`,
+            emphasis: gap.severity === 'critical' || gap.severity === 'high' ? 'high' : 'medium',
+          }));
+
   const filteredGaps = evidenceGaps.filter(gap => {
     if (searchQuery && !gap.controlName.toLowerCase().includes(searchQuery.toLowerCase()) && !gap.controlId.toLowerCase().includes(searchQuery.toLowerCase()) && !gap.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (gapTypeFilter !== 'all' && gap.gapType !== gapTypeFilter) return false;
@@ -590,20 +612,20 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                 <Sparkles size={18} className="text-yellow-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <h4 className="text-sm font-semibold text-yellow-900">AI-Recommended Priority Actions</h4>
-                  <ul className="mt-2 space-y-1.5">
-                    <li className="text-sm text-yellow-800 flex items-start gap-2">
-                      <span className="text-red-600 font-bold">1.</span>
-                      Schedule PCI DSS penetration test immediately (13 months overdue)
-                    </li>
-                    <li className="text-sm text-yellow-800 flex items-start gap-2">
-                      <span className="text-red-600 font-bold">2.</span>
-                      Collect MFA evidence for SOC 2 CC6.1 (critical path for upcoming audit)
-                    </li>
-                    <li className="text-sm text-yellow-800 flex items-start gap-2">
-                      <span className="text-orange-600 font-bold">3.</span>
-                      Complete HIPAA ePHI access reviews (3 critical controls affected)
-                    </li>
-                  </ul>
+                  {priorityActions.length > 0 ? (
+                    <ul className="mt-2 space-y-1.5">
+                      {priorityActions.map((action, idx) => (
+                        <li key={action.key} className="text-sm text-yellow-800 flex items-start gap-2">
+                          <span className={`${action.emphasis === 'high' ? 'text-red-600' : 'text-orange-600'} font-bold`}>{idx + 1}.</span>
+                          {action.label}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-sm text-yellow-800">
+                      No outstanding priority actions. Run a full scan to refresh recommendations.
+                    </p>
+                  )}
                   <button
                     onClick={() => setActiveTab('recommendations')}
                     className="mt-3 text-xs font-medium text-yellow-800 hover:text-yellow-900 flex items-center gap-1"

@@ -27,10 +27,16 @@ test.describe('Authentication Flows', () => {
     const isLoggedIn = await page.locator('[data-testid="dashboard"]').isVisible().catch(() => false);
 
     if (!isLoggedIn) {
-      await loginPage.login(
-        process.env.TEST_USER_EMAIL || 'test@example.com',
-        process.env.TEST_USER_PASSWORD || 'testpassword'
-      );
+      // Real credentials are required to drive the login flow. Substituting a
+      // literal would silently exercise login with bogus input and mask a
+      // misconfigured CI environment, so fail fast when they are absent.
+      const email = process.env.TEST_USER_EMAIL;
+      const password = process.env.TEST_USER_PASSWORD;
+      expect(
+        email && password,
+        'TEST_USER_EMAIL and TEST_USER_PASSWORD must be set to run the login flow'
+      ).toBeTruthy();
+      await loginPage.login(email as string, password as string);
     }
 
     await dashboardPage.expectDashboardLoaded();
@@ -74,13 +80,22 @@ test.describe('Framework Management', () => {
     await frameworksPage.goto();
     await frameworksPage.createFramework(testData.name!, testData.type!, testData.region!);
 
-    // Verify framework appears in list
+    // The framework must appear in the list — this is the deterministic,
+    // always-on assertion that the create flow persisted and re-rendered.
     await frameworksPage.expectFrameworkVisible(testData.name!);
 
-    // Verify in database if available
+    // Supplementary cross-check against the database. This runs only when a
+    // Supabase client is configured (db.client); it is an additional integrity
+    // check, not a substitute for the UI assertion above.
     if (db.client) {
-      const dbFramework = await db.getFrameworks('').then((f) => f.find((x) => x.name === testData.name));
-      expect(dbFramework).toBeTruthy();
+      // Scope the lookup to the e2e test organization (see auth.setup.ts);
+      // getFrameworks filters on organization_id, so an empty id would match
+      // nothing and make the find() pass only by coincidence.
+      const e2eOrgId = process.env.TEST_USER_ORG_ID || 'e2e-test-org-001';
+      const dbFramework = await db
+        .getFrameworks(e2eOrgId)
+        .then((f) => f.find((x) => x.name === testData.name));
+      expect(dbFramework, `Framework ${testData.name} not found in org ${e2eOrgId}`).toBeTruthy();
       expect(dbFramework?.type).toBe(testData.type);
     }
   });

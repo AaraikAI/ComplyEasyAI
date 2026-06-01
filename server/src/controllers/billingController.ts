@@ -272,7 +272,10 @@ class BillingController {
   changeTier: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { tier, billingCycle = 'annual', immediate = true } = req.body;
+      // The client and changeTierSchema use `targetTier`; accept `tier` as a
+      // backward-compatible alias.
+      const { targetTier, tier: legacyTier, billingCycle = 'annual', immediate = true } = req.body;
+      const tier = targetTier ?? legacyTier;
       const organizationId = authReq.user!.organizationId;
 
       if (!TIER_ORDER.includes(tier as TierName)) {
@@ -510,14 +513,25 @@ class BillingController {
   requestQuote: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { userCount, features, addOns, billingCycle = 'annual' } = req.body;
+      // Frontend sends { tier, requirements }; derive the quote inputs from
+      // the free-form requirements object (validated by requestQuoteSchema).
+      const { tier, requirements = {} } = req.body as {
+        tier: string;
+        requirements?: Record<string, any>;
+      };
       const organizationId = authReq.user!.organizationId;
+
+      const userCount = Number(requirements.userCount ?? 0);
+      const features = requirements.features ?? [];
+      const addOns = requirements.addOns ?? [];
+      const billingCycle = requirements.billingCycle ?? 'annual';
 
       if (userCount < 1000) {
         throw new AppError('Custom quotes are available for 1000+ users. Consider the Growth tier.', 400);
       }
 
       const quote = await stripeService.createQuote(organizationId, {
+        tier,
         userCount,
         features,
         addOns,

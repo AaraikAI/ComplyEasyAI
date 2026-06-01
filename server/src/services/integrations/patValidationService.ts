@@ -12,6 +12,15 @@ interface ValidationResult {
   valid: boolean;
   error?: string;
   userInfo?: any;
+  /**
+   * True when the credential passed only a format/connection-string check and
+   * was NOT confirmed against the provider with an authenticated probe.
+   * Callers should surface this as "format-only / unverified" rather than a
+   * fully validated, connected integration.
+   */
+  unverified?: boolean;
+  /** Human-readable note explaining the verification depth. */
+  note?: string;
 }
 
 class PATValidationService {
@@ -209,7 +218,8 @@ class PATValidationService {
   private async validateGitLabToken(token: string, baseUrl?: string): Promise<ValidationResult> {
     this.validateBaseUrl(baseUrl);
     const apiUrl = baseUrl ? `${baseUrl}/api/v4/user` : 'https://gitlab.com/api/v4/user';
-    
+    this.assertSafeOutbound(apiUrl, 'GitLab');
+
     try {
       const response = await axios.get(apiUrl, {
         headers: {
@@ -600,7 +610,9 @@ class PATValidationService {
     this.validateBaseUrl(baseUrl);
 
     try {
-      const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/v1/namespaces`, {
+      const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/v1/namespaces`;
+      this.assertSafeOutbound(apiUrl, 'Kubernetes');
+      const response = await axios.get(apiUrl, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -638,7 +650,9 @@ class PATValidationService {
     this.validateBaseUrl(baseUrl);
 
     try {
-      const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/rest/api/user/current`, {
+      const apiUrl = `${baseUrl.replace(/\/$/, '')}/rest/api/user/current`;
+      this.assertSafeOutbound(apiUrl, 'Confluence');
+      const response = await axios.get(apiUrl, {
         auth: {
           username: token.split(':')[0] || '',
           password: token.split(':')[1] || token,
@@ -846,7 +860,9 @@ class PATValidationService {
     this.validateBaseUrl(baseUrl);
 
     try {
-      const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/v1/users/me`, {
+      const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/v1/users/me`;
+      this.assertSafeOutbound(apiUrl, 'Okta');
+      const response = await axios.get(apiUrl, {
         headers: {
           Authorization: `SSWS ${token}`,
         },
@@ -882,17 +898,22 @@ class PATValidationService {
     }
     this.validateBaseUrl(baseUrl);
 
-    // Workday uses OAuth2, validate by checking token format and making a test call
+    // Workday uses OAuth2; validate the token shape here.
     if (!token || token.length < 20) {
       return { valid: false, error: 'Workday token appears to be invalid' };
     }
 
-    // Basic validation - Workday tokens are typically JWT or opaque strings
-    // Format-level check only; full validation requires an authenticated API call.
+    // Workday tokens are typically JWT or opaque strings. This is a format-level
+    // check only — full validation requires an authenticated API call against the
+    // tenant, which is deferred to the integration runtime. Mark as unverified so
+    // callers do not report it as a confirmed, connected credential.
     return {
       valid: true,
+      unverified: true,
+      note: 'Token format accepted; not verified against Workday (requires tenant OAuth probe).',
       userInfo: {
-        authenticated: true,
+        authenticated: false,
+        formatOnly: true,
       },
     };
   }
@@ -1304,7 +1325,9 @@ class PATValidationService {
 
     try {
       // Splunk uses Bearer token or Basic Auth
-      const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/services/auth/current-context`, {
+      const apiUrl = `${baseUrl.replace(/\/$/, '')}/services/auth/current-context`;
+      this.assertSafeOutbound(apiUrl, 'Splunk');
+      const response = await axios.get(apiUrl, {
         headers: {
           Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}`,
         },
@@ -1477,10 +1500,13 @@ class PATValidationService {
         return { valid: false, error: 'Invalid PostgreSQL connection string format' };
       }
 
-      // For validation, we check the format - actual connection test requires the pg library
-      // Supports actual connection testing when DATABASE_TEST_ENABLED is configured
+      // Connection-string format check only; a live connection probe is deferred
+      // to the integration runtime. Flag as unverified so a malformed/bogus
+      // credential is not reported as a fully connected database integration.
       return {
         valid: true,
+        unverified: true,
+        note: 'Connection string format accepted; not verified with a live PostgreSQL connection.',
         userInfo: {
           host: url.hostname,
           database: url.pathname.replace('/', ''),
@@ -1507,8 +1533,12 @@ class PATValidationService {
         return { valid: false, error: 'Invalid MySQL connection string format' };
       }
 
+      // Connection-string format check only; live connection probe deferred to
+      // the integration runtime. Flag as unverified.
       return {
         valid: true,
+        unverified: true,
+        note: 'Connection string format accepted; not verified with a live MySQL connection.',
         userInfo: {
           host: url.hostname,
           database: url.pathname.replace('/', ''),
@@ -1544,8 +1574,12 @@ class PATValidationService {
           return { valid: false, error: 'Invalid Redis connection string format: missing hostname' };
         }
 
+        // Connection-string format check only; live connection probe deferred to
+        // the integration runtime. Flag as unverified.
         return {
           valid: true,
+          unverified: true,
+          note: 'Connection string format accepted; not verified with a live Redis connection.',
           userInfo: {
             host: url.hostname,
             port: url.port || '6379',
@@ -1571,7 +1605,9 @@ class PATValidationService {
     this.validateBaseUrl(baseUrl);
 
     try {
-      const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/`, {
+      const apiUrl = `${baseUrl.replace(/\/$/, '')}/`;
+      this.assertSafeOutbound(apiUrl, 'Elasticsearch');
+      const response = await axios.get(apiUrl, {
         headers: {
           Authorization: `ApiKey ${token}`,
         },

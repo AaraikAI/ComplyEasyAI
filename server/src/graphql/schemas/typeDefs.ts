@@ -662,17 +662,14 @@ export const typeDefs = `#graphql
   # ============================================================================
   # SUBSCRIPTIONS
   # ============================================================================
-
-  type Subscription {
-    # Real-time updates
-    vendorUpdated(organizationId: ID!): Vendor!
-    riskUpdated(organizationId: ID!): RiskItem!
-    frameworkUpdated(organizationId: ID!): ComplianceFramework!
-    issueUpdated(organizationId: ID!): Issue!
-    monitorResult(organizationId: ID!): MonitorResult!
-    auditLogCreated(organizationId: ID!): AuditLog!
-    notificationReceived(userId: ID!): JSON!
-  }
+  #
+  # Real-time subscriptions are not advertised in the schema because this GraphQL
+  # endpoint is served over HTTP only (no WebSocket transport) and has no
+  # subscription resolvers. Exposing a Subscription type here would lead clients
+  # that introspect the schema to believe subscriptions are available when they
+  # are not. Re-introduce a Subscription type only alongside a WS transport and
+  # matching resolvers. Use the REST notifications / websocket service for
+  # push-style updates in the meantime.
 `;
 
 export default typeDefs;

@@ -79,24 +79,22 @@ describe('ReportBuilder', () => {
 
   it('shows section types', async () => {
     render(<ReportBuilder />);
-    await waitFor(() => expect(screen.queryAllByText(/Report|report/i).length).toBeGreaterThan(0));
-    const addBtn = screen.queryAllByText(/New Report|Create|New|Add/i)[0] ?? null;
-    if (addBtn) {
-      fireEvent.click(addBtn);
-      // Builder view shows section types like table, chart, metric
-      await waitFor(() => expect(screen.queryAllByText(/Table|Chart|Metric|Text|table|chart|metric/i).length).toBeGreaterThanOrEqual(0));
-    }
+    // Enter the builder, then open the Add Section modal which lists the section types.
+    fireEvent.click(screen.getByText('New Report'));
+    await waitFor(() => expect(screen.getByText('Report Sections')).toBeInTheDocument());
+    fireEvent.click(screen.getAllByText('Add Section')[0]);
+    await waitFor(() => expect(screen.getByText('Data Table')).toBeInTheDocument());
+    expect(screen.getByText('Metrics Card')).toBeInTheDocument();
+    expect(screen.getByText('Text Block')).toBeInTheDocument();
   });
 
   it('shows export format options', async () => {
     render(<ReportBuilder />);
-    await waitFor(() => expect(screen.queryAllByText(/Report|report/i).length).toBeGreaterThan(0));
-    const addBtn = screen.queryAllByText(/New Report|Create|New|Add/i)[0] ?? null;
-    if (addBtn) {
-      fireEvent.click(addBtn);
-      // Export formats appear in builder view
-      await waitFor(() => expect(screen.queryAllByText(/PDF|Excel|CSV/i).length).toBeGreaterThanOrEqual(0));
-    }
+    fireEvent.click(screen.getByText('New Report'));
+    // Builder view renders an export-format selector with PDF / Excel / CSV options.
+    await waitFor(() => expect(screen.getByText('PDF')).toBeInTheDocument());
+    expect(screen.getByText('Excel')).toBeInTheDocument();
+    expect(screen.getByText('CSV')).toBeInTheDocument();
   });
 
   it('shows schedule options', () => {

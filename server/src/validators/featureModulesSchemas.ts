@@ -369,7 +369,46 @@ export const updateProductLifecycleSchema = Joi.object({
   marketExit: Joi.date().iso().allow(null).optional(),
   regulatoryRequirements: Joi.array().items(Joi.object()).allow(null).optional(),
   certifications: Joi.array().items(Joi.object()).allow(null).optional(),
+  // Document metadata array persisted to the ProductLifecycle.documents JSON field.
+  // Raw file bytes are not stored here; each entry captures descriptive metadata only.
+  documents: Joi.array().items(Joi.object()).allow(null).optional(),
 }).min(1).unknown(false);
+
+// ============================================================================
+// PRODUCT DECOMMISSION — CUSTOMER NOTIFICATIONS
+// ============================================================================
+//
+// Notifications are persisted inside the ProductDecommission.customerNotifications
+// JSON array (no dedicated table). The productId identifies the owning decommission
+// record so the handler can scope the write to the caller's organization.
+
+const decommissionNotificationChannels = ['email', 'in_app', 'portal', 'all'] as const;
+const decommissionNotificationTypes = ['end_of_sale', 'end_of_support', 'end_of_life', 'migration_guide', 'final_notice'] as const;
+const decommissionNotificationStatuses = ['draft', 'scheduled', 'sent', 'delivered'] as const;
+
+export const createDecommissionNotificationSchema = Joi.object({
+  productId: Joi.string().required().min(1).max(100),
+  channel: Joi.string().valid(...decommissionNotificationChannels).required(),
+  audience: Joi.string().max(500).allow('', null).optional(),
+  type: Joi.string().valid(...decommissionNotificationTypes).allow(null).optional(),
+  subject: Joi.string().max(500).allow('', null).optional(),
+  scheduledDate: Joi.date().iso().allow('', null).optional(),
+  template: Joi.string().max(20000).allow('', null).optional(),
+  status: Joi.string().valid(...decommissionNotificationStatuses).optional(),
+}).unknown(false);
+
+export const updateDecommissionNotificationSchema = Joi.object({
+  productId: Joi.string().required().min(1).max(100),
+  channel: Joi.string().valid(...decommissionNotificationChannels).optional(),
+  audience: Joi.string().max(500).allow('', null).optional(),
+  type: Joi.string().valid(...decommissionNotificationTypes).allow(null).optional(),
+  subject: Joi.string().max(500).allow('', null).optional(),
+  scheduledDate: Joi.date().iso().allow('', null).optional(),
+  sentDate: Joi.date().iso().allow('', null).optional(),
+  recipientCount: Joi.number().integer().min(0).allow(null).optional(),
+  template: Joi.string().max(20000).allow('', null).optional(),
+  status: Joi.string().valid(...decommissionNotificationStatuses).optional(),
+}).unknown(false);
 
 // ============================================================================
 // PROCESS MAPPER

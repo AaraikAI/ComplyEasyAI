@@ -190,12 +190,32 @@ describe('Endpoint Performance Scenarios', () => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
-      // Performance should remain consistent
-      const firstAvg = results[0].averageResponseTime;
-      const lastAvg = results[results.length - 1].averageResponseTime;
+      // Performance should remain consistent across the run. Compare the mean
+      // of the first half of iterations against the second half — this is far
+      // more stable than two single-batch snapshots, which at the sub-ms,
+      // in-process latencies seen here are dominated by integer-millisecond
+      // rounding and scheduler jitter rather than real degradation.
+      const avgOf = (arr: typeof results) =>
+        arr.reduce((sum, r) => sum + r.averageResponseTime, 0) / arr.length;
+      const mid = Math.floor(results.length / 2);
+      const firstHalfAvg = avgOf(results.slice(0, mid || 1));
+      const secondHalfAvg = avgOf(results.slice(mid || 1));
 
-      const degradation = Math.abs(lastAvg - firstAvg) / firstAvg;
-      expect(degradation).toBeLessThan(0.5); // Less than 50% degradation
+      // Sustained throughput: every iteration must complete its full batch.
+      results.forEach((r) => {
+        expect(r.successfulRequests).toBe(r.totalRequests);
+      });
+
+      // The ratio test is only meaningful once latencies clear the timer-
+      // resolution noise floor; below it, assert a small absolute bound instead.
+      const NOISE_FLOOR_MS = 5;
+      if (firstHalfAvg >= NOISE_FLOOR_MS) {
+        const degradation = (secondHalfAvg - firstHalfAvg) / firstHalfAvg;
+        expect(degradation).toBeLessThan(0.5); // < 50% slowdown over the run
+      } else {
+        // Sub-millisecond regime: require the run to stay fast in absolute terms.
+        expect(secondHalfAvg).toBeLessThan(NOISE_FLOOR_MS + firstHalfAvg);
+      }
     });
   });
 });

@@ -9,6 +9,6 @@ describe('OnboardingModal', () => {
 
   it('should render title and description', () => { render(<OnboardingModal {...defaultProps} />); expect(screen.getByText('Test Title')).toBeTruthy(); expect(screen.getByText('Test Description')).toBeTruthy(); });
   it('should call primaryAction onClick', () => { const action = { label: 'Continue', onClick: vi.fn() }; render(<OnboardingModal {...defaultProps} primaryAction={action} />); fireEvent.click(screen.getByText('Continue')); expect(action.onClick).toHaveBeenCalled(); });
-  it('should call onClose', () => { const onClose = vi.fn(); render(<OnboardingModal {...defaultProps} onClose={onClose} showCloseButton={true} />); const closeBtn = document.querySelector('button[aria-label*="close"], button[aria-label*="Close"]') || screen.getByTestId('icon-X'); if (closeBtn) { fireEvent.click(closeBtn); expect(onClose).toHaveBeenCalled(); } });
+  it('should call onClose', () => { const onClose = vi.fn(); render(<OnboardingModal {...defaultProps} onClose={onClose} showCloseButton={true} />); const closeBtn = screen.getByRole('button', { name: /close/i }); fireEvent.click(closeBtn); expect(onClose).toHaveBeenCalled(); });
   it('should render children', () => { render(<OnboardingModal {...defaultProps}><div data-testid="child">Child</div></OnboardingModal>); expect(screen.getByTestId('child')).toBeTruthy(); });
 });

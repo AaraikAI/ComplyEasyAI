@@ -16,6 +16,8 @@ import BaseIntegrationProvider, {
   EvidenceType,
 } from './baseIntegration';
 import logger from '../../../config/logger';
+import { isUrlSafe } from '../../../utils/urlValidator';
+import { AppError } from '../../../middleware/errorHandler';
 
 // ─── Provider Descriptor ─────────────────────────────────────────────────────
 
@@ -82,8 +84,19 @@ class ConfiguredProvider extends BaseIntegrationProvider {
 
   protected configureHttpClient(): void {
     const baseURL = this.resolveUrl(this.descriptor.apiBaseUrl);
+    // SSRF guard: the base URL may embed user-controllable credential segments
+    // ({instance}/{host}/{domain}/...). Reject private/loopback/link-local hosts
+    // before any request is dispatched.
+    if (baseURL) {
+      this.assertSafeOutbound(baseURL);
+    }
     this.httpClient.defaults.baseURL = baseURL;
 
+    // Trust boundary: credentials reach this factory already decrypted and
+    // transiently (set per-call via registry.configure -> setCredentials). This
+    // path NEVER persists them — encryption-at-rest is owned by the per-integration
+    // services (e.g. servicenowService via encryptConfigSecrets). Values here are
+    // only read into outbound request headers.
     const header = this.descriptor.authHeader || 'Authorization';
     const prefix = this.descriptor.authPrefix ?? 'Bearer';
     const token =
@@ -110,6 +123,7 @@ class ConfiguredProvider extends BaseIntegrationProvider {
     try {
       this.configureHttpClient();
       const endpoint = this.resolveUrl(this.descriptor.testEndpoint);
+      this.assertSafeOutbound(this.toAbsoluteUrl(endpoint));
       const { result, latencyMs } = await this.timedRequest(() =>
         this.httpClient.get(endpoint),
       );
@@ -148,6 +162,7 @@ class ConfiguredProvider extends BaseIntegrationProvider {
     for (const ep of this.descriptor.evidenceEndpoints) {
       try {
         const url = this.resolveUrl(ep.path);
+        this.assertSafeOutbound(this.toAbsoluteUrl(url));
         const response =
           ep.method === 'POST'
             ? await this.httpClient.post(url, ep.params || {})
@@ -204,6 +219,35 @@ class ConfiguredProvider extends BaseIntegrationProvider {
       .replace(/\{env\}/g, this.credentials.baseUrl || '')
       .replace(/\{portal\}/g, this.credentials.baseUrl || '')
       .replace(/\{dc\}/g, this.credentials.region || '');
+  }
+
+  /**
+   * Resolve a (possibly relative) endpoint against the configured base URL into
+   * an absolute URL.
+   */
+  private toAbsoluteUrl(endpoint: string): string {
+    const baseURL = (this.httpClient.defaults.baseURL as string) || this.resolveUrl(this.descriptor.apiBaseUrl);
+    try {
+      return new URL(endpoint, baseURL || undefined).toString();
+    } catch {
+      // If endpoint is already absolute (or base is empty), fall back to it directly.
+      return endpoint;
+    }
+  }
+
+  /**
+   * SSRF defense: reject outbound URLs that resolve to private/loopback/link-local
+   * targets. Credential-derived placeholders ({instance}/{host}/{domain}/...) are
+   * user-controllable, so the FINAL absolute URL is validated before every request.
+   */
+  private assertSafeOutbound(absoluteUrl: string): void {
+    if (!isUrlSafe(absoluteUrl)) {
+      logger.error(
+        `[${this.providerId}] Outbound URL rejected by SSRF guard`,
+        { url: absoluteUrl },
+      );
+      throw new AppError(`Unsafe outbound URL for provider ${this.providerId}`, 400);
+    }
   }
 }
 

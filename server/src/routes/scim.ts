@@ -866,17 +866,27 @@ router.post(
         },
       });
 
-      // Add members if provided
+      // Add members if provided. Member userIds come from the IdP payload and
+      // are NOT trusted: restrict to users that belong to this SCIM config's
+      // organization so a misconfigured/malicious IdP cannot assign roles to
+      // users in another tenant.
       if (members && Array.isArray(members) && members.length > 0) {
         const memberIds = members.map((m: any) => m.value).filter(Boolean);
         if (memberIds.length > 0) {
-          await Promise.allSettled(
-            memberIds.map((userId: string) =>
-              prisma.userRole.create({
-                data: { userId, roleId: role.id },
-              })
-            )
-          );
+          const orgUsers = await prisma.user.findMany({
+            where: { id: { in: memberIds }, organizationId: orgId },
+            select: { id: true },
+          });
+          const validUserIds = orgUsers.map((u) => u.id);
+          if (validUserIds.length > 0) {
+            await Promise.allSettled(
+              validUserIds.map((userId: string) =>
+                prisma.userRole.create({
+                  data: { userId, roleId: role.id },
+                })
+              )
+            );
+          }
         }
       }
 

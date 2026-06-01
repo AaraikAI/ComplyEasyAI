@@ -175,6 +175,7 @@ class RedisCacheService {
 
     // Start periodic cleanup for expired entries (in-memory only)
     this.cleanupInterval = setInterval(() => this.cleanup(), 60000); // Every minute
+    this.cleanupInterval?.unref?.();
 
     this.initialized = true;
   }

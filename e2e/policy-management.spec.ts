@@ -34,28 +34,33 @@ test.describe('Policy Management', () => {
     await page.waitForLoadState('networkidle').catch(() => {});
 
     const addBtn = page.getByRole('button', { name: /Create Policy|Add Policy|New Policy/i }).first();
-    if (await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await addBtn.click();
+    // If the create affordance is absent, skip explicitly so the missing feature
+    // is surfaced rather than the create-and-verify flow passing vacuously.
+    if (!await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) test.skip();
 
-      await page.fill('[name="title"]', 'E2E Access Control Policy');
+    await addBtn.click();
 
-      const contentField = page.locator('[name="content"], textarea[name="content"], .policy-editor');
-      if (await contentField.isVisible()) {
-        await contentField.fill('All access to production systems must be approved by a security manager and reviewed quarterly.');
-      }
+    const titleField = page.locator('[name="title"]').first();
+    await expect(titleField).toBeVisible({ timeout: 5000 });
+    await titleField.fill('E2E Access Control Policy');
 
-      const categoryField = page.locator('[name="category"], select[name="category"]');
-      if (await categoryField.isVisible()) {
-        await categoryField.selectOption('Security').catch(() => {
-          categoryField.fill('Security');
-        });
-      }
-
-      const submitBtn = page.getByRole('button', { name: /Create|Save|Submit/i }).first();
-      await submitBtn.click({ timeout: 5000 });
-
-      await expect(page.locator('text=E2E Access Control Policy')).toBeVisible({ timeout: 15000 });
+    const contentField = page.locator('[name="content"], textarea[name="content"], .policy-editor').first();
+    if (await contentField.isVisible().catch(() => false)) {
+      await contentField.fill('All access to production systems must be approved by a security manager and reviewed quarterly.');
     }
+
+    const categoryField = page.locator('[name="category"], select[name="category"]').first();
+    if (await categoryField.isVisible().catch(() => false)) {
+      await categoryField.selectOption('Security').catch(() => {
+        categoryField.fill('Security');
+      });
+    }
+
+    const submitBtn = page.getByRole('button', { name: /Create|Save|Submit/i }).first();
+    await submitBtn.click({ timeout: 5000 });
+
+    // The created policy must appear in the list/library after submission.
+    await expect(page.locator('text=E2E Access Control Policy')).toBeVisible({ timeout: 15000 });
   });
 
   test('User can filter policies by status', async ({ page }) => {

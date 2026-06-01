@@ -31,14 +31,28 @@ jest.mock('../../../middleware/auth', () => ({
 }));
 
 const mockController = {
-  createMapping: jest.fn<any>().mockImplementation((_req: any, res: any) => res.status(201).json({ id: 'cm-1' })),
-  getMappings: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json([])),
-  updateMapping: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ id: 'cm-1', updated: true })),
-  deleteMapping: jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ success: true })),
-  exportMappings: jest.fn<any>().mockImplementation((_req: any, res: any) => {
+  createMapping: jest.fn<any>(),
+  // The route binds listAllMappings for GET '/'; it must exist on the mock or
+  // the route's `.bind(controller)` call throws at import time (suite fails to run).
+  listAllMappings: jest.fn<any>(),
+  getMappings: jest.fn<any>(),
+  updateMapping: jest.fn<any>(),
+  deleteMapping: jest.fn<any>(),
+  exportMappings: jest.fn<any>(),
+};
+
+// jest config uses resetMocks, which strips implementations before each test.
+// Re-apply the handlers in beforeEach so requests reach a responding handler.
+const applyControllerMocks = (): void => {
+  mockController.createMapping.mockImplementation((_req: any, res: any) => res.status(201).json({ id: 'cm-1' }));
+  mockController.listAllMappings.mockImplementation((_req: any, res: any) => res.json([]));
+  mockController.getMappings.mockImplementation((_req: any, res: any) => res.json([]));
+  mockController.updateMapping.mockImplementation((_req: any, res: any) => res.json({ id: 'cm-1', updated: true }));
+  mockController.deleteMapping.mockImplementation((_req: any, res: any) => res.json({ success: true }));
+  mockController.exportMappings.mockImplementation((_req: any, res: any) => {
     res.setHeader('Content-Type', 'text/csv');
     res.send('id,control,framework\n');
-  }),
+  });
 };
 
 jest.mock('../../../controllers/controlMappingsController', () => ({
@@ -69,7 +83,10 @@ describe('Control Mappings Routes Contract Tests', () => {
   const editorToken = generateToken('editor');
   const viewerToken = generateToken('viewer');
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    applyControllerMocks();
+  });
 
   // ── Create Mapping ───────────────────────────────────────────────
 
@@ -78,7 +95,7 @@ describe('Control Mappings Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/control-mappings/')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ controlId: 'ctrl-1', targetFramework: 'ISO27001', targetControl: 'A.5.1' });
+        .send({ sourceControlId: 'ctrl-1', targetControlId: 'iso-a-5-1', mappingType: 'equivalent' });
       expect(res.status).toBe(201);
     });
 

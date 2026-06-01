@@ -32,7 +32,9 @@ describe('SCIMSettings', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (globalThis.fetch as any).mockImplementation((url: string) => {
+    // Install a fresh fetch spy each test so the suite does not depend on a global
+    // pre-stub remaining in place (mirrors the resilient pattern in RoleManager.test.tsx).
+    (vi.spyOn(globalThis, 'fetch') as any).mockImplementation((url: string) => {
       if (url.includes('/scim/config')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockConfig) });
       if (url.includes('/scim/stats')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockSyncStats) });
       if (url.includes('/scim/logs')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockSyncLogs) });
@@ -45,7 +47,7 @@ describe('SCIMSettings', () => {
   });
 
   it('shows loading state initially', () => {
-    (globalThis.fetch as any).mockImplementation(() => new Promise(() => {}));
+    (vi.spyOn(globalThis, 'fetch') as any).mockImplementation(() => new Promise(() => {}));
     render(<SCIMSettings onBack={mockOnBack} />);
     expect(screen.getByText(/common.loading/i)).toBeInTheDocument();
   });
@@ -123,7 +125,7 @@ describe('SCIMSettings', () => {
   });
 
   it('creates a new group mapping', async () => {
-    (globalThis.fetch as any).mockImplementation((url: string, opts: any) => {
+    (vi.spyOn(globalThis, 'fetch') as any).mockImplementation((url: string, opts: any) => {
       if (url.includes('/scim/group-mappings') && opts?.method === 'POST') {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'gm-new', scimGroup: 'NewGroup', appRole: 'viewer', autoAssign: true }) });
       }
@@ -159,7 +161,7 @@ describe('SCIMSettings', () => {
   });
 
   it('handles loading error gracefully', async () => {
-    (globalThis.fetch as any).mockImplementation(() => Promise.resolve({ ok: false, status: 500 }));
+    (vi.spyOn(globalThis, 'fetch') as any).mockImplementation(() => Promise.resolve({ ok: false, status: 500 }));
     render(<SCIMSettings onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Failed to load SCIM settings.')).toBeInTheDocument());
   });
@@ -175,7 +177,7 @@ describe('SCIMSettings', () => {
   });
 
   it('shows empty log state', async () => {
-    (globalThis.fetch as any).mockImplementation((url: string) => {
+    (vi.spyOn(globalThis, 'fetch') as any).mockImplementation((url: string) => {
       if (url.includes('/scim/config')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockConfig) });
       if (url.includes('/scim/stats')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockSyncStats) });
       if (url.includes('/scim/logs')) return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });

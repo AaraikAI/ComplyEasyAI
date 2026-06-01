@@ -45,26 +45,28 @@ describe('GlobalSearch', () => {
 
   it('accepts search query input', () => {
     render(<GlobalSearch isOpen={true} />);
-    const input = screen.queryByPlaceholderText(/search/i);
-    if (input) {
-      fireEvent.change(input, { target: { value: 'SOC 2' } });
-      expect((input as HTMLInputElement).value).toBe('SOC 2');
-    }
+    // The search input must always render when the modal is open; assert it
+    // exists unconditionally so the test fails (not silently passes) if it disappears.
+    const input = screen.getByPlaceholderText(/search/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'SOC 2' } });
+    expect(input.value).toBe('SOC 2');
   });
 
   it('shows empty state with no query', () => {
     render(<GlobalSearch isOpen={true} />);
-    const input = screen.queryByPlaceholderText(/search/i);
-    if (input) {
-      fireEvent.change(input, { target: { value: '' } });
-    }
+    const input = screen.getByPlaceholderText(/search/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '' } });
+    expect(input.value).toBe('');
+    // With no query the modal shows its empty-state prompt rather than results.
+    expect(screen.getByText(/Start typing to search across all resources/i)).toBeInTheDocument();
   });
 
   it('handles keyboard shortcut', () => {
-    render(<GlobalSearch isOpen={true} />);
-    const input = screen.queryByPlaceholderText(/search/i);
-    if (input) {
-      fireEvent.keyDown(input, { key: 'Escape' });
-    }
+    const onClose = vi.fn();
+    render(<GlobalSearch isOpen={true} onClose={onClose} />);
+    const input = screen.getByPlaceholderText(/search/i);
+    // Escape closes the modal, invoking onClose.
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
   });
 });

@@ -92,7 +92,8 @@ export function monitoringMiddleware(req: Request, res: Response, next: NextFunc
       }
     }
 
-    // Log metrics
+    // Log access metrics. Only method/path/status/duration are emitted — no
+    // request body, headers, or tokens — so this is safe observability data.
     logger.info(`${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
   });
 

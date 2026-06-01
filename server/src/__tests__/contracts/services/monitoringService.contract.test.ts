@@ -176,7 +176,8 @@ describe('MonitoringService contract', () => {
       expect(prismaMock.monitorResult.create).toHaveBeenCalled();
       expect(prismaMock.continuousMonitor.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'monitor-1' },
+          // Multi-tenant: update is scoped by organizationId as well as id.
+          where: { id: 'monitor-1', organizationId: 'org-123' },
           data: expect.objectContaining({
             status: expect.any(String),
             lastRun: expect.any(Date),

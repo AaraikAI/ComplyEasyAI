@@ -752,6 +752,18 @@ export const NIS2Dashboard: React.FC = () => {
 
   // ── Tab: Compliance ──
 
+  // True when the Article 21 measure with the given id is marked implemented.
+  const isMeasureImplemented = useCallback(
+    (measureId: string) => measures.some(m => m.id === measureId && m.status === 'implemented'),
+    [measures]
+  );
+  // Cross-border process counts as exercised once an incident flagged cross-border
+  // has reached the notification-sent stage (or beyond).
+  const crossBorderProcessTested = useMemo(
+    () => incidents.some(i => i.crossBorderImpact && (i.notificationSentDate !== null || i.finalReportSentDate !== null)),
+    [incidents]
+  );
+
   const renderCompliance = () => (
     <div className="space-y-6">
       {/* Compliance Score Card */}
@@ -792,16 +804,22 @@ export const NIS2Dashboard: React.FC = () => {
           {[
             { label: 'Entity registered with competent authority', done: entity.registeredWithAuthority },
             { label: 'Management body cybersecurity training completed', done: entity.managementTrainingCompleted },
-            { label: 'All Article 21 cybersecurity measures implemented', done: measureComplianceRate === 100 },
-            { label: 'Incident reporting procedures established (24h/72h/1mo)', done: true },
-            { label: 'Supply chain security assessments completed', done: suppliers.every(s => s.contractualSecurityClauses) },
-            { label: 'Business continuity plans tested', done: bcps.every(b => b.disasterRecoveryReady) },
-            { label: 'MFA deployed for all critical systems', done: false },
-            { label: 'Encryption policies implemented', done: true },
-            { label: 'Vulnerability handling and disclosure process active', done: true },
-            { label: 'Regular security audits conducted', done: true },
-            { label: 'CSIRT integration verified', done: true },
-            { label: 'Cross-border incident notification process tested', done: false },
+            { label: 'All Article 21 cybersecurity measures implemented', done: measures.length > 0 && measureComplianceRate === 100 },
+            // Incident reporting (Art. 21(2)(b)) → sm-002 incident handling
+            { label: 'Incident reporting procedures established (24h/72h/1mo)', done: isMeasureImplemented('sm-002') },
+            { label: 'Supply chain security assessments completed', done: suppliers.length > 0 && suppliers.every(s => s.contractualSecurityClauses) },
+            { label: 'Business continuity plans tested', done: bcps.length > 0 && bcps.every(b => b.disasterRecoveryReady) },
+            // MFA (Art. 21(2)(j)) → sm-010
+            { label: 'MFA deployed for all critical systems', done: isMeasureImplemented('sm-010') },
+            // Cryptography (Art. 21(2)(h)) → sm-008
+            { label: 'Encryption policies implemented', done: isMeasureImplemented('sm-008') },
+            // Acquisition/vulnerability handling (Art. 21(2)(e)) → sm-005
+            { label: 'Vulnerability handling and disclosure process active', done: isMeasureImplemented('sm-005') },
+            // Effectiveness assessment / pentests (Art. 21(2)(f)) → sm-006
+            { label: 'Regular security audits conducted', done: isMeasureImplemented('sm-006') },
+            // CSIRT integration is part of incident handling (Art. 21(2)(b)) → sm-002
+            { label: 'CSIRT integration verified', done: isMeasureImplemented('sm-002') },
+            { label: 'Cross-border incident notification process tested', done: crossBorderProcessTested },
           ].map((item, idx) => (
             <label key={idx} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
               <input type="checkbox" checked={item.done} readOnly className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />

@@ -62,6 +62,23 @@ interface ChartData {
   }[];
 }
 
+/**
+ * Fit a real historical series to a fixed number of chart buckets.
+ * Uses the latest `count` points when available; when history is shorter than
+ * the chart width it left-pads with the earliest known value, and when no
+ * history exists it renders a flat line at `fallbackValue` (the current value)
+ * rather than fabricating day-to-day variation.
+ */
+function fitSeriesToBuckets(series: number[], count: number, fallbackValue: number): number[] {
+  if (!series || series.length === 0) {
+    return Array(count).fill(Math.round(fallbackValue));
+  }
+  const recent = series.slice(-count);
+  if (recent.length === count) return recent.map(v => Math.round(v));
+  const pad = Array(count - recent.length).fill(recent[0]);
+  return [...pad, ...recent].map(v => Math.round(v));
+}
+
 const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { user } = useAuth();
   const { t } = useI18n();
@@ -71,16 +88,25 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [risksData, setRisksData] = useState<any[]>([]);
   const [frameworksData, setFrameworksData] = useState<any[]>([]);
+  // Real historical series for trend charts (no synthetic interpolation).
+  const [complianceHistorySeries, setComplianceHistorySeries] = useState<number[]>([]);
+  const [passedHistorySeries, setPassedHistorySeries] = useState<number[]>([]);
+  const [failedHistorySeries, setFailedHistorySeries] = useState<number[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Throttle persistence so periodic refreshes do not flood the metrics table.
+  const lastRecordRef = useRef<number>(0);
+  const RECORD_INTERVAL_MS = 5 * 60 * 1000; // persist at most once every 5 minutes
+
   useEffect(() => {
-    loadMetrics();
-    
-    // Set up real-time updates every 5 seconds
+    // Initial load persists a snapshot; periodic refreshes only read.
+    loadMetrics(true);
+
+    // Refresh the live view every 30 seconds without writing on every tick.
     intervalRef.current = setInterval(() => {
-      loadMetrics();
+      loadMetrics(false);
       setLastUpdate(new Date());
-    }, 5000);
+    }, 30000);
 
     return () => {
       if (intervalRef.current) {
@@ -89,7 +115,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     };
   }, [timeRange]);
 
-  const loadMetrics = async () => {
+  const loadMetrics = async (recordSnapshot = false) => {
     setLoading(true);
     try {
       // Fetch real data from APIs
@@ -149,11 +175,22 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
       // Calculate historical changes from backend metrics history
       try {
-        const [complianceHistory, risksHistory, controlsHistory] = await Promise.all([
+        const [complianceHistory, risksHistory, controlsHistory, failedHistory] = await Promise.all([
           api.metrics.getHistory('compliance_score').catch(() => []),
           api.metrics.getHistory('risks_count').catch(() => []),
           api.metrics.getHistory('controls_passed').catch(() => []),
+          api.metrics.getHistory('controls_failed').catch(() => []),
         ]);
+
+        const toSeries = (history: any[]): number[] =>
+          Array.isArray(history)
+            ? history.map((point: any) => Number(point?.value) || 0).reverse()
+            : [];
+
+        // Store real series (chronological order) for the trend charts.
+        setComplianceHistorySeries(toSeries(complianceHistory));
+        setPassedHistorySeries(toSeries(controlsHistory));
+        setFailedHistorySeries(toSeries(failedHistory));
 
         if (Array.isArray(complianceHistory) && complianceHistory.length > 0) {
           const prevCompliance = complianceHistory[0]?.value || 0;
@@ -177,16 +214,26 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         logger.error('Failed to load historical metrics:', err);
       }
 
-      // Record current metrics to backend for historical tracking
-      try {
-        await Promise.all([
-          api.metrics.record('compliance_score', parseFloat(complianceScore)),
-          api.metrics.record('risks_count', risks.length),
-          api.metrics.record('controls_passed', passedControls),
-          api.metrics.record('frameworks_active', frameworks.length),
-        ]);
-      } catch (err) {
-        logger.error('Failed to record metrics:', err);
+      // Persist a historical snapshot only on explicit refresh/initial load,
+      // and no more often than RECORD_INTERVAL_MS, to avoid inflating metric rows.
+      const now = Date.now();
+      if (recordSnapshot && now - lastRecordRef.current >= RECORD_INTERVAL_MS) {
+        lastRecordRef.current = now;
+        const failedControls = frameworks.reduce((sum: number, fw: any) =>
+          sum + (fw.controls?.filter((c: any) =>
+            c.status === 'Failed' || c.status === 'Non-Compliant' || c.status === 'At Risk'
+          ).length || 0), 0);
+        try {
+          await Promise.all([
+            api.metrics.record('compliance_score', parseFloat(complianceScore)),
+            api.metrics.record('risks_count', risks.length),
+            api.metrics.record('controls_passed', passedControls),
+            api.metrics.record('controls_failed', failedControls),
+            api.metrics.record('frameworks_active', frameworks.length),
+          ]);
+        } catch (err) {
+          logger.error('Failed to record metrics:', err);
+        }
       }
 
       // Calculate metrics from real data
@@ -322,13 +369,14 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         risksData,
         frameworksData,
         charts: {
-          complianceScoreTrend: frameworksData.length > 0 ? (() => {
-            const totalControls = frameworksData.reduce((sum: number, fw: any) => 
+          complianceScoreTrend: (frameworksData.length > 0 || complianceHistorySeries.length > 0) ? (() => {
+            const totalControls = frameworksData.reduce((sum: number, fw: any) =>
               sum + (fw.controls?.length || 0), 0);
-            const passedControls = frameworksData.reduce((sum: number, fw: any) => 
+            const passedControls = frameworksData.reduce((sum: number, fw: any) =>
               sum + (fw.controls?.filter((c: any) => c.status === 'Passed' || c.status === 'Compliant').length || 0), 0);
             const baseScore = totalControls > 0 ? (passedControls / totalControls) * 100 : 0;
-            return Array(7).fill(0).map((_, i) => Math.max(0, Math.min(100, baseScore + (Math.random() * 2 - 1))));
+            // Export the real recorded series; flat at current value when no history.
+            return fitSeriesToBuckets(complianceHistorySeries, 7, baseScore);
           })() : [],
           riskDistribution: {
             critical: risksData.filter((r: any) => (r.severity || '').toLowerCase() === 'critical').length,
@@ -391,7 +439,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               <option value="30d">Last 30 Days</option>
             </select>
             <button
-              onClick={loadMetrics}
+              onClick={() => loadMetrics(true)}
               className="p-2 hover:bg-white rounded-lg border border-slate-200 transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -420,22 +468,17 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               datasets: [{
                 label: 'Score',
                 data: (() => {
-                  if (frameworksData.length === 0) {
+                  if (frameworksData.length === 0 && complianceHistorySeries.length === 0) {
                     return [0, 0, 0, 0, 0, 0, 0];
                   }
-                  // Calculate base score from actual data
-                  const totalControls = frameworksData.reduce((sum: number, fw: any) => 
+                  // Current base score from actual framework control data.
+                  const totalControls = frameworksData.reduce((sum: number, fw: any) =>
                     sum + (fw.controls?.length || 0), 0);
-                  const passedControls = frameworksData.reduce((sum: number, fw: any) => 
+                  const passedControls = frameworksData.reduce((sum: number, fw: any) =>
                     sum + (fw.controls?.filter((c: any) => c.status === 'Passed' || c.status === 'Compliant' || c.status === 'Implemented').length || 0), 0);
-                  const baseScore = totalControls > 0 ? (passedControls / totalControls) * 100 : 85;
-                  // Generate trend data with realistic variations (day-to-day changes)
-                  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                  return days.map((_, i) => {
-                    // Add small random variation but keep it realistic
-                    const variation = (Math.random() * 4 - 2); // -2 to +2
-                    return Math.max(0, Math.min(100, baseScore + variation));
-                  });
+                  const baseScore = totalControls > 0 ? (passedControls / totalControls) * 100 : 0;
+                  // Plot the real recorded series; flat at current value when no history.
+                  return fitSeriesToBuckets(complianceHistorySeries, 7, baseScore);
                 })(),
                 borderColor: 'rgb(34, 197, 94)',
                 backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -509,22 +552,16 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 {
                   label: 'Passed',
                   data: (() => {
-                    if (frameworksData.length === 0) {
+                    if (frameworksData.length === 0 && passedHistorySeries.length === 0) {
                       return [0, 0, 0, 0];
                     }
-                    // Calculate passed controls for each week
-                    const totalControls = frameworksData.reduce((sum: number, fw: any) => 
-                      sum + (fw.controls?.length || 0), 0);
-                    const passedControls = frameworksData.reduce((sum: number, fw: any) => 
-                      sum + (fw.controls?.filter((c: any) => 
+                    // Current passed-control count from actual data.
+                    const passedControls = frameworksData.reduce((sum: number, fw: any) =>
+                      sum + (fw.controls?.filter((c: any) =>
                         c.status === 'Passed' || c.status === 'Compliant' || c.status === 'Implemented'
                       ).length || 0), 0);
-                    
-                    // Generate trend showing gradual improvement
-                    return Array(4).fill(0).map((_, i) => {
-                      const growthFactor = 1 + (i * 0.02); // 2% growth per week
-                      return Math.round(passedControls * growthFactor);
-                    });
+                    // Plot the real recorded series; flat at current value when no history.
+                    return fitSeriesToBuckets(passedHistorySeries, 4, passedControls);
                   })(),
                   borderColor: 'rgb(34, 197, 94)',
                   backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -532,22 +569,16 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 {
                   label: 'Failed',
                   data: (() => {
-                    if (frameworksData.length === 0) {
-                      return [50, 45, 40, 23];
+                    if (frameworksData.length === 0 && failedHistorySeries.length === 0) {
+                      return [0, 0, 0, 0];
                     }
-                    // Calculate failed controls for each week
-                    const totalControls = frameworksData.reduce((sum: number, fw: any) => 
-                      sum + (fw.controls?.length || 0), 0);
-                    const failedControls = frameworksData.reduce((sum: number, fw: any) => 
-                      sum + (fw.controls?.filter((c: any) => 
+                    // Current failed-control count from actual data.
+                    const failedControls = frameworksData.reduce((sum: number, fw: any) =>
+                      sum + (fw.controls?.filter((c: any) =>
                         c.status === 'Failed' || c.status === 'Non-Compliant' || c.status === 'At Risk'
                       ).length || 0), 0);
-                    
-                    // Generate trend showing gradual decrease
-                    return Array(4).fill(0).map((_, i) => {
-                      const reductionFactor = 1 - (i * 0.1); // 10% reduction per week
-                      return Math.max(0, Math.round(failedControls * reductionFactor));
-                    });
+                    // Plot the real recorded series; flat at current value when no history.
+                    return fitSeriesToBuckets(failedHistorySeries, 4, failedControls);
                   })(),
                   borderColor: 'rgb(239, 68, 68)',
                   backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -710,14 +741,86 @@ const ChartCard: React.FC<{ title: string; type: 'line' | 'bar' | 'pie'; data: C
   );
 };
 
+interface ActivityItem {
+  id: string;
+  type: 'success' | 'warning' | 'info';
+  message: string;
+  time: string;
+}
+
+// Derive a feed entry type from the audit action verb.
+const activityTypeForAction = (action: string): ActivityItem['type'] => {
+  const a = (action || '').toLowerCase();
+  if (a.includes('fail') || a.includes('delete') || a.includes('risk') || a.includes('breach') || a.includes('revoke')) {
+    return 'warning';
+  }
+  if (a.includes('pass') || a.includes('approve') || a.includes('verif') || a.includes('complete') || a.includes('create')) {
+    return 'success';
+  }
+  return 'info';
+};
+
+const relativeTime = (iso: string): string => {
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return '';
+  const diff = Math.max(0, Date.now() - ts);
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return `${sec} second${sec === 1 ? '' : 's'} ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} minute${min === 1 ? '' : 's'} ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hour${hr === 1 ? '' : 's'} ago`;
+  const day = Math.floor(hr / 24);
+  return `${day} day${day === 1 ? '' : 's'} ago`;
+};
+
 const ActivityFeed: React.FC = () => {
-  const [activities] = useState([
-    { id: 1, type: 'success', message: 'Control CC6.1 passed compliance check', time: '2 seconds ago' },
-    { id: 2, type: 'warning', message: 'New risk detected in Framework ISO 27001', time: '15 seconds ago' },
-    { id: 3, type: 'success', message: 'User access verified via Zero Trust', time: '1 minute ago' },
-    { id: 4, type: 'info', message: 'Compliance report generated', time: '2 minutes ago' },
-    { id: 5, type: 'success', message: 'Policy updated successfully', time: '3 minutes ago' },
-  ]);
+  const { t } = useI18n();
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const logs = await api.audit.list();
+        if (!active) return;
+        const items: ActivityItem[] = (Array.isArray(logs) ? logs : [])
+          .slice(0, 8)
+          .map((log: any) => ({
+            id: String(log.id),
+            type: activityTypeForAction(log.action),
+            message: log.user ? `${log.action} — ${log.user}` : log.action,
+            time: relativeTime(log.timestamp),
+          }));
+        setActivities(items);
+      } catch (err) {
+        logger.error('Failed to load activity feed:', err);
+        if (active) setActivities([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8 text-slate-500">
+        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+        <span className="text-sm">{t('common.loading')}</span>
+      </div>
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="text-center py-8 text-slate-400">
+        <Activity className="w-8 h-8 mx-auto mb-2" />
+        <p className="text-sm">{t('common.noResults')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

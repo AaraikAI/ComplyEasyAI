@@ -11,7 +11,7 @@ const opts = { abortEarly: false, stripUnknown: true, convert: true };
 // inviteSchema
 // ---------------------------------------------------------------------------
 describe('inviteSchema contract', () => {
-  const valid = { email: 'newuser@example.com', role: 'editor' };
+  const valid = { email: 'newuser@example.com', role: 'editor', name: 'New User' };
 
   it('should accept valid payload', () => {
     const { error, value } = inviteSchema.validate(valid, opts);
@@ -21,25 +21,27 @@ describe('inviteSchema contract', () => {
     expect(value.role).toBe('editor');
   });
 
-  it('should accept optional name', () => {
+  it('should accept payload with name', () => {
     const { error } = inviteSchema.validate(
       { ...valid, name: 'Jane Doe' }, opts,
     );
     expect(error).toBeUndefined();
   });
 
-  it('should accept null name', () => {
+  it('should reject null name (name is required)', () => {
     const { error } = inviteSchema.validate(
       { ...valid, name: null }, opts,
     );
-    expect(error).toBeUndefined();
+    expect(error).toBeDefined();
+    expect(error!.details.some((d) => d.path.includes('name'))).toBe(true);
   });
 
-  it('should accept empty name', () => {
+  it('should reject empty name (name is required)', () => {
     const { error } = inviteSchema.validate(
       { ...valid, name: '' }, opts,
     );
-    expect(error).toBeUndefined();
+    expect(error).toBeDefined();
+    expect(error!.details.some((d) => d.path.includes('name'))).toBe(true);
   });
 
   it('should reject empty payload', () => {
@@ -53,10 +55,16 @@ describe('inviteSchema contract', () => {
     expect(error!.details.some((d) => d.path.includes('email'))).toBe(true);
   });
 
-  it('should require role', () => {
-    const { error } = inviteSchema.validate({ email: 'a@b.com' }, opts);
+  it('should treat role as optional', () => {
+    // role is optional; name + email remain required
+    const { error } = inviteSchema.validate({ email: 'a@b.com', name: 'A B' }, opts);
+    expect(error).toBeUndefined();
+  });
+
+  it('should require name', () => {
+    const { error } = inviteSchema.validate({ email: 'a@b.com', role: 'admin' }, opts);
     expect(error).toBeDefined();
-    expect(error!.details.some((d) => d.path.includes('role'))).toBe(true);
+    expect(error!.details.some((d) => d.path.includes('name'))).toBe(true);
   });
 
   it('should reject invalid email format', () => {
@@ -70,7 +78,7 @@ describe('inviteSchema contract', () => {
   it('should accept valid role values', () => {
     for (const role of ['admin', 'editor', 'viewer']) {
       const { error } = inviteSchema.validate(
-        { email: 'a@b.com', role }, opts,
+        { email: 'a@b.com', role, name: 'A B' }, opts,
       );
       expect(error).toBeUndefined();
     }
@@ -78,7 +86,7 @@ describe('inviteSchema contract', () => {
 
   it('should reject invalid role value', () => {
     const { error } = inviteSchema.validate(
-      { email: 'a@b.com', role: 'superadmin' }, opts,
+      { email: 'a@b.com', role: 'superadmin', name: 'A B' }, opts,
     );
     expect(error).toBeDefined();
   });
@@ -118,8 +126,8 @@ describe('inviteSchema contract', () => {
 describe('bulkInviteSchema contract', () => {
   const valid = {
     invitations: [
-      { email: 'user1@example.com', role: 'editor' },
-      { email: 'user2@example.com', role: 'viewer' },
+      { email: 'user1@example.com', role: 'editor', name: 'User One' },
+      { email: 'user2@example.com', role: 'viewer', name: 'User Two' },
     ],
   };
 
@@ -129,7 +137,7 @@ describe('bulkInviteSchema contract', () => {
     expect(value.invitations).toHaveLength(2);
   });
 
-  it('should accept invitations with optional name', () => {
+  it('should accept invitations with name', () => {
     const { error } = bulkInviteSchema.validate(
       { invitations: [{ email: 'a@b.com', role: 'admin', name: 'John' }] }, opts,
     );
@@ -151,13 +159,15 @@ describe('bulkInviteSchema contract', () => {
     expect(error).toBeDefined();
   });
 
-  it('should reject more than 50 invitations', () => {
-    const invitations = Array.from({ length: 51 }, (_, i) => ({
+  it('should reject more than 100 invitations', () => {
+    const invitations = Array.from({ length: 101 }, (_, i) => ({
       email: `user${i}@example.com`,
       role: 'viewer' as const,
+      name: `User ${i}`,
     }));
     const { error } = bulkInviteSchema.validate({ invitations }, opts);
     expect(error).toBeDefined();
+    expect(error!.details.some((d) => d.path.includes('invitations'))).toBe(true);
   });
 
   it('should validate email in nested invitation objects', () => {

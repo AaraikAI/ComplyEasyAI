@@ -178,6 +178,8 @@ describe('VendorRiskService', () => {
         updatedAt: new Date(),
       };
 
+      // Vendor org ownership is verified before the review is created.
+      prismaMock.vendor.findFirst.mockResolvedValue(createMockVendor());
       prismaMock.vendorReview.create.mockResolvedValue(mockReview);
 
       const result = await vendorRiskService.createVendorReview({
@@ -206,6 +208,8 @@ describe('VendorRiskService', () => {
         vendor: createMockVendor(),
       };
 
+      // Vendor org ownership is verified before the monitor is created.
+      prismaMock.vendor.findFirst.mockResolvedValue(createMockVendor());
       prismaMock.vendorMonitor.create.mockResolvedValue(mockMonitor);
 
       const result = await vendorRiskService.createVendorMonitor({
@@ -239,6 +243,11 @@ describe('VendorRiskService', () => {
         vendor: createMockVendor(),
       };
 
+      // The monitor's vendor org ownership is verified before the update.
+      prismaMock.vendorMonitor.findFirst.mockResolvedValue({
+        id: 'monitor-123',
+        vendor: { organizationId: 'org-123' },
+      } as any);
       prismaMock.vendorMonitor.update.mockResolvedValue(mockMonitor);
 
       const result = await vendorRiskService.updateVendorMonitorResults(
@@ -268,6 +277,11 @@ describe('VendorRiskService', () => {
         vendor: createMockVendor(),
       };
 
+      // The monitor's vendor org ownership is verified before the update.
+      prismaMock.vendorMonitor.findFirst.mockResolvedValue({
+        id: 'monitor-123',
+        vendor: { organizationId: 'org-123' },
+      } as any);
       prismaMock.vendorMonitor.update.mockResolvedValue(mockMonitor);
 
       await vendorRiskService.updateVendorMonitorResults(

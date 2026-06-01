@@ -46,17 +46,23 @@ jest.mock('../../../utils/auditLogger', () => ({
   },
 }));
 
+// Mutable role for the injected user. Defaults to the canonical lowercase 'admin'
+// (matching the Prisma Role enum: admin|editor|viewer|compliance_admin|security_admin),
+// which is what the JIT controller's in-handler role checks compare against. Individual
+// tests override this to exercise the non-admin (403) authorization path.
+const authState = { role: 'admin' };
+
 jest.mock('../../../middleware/auth', () => ({
-  authenticate: (req: any, res: any, next: any) => {
+  authenticate: (req: any, _res: any, next: any) => {
     req.user = {
       id: 'user-123',
       email: 'test@example.com',
       organizationId: 'org-123',
-      role: 'Admin',
+      role: authState.role,
     };
     next();
   },
-  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => next(),
+  authorize: (..._roles: string[]) => (_req: any, _res: any, next: any) => next(),
   AuthRequest: {},
 }));
 
@@ -521,6 +527,12 @@ function setupServiceMocks() {
 beforeEach(async () => {
   jest.clearAllMocks();
   setupServiceMocks();
+  authState.role = 'admin';
+  // Audit-log writes happen on the JIT approve/deny paths via prisma + logControllerAction.
+  prismaMock.auditLog.create.mockResolvedValue({} as never);
+  prismaMock.user.findUnique.mockResolvedValue({
+    id: 'user-123', name: 'Test User', email: 'test@example.com', role: 'admin',
+  } as never);
 
   app = express();
   app.use(express.json());
@@ -533,10 +545,13 @@ beforeEach(async () => {
   app.use(errorHandler);
 });
 
-// Helper to verify route exists (accepts 200, 201, or mocked responses)
-const expectRouteExists = (status: number) => {
-  // Routes may return 200, 201, or 500 if service not fully mocked
-  return status !== 404;
+// Asserts a route resolved successfully. All collaborating services are mocked to
+// resolve in setupServiceMocks(), so a correctly-wired route MUST return a 2xx status.
+// A 404 (route not mounted / shadowed) or 500 (unhandled service error) is a real
+// failure and must fail the test rather than being silently accepted.
+const expectRouteSucceeds = (status: number) => {
+  expect(status).toBeGreaterThanOrEqual(200);
+  expect(status).toBeLessThan(300);
 };
 
 describe('aCOS Routes Integration', () => {
@@ -545,51 +560,73 @@ describe('aCOS Routes Integration', () => {
   // ===========================================================================
   describe('Goals Management', () => {
     describe('POST /api/acos/goals', () => {
-      it('should handle create goal request', async () => {
+      it('should create a goal and return the created resource', async () => {
+        mockAcosService.createComplianceGoal.mockResolvedValue({ id: 'goal-123', name: 'Achieve SOC2 Compliance' });
+
         const response = await request(app)
           .post('/api/acos/goals')
           .send({
             name: 'Achieve SOC2 Compliance',
             targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-            framework: 'SOC2',
+            frameworkId: 'fw-soc2',
           });
 
-        expect(expectRouteExists(response.status)).toBe(true);
+        expectRouteSucceeds(response.status);
+        expect(response.body).toHaveProperty('id', 'goal-123');
+        expect(mockAcosService.createComplianceGoal).toHaveBeenCalledTimes(1);
       });
     });
 
     describe('GET /api/acos/goals', () => {
-      it('should handle list goals request', async () => {
+      it('should list goals scoped to the caller organization', async () => {
+        mockAcosService.getComplianceGoals.mockResolvedValue([{ id: 'goal-1' }]);
+
         const response = await request(app)
           .get('/api/acos/goals');
 
-        expect(expectRouteExists(response.status)).toBe(true);
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(mockAcosService.getComplianceGoals).toHaveBeenCalledWith('org-123', expect.anything());
       });
 
-      it('should accept status filter', async () => {
+      it('should pass the status filter through to the service', async () => {
+        mockAcosService.getComplianceGoals.mockResolvedValue([]);
+
         const response = await request(app)
           .get('/api/acos/goals?status=Active');
 
-        expect(expectRouteExists(response.status)).toBe(true);
+        expect(response.status).toBe(200);
+        // The status query param must reach the service layer as a filter.
+        expect(mockAcosService.getComplianceGoals).toHaveBeenCalledWith(
+          'org-123',
+          expect.objectContaining({ status: 'Active' })
+        );
       });
     });
 
     describe('GET /api/acos/goals/:goalId', () => {
-      it('should handle get goal request', async () => {
+      it('should return the requested goal', async () => {
+        mockAcosService.getComplianceGoalById.mockResolvedValue({ id: 'goal-123' });
+
         const response = await request(app)
           .get('/api/acos/goals/goal-123');
 
-        expect(expectRouteExists(response.status)).toBe(true);
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('id', 'goal-123');
       });
     });
 
     describe('PATCH /api/acos/goals/:goalId', () => {
-      it('should handle update goal request', async () => {
+      it('should update the goal and return it', async () => {
+        mockAcosService.updateComplianceGoal.mockResolvedValue({ id: 'goal-123', status: 'Completed' });
+
         const response = await request(app)
           .patch('/api/acos/goals/goal-123')
           .send({ status: 'Completed' });
 
-        expect(expectRouteExists(response.status)).toBe(true);
+        expectRouteSucceeds(response.status);
+        expect(response.body).toHaveProperty('id', 'goal-123');
+        expect(mockAcosService.updateComplianceGoal).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -765,13 +802,15 @@ describe('aCOS Routes Integration', () => {
     });
 
     describe('POST /api/acos/evidence/verify-hash', () => {
-      it('should require file and stored hash', async () => {
-        // verify-hash requires a multipart file upload and storedHash in body
+      it('should reject a request with no file and no stored hash with 400', async () => {
+        // validateMultipartBody(verifyFileHashSchema) runs before the controller and
+        // rejects the missing required storedHash deterministically with 400.
         const response = await request(app)
           .post('/api/acos/evidence/verify-hash');
 
-        // Without file and storedHash, returns 400 or 500
-        expect([400, 500]).toContain(response.status);
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('error');
+        expect(mockEvidenceTruthLayerService.verifyFileHash).not.toHaveBeenCalled();
       });
     });
 
@@ -804,16 +843,22 @@ describe('aCOS Routes Integration', () => {
   // ===========================================================================
   describe('Regulatory Intelligence Fabric', () => {
     describe('POST /api/acos/rif/ingest-regulation', () => {
-      it('should ingest a regulation', async () => {
+      it('should ingest a regulation from a JSON text body', async () => {
+        mockRegulatoryIntelligenceFabricService.ingestRegulation.mockResolvedValue({ regulationId: 'reg-123' });
+
         const response = await request(app)
           .post('/api/acos/rif/ingest-regulation')
           .send({ text: 'Sample regulation text', metadata: { name: 'Test Regulation' } });
 
-        // Route has multer middleware and may fail without multipart form
-        expect([200, 500]).toContain(response.status);
-        if (response.status === 200) {
-          expect(response.body).toHaveProperty('regulationId');
-        }
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('regulationId', 'reg-123');
+        // The text body must reach the service as the regulation input, scoped to the org.
+        expect(mockRegulatoryIntelligenceFabricService.ingestRegulation).toHaveBeenCalledWith(
+          'org-123',
+          expect.objectContaining({ text: 'Sample regulation text' }),
+          expect.anything(),
+          'user-123'
+        );
       });
     });
 
@@ -875,12 +920,15 @@ describe('aCOS Routes Integration', () => {
     });
 
     describe('GET /api/acos/tgn/frameworks/:frameworkId/trajectory', () => {
-      it('should handle compliance trajectory request', async () => {
+      it('should return the compliance trajectory for the framework', async () => {
+        mockTemporalGraphNetworkService.predictComplianceTrajectory.mockResolvedValue({ trajectory: [{ period: 'Q1', score: 80 }] });
+
         const response = await request(app)
           .get('/api/acos/tgn/frameworks/fw-123/trajectory');
 
-        // Route exists (not 404); may return 200 or 500 depending on service internals
-        expect([200, 500]).toContain(response.status);
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('trajectory');
+        expect(mockTemporalGraphNetworkService.predictComplianceTrajectory).toHaveBeenCalled();
       });
     });
 
@@ -949,12 +997,16 @@ describe('aCOS Routes Integration', () => {
     });
 
     describe('POST /api/acos/red-team/automated-scan', () => {
-      it('should handle automated scan request', async () => {
+      it('should start an automated scan and return its id', async () => {
+        mockRedTeamService.runAutomatedScan.mockResolvedValue({ scanId: 'scan-123' });
+
         const response = await request(app)
           .post('/api/acos/red-team/automated-scan')
           .send({ scope: 'full' });
 
-        expect([200, 500]).toContain(response.status);
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('scanId', 'scan-123');
+        expect(mockRedTeamService.runAutomatedScan).toHaveBeenCalled();
       });
     });
 
@@ -1101,14 +1153,16 @@ describe('aCOS Routes Integration', () => {
     });
 
     describe('POST /api/acos/vr/sessions/:sessionId/join', () => {
-      it('should handle join VR session request', async () => {
+      it('should join the VR session and return the joined state', async () => {
+        mockVrCollaborativeReviewService.joinSession.mockResolvedValue({ joined: true });
+
         const response = await request(app)
           .post('/api/acos/vr/sessions/vr-123/join')
           .send({ role: 'reviewer' });
 
-        expect([200, 500]).toContain(response.status);
-
-        expect(response.body).toHaveProperty('joined');
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('joined', true);
+        expect(mockVrCollaborativeReviewService.joinSession).toHaveBeenCalled();
       });
     });
 
@@ -1165,34 +1219,85 @@ describe('aCOS Routes Integration', () => {
     });
 
     describe('GET /api/acos/jit/requests/pending', () => {
-      it('should enforce admin role check for pending requests', async () => {
-        // Controller checks role === 'admin' (lowercase), mock uses 'Admin' (capitalized)
-        const response = await request(app)
-          .get('/api/acos/jit/requests/pending');
+      it('returns 200 with the pending requests for an admin', async () => {
+        // Canonical admin role (lowercase, per the Prisma Role enum) is the authorized case.
+        mockJitAccessService.getPendingAccessRequests.mockResolvedValue([
+          { id: 'jit-1', userId: 'user-9', status: 'Pending' },
+        ]);
 
-        // Returns 403 due to role case mismatch, or 500 if error wrapping applies
-        expect([200, 403, 500]).toContain(response.status);
+        const response = await request(app).get('/api/acos/jit/requests/pending');
+
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveLength(1);
+        expect(response.body[0]).toHaveProperty('id', 'jit-1');
+        expect(mockJitAccessService.getPendingAccessRequests).toHaveBeenCalledWith('org-123');
+      });
+
+      it('returns 403 for a non-admin caller', async () => {
+        authState.role = 'editor';
+
+        const response = await request(app).get('/api/acos/jit/requests/pending');
+
+        expect(response.status).toBe(403);
+        expect(response.body).toHaveProperty('error', 'Insufficient privileges. Admin access required.');
+        expect(mockJitAccessService.getPendingAccessRequests).not.toHaveBeenCalled();
       });
     });
 
     describe('POST /api/acos/jit/requests/:requestId/approve', () => {
-      it('should enforce admin role check for approvals', async () => {
-        const response = await request(app)
-          .post('/api/acos/jit/requests/jit-123/approve');
+      it('approves the request and returns 200 for an admin', async () => {
+        mockJitAccessService.approveAccess.mockResolvedValue({ id: 'session-1' });
 
-        // Controller's internal role check: role !== 'admin' => 403
-        expect([200, 403, 500]).toContain(response.status);
+        const response = await request(app).post('/api/acos/jit/requests/jit-123/approve');
+
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('success', true);
+        expect(mockJitAccessService.approveAccess).toHaveBeenCalledWith('jit-123', 'user-123', 'org-123');
+      });
+
+      it('returns 403 for a non-admin caller', async () => {
+        authState.role = 'viewer';
+
+        const response = await request(app).post('/api/acos/jit/requests/jit-123/approve');
+
+        expect(response.status).toBe(403);
+        expect(mockJitAccessService.approveAccess).not.toHaveBeenCalled();
       });
     });
 
     describe('POST /api/acos/jit/requests/:requestId/deny', () => {
-      it('should enforce admin role check for denials', async () => {
+      it('denies the request and returns 200 for an admin', async () => {
+        mockJitAccessService.denyAccess.mockResolvedValue({ denied: true });
+
         const response = await request(app)
           .post('/api/acos/jit/requests/jit-123/deny')
           .send({ reason: 'Insufficient justification' });
 
-        // Controller's internal role check: role !== 'admin' => 403
-        expect([200, 403, 500]).toContain(response.status);
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('success', true);
+        expect(mockJitAccessService.denyAccess).toHaveBeenCalledWith('jit-123', 'user-123', 'Insufficient justification');
+      });
+
+      it('returns 400 when an admin omits the denial reason', async () => {
+        const response = await request(app)
+          .post('/api/acos/jit/requests/jit-123/deny')
+          .send({});
+
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('error', 'Denial reason is required');
+        expect(mockJitAccessService.denyAccess).not.toHaveBeenCalled();
+      });
+
+      it('returns 403 for a non-admin caller', async () => {
+        authState.role = 'editor';
+
+        const response = await request(app)
+          .post('/api/acos/jit/requests/jit-123/deny')
+          .send({ reason: 'No' });
+
+        expect(response.status).toBe(403);
+        expect(mockJitAccessService.denyAccess).not.toHaveBeenCalled();
       });
     });
   });
@@ -1234,20 +1339,29 @@ describe('aCOS Routes Integration', () => {
     });
 
     describe('GET /api/acos/swarm-tasks/dashboard', () => {
-      it('should handle swarm dashboard request', async () => {
+      it('should return the swarm dashboard (static segment not shadowed by /:taskId)', async () => {
+        mockSwarmTaskAllocationService.getDashboard.mockReturnValue({ activeAgents: 2, queuedTasks: 1 });
+
         const response = await request(app)
           .get('/api/acos/swarm-tasks/dashboard');
 
-        expect([200, 500]).toContain(response.status);
+        expect(response.status).toBe(200);
+        // The dedicated dashboard handler must run, not getSwarmTaskStatus with taskId="dashboard".
+        expect(mockSwarmTaskAllocationService.getDashboard).toHaveBeenCalled();
+        expect(mockSwarmTaskAllocationService.getTaskStatus).not.toHaveBeenCalledWith('dashboard');
       });
     });
 
     describe('GET /api/acos/swarm-tasks/metrics', () => {
-      it('should handle swarm metrics request', async () => {
+      it('should return swarm metrics (static segment not shadowed by /:taskId)', async () => {
+        mockSwarmTaskAllocationService.getSwarmMetrics.mockReturnValue({ throughput: 5 });
+
         const response = await request(app)
           .get('/api/acos/swarm-tasks/metrics');
 
-        expect([200, 500]).toContain(response.status);
+        expect(response.status).toBe(200);
+        expect(mockSwarmTaskAllocationService.getSwarmMetrics).toHaveBeenCalled();
+        expect(mockSwarmTaskAllocationService.getTaskStatus).not.toHaveBeenCalledWith('metrics');
       });
     });
   });
@@ -1268,12 +1382,19 @@ describe('aCOS Routes Integration', () => {
     });
 
     describe('POST /api/acos/neuro-symbolic/infer-rules', () => {
-      it('should handle infer rules request', async () => {
+      it('should infer rules from patterns and return them under "inferences"', async () => {
+        mockNeuroSymbolicAIService.inferRulesFromPatterns.mockResolvedValue([{ rule: 'r1' }]);
+
         const response = await request(app)
           .post('/api/acos/neuro-symbolic/infer-rules')
           .send({ patterns: ['pattern-1', 'pattern-2'] });
 
-        expect([200, 500]).toContain(response.status);
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('inferences');
+        expect(mockNeuroSymbolicAIService.inferRulesFromPatterns).toHaveBeenCalledWith(
+          'org-123',
+          ['pattern-1', 'pattern-2']
+        );
       });
     });
 
@@ -1317,17 +1438,36 @@ describe('aCOS Routes Integration', () => {
     });
 
     describe('POST /api/acos/homomorphic/encrypt', () => {
-      it('should encrypt data', async () => {
+      it('should reject a publicKey field that the request schema does not allow with 400', async () => {
+        // encryptDataSchema permits only { data, keyId } with unknown(false); a publicKey
+        // field is rejected at validation. (Schema/controller mismatch: the controller
+        // requires publicKey, which the validation schema does not permit — a real product
+        // gap. Asserted deterministically so the build fails if either side changes silently.)
+        const response = await request(app)
+          .post('/api/acos/homomorphic/encrypt')
+          .send({ data: [1.0, 2.0, 3.0], publicKey: 'pk-123', scheme: 'CKKS' });
+
+        expect(response.status).toBe(400);
+        expect(mockHomomorphicAIService.encryptData).not.toHaveBeenCalled();
+      });
+
+      it('should reject a schema-valid body that lacks the controller-required publicKey with 400', async () => {
+        // { data, keyId } passes validation but the controller still requires publicKey,
+        // returning a deterministic 400 (no longer masked as a 500 by the catch block).
         const response = await request(app)
           .post('/api/acos/homomorphic/encrypt')
           .send({ data: [1.0, 2.0, 3.0], keyId: 'pk-123' });
 
-        expect([200, 500]).toContain(response.status);
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('error', 'Public key is required');
+        expect(mockHomomorphicAIService.encryptData).not.toHaveBeenCalled();
       });
     });
 
     describe('POST /api/acos/homomorphic/linear-regression', () => {
-      it('should handle encrypted linear regression request', async () => {
+      it('should run encrypted linear regression with the supplied keys', async () => {
+        mockHomomorphicAIService.encryptedLinearRegression.mockResolvedValue({ result: { ciphertext: 'enc-result' } });
+
         const response = await request(app)
           .post('/api/acos/homomorphic/linear-regression')
           .send({
@@ -1337,12 +1477,16 @@ describe('aCOS Routes Integration', () => {
             relinKeys: 'relin-123',
           });
 
-        expect([200, 500]).toContain(response.status);
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('result');
+        expect(mockHomomorphicAIService.encryptedLinearRegression).toHaveBeenCalled();
       });
     });
 
     describe('POST /api/acos/homomorphic/statistics', () => {
-      it('should handle encrypted statistics request', async () => {
+      it('should compute encrypted statistics with the supplied keys', async () => {
+        mockHomomorphicAIService.encryptedStatistics.mockResolvedValue({ stats: { mean: { ciphertext: 'enc' } } });
+
         const response = await request(app)
           .post('/api/acos/homomorphic/statistics')
           .send({
@@ -1351,7 +1495,9 @@ describe('aCOS Routes Integration', () => {
             relinKeys: 'relin-123',
           });
 
-        expect([200, 500]).toContain(response.status);
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('stats');
+        expect(mockHomomorphicAIService.encryptedStatistics).toHaveBeenCalled();
       });
     });
   });

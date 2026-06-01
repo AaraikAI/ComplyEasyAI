@@ -519,10 +519,27 @@ class DemoController {
   // ============================================================================
 
   /**
+   * Escape values that originate from untrusted submitter input before
+   * interpolating them into an HTML email body, so markup/links cannot be
+   * injected into the internal notification.
+   */
+  private escapeHtml(value: unknown): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string)
+    );
+  }
+
+  /**
    * Send demo request notification email to contact@complyeasyai.com
    */
   private async sendDemoRequestEmail(demoRequest: any) {
     try {
+      const e = (value: unknown) => this.escapeHtml(value);
       const emailHtml = `
         <!DOCTYPE html>
         <html>
@@ -548,95 +565,95 @@ class DemoController {
               
               <div class="info-row">
                 <div class="label">Name:</div>
-                <div class="value">${demoRequest.firstName} ${demoRequest.lastName}</div>
+                <div class="value">${e(demoRequest.firstName)} ${e(demoRequest.lastName)}</div>
               </div>
-              
+
               <div class="info-row">
                 <div class="label">Email:</div>
-                <div class="value">${demoRequest.email}</div>
+                <div class="value">${e(demoRequest.email)}</div>
               </div>
-              
+
               <div class="info-row">
                 <div class="label">Company:</div>
-                <div class="value">${demoRequest.company}</div>
+                <div class="value">${e(demoRequest.company)}</div>
               </div>
-              
+
               ${demoRequest.jobTitle ? `
               <div class="info-row">
                 <div class="label">Job Title:</div>
-                <div class="value">${demoRequest.jobTitle}</div>
+                <div class="value">${e(demoRequest.jobTitle)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.phone ? `
               <div class="info-row">
                 <div class="label">Phone:</div>
-                <div class="value">${demoRequest.phone}</div>
+                <div class="value">${e(demoRequest.phone)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.companySize ? `
               <div class="info-row">
                 <div class="label">Company Size:</div>
-                <div class="value">${demoRequest.companySize}</div>
+                <div class="value">${e(demoRequest.companySize)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.industry ? `
               <div class="info-row">
                 <div class="label">Industry:</div>
-                <div class="value">${demoRequest.industry}</div>
+                <div class="value">${e(demoRequest.industry)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.country ? `
               <div class="info-row">
                 <div class="label">Country:</div>
-                <div class="value">${demoRequest.country}</div>
+                <div class="value">${e(demoRequest.country)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.interestedTier ? `
               <div class="info-row">
                 <div class="label">Interested Plan:</div>
-                <div class="value">${demoRequest.interestedTier}</div>
+                <div class="value">${e(demoRequest.interestedTier)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.currentChallenge ? `
               <div class="info-row">
                 <div class="label">Main Challenge:</div>
-                <div class="value">${demoRequest.currentChallenge}</div>
+                <div class="value">${e(demoRequest.currentChallenge)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.howDidYouHear ? `
               <div class="info-row">
                 <div class="label">How did they hear about us:</div>
-                <div class="value">${demoRequest.howDidYouHear}</div>
+                <div class="value">${e(demoRequest.howDidYouHear)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.message ? `
               <div class="info-row">
                 <div class="label">Additional Message:</div>
-                <div class="value">${demoRequest.message}</div>
+                <div class="value">${e(demoRequest.message)}</div>
               </div>
               ` : ''}
-              
+
               <div class="info-row">
                 <div class="label">Source:</div>
-                <div class="value">${demoRequest.source || 'Unknown'}</div>
+                <div class="value">${e(demoRequest.source || 'Unknown')}</div>
               </div>
-              
+
               <div class="info-row">
                 <div class="label">Request ID:</div>
-                <div class="value">${demoRequest.id}</div>
+                <div class="value">${e(demoRequest.id)}</div>
               </div>
-              
+
               <div class="info-row">
                 <div class="label">Submitted At:</div>
-                <div class="value">${new Date(demoRequest.createdAt).toLocaleString()}</div>
+                <div class="value">${e(new Date(demoRequest.createdAt).toLocaleString())}</div>
               </div>
               
               <div class="footer">

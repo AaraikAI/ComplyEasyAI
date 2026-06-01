@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ComplianceFramework, RiskItem } from './types';
+import { ComplianceFramework, RiskItem, ComplianceStatus } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -14,7 +14,7 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
-import { ROUTES } from './routes/routeConfig';
+import { ROUTES, viewToPath } from './routes/routeConfig';
 import { api } from './services/api';
 import { Toaster } from 'sonner';
 import { toast } from 'sonner';
@@ -197,15 +197,23 @@ const MainApp: React.FC = () => {
       toast.warning(getUpgradeMessage(user?.organization?.plan, 'maxFrameworks', frameworks.length) || 'Framework limit reached. Upgrade in Settings.');
       return;
     }
-    const newFw: ComplianceFramework = { id: 'temp', name, region: region || '', status: 'In Review', progress: 0, nextAuditDate: '2025-01-01' } as ComplianceFramework;
-    setFrameworks([...frameworks, newFw]);
-    await api.frameworks.create(newFw);
-    loadData();
+    try {
+      await api.frameworks.create({
+        name,
+        region: region || '',
+        status: ComplianceStatus.IN_REVIEW,
+        progress: 0,
+        nextAuditDate: '2025-01-01',
+      });
+      await loadData();
+    } catch (error) {
+      logger.error('Failed to add framework:', error);
+      toast.error('Failed to add framework. Please try again.');
+    }
   };
 
   // Backward-compatible onNavigate for components that still use it
   const handleNavigate = (view: string) => {
-    const { viewToPath } = require('./routes/routeConfig');
     navigate(viewToPath(view));
   };
 

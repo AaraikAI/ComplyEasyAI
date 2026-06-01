@@ -42,7 +42,7 @@ import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
-import { connect, Gateway, Network, Contract } from '@hyperledger/fabric-gateway';
+import { connect, Gateway, Network, Contract, signers } from '@hyperledger/fabric-gateway';
 import { Wallets } from 'fabric-network';
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
@@ -210,8 +210,18 @@ class BlockchainService {
    */
   async initialize(): Promise<void> {
     try {
-      // Initialize Ethereum provider
-      const ethereumRpc = process.env.ETHEREUM_RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/your-api-key';
+      // Initialize Ethereum provider.
+      // Require an explicit RPC endpoint in production (mirrors the
+      // COMPLIANCE_CONTRACT_BYTECODE guard below) rather than constructing a
+      // provider against a non-functional default that fails on first use.
+      let ethereumRpc = process.env.ETHEREUM_RPC_URL;
+      if (!ethereumRpc) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new AppError('ETHEREUM_RPC_URL environment variable required in production', 500);
+        }
+        // Public, keyless gateway for local/dev use only.
+        ethereumRpc = 'https://ethereum-rpc.publicnode.com';
+      }
       this.ethereumProvider = new ethers.JsonRpcProvider(ethereumRpc);
 
       // Initialize Polygon provider
@@ -449,14 +459,14 @@ class BlockchainService {
                 key: privateKeyPem,
                 format: 'pem',
               });
-              // Sign the digest using ECDSA with P-256 (prime256v1) curve
-              // Fabric expects a raw signature (not DER-encoded), so we use IEEE P1363 format
-              const sign = crypto.createSign('SHA256');
-              sign.update(Buffer.from(digest));
-              sign.end();
-              const derSignature = sign.sign(privateKey);
-              // Return DER-encoded signature as Uint8Array (fabric-gateway handles decoding)
-              return new Uint8Array(derSignature);
+              // Delegate to the fabric-gateway P-256/SHA-256 signer. The callback
+              // receives an already-computed digest; this signer signs it directly
+              // (no re-hashing) and emits a low-S canonical DER signature, which is
+              // the encoding Fabric's MSP verifies. A hand-rolled crypto.createSign
+              // would both re-hash the digest and skip low-S normalization, causing
+              // the peer to reject otherwise-valid signatures.
+              const sign = signers.newPrivateKeySigner(privateKey);
+              return await sign(digest);
             } catch (err) {
               logger.error('[Blockchain] ECDSA signing failed', err);
               throw new AppError(`Hyperledger signer failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 500);

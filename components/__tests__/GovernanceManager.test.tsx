@@ -26,6 +26,8 @@ vi.mock('@/services/api', () => ({
 import GovernanceManager from '../GovernanceManager';
 
 describe('GovernanceManager', () => {
+  const onBack = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
     apiGet.mockResolvedValue({ data: [] });
@@ -35,60 +37,71 @@ describe('GovernanceManager', () => {
   });
 
   it('renders without crashing', () => {
-    render(<GovernanceManager />);
-    expect(screen.queryAllByText(/Governance|governance|DPO|Committee/i).length).toBeGreaterThan(0);
+    render(<GovernanceManager onBack={onBack} />);
+    // The page title is always rendered.
+    expect(screen.getByRole('heading', { name: /Governance Manager/i })).toBeInTheDocument();
   });
 
   it('shows tab navigation', () => {
-    render(<GovernanceManager />);
-    expect(screen.queryAllByText(/DPO|Data Protection Officer/i).length).toBeGreaterThan(0);
+    render(<GovernanceManager onBack={onBack} />);
+    // The three top-level tabs render unconditionally.
+    expect(screen.getByRole('button', { name: /DPO Management/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Committees/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Escalation Paths/i })).toBeInTheDocument();
   });
 
-  it('displays stat cards', () => {
-    render(<GovernanceManager />);
-    const statCards = document.querySelectorAll('[class*="rounded-xl"]');
-    expect(statCards.length).toBeGreaterThan(0);
+  it('displays the DPO profile by default', () => {
+    render(<GovernanceManager onBack={onBack} />);
+    // DPO tab is active on mount and shows the DPO designation + sub-tabs.
+    expect(screen.getByText('Data Protection Officer')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Profile$/i })).toBeInTheDocument();
   });
 
-  it('shows committees section', () => {
-    render(<GovernanceManager />);
-    const committeeTab = screen.queryAllByText(/Committee|committee/i)[0] ?? null;
-    if (committeeTab) fireEvent.click(committeeTab);
+  it('shows committees section when the Committees tab is opened', () => {
+    render(<GovernanceManager onBack={onBack} />);
+    fireEvent.click(screen.getByRole('button', { name: /Committees/i }));
+    // The committees overview renders the consolidated members table.
+    expect(screen.getByText('All Governance Members')).toBeInTheDocument();
   });
 
-  it('shows meetings section', () => {
-    render(<GovernanceManager />);
-    const meetingsTab = screen.queryAllByText(/Meeting|meeting/i)[0] ?? null;
-    if (meetingsTab) fireEvent.click(meetingsTab);
+  it('shows a committee detail with members and meetings sub-tabs', () => {
+    render(<GovernanceManager onBack={onBack} />);
+    fireEvent.click(screen.getByRole('button', { name: /Committees/i }));
+    // Selecting a committee card opens its detail with sub-tabs.
+    fireEvent.click(screen.getByText('Privacy Committee'));
+    expect(screen.getByRole('button', { name: /^Members$/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Meetings$/i }));
+    expect(screen.getByText(/Next Meeting:/i)).toBeInTheDocument();
   });
 
-  it('opens create DPO form', () => {
-    render(<GovernanceManager />);
-    const addBtn = screen.queryAllByText(/Add DPO|New DPO|Create|Add/i)[0] ?? null;
-    if (addBtn) fireEvent.click(addBtn);
+  it('opens the create DPO task form', () => {
+    render(<GovernanceManager onBack={onBack} />);
+    // Navigate to the DPO Tasks sub-tab and open the add-task modal.
+    fireEvent.click(screen.getByRole('button', { name: /^Tasks$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Add Task/i }));
+    expect(screen.getByRole('heading', { name: /New DPO Task/i })).toBeInTheDocument();
   });
 
-  it('searches DPO profiles', () => {
-    render(<GovernanceManager />);
-    const searchInput = screen.queryByPlaceholderText(/search/i);
-    if (searchInput) fireEvent.change(searchInput, { target: { value: 'privacy' } });
+  it('shows decision records for a committee', () => {
+    render(<GovernanceManager onBack={onBack} />);
+    fireEvent.click(screen.getByRole('button', { name: /Committees/i }));
+    fireEvent.click(screen.getByText('Privacy Committee'));
+    fireEvent.click(screen.getByRole('button', { name: /^Decisions$/i }));
+    // The seeded Privacy Committee has a recorded decision.
+    expect(screen.getByText('AI Chatbot DPIA Approval')).toBeInTheDocument();
   });
 
-  it('shows decision records tab', () => {
-    render(<GovernanceManager />);
-    const decisionTab = screen.queryAllByText(/Decision|decision/i)[0] ?? null;
-    if (decisionTab) fireEvent.click(decisionTab);
+  it('shows the DPO activity log', () => {
+    render(<GovernanceManager onBack={onBack} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Activity$/i }));
+    expect(screen.getByRole('heading', { name: /DPO Activity Log/i })).toBeInTheDocument();
   });
 
-  it('shows audit log tab', () => {
-    render(<GovernanceManager />);
-    const auditTab = screen.queryAllByText(/Audit|Log|audit|log/i)[0] ?? null;
-    if (auditTab) fireEvent.click(auditTab);
-  });
-
-  it('renders DPO detail view', () => {
-    render(<GovernanceManager />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) fireEvent.click(rows[0]);
+  it('renders the escalation paths tab', () => {
+    render(<GovernanceManager onBack={onBack} />);
+    fireEvent.click(screen.getByRole('button', { name: /Escalation Paths/i }));
+    // The escalation list shows the seeded Data Breach path.
+    expect(screen.getByText('Data Breach Escalation')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /New Path/i })).toBeInTheDocument();
   });
 });

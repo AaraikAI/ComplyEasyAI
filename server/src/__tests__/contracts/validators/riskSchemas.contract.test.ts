@@ -272,8 +272,8 @@ describe('createRiskSchema contract', () => {
 // updateRiskSchema
 // ---------------------------------------------------------------------------
 describe('updateRiskSchema contract', () => {
-  // updateRiskSchema = createRiskSchema.min(1), so title is still required
-  // but .min(1) means the payload must have at least 1 key present
+  // updateRiskSchema = createRiskSchema.fork(['title'], optional).min(1)
+  // so title is optional on update; payload must have at least 1 key present
   it('should accept payload with title and optional fields', () => {
     const { error } = updateRiskSchema.validate(
       { title: 'Updated risk', severity: 'High' },
@@ -287,13 +287,13 @@ describe('updateRiskSchema contract', () => {
     expect(error).toBeDefined();
   });
 
-  it('should still require title (inherited from createRiskSchema)', () => {
-    const { error } = updateRiskSchema.validate(
+  it('should allow partial update without title (title forked to optional)', () => {
+    const { error, value } = updateRiskSchema.validate(
       { status: 'Closed' },
       { abortEarly: false },
     );
-    expect(error).toBeDefined();
-    expect(error!.details.some((d) => d.path.includes('title'))).toBe(true);
+    expect(error).toBeUndefined();
+    expect(value.status).toBe('Closed');
   });
 
   it('should validate field constraints the same as createRiskSchema', () => {

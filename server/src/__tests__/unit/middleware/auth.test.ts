@@ -369,9 +369,11 @@ describe('Auth Middleware', () => {
 
       await (authenticate as Function)(req, res, next);
 
+      // jwt.verify must pin the algorithm (HS256) to block alg-downgrade / "none" attacks (COV-9).
       expect(mockVerify).toHaveBeenCalledWith(
         specificToken,
-        'test-jwt-secret-key-for-testing-purposes-only-min-32-chars'
+        'test-jwt-secret-key-for-testing-purposes-only-min-32-chars',
+        { algorithms: ['HS256'] }
       );
     });
   });
@@ -540,9 +542,11 @@ describe('Auth Middleware', () => {
 
       const result = verifyRefreshToken('valid-refresh-token');
 
+      // The refresh-token verify must also pin algorithms to HS256 (COV-9).
       expect(mockVerify).toHaveBeenCalledWith(
         'valid-refresh-token',
-        'test-refresh-secret-key-for-testing-purposes-only-min-32-chars'
+        'test-refresh-secret-key-for-testing-purposes-only-min-32-chars',
+        { algorithms: ['HS256'] }
       );
       expect(result).toBe('user-123');
     });

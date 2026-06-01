@@ -188,6 +188,16 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
   const [retention, setRetention] = useState<RetentionSchedule[]>([]);
   const [transfers, setTransfers] = useState<CrossBorderTransfer[]>([]);
   const [suppression, setSuppression] = useState<SuppressionEntry[]>([]);
+  const [avgResponseDays, setAvgResponseDays] = useState<number | null>(null);
+  const [lastSync, setLastSync] = useState<number | null>(null);
+  const [syncTick, forceSyncTick] = useState(0);
+  const [actionBusyId, setActionBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [assignTarget, setAssignTarget] = useState<DSARRequest | null>(null);
+  const [assignName, setAssignName] = useState('');
+  const [viewDSAR, setViewDSAR] = useState<DSARRequest | null>(null);
+  const [showAddTransfer, setShowAddTransfer] = useState(false);
+  const [newTransfer, setNewTransfer] = useState({ transferName: '', sourceCountry: '', destinationCountry: '', legalMechanism: 'SCC' });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -202,6 +212,10 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
         api.privacy.getSuppressionList(),
       ]);
       const failedApis: string[] = [];
+      if (dashRes.status === 'fulfilled') {
+        const d: any = dashRes.value;
+        if (d && typeof d.avgResponseTime === 'number') setAvgResponseDays(d.avgResponseTime);
+      } else { failedApis.push('Dashboard'); }
       if (dsarRes.status === 'fulfilled') {
         const d = dsarRes.value;
         if (Array.isArray(d)) setDsars(d);
@@ -230,6 +244,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       if (failedApis.length > 0) {
         setLoadError(`Failed to load: ${failedApis.join(', ')}. Showing available data only.`);
       }
+      setLastSync(Date.now());
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
       logger.error('PrivacyManagementPlatform data load error:', err);
@@ -239,6 +254,79 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Refresh the relative "last sync" label once a minute.
+  useEffect(() => {
+    const interval = setInterval(() => forceSyncTick(n => n + 1), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const lastSyncLabel = useMemo(() => {
+    if (lastSync == null) return null;
+    const diffMin = Math.floor((Date.now() - lastSync) / 60_000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin === 1) return '1 min ago';
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    return diffHr === 1 ? '1 hour ago' : `${diffHr} hours ago`;
+  }, [lastSync, syncTick]);
+
+  // ── DSAR / Retention / Transfer Actions ─────────────────────────────────
+
+  const runAction = useCallback(async (id: string, label: string, fn: () => Promise<unknown>) => {
+    setActionBusyId(id);
+    setActionError(null);
+    try {
+      await fn();
+      await loadData();
+    } catch (err) {
+      logger.error(`Privacy ${label} action failed:`, err);
+      setActionError(`Could not ${label}. Please try again.`);
+    } finally {
+      setActionBusyId(null);
+    }
+  }, [loadData]);
+
+  const handleVerifyIdentity = useCallback((d: DSARRequest) => {
+    runAction(d.id, 'verify identity', () => api.privacy.verifyDSARIdentity(d.id, { verificationMethod: 'manual review' }));
+  }, [runAction]);
+
+  const handleCompleteDSAR = useCallback((d: DSARRequest) => {
+    runAction(d.id, 'mark complete', () => api.privacy.completeDSAR(d.id));
+  }, [runAction]);
+
+  const submitAssign = useCallback(() => {
+    if (!assignTarget || !assignName.trim()) return;
+    const target = assignTarget;
+    const name = assignName.trim();
+    setAssignTarget(null);
+    setAssignName('');
+    runAction(target.id, 'assign request', () => api.privacy.updateDSAR(target.id, { assignedTo: name }));
+  }, [assignTarget, assignName, runAction]);
+
+  const handleRunPurge = useCallback((r: RetentionSchedule) => {
+    runAction(r.id, 'run purge', () => api.privacy.runRetentionJob(r.id));
+  }, [runAction]);
+
+  const handleReviewSchedule = useCallback((r: RetentionSchedule) => {
+    runAction(r.id, 'review schedule', () => api.privacy.updateRetention(r.id, { status: 'Active' }));
+  }, [runAction]);
+
+  const submitAddTransfer = useCallback(() => {
+    if (!newTransfer.transferName.trim()) return;
+    // Map the transfer form to the SCC template fields the backend persists.
+    const payload = {
+      name: newTransfer.transferName.trim(),
+      templateType: newTransfer.legalMechanism,
+      dataExporter: newTransfer.sourceCountry,
+      dataImporter: newTransfer.destinationCountry,
+      transferDescription: `${newTransfer.sourceCountry} → ${newTransfer.destinationCountry} (${newTransfer.legalMechanism})`,
+      status: 'Draft',
+    };
+    setShowAddTransfer(false);
+    setNewTransfer({ transferName: '', sourceCountry: '', destinationCountry: '', legalMechanism: 'SCC' });
+    runAction('new-transfer', 'add transfer', () => api.privacy.createSCCTIA(payload));
+  }, [newTransfer, runAction]);
 
   // ── Computed Stats ──────────────────────────────────────────────────────
 
@@ -250,8 +338,8 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       if (d.status === 'Completed' || d.status === 'Rejected') return false;
       return new Date(d.deadline) < new Date();
     }).length;
-    return { total, active, completed, overdue, avgResponseDays: 12.4 };
-  }, [dsars]);
+    return { total, active, completed, overdue, avgResponseDays };
+  }, [dsars, avgResponseDays]);
 
   const consentStats = useMemo(() => {
     if (consent.length === 0) return { avgGranted: '0', avgWithdrawn: '0', totalPurposes: 0 };
@@ -295,7 +383,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       const matchesChannel = optOutChannelFilter === 'All' || s.channels.includes(optOutChannelFilter);
       return matchesSearch && matchesChannel;
     });
-  }, [searchQuery, optOutChannelFilter]);
+  }, [suppression, searchQuery, optOutChannelFilter]);
 
   // ── Overview Tab ────────────────────────────────────────────────────────
 
@@ -313,7 +401,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <div className="flex items-center gap-2 text-cyan-400 text-sm mb-1">
             <Clock className="w-4 h-4" /> Avg Response Time
           </div>
-          <div className="text-3xl font-bold text-cyan-400">{dsarStats.avgResponseDays}</div>
+          <div className="text-3xl font-bold text-cyan-400">{dsarStats.avgResponseDays != null ? dsarStats.avgResponseDays : '—'}</div>
           <div className="text-xs text-slate-500 mt-1">days (30-day deadline)</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
@@ -540,21 +628,21 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         {d.status === 'Received' && (
-                          <button className="p-1 text-cyan-400 hover:bg-cyan-500/20 rounded" title="Verify Identity">
+                          <button onClick={() => handleVerifyIdentity(d)} disabled={actionBusyId === d.id} className="p-1 text-cyan-400 hover:bg-cyan-500/20 rounded disabled:opacity-40" title="Verify Identity">
                             <UserCheck className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {(d.status === 'Received' || d.status === 'Identity Verified') && d.assignedTo === 'Unassigned' && (
-                          <button className="p-1 text-blue-400 hover:bg-blue-500/20 rounded" title="Assign">
+                          <button onClick={() => { setAssignTarget(d); setAssignName(''); }} disabled={actionBusyId === d.id} className="p-1 text-blue-400 hover:bg-blue-500/20 rounded disabled:opacity-40" title="Assign">
                             <Users className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {d.status === 'In Progress' && (
-                          <button className="p-1 text-green-400 hover:bg-green-500/20 rounded" title="Mark Complete">
+                          <button onClick={() => handleCompleteDSAR(d)} disabled={actionBusyId === d.id} className="p-1 text-green-400 hover:bg-green-500/20 rounded disabled:opacity-40" title="Mark Complete">
                             <CheckCircle className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        <button className="p-1 text-slate-400 hover:bg-slate-700 rounded" title="View Details">
+                        <button onClick={() => setViewDSAR(d)} className="p-1 text-slate-400 hover:bg-slate-700 rounded" title="View Details">
                           <Eye className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -841,18 +929,20 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       {r.status === 'Active' && (
-                        <button className="p-1 text-red-400 hover:bg-red-500/20 rounded" title="Run Purge">
+                        <button
+                          onClick={() => { if (window.confirm(`Run purge for "${r.dataCategory}"? This enforces the retention policy.`)) handleRunPurge(r); }}
+                          disabled={actionBusyId === r.id}
+                          className="p-1 text-red-400 hover:bg-red-500/20 rounded disabled:opacity-40"
+                          title="Run Purge"
+                        >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                       {r.status === 'Expired' && (
-                        <button className="p-1 text-yellow-400 hover:bg-yellow-500/20 rounded" title="Review Schedule">
+                        <button onClick={() => handleReviewSchedule(r)} disabled={actionBusyId === r.id} className="p-1 text-yellow-400 hover:bg-yellow-500/20 rounded disabled:opacity-40" title="Review Schedule">
                           <RefreshCw className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      <button className="p-1 text-slate-400 hover:bg-slate-700 rounded" title="View Details">
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -934,7 +1024,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
           <h3 className="text-sm font-medium text-white">{t('privacy.crossBorderTransfers')}</h3>
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs transition-colors">
+          <button onClick={() => setShowAddTransfer(true)} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs transition-colors">
             <Plus className="w-3.5 h-3.5" /> Add Transfer
           </button>
         </div>
@@ -1129,7 +1219,112 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
     );
   };
 
+  // ── Action Modals ───────────────────────────────────────────────────────
+
+  const renderAssignModal = () => {
+    if (!assignTarget) return null;
+    return (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-sm mx-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-white">Assign Request {assignTarget.id}</h3>
+            <button onClick={() => setAssignTarget(null)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+          </div>
+          <label className="block text-sm text-slate-400 mb-1">Assignee</label>
+          <input
+            type="text"
+            autoFocus
+            value={assignName}
+            onChange={e => setAssignName(e.target.value)}
+            placeholder="Team member name"
+            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <div className="flex gap-3 justify-end pt-4">
+            <button onClick={() => setAssignTarget(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">{t('common.cancel')}</button>
+            <button onClick={submitAssign} disabled={!assignName.trim()} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm rounded-lg transition-colors">Assign</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderViewDSARModal = () => {
+    if (!viewDSAR) return null;
+    const d = viewDSAR;
+    return (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-lg mx-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-white">Request {d.id}</h3>
+            <button onClick={() => setViewDSAR(null)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-slate-400">{t('common.type')}</span><span className="text-slate-200">{d.type}</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">{t('dpia.dataSubjects')}</span><span className="text-slate-200">{d.subjectName}</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Email</span><span className="text-slate-200">{d.subjectEmail}</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">{t('common.status')}</span><span className="text-slate-200">{d.status}</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">{t('common.assignee')}</span><span className="text-slate-200">{d.assignedTo}</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">{t('common.priority')}</span><span className="text-slate-200">{d.priority}</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Submitted</span><span className="text-slate-200">{d.submissionDate}</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Deadline</span><span className="text-slate-200">{d.deadline}</span></div>
+            {d.description && <div className="pt-2 text-slate-300">{d.description}</div>}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAddTransferModal = () => {
+    if (!showAddTransfer) return null;
+    return (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-lg mx-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-white">Add Cross-Border Transfer</h3>
+            <button onClick={() => setShowAddTransfer(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Transfer Name</label>
+              <input type="text" value={newTransfer.transferName} onChange={e => setNewTransfer(v => ({ ...v, transferName: e.target.value }))} placeholder="Transfer name" className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Source Country</label>
+                <input type="text" value={newTransfer.sourceCountry} onChange={e => setNewTransfer(v => ({ ...v, sourceCountry: e.target.value }))} placeholder="e.g. Germany" className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Destination Country</label>
+                <input type="text" value={newTransfer.destinationCountry} onChange={e => setNewTransfer(v => ({ ...v, destinationCountry: e.target.value }))} placeholder="e.g. United States" className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Legal Mechanism</label>
+              <select value={newTransfer.legalMechanism} onChange={e => setNewTransfer(v => ({ ...v, legalMechanism: e.target.value }))} className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                {(['SCC', 'BCR', 'Adequacy Decision', 'Derogation'] as const).map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3 justify-end pt-2">
+              <button onClick={() => setShowAddTransfer(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">{t('common.cancel')}</button>
+              <button onClick={submitAddTransfer} disabled={!newTransfer.transferName.trim()} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm rounded-lg transition-colors">{t('common.create')}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ── Content Router ──────────────────────────────────────────────────────
+
+  const renderActionError = () => actionError ? (
+    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+        <span className="text-sm text-red-300">{actionError}</span>
+      </div>
+      <button onClick={() => setActionError(null)} className="text-red-300/70 hover:text-red-300"><X className="w-4 h-4" /></button>
+    </div>
+  ) : null;
 
   const renderErrorBanner = () => loadError ? (
     <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
@@ -1177,9 +1372,9 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Last sync: 3 min ago</span>
-              <button className="p-2 text-slate-400 hover:text-white transition-colors" title="Refresh">
-                <RefreshCw className="w-4 h-4" />
+              {lastSyncLabel && <span className="text-xs text-slate-500">Last sync: {lastSyncLabel}</span>}
+              <button onClick={loadData} disabled={loading} className="p-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50" title="Refresh">
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
@@ -1205,10 +1400,14 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
         </div>
 
         {renderErrorBanner()}
+        {renderActionError()}
         {renderContent()}
       </div>
 
       {renderCreateDSARModal()}
+      {renderAssignModal()}
+      {renderViewDSARModal()}
+      {renderAddTransferModal()}
     </div>
   );
 };

@@ -15,11 +15,13 @@
  */
 
 import { Request, Response, RequestHandler } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import { logControllerAction } from '../services/auditLogService';
+import { assertOrgOwned, assertOwnedByOrg } from '../utils/orgOwnership';
 
 // Helper to get org ID from request
 const getOrgId = (req: Request): string => (req as AuthRequest).user!.organizationId;
@@ -51,9 +53,12 @@ export const createGovernanceBody: RequestHandler = async (req, res) => {
 
 export const updateGovernanceBody: RequestHandler = async (req, res) => {
   const { id } = req.params;
+  await assertOrgOwned('governanceBody', id, getOrgId(req));
+  const data = { ...req.body };
+  delete data.organizationId;
   const body = await prisma.governanceBody.update({
     where: { id },
-    data: req.body,
+    data,
     include: { meetings: true, decisions: true, escalationPaths: true },
   });
   await logControllerAction(req, 'governance.body_updated', { ip: req.ip });
@@ -61,6 +66,7 @@ export const updateGovernanceBody: RequestHandler = async (req, res) => {
 };
 
 export const deleteGovernanceBody: RequestHandler = async (req, res) => {
+  await assertOrgOwned('governanceBody', req.params.id, getOrgId(req));
   await prisma.governanceBody.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'governance.body_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -70,6 +76,7 @@ export const deleteGovernanceBody: RequestHandler = async (req, res) => {
 export const createMeeting: RequestHandler = async (req, res) => {
   const { governanceBodyId, title, date, duration, agenda, attendees } = req.body;
   if (!governanceBodyId || !title || !date) throw new AppError('governanceBodyId, title, and date are required', 400);
+  await assertOrgOwned('governanceBody', governanceBodyId, getOrgId(req));
   const meeting = await prisma.governanceMeeting.create({
     data: { governanceBodyId, title, date: new Date(date), duration, agenda, attendees, status: 'scheduled' },
   });
@@ -78,14 +85,17 @@ export const createMeeting: RequestHandler = async (req, res) => {
 };
 
 export const updateMeeting: RequestHandler = async (req, res) => {
+  await assertOwnedByOrg('governanceMeeting', req.params.id, { governanceBody: { organizationId: getOrgId(req) } });
   const data = { ...req.body };
   if (data.date) data.date = new Date(data.date);
+  delete data.governanceBodyId;
   const meeting = await prisma.governanceMeeting.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'governance.meeting_updated', { ip: req.ip });
   res.json(meeting);
 };
 
 export const deleteMeeting: RequestHandler = async (req, res) => {
+  await assertOwnedByOrg('governanceMeeting', req.params.id, { governanceBody: { organizationId: getOrgId(req) } });
   await prisma.governanceMeeting.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'governance.meeting_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -95,6 +105,7 @@ export const deleteMeeting: RequestHandler = async (req, res) => {
 export const createDecision: RequestHandler = async (req, res) => {
   const { governanceBodyId, title, description, decisionType } = req.body;
   if (!governanceBodyId || !title || !decisionType) throw new AppError('governanceBodyId, title, and decisionType are required', 400);
+  await assertOrgOwned('governanceBody', governanceBodyId, getOrgId(req));
   const decision = await prisma.governanceDecision.create({
     data: { governanceBodyId, title, description, decisionType, status: 'proposed', ...req.body },
   });
@@ -103,9 +114,11 @@ export const createDecision: RequestHandler = async (req, res) => {
 };
 
 export const updateDecision: RequestHandler = async (req, res) => {
+  await assertOwnedByOrg('governanceDecision', req.params.id, { governanceBody: { organizationId: getOrgId(req) } });
   const data = { ...req.body };
   if (data.effectiveDate) data.effectiveDate = new Date(data.effectiveDate);
   if (data.reviewDate) data.reviewDate = new Date(data.reviewDate);
+  delete data.governanceBodyId;
   const decision = await prisma.governanceDecision.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'governance.decision_updated', { ip: req.ip });
   res.json(decision);
@@ -115,6 +128,7 @@ export const updateDecision: RequestHandler = async (req, res) => {
 export const createEscalationPath: RequestHandler = async (req, res) => {
   const { governanceBodyId, name, triggerCriteria, levels } = req.body;
   if (!governanceBodyId || !name) throw new AppError('governanceBodyId and name are required', 400);
+  await assertOrgOwned('governanceBody', governanceBodyId, getOrgId(req));
   const path = await prisma.escalationPath.create({
     data: { governanceBodyId, name, triggerCriteria: triggerCriteria || [], levels: levels || [] },
   });
@@ -123,12 +137,16 @@ export const createEscalationPath: RequestHandler = async (req, res) => {
 };
 
 export const updateEscalationPath: RequestHandler = async (req, res) => {
-  const path = await prisma.escalationPath.update({ where: { id: req.params.id }, data: req.body });
+  await assertOwnedByOrg('escalationPath', req.params.id, { governanceBody: { organizationId: getOrgId(req) } });
+  const data = { ...req.body };
+  delete data.governanceBodyId;
+  const path = await prisma.escalationPath.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'governance.escalation_path_updated', { ip: req.ip });
   res.json(path);
 };
 
 export const deleteEscalationPath: RequestHandler = async (req, res) => {
+  await assertOwnedByOrg('escalationPath', req.params.id, { governanceBody: { organizationId: getOrgId(req) } });
   await prisma.escalationPath.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'governance.escalation_path_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -194,6 +212,7 @@ export const getBreachIncident: RequestHandler = async (req, res) => {
 };
 
 export const updateBreachIncident: RequestHandler = async (req, res) => {
+  await assertOrgOwned('breachIncident', req.params.id, getOrgId(req));
   const data = { ...req.body };
   if (data.discoveryDate) data.discoveryDate = new Date(data.discoveryDate);
   delete data.organizationId;
@@ -207,6 +226,7 @@ export const updateBreachIncident: RequestHandler = async (req, res) => {
 };
 
 export const deleteBreachIncident: RequestHandler = async (req, res) => {
+  await assertOrgOwned('breachIncident', req.params.id, getOrgId(req));
   await prisma.breachIncident.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'breach.incident_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -216,6 +236,7 @@ export const deleteBreachIncident: RequestHandler = async (req, res) => {
 export const createBreachNotification: RequestHandler = async (req, res) => {
   const { breachId, recipientType, jurisdiction, authority, content, dueDate } = req.body;
   if (!breachId || !recipientType) throw new AppError('breachId and recipientType are required', 400);
+  await assertOrgOwned('breachIncident', breachId, getOrgId(req));
   const notification = await prisma.breachNotification.create({
     data: { breachId, recipientType, jurisdiction, authority, content, dueDate: dueDate ? new Date(dueDate) : undefined, status: 'draft' },
   });
@@ -224,9 +245,11 @@ export const createBreachNotification: RequestHandler = async (req, res) => {
 };
 
 export const updateBreachNotification: RequestHandler = async (req, res) => {
+  await assertOwnedByOrg('breachNotification', req.params.id, { breach: { organizationId: getOrgId(req) } });
   const data = { ...req.body };
   if (data.dueDate) data.dueDate = new Date(data.dueDate);
   if (data.sentAt) data.sentAt = new Date(data.sentAt);
+  delete data.breachId;
   const notification = await prisma.breachNotification.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'breach.notification_updated', { ip: req.ip });
   res.json(notification);
@@ -254,12 +277,16 @@ export const createBreachTemplate: RequestHandler = async (req, res) => {
 };
 
 export const updateBreachTemplate: RequestHandler = async (req, res) => {
-  const template = await prisma.breachTemplate.update({ where: { id: req.params.id }, data: req.body });
+  await assertOrgOwned('breachTemplate', req.params.id, getOrgId(req));
+  const data = { ...req.body };
+  delete data.organizationId;
+  const template = await prisma.breachTemplate.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'breach.template_updated', { ip: req.ip });
   res.json(template);
 };
 
 export const deleteBreachTemplate: RequestHandler = async (req, res) => {
+  await assertOrgOwned('breachTemplate', req.params.id, getOrgId(req));
   await prisma.breachTemplate.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'breach.template_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -287,12 +314,16 @@ export const createRegulatoryContact: RequestHandler = async (req, res) => {
 };
 
 export const updateRegulatoryContact: RequestHandler = async (req, res) => {
-  const contact = await prisma.regulatoryContact.update({ where: { id: req.params.id }, data: req.body });
+  await assertOrgOwned('regulatoryContact', req.params.id, getOrgId(req));
+  const data = { ...req.body };
+  delete data.organizationId;
+  const contact = await prisma.regulatoryContact.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'breach.regulatory_contact_updated', { ip: req.ip });
   res.json(contact);
 };
 
 export const deleteRegulatoryContact: RequestHandler = async (req, res) => {
+  await assertOrgOwned('regulatoryContact', req.params.id, getOrgId(req));
   await prisma.regulatoryContact.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'breach.regulatory_contact_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -311,7 +342,7 @@ export const listCEProducts: RequestHandler = async (req, res) => {
     res.json(products);
   } catch (error) {
     logger.error('Error fetching CE products:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to fetch CE products', 500);
   }
 };
 
@@ -334,6 +365,7 @@ export const getCEProduct: RequestHandler = async (req, res) => {
 };
 
 export const updateCEProduct: RequestHandler = async (req, res) => {
+  await assertOrgOwned('cEProduct', req.params.id, getOrgId(req));
   const data = { ...req.body };
   delete data.organizationId;
   if (data.ceMarkedDate) data.ceMarkedDate = new Date(data.ceMarkedDate);
@@ -344,6 +376,7 @@ export const updateCEProduct: RequestHandler = async (req, res) => {
 };
 
 export const deleteCEProduct: RequestHandler = async (req, res) => {
+  await assertOrgOwned('cEProduct', req.params.id, getOrgId(req));
   await prisma.cEProduct.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'ce_marking.product_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -407,7 +440,7 @@ export const listCEDocuments: RequestHandler = async (req, res) => {
     res.json(documents);
   } catch (error) {
     logger.error('Error fetching CE documents:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to fetch CE documents', 500);
   }
 };
 
@@ -422,7 +455,7 @@ export const listCERiskItems: RequestHandler = async (req, res) => {
     res.json(items);
   } catch (error) {
     logger.error('Error fetching CE risk items:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to fetch CE risk items', 500);
   }
 };
 
@@ -468,7 +501,7 @@ export const listCESurveillanceChecks: RequestHandler = async (req, res) => {
     res.json(checks);
   } catch (error) {
     logger.error('Error fetching CE surveillance checks:', error);
-    res.json([]); // Return empty array instead of 500 error
+    throw error instanceof AppError ? error : new AppError('Failed to fetch CE surveillance checks', 500);
   }
 };
 
@@ -485,7 +518,7 @@ export const listDPPs: RequestHandler = async (req, res) => {
     res.json(passports);
   } catch (error) {
     logger.error('Error fetching digital product passports:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to fetch digital product passports', 500);
   }
 };
 
@@ -523,6 +556,7 @@ export const getDPP: RequestHandler = async (req, res) => {
 };
 
 export const updateDPP: RequestHandler = async (req, res) => {
+  await assertOrgOwned('digitalProductPassport', req.params.id, getOrgId(req));
   const data = { ...req.body };
   delete data.organizationId;
   if (data.manufacturingDate) data.manufacturingDate = new Date(data.manufacturingDate);
@@ -532,6 +566,7 @@ export const updateDPP: RequestHandler = async (req, res) => {
 };
 
 export const deleteDPP: RequestHandler = async (req, res) => {
+  await assertOrgOwned('digitalProductPassport', req.params.id, getOrgId(req));
   await prisma.digitalProductPassport.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'dpp.deleted', { ip: req.ip });
   res.json({ success: true });
@@ -552,7 +587,7 @@ export const getDPPMaterials: RequestHandler = async (req, res) => {
     res.json(materials);
   } catch (error) {
     logger.error('Error fetching DPP materials:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to fetch DPP materials', 500);
   }
 };
 
@@ -574,7 +609,7 @@ export const getDPPCarbon: RequestHandler = async (req, res) => {
     res.json(stages);
   } catch (error) {
     logger.error('Error fetching DPP carbon data:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to fetch DPP carbon data', 500);
   }
 };
 
@@ -593,7 +628,7 @@ export const getDPPSupplyChain: RequestHandler = async (req, res) => {
     res.json(chain);
   } catch (error) {
     logger.error('Error fetching DPP supply chain:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to fetch DPP supply chain', 500);
   }
 };
 
@@ -618,7 +653,7 @@ export const getDPPSustainability: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching DPP sustainability:', error);
-    res.json({});
+    throw error instanceof AppError ? error : new AppError('Failed to fetch DPP sustainability', 500);
   }
 };
 
@@ -635,7 +670,7 @@ export const getDPPCertifications: RequestHandler = async (req, res) => {
     res.json(passport);
   } catch (error) {
     logger.error('Error fetching DPP certifications:', error);
-    res.json({});
+    throw error instanceof AppError ? error : new AppError('Failed to fetch DPP certifications', 500);
   }
 };
 
@@ -673,12 +708,16 @@ export const createESGMetric: RequestHandler = async (req, res) => {
 };
 
 export const updateESGMetric: RequestHandler = async (req, res) => {
-  const metric = await prisma.eSGMetric.update({ where: { id: req.params.id }, data: req.body });
+  await assertOrgOwned('eSGMetric', req.params.id, getOrgId(req));
+  const data = { ...req.body };
+  delete data.organizationId;
+  const metric = await prisma.eSGMetric.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'esg.metric_updated', { ip: req.ip });
   res.json(metric);
 };
 
 export const deleteESGMetric: RequestHandler = async (req, res) => {
+  await assertOrgOwned('eSGMetric', req.params.id, getOrgId(req));
   await prisma.eSGMetric.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'esg.metric_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -703,7 +742,10 @@ export const createMaterialityAssessment: RequestHandler = async (req, res) => {
 };
 
 export const updateMaterialityAssessment: RequestHandler = async (req, res) => {
-  const assessment = await prisma.materialityAssessment.update({ where: { id: req.params.id }, data: req.body });
+  await assertOrgOwned('materialityAssessment', req.params.id, getOrgId(req));
+  const data = { ...req.body };
+  delete data.organizationId;
+  const assessment = await prisma.materialityAssessment.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'esg.materiality_assessment_updated', { ip: req.ip });
   res.json(assessment);
 };
@@ -717,6 +759,7 @@ export const getMaterialityAssessment: RequestHandler = async (req, res) => {
 };
 
 export const deleteMaterialityAssessment: RequestHandler = async (req, res) => {
+  await assertOrgOwned('materialityAssessment', req.params.id, getOrgId(req));
   await prisma.materialityAssessment.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'esg.materiality_assessment_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -831,12 +874,16 @@ export const createSBOMEntry: RequestHandler = async (req, res) => {
 };
 
 export const updateSBOMEntry: RequestHandler = async (req, res) => {
-  const entry = await prisma.sBOMEntry.update({ where: { id: req.params.id }, data: req.body });
+  await assertOrgOwned('sBOMEntry', req.params.id, getOrgId(req));
+  const data = { ...req.body };
+  delete data.organizationId;
+  const entry = await prisma.sBOMEntry.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'sbom.entry_updated', { ip: req.ip });
   res.json(entry);
 };
 
 export const deleteSBOMEntry: RequestHandler = async (req, res) => {
+  await assertOrgOwned('sBOMEntry', req.params.id, getOrgId(req));
   await prisma.sBOMEntry.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'sbom.entry_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -873,12 +920,16 @@ export const createSBOMRepository: RequestHandler = async (req, res) => {
 };
 
 export const updateSBOMRepository: RequestHandler = async (req, res) => {
-  const repo = await prisma.sBOMRepository.update({ where: { id: req.params.id }, data: req.body });
+  await assertOrgOwned('sBOMRepository', req.params.id, getOrgId(req));
+  const data = { ...req.body };
+  delete data.organizationId;
+  const repo = await prisma.sBOMRepository.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'sbom.repository_updated', { ip: req.ip });
   res.json(repo);
 };
 
 export const deleteSBOMRepository: RequestHandler = async (req, res) => {
+  await assertOrgOwned('sBOMRepository', req.params.id, getOrgId(req));
   await prisma.sBOMRepository.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'sbom.repository_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -940,7 +991,7 @@ export const listSBOMLicenses: RequestHandler = async (req, res) => {
     res.json(licenses);
   } catch (error) {
     logger.error('Error aggregating SBOM licenses:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to aggregate SBOM licenses', 500);
   }
 };
 
@@ -958,7 +1009,7 @@ export const listSurveillancePlans: RequestHandler = async (req, res) => {
     res.json(plans);
   } catch (error) {
     logger.error('Error fetching surveillance plans:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to fetch surveillance plans', 500);
   }
 };
 
@@ -976,6 +1027,7 @@ export const createSurveillancePlan: RequestHandler = async (req, res) => {
 };
 
 export const updateSurveillancePlan: RequestHandler = async (req, res) => {
+  await assertOrgOwned('surveillancePlan', req.params.id, getOrgId(req));
   const data = { ...req.body };
   if (data.lastReviewDate) data.lastReviewDate = new Date(data.lastReviewDate);
   if (data.nextReviewDate) data.nextReviewDate = new Date(data.nextReviewDate);
@@ -989,6 +1041,7 @@ export const updateSurveillancePlan: RequestHandler = async (req, res) => {
 };
 
 export const deleteSurveillancePlan: RequestHandler = async (req, res) => {
+  await assertOrgOwned('surveillancePlan', req.params.id, getOrgId(req));
   await prisma.surveillancePlan.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'surveillance.plan_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -999,6 +1052,7 @@ export const createSurveillanceIncident: RequestHandler = async (req, res) => {
   if (!planId || !type || !severity || !title || !reportedDate) {
     throw new AppError('planId, type, severity, title, and reportedDate are required', 400);
   }
+  await assertOrgOwned('surveillancePlan', planId, getOrgId(req));
   const incident = await prisma.surveillanceIncident.create({
     data: { ...req.body, reportedDate: new Date(reportedDate) },
   });
@@ -1007,8 +1061,10 @@ export const createSurveillanceIncident: RequestHandler = async (req, res) => {
 };
 
 export const updateSurveillanceIncident: RequestHandler = async (req, res) => {
+  await assertOwnedByOrg('surveillanceIncident', req.params.id, { plan: { organizationId: getOrgId(req) } });
   const data = { ...req.body };
   if (data.reportedDate) data.reportedDate = new Date(data.reportedDate);
+  delete data.planId;
   const incident = await prisma.surveillanceIncident.update({ where: { id: req.params.id }, data });
   await logControllerAction(req, 'surveillance.incident_updated', { ip: req.ip });
   res.json(incident);
@@ -1024,7 +1080,7 @@ export const listProductRecalls: RequestHandler = async (req, res) => {
     res.json(recalls);
   } catch (error) {
     logger.error('Error fetching product recalls:', error);
-    res.json([]);
+    throw error instanceof AppError ? error : new AppError('Failed to fetch product recalls', 500);
   }
 };
 
@@ -1044,6 +1100,7 @@ export const createProductRecall: RequestHandler = async (req, res) => {
 };
 
 export const updateProductRecall: RequestHandler = async (req, res) => {
+  await assertOrgOwned('productRecall', req.params.id, getOrgId(req));
   const data = { ...req.body };
   if (data.notificationDate) data.notificationDate = new Date(data.notificationDate);
   if (data.completionDate) data.completionDate = new Date(data.completionDate);
@@ -1082,6 +1139,7 @@ export const createProductDecommission: RequestHandler = async (req, res) => {
 };
 
 export const updateProductDecommission: RequestHandler = async (req, res) => {
+  await assertOrgOwned('productDecommission', req.params.id, getOrgId(req));
   const data = { ...req.body };
   for (const dateField of ['endOfSaleDate', 'endOfSupportDate', 'endOfLifeDate', 'decommissionDate']) {
     if (data[dateField]) data[dateField] = new Date(data[dateField]);
@@ -1093,9 +1151,105 @@ export const updateProductDecommission: RequestHandler = async (req, res) => {
 };
 
 export const deleteProductDecommission: RequestHandler = async (req, res) => {
+  await assertOrgOwned('productDecommission', req.params.id, getOrgId(req));
   await prisma.productDecommission.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'decommission.deleted', { ip: req.ip });
   res.json({ success: true });
+};
+
+// --- Product Decommission Customer Notifications ---
+//
+// Notifications are stored inside each ProductDecommission row's customerNotifications
+// JSON array rather than a dedicated table. Each notification carries the owning
+// productId and a stable id; ids absent on legacy rows are generated and backfilled on
+// the next write so updates can target a specific entry.
+
+type DecommissionNotification = Record<string, unknown> & { id?: string; productId?: string };
+
+const asNotificationArray = (value: unknown): DecommissionNotification[] =>
+  Array.isArray(value) ? (value as DecommissionNotification[]) : [];
+
+export const listDecommissionNotifications: RequestHandler = async (req, res) => {
+  const { productId } = req.query;
+  const where: any = { organizationId: getOrgId(req) };
+  if (productId) where.id = productId as string;
+  const products = await prisma.productDecommission.findMany({
+    where,
+    select: { id: true, customerNotifications: true },
+  });
+
+  const flattened: DecommissionNotification[] = [];
+  for (const product of products) {
+    for (const notification of asNotificationArray(product.customerNotifications)) {
+      flattened.push({
+        ...notification,
+        id: notification.id || uuidv4(),
+        productId: product.id,
+      });
+    }
+  }
+  res.json(flattened);
+};
+
+export const createDecommissionNotification: RequestHandler = async (req, res) => {
+  const { productId, ...rest } = req.body;
+  if (!productId) throw new AppError('productId is required', 400);
+  await assertOrgOwned('productDecommission', productId, getOrgId(req));
+
+  const product = await prisma.productDecommission.findUnique({
+    where: { id: productId },
+    select: { customerNotifications: true },
+  });
+  if (!product) throw new AppError('Decommission record not found', 404);
+
+  const notifications = asNotificationArray(product.customerNotifications);
+  const notification: DecommissionNotification = {
+    ...rest,
+    id: uuidv4(),
+    productId,
+    status: rest.status || 'draft',
+    createdAt: new Date().toISOString(),
+  };
+
+  await prisma.productDecommission.update({
+    where: { id: productId },
+    data: { customerNotifications: [...notifications, notification] as any },
+  });
+  await logControllerAction(req, 'decommission.notification_created', { ip: req.ip });
+  res.status(201).json(notification);
+};
+
+export const updateDecommissionNotification: RequestHandler = async (req, res) => {
+  const { productId, ...patch } = req.body;
+  if (!productId) throw new AppError('productId is required', 400);
+  await assertOrgOwned('productDecommission', productId, getOrgId(req));
+
+  const product = await prisma.productDecommission.findUnique({
+    where: { id: productId },
+    select: { customerNotifications: true },
+  });
+  if (!product) throw new AppError('Decommission record not found', 404);
+
+  const notifications = asNotificationArray(product.customerNotifications);
+  let updated: DecommissionNotification | null = null;
+  const next = notifications.map((notification) => {
+    const notificationId = notification.id || uuidv4();
+    if (notificationId === req.params.id) {
+      updated = { ...notification, ...patch, id: notificationId, productId };
+      return updated;
+    }
+    // Backfill a stable id onto any legacy entry that lacks one.
+    return { ...notification, id: notificationId };
+  });
+
+  if (!updated) throw new AppError('Notification not found', 404);
+
+  await prisma.productDecommission.update({
+    where: { id: productId },
+    data: { customerNotifications: next as any },
+  });
+  await logControllerAction(req, 'decommission.notification_updated', { ip: req.ip });
+  res.json(updated);
 };
 
 // ============================================================================
@@ -1129,6 +1283,7 @@ export const getLifecycleAssessment: RequestHandler = async (req, res) => {
 };
 
 export const updateLifecycleAssessment: RequestHandler = async (req, res) => {
+  await assertOrgOwned('lifecycleAssessment', req.params.id, getOrgId(req));
   const data = { ...req.body };
   delete data.organizationId;
   const assessment = await prisma.lifecycleAssessment.update({ where: { id: req.params.id }, data });
@@ -1137,6 +1292,7 @@ export const updateLifecycleAssessment: RequestHandler = async (req, res) => {
 };
 
 export const deleteLifecycleAssessment: RequestHandler = async (req, res) => {
+  await assertOrgOwned('lifecycleAssessment', req.params.id, getOrgId(req));
   await prisma.lifecycleAssessment.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'lifecycle.assessment_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -1177,6 +1333,7 @@ export const getProductLifecycle: RequestHandler = async (req, res) => {
 };
 
 export const updateProductLifecycle: RequestHandler = async (req, res) => {
+  await assertOrgOwned('productLifecycle', req.params.id, getOrgId(req));
   const data = { ...req.body };
   delete data.organizationId;
   if (data.marketEntry) data.marketEntry = new Date(data.marketEntry);
@@ -1187,6 +1344,7 @@ export const updateProductLifecycle: RequestHandler = async (req, res) => {
 };
 
 export const deleteProductLifecycle: RequestHandler = async (req, res) => {
+  await assertOrgOwned('productLifecycle', req.params.id, getOrgId(req));
   await prisma.productLifecycle.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'lifecycle.product_deleted', { ip: req.ip });
   res.json({ success: true });
@@ -1223,6 +1381,7 @@ export const getProcessMap: RequestHandler = async (req, res) => {
 };
 
 export const updateProcessMap: RequestHandler = async (req, res) => {
+  await assertOrgOwned('processMap', req.params.id, getOrgId(req));
   const data = { ...req.body };
   delete data.organizationId;
   const map = await prisma.processMap.update({ where: { id: req.params.id }, data });
@@ -1231,6 +1390,7 @@ export const updateProcessMap: RequestHandler = async (req, res) => {
 };
 
 export const deleteProcessMap: RequestHandler = async (req, res) => {
+  await assertOrgOwned('processMap', req.params.id, getOrgId(req));
   await prisma.processMap.delete({ where: { id: req.params.id } });
   await logControllerAction(req, 'process_map.deleted', { ip: req.ip });
   res.json({ success: true });
@@ -1284,8 +1444,10 @@ export const syncSBOMToModules: RequestHandler = async (req, res) => {
         lastSync: new Date().toISOString(),
       };
       const updatedReqs = [...reqs.filter((r: any) => r.framework !== 'SBOM'), sbomReq];
-      await prisma.productLifecycle.update({
-        where: { id: product.id },
+      // Org-scope the write so the mutation enforces tenant ownership directly,
+      // independent of the source query that produced this id.
+      await prisma.productLifecycle.updateMany({
+        where: { id: product.id, organizationId: orgId },
         data: { regulatoryRequirements: updatedReqs },
       });
       updates.push(`Updated ${product.productName} with SBOM data`);
@@ -1302,8 +1464,8 @@ export const syncSBOMToModules: RequestHandler = async (req, res) => {
         const patches = (decom.securityPatches as any) || {};
         patches.sbomVulnerabilities = productSBOM.length;
         patches.lastSBOMSync = new Date().toISOString();
-        await prisma.productDecommission.update({
-          where: { id: decom.id },
+        await prisma.productDecommission.updateMany({
+          where: { id: decom.id, organizationId: orgId },
           data: { securityPatches: patches },
         });
         updates.push(`Flagged ${decom.productName} decommission with SBOM vulnerabilities`);
@@ -1335,6 +1497,8 @@ export const syncBreachToModules: RequestHandler = async (req, res) => {
     where: { organizationId: orgId, status: 'active' },
   });
 
+  // Both `plans` and `activeBreaches` are filtered by organizationId above, so every
+  // plan.id / breach.id referenced below is guaranteed to belong to the caller's org.
   for (const breach of activeBreaches) {
     for (const plan of plans) {
       const existingIncident = await prisma.surveillanceIncident.findFirst({

@@ -94,34 +94,49 @@ test.describe('Authorization & Access Control', () => {
     expect([401, 403, 404]).toContain(response.status());
   });
 
-  test('Tier-gated features are blocked for lower tiers', async ({ page }) => {
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+  test('Tier-gated features are blocked for lower tiers', async ({ page, context }) => {
+    // Without an authenticated, sufficiently-privileged session the Visionary-tier
+    // route must not expose its functional content. Acceptable enforced outcomes:
+    //   1. redirected to the landing/login page (Sign In affordance visible), or
+    //   2. an upgrade / tier-limit gate rendered in place of the feature.
+    await context.clearCookies();
 
-    // Try to access Visionary tier feature
     await page.goto('/ai-rmf');
     await page.waitForLoadState('networkidle');
 
-    // Should see upgrade prompt or be blocked
-    const isBlocked = await page.locator('text=/upgrade|not available|tier/i').isVisible();
-    // This may or may not be blocked depending on test user's tier
-    expect(typeof isBlocked).toBe('boolean');
+    const upgradeGate = page.locator('text=/upgrade|not available|tier|requires|visionary plan/i');
+    const signIn = page.locator('button:has-text("Sign In"), [name="email"], text=/login|sign in/i');
+
+    const hasUpgradeGate = await upgradeGate.first().isVisible().catch(() => false);
+    const requiresAuth = await signIn.first().isVisible().catch(() => false);
+
+    // The gated route must be enforced one way or the other — it must not silently
+    // render the protected feature to an unauthenticated/lower-tier visitor.
+    expect(hasUpgradeGate || requiresAuth).toBeTruthy();
   });
 
-  test('Role-based access control for admin functions', async ({ page }) => {
+  test('Role-based access control for admin functions', async ({ page, context }) => {
+    // Admin-only settings (team management, member invitations) must not be
+    // reachable without an authenticated session. With no session, the settings
+    // route must deny access by surfacing the login affordance rather than
+    // rendering the admin sections.
+    await context.clearCookies();
+
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
-    // Check for admin-only features
-    const adminFeatures = page.locator('[data-testid="admin-only"], .admin-section');
-    const teamManagement = page.locator('text=/team management|invite users/i');
+    const adminFeatures = page.locator(
+      '[data-testid="admin-only"], .admin-section, text=/invite users|team management/i'
+    );
+    const signIn = page.locator('button:has-text("Sign In"), [name="email"], text=/login|sign in/i');
 
-    // These should be visible only to admins, or show appropriate restrictions
-    const hasAdminFeatures = await adminFeatures.isVisible().catch(() => false);
-    const hasTeamManagement = await teamManagement.isVisible().catch(() => false);
+    const hasAdminFeatures = await adminFeatures.first().isVisible().catch(() => false);
+    const requiresAuth = await signIn.first().isVisible().catch(() => false);
 
-    // Just verify the page loads without errors
-    expect(page.url()).toContain('settings');
+    // Admin functions must be gated: an unauthenticated visitor is sent to login
+    // and must not see admin-only sections.
+    expect(requiresAuth).toBeTruthy();
+    expect(hasAdminFeatures).toBeFalsy();
   });
 });
 

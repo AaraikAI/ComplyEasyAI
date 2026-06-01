@@ -153,28 +153,59 @@ describe('SwarmTaskAllocationService', () => {
       ).rejects.toThrow();
     });
 
-    it('should reject self-dependent tasks', async () => {
-      // Since the ID is generated internally, self-dependency is based on
-      // the task having its own generated ID in dependencies, which won't happen
-      // through normal submit flow. We test that validation logic exists.
-      await expect(
-        swarmTaskAllocationService.submitTask(
-          orgId,
-          {
-            taskType: 'evidence_collection',
-            priority: 'high',
-            payload: { parameters: {} },
-            constraints: {
-              requiredCapabilities: [] as any[],
-              minAgents: 1,
-              maxAgents: 1,
-            },
-            dependencies: [],
-            deadline: new Date(Date.now() - 86400000), // Past deadline to trigger a validation error
-          },
-          'user-123'
-        )
-      ).rejects.toThrow();
+    it('should reject self-dependent tasks via validateTask', () => {
+      // The task id is generated inside submitTask, so a self-dependency cannot be
+      // injected through the public submit flow. Exercise the actual self-dependency
+      // guard directly (swarmTaskAllocationService.ts:737) with a task whose
+      // dependencies include its own id, valid constraints, and a FUTURE deadline so
+      // the check under test is the one that fires (not the deadline/constraint checks).
+      const selfDependentTask: any = {
+        id: 'task_self_1',
+        organizationId: orgId,
+        taskType: 'evidence_collection',
+        priority: 'high',
+        status: 'pending',
+        payload: { parameters: {} },
+        constraints: { requiredCapabilities: [], minAgents: 1, maxAgents: 1 },
+        assignedAgents: [],
+        dependencies: ['task_self_1'], // depends on itself
+        subtasks: [],
+        createdAt: new Date(),
+        deadline: new Date(Date.now() + 86400000),
+        retryCount: 0,
+        maxRetries: 3,
+        metrics: { queueTime: 0, assignmentTime: 0, executionTime: 0, totalTime: 0, agentSwitches: 0, failureCount: 0 },
+      };
+
+      const result = (swarmTaskAllocationService as any).validateTask(selfDependentTask);
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Task cannot depend on itself');
+    });
+
+    it('should accept a task that depends on a DIFFERENT task id', () => {
+      // Control case: a dependency on another task id must pass the self-dependency guard.
+      const okTask: any = {
+        id: 'task_self_1',
+        organizationId: orgId,
+        taskType: 'evidence_collection',
+        priority: 'high',
+        status: 'pending',
+        payload: { parameters: {} },
+        constraints: { requiredCapabilities: [], minAgents: 1, maxAgents: 1 },
+        assignedAgents: [],
+        dependencies: ['task_other_2'],
+        subtasks: [],
+        createdAt: new Date(),
+        deadline: new Date(Date.now() + 86400000),
+        retryCount: 0,
+        maxRetries: 3,
+        metrics: { queueTime: 0, assignmentTime: 0, executionTime: 0, totalTime: 0, agentSwitches: 0, failureCount: 0 },
+      };
+
+      const result = (swarmTaskAllocationService as any).validateTask(okTask);
+
+      expect(result.valid).toBe(true);
     });
   });
 

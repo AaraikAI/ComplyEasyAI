@@ -72,6 +72,14 @@ export class RiskManagementService {
     const severity = this.calculateRiskSeverity(riskScore);
 
     return prisma.$transaction(async (tx) => {
+      // Verify the parent assessment belongs to the caller's organization before attaching a risk.
+      const parentAssessment = await tx.riskAssessment.findFirst({
+        where: { id: assessmentId, organizationId: riskData.organizationId },
+      });
+      if (!parentAssessment) {
+        throw new AppError('Risk assessment not found', 404);
+      }
+
       const risk = await tx.riskItem.create({
         data: {
           title: riskData.title,

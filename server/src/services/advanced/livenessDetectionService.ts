@@ -97,6 +97,10 @@ interface FrameLivenessData {
 
 class LivenessDetectionService {
   private antiSpoofModel: tf.LayersModel | null = null;
+  // True only when real pre-trained anti-spoof weights were loaded. When false the
+  // model's weights are untrained, so neural classification is skipped in favour of
+  // the deterministic texture/depth heuristics. Surfaced via getModelHealth().
+  private antiSpoofModelTrained = false;
   private isInitialized = false;
   // Working set kept in-process for fast access; mirrored to Redis (via cacheService)
   // so a restart doesn't leave in-flight liveness challenges stranded.
@@ -175,19 +179,40 @@ class LivenessDetectionService {
     model.add(tf.layers.dense({ units: 4, activation: 'softmax' })); // live, print, screen, mask
     model.compile({ optimizer: tf.train.adam(0.001), loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
 
-    // Try to load pre-trained weights
+    // Try to load pre-trained weights. The neural classifier is only used when real
+    // weights are present; otherwise the service falls back to deterministic heuristics
+    // so a security control never runs on untrained weights.
+    this.antiSpoofModelTrained = false;
     try {
       const weightsPath = path.join(process.cwd(), 'server', 'models', 'antispoof_weights.json');
       if (fs.existsSync(weightsPath)) {
         const data = JSON.parse(fs.readFileSync(weightsPath, 'utf-8'));
         model.setWeights(data.map((w: any) => tf.tensor(w.data, w.shape)));
+        this.antiSpoofModelTrained = true;
         logger.info('[LivenessDetection] Loaded anti-spoof model weights');
+      } else {
+        logger.warn(
+          `[LivenessDetection] Anti-spoof weights not found at ${weightsPath}; ` +
+          'neural classification disabled, using texture/depth heuristics. ' +
+          'Provision the weights file to enable the trained classifier.'
+        );
       }
-    } catch {
-      logger.info('[LivenessDetection] Using random initialization for anti-spoof model');
+    } catch (err) {
+      logger.warn('[LivenessDetection] Failed to load anti-spoof weights; using heuristic fallback', err);
     }
 
     this.antiSpoofModel = model;
+  }
+
+  /**
+   * Health snapshot for readiness/health-check endpoints. `antiSpoofModelTrained`
+   * is false when the anti-spoof classifier is running on heuristics only.
+   */
+  getModelHealth(): { initialized: boolean; antiSpoofModelTrained: boolean } {
+    return {
+      initialized: this.isInitialized,
+      antiSpoofModelTrained: this.antiSpoofModelTrained,
+    };
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
@@ -1062,8 +1087,10 @@ class LivenessDetectionService {
   // ── Spoof Classification ────────────────────────────────────────────────
 
   private async classifySpoofType(imageBuffer: Buffer, frameData: FrameLivenessData): Promise<'print' | 'screen' | 'mask' | 'video_replay' | 'none'> {
-    if (!this.antiSpoofModel) {
-      // Heuristic fallback
+    // Only use the neural classifier when real weights were loaded; an untrained
+    // model would produce meaningless verdicts, so fall back to deterministic
+    // texture/depth heuristics instead.
+    if (!this.antiSpoofModel || !this.antiSpoofModelTrained) {
       if (frameData.textureScore < 0.3) return 'print';
       if (frameData.depthScore < 0.3) return 'screen';
       return 'video_replay';
@@ -1174,7 +1201,7 @@ class LivenessDetectionService {
   }
 
   private startChallengeCleanup(): void {
-    setInterval(() => {
+    const cleanupTimer = setInterval(() => {
       const now = new Date();
       let deleted = 0;
       for (const [id, challenge] of this.activeChallenges.entries()) {
@@ -1187,6 +1214,8 @@ class LivenessDetectionService {
         this.persistActiveChallenges().catch(() => {});
       }
     }, 30000);
+    // Do not keep the event loop alive solely for this background timer.
+    cleanupTimer.unref?.();
   }
 }
 

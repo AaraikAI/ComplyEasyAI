@@ -1,7 +1,13 @@
 /**
  * E2E Tests - Enterprise Features Flow
- * Tests complete enterprise workflows including advanced reporting,
- * multi-workspace, custom branding, and enterprise security.
+ * Tests complete enterprise workflows: risk management, questionnaires,
+ * policy library, trust center, multi-workspace, reporting, monitoring,
+ * issue management, and visionary AI.
+ *
+ * Exercises the real sub-routers mounted in src/routes/enterprise.ts. Route
+ * handlers delegate to the enterprise service layer, which is mocked here so
+ * assertions verify the route wiring (path + method + status + response shape)
+ * deterministically. Routes that hit prisma directly use the shared prismaMock.
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
@@ -25,29 +31,79 @@ jest.mock('../../config/logger', () => ({
   },
 }));
 
-jest.mock('../../utils/auditLogger', () => ({
-  AuditLogger: { log: jest.fn() },
-}));
-
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req: any, res: any, next: any) => next(),
-  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => next(),
+  authenticate: (req: any, _res: any, next: any) => next(),
+  authorize: (..._roles: string[]) => (req: any, _res: any, next: any) => next(),
   AuthRequest: {},
 }));
 
-jest.mock('../../middleware/rateLimiter', () => ({
-  authLimiter: (req: any, res: any, next: any) => next(),
-  apiLimiter: (req: any, res: any, next: any) => next(),
-  aiLimiter: (req: any, res: any, next: any) => next(),
-  frameworkLimiter: (req: any, res: any, next: any) => next(),
-}));
+// Provide ALL tierMiddleware exports the route module imports at load time.
+jest.mock('../../middleware/tierMiddleware', () => {
+  const pass = (_req: any, _res: any, next: any) => next();
+  const passArr = () => [pass];
+  return {
+    __esModule: true,
+    requireFeature: () => pass,
+    requireTier: () => pass,
+    enforceLimit: () => pass,
+    attachTierInfo: () => pass,
+    trackUsage: () => pass,
+    requireFeatureAndLimit: () => pass,
+    requireActiveSubscription: () => pass,
+    requireAiFeature: passArr,
+    requireResourceCreation: passArr,
+    requireEnterpriseFeature: passArr,
+    requireAcosFeature: passArr,
+    requireVisionaryFeature: passArr,
+    default: {},
+  };
+});
 
-jest.mock('../../middleware/tierMiddleware', () => ({
-  requireTier: () => (req: any, res: any, next: any) => next(),
-}));
+const svc = (methods: string[]) => {
+  const obj: Record<string, jest.Mock> = {};
+  for (const m of methods) obj[m] = jest.fn();
+  return { __esModule: true, default: obj };
+};
+
+jest.mock('../../services/riskManagementService', () =>
+  svc(['createRiskAssessment', 'getRiskRegister', 'getRiskDashboard', 'getRiskHeatMap']));
+jest.mock('../../services/questionnaireService', () =>
+  svc(['createQuestionnaire', 'generateAIResponses', 'completeQuestionnaire', 'getQuestionnairesByOrganization', 'getQuestionnaireMetrics', 'addQuestions', 'submitResponse']));
+jest.mock('../../services/policyLibraryService', () =>
+  svc(['createPolicy', 'bulkImportPolicies', 'getPolicyTemplates', 'getPolicyMetrics', 'getPoliciesByOrganization', 'getPolicyById', 'updatePolicy', 'archivePolicy', 'approvePolicy', 'submitForReview', 'duplicatePolicy']));
+jest.mock('../../services/trustCenterService', () =>
+  svc(['getPublicTrustCenter', 'createCertificate', 'generateComplianceCertificate']));
+jest.mock('../../services/multiWorkspaceService', () =>
+  svc(['createChildOrganization', 'getOrganizationHierarchy', 'getConsolidatedMetrics', 'moveUserToOrganization', 'cloneFrameworkToChildren']));
+jest.mock('../../services/reportingService', () =>
+  svc(['createReport', 'generateComplianceReport', 'generateRiskReport', 'generateVendorRiskReport', 'generateExecutiveSummary']));
+jest.mock('../../services/monitoringService', () =>
+  svc(['createMonitor', 'executeMonitor', 'getMonitoringDashboard', 'getMonitorsByOrganization', 'getMonitorById', 'updateMonitor', 'deleteMonitor', 'getMonitorResults', 'toggleMonitorActive', 'suggestMonitors', 'analyzeMonitorTrends', 'triageAlerts']));
+jest.mock('../../services/issueManagementService', () =>
+  svc(['createIssue', 'assignIssue', 'addComment', 'getIssueDashboard', 'getIssuesByOrganization', 'updateIssueStatus']));
+jest.mock('../../services/visionaryAIService', () =>
+  svc(['getComplianceCoPilotRecommendations', 'predictFutureRisks', 'generatePolicyFromNaturalLanguage', 'runComplianceAutopilot', 'getComplianceBenchmarking']));
 
 import enterpriseRoutes from '../../routes/enterprise';
 import { errorHandler } from '../../middleware/errorHandler';
+import riskManagementService from '../../services/riskManagementService';
+import questionnaireService from '../../services/questionnaireService';
+import policyLibraryService from '../../services/policyLibraryService';
+import trustCenterService from '../../services/trustCenterService';
+import multiWorkspaceService from '../../services/multiWorkspaceService';
+import reportingService from '../../services/reportingService';
+import monitoringService from '../../services/monitoringService';
+import issueManagementService from '../../services/issueManagementService';
+
+const asMocks = (s: unknown) => s as unknown as Record<string, jest.Mock>;
+const risk = asMocks(riskManagementService);
+const questionnaire = asMocks(questionnaireService);
+const policy = asMocks(policyLibraryService);
+const trustCenter = asMocks(trustCenterService);
+const workspace = asMocks(multiWorkspaceService);
+const reporting = asMocks(reportingService);
+const monitoring = asMocks(monitoringService);
+const issues = asMocks(issueManagementService);
 
 const app = express();
 app.use(express.json());
@@ -55,7 +111,7 @@ app.use((req, _res, next) => {
   (req as any).user = {
     id: 'user-123',
     organizationId: 'org-123',
-    role: 'Admin',
+    role: 'admin',
     email: 'admin@example.com',
   };
   next();
@@ -69,160 +125,77 @@ describe('E2E: Enterprise Features Flow', () => {
   });
 
   // ===========================================================================
-  // Enterprise Risk Management
+  // Risk Management
   // ===========================================================================
-  describe('Enterprise Risk Management', () => {
-    const mockRiskRegister = {
-      id: 'rr-123',
-      name: 'Corporate Risk Register',
-      organizationId: 'org-123',
-      risks: [],
-      lastUpdated: new Date(),
-    };
-
-    const mockEnterpriseRisk = {
-      id: 'er-123',
-      title: 'Strategic Market Risk',
-      category: 'Strategic',
-      impact: 'High',
-      likelihood: 'Medium',
-      riskScore: 15,
-      owner: 'user-456',
-      mitigations: [],
-    };
-
-    it('should create enterprise risk register', async () => {
-      prismaMock.riskRegister.create.mockResolvedValue(mockRiskRegister as any);
+  describe('Risk Management', () => {
+    it('should create a risk assessment', async () => {
+      risk.createRiskAssessment.mockResolvedValue({ id: 'ra-123', name: 'Annual Risk Assessment' });
 
       const response = await request(app)
-        .post('/api/enterprise/risk-registers')
-        .send({
-          name: 'Corporate Risk Register',
-          categories: ['Strategic', 'Operational', 'Financial', 'Compliance'],
-        })
+        .post('/api/enterprise/risk-management/assessments')
+        .send({ name: 'Annual Risk Assessment', assessmentType: 'Strategic' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'ra-123');
+      expect(risk.createRiskAssessment).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Annual Risk Assessment', organizationId: 'org-123', userId: 'user-123' })
+      );
     });
 
-    it('should add enterprise risk', async () => {
-      prismaMock.riskRegister.findFirst.mockResolvedValue(mockRiskRegister as any);
-      prismaMock.enterpriseRisk.create.mockResolvedValue(mockEnterpriseRisk as any);
+    it('should get the risk register', async () => {
+      risk.getRiskRegister.mockResolvedValue([{ id: 'r1', title: 'Market Risk' }]);
 
       const response = await request(app)
-        .post('/api/enterprise/risk-registers/rr-123/risks')
-        .send({
-          title: 'Strategic Market Risk',
-          category: 'Strategic',
-          description: 'Risk of market share loss',
-          impact: 5,
-          likelihood: 3,
-        })
-        .expect(201);
+        .get('/api/enterprise/risk-management/register')
+        .expect(200);
 
-      expect(response.body).toHaveProperty('riskScore');
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body[0]).toHaveProperty('title', 'Market Risk');
     });
 
-    it('should generate risk heat map', async () => {
-      prismaMock.enterpriseRisk.findMany.mockResolvedValue([mockEnterpriseRisk] as any);
+    it('should get the risk heat map', async () => {
+      risk.getRiskHeatMap.mockResolvedValue({ matrix: [[0, 1], [2, 3]] });
 
       const response = await request(app)
-        .get('/api/enterprise/risk-registers/rr-123/heat-map')
+        .get('/api/enterprise/risk-management/heatmap')
         .expect(200);
 
       expect(response.body).toHaveProperty('matrix');
-      expect(response.body).toHaveProperty('legend');
-    });
-
-    it('should track risk treatment plans', async () => {
-      prismaMock.enterpriseRisk.findFirst.mockResolvedValue(mockEnterpriseRisk as any);
-      prismaMock.riskTreatment.create.mockResolvedValue({
-        id: 'rt-123',
-        riskId: 'er-123',
-        strategy: 'Mitigate',
-        actions: [],
-        status: 'In Progress',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/enterprise/risks/er-123/treatment')
-        .send({
-          strategy: 'Mitigate',
-          actions: ['Implement hedging strategy', 'Diversify suppliers'],
-          owner: 'user-456',
-          targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('strategy');
     });
   });
 
   // ===========================================================================
-  // Vendor Security Questionnaires
+  // Questionnaire Automation
   // ===========================================================================
-  describe('Vendor Security Questionnaires', () => {
-    const mockQuestionnaire = {
-      id: 'quest-123',
-      name: 'Security Assessment Questionnaire',
-      type: 'SIG Lite',
-      questions: [],
-      organizationId: 'org-123',
-    };
-
-    it('should create questionnaire template', async () => {
-      prismaMock.questionnaireTemplate.create.mockResolvedValue(mockQuestionnaire as any);
+  describe('Questionnaire Automation', () => {
+    it('should create a questionnaire', async () => {
+      questionnaire.createQuestionnaire.mockResolvedValue({ id: 'q-123', title: 'Security Assessment' });
 
       const response = await request(app)
-        .post('/api/enterprise/questionnaires/templates')
-        .send({
-          name: 'Security Assessment Questionnaire',
-          type: 'Custom',
-          sections: [
-            { name: 'Access Control', questions: [] },
-            { name: 'Data Protection', questions: [] },
-          ],
-        })
+        .post('/api/enterprise/questionnaires')
+        .send({ title: 'Security Assessment', questionnaireType: 'SIG Lite' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'q-123');
     });
 
-    it('should send questionnaire to vendor', async () => {
-      prismaMock.questionnaireTemplate.findFirst.mockResolvedValue(mockQuestionnaire as any);
-      prismaMock.vendorQuestionnaire.create.mockResolvedValue({
-        id: 'vq-123',
-        templateId: 'quest-123',
-        vendorId: 'vendor-123',
-        status: 'Sent',
-        sentAt: new Date(),
-      } as any);
+    it('should list questionnaires', async () => {
+      questionnaire.getQuestionnairesByOrganization.mockResolvedValue([{ id: 'q-123' }]);
 
       const response = await request(app)
-        .post('/api/enterprise/questionnaires/send')
-        .send({
-          templateId: 'quest-123',
-          vendorId: 'vendor-123',
-          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-          reminder: true,
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('status', 'Sent');
-    });
-
-    it('should score questionnaire responses', async () => {
-      prismaMock.vendorQuestionnaire.findFirst.mockResolvedValue({
-        id: 'vq-123',
-        responses: { q1: 'Yes', q2: 'Implemented', q3: 'Partially' },
-      } as any);
-
-      const response = await request(app)
-        .post('/api/enterprise/questionnaires/vq-123/score')
+        .get('/api/enterprise/questionnaires')
         .expect(200);
 
-      expect(response.body).toHaveProperty('score');
-      expect(response.body).toHaveProperty('riskRating');
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should get questionnaire templates', async () => {
+      const response = await request(app)
+        .get('/api/enterprise/questionnaires/templates')
+        .expect(200);
+
+      // Templates are served from a static data module (not the mocked service).
+      expect(Array.isArray(response.body)).toBe(true);
     });
   });
 
@@ -230,57 +203,41 @@ describe('E2E: Enterprise Features Flow', () => {
   // Policy Library
   // ===========================================================================
   describe('Policy Library', () => {
-    const mockPolicyTemplate = {
-      id: 'pt-123',
-      name: 'Information Security Policy',
-      category: 'Security',
-      content: 'Policy template content...',
-      version: '1.0',
-    };
-
-    it('should get policy templates', async () => {
-      const response = await request(app)
-        .get('/api/enterprise/policy-library/templates')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should create policy from template', async () => {
-      prismaMock.policy.create.mockResolvedValue({
-        id: 'pol-123',
-        title: 'Information Security Policy',
-        content: 'Customized policy content...',
-        status: 'Draft',
-      } as any);
+    it('should create a policy', async () => {
+      policy.createPolicy.mockResolvedValue({ id: 'pol-123', title: 'Information Security Policy', status: 'Draft' });
 
       const response = await request(app)
-        .post('/api/enterprise/policy-library/create-from-template')
+        .post('/api/enterprise/policies')
         .send({
-          templateId: 'pt-123',
-          customizations: {
-            companyName: 'Test Company',
-            effectiveDate: new Date(),
-          },
+          title: 'Information Security Policy',
+          category: 'Security',
+          content: 'Policy content goes here.',
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'pol-123');
     });
 
-    it('should track policy acknowledgments', async () => {
-      prismaMock.policyAcknowledgment.create.mockResolvedValue({
-        id: 'ack-123',
-        policyId: 'pol-123',
-        userId: 'user-456',
-        acknowledgedAt: new Date(),
-      } as any);
+    it('should get policy templates', async () => {
+      policy.getPolicyTemplates.mockResolvedValue([{ id: 'pt-1', name: 'ISP Template' }]);
 
       const response = await request(app)
-        .post('/api/enterprise/policies/pol-123/acknowledge')
+        .get('/api/enterprise/policies/templates')
         .expect(200);
 
-      expect(response.body).toHaveProperty('acknowledgedAt');
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body[0]).toHaveProperty('name', 'ISP Template');
+    });
+
+    it('should approve a policy', async () => {
+      policy.approvePolicy.mockResolvedValue({ id: 'pol-123', status: 'Approved' });
+
+      const response = await request(app)
+        .post('/api/enterprise/policies/pol-123/approve')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('status', 'Approved');
+      expect(policy.approvePolicy).toHaveBeenCalledWith('pol-123', 'user-123', 'org-123');
     });
   });
 
@@ -288,67 +245,30 @@ describe('E2E: Enterprise Features Flow', () => {
   // Trust Center
   // ===========================================================================
   describe('Trust Center', () => {
-    it('should configure trust center', async () => {
-      prismaMock.trustCenter.upsert.mockResolvedValue({
-        id: 'tc-123',
-        organizationId: 'org-123',
-        enabled: true,
-        customDomain: 'trust.example.com',
-        branding: { logo: 'https://example.com/logo.png' },
-      } as any);
+    it('should create a certificate', async () => {
+      trustCenter.createCertificate.mockResolvedValue({ id: 'cert-123', certificateType: 'SOC 2' });
 
       const response = await request(app)
-        .post('/api/enterprise/trust-center/configure')
+        .post('/api/enterprise/trust-center/certificates')
         .send({
-          enabled: true,
-          customDomain: 'trust.example.com',
-          publicDocuments: ['soc2-report', 'iso27001-cert'],
-          branding: {
-            logo: 'https://example.com/logo.png',
-            primaryColor: '#1a73e8',
-          },
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('enabled', true);
-    });
-
-    it('should manage public documents', async () => {
-      prismaMock.trustCenterDocument.create.mockResolvedValue({
-        id: 'doc-123',
-        name: 'SOC 2 Type II Report',
-        type: 'Compliance Report',
-        accessLevel: 'NDA Required',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/enterprise/trust-center/documents')
-        .send({
-          name: 'SOC 2 Type II Report',
-          type: 'Compliance Report',
-          fileUrl: 'https://storage.example.com/soc2-report.pdf',
-          accessLevel: 'NDA Required',
+          certificateType: 'SOC 2',
+          issuer: 'Big Four Auditing',
+          issueDate: '2024-01-01T00:00:00.000Z',
+          expiryDate: '2025-01-01T00:00:00.000Z',
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'cert-123');
     });
 
-    it('should track document access requests', async () => {
-      prismaMock.documentAccessRequest.findMany.mockResolvedValue([
-        {
-          id: 'dar-123',
-          documentId: 'doc-123',
-          requesterEmail: 'prospect@company.com',
-          status: 'Pending',
-        },
-      ] as any);
+    it('should serve the public trust center without auth', async () => {
+      trustCenter.getPublicTrustCenter.mockResolvedValue({ organizationId: 'org-123', certificates: [] });
 
       const response = await request(app)
-        .get('/api/enterprise/trust-center/access-requests')
+        .get('/api/enterprise/trust-center/public/org-123')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('organizationId', 'org-123');
     });
   });
 
@@ -356,180 +276,109 @@ describe('E2E: Enterprise Features Flow', () => {
   // Multi-Workspace
   // ===========================================================================
   describe('Multi-Workspace', () => {
-    const mockWorkspace = {
-      id: 'ws-123',
-      name: 'US Operations',
-      organizationId: 'org-123',
-      settings: {},
-    };
-
-    it('should create workspace', async () => {
-      prismaMock.workspace.create.mockResolvedValue(mockWorkspace as any);
+    it('should create a child organization', async () => {
+      workspace.createChildOrganization.mockResolvedValue({ id: 'child-123', name: 'US Operations' });
 
       const response = await request(app)
-        .post('/api/enterprise/workspaces')
-        .send({
-          name: 'US Operations',
-          description: 'Workspace for US compliance',
-          admins: ['user-123'],
-        })
+        .post('/api/enterprise/workspace/child-organizations')
+        .send({ name: 'US Operations' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'child-123');
     });
 
-    it('should list workspaces', async () => {
-      prismaMock.workspace.findMany.mockResolvedValue([mockWorkspace] as any);
+    it('should get the organization hierarchy', async () => {
+      workspace.getOrganizationHierarchy.mockResolvedValue({ root: 'org-123', children: ['child-123'] });
 
       const response = await request(app)
-        .get('/api/enterprise/workspaces')
+        .get('/api/enterprise/workspace/hierarchy')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should switch workspace context', async () => {
-      prismaMock.workspace.findFirst.mockResolvedValue(mockWorkspace as any);
-
-      const response = await request(app)
-        .post('/api/enterprise/workspaces/ws-123/switch')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('activeWorkspace');
-    });
-
-    it('should manage workspace permissions', async () => {
-      prismaMock.workspacePermission.create.mockResolvedValue({
-        id: 'wp-123',
-        workspaceId: 'ws-123',
-        userId: 'user-456',
-        role: 'Analyst',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/enterprise/workspaces/ws-123/permissions')
-        .send({
-          userId: 'user-456',
-          role: 'Analyst',
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('role');
+      expect(response.body).toHaveProperty('root', 'org-123');
     });
   });
 
   // ===========================================================================
-  // Advanced Reporting
+  // Reporting
   // ===========================================================================
-  describe('Advanced Reporting', () => {
-    it('should generate executive dashboard', async () => {
-      const response = await request(app)
-        .get('/api/enterprise/reports/executive-dashboard')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('complianceScore');
-      expect(response.body).toHaveProperty('riskMetrics');
-      expect(response.body).toHaveProperty('trends');
-    });
-
-    it('should create custom report', async () => {
-      prismaMock.customReport.create.mockResolvedValue({
-        id: 'report-123',
-        name: 'Monthly Compliance Report',
-        config: {},
-        schedule: 'monthly',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/enterprise/reports/custom')
-        .send({
-          name: 'Monthly Compliance Report',
-          metrics: ['compliance_score', 'open_risks', 'pending_tasks'],
-          filters: { frameworks: ['SOC2', 'ISO27001'] },
-          schedule: 'monthly',
-          recipients: ['ciso@example.com'],
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should generate board report', async () => {
-      const response = await request(app)
-        .post('/api/enterprise/reports/board')
-        .send({
-          period: 'Q1-2024',
-          includeRisks: true,
-          includeCompliance: true,
-          format: 'pptx',
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('downloadUrl');
-    });
-  });
-
-  // ===========================================================================
-  // Monitoring & Alerts
-  // ===========================================================================
-  describe('Monitoring & Alerts', () => {
-    it('should configure monitoring rules', async () => {
-      prismaMock.monitoringRule.create.mockResolvedValue({
-        id: 'rule-123',
-        name: 'High Risk Alert',
-        condition: { field: 'severity', operator: 'equals', value: 'Critical' },
-        actions: ['email', 'slack'],
-      } as any);
-
-      const response = await request(app)
-        .post('/api/enterprise/monitoring/rules')
-        .send({
-          name: 'High Risk Alert',
-          entity: 'risk',
-          condition: { field: 'severity', operator: 'equals', value: 'Critical' },
-          actions: [
-            { type: 'email', recipients: ['ciso@example.com'] },
-            { type: 'slack', channel: '#security-alerts' },
-          ],
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should get active alerts', async () => {
-      prismaMock.alert.findMany.mockResolvedValue([
-        {
-          id: 'alert-123',
-          ruleId: 'rule-123',
-          triggeredAt: new Date(),
-          status: 'Active',
-        },
+  describe('Reporting', () => {
+    it('should list custom reports', async () => {
+      prismaMock.customReport.findMany.mockResolvedValue([
+        { id: 'report-1', name: 'Monthly Compliance Report' },
       ] as any);
 
       const response = await request(app)
-        .get('/api/enterprise/monitoring/alerts')
+        .get('/api/enterprise/reports')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('data');
+      expect(response.body).toHaveProperty('total', 1);
     });
 
-    it('should acknowledge alert', async () => {
-      prismaMock.alert.findFirst.mockResolvedValue({
-        id: 'alert-123',
-        status: 'Active',
-      } as any);
-      prismaMock.alert.update.mockResolvedValue({
-        id: 'alert-123',
-        status: 'Acknowledged',
-        acknowledgedBy: 'user-123',
-      } as any);
+    it('should create a custom report', async () => {
+      reporting.createReport.mockResolvedValue({ id: 'report-123', name: 'Monthly Compliance Report' });
 
       const response = await request(app)
-        .post('/api/enterprise/monitoring/alerts/alert-123/acknowledge')
+        .post('/api/enterprise/reports')
+        .send({
+          name: 'Monthly Compliance Report',
+          reportType: 'compliance',
+          template: { metrics: ['compliance_score'] },
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id', 'report-123');
+    });
+
+    it('should generate an executive summary', async () => {
+      reporting.generateExecutiveSummary.mockResolvedValue({ complianceScore: 82, riskMetrics: {} });
+
+      const response = await request(app)
+        .get('/api/enterprise/reports/executive-summary')
         .expect(200);
 
-      expect(response.body.status).toBe('Acknowledged');
+      expect(response.body).toHaveProperty('complianceScore', 82);
+    });
+  });
+
+  // ===========================================================================
+  // Monitoring
+  // ===========================================================================
+  describe('Monitoring', () => {
+    it('should create a monitor', async () => {
+      monitoring.createMonitor.mockResolvedValue({ id: 'mon-123', name: 'High Risk Alert' });
+
+      const response = await request(app)
+        .post('/api/enterprise/monitoring')
+        .send({
+          name: 'High Risk Alert',
+          monitorType: 'threshold',
+          configuration: { field: 'severity', value: 'Critical' },
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id', 'mon-123');
+    });
+
+    it('should get the monitoring dashboard', async () => {
+      monitoring.getMonitoringDashboard.mockResolvedValue({ totalMonitors: 3, activeAlerts: 1 });
+
+      const response = await request(app)
+        .get('/api/enterprise/monitoring/dashboard')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('totalMonitors', 3);
+    });
+
+    it('should toggle a monitor', async () => {
+      monitoring.toggleMonitorActive.mockResolvedValue({ id: 'mon-123', active: false });
+
+      const response = await request(app)
+        .patch('/api/enterprise/monitoring/mon-123/toggle')
+        .send({ active: false })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('active', false);
     });
   });
 
@@ -537,51 +386,49 @@ describe('E2E: Enterprise Features Flow', () => {
   // Issue Management
   // ===========================================================================
   describe('Issue Management', () => {
-    it('should create issue', async () => {
-      prismaMock.issue.create.mockResolvedValue({
-        id: 'issue-123',
-        title: 'Missing encryption on database',
-        severity: 'High',
-        status: 'Open',
-        source: 'Audit Finding',
-      } as any);
+    it('should create an issue', async () => {
+      issues.createIssue.mockResolvedValue({ id: 'issue-123', title: 'Missing encryption', status: 'Open' });
 
       const response = await request(app)
         .post('/api/enterprise/issues')
         .send({
-          title: 'Missing encryption on database',
-          severity: 'High',
+          title: 'Missing encryption',
           description: 'Database lacks encryption at rest',
-          source: 'Audit Finding',
-          assignee: 'user-456',
+          issueType: 'Finding',
+          priority: 'High',
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'issue-123');
+      expect(issues.createIssue).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org-123', createdById: 'user-123' })
+      );
     });
 
-    it('should track issue resolution', async () => {
-      prismaMock.issue.findFirst.mockResolvedValue({
-        id: 'issue-123',
-        status: 'Open',
-      } as any);
-      prismaMock.issue.update.mockResolvedValue({
-        id: 'issue-123',
-        status: 'Resolved',
-        resolvedAt: new Date(),
-        resolution: 'Implemented AES-256 encryption',
-      } as any);
+    it('should update issue status', async () => {
+      issues.updateIssueStatus.mockResolvedValue({ id: 'issue-123', status: 'Resolved' });
+
+      const response = await request(app)
+        .patch('/api/enterprise/issues/issue-123/status')
+        .send({ status: 'Resolved' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('status', 'Resolved');
+    });
+
+    it('should update an issue (org-scoped)', async () => {
+      prismaMock.issue.findFirst.mockResolvedValue({ id: 'issue-123' } as any);
+      prismaMock.issue.update.mockResolvedValue({ id: 'issue-123', priority: 'Critical' } as any);
 
       const response = await request(app)
         .patch('/api/enterprise/issues/issue-123')
-        .send({
-          status: 'Resolved',
-          resolution: 'Implemented AES-256 encryption',
-          evidence: ['ev-123'],
-        })
+        .send({ priority: 'Critical' })
         .expect(200);
 
-      expect(response.body.status).toBe('Resolved');
+      expect(response.body).toHaveProperty('priority', 'Critical');
+      expect(prismaMock.issue.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'issue-123', organizationId: 'org-123' } })
+      );
     });
   });
 });

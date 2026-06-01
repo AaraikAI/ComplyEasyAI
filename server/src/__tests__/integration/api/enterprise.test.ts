@@ -1,8 +1,12 @@
 /**
  * Enterprise Routes Integration Tests
  *
- * Tests for enterprise features including risk management, questionnaires,
- * policies, trust center, workspace, reports, monitoring, issues, and AI.
+ * Exercises the real enterprise router (src/routes/enterprise.ts) and its
+ * service collaborators. Each enterprise service is mocked at its actual module
+ * path (../services/<name>) so the router wiring, validation middleware,
+ * org-scoping of inputs, and status codes are genuinely exercised. The global
+ * errorHandler is mounted so thrown AppErrors map to their real HTTP statuses
+ * (e.g. 404) instead of surfacing as unhandled 500s.
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
@@ -10,7 +14,7 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
-// Mock dependencies
+// Database used by routes that hit prisma directly (questionnaire/issue PUT/DELETE/comments).
 jest.mock('../../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
@@ -32,801 +36,740 @@ jest.mock('../../../utils/auditLogger', () => ({
   },
 }));
 
+// Authenticated user injected by the auth middleware mock.
+const TEST_USER = {
+  id: 'user-123',
+  email: 'test@example.com',
+  organizationId: 'org-123',
+  role: 'Admin',
+};
+
 jest.mock('../../../middleware/auth', () => ({
-  authenticate: (req: any, res: any, next: any) => {
-    req.user = {
-      id: 'user-123',
-      email: 'test@example.com',
-      organizationId: 'org-123',
-      role: 'Admin',
-    };
+  authenticate: (req: any, _res: any, next: any) => {
+    req.user = { ...TEST_USER };
     next();
   },
-  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => next(),
+  authorize: (..._roles: string[]) => (_req: any, _res: any, next: any) => next(),
   AuthRequest: {},
 }));
 
 jest.mock('../../../middleware/tierMiddleware', () => ({
-  requireVisionaryFeature: () => [(req: any, res: any, next: any) => next()],
-  enforceLimit: () => (req: any, res: any, next: any) => next(),
+  requireVisionaryFeature: () => [(_req: any, _res: any, next: any) => next()],
+  enforceLimit: () => (_req: any, _res: any, next: any) => next(),
 }));
 
-// Mock enterprise services (virtual: true because these modules don't exist yet)
-jest.mock('../../../services/advanced/riskManagementService', () => ({
+// ---------------------------------------------------------------------------
+// Enterprise services — mocked at their REAL module paths so the routes import
+// these mocks. Method names mirror exactly what routes/enterprise.ts invokes.
+// ---------------------------------------------------------------------------
+const riskManagementService = {
+  createRiskAssessment: jest.fn(),
+  getRiskRegister: jest.fn(),
+  getRiskDashboard: jest.fn(),
+  getRiskHeatMap: jest.fn(),
+};
+jest.mock('../../../services/riskManagementService', () => ({
   __esModule: true,
-  default: {
-    getRiskRegister: jest.fn().mockResolvedValue([]),
-    createRisk: jest.fn().mockResolvedValue({ id: 'risk-123', name: 'Test Risk' }),
-    getRiskById: jest.fn().mockResolvedValue({ id: 'risk-123', name: 'Test Risk' }),
-    updateRisk: jest.fn().mockResolvedValue({ id: 'risk-123', updated: true }),
-    deleteRisk: jest.fn().mockResolvedValue({ deleted: true }),
-    getRiskMatrix: jest.fn().mockResolvedValue({ matrix: [] }),
-    getTreatmentPlans: jest.fn().mockResolvedValue([]),
-    createTreatmentPlan: jest.fn().mockResolvedValue({ id: 'plan-123' }),
-  },
+  default: riskManagementService,
+}));
+
+const questionnaireService = {
+  createQuestionnaire: jest.fn(),
+  generateAIResponses: jest.fn(),
+  completeQuestionnaire: jest.fn(),
+  getQuestionnairesByOrganization: jest.fn(),
+  getQuestionnaireMetrics: jest.fn(),
+  addQuestions: jest.fn(),
+  submitResponse: jest.fn(),
+};
+jest.mock('../../../services/questionnaireService', () => ({
+  __esModule: true,
+  default: questionnaireService,
+}));
+
+const policyLibraryService = {
+  createPolicy: jest.fn(),
+  bulkImportPolicies: jest.fn(),
+  getPolicyTemplates: jest.fn(),
+  getPolicyMetrics: jest.fn(),
+  getPoliciesByOrganization: jest.fn(),
+  getPolicyById: jest.fn(),
+  updatePolicy: jest.fn(),
+  archivePolicy: jest.fn(),
+  approvePolicy: jest.fn(),
+  submitForReview: jest.fn(),
+  duplicatePolicy: jest.fn(),
+};
+jest.mock('../../../services/policyLibraryService', () => ({
+  __esModule: true,
+  default: policyLibraryService,
+}));
+
+const trustCenterService = {
+  getPublicTrustCenter: jest.fn(),
+  createCertificate: jest.fn(),
+  generateComplianceCertificate: jest.fn(),
+};
+jest.mock('../../../services/trustCenterService', () => ({
+  __esModule: true,
+  default: trustCenterService,
+}));
+
+const multiWorkspaceService = {
+  createChildOrganization: jest.fn(),
+  getOrganizationHierarchy: jest.fn(),
+  getConsolidatedMetrics: jest.fn(),
+  moveUserToOrganization: jest.fn(),
+  cloneFrameworkToChildren: jest.fn(),
+};
+jest.mock('../../../services/multiWorkspaceService', () => ({
+  __esModule: true,
+  default: multiWorkspaceService,
+}));
+
+const reportingService = {
+  createReport: jest.fn(),
+  generateComplianceReport: jest.fn(),
+  generateRiskReport: jest.fn(),
+  generateVendorRiskReport: jest.fn(),
+  generateExecutiveSummary: jest.fn(),
+};
+jest.mock('../../../services/reportingService', () => ({
+  __esModule: true,
+  default: reportingService,
+}));
+
+const monitoringService = {
+  createMonitor: jest.fn(),
+  executeMonitor: jest.fn(),
+  getMonitoringDashboard: jest.fn(),
+  getMonitorsByOrganization: jest.fn(),
+  getMonitorById: jest.fn(),
+  updateMonitor: jest.fn(),
+  deleteMonitor: jest.fn(),
+  getMonitorResults: jest.fn(),
+  toggleMonitorActive: jest.fn(),
+  suggestMonitors: jest.fn(),
+  analyzeMonitorTrends: jest.fn(),
+  triageAlerts: jest.fn(),
+};
+jest.mock('../../../services/monitoringService', () => ({
+  __esModule: true,
+  default: monitoringService,
+}));
+
+const issueManagementService = {
+  createIssue: jest.fn(),
+  assignIssue: jest.fn(),
+  addComment: jest.fn(),
+  getIssueDashboard: jest.fn(),
+  getIssuesByOrganization: jest.fn(),
+  updateIssueStatus: jest.fn(),
+};
+jest.mock('../../../services/issueManagementService', () => ({
+  __esModule: true,
+  default: issueManagementService,
+}));
+
+const visionaryAIService = {
+  getComplianceCoPilotRecommendations: jest.fn(),
+  predictFutureRisks: jest.fn(),
+  generatePolicyFromNaturalLanguage: jest.fn(),
+  runComplianceAutopilot: jest.fn(),
+  getComplianceBenchmarking: jest.fn(),
+};
+jest.mock('../../../services/visionaryAIService', () => ({
+  __esModule: true,
+  default: visionaryAIService,
+}));
+
+// questionnaireTemplates is loaded via require() inside the route.
+jest.mock('../../../data/questionnaireTemplates', () => ({
+  questionnaireTemplates: [
+    {
+      id: 'tmpl-soc2',
+      title: 'SOC 2 Vendor Assessment',
+      description: 'Standard SOC 2 questionnaire',
+      type: 'SecurityAssessment',
+      questions: [
+        { questionText: 'Do you have SOC 2?', questionType: 'yes_no' },
+      ],
+    },
+  ],
 }), { virtual: true });
 
-jest.mock('../../../services/advanced/questionnaireService', () => ({
-  __esModule: true,
-  default: {
-    getQuestionnaires: jest.fn().mockResolvedValue([]),
-    createQuestionnaire: jest.fn().mockResolvedValue({ id: 'quest-123' }),
-    getQuestionnaire: jest.fn().mockResolvedValue({ id: 'quest-123' }),
-    updateQuestionnaire: jest.fn().mockResolvedValue({ id: 'quest-123', updated: true }),
-    deleteQuestionnaire: jest.fn().mockResolvedValue({ deleted: true }),
-    submitResponse: jest.fn().mockResolvedValue({ id: 'response-123' }),
-    getResponses: jest.fn().mockResolvedValue([]),
-  },
-}), { virtual: true });
-
-jest.mock('../../../services/advanced/policyLibraryService', () => ({
-  __esModule: true,
-  default: {
-    getPolicies: jest.fn().mockResolvedValue([]),
-    createPolicy: jest.fn().mockResolvedValue({ id: 'policy-123' }),
-    getPolicy: jest.fn().mockResolvedValue({ id: 'policy-123' }),
-    updatePolicy: jest.fn().mockResolvedValue({ id: 'policy-123', updated: true }),
-    deletePolicy: jest.fn().mockResolvedValue({ deleted: true }),
-    publishPolicy: jest.fn().mockResolvedValue({ id: 'policy-123', status: 'Published' }),
-    getTemplates: jest.fn().mockResolvedValue([]),
-  },
-}), { virtual: true });
-
-jest.mock('../../../services/advanced/trustCenterService', () => ({
-  __esModule: true,
-  default: {
-    getConfig: jest.fn().mockResolvedValue({ enabled: true }),
-    updateConfig: jest.fn().mockResolvedValue({ updated: true }),
-    getDocuments: jest.fn().mockResolvedValue([]),
-    addDocument: jest.fn().mockResolvedValue({ id: 'doc-123' }),
-    removeDocument: jest.fn().mockResolvedValue({ deleted: true }),
-    getRequests: jest.fn().mockResolvedValue([]),
-    processRequest: jest.fn().mockResolvedValue({ processed: true }),
-  },
-}), { virtual: true });
-
-jest.mock('../../../services/advanced/multiWorkspaceService', () => ({
-  __esModule: true,
-  default: {
-    getWorkspaces: jest.fn().mockResolvedValue([]),
-    createWorkspace: jest.fn().mockResolvedValue({ id: 'ws-123' }),
-    getWorkspace: jest.fn().mockResolvedValue({ id: 'ws-123' }),
-    updateWorkspace: jest.fn().mockResolvedValue({ id: 'ws-123', updated: true }),
-    deleteWorkspace: jest.fn().mockResolvedValue({ deleted: true }),
-    switchWorkspace: jest.fn().mockResolvedValue({ switched: true }),
-  },
-}), { virtual: true });
-
-jest.mock('../../../services/advanced/reportingService', () => ({
-  __esModule: true,
-  default: {
-    getReports: jest.fn().mockResolvedValue([]),
-    generateReport: jest.fn().mockResolvedValue({ id: 'report-123' }),
-    getReport: jest.fn().mockResolvedValue({ id: 'report-123' }),
-    deleteReport: jest.fn().mockResolvedValue({ deleted: true }),
-    scheduleReport: jest.fn().mockResolvedValue({ scheduled: true }),
-    getScheduledReports: jest.fn().mockResolvedValue([]),
-  },
-}), { virtual: true });
-
-jest.mock('../../../services/advanced/monitoringService', () => ({
-  __esModule: true,
-  default: {
-    getMonitors: jest.fn().mockResolvedValue([]),
-    createMonitor: jest.fn().mockResolvedValue({ id: 'monitor-123' }),
-    getMonitor: jest.fn().mockResolvedValue({ id: 'monitor-123' }),
-    updateMonitor: jest.fn().mockResolvedValue({ id: 'monitor-123', updated: true }),
-    deleteMonitor: jest.fn().mockResolvedValue({ deleted: true }),
-    runMonitor: jest.fn().mockResolvedValue({ runId: 'run-123' }),
-    getAlerts: jest.fn().mockResolvedValue([]),
-    acknowledgeAlert: jest.fn().mockResolvedValue({ acknowledged: true }),
-  },
-}), { virtual: true });
-
-jest.mock('../../../services/advanced/issueManagementService', () => ({
-  __esModule: true,
-  default: {
-    getIssues: jest.fn().mockResolvedValue([]),
-    createIssue: jest.fn().mockResolvedValue({ id: 'issue-123' }),
-    getIssue: jest.fn().mockResolvedValue({ id: 'issue-123' }),
-    updateIssue: jest.fn().mockResolvedValue({ id: 'issue-123', updated: true }),
-    deleteIssue: jest.fn().mockResolvedValue({ deleted: true }),
-    assignIssue: jest.fn().mockResolvedValue({ assigned: true }),
-    resolveIssue: jest.fn().mockResolvedValue({ resolved: true }),
-    getComments: jest.fn().mockResolvedValue([]),
-    addComment: jest.fn().mockResolvedValue({ id: 'comment-123' }),
-  },
-}), { virtual: true });
-
-jest.mock('../../../services/advanced/visionaryAIService', () => ({
-  __esModule: true,
-  default: {
-    analyzeRisk: jest.fn().mockResolvedValue({ analysis: {} }),
-    generatePolicy: jest.fn().mockResolvedValue({ policy: {} }),
-    reviewCompliance: jest.fn().mockResolvedValue({ review: {} }),
-    suggestControls: jest.fn().mockResolvedValue({ suggestions: [] }),
-    predictTrends: jest.fn().mockResolvedValue({ predictions: [] }),
-    askQuestion: jest.fn().mockResolvedValue({ answer: 'AI response' }),
-  },
-}), { virtual: true });
-
-// Setup app
 let app: Express;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  jest.resetAllMocks();
+
+  // Re-establish auditLog mock (cleared above) used by direct-prisma routes.
+  prismaMock.auditLog.create.mockResolvedValue({} as never);
 
   app = express();
   app.use(express.json());
 
   const enterpriseRoutes = (await import('../../../routes/enterprise')).default;
   app.use('/api/enterprise', enterpriseRoutes);
+
+  // Mount the real error handler so thrown AppErrors map to their status codes.
+  const { errorHandler } = await import('../../../middleware/errorHandler');
+  app.use(errorHandler);
 });
 
-describe.skip('Enterprise Routes Integration', () => {
+describe('Enterprise Routes Integration', () => {
   // ===========================================================================
-  // Risk Management Tests
+  // Risk Management
   // ===========================================================================
   describe('Risk Management', () => {
-    describe('GET /api/enterprise/risk-management/register', () => {
-      it('should list risk register', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/risk-management/register')
-          .expect(200);
+    it('POST /risk-management/assessments creates an org-scoped assessment', async () => {
+      riskManagementService.createRiskAssessment.mockResolvedValue({
+        id: 'assess-1',
+        name: 'Annual Risk Assessment',
+      } as never);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      const response = await request(app)
+        .post('/api/enterprise/risk-management/assessments')
+        .send({ name: 'Annual Risk Assessment', scope: 'Org-wide' });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual({ id: 'assess-1', name: 'Annual Risk Assessment' });
+      // Service must be called with the caller's org + user injected server-side.
+      expect(riskManagementService.createRiskAssessment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Annual Risk Assessment',
+          organizationId: 'org-123',
+          userId: 'user-123',
+        })
+      );
     });
 
-    describe('POST /api/enterprise/risk-management/risks', () => {
-      it('should create risk', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/risk-management/risks')
-          .send({
-            name: 'Data Breach Risk',
-            category: 'Security',
-            likelihood: 3,
-            impact: 4,
-          })
-          .expect(201);
+    it('POST /risk-management/assessments rejects a body missing required name with 400', async () => {
+      const response = await request(app)
+        .post('/api/enterprise/risk-management/assessments')
+        .send({ scope: 'Org-wide' });
 
-        expect(response.body).toHaveProperty('id');
-      });
+      expect(response.status).toBe(400);
+      expect(riskManagementService.createRiskAssessment).not.toHaveBeenCalled();
     });
 
-    describe('GET /api/enterprise/risk-management/risks/:id', () => {
-      it('should get risk by ID', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/risk-management/risks/risk-123')
-          .expect(200);
+    it('GET /risk-management/register returns the org risk register', async () => {
+      riskManagementService.getRiskRegister.mockResolvedValue([
+        { id: 'risk-1', title: 'Data Breach' },
+      ] as never);
 
-        expect(response.body).toHaveProperty('id', 'risk-123');
-      });
+      const response = await request(app).get('/api/enterprise/risk-management/register');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual([{ id: 'risk-1', title: 'Data Breach' }]);
+      expect(riskManagementService.getRiskRegister).toHaveBeenCalledWith('org-123', expect.any(Object));
     });
 
-    describe('PATCH /api/enterprise/risk-management/risks/:id', () => {
-      it('should update risk', async () => {
-        const response = await request(app)
-          .patch('/api/enterprise/risk-management/risks/risk-123')
-          .send({ status: 'Mitigated' })
-          .expect(200);
+    it('GET /risk-management/dashboard scopes the dashboard to the org', async () => {
+      riskManagementService.getRiskDashboard.mockResolvedValue({ totalRisks: 5 } as never);
 
-        expect(response.body).toHaveProperty('updated', true);
-      });
+      const response = await request(app).get('/api/enterprise/risk-management/dashboard');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ totalRisks: 5 });
+      expect(riskManagementService.getRiskDashboard).toHaveBeenCalledWith('org-123');
     });
 
-    describe('DELETE /api/enterprise/risk-management/risks/:id', () => {
-      it('should delete risk', async () => {
-        const response = await request(app)
-          .delete('/api/enterprise/risk-management/risks/risk-123')
-          .expect(200);
+    it('GET /risk-management/heatmap scopes the heat map to the org', async () => {
+      riskManagementService.getRiskHeatMap.mockResolvedValue({ cells: [] } as never);
 
-        expect(response.body).toHaveProperty('deleted', true);
-      });
-    });
+      const response = await request(app).get('/api/enterprise/risk-management/heatmap');
 
-    describe('GET /api/enterprise/risk-management/matrix', () => {
-      it('should get risk matrix', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/risk-management/matrix')
-          .expect(200);
-
-        expect(response.body).toHaveProperty('matrix');
-      });
-    });
-
-    describe('GET /api/enterprise/risk-management/treatment-plans', () => {
-      it('should list treatment plans', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/risk-management/treatment-plans')
-          .expect(200);
-
-        expect(Array.isArray(response.body)).toBe(true);
-      });
-    });
-
-    describe('POST /api/enterprise/risk-management/treatment-plans', () => {
-      it('should create treatment plan', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/risk-management/treatment-plans')
-          .send({
-            riskId: 'risk-123',
-            strategy: 'Mitigate',
-            actions: ['Implement encryption'],
-          })
-          .expect(201);
-
-        expect(response.body).toHaveProperty('id');
-      });
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ cells: [] });
+      expect(riskManagementService.getRiskHeatMap).toHaveBeenCalledWith('org-123');
     });
   });
 
   // ===========================================================================
-  // Questionnaire Tests
+  // Questionnaires
   // ===========================================================================
   describe('Questionnaires', () => {
-    describe('GET /api/enterprise/questionnaires', () => {
-      it('should list questionnaires', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/questionnaires')
-          .expect(200);
+    it('POST /questionnaires creates an org-scoped questionnaire', async () => {
+      questionnaireService.createQuestionnaire.mockResolvedValue({ id: 'q-1', title: 'Vendor Q' } as never);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      const response = await request(app)
+        .post('/api/enterprise/questionnaires')
+        .send({ title: 'Vendor Q' });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual({ id: 'q-1', title: 'Vendor Q' });
+      expect(questionnaireService.createQuestionnaire).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Vendor Q', organizationId: 'org-123', userId: 'user-123' })
+      );
     });
 
-    describe('POST /api/enterprise/questionnaires', () => {
-      it('should create questionnaire', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/questionnaires')
-          .send({
-            name: 'Vendor Security Assessment',
-            questions: [{ text: 'Do you have SOC 2?', type: 'yes_no' }],
-          })
-          .expect(201);
-
-        expect(response.body).toHaveProperty('id');
-      });
+    it('POST /questionnaires rejects an empty body with 400', async () => {
+      const response = await request(app).post('/api/enterprise/questionnaires').send({});
+      expect(response.status).toBe(400);
+      expect(questionnaireService.createQuestionnaire).not.toHaveBeenCalled();
     });
 
-    describe('GET /api/enterprise/questionnaires/:id', () => {
-      it('should get questionnaire by ID', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/questionnaires/quest-123')
-          .expect(200);
+    it('GET /questionnaires lists org questionnaires', async () => {
+      questionnaireService.getQuestionnairesByOrganization.mockResolvedValue([{ id: 'q-1' }] as never);
 
-        expect(response.body).toHaveProperty('id', 'quest-123');
-      });
+      const response = await request(app).get('/api/enterprise/questionnaires');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual([{ id: 'q-1' }]);
+      expect(questionnaireService.getQuestionnairesByOrganization).toHaveBeenCalledWith('org-123', expect.any(Object));
     });
 
-    describe('POST /api/enterprise/questionnaires/:id/responses', () => {
-      it('should submit questionnaire response', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/questionnaires/quest-123/responses')
-          .send({
-            respondent: 'vendor@example.com',
-            answers: [{ questionId: 'q1', answer: 'Yes' }],
-          })
-          .expect(201);
+    it('GET /questionnaires/templates returns the static template catalog', async () => {
+      const response = await request(app).get('/api/enterprise/questionnaires/templates');
 
-        expect(response.body).toHaveProperty('id');
-      });
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body[0]).toHaveProperty('id', 'tmpl-soc2');
     });
 
-    describe('GET /api/enterprise/questionnaires/:id/responses', () => {
-      it('should list questionnaire responses', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/questionnaires/quest-123/responses')
-          .expect(200);
+    it('POST /questionnaires/from-template returns 404 for an unknown template', async () => {
+      const response = await request(app)
+        .post('/api/enterprise/questionnaires/from-template')
+        .send({ templateId: 'does-not-exist' });
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty('error', 'Template not found');
+    });
+
+    it('POST /questionnaires/from-template builds a questionnaire from a known template', async () => {
+      questionnaireService.createQuestionnaire.mockResolvedValue({ id: 'q-tmpl', title: 'SOC 2 Vendor Assessment' } as never);
+      questionnaireService.addQuestions.mockResolvedValue([] as never);
+      questionnaireService.getQuestionnairesByOrganization.mockResolvedValue([
+        { id: 'q-tmpl', title: 'SOC 2 Vendor Assessment' },
+      ] as never);
+
+      const response = await request(app)
+        .post('/api/enterprise/questionnaires/from-template')
+        .send({ templateId: 'tmpl-soc2' });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('id', 'q-tmpl');
+      expect(questionnaireService.createQuestionnaire).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org-123', questionnaireType: 'SecurityAssessment' })
+      );
+      expect(questionnaireService.addQuestions).toHaveBeenCalled();
+    });
+
+    it('GET /questionnaires/:id returns 404 when the questionnaire is not in the org', async () => {
+      questionnaireService.getQuestionnairesByOrganization.mockResolvedValue([] as never);
+
+      const response = await request(app).get('/api/enterprise/questionnaires/q-unknown');
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty('error', 'Questionnaire not found');
+    });
+
+    it('PUT /questionnaires/:id returns 404 when org ownership check fails', async () => {
+      prismaMock.questionnaire.findFirst.mockResolvedValue(null as never);
+
+      const response = await request(app)
+        .put('/api/enterprise/questionnaires/q-foreign')
+        .send({ title: 'Renamed' });
+
+      expect(response.status).toBe(404);
+      // Ownership lookup must be scoped to the caller's org.
+      expect(prismaMock.questionnaire.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'q-foreign', organizationId: 'org-123' },
+        })
+      );
+      expect(prismaMock.questionnaire.update).not.toHaveBeenCalled();
+    });
+
+    it('PUT /questionnaires/:id updates an owned questionnaire', async () => {
+      prismaMock.questionnaire.findFirst.mockResolvedValue({ id: 'q-1' } as never);
+      prismaMock.questionnaire.update.mockResolvedValue({ id: 'q-1', title: 'Renamed' } as never);
+
+      const response = await request(app)
+        .put('/api/enterprise/questionnaires/q-1')
+        .send({ title: 'Renamed' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ id: 'q-1', title: 'Renamed' });
+    });
+
+    it('POST /questionnaires/:id/responses submits a response scoped to org', async () => {
+      questionnaireService.submitResponse.mockResolvedValue({ id: 'resp-1' } as never);
+
+      const response = await request(app)
+        .post('/api/enterprise/questionnaires/q-1/responses')
+        .send({ questionId: 'qq-1', responseText: 'Yes' });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ id: 'resp-1' });
+      expect(questionnaireService.submitResponse).toHaveBeenCalledWith(
+        'q-1',
+        'qq-1',
+        expect.objectContaining({ responseText: 'Yes' }),
+        'user-123',
+        'org-123'
+      );
     });
   });
 
   // ===========================================================================
-  // Policy Library Tests
+  // Policy Library
   // ===========================================================================
   describe('Policy Library', () => {
-    describe('GET /api/enterprise/policies', () => {
-      it('should list policies', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/policies')
-          .expect(200);
+    it('POST /policies creates an org-scoped policy', async () => {
+      policyLibraryService.createPolicy.mockResolvedValue({ id: 'p-1' } as never);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      const response = await request(app)
+        .post('/api/enterprise/policies')
+        .send({ title: 'InfoSec Policy', category: 'Security', content: 'Body text' });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual({ id: 'p-1' });
+      expect(policyLibraryService.createPolicy).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'InfoSec Policy', organizationId: 'org-123', userId: 'user-123' })
+      );
     });
 
-    describe('POST /api/enterprise/policies', () => {
-      it('should create policy', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/policies')
-          .send({
-            name: 'Information Security Policy',
-            content: 'Policy content...',
-            category: 'Security',
-          })
-          .expect(201);
+    it('POST /policies rejects a body missing required content with 400', async () => {
+      const response = await request(app)
+        .post('/api/enterprise/policies')
+        .send({ title: 'InfoSec Policy', category: 'Security' });
 
-        expect(response.body).toHaveProperty('id');
-      });
+      expect(response.status).toBe(400);
+      expect(policyLibraryService.createPolicy).not.toHaveBeenCalled();
     });
 
-    describe('GET /api/enterprise/policies/:id', () => {
-      it('should get policy by ID', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/policies/policy-123')
-          .expect(200);
+    it('GET /policies lists org policies', async () => {
+      policyLibraryService.getPoliciesByOrganization.mockResolvedValue([{ id: 'p-1' }] as never);
 
-        expect(response.body).toHaveProperty('id', 'policy-123');
-      });
+      const response = await request(app).get('/api/enterprise/policies');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual([{ id: 'p-1' }]);
+      expect(policyLibraryService.getPoliciesByOrganization).toHaveBeenCalledWith('org-123', expect.any(Object));
     });
 
-    describe('POST /api/enterprise/policies/:id/publish', () => {
-      it('should publish policy', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/policies/policy-123/publish')
-          .expect(200);
+    it('GET /policies/templates returns templates (routed before /:id)', async () => {
+      policyLibraryService.getPolicyTemplates.mockResolvedValue([{ id: 'tmpl-1' }] as never);
 
-        expect(response.body.status).toBe('Published');
-      });
+      const response = await request(app).get('/api/enterprise/policies/templates');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual([{ id: 'tmpl-1' }]);
+      // /:id must NOT have matched "templates".
+      expect(policyLibraryService.getPolicyById).not.toHaveBeenCalled();
     });
 
-    describe('GET /api/enterprise/policies/templates', () => {
-      it('should list policy templates', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/policies/templates')
-          .expect(200);
+    it('GET /policies/:id passes org for ownership scoping', async () => {
+      policyLibraryService.getPolicyById.mockResolvedValue({ id: 'p-1' } as never);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      const response = await request(app).get('/api/enterprise/policies/p-1');
+
+      expect(response.status).toBe(200);
+      expect(policyLibraryService.getPolicyById).toHaveBeenCalledWith('p-1', 'org-123');
+    });
+
+    it('POST /policies/:id/approve approves with org scoping', async () => {
+      policyLibraryService.approvePolicy.mockResolvedValue({ id: 'p-1', status: 'Approved' } as never);
+
+      const response = await request(app).post('/api/enterprise/policies/p-1/approve');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('status', 'Approved');
+      expect(policyLibraryService.approvePolicy).toHaveBeenCalledWith('p-1', 'user-123', 'org-123');
     });
   });
 
   // ===========================================================================
-  // Trust Center Tests
+  // Trust Center
   // ===========================================================================
   describe('Trust Center', () => {
-    describe('GET /api/enterprise/trust-center/config', () => {
-      it('should get trust center config', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/trust-center/config')
-          .expect(200);
+    it('GET /trust-center/public/:organizationId is reachable without auth state', async () => {
+      trustCenterService.getPublicTrustCenter.mockResolvedValue({ name: 'Acme' } as never);
 
-        expect(response.body).toHaveProperty('enabled');
-      });
+      const response = await request(app).get('/api/enterprise/trust-center/public/org-public');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ name: 'Acme' });
+      expect(trustCenterService.getPublicTrustCenter).toHaveBeenCalledWith('org-public');
     });
 
-    describe('PATCH /api/enterprise/trust-center/config', () => {
-      it('should update trust center config', async () => {
-        const response = await request(app)
-          .patch('/api/enterprise/trust-center/config')
-          .send({ enabled: true, customDomain: 'trust.example.com' })
-          .expect(200);
+    it('POST /trust-center/certificates creates an org-scoped certificate', async () => {
+      trustCenterService.createCertificate.mockResolvedValue({ id: 'cert-1' } as never);
 
-        expect(response.body).toHaveProperty('updated', true);
-      });
+      const response = await request(app)
+        .post('/api/enterprise/trust-center/certificates')
+        .send({
+          certificateType: 'SOC2',
+          issuer: 'AuditFirm',
+          issueDate: '2024-01-01',
+          expiryDate: '2025-01-01',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual({ id: 'cert-1' });
+      expect(trustCenterService.createCertificate).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org-123', userId: 'user-123' })
+      );
     });
 
-    describe('GET /api/enterprise/trust-center/documents', () => {
-      it('should list trust center documents', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/trust-center/documents')
-          .expect(200);
+    it('POST /trust-center/certificates rejects a missing issuer with 400', async () => {
+      const response = await request(app)
+        .post('/api/enterprise/trust-center/certificates')
+        .send({ certificateType: 'SOC2', issueDate: '2024-01-01', expiryDate: '2025-01-01' });
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
-    });
-
-    describe('POST /api/enterprise/trust-center/documents', () => {
-      it('should add document to trust center', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/trust-center/documents')
-          .send({
-            name: 'SOC 2 Report',
-            type: 'Compliance',
-            url: 'https://docs.example.com/soc2.pdf',
-          })
-          .expect(201);
-
-        expect(response.body).toHaveProperty('id');
-      });
-    });
-
-    describe('GET /api/enterprise/trust-center/requests', () => {
-      it('should list document requests', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/trust-center/requests')
-          .expect(200);
-
-        expect(Array.isArray(response.body)).toBe(true);
-      });
-    });
-
-    describe('POST /api/enterprise/trust-center/requests/:id/process', () => {
-      it('should process document request', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/trust-center/requests/req-123/process')
-          .send({ action: 'approve' })
-          .expect(200);
-
-        expect(response.body).toHaveProperty('processed', true);
-      });
+      expect(response.status).toBe(400);
+      expect(trustCenterService.createCertificate).not.toHaveBeenCalled();
     });
   });
 
   // ===========================================================================
-  // Multi-Workspace Tests
+  // Multi-Workspace
   // ===========================================================================
   describe('Multi-Workspace', () => {
-    describe('GET /api/enterprise/workspace', () => {
-      it('should list workspaces', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/workspace')
-          .expect(200);
+    it('GET /workspace/hierarchy scopes to the org', async () => {
+      multiWorkspaceService.getOrganizationHierarchy.mockResolvedValue({ root: 'org-123' } as never);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      const response = await request(app).get('/api/enterprise/workspace/hierarchy');
+
+      expect(response.status).toBe(200);
+      expect(multiWorkspaceService.getOrganizationHierarchy).toHaveBeenCalledWith('org-123');
     });
 
-    describe('POST /api/enterprise/workspace', () => {
-      it('should create workspace', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/workspace')
-          .send({
-            name: 'Development',
-            description: 'Development environment',
-          })
-          .expect(201);
+    it('POST /workspace/child-organizations creates a child under the caller org', async () => {
+      multiWorkspaceService.createChildOrganization.mockResolvedValue({ id: 'child-1' } as never);
 
-        expect(response.body).toHaveProperty('id');
-      });
+      const response = await request(app)
+        .post('/api/enterprise/workspace/child-organizations')
+        .send({ name: 'Subsidiary' });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual({ id: 'child-1' });
+      expect(multiWorkspaceService.createChildOrganization).toHaveBeenCalledWith(
+        'org-123',
+        expect.objectContaining({ name: 'Subsidiary' }),
+        'user-123'
+      );
     });
 
-    describe('GET /api/enterprise/workspace/:id', () => {
-      it('should get workspace by ID', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/workspace/ws-123')
-          .expect(200);
+    it('POST /workspace/move-user resolves caller org server-side from req.user.id', async () => {
+      multiWorkspaceService.moveUserToOrganization.mockResolvedValue({ moved: true } as never);
 
-        expect(response.body).toHaveProperty('id', 'ws-123');
-      });
-    });
+      const response = await request(app)
+        .post('/api/enterprise/workspace/move-user')
+        .send({ userId: 'user-456', targetOrganizationId: 'org-child' });
 
-    describe('POST /api/enterprise/workspace/:id/switch', () => {
-      it('should switch workspace', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/workspace/ws-123/switch')
-          .expect(200);
-
-        expect(response.body).toHaveProperty('switched', true);
-      });
+      expect(response.status).toBe(200);
+      expect(multiWorkspaceService.moveUserToOrganization).toHaveBeenCalledWith(
+        'user-456',
+        'org-child',
+        'user-123'
+      );
     });
   });
 
   // ===========================================================================
-  // Reporting Tests
+  // Reporting
   // ===========================================================================
   describe('Reports', () => {
-    describe('GET /api/enterprise/reports', () => {
-      it('should list reports', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/reports')
-          .expect(200);
+    it('GET /reports returns org reports from prisma with a total', async () => {
+      prismaMock.customReport.findMany.mockResolvedValue([{ id: 'r-1' }] as never);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      const response = await request(app).get('/api/enterprise/reports');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ data: [{ id: 'r-1' }], total: 1 });
+      expect(prismaMock.customReport.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { organizationId: 'org-123' } })
+      );
     });
 
-    describe('POST /api/enterprise/reports/generate', () => {
-      it('should generate report', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/reports/generate')
-          .send({
-            type: 'Compliance Summary',
-            dateRange: { start: '2024-01-01', end: '2024-12-31' },
-          })
-          .expect(201);
+    it('POST /reports creates an org-scoped report', async () => {
+      reportingService.createReport.mockResolvedValue({ id: 'r-1' } as never);
 
-        expect(response.body).toHaveProperty('id');
-      });
+      const response = await request(app)
+        .post('/api/enterprise/reports')
+        .send({ name: 'Compliance Summary', reportType: 'Compliance', template: { sections: [] } });
+
+      expect(response.status).toBe(201);
+      expect(reportingService.createReport).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Compliance Summary', organizationId: 'org-123', userId: 'user-123' })
+      );
     });
 
-    describe('GET /api/enterprise/reports/:id', () => {
-      it('should get report by ID', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/reports/report-123')
-          .expect(200);
+    it('GET /reports/compliance generates the compliance report for the org', async () => {
+      reportingService.generateComplianceReport.mockResolvedValue({ score: 88 } as never);
 
-        expect(response.body).toHaveProperty('id', 'report-123');
-      });
-    });
+      const response = await request(app).get('/api/enterprise/reports/compliance?frameworkId=fw-1');
 
-    describe('POST /api/enterprise/reports/schedule', () => {
-      it('should schedule report', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/reports/schedule')
-          .send({
-            type: 'Weekly Summary',
-            schedule: 'every Monday',
-            recipients: ['admin@example.com'],
-          })
-          .expect(201);
-
-        expect(response.body).toHaveProperty('scheduled', true);
-      });
-    });
-
-    describe('GET /api/enterprise/reports/scheduled', () => {
-      it('should list scheduled reports', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/reports/scheduled')
-          .expect(200);
-
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ score: 88 });
+      expect(reportingService.generateComplianceReport).toHaveBeenCalledWith('org-123', 'fw-1');
     });
   });
 
   // ===========================================================================
-  // Monitoring Tests
+  // Monitoring
   // ===========================================================================
   describe('Monitoring', () => {
-    describe('GET /api/enterprise/monitoring', () => {
-      it('should list monitors', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/monitoring')
-          .expect(200);
+    it('POST /monitoring creates an org-scoped monitor', async () => {
+      monitoringService.createMonitor.mockResolvedValue({ id: 'm-1' } as never);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      const response = await request(app)
+        .post('/api/enterprise/monitoring')
+        .send({ name: 'SSL Monitor', monitorType: 'Certificate', configuration: { host: 'example.com' } });
+
+      expect(response.status).toBe(201);
+      expect(monitoringService.createMonitor).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'SSL Monitor', organizationId: 'org-123', userId: 'user-123' })
+      );
     });
 
-    describe('POST /api/enterprise/monitoring', () => {
-      it('should create monitor', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/monitoring')
-          .send({
-            name: 'SSL Certificate Monitor',
-            type: 'Certificate',
-            target: 'example.com',
-          })
-          .expect(201);
+    it('POST /monitoring rejects a missing configuration with 400', async () => {
+      const response = await request(app)
+        .post('/api/enterprise/monitoring')
+        .send({ name: 'SSL Monitor', monitorType: 'Certificate' });
 
-        expect(response.body).toHaveProperty('id');
-      });
+      expect(response.status).toBe(400);
+      expect(monitoringService.createMonitor).not.toHaveBeenCalled();
     });
 
-    describe('GET /api/enterprise/monitoring/:id', () => {
-      it('should get monitor by ID', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/monitoring/monitor-123')
-          .expect(200);
+    it('GET /monitoring/dashboard scopes to the org (routed before /:id)', async () => {
+      monitoringService.getMonitoringDashboard.mockResolvedValue({ activeMonitors: 3 } as never);
 
-        expect(response.body).toHaveProperty('id', 'monitor-123');
-      });
+      const response = await request(app).get('/api/enterprise/monitoring/dashboard');
+
+      expect(response.status).toBe(200);
+      expect(monitoringService.getMonitoringDashboard).toHaveBeenCalledWith('org-123');
+      expect(monitoringService.getMonitorById).not.toHaveBeenCalled();
     });
 
-    describe('POST /api/enterprise/monitoring/:id/run', () => {
-      it('should run monitor', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/monitoring/monitor-123/run')
-          .expect(200);
+    it('GET /monitoring/:id passes org for ownership scoping', async () => {
+      monitoringService.getMonitorById.mockResolvedValue({ id: 'm-1' } as never);
 
-        expect(response.body).toHaveProperty('runId');
-      });
-    });
+      const response = await request(app).get('/api/enterprise/monitoring/m-1');
 
-    describe('GET /api/enterprise/monitoring/alerts', () => {
-      it('should list alerts', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/monitoring/alerts')
-          .expect(200);
-
-        expect(Array.isArray(response.body)).toBe(true);
-      });
-    });
-
-    describe('POST /api/enterprise/monitoring/alerts/:id/acknowledge', () => {
-      it('should acknowledge alert', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/monitoring/alerts/alert-123/acknowledge')
-          .expect(200);
-
-        expect(response.body).toHaveProperty('acknowledged', true);
-      });
+      expect(response.status).toBe(200);
+      expect(monitoringService.getMonitorById).toHaveBeenCalledWith('m-1', 'org-123');
     });
   });
 
   // ===========================================================================
-  // Issue Management Tests
+  // Issue Management
   // ===========================================================================
   describe('Issue Management', () => {
-    describe('GET /api/enterprise/issues', () => {
-      it('should list issues', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/issues')
-          .expect(200);
+    it('POST /issues creates an org-scoped issue', async () => {
+      issueManagementService.createIssue.mockResolvedValue({ id: 'i-1' } as never);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
+      const response = await request(app)
+        .post('/api/enterprise/issues')
+        .send({ title: 'Gap found', description: 'Missing control', issueType: 'ComplianceGap' });
+
+      expect(response.status).toBe(201);
+      expect(issueManagementService.createIssue).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Gap found', organizationId: 'org-123', createdById: 'user-123' })
+      );
     });
 
-    describe('POST /api/enterprise/issues', () => {
-      it('should create issue', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/issues')
-          .send({
-            title: 'Compliance Gap Found',
-            description: 'Missing encryption control',
-            severity: 'High',
-          })
-          .expect(201);
+    it('POST /issues rejects a missing description with 400', async () => {
+      const response = await request(app)
+        .post('/api/enterprise/issues')
+        .send({ title: 'Gap found', issueType: 'ComplianceGap' });
 
-        expect(response.body).toHaveProperty('id');
-      });
+      expect(response.status).toBe(400);
+      expect(issueManagementService.createIssue).not.toHaveBeenCalled();
     });
 
-    describe('GET /api/enterprise/issues/:id', () => {
-      it('should get issue by ID', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/issues/issue-123')
-          .expect(200);
+    it('GET /issues/:id returns 404 for an issue outside the org and scopes the lookup', async () => {
+      prismaMock.issue.findFirst.mockResolvedValue(null as never);
 
-        expect(response.body).toHaveProperty('id', 'issue-123');
-      });
+      const response = await request(app).get('/api/enterprise/issues/i-foreign');
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty('error', 'Issue not found');
+      expect(prismaMock.issue.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'i-foreign', organizationId: 'org-123' }),
+        })
+      );
     });
 
-    describe('POST /api/enterprise/issues/:id/assign', () => {
-      it('should assign issue', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/issues/issue-123/assign')
-          .send({ assignee: 'user-456' })
-          .expect(200);
+    it('GET /issues/:id returns an owned issue', async () => {
+      prismaMock.issue.findFirst.mockResolvedValue({ id: 'i-1', title: 'Gap' } as never);
 
-        expect(response.body).toHaveProperty('assigned', true);
-      });
+      const response = await request(app).get('/api/enterprise/issues/i-1');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('id', 'i-1');
     });
 
-    describe('POST /api/enterprise/issues/:id/resolve', () => {
-      it('should resolve issue', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/issues/issue-123/resolve')
-          .send({ resolution: 'Implemented encryption' })
-          .expect(200);
+    it('GET /issues/:id/comments returns 404 when the parent issue is not in the org', async () => {
+      prismaMock.issue.findFirst.mockResolvedValue(null as never);
 
-        expect(response.body).toHaveProperty('resolved', true);
-      });
+      const response = await request(app).get('/api/enterprise/issues/i-foreign/comments');
+
+      expect(response.status).toBe(404);
+      expect(prismaMock.issueComment.findMany).not.toHaveBeenCalled();
     });
 
-    describe('GET /api/enterprise/issues/:id/comments', () => {
-      it('should list issue comments', async () => {
-        const response = await request(app)
-          .get('/api/enterprise/issues/issue-123/comments')
-          .expect(200);
+    it('POST /issues/:id/comments adds a comment scoped to the org', async () => {
+      issueManagementService.addComment.mockResolvedValue({ id: 'c-1' } as never);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
-    });
+      const response = await request(app)
+        .post('/api/enterprise/issues/i-1/comments')
+        .send({ comment: 'Working on it' });
 
-    describe('POST /api/enterprise/issues/:id/comments', () => {
-      it('should add issue comment', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/issues/issue-123/comments')
-          .send({ text: 'Working on this' })
-          .expect(201);
-
-        expect(response.body).toHaveProperty('id');
-      });
+      expect(response.status).toBe(200);
+      expect(issueManagementService.addComment).toHaveBeenCalledWith(
+        'i-1',
+        expect.objectContaining({ comment: 'Working on it', userId: 'user-123' }),
+        'org-123'
+      );
     });
   });
 
   // ===========================================================================
-  // Visionary AI Tests
+  // Visionary AI
   // ===========================================================================
   describe('Visionary AI', () => {
-    describe('POST /api/enterprise/visionary-ai/analyze-risk', () => {
-      it('should analyze risk with AI', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/visionary-ai/analyze-risk')
-          .send({
-            riskId: 'risk-123',
-            context: 'Financial services company',
-          })
-          .expect(200);
+    it('GET /visionary-ai/copilot/recommendations scopes to org+user', async () => {
+      visionaryAIService.getComplianceCoPilotRecommendations.mockResolvedValue({ items: [] } as never);
 
-        expect(response.body).toHaveProperty('analysis');
-      });
+      const response = await request(app).get('/api/enterprise/visionary-ai/copilot/recommendations');
+
+      expect(response.status).toBe(200);
+      expect(visionaryAIService.getComplianceCoPilotRecommendations).toHaveBeenCalledWith('org-123', 'user-123');
     });
 
-    describe('POST /api/enterprise/visionary-ai/generate-policy', () => {
-      it('should generate policy with AI', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/visionary-ai/generate-policy')
-          .send({
-            type: 'Data Protection',
-            requirements: ['GDPR', 'CCPA'],
-          })
-          .expect(200);
+    it('POST /visionary-ai/predict-risks passes the time horizon', async () => {
+      visionaryAIService.predictFutureRisks.mockResolvedValue({ predictions: [] } as never);
 
-        expect(response.body).toHaveProperty('policy');
-      });
+      const response = await request(app)
+        .post('/api/enterprise/visionary-ai/predict-risks')
+        .send({ timeHorizonDays: 120 });
+
+      expect(response.status).toBe(200);
+      expect(visionaryAIService.predictFutureRisks).toHaveBeenCalledWith('org-123', 120, 'user-123');
     });
 
-    describe('POST /api/enterprise/visionary-ai/review-compliance', () => {
-      it('should review compliance with AI', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/visionary-ai/review-compliance')
-          .send({
-            framework: 'SOC 2',
-            controls: ['CC1.1', 'CC1.2'],
-          })
-          .expect(200);
+    it('POST /visionary-ai/predict-risks rejects an out-of-range horizon with 400', async () => {
+      const response = await request(app)
+        .post('/api/enterprise/visionary-ai/predict-risks')
+        .send({ timeHorizonDays: 9999 });
 
-        expect(response.body).toHaveProperty('review');
-      });
+      expect(response.status).toBe(400);
+      expect(visionaryAIService.predictFutureRisks).not.toHaveBeenCalled();
     });
 
-    describe('POST /api/enterprise/visionary-ai/suggest-controls', () => {
-      it('should suggest controls with AI', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/visionary-ai/suggest-controls')
-          .send({
-            riskId: 'risk-123',
-            currentControls: ['Encryption at rest'],
-          })
-          .expect(200);
+    it('GET /visionary-ai/benchmarking defaults industry to Technology', async () => {
+      visionaryAIService.getComplianceBenchmarking.mockResolvedValue({ percentile: 70 } as never);
 
-        expect(response.body).toHaveProperty('suggestions');
-      });
-    });
+      const response = await request(app).get('/api/enterprise/visionary-ai/benchmarking');
 
-    describe('POST /api/enterprise/visionary-ai/predict-trends', () => {
-      it('should predict compliance trends with AI', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/visionary-ai/predict-trends')
-          .send({
-            timeframe: '6 months',
-            focus: 'Security risks',
-          })
-          .expect(200);
-
-        expect(response.body).toHaveProperty('predictions');
-      });
-    });
-
-    describe('POST /api/enterprise/visionary-ai/ask', () => {
-      it('should answer compliance questions with AI', async () => {
-        const response = await request(app)
-          .post('/api/enterprise/visionary-ai/ask')
-          .send({
-            question: 'What are the key requirements for GDPR compliance?',
-          })
-          .expect(200);
-
-        expect(response.body).toHaveProperty('answer');
-      });
+      expect(response.status).toBe(200);
+      expect(visionaryAIService.getComplianceBenchmarking).toHaveBeenCalledWith('org-123', 'Technology', 'user-123');
     });
   });
 });

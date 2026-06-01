@@ -33,27 +33,34 @@ test.describe('Issue Management', () => {
     await issueLink.click({ timeout: 10000 });
     await page.waitForLoadState('networkidle').catch(() => {});
 
+    // The Issue Management view always renders a "New Issue" control in its
+    // header (IssueManagement.tsx), so for an authenticated user it must be
+    // present — guarding the whole flow behind its visibility would let a
+    // missing CRUD UI pass silently.
     const addBtn = page.getByRole('button', { name: /Create Issue|Add Issue|New Issue/i }).first();
-    if (await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await addBtn.click();
+    await expect(addBtn).toBeVisible({ timeout: 10000 });
+    await addBtn.click();
 
-      await page.fill('[name="title"]', 'E2E Expired SSL Certificate');
+    // Clicking "New Issue" opens the create form with a title field.
+    const titleField = page.locator('[name="title"]');
+    await expect(titleField).toBeVisible({ timeout: 5000 });
+    await titleField.fill('E2E Expired SSL Certificate');
 
-      const descField = page.locator('[name="description"]');
-      if (await descField.isVisible()) {
-        await descField.fill('Production SSL certificate expires in 30 days');
-      }
-
-      const severityField = page.locator('[name="severity"], select[name="severity"]');
-      if (await severityField.isVisible()) {
-        await severityField.selectOption('High').catch(() => {});
-      }
-
-      const submitBtn = page.getByRole('button', { name: /Create|Save|Submit/i }).first();
-      await submitBtn.click({ timeout: 5000 });
-
-      await expect(page.locator('text=E2E Expired SSL Certificate')).toBeVisible({ timeout: 15000 });
+    const descField = page.locator('[name="description"]');
+    if (await descField.isVisible()) {
+      await descField.fill('Production SSL certificate expires in 30 days');
     }
+
+    const severityField = page.locator('[name="severity"], select[name="severity"]');
+    if (await severityField.isVisible()) {
+      await severityField.selectOption('High').catch(() => {});
+    }
+
+    const submitBtn = page.getByRole('button', { name: /Create Issue|Save|Submit/i }).last();
+    await submitBtn.click({ timeout: 5000 });
+
+    // The newly created issue must appear in the list.
+    await expect(page.locator('text=E2E Expired SSL Certificate')).toBeVisible({ timeout: 15000 });
   });
 
   test('User can filter issues by severity and status', async ({ page }) => {

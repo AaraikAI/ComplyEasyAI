@@ -56,16 +56,6 @@ interface MappingSession {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Constants                                                          */
-/* ------------------------------------------------------------------ */
-
-// Backing arrays — populated at runtime from the live API. See useEffect
-// inside CrossFrameworkMapper for the load logic.
-const FRAMEWORKS: Framework[] = [];
-const CONTROLS_DB: Control[] = [];
-const PREBUILT_MAPPINGS: Omit<ControlMapping, 'id'>[] = [];
-
-/* ------------------------------------------------------------------ */
 /*  ID helper                                                          */
 /* ------------------------------------------------------------------ */
 let _uid = 8000;
@@ -108,8 +98,9 @@ const mappingTypeBadge = (t: ControlMapping['mappingType']) => {
   }
 };
 
-const getControl = (id: string) => CONTROLS_DB.find(c => c.id === id);
-const getFramework = (id: string) => FRAMEWORKS.find(f => f.id === id);
+// Pure lookups over the supplied catalog arrays (component holds the live data).
+const findControl = (controls: Control[], id: string) => controls.find(c => c.id === id);
+const findFramework = (frameworks: Framework[], id: string) => frameworks.find(f => f.id === id);
 
 /* ------------------------------------------------------------------ */
 /*  Backend → frontend adapters                                         */
@@ -192,8 +183,15 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
   /* loading state */
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  // Bump this to force re-render after mutating the module-scope catalog arrays.
-  const [, setDataVersion] = useState<number>(0);
+
+  /* catalog data — component-scoped so it is reactive and not shared across instances */
+  const [frameworks, setFrameworks] = useState<Framework[]>([]);
+  const [controlsDb, setControlsDb] = useState<Control[]>([]);
+  const [prebuiltMappings, setPrebuiltMappings] = useState<Omit<ControlMapping, 'id'>[]>([]);
+
+  // Local lookups bound to the live catalog state.
+  const getControl = useCallback((id: string) => findControl(controlsDb, id), [controlsDb]);
+  const getFramework = useCallback((id: string) => findFramework(frameworks, id), [frameworks]);
 
   useEffect(() => {
     let cancelled = false;
@@ -207,25 +205,21 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
         ]);
         if (cancelled) return;
 
-        // Wipe and repopulate module-level catalog arrays.
-        FRAMEWORKS.length = 0;
-        CONTROLS_DB.length = 0;
-        PREBUILT_MAPPINGS.length = 0;
-
+        const nextFrameworks: Framework[] = [];
+        const nextControls: Control[] = [];
         (frameworksRaw || []).forEach((fw: any, idx: number) => {
-          FRAMEWORKS.push(adaptBackendFramework(fw, idx));
+          nextFrameworks.push(adaptBackendFramework(fw, idx));
           if (Array.isArray(fw.controls)) {
             fw.controls.forEach((c: any) => {
-              CONTROLS_DB.push(adaptBackendControl(c, fw.id));
+              nextControls.push(adaptBackendControl(c, fw.id));
             });
           }
         });
+        const nextMappings = (mappingsRaw || []).map((m: any) => adaptBackendMapping(m));
 
-        (mappingsRaw || []).forEach((m: any) => {
-          PREBUILT_MAPPINGS.push(adaptBackendMapping(m));
-        });
-
-        setDataVersion(v => v + 1);
+        setFrameworks(nextFrameworks);
+        setControlsDb(nextControls);
+        setPrebuiltMappings(nextMappings);
       } catch (err: any) {
         if (cancelled) return;
         logger.error('Failed to load cross-framework catalog', err);
@@ -257,18 +251,18 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
 
   /* derived */
   const activeSession = useMemo(() => sessions.find(s => s.id === activeSessionId) ?? null, [sessions, activeSessionId]);
-  const sourceFramework = useMemo(() => getFramework(activeSession?.sourceFrameworkId ?? sourceFrameworkId), [activeSession, sourceFrameworkId]);
-  const targetFramework = useMemo(() => getFramework(activeSession?.targetFrameworkId ?? targetFrameworkId), [activeSession, targetFrameworkId]);
+  const sourceFramework = useMemo(() => getFramework(activeSession?.sourceFrameworkId ?? sourceFrameworkId), [activeSession, sourceFrameworkId, getFramework]);
+  const targetFramework = useMemo(() => getFramework(activeSession?.targetFrameworkId ?? targetFrameworkId), [activeSession, targetFrameworkId, getFramework]);
 
   const sourceControls = useMemo(() => {
     const fid = activeSession?.sourceFrameworkId ?? sourceFrameworkId;
-    return CONTROLS_DB.filter(c => c.frameworkId === fid);
-  }, [activeSession, sourceFrameworkId]);
+    return controlsDb.filter(c => c.frameworkId === fid);
+  }, [activeSession, sourceFrameworkId, controlsDb]);
 
   const targetControls = useMemo(() => {
     const fid = activeSession?.targetFrameworkId ?? targetFrameworkId;
-    return CONTROLS_DB.filter(c => c.frameworkId === fid);
-  }, [activeSession, targetFrameworkId]);
+    return controlsDb.filter(c => c.frameworkId === fid);
+  }, [activeSession, targetFrameworkId, controlsDb]);
 
   const filteredMappings = useMemo(() => {
     if (!activeSession) return [];
@@ -283,7 +277,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
       }
       return true;
     });
-  }, [activeSession, filterStatus, filterType, searchMappings]);
+  }, [activeSession, filterStatus, filterType, searchMappings, getControl]);
 
   /* gap analysis */
   const gapAnalysis = useMemo(() => {
@@ -305,8 +299,8 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
     setAnalyzeProgress(0);
     setAiError(null);
 
-    const srcFw = FRAMEWORKS.find(f => f.id === sourceFrameworkId);
-    const tgtFw = FRAMEWORKS.find(f => f.id === targetFrameworkId);
+    const srcFw = frameworks.find(f => f.id === sourceFrameworkId);
+    const tgtFw = frameworks.find(f => f.id === targetFrameworkId);
 
     try {
       setAnalyzeProgress(10);
@@ -338,7 +332,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
       });
 
       // Also include any pre-built mappings that the AI may have missed
-      const prebuiltMappings = PREBUILT_MAPPINGS.filter(m => {
+      const relevantPrebuilt = prebuiltMappings.filter(m => {
         const src = getControl(m.sourceControlId);
         const tgt = getControl(m.targetControlId);
         return (src?.frameworkId === sourceFrameworkId && tgt?.frameworkId === targetFrameworkId) ||
@@ -355,7 +349,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
       const aiPairKeys = new Set(aiMappings.map(m => `${m.sourceControlId}:${m.targetControlId}`));
       const mergedMappings = [
         ...aiMappings,
-        ...prebuiltMappings.filter(m => !aiPairKeys.has(`${m.sourceControlId}:${m.targetControlId}`)),
+        ...relevantPrebuilt.filter(m => !aiPairKeys.has(`${m.sourceControlId}:${m.targetControlId}`)),
       ];
 
       setAnalyzeProgress(100);
@@ -383,7 +377,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
       setAiError(error?.message || 'Failed to perform AI mapping. Please try again.');
 
       // Fallback to pre-built mappings only
-      const fallbackMappings = PREBUILT_MAPPINGS.filter(m => {
+      const fallbackMappings = prebuiltMappings.filter(m => {
         const src = getControl(m.sourceControlId);
         const tgt = getControl(m.targetControlId);
         return (src?.frameworkId === sourceFrameworkId && tgt?.frameworkId === targetFrameworkId) ||
@@ -417,7 +411,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
       setIsAnalyzing(false);
       setAnalyzeProgress(0);
     }
-  }, [sourceFrameworkId, targetFrameworkId, sourceControls, targetControls]);
+  }, [sourceFrameworkId, targetFrameworkId, sourceControls, targetControls, frameworks, prebuiltMappings, getControl]);
 
   const updateMappingStatus = useCallback((mappingId: string, status: ControlMapping['status']) => {
     setSessions(prev => prev.map(s => {
@@ -428,13 +422,13 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
         lastUpdated: new Date().toISOString().split('T')[0],
       };
       // Recalculate coverage
-      const sourceCtls = CONTROLS_DB.filter(c => c.frameworkId === s.sourceFrameworkId);
+      const sourceCtls = controlsDb.filter(c => c.frameworkId === s.sourceFrameworkId);
       const mappedIds = new Set(updated.mappings.filter(m => m.status !== 'Rejected').map(m => m.sourceControlId));
       updated.coveragePercent = sourceCtls.length > 0 ? Math.round((mappedIds.size / sourceCtls.length) * 100) : 0;
       updated.avgConfidence = updated.mappings.length > 0 ? Math.round(updated.mappings.filter(m => m.status !== 'Rejected').reduce((a, m) => a + m.confidence, 0) / updated.mappings.filter(m => m.status !== 'Rejected').length) : 0;
       return updated;
     }));
-  }, [activeSessionId]);
+  }, [activeSessionId, controlsDb]);
 
   const addManualMapping = useCallback(() => {
     if (!manualSource || !manualTarget || !activeSessionId) return;
@@ -483,7 +477,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
     const a = document.createElement('a');
     a.href = url; a.download = `mapping_${sf?.shortName}_to_${tf?.shortName}_report.json`; a.click();
     URL.revokeObjectURL(url);
-  }, [activeSession, gapAnalysis]);
+  }, [activeSession, gapAnalysis, getControl, getFramework]);
 
   /* ================================================================ */
   /*  RENDER - Framework Selection (no active session)                  */
@@ -503,7 +497,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
             {loadError}
           </div>
         )}
-        {!loading && !loadError && FRAMEWORKS.length === 0 && (
+        {!loading && !loadError && frameworks.length === 0 && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center gap-2 text-yellow-800 text-sm">
             <Info size={14} />
             No frameworks configured for your organization yet. Add a framework to begin mapping.
@@ -553,7 +547,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
               <label className="block text-sm font-medium text-gray-700 mb-1">Source Framework</label>
               <select value={sourceFrameworkId} onChange={e => setSourceFrameworkId(e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
                 <option value="">Select source...</option>
-                {FRAMEWORKS.map(f => <option key={f.id} value={f.id} disabled={f.id === targetFrameworkId}>{f.name} ({f.controlCount} controls)</option>)}
+                {frameworks.map(f => <option key={f.id} value={f.id} disabled={f.id === targetFrameworkId}>{f.name} ({f.controlCount} controls)</option>)}
               </select>
             </div>
             <div className="flex items-center justify-center"><ArrowRight size={24} className="text-gray-400" /></div>
@@ -561,7 +555,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
               <label className="block text-sm font-medium text-gray-700 mb-1">Target Framework</label>
               <select value={targetFrameworkId} onChange={e => setTargetFrameworkId(e.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
                 <option value="">Select target...</option>
-                {FRAMEWORKS.map(f => <option key={f.id} value={f.id} disabled={f.id === sourceFrameworkId}>{f.name} ({f.controlCount} controls)</option>)}
+                {frameworks.map(f => <option key={f.id} value={f.id} disabled={f.id === sourceFrameworkId}>{f.name} ({f.controlCount} controls)</option>)}
               </select>
             </div>
           </div>
@@ -588,7 +582,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
         <div>
           <h3 className="font-semibold text-gray-900 mb-3">Available Frameworks</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {FRAMEWORKS.map(f => (
+            {frameworks.map(f => (
               <div key={f.id} className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`w-3 h-3 rounded-full ${f.color}`} />

@@ -145,3 +145,40 @@ export function decryptConfigFields(configObj: any): any {
   }
   return decrypted;
 }
+
+/**
+ * Encrypt sensitive fields of a config object before persistence. Targets the known
+ * SENSITIVE_CONFIG_KEYS plus any config-specific secret key names passed in
+ * `extraFields` (e.g. 'webhookSecret', 'scimToken', 'signingSecret'). Idempotent —
+ * already-encrypted values are passed through unchanged by encryptField.
+ */
+export function encryptConfigSecrets(configObj: any, extraFields: string[] = []): any {
+  if (!configObj || typeof configObj !== 'object') return configObj;
+
+  const targets = new Set<string>([...SENSITIVE_CONFIG_KEYS, ...extraFields]);
+  const encrypted = { ...configObj };
+  for (const [key, value] of Object.entries(encrypted)) {
+    if (typeof value === 'string' && value && targets.has(key)) {
+      encrypted[key] = encryptField(value);
+    }
+  }
+  return encrypted;
+}
+
+/** Inverse of encryptConfigSecrets — decrypts any prefixed values regardless of key name. */
+export function decryptConfigSecrets(configObj: any, extraFields: string[] = []): any {
+  if (!configObj || typeof configObj !== 'object') return configObj;
+
+  const targets = new Set<string>([...SENSITIVE_CONFIG_KEYS, ...extraFields]);
+  const decrypted = { ...configObj };
+  for (const [key, value] of Object.entries(decrypted)) {
+    if (
+      typeof value === 'string' &&
+      value.startsWith(ENCRYPTED_PREFIX) &&
+      (targets.has(key) || extraFields.length === 0)
+    ) {
+      decrypted[key] = decryptField(value);
+    }
+  }
+  return decrypted;
+}

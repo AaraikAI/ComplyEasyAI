@@ -7,6 +7,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
+import crypto from 'crypto';
 import { prismaMock } from '../../mocks/prisma';
 
 jest.mock('../../../config/database', () => ({ __esModule: true, default: prismaMock }));
@@ -24,17 +25,18 @@ app.use('/api/scim', scimRoutes);
 app.use(errorHandler);
 
 const SCIM_TOKEN = 'scim-test-bearer-token';
+// The auth middleware stores/compares SHA-256 hashes of bearer tokens, so the
+// mocked config must hold the hash of SCIM_TOKEN (not the plaintext value).
+const SCIM_TOKEN_HASH = crypto.createHash('sha256').update(SCIM_TOKEN).digest('hex');
 
 describe('SCIM API — Contract Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Mock SCIM bearer token auth
-    prismaMock.sCIMConfiguration.findFirst.mockImplementation(async (args: any) => {
-      if (args?.where?.bearerToken === SCIM_TOKEN) {
-        return { id: 'scim-cfg-1', organizationId: 'org-123', enabled: true, bearerToken: SCIM_TOKEN };
-      }
-      return null;
-    });
+    // Mock SCIM bearer token auth: middleware now queries findMany over enabled
+    // configs and timing-safe-compares the SHA-256 hash of the incoming token.
+    prismaMock.sCIMConfiguration.findMany.mockResolvedValue([
+      { id: 'scim-cfg-1', organizationId: 'org-123', enabled: true, bearerToken: SCIM_TOKEN_HASH },
+    ]);
     prismaMock.sCIMConfiguration.update.mockResolvedValue({ id: 'scim-cfg-1' });
   });
 

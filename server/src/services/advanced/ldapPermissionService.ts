@@ -338,6 +338,18 @@ class LDAPConnection extends EventEmitter {
   }
 
   async bind(dn: string, password: string): Promise<{ resultCode: number }> {
+    // Refuse to transmit a non-empty bind password over a non-encrypted socket.
+    // Simple-auth BIND sends the password in the clear, so a plaintext transport
+    // would expose admin/user credentials on the wire. Anonymous binds (empty
+    // password) remain permitted. Set LDAP_USE_TLS or pass useTLS to enable LDAPS.
+    const usingTls = this.config.useTLS === true || this.socket instanceof tls.TLSSocket;
+    if (password && password.length > 0 && !usingTls) {
+      throw new AppError(
+        'Refusing LDAP simple bind with a password over a non-TLS connection; enable LDAPS (useTLS).',
+        500
+      );
+    }
+
     const msgId = ++this.messageId;
 
     // Build bind request
@@ -833,7 +845,9 @@ class LDAPPermissionService {
       baseDN: config?.baseDN || process.env.LDAP_BASE_DN || 'dc=company,dc=com',
       bindDN: config?.bindDN || process.env.LDAP_BIND_DN || 'cn=admin,dc=company,dc=com',
       bindPassword: config?.bindPassword || process.env.LDAP_BIND_PASSWORD || '',
-      useTLS: config?.useTLS ?? (process.env.LDAP_USE_TLS === 'true'),
+      // Secure by default: use LDAPS unless TLS is explicitly disabled. A non-empty
+      // bind password is refused over a non-TLS socket (see LDAPConnection.bind).
+      useTLS: config?.useTLS ?? (process.env.LDAP_USE_TLS !== 'false'),
       tlsOptions: config?.tlsOptions || {
         rejectUnauthorized: process.env.LDAP_TLS_REJECT_UNAUTHORIZED !== 'false',
       },
@@ -1521,7 +1535,7 @@ class LDAPPermissionService {
       for (const [key, entry] of this.userCache.entries()) {
         if (now - entry.timestamp > this.CACHE_TTL_MS) this.userCache.delete(key);
       }
-    }, 60000);
+    }, 60000).unref?.();
   }
 }
 

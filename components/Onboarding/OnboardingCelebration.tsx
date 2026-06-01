@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Trophy, Share2, ArrowRight } from 'lucide-react';
+import { Trophy, ArrowRight } from 'lucide-react';
 
 export interface OnboardingCelebrationProps {
   message: string;

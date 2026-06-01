@@ -229,11 +229,23 @@ class ComplianceAsCodeService {
    */
   async evaluatePolicy(
     policyId: string,
-    input: any
+    input: any,
+    organizationId?: string
   ): Promise<PolicyEvaluationResult> {
     const startTime = Date.now();
 
     try {
+      // When organization context is provided, verify the policy belongs to
+      // the caller's organization before evaluating it. This prevents one
+      // tenant from evaluating (and inferring the contents of) another
+      // tenant's policy by ID.
+      if (organizationId) {
+        const owned = await this.getPolicy(policyId, organizationId);
+        if (!owned) {
+          throw new AppError('Policy not found', 404);
+        }
+      }
+
       // Query OPA for policy decision
       // Production: Fail fast if OPA unavailable
       const dataUrl = `${this.opaEndpoint}/v1/data/compliance/${encodeURIComponent(policyId)}`;
@@ -279,6 +291,11 @@ class ComplianceAsCodeService {
         },
       };
     } catch (error) {
+      // Preserve typed errors (e.g. 404 ownership failures) so callers see the
+      // correct status instead of a generic 500.
+      if (error instanceof AppError) {
+        throw error;
+      }
       logger.error('Error evaluating policy', error);
       throw new AppError('Policy evaluation failed', 500);
     }
@@ -318,11 +335,12 @@ class ComplianceAsCodeService {
    */
   async evaluateMultiplePolicies(
     policyIds: string[],
-    input: any
+    input: any,
+    organizationId?: string
   ): Promise<PolicyEvaluationResult[]> {
     try {
       const results = await Promise.all(
-        policyIds.map((policyId) => this.evaluatePolicy(policyId, input))
+        policyIds.map((policyId) => this.evaluatePolicy(policyId, input, organizationId))
       );
 
       return results;
@@ -1057,12 +1075,21 @@ allow {
 
   /**
    * Get policy by ID - Database-backed
+   *
+   * When an organizationId is supplied the lookup is scoped to that
+   * organization so a caller cannot read another tenant's policy (and its
+   * Rego source) by guessing an ID. Callers that already hold the request's
+   * organization context must always pass it.
    */
-  async getPolicy(policyId: string): Promise<Policy | null> {
+  async getPolicy(policyId: string, organizationId?: string): Promise<Policy | null> {
     try {
-      const dbPolicy = await prisma.compliancePolicy.findUnique({
-        where: { id: policyId },
-      });
+      const dbPolicy = organizationId
+        ? await prisma.compliancePolicy.findFirst({
+            where: { id: policyId, organizationId },
+          })
+        : await prisma.compliancePolicy.findUnique({
+            where: { id: policyId },
+          });
 
       if (!dbPolicy) {
         return null;
@@ -1274,25 +1301,73 @@ allow {
   }
 
   /**
-   * Test policy with sample data
+   * Test a policy against one or more sample inputs.
+   *
+   * The policy is first resolved scoped to the caller's organization so a
+   * tenant cannot test (and thereby probe) another tenant's policy by ID.
+   * Each test case is evaluated and compared against its expected result.
    */
   async testPolicy(
     policyId: string,
-    testInput: any
-  ): Promise<PolicyEvaluationResult> {
+    organizationId: string,
+    testCases: Array<{ input: any; expectedResult?: boolean }>
+  ): Promise<{
+    policyId: string;
+    total: number;
+    passed: number;
+    failed: number;
+    results: Array<{
+      input: any;
+      expectedResult?: boolean;
+      actualAllowed: boolean;
+      matched: boolean;
+      violations: PolicyViolation[];
+    }>;
+  }> {
     try {
-      const policy = await this.getPolicy(policyId);
+      // Org-scoped ownership check (404 if the policy is not the org's).
+      const policy = await this.getPolicy(policyId, organizationId);
       if (!policy) {
         throw new AppError('Policy not found', 404);
       }
 
-      // Evaluate with test input
-      const result = await this.evaluatePolicy(policyId, testInput);
+      const cases = Array.isArray(testCases) ? testCases : [];
+      const results = [] as Array<{
+        input: any;
+        expectedResult?: boolean;
+        actualAllowed: boolean;
+        matched: boolean;
+        violations: PolicyViolation[];
+      }>;
 
-      logger.info(`Policy test completed: ${policyId} - ${result.allowed ? 'PASS' : 'FAIL'}`);
+      for (const testCase of cases) {
+        const evaluation = await this.evaluatePolicy(policyId, testCase.input, organizationId);
+        const matched = testCase.expectedResult === undefined
+          ? true
+          : evaluation.allowed === testCase.expectedResult;
+        results.push({
+          input: testCase.input,
+          expectedResult: testCase.expectedResult,
+          actualAllowed: evaluation.allowed,
+          matched,
+          violations: evaluation.violations,
+        });
+      }
 
-      return result;
+      const passed = results.filter(r => r.matched).length;
+      logger.info(`Policy test completed: ${policyId} - ${passed}/${results.length} cases matched`);
+
+      return {
+        policyId,
+        total: results.length,
+        passed,
+        failed: results.length - passed,
+        results,
+      };
     } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
       logger.error('Error testing policy', error);
       throw new AppError('Policy test failed', 500);
     }
@@ -1303,6 +1378,7 @@ allow {
    */
   async benchmarkPolicy(
     policyId: string,
+    organizationId: string,
     iterations: number = 100
   ): Promise<{
     averageTime: number;
@@ -1312,7 +1388,8 @@ allow {
     p99: number;
   }> {
     try {
-      const policy = await this.getPolicy(policyId);
+      // Org-scoped ownership check before running the benchmark.
+      const policy = await this.getPolicy(policyId, organizationId);
       if (!policy) {
         throw new AppError('Policy not found', 404);
       }
@@ -1322,7 +1399,7 @@ allow {
 
       for (let i = 0; i < iterations; i++) {
         const start = Date.now();
-        await this.evaluatePolicy(policyId, testInput);
+        await this.evaluatePolicy(policyId, testInput, organizationId);
         times.push(Date.now() - start);
       }
 
@@ -1340,6 +1417,9 @@ allow {
         p99,
       };
     } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
       logger.error('Error benchmarking policy', error);
       throw new AppError('Policy benchmark failed', 500);
     }

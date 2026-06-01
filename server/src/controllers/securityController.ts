@@ -135,34 +135,53 @@ class SecurityController {
   updateZeroTrustPolicy: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
       const { policyId } = req.params;
 
-      await zeroTrustService.initialize(authReq.user!.organizationId);
-
-      // Get existing policies, find the one to update
-      const policies = await zeroTrustService.getPolicies(authReq.user!.organizationId);
-      const existing = policies.find(p => p.id === policyId);
+      // Verify the policy belongs to this organization before mutating
+      const existing = await prisma.zeroTrustPolicy.findFirst({
+        where: { id: policyId, organizationId },
+      });
       if (!existing) {
         throw new AppError('Policy not found', 404);
       }
 
-      // Re-create policy with updated fields (zero trust service stores in-memory per org)
-      const updatedPolicy = { ...existing, ...req.body, id: policyId };
+      // Build the update payload only from provided fields, serializing rules to JSON
+      const { name, description, rules, enabled, priority } = req.body;
+      const data: Record<string, any> = {};
+      if (name !== undefined) data.name = name;
+      if (description !== undefined) data.description = description;
+      if (rules !== undefined) data.rules = JSON.stringify(rules);
+      if (enabled !== undefined) data.enabled = enabled;
+      if (priority !== undefined) data.priority = priority;
 
-      // Persist the update via audit log
-      await prisma.auditLog.create({
-        data: {
-          action: `Zero Trust Policy Updated: ${policyId}`,
-          organizationId: authReq.user!.organizationId,
-          userId: authReq.user!.id,
-          hash: policyId,
-          details: JSON.stringify(updatedPolicy),
-        },
+      // Persist the update to the real policy store and record the change
+      const [updated] = await prisma.$transaction([
+        prisma.zeroTrustPolicy.update({
+          where: { id: policyId },
+          data,
+        }),
+        prisma.auditLog.create({
+          data: {
+            action: `Zero Trust Policy Updated: ${policyId}`,
+            organizationId,
+            userId: authReq.user!.id,
+            hash: policyId,
+            details: JSON.stringify({ policyId, fields: Object.keys(data) }),
+          },
+        }),
+      ]);
+
+      // Re-initialize so the service reloads policies from the persisted store
+      await zeroTrustService.initialize(organizationId);
+
+      res.json({
+        ...updated,
+        rules: typeof updated.rules === 'string' ? JSON.parse(updated.rules) : updated.rules,
       });
-
-      res.json(updatedPolicy);
     } catch (error: any) {
       logger.error('Update Zero Trust policy error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to update Zero Trust policy', 500);
     }
   };
@@ -170,31 +189,32 @@ class SecurityController {
   deleteZeroTrustPolicy: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
       const { policyId } = req.params;
 
-      await zeroTrustService.initialize(authReq.user!.organizationId);
+      // Org-scoped delete: only removes a row owned by this organization
+      const result = await prisma.zeroTrustPolicy.deleteMany({
+        where: { id: policyId, organizationId },
+      });
 
-      // Verify policy exists
-      const policies = await zeroTrustService.getPolicies(authReq.user!.organizationId);
-      const existing = policies.find(p => p.id === policyId);
-      if (!existing) {
+      if (result.count === 0) {
         throw new AppError('Policy not found', 404);
       }
 
-      // Log deletion
       await prisma.auditLog.create({
         data: {
           action: `Zero Trust Policy Deleted: ${policyId}`,
-          organizationId: authReq.user!.organizationId,
+          organizationId,
           userId: authReq.user!.id,
           hash: policyId,
-          details: JSON.stringify({ policyId, policyName: existing.name }),
+          details: JSON.stringify({ policyId }),
         },
       });
 
       res.json({ success: true, message: `Policy ${policyId} deleted` });
     } catch (error: any) {
       logger.error('Delete Zero Trust policy error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to delete Zero Trust policy', 500);
     }
   };
@@ -232,39 +252,43 @@ class SecurityController {
   createNetworkSegment: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { name, cidr, trustLevel, allowedPolicies, description } = req.body;
+      const organizationId = authReq.user!.organizationId;
+      const { name, cidr, trustLevel, allowedPolicies, resources, description } = req.body;
 
       if (!name || !cidr) {
         throw new AppError('Name and CIDR are required', 400);
       }
 
-      const segmentId = crypto.randomBytes(16).toString('hex');
-
-      // Persist network segment via audit log
-      const segment = {
-        id: segmentId,
-        name,
-        cidr,
-        trustLevel: trustLevel || 'medium',
-        allowedPolicies: allowedPolicies || [],
-        description: description || '',
-        organizationId: authReq.user!.organizationId,
-        createdAt: new Date(),
-      };
+      // Persist to the dedicated network segment store so reads reflect current state
+      const created = await prisma.networkSegment.create({
+        data: {
+          organizationId,
+          name,
+          cidr,
+          trustLevel: trustLevel || 'medium',
+          resources: resources || [],
+          policies: allowedPolicies || [],
+        },
+      });
 
       await prisma.auditLog.create({
         data: {
           action: `Network Segment Created: ${name}`,
-          organizationId: authReq.user!.organizationId,
+          organizationId,
           userId: authReq.user!.id,
-          hash: segmentId,
-          details: JSON.stringify(segment),
+          hash: created.id,
+          details: JSON.stringify({ segmentId: created.id, name, cidr }),
         },
       });
 
-      res.json(segment);
+      res.json({
+        ...created,
+        allowedPolicies: created.policies,
+        description: description || '',
+      });
     } catch (error: any) {
       logger.error('Create network segment error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to create network segment', 500);
     }
   };
@@ -273,26 +297,14 @@ class SecurityController {
     try {
       const authReq = req as AuthRequest;
 
-      // Query network segments from audit log
-      const logs = await prisma.auditLog.findMany({
-        where: {
-          organizationId: authReq.user!.organizationId,
-          action: { startsWith: 'Network Segment Created' },
-        },
-        orderBy: { timestamp: 'desc' },
+      // Read the current set of segments from the dedicated, org-scoped store
+      const segments = await prisma.networkSegment.findMany({
+        where: { organizationId: authReq.user!.organizationId },
+        orderBy: { createdAt: 'desc' },
         take: 100,
       });
 
-      const segments = logs.map(log => {
-        try {
-          const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
-          return details;
-        } catch {
-          return { id: log.hash, name: 'Unknown', createdAt: log.timestamp };
-        }
-      }).filter(Boolean);
-
-      res.json(segments);
+      res.json(segments.map(s => ({ ...s, allowedPolicies: s.policies })));
     } catch (error: any) {
       logger.error('Get network segments error', error);
       throw new AppError('Failed to get network segments', 500);
@@ -634,11 +646,17 @@ class SecurityController {
         if (!vaultUrl || !keyName) {
           throw new AppError('Vault URL and key name are required for HashiCorp Vault', 400);
         }
+        // Require an explicit per-request token. Pairing a caller-supplied vaultUrl
+        // with the server's own VAULT_TOKEN would let a tenant direct key creation at
+        // an arbitrary Vault endpoint using server credentials.
+        if (!req.body.token) {
+          throw new AppError('A Vault token is required for HashiCorp Vault key creation', 400);
+        }
         keyId = await byokService.createVaultKey(
           vaultUrl,
           keyName,
           authReq.user!.organizationId,
-          req.body.token || process.env.VAULT_TOKEN
+          req.body.token
         );
       } else if (effectiveProvider === 'local') {
         // For local provider, generate a secure key ID
@@ -969,9 +987,9 @@ class SecurityController {
         // Return default config if none exists yet
         res.json({
           enabled: false,
-          defaultProvider: null,
+          defaultKeyId: null,
           autoRotation: false,
-          rotationIntervalDays: 90,
+          rotationInterval: 90,
           organizationId: authReq.user!.organizationId,
         });
         return;
@@ -988,13 +1006,15 @@ class SecurityController {
   updateBYOKConfig: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { enabled, defaultProvider, autoRotation, rotationIntervalDays } = req.body;
+      // Field set is canonicalized to the validation schema's names.
+      const { defaultKeyId, autoRotation, rotationInterval } = req.body;
 
       const configData = {
-        enabled: enabled ?? false,
-        defaultProvider: defaultProvider || null,
+        defaultKeyId: defaultKeyId || null,
         autoRotation: autoRotation ?? false,
-        rotationIntervalDays: rotationIntervalDays || 90,
+        rotationInterval: rotationInterval || 90,
+        // Derived flag for consumers that key off an overall on/off state.
+        enabled: Boolean(defaultKeyId) || autoRotation === true,
         organizationId: authReq.user!.organizationId,
         updatedAt: new Date(),
         updatedBy: authReq.user!.id,
@@ -1053,8 +1073,9 @@ class SecurityController {
 
   getCompliancePolicy: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { policyId } = req.params;
-      const policy = await complianceAsCodeService.getPolicy(policyId);
+      const policy = await complianceAsCodeService.getPolicy(policyId, authReq.user!.organizationId);
       if (!policy) {
         throw new AppError('Policy not found', 404);
       }
@@ -1099,7 +1120,7 @@ class SecurityController {
       const { policyId } = req.params;
       const { input } = req.body;
 
-      const result = await complianceAsCodeService.evaluatePolicy(policyId, input || {});
+      const result = await complianceAsCodeService.evaluatePolicy(policyId, input || {}, authReq.user!.organizationId);
       res.json(result);
     } catch (error: any) {
       logger.error('Evaluate compliance policy error', error);
@@ -1116,7 +1137,7 @@ class SecurityController {
         throw new AppError('Policy IDs must be an array', 400);
       }
 
-      const results = await complianceAsCodeService.evaluateMultiplePolicies(policyIds, input || {});
+      const results = await complianceAsCodeService.evaluateMultiplePolicies(policyIds, input || {}, authReq.user!.organizationId);
       res.json(results);
     } catch (error: any) {
       logger.error('Evaluate compliance policies batch error', error);
@@ -1212,6 +1233,9 @@ class SecurityController {
       const signature = req.headers['x-hub-signature-256'] as string ||
         req.headers['x-gitlab-token'] as string || '';
 
+      // The route is authenticated/tier-gated and the service verifies the HMAC
+      // fail-closed before any side effect: an empty or mismatched signature is
+      // rejected (timingSafeEqual length mismatch is caught and returns false).
       const result = await complianceAsCodeService.handleCIWebhook(
         webhookId || 'default',
         provider,

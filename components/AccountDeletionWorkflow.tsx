@@ -91,7 +91,7 @@ const statusColors: Record<RequestStatus, string> = {
   Denied: 'bg-red-500/20 text-red-400 border-red-500/30',
 };
 
-// Mock data constants removed — component now uses empty initial state with proper error handling.
+// Component initializes with empty state and populates from the privacy API with full error handling.
 
 const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
@@ -113,6 +113,9 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   const [requests, setRequests] = useState<DeletionRequest[]>([]);
   const [systemDeletions, setSystemDeletions] = useState<SystemDeletion[]>([]);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
+  const [createForm, setCreateForm] = useState({ accountName: '', email: '', reason: 'GDPR Right to Erasure', priority: 'Medium' as 'High' | 'Medium' | 'Low', notes: '' });
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createSubmitting, setCreateSubmitting] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -149,6 +152,57 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Derive a system icon from the system/datastore name.
+  const iconForSystem = useCallback((name: string): React.ReactNode => {
+    const n = name.toLowerCase();
+    if (n.includes('db') || n.includes('database') || n.includes('postgres') || n.includes('sql')) return <Database className="w-4 h-4 text-blue-400" />;
+    if (n.includes('s3') || n.includes('storage') || n.includes('blob') || n.includes('disk')) return <HardDrive className="w-4 h-4 text-purple-400" />;
+    if (n.includes('cdn') || n.includes('web') || n.includes('http') || n.includes('api')) return <Globe className="w-4 h-4 text-cyan-400" />;
+    return <Server className="w-4 h-4 text-slate-400" />;
+  }, []);
+
+  // Map the backend deletion record's systemsAffected + deletionLog into per-system rows.
+  const mapSystemDeletions = useCallback((record: any): SystemDeletion[] => {
+    const affected: any[] = Array.isArray(record?.systemsAffected) ? record.systemsAffected : [];
+    const log: any[] = Array.isArray(record?.deletionLog) ? record.deletionLog : [];
+    return affected.map((sys: any) => {
+      const systemName = typeof sys === 'string' ? sys : (sys.system || sys.name || 'Unknown System');
+      const logEntry = log.find((l: any) => (l.system || l.target) === systemName);
+      const status: SystemDeletion['status'] =
+        (typeof sys === 'object' && sys.status) ? sys.status
+        : logEntry?.status === 'verified' ? 'Verified'
+        : logEntry ? 'Completed'
+        : record?.status === 'Completed' ? 'Completed'
+        : record?.status === 'InProgress' ? 'In Progress'
+        : 'Pending';
+      return {
+        system: systemName,
+        icon: iconForSystem(systemName),
+        status,
+        records: typeof sys === 'object' && typeof sys.records === 'number' ? sys.records : 0,
+        deletedAt: logEntry?.timestamp || (typeof sys === 'object' ? sys.deletedAt : undefined),
+        verifiedBy: logEntry?.userId || (typeof sys === 'object' ? sys.verifiedBy : undefined),
+        evidence: logEntry?.evidence || (typeof sys === 'object' ? sys.evidence : undefined),
+        rollbackAvailable: status !== 'Verified',
+      };
+    });
+  }, [iconForSystem]);
+
+  const loadExecutionDetail = useCallback(async (requestId: string) => {
+    if (!requestId) { setSystemDeletions([]); return; }
+    setExecLoading(true);
+    try {
+      const record = await api.privacy.getDeletion(requestId);
+      setSystemDeletions(mapSystemDeletions(record));
+    } catch (err) {
+      setSystemDeletions([]);
+      logger.error('Failed to load deletion execution detail:', err);
+    } finally {
+      setExecLoading(false);
+    }
+  }, [mapSystemDeletions]);
+
   const [gracePeriodDays, setGracePeriodDays] = useState(7);
   const [deletionMethod, setDeletionMethod] = useState<'deletion' | 'anonymization'>('deletion');
   const [autoVerify, setAutoVerify] = useState(true);
@@ -156,7 +210,10 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   const [notifyOnDenied, setNotifyOnDenied] = useState(true);
   const [retentionOverride, setRetentionOverride] = useState(false);
   const [auditCategoryFilter, setAuditCategoryFilter] = useState<string>('all');
-  const [selectedExecRequest, setSelectedExecRequest] = useState<string>('DEL-002');
+  const [selectedExecRequest, setSelectedExecRequest] = useState<string>('');
+  const [execLoading, setExecLoading] = useState(false);
+
+  useEffect(() => { loadExecutionDetail(selectedExecRequest); }, [selectedExecRequest, loadExecutionDetail]);
 
   const stats = useMemo(() => {
     const total = requests.length;
@@ -354,17 +411,22 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             </button>
           </div>
           <div className="space-y-4">
+            {createError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-300 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {createError}
+              </div>
+            )}
             <div>
               <label className="block text-sm text-slate-400 mb-1">Account Name</label>
-              <input type="text" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" placeholder="Full name" />
+              <input type="text" value={createForm.accountName} onChange={(e) => setCreateForm(f => ({ ...f, accountName: e.target.value }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" placeholder="Full name" />
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Email Address</label>
-              <input type="email" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" placeholder="user@example.com" />
+              <input type="email" value={createForm.email} onChange={(e) => setCreateForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" placeholder="user@example.com" />
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Reason</label>
-              <select className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+              <select value={createForm.reason} onChange={(e) => setCreateForm(f => ({ ...f, reason: e.target.value }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
                 <option>GDPR Right to Erasure</option>
                 <option>CCPA deletion request</option>
                 <option>Account closure request</option>
@@ -373,7 +435,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Priority</label>
-              <select className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+              <select value={createForm.priority} onChange={(e) => setCreateForm(f => ({ ...f, priority: e.target.value as 'High' | 'Medium' | 'Low' }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
                 <option>High</option>
                 <option>Medium</option>
                 <option>Low</option>
@@ -381,17 +443,40 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Additional Notes</label>
-              <textarea className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" placeholder="Any additional context..." />
+              <textarea value={createForm.notes} onChange={(e) => setCreateForm(f => ({ ...f, notes: e.target.value }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" placeholder="Any additional context..." />
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
+            <button onClick={() => { setShowCreateModal(false); setCreateError(null); }} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
               {t('common.cancel')}
             </button>
-            <button onClick={async () => {
-              try { await api.privacy.createDeletion({ status: 'Submitted' }); setShowCreateModal(false); loadData(); } catch { setShowCreateModal(false); }
-            }} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">
-              {t('common.submit')}
+            <button
+              disabled={createSubmitting || !createForm.accountName.trim() || !createForm.email.trim()}
+              onClick={async () => {
+                setCreateError(null);
+                setCreateSubmitting(true);
+                try {
+                  await api.privacy.createDeletion({
+                    accountName: createForm.accountName.trim(),
+                    email: createForm.email.trim(),
+                    reason: createForm.reason,
+                    priority: createForm.priority,
+                    notes: createForm.notes.trim() || undefined,
+                    status: 'Submitted',
+                  });
+                  setShowCreateModal(false);
+                  setCreateForm({ accountName: '', email: '', reason: 'GDPR Right to Erasure', priority: 'Medium', notes: '' });
+                  loadData();
+                } catch (err) {
+                  setCreateError(err instanceof Error ? err.message : 'Failed to submit deletion request. Please try again.');
+                  logger.error('Create deletion request error:', err);
+                } finally {
+                  setCreateSubmitting(false);
+                }
+              }}
+              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {createSubmitting ? `${t('common.loading')}...` : t('common.submit')}
             </button>
           </div>
         </div>
@@ -572,10 +657,21 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   );
 
   const renderExecution = () => {
+    const eligibleRequests = requests.filter(r => ['Executing', 'Approved', 'Completed'].includes(r.status));
     const execRequest = requests.find(r => r.id === selectedExecRequest);
     const completedSystems = systemDeletions.filter(s => s.status === 'Completed' || s.status === 'Verified').length;
     const totalSystems = systemDeletions.length;
     const progressPct = totalSystems > 0 ? Math.round((completedSystems / totalSystems) * 100) : 0;
+
+    if (eligibleRequests.length === 0) {
+      return (
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
+          <Server className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+          <div className="text-slate-400 text-sm">No deletion requests are in execution</div>
+          <div className="text-slate-500 text-xs mt-1">Approve or execute a request to track its system-by-system progress here</div>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
@@ -586,11 +682,25 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             onChange={(e) => setSelectedExecRequest(e.target.value)}
             className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
           >
-            {requests.filter(r => ['Executing', 'Approved', 'Completed'].includes(r.status)).map(r => (
+            <option value="">Select a request...</option>
+            {eligibleRequests.map(r => (
               <option key={r.id} value={r.id}>{r.id} - {r.accountName}</option>
             ))}
           </select>
         </div>
+
+        {execLoading && (
+          <div className="flex items-center justify-center py-10">
+            <RefreshCw className="w-5 h-5 text-blue-400 animate-spin" />
+            <span className="ml-3 text-slate-400 text-sm">{t('common.loading')}...</span>
+          </div>
+        )}
+
+        {!execLoading && selectedExecRequest && systemDeletions.length === 0 && (
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-8 text-center text-sm text-slate-400">
+            No system-level deletion records have been logged for this request yet.
+          </div>
+        )}
 
         {execRequest && (
           <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
@@ -1004,13 +1114,13 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Last sync: 2 min ago</span>
               <button
-                onClick={() => { setLoading(true); setTimeout(() => setLoading(false), 1000); }}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
+                onClick={loadData}
+                disabled={loading}
+                className="p-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
                 title="Refresh"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>

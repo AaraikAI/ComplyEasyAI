@@ -411,11 +411,42 @@ describe('SOXService', () => {
         });
 
         expect(result.conclusion).toBe('Effective');
+        // The parent control (the org-owned entity this child test result attaches to)
+        // must be looked up scoped to the caller's organization, so a controlId from
+        // another tenant cannot have a test result attached to it.
+        expect(prismaMock.sOXControl.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'sox-ctrl-123', organizationId: 'org-123' },
+          })
+        );
         expect(AuditLogger.log).toHaveBeenCalledWith(
           expect.objectContaining({
             action: 'sox_test_result.created',
           })
         );
+      });
+
+      it('should throw 404 when the parent control is not in the caller org (cross-tenant guard)', async () => {
+        // findFirst scoped by org returns nothing for a control owned by another tenant.
+        prismaMock.sOXControl.findFirst.mockResolvedValue(null);
+
+        await expect(
+          soxService.createSOXTestResult({
+            organizationId: 'org-123',
+            controlId: 'sox-ctrl-foreign',
+            testProcedure: 'Test procedure',
+            testType: 'OperatingEffectiveness',
+            conclusion: 'Effective',
+          })
+        ).rejects.toThrow('SOX control not found');
+
+        expect(prismaMock.sOXControl.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'sox-ctrl-foreign', organizationId: 'org-123' },
+          })
+        );
+        // No child test result may be written when the parent ownership check fails.
+        expect(prismaMock.sOXTestResult.create).not.toHaveBeenCalled();
       });
 
       it('should update parent control status on test completion', async () => {
@@ -427,11 +458,19 @@ describe('SOXService', () => {
         prismaMock.sOXControl.update.mockResolvedValue({ ...mockControl, status: 'Effective' });
 
         await soxService.createSOXTestResult({
+          organizationId: 'org-123',
           controlId: 'sox-ctrl-123',
           testProcedure: 'Test procedure',
           testType: 'OperatingEffectiveness',
           conclusion: 'Effective',
         });
+
+        // Parent lookup is org-scoped even on the status-update path.
+        expect(prismaMock.sOXControl.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'sox-ctrl-123', organizationId: 'org-123' },
+          })
+        );
 
         expect(prismaMock.sOXControl.update).toHaveBeenCalledWith(
           expect.objectContaining({

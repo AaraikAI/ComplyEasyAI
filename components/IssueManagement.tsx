@@ -251,18 +251,15 @@ export default function IssueManagement() {
     }
     setIsSaving(true);
     try {
-      const { assignedToId, ...createPayload } = issueForm;
+      // Send assignedToId as part of the create payload so the server assigns the
+      // exact new issue atomically. Re-listing and assuming index [0] is the just-
+      // created record was order-dependent and racy under concurrent creates.
       await api.enterprise.issues.create({
-        ...createPayload,
+        ...issueForm,
+        assignedToId: issueForm.assignedToId || null,
         dueDate: issueForm.dueDate ? new Date(issueForm.dueDate) : undefined,
         slaTarget: issueForm.slaTarget ? new Date(issueForm.slaTarget) : undefined,
       });
-      // Assign separately if an assignee was selected
-      if (assignedToId) {
-        const created = await api.enterprise.issues.list();
-        const newest = created[0];
-        if (newest) await api.enterprise.issues.assign(newest.id, assignedToId);
-      }
       await Promise.all([loadIssues(), loadDashboard()]);
       setViewMode('list');
       resetForm();

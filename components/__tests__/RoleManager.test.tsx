@@ -43,28 +43,41 @@ describe('RoleManager', () => {
     expect(screen.queryAllByText(/Custom Roles|System Roles|User Assignments/i).length).toBeGreaterThan(0);
   });
 
-  it('opens create role form', () => {
+  it('opens create role form', async () => {
     render(<RoleManager />);
-    const addBtn = screen.queryAllByText(/Create Role|New Role|Add Role/i)[0] ?? null;
-    if (addBtn) fireEvent.click(addBtn);
+    await waitFor(() => expect(screen.getByText('Roles & Permissions')).toBeInTheDocument());
+    // Custom tab is empty (all mocked roles are system roles) and shows a Create Role button.
+    fireEvent.click(screen.getByText('Create Role'));
+    await waitFor(() => expect(screen.getByText('Create Custom Role')).toBeInTheDocument());
+    expect(screen.getByText('Permission Matrix')).toBeInTheDocument();
   });
 
-  it('shows permission matrix', () => {
+  it('shows permission matrix', async () => {
     render(<RoleManager />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) fireEvent.click(rows[0]);
+    await waitFor(() => expect(screen.getByText('Roles & Permissions')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Create Role'));
+    await waitFor(() => expect(screen.getByText('Permission Matrix')).toBeInTheDocument());
+    // Matrix renders the resource rows and action columns.
+    expect(screen.getByText('Frameworks')).toBeInTheDocument();
+    expect(screen.getAllByText(/^Resource$/i).length).toBeGreaterThan(0);
   });
 
-  it('filters roles by search', () => {
+  it('filters roles by search', async () => {
     render(<RoleManager />);
-    const searchInput = screen.queryByPlaceholderText(/search/i);
-    if (searchInput) fireEvent.change(searchInput, { target: { value: 'admin' } });
+    await waitFor(() => expect(screen.getByText('Roles & Permissions')).toBeInTheDocument());
+    const searchInput = screen.getByPlaceholderText('Search roles...');
+    fireEvent.change(searchInput, { target: { value: 'admin' } });
+    expect(searchInput).toHaveValue('admin');
   });
 
-  it('shows stat cards', () => {
+  it('renders all four management tabs', async () => {
     render(<RoleManager />);
-    const stats = document.querySelectorAll('[class*="rounded-xl"]');
-    expect(stats.length).toBeGreaterThanOrEqual(0);
+    await waitFor(() => expect(screen.getByText('Roles & Permissions')).toBeInTheDocument());
+    // RoleManager exposes Custom / System / User-assignment / Audit tabs.
+    expect(screen.getByText('Custom Roles')).toBeInTheDocument();
+    expect(screen.getByText('System Roles')).toBeInTheDocument();
+    expect(screen.getByText('User Assignments')).toBeInTheDocument();
+    expect(screen.getByText('Audit Log')).toBeInTheDocument();
   });
 
   it('prevents editing system roles', async () => {
@@ -75,27 +88,28 @@ describe('RoleManager', () => {
     await waitFor(() => expect(screen.queryAllByText(/Admin/i).length).toBeGreaterThan(0));
   });
 
-  it('shows audit log tab', () => {
+  it('shows audit log tab', async () => {
     render(<RoleManager />);
-    const auditTab = screen.queryAllByText(/Audit|audit|History|history|Log|log/i)[0] ?? null;
-    if (auditTab) fireEvent.click(auditTab);
+    await waitFor(() => expect(screen.getByText('Roles & Permissions')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Audit Log'));
+    // The mocked audit-log endpoint returns an empty array → empty-state copy.
+    await waitFor(() => expect(screen.getByText('No audit entries')).toBeInTheDocument());
   });
 
-  it('duplicates a role', () => {
+  it('shows the system-roles permission matrix', async () => {
     render(<RoleManager />);
-    const copyBtns = document.querySelectorAll('[data-testid="icon-Copy"]');
-    if (copyBtns.length > 0) {
-      const btn = copyBtns[0].closest('button');
-      if (btn) fireEvent.click(btn);
-    }
+    await waitFor(() => expect(screen.getByText('Roles & Permissions')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('System Roles'));
+    // System roles render read-only matrices listing each system role by name.
+    await waitFor(() => expect(screen.getByText('Compliance Manager')).toBeInTheDocument());
+    expect(screen.getByText('Risk Manager')).toBeInTheDocument();
   });
 
-  it('deletes a custom role', () => {
+  it('shows the empty custom-roles state with no delete affordance', async () => {
     render(<RoleManager />);
-    const deleteBtns = document.querySelectorAll('[data-testid="icon-Trash2"]');
-    if (deleteBtns.length > 0) {
-      const btn = deleteBtns[0].closest('button');
-      if (btn) fireEvent.click(btn);
-    }
+    await waitFor(() => expect(screen.getByText('Roles & Permissions')).toBeInTheDocument());
+    // No custom roles exist, so the empty state is shown and no role-card delete icon renders.
+    expect(screen.getByText('No custom roles')).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-testid="icon-Trash2"]').length).toBe(0);
   });
 });

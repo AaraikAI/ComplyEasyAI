@@ -53,6 +53,17 @@ const batchPoliciesSchema = Joi.object({
   })).min(1).max(100).required(),
 });
 
+const batchFrameworksSchema = Joi.object({
+  items: Joi.array().items(Joi.object({
+    name: Joi.string().min(1).max(255).required(),
+    description: Joi.string().max(5000).allow(null, '').optional(),
+    version: Joi.number().integer().min(1).optional(),
+    region: Joi.string().max(100).optional(),
+    status: Joi.string().valid('Compliant', 'At_Risk', 'Non_Compliant', 'In_Review').optional(),
+    nextAuditDate: Joi.date().iso().allow(null).optional(),
+  })).min(1).max(100).required(),
+});
+
 const batchRouter = Router();
 
 // All batch operations require authentication
@@ -305,7 +316,7 @@ batchRouter.post('/policies', validateBody(batchPoliciesSchema), asyncHandler(as
  *
  * Body: { items: Array<{ name, type?, description?, region?, ... }> }
  */
-batchRouter.post('/frameworks', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+batchRouter.post('/frameworks', validateBody(batchFrameworksSchema), asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { items } = req.body;
   const user = (req as any).user;
   const organizationId = user.organizationId;

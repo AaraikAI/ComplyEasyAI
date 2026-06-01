@@ -15,70 +15,96 @@ vi.mock('@/services/api', () => ({
 
 import MaturityAssessment from '../MaturityAssessment';
 
+// The component gates tab content behind an initial load; wait for the loading
+// spinner to clear before asserting on rendered content.
+async function waitForLoaded() {
+  await waitFor(() => {
+    expect(screen.queryByText('common.loading')).not.toBeInTheDocument();
+  });
+}
+
 describe('MaturityAssessment', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders without crashing', () => {
+  it('renders the header and overall score banner', async () => {
     render(<MaturityAssessment />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    // Title is rendered via the (key-returning) i18n mock.
+    expect(screen.getByRole('heading', { name: 'maturity.title' })).toBeInTheDocument();
+    await waitForLoaded();
+    // The "/ 5" denominator next to the overall score is always present.
+    expect(screen.getByText('/ 5')).toBeInTheDocument();
   });
 
-  it('displays overview tab by default', () => {
+  it('shows the tab navigation', () => {
     render(<MaturityAssessment />);
-    const content = document.body.textContent || '';
-    expect(content.length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Overview/i })).toBeInTheDocument();
+    // Anchored so it matches the "Assessment" tab, not the "Save Assessment" button.
+    expect(screen.getByRole('button', { name: /^Assessment$/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /History/i })).toBeInTheDocument();
   });
 
-  it('shows domain scores', () => {
+  it('displays the radar chart and domain scores on the overview tab', async () => {
     render(<MaturityAssessment />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    await waitForLoaded();
+    // Overview is the default tab: assert the radar + domain panels and a domain row.
+    expect(screen.getByText('Maturity Radar')).toBeInTheDocument();
+    expect(screen.getByText('Maturity Scale Reference')).toBeInTheDocument();
+    expect(document.querySelector('svg')).toBeTruthy();
+    // Governance is one of the five assessed domains rendered in the scores panel.
+    expect(screen.getAllByText('Governance').length).toBeGreaterThan(0);
   });
 
-  it('navigates to questionnaire tab', () => {
+  it('navigates to the assessment (questionnaire) tab', async () => {
     render(<MaturityAssessment />);
-    const buttons = screen.getAllByRole('button');
-    const qTab = buttons.find(b => b.textContent?.includes('Questionnaire') || b.textContent?.includes('questionnaire'));
-    if (qTab) {
-      fireEvent.click(qTab);
-      expect(document.body.textContent).toBeTruthy();
-    }
+    await waitForLoaded();
+    fireEvent.click(screen.getByRole('button', { name: /^Assessment$/ }));
+    // The first Governance question from the default question set is shown.
+    expect(screen.getByText(/Is there a formal information security policy approved by management/i)).toBeInTheDocument();
+    expect(screen.getByText(/Question 1 of/i)).toBeInTheDocument();
   });
 
-  it('navigates to gap analysis tab', () => {
+  it('navigates to the gap analysis tab', async () => {
     render(<MaturityAssessment />);
-    const buttons = screen.getAllByRole('button');
-    const gapTab = buttons.find(b => b.textContent?.includes('Gap') || b.textContent?.includes('gap'));
-    if (gapTab) {
-      fireEvent.click(gapTab);
-    }
+    await waitForLoaded();
+    // The gap tab label comes from the i18n key 'maturity.gap'.
+    fireEvent.click(screen.getByRole('button', { name: 'maturity.gap' }));
+    expect(screen.getByText('Gap Analysis: Current vs Target')).toBeInTheDocument();
+    expect(screen.getByText(/AI-Generated Recommendations/i)).toBeInTheDocument();
   });
 
-  it('navigates to history tab', () => {
+  it('navigates to the history tab and shows the empty state', async () => {
     render(<MaturityAssessment />);
-    const buttons = screen.getAllByRole('button');
-    const histTab = buttons.find(b => b.textContent?.includes('History') || b.textContent?.includes('history'));
-    if (histTab) {
-      fireEvent.click(histTab);
-    }
+    await waitForLoaded();
+    fireEvent.click(screen.getByRole('button', { name: /History/i }));
+    // With no persisted assessments the history empty-state message renders.
+    expect(screen.getByText('No historical assessments found')).toBeInTheDocument();
   });
 
-  it('renders maturity level indicators', () => {
+  it('records an answer in the questionnaire and reflects completion progress', async () => {
     render(<MaturityAssessment />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    await waitForLoaded();
+    fireEvent.click(screen.getByRole('button', { name: /^Assessment$/ }));
+    // Initially question 1 is unanswered.
+    expect(screen.getByText('Unanswered')).toBeInTheDocument();
+    // Answer it by choosing a maturity level option.
+    fireEvent.click(screen.getByRole('button', { name: /Level 3 - Defined/i }));
+    expect(screen.getByText('Answered')).toBeInTheDocument();
   });
 
-  it('renders SVG radar chart', () => {
+  it('renders the maturity scale levels reference', async () => {
     render(<MaturityAssessment />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    await waitForLoaded();
+    // The five maturity level labels are part of the scale reference.
+    expect(screen.getAllByText(/Initial/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Optimizing/).length).toBeGreaterThan(0);
   });
 
-  it('renders with assessment data', () => {
+  it('exposes the save assessment action', async () => {
     render(<MaturityAssessment />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    await waitForLoaded();
+    // The save button is present (disabled until questions are answered).
+    expect(screen.getByRole('button', { name: /Save Assessment/i })).toBeInTheDocument();
   });
 });

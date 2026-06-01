@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Check, CheckCheck, X, AlertTriangle, Shield, FileText, Users, Clock, ChevronRight, Settings, Volume2, VolumeX, Filter } from 'lucide-react';
 import { api } from '../services/api';
+import { ROUTES } from '../routes/routeConfig';
 import { useI18n } from '../contexts/I18nContext';
 
 interface Notification {
@@ -34,6 +36,7 @@ const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = {
 
 const NotificationCenter: React.FC = () => {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -134,6 +137,11 @@ const NotificationCenter: React.FC = () => {
 
   const getTypeConfig = (type: string) => {
     return TYPE_CONFIG[type] || { icon: <Bell size={16} />, color: 'text-gray-500' };
+  };
+
+  const openPreferences = () => {
+    setIsOpen(false);
+    navigate(ROUTES.SETTINGS);
   };
 
   const formatTime = (dateStr: string) => {
@@ -293,7 +301,10 @@ const NotificationCenter: React.FC = () => {
 
           {/* Footer */}
           <div className="border-t border-surface-200 dark:border-surface-700 px-4 py-2">
-            <button className="flex items-center gap-1 text-xs text-surface-500 dark:text-surface-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+            <button
+              onClick={openPreferences}
+              className="flex items-center gap-1 text-xs text-surface-500 dark:text-surface-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+            >
               <Settings size={12} />
               {t('notifications.preferences')}
             </button>

@@ -27,11 +27,52 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Focus trap
-    if (modalRef.current) {
-      modalRef.current.focus();
-    }
-  }, []);
+    const node = modalRef.current;
+    if (!node) return;
+
+    // Move initial focus into the dialog.
+    node.focus();
+
+    const getFocusable = (): HTMLElement[] =>
+      Array.from(
+        node.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+    // Confine keyboard focus to the dialog (Tab / Shift+Tab cycle); Escape closes.
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && onClose) {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = getFocusable();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        node.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (event.shiftKey) {
+        if (active === first || active === node || !node.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    node.addEventListener('keydown', handleKeyDown);
+    return () => node.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4 pt-20" role="dialog" aria-modal="true" aria-label={title}>

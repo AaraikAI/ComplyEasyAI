@@ -210,18 +210,20 @@ API requests are rate-limited:
         // Auth schemas
         LoginRequest: {
           type: 'object',
-          required: ['email'],
+          required: ['email', 'password'],
           properties: {
             email: { type: 'string', format: 'email' },
+            password: { type: 'string', format: 'password' },
           },
         },
         RegisterRequest: {
           type: 'object',
-          required: ['name', 'email'],
+          required: ['name', 'email', 'password'],
           properties: {
-            name: { type: 'string', minLength: 1 },
+            name: { type: 'string', minLength: 1, maxLength: 200 },
             email: { type: 'string', format: 'email' },
-            organizationName: { type: 'string' },
+            password: { type: 'string', format: 'password', minLength: 8, maxLength: 128 },
+            organizationName: { type: 'string', minLength: 1, maxLength: 100 },
           },
         },
         AuthResponse: {

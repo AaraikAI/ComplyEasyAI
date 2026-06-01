@@ -7,6 +7,43 @@
 import logger from '../config/logger';
 import prisma from '../config/database';
 import azureSyncService from '../services/integrations/azureSyncService';
+import jobQueueService, { QUEUE_NAMES } from '../services/queue/jobQueue';
+
+/** Job name used for per-organization Azure sync work items. */
+const AZURE_ORG_SYNC_JOB = 'azure-org-sync';
+
+/** Bounded retry policy for per-org sync jobs. Exhausted attempts are routed
+ *  to the shared dead-letter queue by the job queue service. */
+const ORG_SYNC_JOB_OPTIONS = {
+  attempts: 3,
+  backoff: { type: 'exponential' as const, delay: 30_000 },
+};
+
+let orgSyncProcessorRegistered = false;
+
+/**
+ * Register the processor that performs a single organization's full Azure sync.
+ * Registered once; the job queue handles retries/backoff and dead-lettering so a
+ * transient per-org failure is retried rather than silently dropped.
+ */
+function ensureOrgSyncProcessor(): void {
+  if (orgSyncProcessorRegistered) return;
+  orgSyncProcessorRegistered = true;
+
+  jobQueueService.registerProcessor(QUEUE_NAMES.INTEGRATION_SYNC, async (job) => {
+    if (job.name !== AZURE_ORG_SYNC_JOB) return;
+    const organizationId = job.data.organizationId as string;
+    const triggeredBy = (job.data.triggeredBy as string) || 'system';
+
+    const result = await azureSyncService.runFullSync(organizationId, triggeredBy);
+    if (!result.success) {
+      // Surface as a failure so the queue applies its retry/backoff policy and,
+      // once attempts are exhausted, routes the job to the dead-letter queue.
+      throw new Error(`Azure sync for org ${organizationId} completed with errors`);
+    }
+    return result;
+  });
+}
 
 interface AzureSyncJobConfig {
   // How often to run sync (in hours)
@@ -43,6 +80,9 @@ class AzureSyncJob {
 
     const intervalMs = this.config.syncIntervalHours * 60 * 60 * 1000;
 
+    // Ensure the per-org sync processor (with retry/backoff + DLQ) is wired up.
+    ensureOrgSyncProcessor();
+
     // Run immediately on start, then schedule
     this.runSyncCycle().catch(error => {
       logger.error('[AzureSyncJob] Initial sync cycle failed', error);
@@ -53,6 +93,7 @@ class AzureSyncJob {
         logger.error('[AzureSyncJob] Scheduled sync cycle failed', error);
       });
     }, intervalMs);
+    this.intervalId?.unref?.();
 
     logger.info(`[AzureSyncJob] Started with ${this.config.syncIntervalHours}h interval`);
   }
@@ -115,39 +156,35 @@ class AzureSyncJob {
 
       logger.info(`[AzureSyncJob] ${orgsToSync.length} organizations need syncing`);
 
-      // Process in batches with concurrency limit
-      let processed = 0;
-      let succeeded = 0;
-      let failed = 0;
+      // Ensure the durable per-org processor is registered before enqueueing.
+      ensureOrgSyncProcessor();
 
-      for (let i = 0; i < orgsToSync.length; i += this.config.batchSize) {
-        const batch = orgsToSync.slice(i, i + this.config.batchSize);
+      // Enqueue each org sync as a bounded-retry job. The job queue applies
+      // exponential backoff on transient failures and routes exhausted jobs to
+      // the dead-letter queue, so a single org's failure no longer silently
+      // drops until the next interval. A stable jobId per org+cycle de-dupes
+      // overlapping cycles.
+      const cycleStamp = Math.floor(startTime / (this.config.syncIntervalHours * 60 * 60 * 1000));
+      let enqueued = 0;
+      let enqueueFailed = 0;
 
-        // Process batch with concurrency limit
-        const batchPromises = batch.map(async (orgId) => {
-          try {
-            const result = await azureSyncService.runFullSync(orgId, 'system');
-            if (result.success) {
-              succeeded++;
-            } else {
-              failed++;
-              logger.warn(`[AzureSyncJob] Sync for org ${orgId} completed with errors`);
-            }
-          } catch (error: any) {
-            failed++;
-            logger.error(`[AzureSyncJob] Sync failed for org ${orgId}`, error);
-          }
-          processed++;
-        });
-
-        // Wait for batch to complete
-        await Promise.allSettled(batchPromises);
-
-        logger.info(`[AzureSyncJob] Progress: ${processed}/${orgsToSync.length} organizations processed`);
+      for (const orgId of orgsToSync) {
+        try {
+          await jobQueueService.addJob(
+            QUEUE_NAMES.INTEGRATION_SYNC,
+            AZURE_ORG_SYNC_JOB,
+            { organizationId: orgId, triggeredBy: 'system' },
+            { ...ORG_SYNC_JOB_OPTIONS, jobId: `azure-sync:${orgId}:${cycleStamp}` }
+          );
+          enqueued++;
+        } catch (error) {
+          enqueueFailed++;
+          logger.error(`[AzureSyncJob] Failed to enqueue sync for org ${orgId}`, error);
+        }
       }
 
       const duration = Date.now() - startTime;
-      logger.info(`[AzureSyncJob] Sync cycle completed: ${succeeded} succeeded, ${failed} failed, ${duration}ms`);
+      logger.info(`[AzureSyncJob] Sync cycle dispatched: ${enqueued} org sync jobs enqueued, ${enqueueFailed} enqueue failures, ${duration}ms`);
 
     } catch (error) {
       logger.error('[AzureSyncJob] Sync cycle error', error);

@@ -53,27 +53,30 @@ describe('SBOMManager', () => {
   });
 
   it('switches to components tab', () => {
-    render(<SBOMManager />);
-    const tab = screen.queryAllByText(/Components|components/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    render(<SBOMManager onBack={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Components/i }));
+    // The components tab exposes its own search box.
+    expect(screen.getByPlaceholderText('Search components...')).toBeInTheDocument();
   });
 
   it('switches to vulnerabilities tab', () => {
-    render(<SBOMManager />);
-    const tab = screen.queryAllByText(/Vulnerabilities|vulnerabilities/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    render(<SBOMManager onBack={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Vulnerabilities/i }));
+    expect(screen.getByPlaceholderText(/Search by CVE/i)).toBeInTheDocument();
   });
 
   it('switches to licenses tab', () => {
-    render(<SBOMManager />);
-    const tab = screen.queryAllByText(/Licenses|licenses/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    render(<SBOMManager onBack={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Licenses/i }));
+    // License category summary cards are unique to the licenses tab.
+    expect(screen.getByText('Permissive')).toBeInTheDocument();
+    expect(screen.getByText('Copyleft')).toBeInTheDocument();
   });
 
   it('switches to repositories tab', () => {
-    render(<SBOMManager />);
-    const tab = screen.queryAllByText(/Repositories|repositories/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    render(<SBOMManager onBack={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Repositories/i }));
+    expect(screen.getByText('Connected Repositories')).toBeInTheDocument();
   });
 
   it('filters by search', () => {
@@ -82,10 +85,12 @@ describe('SBOMManager', () => {
     if (searchInput) fireEvent.change(searchInput, { target: { value: 'react' } });
   });
 
-  it('shows stat cards', () => {
-    render(<SBOMManager />);
-    const stats = document.querySelectorAll('[class*="rounded-xl"]');
-    expect(stats.length).toBeGreaterThanOrEqual(0);
+  it('shows overview summary cards', () => {
+    render(<SBOMManager onBack={vi.fn()} />);
+    // Overview is the default tab and always renders its labelled summary cards.
+    expect(screen.getByText('Critical CVEs')).toBeInTheDocument();
+    expect(screen.getByText('High CVEs')).toBeInTheDocument();
+    expect(screen.getByText('License Issues')).toBeInTheDocument();
   });
 
   it('calls API on mount', async () => {
@@ -103,17 +108,29 @@ describe('SBOMManager', () => {
     });
   });
 
-  it('shows component detail view', () => {
-    render(<SBOMManager />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) fireEvent.click(rows[0]);
+  it('shows component detail view', async () => {
+    render(<SBOMManager onBack={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Components/i }));
+    // Reference fixtures load once listLicenses is unavailable; a known component row appears.
+    const row = (await screen.findByText('express')).closest('tr');
+    expect(row).not.toBeNull();
+    fireEvent.click(row!);
+    // Clicking a row reveals the detail panel exposing PURL / CPE metadata.
+    await waitFor(() => expect(screen.getByText('PURL')).toBeInTheDocument());
+    expect(screen.getByText('CPE')).toBeInTheDocument();
   });
 
-  it('filters by severity', () => {
-    render(<SBOMManager />);
-    const tab = screen.queryAllByText(/Vulnerabilities|vulnerabilities/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
-    const severitySelects = screen.queryAllByDisplayValue(/All/i);
-    if (severitySelects.length > 0) fireEvent.change(severitySelects[0], { target: { value: 'Critical' } });
+  it('filters by severity', async () => {
+    render(<SBOMManager onBack={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Vulnerabilities/i }));
+    // Wait for reference fixtures so the vulnerability list is populated, then narrow to Critical.
+    await screen.findByText('CVE-2024-33883');
+    // The severity <select> is identified by its current option text (".. Severity").
+    const severitySelect = screen.getByDisplayValue(/Severity/i);
+    fireEvent.change(severitySelect, { target: { value: 'Critical' } });
+    expect((severitySelect as HTMLSelectElement).value).toBe('Critical');
+    // A High-severity CVE is filtered out while a Critical one remains.
+    expect(screen.getByText('CVE-2024-33883')).toBeInTheDocument();
+    expect(screen.queryByText('CVE-2024-29041')).not.toBeInTheDocument();
   });
 });

@@ -650,7 +650,7 @@ describe('Config Index', () => {
       expect(() => validateConfig()).toThrow('Configuration validation failed');
     });
 
-    it('should not show warnings in production environment', () => {
+    it('should surface optional-feature warnings even in production environment', () => {
       process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
       process.env.JWT_SECRET = 'a'.repeat(32);
       process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
@@ -660,6 +660,9 @@ describe('Config Index', () => {
       process.env.SENDGRID_FROM_EMAIL = 'test@example.com';
       process.env.CORS_ORIGIN = 'http://localhost:3000';
       process.env.REDIS_URL = 'redis://localhost:6379';
+      // Provide an mqtts:// broker so the only warning trigger is the missing
+      // STRIPE_SECRET_KEY (avoids extra prod-only MQTT warnings/errors).
+      process.env.MQTT_BROKER_URL = 'mqtts://broker.example.com:8883';
       delete process.env.STRIPE_SECRET_KEY;
       process.env.NODE_ENV = 'production';
       jest.resetModules();
@@ -668,11 +671,13 @@ describe('Config Index', () => {
       const { validateConfig } = require('../../../config/index');
       validateConfig();
 
-      // In production, warnings should be suppressed
+      // Warnings are intentionally surfaced in every environment (including
+      // production) so optional-feature misconfigurations are visible in logs.
       const warnCalls = stdoutSpy.mock.calls.filter(
         (call) => typeof call[0] === 'string' && call[0].includes('Configuration Warnings')
       );
-      expect(warnCalls.length).toBe(0);
+      expect(warnCalls.length).toBe(1);
+      expect(warnCalls[0][0]).toContain('STRIPE_SECRET_KEY is not set');
       stdoutSpy.mockRestore();
     });
 

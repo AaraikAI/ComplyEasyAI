@@ -18,7 +18,18 @@ vi.mock('@/services/api', () => ({
     put: apiPut,
     delete: apiDelete,
     modules: {
-      surveillance: { listPlans: apiGet, listRecalls: apiGet, createIncident: apiPost },
+      // Mirror the full surveillance surface the component loads on mount so the
+      // success path (real data) is exercised rather than the fixture fallback.
+      surveillance: {
+        listPlans: apiGet,
+        listRecalls: apiGet,
+        listIncidents: apiGet,
+        listCapas: apiGet,
+        listNonConformities: apiGet,
+        listReports: apiGet,
+        createIncident: apiPost,
+        createReport: apiPost,
+      },
     },
     ai: { generateReport: apiPost },
   },
@@ -31,8 +42,9 @@ import PostMarketSurveillance from '../PostMarketSurveillance';
 describe('PostMarketSurveillance', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    apiGet.mockResolvedValue({ data: [] });
-    apiPost.mockResolvedValue({ data: { id: 'pms1' } });
+    // The component treats array responses as live data; non-arrays fall back to [].
+    apiGet.mockResolvedValue([]);
+    apiPost.mockResolvedValue({ id: 'pms1' });
   });
 
   it('renders without crashing', () => {
@@ -46,28 +58,38 @@ describe('PostMarketSurveillance', () => {
     expect(rows.length).toBeGreaterThanOrEqual(0);
   });
 
-  it('opens create plan form', () => {
+  it('opens the report-incident modal from the header action', () => {
     render(<PostMarketSurveillance />);
-    const addBtn = screen.queryAllByText(/Create|New|Add/i)[0] ?? null;
-    if (addBtn) fireEvent.click(addBtn);
+    // The header always renders a "Report Incident" action.
+    const reportBtn = screen.getAllByText(/Report Incident/i)[0];
+    expect(reportBtn).toBeTruthy();
+    fireEvent.click(reportBtn);
+    // The modal heading must now be present.
+    expect(screen.getByText(/Report New Incident/i)).toBeInTheDocument();
   });
 
-  it('filters by search', () => {
+  it('filters incidents by search query', async () => {
     render(<PostMarketSurveillance />);
-    const searchInput = screen.queryByPlaceholderText(/search/i);
-    if (searchInput) fireEvent.change(searchInput, { target: { value: 'safety' } });
+    // The incident search box lives on the Incidents tab — switch to it first.
+    fireEvent.click(screen.getByRole('button', { name: /^Incidents$/i }));
+    const searchInput = await screen.findByPlaceholderText(/Search incidents/i);
+    expect(searchInput).toBeInTheDocument();
+    fireEvent.change(searchInput, { target: { value: 'safety' } });
+    expect((searchInput as HTMLInputElement).value).toBe('safety');
   });
 
   it('shows stat cards', () => {
     render(<PostMarketSurveillance />);
     const stats = document.querySelectorAll('[class*="rounded-xl"]');
-    expect(stats.length).toBeGreaterThanOrEqual(0);
+    expect(stats.length).toBeGreaterThan(0);
   });
 
-  it('shows detail view', () => {
+  it('renders the overview stat cards', () => {
     render(<PostMarketSurveillance />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) fireEvent.click(rows[0]);
+    // The overview is the default tab and always renders its summary cards.
+    expect(screen.getByText(/Open Incidents/i)).toBeInTheDocument();
+    expect(screen.getByText(/Open CAPAs/i)).toBeInTheDocument();
+    expect(screen.getByText(/Active Recalls/i)).toBeInTheDocument();
   });
 
   it('calls API on mount', async () => {
@@ -77,23 +99,27 @@ describe('PostMarketSurveillance', () => {
     });
   });
 
-  it('handles API errors', async () => {
+  it('handles API errors by surfacing the fallback banner', async () => {
     apiGet.mockRejectedValue(new Error('Network error'));
     render(<PostMarketSurveillance />);
     await waitFor(() => {
       expect(apiGet).toHaveBeenCalled();
     });
+    // When every list endpoint rejects the component shows a connectivity banner.
+    expect(await screen.findByText(/Unable to connect to server/i)).toBeInTheDocument();
   });
 
-  it('shows incidents tab', () => {
+  it('switches to the incidents tab', async () => {
     render(<PostMarketSurveillance />);
-    const tab = screen.queryAllByText(/Incident|incident|Complaint|complaint/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    fireEvent.click(screen.getByRole('button', { name: /^Incidents$/i }));
+    // The incidents view exposes its dedicated search box.
+    expect(await screen.findByPlaceholderText(/Search incidents/i)).toBeInTheDocument();
   });
 
-  it('shows CAPA section', () => {
+  it('switches to the CAPA tab', async () => {
     render(<PostMarketSurveillance />);
-    const tab = screen.queryAllByText(/CAPA|Corrective|corrective/i)[0] ?? null;
-    if (tab) fireEvent.click(tab);
+    fireEvent.click(screen.getByRole('button', { name: /^CAPA$/i }));
+    // The CAPA view always renders its "Total CAPAs" summary card.
+    expect(await screen.findByText(/Total CAPAs/i)).toBeInTheDocument();
   });
 });
