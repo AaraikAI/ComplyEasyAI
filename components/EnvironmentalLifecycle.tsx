@@ -537,7 +537,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
     const win = window.open('', '_blank', 'noopener,noreferrer,width=820,height=900');
     if (!win) { setLoadError('Unable to open the report for printing. Please allow pop-ups to save as PDF.'); return; }
     win.document.open();
-    win.document.write(buildReportHtml(rpt) + '<script>window.onload=function(){window.print();};<\/script>');
+    win.document.write(buildReportHtml(rpt) + '<script>window.onload=function(){window.print();};<' + '/script>');
     win.document.close();
   }, [buildReportHtml]);
 

@@ -262,7 +262,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
   }, []);
 
   const lastSyncLabel = useMemo(() => {
-    if (lastSync == null) return null;
+    if (lastSync === null || lastSync === undefined) return null;
     const diffMin = Math.floor((Date.now() - lastSync) / 60_000);
     if (diffMin < 1) return 'just now';
     if (diffMin === 1) return '1 min ago';
@@ -401,7 +401,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <div className="flex items-center gap-2 text-cyan-400 text-sm mb-1">
             <Clock className="w-4 h-4" /> Avg Response Time
           </div>
-          <div className="text-3xl font-bold text-cyan-400">{dsarStats.avgResponseDays != null ? dsarStats.avgResponseDays : '—'}</div>
+          <div className="text-3xl font-bold text-cyan-400">{dsarStats.avgResponseDays !== null && dsarStats.avgResponseDays !== undefined ? dsarStats.avgResponseDays : '—'}</div>
           <div className="text-xs text-slate-500 mt-1">days (30-day deadline)</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
