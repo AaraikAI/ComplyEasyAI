@@ -29,8 +29,8 @@ describe('USPrivacyTracker', () => {
 
   it('renders without crashing', () => {
     render(<USPrivacyTracker />);
-    // The page title renders synchronously.
-    expect(screen.getByText('Privacy Management')).toBeInTheDocument();
+    // The page title is now i18n-keyed (t('privacy.title')); the mock returns the key.
+    expect(screen.getByText('privacy.title')).toBeInTheDocument();
   });
 
   it('displays US Privacy Tracker content', () => {
@@ -43,7 +43,9 @@ describe('USPrivacyTracker', () => {
 
   it('shows tab navigation for overview, map, comparison, gap analysis, tracker', () => {
     render(<USPrivacyTracker />);
-    ['Overview', 'State Map', 'Comparison', 'Gap Analysis', 'Compliance Tracker'].forEach(label => {
+    // The overview tab label is now i18n-keyed (t('common.overview')); the per-file
+    // i18n mock returns the key verbatim. The remaining tabs use literal labels.
+    ['common.overview', 'State Map', 'Comparison', 'Gap Analysis', 'Compliance Tracker'].forEach(label => {
       expect(screen.getByText(label)).toBeInTheDocument();
     });
   });

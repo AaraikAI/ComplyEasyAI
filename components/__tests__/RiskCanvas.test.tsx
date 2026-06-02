@@ -36,6 +36,18 @@ vi.mock('@/components/RisingSignals', () => ({
   RisingSignals: ({ risks }: any) => <div data-testid="rising-signals">Signals: {risks?.length ?? 0}</div>,
 }));
 
+// The chat now delegates to the backend copilot service (api.ai.complianceCopilot)
+// instead of generating canned local replies. Mock it to return a context-aware
+// response so the test can verify the component renders the AI reply it receives.
+const complianceCopilot = vi.fn();
+vi.mock('@/services/api', () => ({
+  api: {
+    ai: {
+      complianceCopilot: (...args: any[]) => complianceCopilot(...args),
+    },
+  },
+}));
+
 import RiskCanvas from '../RiskCanvas';
 
 const renderComponent = () =>
@@ -48,6 +60,22 @@ const renderComponent = () =>
 describe('RiskCanvas', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // The copilot reply is generated server-side from the live dashboard context
+    // the component forwards (compliance score, vendor counts, etc.). Echo a
+    // context-aware reply so assertions exercise that the component renders the
+    // response it receives and forwards the correct context.
+    complianceCopilot.mockImplementation((msg: string, _history: any, context: any) => {
+      const lower = (msg || '').toLowerCase();
+      let response: string;
+      if (lower.includes('vendor')) {
+        response = `You currently have ${context?.totalVendors ?? 0} vendors being monitored, with ${context?.highRiskVendors ?? 0} flagged as high risk.`;
+      } else if (lower.includes('gap')) {
+        response = 'Here is a gap analysis across your active frameworks; several controls still need evidence.';
+      } else {
+        response = `Your overall compliance score is ${context?.complianceScore ?? 0}% across the frameworks you track.`;
+      }
+      return Promise.resolve({ response, suggestions: [] });
+    });
   });
 
   it('renders without crashing', () => {
@@ -112,6 +140,13 @@ describe('RiskCanvas', () => {
     await waitFor(() => {
       expect(screen.getByText(/Your overall compliance score is 82%/)).toBeInTheDocument();
     }, { timeout: 3000 });
+    // The copilot service is invoked with the user's message and the live
+    // dashboard context (overall compliance score forwarded from the hook).
+    expect(complianceCopilot).toHaveBeenCalledWith(
+      'What is our SOC2 status?',
+      expect.any(Array),
+      expect.objectContaining({ complianceScore: 82 }),
+    );
   });
 
   it('sends a vendor-related message and gets vendor response', async () => {

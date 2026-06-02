@@ -34,6 +34,15 @@ function createFetchMock() {
           json: () => Promise.resolve({ data: { id: 'inc-new', title: body.title, description: body.description, severity: body.severity || 'SEV3', status: 'DETECTED', category: body.category || 'SYSTEM_FAILURE', detectedAt: new Date().toISOString(), triagedAt: null, containedAt: null, eradicatedAt: null, resolvedAt: null, closedAt: null, assignedTo: '', reportedBy: '', affectedSystems: [], timeline: [], tasks: [] } }),
         });
       }
+      if (options?.method === 'PATCH') {
+        // The backend PATCH route returns the updated incident object under `data`
+        // (server/src/routes/incidents.ts:325). Echo back inc-1 advanced to ERADICATED.
+        const body = options?.body ? JSON.parse(options.body) : {};
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ status: 'success', data: { ...MOCK_INCIDENTS[0], status: body.status || 'ERADICATED' } }),
+        });
+      }
       if (options?.method === 'DELETE') {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ status: 'ok' }) });
       }
