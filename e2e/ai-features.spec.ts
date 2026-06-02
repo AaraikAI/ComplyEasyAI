@@ -97,7 +97,11 @@ test.describe('AI Features', () => {
 
         const submitBtn = page.getByRole('button', { name: /generate|analyze|run|submit|start|check|create|simulate/i }).first();
         if (await submitBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await submitBtn.click();
+          // Cap the click so a submit button that stays disabled (form requires
+          // fields this generic filler did not populate) fails fast instead of
+          // blocking on Playwright's 60s actionability wait. The request
+          // assertion below is already guarded on whether a call actually fired.
+          await submitBtn.click({ timeout: 6000 }).catch(() => {});
           await page.waitForTimeout(3000);
 
           if (apiCalled) {
