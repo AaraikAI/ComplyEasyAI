@@ -366,7 +366,7 @@ jobs:
         working-directory: ./server
         continue-on-error: true  # Known unfixable: elliptic, aws-sdk v2, serialize-javascript
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -511,7 +511,7 @@ jobs:
       # 1) SARIF for GitHub Security tab (no gate — logs all severities)
       # 2) Table-format gate that fails only on fixable CRITICAL vulns
       - name: Scan API image with Trivy (SARIF for Security tab)
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}'
           format: 'sarif'
@@ -526,7 +526,7 @@ jobs:
           category: 'container-api'
 
       - name: Scan API image with Trivy (CRITICAL gate)
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}'
           format: 'table'
@@ -536,7 +536,7 @@ jobs:
 
       # Web image: same pattern
       - name: Scan Web image with Trivy (SARIF for Security tab)
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:${{ github.sha }}'
           format: 'sarif'
@@ -551,7 +551,7 @@ jobs:
           category: 'container-web'
 
       - name: Scan Web image with Trivy (CRITICAL gate)
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:${{ github.sha }}'
           format: 'table'
