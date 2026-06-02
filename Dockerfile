@@ -135,7 +135,7 @@ CMD ["/app/server/entrypoint.sh"]
 # ---------------------------------------------------------------------------
 # Stage 7: Production frontend via Nginx
 # ---------------------------------------------------------------------------
-FROM nginx:1.29-alpine AS frontend-production
+FROM nginx:1.31-alpine AS frontend-production
 
 RUN rm /etc/nginx/conf.d/default.conf
 
