@@ -110,7 +110,9 @@ describe('RegulatoryChangeTracker', () => {
     const rows = document.querySelectorAll('div[class*="cursor-pointer"]');
     expect(rows.length).toBeGreaterThan(0);
     fireEvent.click(rows[0]);
-    expect(screen.getByText(/Affected Controls/i)).toBeInTheDocument();
+    // The empty-state copy ("...identify affected controls") also matches the
+    // substring regex, so target the section heading specifically.
+    expect(screen.getByRole('heading', { name: /Affected Controls/i })).toBeInTheDocument();
   });
 
   it('shows remediation suggestions', async () => {
@@ -119,6 +121,8 @@ describe('RegulatoryChangeTracker', () => {
     const rows = document.querySelectorAll('div[class*="cursor-pointer"]');
     expect(rows.length).toBeGreaterThan(0);
     fireEvent.click(rows[0]);
-    expect(screen.getByText(/Remediation Suggestions/i)).toBeInTheDocument();
+    // The empty-state copy ("No remediation suggestions yet") also matches the
+    // substring regex, so target the section heading specifically.
+    expect(screen.getByRole('heading', { name: /Remediation Suggestions/i })).toBeInTheDocument();
   });
 });

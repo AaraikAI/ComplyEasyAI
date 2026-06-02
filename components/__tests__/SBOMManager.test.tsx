@@ -68,9 +68,13 @@ describe('SBOMManager', () => {
   it('switches to licenses tab', () => {
     render(<SBOMManager onBack={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /Licenses/i }));
-    // License category summary cards are unique to the licenses tab.
-    expect(screen.getByText('Permissive')).toBeInTheDocument();
-    expect(screen.getByText('Copyleft')).toBeInTheDocument();
+    // "Permissive"/"Copyleft" appear both as per-row category badges and as the
+    // license-category summary cards. Scope to the summary cards via their
+    // distinctive colored label class so the assertion targets the cards.
+    const permissive = screen.getAllByText('Permissive');
+    expect(permissive.some(el => el.className.includes('text-green-600'))).toBe(true);
+    const copyleft = screen.getAllByText('Copyleft');
+    expect(copyleft.some(el => el.className.includes('text-red-600'))).toBe(true);
   });
 
   it('switches to repositories tab', () => {

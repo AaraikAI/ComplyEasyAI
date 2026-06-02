@@ -41,9 +41,10 @@ describe('WorkflowAutomationRules', () => {
 
   it('renders without crashing', () => {
     render(<WorkflowAutomationRules />);
-    // Header title and create button render synchronously.
-    expect(screen.getByText('Automation')).toBeInTheDocument();
-    expect(screen.getByText('Create Workflow')).toBeInTheDocument();
+    // Header title and create button are now i18n-keyed; the per-file mock
+    // returns the key verbatim.
+    expect(screen.getByText('workflow.automation')).toBeInTheDocument();
+    expect(screen.getByText('workflow.createWorkflow')).toBeInTheDocument();
   });
 
   it('shows workflows tab', () => {
@@ -72,20 +73,22 @@ describe('WorkflowAutomationRules', () => {
 
   it('opens create workflow form', () => {
     render(<WorkflowAutomationRules />);
-    fireEvent.click(screen.getByText('Create Workflow'));
+    // The create button label is i18n-keyed (workflow.createWorkflow).
+    fireEvent.click(screen.getByText('workflow.createWorkflow'));
     // The create modal renders its name field placeholder.
     expect(screen.getByPlaceholderText('e.g. Auto-escalate critical risks')).toBeInTheDocument();
   });
 
   it('filters by search', async () => {
     render(<WorkflowAutomationRules />);
-    // Workflows tab finishes loading to its empty state.
-    expect(await screen.findByText('No results found')).toBeInTheDocument();
+    // Workflows tab finishes loading to its empty state. The empty-state copy is
+    // i18n-keyed (common.noResults), rendered verbatim by the per-file mock.
+    expect(await screen.findByText('common.noResults')).toBeInTheDocument();
     const searchInput = screen.getByPlaceholderText('Search workflows...');
     fireEvent.change(searchInput, { target: { value: 'compliance' } });
     expect((searchInput as HTMLInputElement).value).toBe('compliance');
     // Still empty (no fixtures) — the empty state is retained.
-    expect(screen.getByText('No results found')).toBeInTheDocument();
+    expect(screen.getByText('common.noResults')).toBeInTheDocument();
   });
 
   it('shows stat cards', () => {
@@ -99,7 +102,8 @@ describe('WorkflowAutomationRules', () => {
   it('renders empty workflow list without toggle controls', async () => {
     render(<WorkflowAutomationRules />);
     // No workflows -> no per-row toggle/delete controls and the empty state shows.
-    expect(await screen.findByText('No results found')).toBeInTheDocument();
+    // Empty-state copy is i18n-keyed (common.noResults).
+    expect(await screen.findByText('common.noResults')).toBeInTheDocument();
     expect(document.querySelectorAll('[data-testid="icon-ToggleLeft"], [data-testid="icon-ToggleRight"]').length).toBe(0);
     expect(document.querySelectorAll('[data-testid="icon-Trash2"]').length).toBe(0);
   });

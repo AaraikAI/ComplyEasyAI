@@ -34,8 +34,9 @@ describe('WorkflowBuilder', () => {
 
   it('renders without crashing', () => {
     render(<WorkflowBuilder />);
-    // Header title renders immediately (before data finishes loading).
-    expect(screen.getByText('Workflow Builder')).toBeInTheDocument();
+    // Header title is now i18n-keyed (t('workflow.title')); the per-file mock
+    // returns the key verbatim.
+    expect(screen.getByText('workflow.title')).toBeInTheDocument();
   });
 
   it('shows tab navigation', () => {
@@ -79,8 +80,10 @@ describe('WorkflowBuilder', () => {
 
   it('opens create workflow form', async () => {
     render(<WorkflowBuilder />);
-    // Wait for the workflows tab to load, then open the create modal.
-    const addBtn = await screen.findByText('Create Workflow');
+    // Wait for the workflows tab to load, then open the create modal. The create
+    // affordance is the i18n-keyed button (workflow.createWorkflow); it is the
+    // sole match before the modal (which reuses the key) is opened.
+    const addBtn = await screen.findByText('workflow.createWorkflow');
     fireEvent.click(addBtn);
     expect(screen.getByPlaceholderText('e.g. Quarterly Compliance Review')).toBeInTheDocument();
   });

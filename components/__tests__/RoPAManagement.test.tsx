@@ -44,7 +44,10 @@ describe('RoPAManagement', () => {
     render(<RoPAManagement onBack={mockOnBack} />);
     // Stat cards render once the (empty) activity list has loaded.
     expect(await screen.findByText('Total Activities')).toBeInTheDocument();
-    expect(screen.getByText('Active')).toBeInTheDocument();
+    // "Active" also appears as a status-filter <option>, so scope to the stat
+    // card by selecting the label that sits in the green stat-card heading.
+    const activeMatches = screen.getAllByText('Active');
+    expect(activeMatches.some(el => el.className.includes('text-green-400'))).toBe(true);
     expect(screen.getByText('Special Categories')).toBeInTheDocument();
     expect(screen.getByText('International Transfers')).toBeInTheDocument();
   });

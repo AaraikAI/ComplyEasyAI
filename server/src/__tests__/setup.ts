@@ -13,6 +13,7 @@ process.env.JWT_EXPIRES_IN = '1h';
 process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key-for-testing-purposes-only-min-32-chars';
 process.env.JWT_REFRESH_EXPIRES_IN = '7d';
 process.env.ENCRYPTION_KEY = 'test-encryption-key-32-chars-minimum-length-required!!!';
+process.env.ATTESTATION_SECRET = 'test-attestation-secret-for-sensor-data-attestation-32chars';
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
 process.env.GEMINI_API_KEY = 'test-gemini-key';
 process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
