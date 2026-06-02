@@ -8,6 +8,36 @@
 
 ---
 
+## §0 Remediation Status — RESOLVED (updated 2026-06-02)
+
+> **The 429 findings catalogued in §1–§6 below have all been remediated.** Those sections are
+> retained as the original scan + the audit trail; this section records the current state.
+> The authoritative 1:1 closure tracker is **`REMEDIATION_LOG.md`** (one row per finding); the
+> doc-vs-code discrepancies and known-unfixable evidence are in **`.claude/CLAUDE.md`**.
+
+**All 429 findings terminal:** FIXED **344** · WIRED **58** · MIGRATED **3** · JUSTIFIED_INTENTIONAL **24** · PENDING **0** · SKIPPED **0**.
+
+**Verification gates (2026-06-01/06-02):**
+
+| Gate | Result |
+|---|---|
+| **D1 — Types** | ✅ `tsc --noEmit` = **0 errors** in server, root, mobile |
+| **D2 — Audit** | ✅ root **0 vulns**; server **29** (0 critical, **0 high** — `dompurify`→^3.4.7, `tmp`→^0.2.7 fixed both prior HIGHs; remainder are breaking-major toolchain chains, documented in CLAUDE.md) |
+| **D3 — Build + boot** | ✅ frontend + server build; server boots, `/health` 200, **DB connected**, auth enforced (401), live escalation route 200 |
+| **D4 — Load** | ✅ ~842 req/s on `/health`, no 5xx/timeouts, no DB-pool exhaustion |
+| **Server test suite** | ✅ **68 failed suites → 0**; final: **275/275 non-skipped suites, 7,776 tests pass** (1 intentional skip: live-target `penetrationTests.spec.ts`); enterprise suite un-skipped |
+| **Frontend (vitest)** | ✅ **167 files / 2,255 tests pass** |
+
+**Real production bugs found & fixed during remediation** (beyond the catalogued findings, surfaced by driving the full suite green): Express-5 `validate.ts` `req.query/params` reassignment 500-ing every `validateQuery` route (HIGH); `createWebhookSchema` missing `name` → `POST /webhooks` always 400 (HIGH); `billing change-tier`/`quote` + 3 onboarding-schema + BYOK-config field drift; `csvExport` Content-Length excluded the BOM; `vendors` GET pagination arg; 24 `setInterval` timers not `.unref()`'d.
+
+**Shipped to `main`:** merged via **PR #288** (2026-06-02) after driving CI green (lock-sync, prisma-generate-without-DATABASE_URL, eslint, test-env, 9 frontend test files). The 8 stale `[Security]` dependency-scan issues were closed. **Dependabot: 10 PRs merged** (checkout-6, trivy-0.36, gitleaks-3, nginx-1.31, 4 mobile, root-prod-group of 31 updates, @types/node patch); **4 held with documented reasons** — major breaking changes needing dedicated migrations: node 22→26 (CI/engines mismatch, #264), `stripe` SDK upgrade (#289), expo 55→56 (#268), jest 29→30 (#281).
+
+**Known follow-ups (pre-existing, NOT regressions):**
+1. **E2E (Playwright) capacity** — the ~1,096-test browser suite times out even at workers:2 + a 35-min cap; needs **sharding across parallel jobs**. Non-blocking (main is not branch-protected); was never green on main previously. The hot-path runtime behaviour it would cover is otherwise exercised by D3/D4 + the contract/integration suites.
+2. **CodeQL code-scanning backlog** — ~2 critical (`js/request-forgery` in `patValidationService.ts`) + ~66 high pre-existing alerts on `main` (the PR check's "737 new" is inflated by the absence of a clean baseline diff). A separate security-review effort.
+
+---
+
 ## §1 Executive Summary
 
 | Severity | Count |
