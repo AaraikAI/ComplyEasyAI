@@ -1,0 +1,4 @@
+server/src/controllers/acosController.ts
+server/src/controllers/authController.ts
+server/src/routes/acos.ts
+server/src/routes/privacy.ts

@@ -97,12 +97,14 @@ test.describe('Vendor Management', () => {
       await vendorRow.click();
       await page.waitForLoadState('networkidle').catch(() => {});
 
-      // Should show vendor details with tabs or sections
-      await expect(
-        page.locator('[data-testid="vendor-details"], .vendor-details, [role="tabpanel"]').first()
-      ).toBeVisible({ timeout: 10000 }).catch(() => {
-        // Fallback: at least we navigated
-      });
+      // Selecting a vendor must surface its detail view (a details panel, a tab
+      // panel, or a vendor-scoped heading/section). The assertion is no longer
+      // swallowed by .catch() — failing to render details now fails the test.
+      const details = page.locator(
+        '[data-testid="vendor-details"], .vendor-details, [role="tabpanel"], '
+        + 'h1:has-text("Vendor"), h2:has-text("Vendor"), :text("Risk Score"), :text("Assessment")'
+      ).first();
+      await expect(details).toBeVisible({ timeout: 10000 });
     }
   });
 });

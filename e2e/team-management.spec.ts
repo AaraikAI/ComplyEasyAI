@@ -5,6 +5,16 @@
 
 import { test, expect } from '@playwright/test';
 
+// Paths the server intentionally exempts from CSRF validation (pre-login auth
+// endpoints and HMAC-verified webhook receivers — see server/src/middleware/csrf.ts).
+const CSRF_EXEMPT = [
+  '/auth/login', '/auth/register', '/auth/refresh', '/auth/magic-link',
+  '/auth/verify', '/auth/2fa/complete', '/webhook', '/csrf-token',
+];
+function isCsrfExempt(url: string): boolean {
+  return CSRF_EXEMPT.some((p) => url.includes(p));
+}
+
 test.describe('Team Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/settings');
@@ -72,11 +82,13 @@ test.describe('Team Management', () => {
     });
 
     test('invite sends POST with CSRF token', async ({ page }) => {
-      let invitePostCsrf = false;
-
+      // Any mutating /api/ request the invite flow fires must carry an
+      // x-csrf-token (the frontend attaches it for all mutations — services/api.ts).
+      // A mutation without the token is a regression and fails the test.
+      const mutationsWithoutCsrf: string[] = [];
       page.on('request', (req) => {
-        if (req.method() === 'POST' && req.url().includes('/api/')) {
-          invitePostCsrf = !!req.headers()['x-csrf-token'];
+        if (req.method() === 'POST' && req.url().includes('/api/') && !isCsrfExempt(req.url())) {
+          if (!req.headers()['x-csrf-token']) mutationsWithoutCsrf.push(req.url());
         }
       });
 
@@ -102,9 +114,7 @@ test.describe('Team Management', () => {
         }
       }
 
-      if (invitePostCsrf) {
-        expect(invitePostCsrf).toBeTruthy();
-      }
+      expect(mutationsWithoutCsrf, `mutating requests missing CSRF: ${mutationsWithoutCsrf.join(', ')}`).toHaveLength(0);
     });
 
     test('invalid email shows validation error', async ({ page }) => {
@@ -226,14 +236,30 @@ test.describe('Team Management', () => {
       expect(html).not.toMatch(/eyJhbGciOi/);
     });
 
-    test('viewer role cannot see invite button (role-based access)', async ({ page }) => {
-      // This test verifies the concept - actual role testing requires separate auth contexts
+    test('invite affordance is confined to the admin-gated team view (role-based access)', async ({ page }) => {
+      // Team management lives on the Settings page, which is admin-gated at the
+      // route level (App.tsx: non-admins are redirected to /dashboard). The invite
+      // affordance is therefore an admin-only control. This asserts the affordance
+      // never leaks outside that admin context: if an invite button is visible, the
+      // app must still be on the admin team/settings view rather than having been
+      // redirected away.
       const inviteBtn = page.getByRole('button', { name: /invite|add member/i }).first();
-      // Invite button visibility depends on user role
-      // For admin/editor, it should be visible; for viewer, it should not
-      const isVisible = await inviteBtn.isVisible({ timeout: 3000 }).catch(() => false);
-      // Just verify no crash - actual role testing needs role-specific sessions
-      expect(true).toBeTruthy();
+      const inviteVisible = await inviteBtn.isVisible({ timeout: 3000 }).catch(() => false);
+
+      if (inviteVisible) {
+        // Admin context: invite control implies we are on the settings/team surface.
+        expect(page.url()).toMatch(/settings|team/i);
+        const teamSurface = page.locator(
+          'table, [data-testid="team-members"], .team-list, .member-list, text=/team/i'
+        ).first();
+        await expect(teamSurface).toBeVisible({ timeout: 5000 });
+      } else {
+        // No admin invite affordance: the role-gated control is correctly absent.
+        // Confirm the app is in a valid state (redirected to dashboard or showing
+        // a non-admin view) rather than crashed/blank.
+        const appShell = page.locator('nav, aside, main, [data-testid="sidebar"]').first();
+        await expect(appShell).toBeVisible({ timeout: 5000 });
+      }
     });
   });
 });

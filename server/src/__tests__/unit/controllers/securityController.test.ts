@@ -120,6 +120,12 @@ describe('SecurityController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // The shared prisma mock does not declare deleteMany on zeroTrustPolicy;
+    // the controller's org-scoped delete uses it, so provide a local jest.fn.
+    if (typeof (prismaMock.zeroTrustPolicy as any).deleteMany !== 'function') {
+      (prismaMock.zeroTrustPolicy as any).deleteMany = jest.fn();
+    }
+
     mockRequest = {
       body: {},
       headers: {},
@@ -332,10 +338,27 @@ describe('SecurityController', () => {
         mockRequest.params = { policyId: 'policy-123' };
         mockRequest.body = { name: 'Updated Policy' };
 
-        (mockGetPolicies as any).mockResolvedValue([
-          { id: 'policy-123', name: 'Original Policy', enabled: true },
-        ]);
+        // Controller org-scopes the lookup before mutating; the mock must
+        // return an org-owned record for the update path to proceed.
+        prismaMock.zeroTrustPolicy.findFirst.mockResolvedValue({
+          id: 'policy-123',
+          name: 'Original Policy',
+          enabled: true,
+          organizationId: 'org-123',
+        } as any);
+        const updatedPolicy = {
+          id: 'policy-123',
+          name: 'Updated Policy',
+          enabled: true,
+          organizationId: 'org-123',
+          rules: JSON.stringify([]),
+        };
+        prismaMock.zeroTrustPolicy.update.mockResolvedValue(updatedPolicy as any);
         prismaMock.auditLog.create.mockResolvedValue({} as any);
+        // Controller uses the array form of $transaction; resolve each entry.
+        (prismaMock.$transaction as jest.Mock<any>).mockImplementation(
+          async (ops: any) => (Array.isArray(ops) ? Promise.all(ops) : ops)
+        );
 
         await securityController.updateZeroTrustPolicy(
           mockRequest as Request,
@@ -343,9 +366,31 @@ describe('SecurityController', () => {
           mockNext
         );
 
+        expect(prismaMock.zeroTrustPolicy.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'policy-123', organizationId: 'org-123' },
+          })
+        );
         expect(mockResponse.json).toHaveBeenCalledWith(
           expect.objectContaining({ id: 'policy-123', name: 'Updated Policy' })
         );
+      });
+
+      it('should throw 404 when policy belongs to another organization', async () => {
+        mockRequest.params = { policyId: 'policy-other-org' };
+        mockRequest.body = { name: 'Updated Policy' };
+
+        // Cross-tenant: org-scoped findFirst returns nothing.
+        prismaMock.zeroTrustPolicy.findFirst.mockResolvedValue(null as any);
+
+        await expect(
+          securityController.updateZeroTrustPolicy(
+            mockRequest as Request,
+            mockResponse as Response,
+            mockNext
+          )
+        ).rejects.toThrow(AppError);
+        expect(prismaMock.zeroTrustPolicy.update).not.toHaveBeenCalled();
       });
     });
 
@@ -353,9 +398,8 @@ describe('SecurityController', () => {
       it('should delete policy', async () => {
         mockRequest.params = { policyId: 'policy-123' };
 
-        (mockGetPolicies as any).mockResolvedValue([
-          { id: 'policy-123', name: 'Test Policy' },
-        ]);
+        // Controller performs an org-scoped deleteMany and checks the count.
+        prismaMock.zeroTrustPolicy.deleteMany.mockResolvedValue({ count: 1 } as any);
         prismaMock.auditLog.create.mockResolvedValue({} as any);
 
         await securityController.deleteZeroTrustPolicy(
@@ -364,9 +408,29 @@ describe('SecurityController', () => {
           mockNext
         );
 
+        expect(prismaMock.zeroTrustPolicy.deleteMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'policy-123', organizationId: 'org-123' },
+          })
+        );
         expect(mockResponse.json).toHaveBeenCalledWith(
           expect.objectContaining({ success: true })
         );
+      });
+
+      it('should throw 404 when policy belongs to another organization', async () => {
+        mockRequest.params = { policyId: 'policy-other-org' };
+
+        // Cross-tenant: org-scoped deleteMany removes nothing.
+        prismaMock.zeroTrustPolicy.deleteMany.mockResolvedValue({ count: 0 } as any);
+
+        await expect(
+          securityController.deleteZeroTrustPolicy(
+            mockRequest as Request,
+            mockResponse as Response,
+            mockNext
+          )
+        ).rejects.toThrow(AppError);
       });
     });
 

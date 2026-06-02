@@ -69,11 +69,14 @@ export class VisionaryAIService {
         name: f.name,
         totalControls: f.controls.length,
         implemented: f.controls.filter((c: { status: string }) => c.status === 'Implemented').length,
-        complianceRate: Math.round(
-          (f.controls.filter((c: { status: string }) => c.status === 'Implemented').length /
-            f.controls.length) *
-            100
-        ),
+        complianceRate:
+          f.controls.length === 0
+            ? 0
+            : Math.round(
+                (f.controls.filter((c: { status: string }) => c.status === 'Implemented').length /
+                  f.controls.length) *
+                  100
+              ),
       })),
       risks: {
         total: risks.length,
@@ -502,11 +505,14 @@ Make it professional, legally sound, and actionable.`;
         totalControls: f.controls.length,
         implemented: f.controls.filter((c) => c.status === 'Implemented')
           .length,
-        complianceRate: Math.round(
-          (f.controls.filter((c) => c.status === 'Implemented').length /
-            f.controls.length) *
-            100
-        ),
+        complianceRate:
+          f.controls.length === 0
+            ? 0
+            : Math.round(
+                (f.controls.filter((c) => c.status === 'Implemented').length /
+                  f.controls.length) *
+                  100
+              ),
       })),
       risks: {
         total: organization.risks.length,

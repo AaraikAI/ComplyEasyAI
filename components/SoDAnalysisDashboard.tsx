@@ -401,9 +401,9 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
                     <button onClick={() => setSelectedViolation(v)} className="p-1 hover:bg-slate-600 rounded" title="View Details"><Eye size={14} className="text-slate-400" /></button>
                     {v.status === 'Open' && (
                       <>
-                        <button onClick={async () => { try { await api.sod.mitigateViolation(v.id, { action: 'mitigate' }); loadData(); } catch (err) { console.warn('SoD mitigation failed', err); } }} className="p-1 hover:bg-slate-600 rounded" title="Mitigate"><ShieldCheck size={14} className="text-blue-400" /></button>
-                        <button onClick={async () => { try { await api.sod.acceptViolation(v.id, { action: 'accept' }); loadData(); } catch (err) { console.warn('SoD accept failed', err); } }} className="p-1 hover:bg-slate-600 rounded" title="Accept Risk"><CheckCircle size={14} className="text-amber-400" /></button>
-                        <button onClick={async () => { try { await api.sod.mitigateViolation(v.id, { action: 'remediate' }); loadData(); } catch (err) { console.warn('SoD remediation failed', err); } }} className="p-1 hover:bg-slate-600 rounded" title="Remediate"><Lock size={14} className="text-emerald-400" /></button>
+                        <button onClick={async () => { try { setLoadError(null); await api.sod.mitigateViolation(v.id, { action: 'mitigate' }); loadData(); } catch (err) { logger.warn('SoD mitigation failed', err); setLoadError('Failed to mitigate the violation. Please try again.'); } }} className="p-1 hover:bg-slate-600 rounded" title="Mitigate"><ShieldCheck size={14} className="text-blue-400" /></button>
+                        <button onClick={async () => { try { setLoadError(null); await api.sod.acceptViolation(v.id, { action: 'accept' }); loadData(); } catch (err) { logger.warn('SoD accept failed', err); setLoadError('Failed to accept the risk. Please try again.'); } }} className="p-1 hover:bg-slate-600 rounded" title="Accept Risk"><CheckCircle size={14} className="text-amber-400" /></button>
+                        <button onClick={async () => { try { setLoadError(null); await api.sod.mitigateViolation(v.id, { action: 'remediate' }); loadData(); } catch (err) { logger.warn('SoD remediation failed', err); setLoadError('Failed to remediate the violation. Please try again.'); } }} className="p-1 hover:bg-slate-600 rounded" title="Remediate"><Lock size={14} className="text-emerald-400" /></button>
                       </>
                     )}
                   </div>
@@ -568,10 +568,11 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
           <button onClick={() => setShowCreateRule(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">{t('common.cancel')}</button>
           <button onClick={async () => {
             try {
+              setLoadError(null);
               await api.sod.createRule({ ...ruleForm, status: 'Active' });
               setShowCreateRule(false);
               loadData();
-            } catch (err) { console.warn('Failed to create SoD rule', err); setShowCreateRule(false); }
+            } catch (err) { logger.warn('Failed to create SoD rule', err); setShowCreateRule(false); setLoadError('Failed to create the SoD rule. Please try again.'); }
           }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Rule</button>
         </div>
       </div>
@@ -607,13 +608,13 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
           {selectedViolation.status === 'Open' && (
             <div className="flex gap-2 pt-2 border-t border-slate-700">
               <button onClick={async () => {
-                try { await api.sod.mitigateViolation(selectedViolation.id, { action: 'mitigate' }); setSelectedViolation(null); loadData(); } catch (err) { console.warn('SoD modal mitigation failed', err); }
+                try { setLoadError(null); await api.sod.mitigateViolation(selectedViolation.id, { action: 'mitigate' }); setSelectedViolation(null); loadData(); } catch (err) { logger.warn('SoD modal mitigation failed', err); setLoadError('Failed to mitigate the violation. Please try again.'); }
               }} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><ShieldCheck size={14} /> Mitigate</button>
               <button onClick={async () => {
-                try { await api.sod.acceptViolation(selectedViolation.id, { action: 'accept' }); setSelectedViolation(null); loadData(); } catch (err) { console.warn('SoD modal accept failed', err); }
+                try { setLoadError(null); await api.sod.acceptViolation(selectedViolation.id, { action: 'accept' }); setSelectedViolation(null); loadData(); } catch (err) { logger.warn('SoD modal accept failed', err); setLoadError('Failed to accept the risk. Please try again.'); }
               }} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700"><CheckCircle size={14} /> Accept Risk</button>
               <button onClick={async () => {
-                try { await api.sod.mitigateViolation(selectedViolation.id, { action: 'remediate' }); setSelectedViolation(null); loadData(); } catch (err) { console.warn('SoD modal remediation failed', err); }
+                try { setLoadError(null); await api.sod.mitigateViolation(selectedViolation.id, { action: 'remediate' }); setSelectedViolation(null); loadData(); } catch (err) { logger.warn('SoD modal remediation failed', err); setLoadError('Failed to remediate the violation. Please try again.'); }
               }} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700"><Lock size={14} /> Remediate</button>
             </div>
           )}

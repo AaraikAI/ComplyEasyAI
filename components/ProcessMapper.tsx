@@ -400,8 +400,10 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       } else {
         await api.modules.processMaps.update(proc.id, payload);
       }
-    } catch {
-      // Silently fail — data is still in local state
+      setLoadError(null);
+    } catch (err) {
+      logger.error('ProcessMapper save failed:', err);
+      setLoadError('Failed to save the process map to the server. Your changes are kept locally; retry to persist them.');
     } finally {
       setIsSaving(false);
     }

@@ -903,7 +903,9 @@ class AzureDevOpsService {
               where: {
                 organizationId,
                 action: 'azuredevops_sync.pushed',
-                details: { contains: issue.id },
+                // Pushed records store the local issue id in `hash` (exact match)
+                // rather than a substring search on the JSON `details`.
+                hash: issue.id,
               },
             });
 
@@ -948,14 +950,19 @@ class AzureDevOpsService {
 
         const workItems = await this.queryWorkItems(organizationId, wiql, 100);
 
+        const syncCreatorId = await this.resolveSyncCreatorId(organizationId);
+
         for (const wi of workItems) {
           try {
             const wiIdStr = String(wi.id);
+            // The pulled sync record stores the ADO work-item id in `hash` (exact),
+            // so match on that instead of a substring search on the JSON `details`
+            // (where numeric id '12' would also match '120'/'1234').
             const existingSync = await prisma.auditLog.findFirst({
               where: {
                 organizationId,
                 action: 'azuredevops_sync.pulled',
-                details: { contains: wiIdStr },
+                hash: wiIdStr,
               },
             });
 
@@ -982,7 +989,7 @@ class AzureDevOpsService {
                   issueType: 'compliance',
                   priority: this.mapAdoPriorityToSeverity(wi.fields['Microsoft.VSTS.Common.Priority']) as any,
                   status: this.mapAdoStateToLocal(wi.fields['System.State']),
-                  createdById: 'system',
+                  createdById: syncCreatorId,
                   tags: JSON.stringify({
                     source: 'azure_devops',
                     adoWorkItemId: wi.id,
@@ -1085,13 +1092,26 @@ class AzureDevOpsService {
       const workItemId = event.resource.workItemId || event.resource.id;
       const wiIdStr = String(workItemId);
 
-      const syncRecord = await prisma.auditLog.findFirst({
-        where: {
-          organizationId,
-          action: { startsWith: 'azuredevops_sync.' },
-          details: { contains: wiIdStr },
-        },
-      });
+      // Pulled records key the ADO work-item id exactly in `hash`. Match that
+      // first; fall back to push-originated records whose work-item id lives in
+      // the JSON `details` under the delimited key `"adoWorkItemId":<id>` — a
+      // delimited token match avoids the numeric-substring collision that a raw
+      // `contains: wiIdStr` would cause (e.g. '12' matching '120'/'1234').
+      const syncRecord =
+        (await prisma.auditLog.findFirst({
+          where: {
+            organizationId,
+            action: { startsWith: 'azuredevops_sync.' },
+            hash: wiIdStr,
+          },
+        })) ||
+        (await prisma.auditLog.findFirst({
+          where: {
+            organizationId,
+            action: { startsWith: 'azuredevops_sync.' },
+            details: { contains: `"adoWorkItemId":${wiIdStr}` },
+          },
+        }));
 
       if (!syncRecord) {
         logger.debug(`[AzureDevOps] No local record found for work item ${workItemId}`);
@@ -1136,6 +1156,26 @@ class AzureDevOpsService {
       logger.error('[AzureDevOps] Error processing webhook event', error);
       return { processed: false };
     }
+  }
+
+  /**
+   * Resolve a real user id in the organization to own externally-synced issues.
+   * `Issue.createdById` is a required FK to User, so a literal 'system' string
+   * would violate referential integrity. Prefer an admin/compliance owner.
+   */
+  private async resolveSyncCreatorId(organizationId: string): Promise<string> {
+    const creator = await prisma.user.findFirst({
+      where: { organizationId },
+      orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+    if (!creator) {
+      throw new AppError(
+        `Cannot sync work items: organization ${organizationId} has no user to own synced issues`,
+        400
+      );
+    }
+    return creator.id;
   }
 
   // =========================================================================

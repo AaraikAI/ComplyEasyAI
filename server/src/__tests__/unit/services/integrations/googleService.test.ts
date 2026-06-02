@@ -77,9 +77,11 @@ import googleService from '../../../../services/integrations/googleService';
 describe('GoogleService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Re-apply mock return values after resetMocks clears them.
-    // The GoogleService singleton's oauth2Client is already set to mockOAuth2Instance
-    // from module init, but its methods get reset by resetMocks: true in jest.config.
+    // Re-apply mock implementations after resetMocks (jest.config) clears them.
+    // GoogleService builds a fresh OAuth2 client per call via createOAuthClient(),
+    // so the constructor implementation must be restored each test, not just the
+    // instance method return values.
+    MockOAuth2.mockImplementation(() => mockOAuth2Instance);
     mockOAuth2Instance.generateAuthUrl.mockReturnValue(
       'https://accounts.google.com/o/oauth2/auth?client_id=test&state=test-state'
     );

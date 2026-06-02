@@ -94,11 +94,23 @@ describe('JITAccessService', () => {
         },
       ]);
 
-      // Mock user.findUnique to verify approver is admin
+      // Mock user.findUnique to verify approver is admin in the same org
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'approver-1',
         role: 'admin',
         email: 'admin@test.com',
+        organizationId: 'org-1',
+      });
+
+      // Mock target-user org guard + role mutation used by grantTemporaryPrivilege
+      (prismaMock.user.findFirst as jest.Mock<any>).mockResolvedValue({
+        id: 'user-1',
+        role: 'viewer',
+        organizationId: 'org-1',
+      });
+      (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({
+        id: 'user-1',
+        role: 'admin',
       });
 
       const result = await jitAccessService.approveAccess(
@@ -131,6 +143,16 @@ describe('JITAccessService', () => {
       (jitAccessService as any).activeSessions = new Map([
         ['session-123', mockSession]
       ]);
+
+      // Mock target-user org guard + role restore used by revokeTemporaryPrivilege
+      (prismaMock.user.findFirst as jest.Mock<any>).mockResolvedValue({
+        id: 'user-1',
+        organizationId: 'org-1',
+      });
+      (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({
+        id: 'user-1',
+        role: 'viewer',
+      });
 
       await jitAccessService.revokeSession('session-123', 'Test revocation');
 
@@ -216,6 +238,16 @@ describe('JITAccessService', () => {
       (jitAccessService as any).activeSessions = new Map([
         ['session-123', expiredSession]
       ]);
+
+      // Mock target-user org guard + role restore used by revokeTemporaryPrivilege
+      (prismaMock.user.findFirst as jest.Mock<any>).mockResolvedValue({
+        id: 'user-1',
+        organizationId: 'org-1',
+      });
+      (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({
+        id: 'user-1',
+        role: 'viewer',
+      });
 
       await jitAccessService.revokeSession('session-123', 'Session expired');
 

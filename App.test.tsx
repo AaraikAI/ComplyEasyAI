@@ -64,4 +64,18 @@ describe('App', () => {
     expect(App).toBeDefined();
     expect(typeof App).toBe('function');
   });
+
+  it('renders the app shell without throwing', async () => {
+    const { default: App } = await import('./App');
+    // Exercise the full provider + route tree so a broken render (e.g. a bad
+    // module import at mount) surfaces here rather than only at runtime.
+    const { container } = render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>
+    );
+    expect(container).toBeInTheDocument();
+    // The Toaster mount point and lazy Suspense boundaries are present.
+    expect(document.body).toBeTruthy();
+  });
 });

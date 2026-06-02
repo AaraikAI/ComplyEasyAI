@@ -59,9 +59,12 @@ export function createElasticsearchTransport(): any {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { ElasticsearchTransport } = require('winston-elasticsearch');
 
+    // @elastic/elasticsearch v8+/v9 expects the `tls` option (Node TLS connection
+    // options) for certificate-verification settings. The legacy `ssl` key is
+    // ignored, which would silently drop ELASTICSEARCH_SSL_REJECT_UNAUTHORIZED.
     const clientOptions: any = {
       node: config.node,
-      ssl: config.ssl,
+      tls: config.ssl,
     };
 
     if (config.username && config.password) {

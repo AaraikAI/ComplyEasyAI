@@ -12,6 +12,7 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
+import cacheService, { CACHE_TTL } from './cache/redisCacheService';
 import sgMail from '@sendgrid/mail';
 import websocketService from './websocketService';
 import slackService from './integrations/slackService';
@@ -83,7 +84,12 @@ export interface Notification {
 
 class NotificationService {
   private templates: Map<string, NotificationTemplate> = new Map();
-  private preferences: Map<string, NotificationPreferences> = new Map();
+
+  /** Cache namespace + key builder for user notification preferences. */
+  private static readonly PREF_CACHE_NS = 'notif-prefs';
+  private prefCacheKey(userId: string): string {
+    return `prefs:${userId}`;
+  }
 
   constructor() {
     this.initializeTemplates();
@@ -354,7 +360,7 @@ class NotificationService {
       text: notification.message,
     });
 
-    logger.info(`[Notification] Email sent to ${user.email}`);
+    logger.info(`[Notification] Email sent to user ${userId}`);
   }
 
   /**
@@ -516,7 +522,7 @@ class NotificationService {
     // Validate phone number format (basic validation)
     const cleanedPhone = phoneNumber.replace(/\D/g, ''); // Remove non-digits
     if (cleanedPhone.length < 10) {
-      logger.warn(`[Notification] Invalid phone number format for user ${userId}: ${phoneNumber}`);
+      logger.warn(`[Notification] Invalid phone number format for user ${userId}`);
       return;
     }
 
@@ -531,7 +537,7 @@ class NotificationService {
         to: phoneNumber,
       });
 
-      logger.info(`[Notification] SMS sent to ${phoneNumber} for user ${userId} (SID: ${message.sid})`);
+      logger.info(`[Notification] SMS sent for user ${userId} (SID: ${message.sid})`);
 
       // Track SMS delivery
       await prisma.notification.create({
@@ -553,7 +559,7 @@ class NotificationService {
         },
       });
     } catch (error) {
-      logger.error(`[Notification] Error sending SMS to ${phoneNumber} for user ${userId}`, error);
+      logger.error(`[Notification] Error sending SMS for user ${userId}`, error);
       throw error;
     }
   }
@@ -562,9 +568,20 @@ class NotificationService {
    * Get user notification preferences
    */
   async getUserPreferences(userId: string): Promise<NotificationPreferences> {
-    // Check cache first
-    if (this.preferences.has(userId)) {
-      return this.preferences.get(userId)!;
+    const cacheKey = this.prefCacheKey(userId);
+
+    // Check the shared cache first. Backed by Redis (with an in-memory fallback)
+    // so the value is consistent across replicas, and a SHORT TTL bounds staleness
+    // even if an explicit invalidation is missed.
+    try {
+      const cached = await cacheService.get<NotificationPreferences>(cacheKey, {
+        namespace: NotificationService.PREF_CACHE_NS,
+      });
+      if (cached) {
+        return cached;
+      }
+    } catch (error) {
+      logger.warn('[Notification] Preference cache read failed, loading from DB', { userId, error });
     }
 
     // Load from database
@@ -590,8 +607,31 @@ class NotificationService {
           categories: {},
         };
 
-    this.preferences.set(userId, preferences);
+    try {
+      await cacheService.set(cacheKey, preferences, {
+        namespace: NotificationService.PREF_CACHE_NS,
+        ttl: CACHE_TTL.SHORT,
+      });
+    } catch (error) {
+      logger.warn('[Notification] Preference cache write failed', { userId, error });
+    }
+
     return preferences;
+  }
+
+  /**
+   * Invalidate the cached preferences for a user. Call this whenever a user's
+   * notificationPreference row is created or updated so channel-routing decisions
+   * pick up the change immediately across all replicas.
+   */
+  async invalidatePreferences(userId: string): Promise<void> {
+    try {
+      await cacheService.del(this.prefCacheKey(userId), {
+        namespace: NotificationService.PREF_CACHE_NS,
+      });
+    } catch (error) {
+      logger.warn('[Notification] Preference cache invalidation failed', { userId, error });
+    }
   }
 
   /**

@@ -711,6 +711,23 @@ export const api = {
       }, 120000);
     },
 
+    // Persisted audit-readiness simulation runs (SimulationScenario store).
+    listAuditSimulations: async () => {
+      return fetchAPI<{ simulations: any[] }>('/ai/audit-simulations', { method: 'GET' });
+    },
+    saveAuditSimulation: async (payload: { name?: string; description?: string; run: any; findings: any[] }) => {
+      return fetchAPI<any>('/ai/audit-simulations', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    updateAuditSimulation: async (id: string, payload: { name?: string; description?: string; run?: any; findings?: any[] }) => {
+      return fetchAPI<any>(`/ai/audit-simulations/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+
     naturalLanguageQuery: async (query: string, context: any) => {
       return fetchAPI<any>('/ai/nl-query', {
         method: 'POST',
@@ -2391,6 +2408,7 @@ export const api = {
         const qs = productId ? `?productId=${encodeURIComponent(productId)}` : '';
         return fetchAPI<any[]>(`/modules/decommission/notifications${qs}`);
       },
+      createNotification: async (data: any) => fetchAPI<any>('/modules/decommission/notifications', { method: 'POST', body: JSON.stringify(data) }),
       updateNotification: async (id: string, data: any) => fetchAPI<any>(`/modules/decommission/notifications/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     },
 

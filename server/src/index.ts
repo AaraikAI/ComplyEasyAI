@@ -24,6 +24,7 @@ import twoFactorRoutes from './routes/twoFactor';
 import risksRoutes from './routes/risks';
 import frameworksRoutes from './routes/frameworks';
 import aiRoutes from './routes/ai';
+import contractsRoutes from './routes/contracts';
 import billingRoutes from './routes/billing';
 import integrationsRoutes from './routes/integrations';
 import teamRoutes from './routes/team';
@@ -240,6 +241,7 @@ try {
 let entropyMonitorInterval: ReturnType<typeof setInterval> | null = null;
 if (config.server.env === 'production') {
   entropyMonitorInterval = startPeriodicHealthMonitoring(3600000); // 1 hour
+  entropyMonitorInterval?.unref?.();
   logger.info('✓ FIPS 140-3 entropy health monitoring started (hourly)');
 }
 
@@ -368,6 +370,11 @@ app.use(helmet({
 // Body parsing middleware
 // Special handling for Stripe webhooks (requires raw body)
 app.use('/api/billing/webhook', apiLimiter, express.raw({ type: 'application/json' }));
+// Ticketing webhooks need the raw body for per-provider HMAC verification (jira/servicenow/azure_devops)
+app.use('/api/ticketing/webhook', apiLimiter, express.raw({ type: '*/*', limit: '5mb' }));
+// Incoming external webhooks verify an HMAC over the exact bytes; capture the raw body
+// before the JSON parser consumes the stream (mirrors the ticketing receiver above).
+app.use('/api/webhooks/incoming', apiLimiter, express.raw({ type: '*/*', limit: '5mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -406,9 +413,10 @@ app.use((req: Request, res: Response, next) => {
   next();
 });
 
-// Request logging middleware
+// Request logging middleware (IP truncated to /24 to satisfy GDPR Recital 30)
 app.use((req: Request, res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.path} - ${req.ip}`);
+  const truncatedIp = (req.ip || '').replace(/\d+$/, '0');
+  logger.info(`${req.method} ${req.path} - ${truncatedIp}`);
   next();
 });
 
@@ -562,6 +570,7 @@ app.use('/api/2fa', authLimiter, twoFactorRoutes);
 app.use('/api/risks', apiLimiter, risksRoutes);
 app.use('/api/frameworks', apiLimiter, frameworksRoutes);
 app.use('/api/ai', apiLimiter, aiRoutes); // Mount-level apiLimiter + internal AI-specific limiter
+app.use('/api/contracts', apiLimiter, contractsRoutes); // Contract analyzer text-extraction endpoint
 app.use('/api/billing', apiLimiter, billingRoutes);
 app.use('/api/integrations', apiLimiter, integrationsRoutes);
 app.use('/api/eu-regulations', apiLimiter, euRegulationsRoutes);

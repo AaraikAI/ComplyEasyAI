@@ -3,7 +3,7 @@
  * Profiles and analyzes database query performance
  */
 
-import { PrismaClient } from '../../generated/prisma/client';
+import { Prisma } from '../../generated/prisma/client';
 import logger from '../../config/logger';
 
 interface QueryProfile {
@@ -178,27 +178,61 @@ class QueryProfiler {
 }
 
 /**
- * Prisma middleware to profile queries
+ * Build a Prisma client extension that records the timing of every model
+ * operation into the supplied {@link QueryProfiler}.
+ *
+ * This uses the `$extends` query-component API (`$allModels.$allOperations`),
+ * which is the supported instrumentation hook in Prisma 5+. The previous
+ * `(params, next)` `$use` middleware signature was removed in Prisma 5 and
+ * would silently no-op if attached to a current client.
+ *
+ * Apply with `basePrisma.$extends(createQueryProfilingExtension(profiler))`.
+ * This is a diagnostic helper intended for local profiling and load tests;
+ * the live client in `config/database.ts` does not attach it by default so
+ * the hot path carries no per-query timing overhead.
+ */
+export function createQueryProfilingExtension(profiler: QueryProfiler) {
+  return Prisma.defineExtension({
+    name: 'query-profiler',
+    query: {
+      $allModels: {
+        async $allOperations({
+          model,
+          operation,
+          args,
+          query,
+        }: {
+          model: string;
+          operation: string;
+          args: unknown;
+          query: (args: unknown) => Promise<unknown>;
+        }) {
+          const startTime = Date.now();
+          try {
+            const result = await query(args);
+            profiler.recordQuery(`${model}.${operation}`, Date.now() - startTime, args);
+            return result;
+          } catch (error) {
+            profiler.recordQuery(`${model}.${operation} (ERROR)`, Date.now() - startTime);
+            throw error;
+          }
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Deprecated alias retained for existing importers. It now returns the
+ * `$extends` query-component extension (the same value as
+ * {@link createQueryProfilingExtension}) rather than a `$use` middleware,
+ * because the `(params, next)` middleware signature was removed in Prisma 5+.
+ * New code should call `createQueryProfilingExtension` directly.
+ *
+ * @deprecated Use {@link createQueryProfilingExtension} with `prisma.$extends`.
  */
 export function createQueryProfilingMiddleware(profiler: QueryProfiler) {
-  return async (params: any, next: any) => {
-    const startTime = Date.now();
-
-    try {
-      const result = await next(params);
-      const duration = Date.now() - startTime;
-
-      // Extract query information
-      const query = `${params.model}.${params.action}`;
-      profiler.recordQuery(query, duration, params.args);
-
-      return result;
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      profiler.recordQuery(`${params.model}.${params.action} (ERROR)`, duration);
-      throw error;
-    }
-  };
+  return createQueryProfilingExtension(profiler);
 }
 
 export { QueryProfiler };

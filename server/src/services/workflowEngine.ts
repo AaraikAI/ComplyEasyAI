@@ -20,8 +20,14 @@ import { Prisma } from '../generated/prisma/client';
 import logger from '../config/logger';
 import RE2 from 're2';
 import axios from 'axios';
+import { createHash } from 'crypto';
 import { isWebhookUrlSafe } from '../utils/urlValidator';
 import { AppError } from '../middleware/errorHandler';
+import cacheService from './cache/redisCacheService';
+
+function hashEmail(email: string): string {
+  return createHash('sha256').update(email.toLowerCase().trim()).digest('hex').slice(0, 16);
+}
 
 /**
  * Detect patterns known to cause catastrophic backtracking (ReDoS).
@@ -291,7 +297,34 @@ export class WorkflowEngineService {
   // Rate Limiting
   // --------------------------------------------------------------------------
 
-  private checkRateLimit(organizationId: string): boolean {
+  private async checkRateLimit(organizationId: string): Promise<boolean> {
+    // Prefer a Redis-backed fixed-window counter so the limit holds across
+    // restarts and horizontally-scaled instances. Falls back to the in-memory
+    // Map when Redis is not connected.
+    const redis = cacheService.getRedisClient();
+    if (redis) {
+      try {
+        const windowSeconds = Math.ceil(RATE_LIMIT_WINDOW_MS / 1000);
+        const bucket = Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS);
+        const key = `wf:ratelimit:${organizationId}:${bucket}`;
+        const count = await redis.incr(key);
+        if (count === 1) {
+          await redis.expire(key, windowSeconds);
+        }
+        if (count > RATE_LIMIT_MAX) {
+          logger.warn('Workflow rate limit exceeded', { organizationId, count });
+          return false;
+        }
+        return true;
+      } catch (error) {
+        logger.warn('Workflow rate limit Redis check failed, using in-memory fallback', {
+          organizationId,
+          error,
+        });
+        // Fall through to in-memory path
+      }
+    }
+
     const now = Date.now();
     const entry = rateLimitMap.get(organizationId);
 
@@ -379,7 +412,7 @@ export class WorkflowEngineService {
               durationMs: Date.now() - startTime,
             };
           } catch (emailError: any) {
-            logger.error('Workflow email action failed', { to, subject, error: emailError.message });
+            logger.error('Workflow email action failed', { to_hash: hashEmail(to), subject, error: emailError.message });
             return {
               actionType: action.type,
               status: 'failure',
@@ -695,7 +728,7 @@ export class WorkflowEngineService {
     const results: ActionResult[] = [];
 
     for (const action of actions) {
-      if (!this.checkRateLimit(orgId)) {
+      if (!(await this.checkRateLimit(orgId))) {
         results.push({
           actionType: action.type,
           status: 'skipped',
@@ -896,7 +929,7 @@ export class WorkflowEngineService {
       const action = nodes[i];
       const stepNumber = steps.length + 1;
 
-      if (!this.checkRateLimit(organizationId)) {
+      if (!(await this.checkRateLimit(organizationId))) {
         steps.push({
           step: stepNumber,
           actionType: action.type,

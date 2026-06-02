@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { validateBody, validateMultipartBody, validateParams } from '../middleware/validate';
+import { AppError } from '../middleware/errorHandler';
+import { idempotencyKey } from '../middleware/idempotencyKey';
 import {
   createGoalSchema,
   updateGoalSchema,
@@ -53,16 +55,57 @@ import multer from 'multer';
 import { requireAcosFeature, requireVisionaryFeature, requireFeature } from '../middleware/tierMiddleware';
 
 const router = Router();
+// Allowlist for aCOS evidence uploads — covers documents, images, audio, and
+// video that the evidence/multimodal pipelines accept. Reject any other MIME
+// to defend against malware/masquerade. Per audit COV-17 §5.5.17.
+const ACOS_ALLOWED_MIMES = new Set<string>([
+  // documents
+  'application/pdf',
+  'application/json',
+  'application/xml',
+  'text/plain',
+  'text/csv',
+  'text/xml',
+  'text/markdown',
+  // images
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  // audio
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/webm',
+  'audio/ogg',
+  'audio/mp4',
+  // video
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-msvideo',
+]);
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB max for audio/video/evidence files
+  fileFilter: (_req, file, cb) => {
+    if (ACOS_ALLOWED_MIMES.has(file.mimetype.toLowerCase())) {
+      cb(null, true);
+    } else {
+      cb(new AppError(`Unsupported file type: ${file.mimetype}`, 415));
+    }
+  },
 });
 
 // All routes require authentication and Growth+ tier for aCOS features
 router.use(authenticate);
 
 // aCOS Goals (Growth+)
-router.post('/goals', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), validateBody(createGoalSchema), asyncHandler(acosController.createGoal));
+router.post('/goals', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), idempotencyKey(), validateBody(createGoalSchema), asyncHandler(acosController.createGoal));
 router.get('/goals', ...requireAcosFeature('acosGoals'), asyncHandler(acosController.getGoals));
 router.get('/goals/:goalId', ...requireAcosFeature('acosGoals'), asyncHandler(acosController.getGoal));
 router.patch('/goals/:goalId', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), validateBody(updateGoalSchema), asyncHandler(acosController.updateGoal));
@@ -70,10 +113,10 @@ router.delete('/goals/:goalId', ...requireAcosFeature('acosGoals'), authorize('a
 router.post('/goals/:goalId/restore', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), asyncHandler(acosController.restoreGoal));
 
 // Control Loops (Growth+)
-router.post('/control-loops', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), validateBody(createControlLoopSchema), asyncHandler(acosController.createControlLoop));
+router.post('/control-loops', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), idempotencyKey(), validateBody(createControlLoopSchema), asyncHandler(acosController.createControlLoop));
 router.get('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), asyncHandler(acosController.getControlLoop));
 router.get('/control-loops/:loopId/history', ...requireAcosFeature('acosControlLoops'), asyncHandler(acosController.getControlLoopHistory));
-router.post('/control-loops/:loopId/execute', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.executeControlLoop));
+router.post('/control-loops/:loopId/execute', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), idempotencyKey(), asyncHandler(acosController.executeControlLoop));
 router.post('/control-loops/:loopId/pause', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.pauseControlLoop));
 router.post('/control-loops/:loopId/resume', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.resumeControlLoop));
 router.patch('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), validateBody(updateControlLoopSchema), asyncHandler(acosController.updateControlLoop));
@@ -81,7 +124,7 @@ router.delete('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'
 
 // Agentic AI (Growth+)
 router.post('/agentic/estimate-blast-radius', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), validateBody(estimateBlastRadiusSchema), asyncHandler(acosController.estimateBlastRadius));
-router.post('/agentic/execute-action', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), validateBody(executeActionSchema), asyncHandler(acosController.executeAction));
+router.post('/agentic/execute-action', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), idempotencyKey(), validateBody(executeActionSchema), asyncHandler(acosController.executeAction));
 router.post('/agentic/rollback/:actionId', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), asyncHandler(acosController.rollbackAction));
 router.post('/agentic/rollback-multiple', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), validateBody(rollbackMultipleSchema), asyncHandler(acosController.rollbackMultipleActions));
 
@@ -243,16 +286,19 @@ router.post('/swarm-tasks', authorize('admin', 'editor'), validateBody(submitSwa
 router.post('/swarm-tasks/bulk', authorize('admin', 'editor'), validateBody(bulkSubmitSwarmTasksSchema), asyncHandler(acosController.bulkSubmitSwarmTasks));
 router.get('/swarm-tasks', asyncHandler(acosController.getAllSwarmTasks));
 router.get('/swarm-tasks/active', asyncHandler(acosController.getActiveSwarmTasks));
-router.get('/swarm-tasks/:taskId', asyncHandler(acosController.getSwarmTaskStatus));
-router.post('/swarm-tasks/:taskId/cancel', authorize('admin'), asyncHandler(acosController.cancelSwarmTask));
-router.post('/swarm-tasks/:taskId/agents/:agentId/progress', asyncHandler(acosController.reportSwarmTaskProgress));
-router.post('/swarm-tasks/:taskId/agents/:agentId/complete', asyncHandler(acosController.completeSwarmTask));
+// Static GET segments must precede the parameterized /:taskId route below so they are
+// not shadowed (Express matches in registration order; /:taskId would otherwise capture
+// "metrics" / "dashboard" and surface a spurious 404).
 router.get('/swarm-tasks/metrics', asyncHandler(acosController.getSwarmMetrics));
 router.get('/swarm-tasks/metrics/history', asyncHandler(acosController.getSwarmHistoricalMetrics));
 router.get('/swarm-tasks/metrics/alerts', asyncHandler(acosController.getSwarmMetricAlerts));
 router.post('/swarm-tasks/metrics/alerts/:alertId/resolve', authorize('admin'), asyncHandler(acosController.resolveSwarmMetricAlert));
 router.get('/swarm-tasks/metrics/export', asyncHandler(acosController.exportSwarmMetrics));
 router.get('/swarm-tasks/dashboard', asyncHandler(acosController.getSwarmDashboard));
+router.get('/swarm-tasks/:taskId', asyncHandler(acosController.getSwarmTaskStatus));
+router.post('/swarm-tasks/:taskId/cancel', authorize('admin'), asyncHandler(acosController.cancelSwarmTask));
+router.post('/swarm-tasks/:taskId/agents/:agentId/progress', asyncHandler(acosController.reportSwarmTaskProgress));
+router.post('/swarm-tasks/:taskId/agents/:agentId/complete', asyncHandler(acosController.completeSwarmTask));
 
 // Federated Swarm Extended
 router.get('/swarm/federation-status', asyncHandler(acosController.getFederationStatus));

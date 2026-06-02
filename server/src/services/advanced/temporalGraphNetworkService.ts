@@ -716,8 +716,9 @@ class TemporalGraphNetworkService {
     sensitivityAnalysis?: Array<{ factor: string; impact: number }>;
   }> {
     try {
-      const framework = await prisma.complianceFramework.findUnique({
-        where: { id: frameworkId },
+      // Org-scoped lookup so a caller cannot pass another tenant's frameworkId.
+      const framework = await prisma.complianceFramework.findFirst({
+        where: { id: frameworkId, organizationId },
         include: { controls: true },
       });
 
@@ -1425,9 +1426,9 @@ class TemporalGraphNetworkService {
       // Extract scores from audit logs (if available)
       const scores: Array<{ date: Date; score: number }> = [];
       
-      // Also get current score
-      const framework = await prisma.complianceFramework.findUnique({
-        where: { id: frameworkId },
+      // Also get current score (org-scoped for tenant isolation)
+      const framework = await prisma.complianceFramework.findFirst({
+        where: { id: frameworkId, organizationId },
       });
 
       if (framework) {
@@ -1537,8 +1538,9 @@ class TemporalGraphNetworkService {
     timeHorizonMonths: number
   ): Promise<Array<{ factor: string; impact: number }>> {
     try {
-      const framework = await prisma.complianceFramework.findUnique({
-        where: { id: frameworkId },
+      // Org-scoped lookup for tenant isolation.
+      const framework = await prisma.complianceFramework.findFirst({
+        where: { id: frameworkId, organizationId },
         include: { controls: true },
       });
 

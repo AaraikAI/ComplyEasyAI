@@ -34,6 +34,15 @@ function createFetchMock() {
           json: () => Promise.resolve({ data: { id: 'inc-new', title: body.title, description: body.description, severity: body.severity || 'SEV3', status: 'DETECTED', category: body.category || 'SYSTEM_FAILURE', detectedAt: new Date().toISOString(), triagedAt: null, containedAt: null, eradicatedAt: null, resolvedAt: null, closedAt: null, assignedTo: '', reportedBy: '', affectedSystems: [], timeline: [], tasks: [] } }),
         });
       }
+      if (options?.method === 'PATCH') {
+        // The backend PATCH route returns the updated incident object under `data`
+        // (server/src/routes/incidents.ts:325). Echo back inc-1 advanced to ERADICATED.
+        const body = options?.body ? JSON.parse(options.body) : {};
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ status: 'success', data: { ...MOCK_INCIDENTS[0], status: body.status || 'ERADICATED' } }),
+        });
+      }
       if (options?.method === 'DELETE') {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ status: 'ok' }) });
       }
@@ -85,76 +94,101 @@ describe('IncidentManagement', () => {
 
   it('filters incidents by search', async () => {
     await renderAndWait(<IncidentManagement />);
-    const searchInput = screen.queryByPlaceholderText(/search/i);
-    if (searchInput) {
-      fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
-    }
+    // The search box is always present on the incidents tab.
+    const searchInput = screen.getByPlaceholderText(/search/i) as HTMLInputElement;
+    fireEvent.change(searchInput, { target: { value: 'Malware' } });
+    expect(searchInput.value).toBe('Malware');
+    // Only the matching incident remains; non-matching titles are filtered out.
+    expect(screen.getByText('Malware Detection on Endpoint')).toBeInTheDocument();
+    expect(screen.queryByText('Data Breach via Third-Party')).not.toBeInTheDocument();
   });
 
   it('opens create form when add button is clicked', async () => {
     await renderAndWait(<IncidentManagement />);
-    const addBtn = screen.queryAllByText(/New Incident|Create Incident/i)[0] ?? null;
-    if (addBtn) {
-      fireEvent.click(addBtn);
-      expect(screen.queryAllByText(/Title|incident/i).length).toBeGreaterThan(0);
-    }
+    // The create button is rendered using the i18n key; assert it exists, then open it.
+    const addBtn = screen.getByRole('button', { name: /incidents\.createIncident/i });
+    fireEvent.click(addBtn);
+    // Modal fields appear with the Title label.
+    expect(screen.getByText('Title')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Incident title')).toBeInTheDocument();
   });
 
   it('switches to timeline tab', async () => {
     await renderAndWait(<IncidentManagement />);
-    const timelineTab = screen.queryAllByText(/Timeline/i)[0] ?? null;
-    if (timelineTab) {
-      fireEvent.click(timelineTab);
-    }
+    const timelineTab = screen.getByRole('button', { name: /Timeline/i });
+    fireEvent.click(timelineTab);
+    // The timeline tab heading renders (key-based, since per-file i18n returns the key).
+    expect(screen.getAllByText(/incidents\.timeline/i).length).toBeGreaterThan(0);
   });
 
   it('switches to metrics tab', async () => {
     await renderAndWait(<IncidentManagement />);
-    const metricsTab = screen.queryAllByText(/Metrics/i)[0] ?? null;
-    if (metricsTab) {
-      fireEvent.click(metricsTab);
-    }
+    const metricsTab = screen.getByRole('button', { name: /Metrics/i });
+    fireEvent.click(metricsTab);
+    // The metrics tab shows the response-time breakdown sections.
+    expect(screen.getByText('Incidents by Severity')).toBeInTheDocument();
+    expect(screen.getByText('Response Time Metrics')).toBeInTheDocument();
   });
 
   it('opens incident detail view when incident is clicked', async () => {
     await renderAndWait(<IncidentManagement />);
-    const incidentRows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (incidentRows.length > 0) {
-      fireEvent.click(incidentRows[0]);
-    }
+    // Click the first incident card to open the detail view.
+    fireEvent.click(screen.getByText('Data Breach via Third-Party'));
+    // Detail view shows the back link and the status pipeline / reporter field.
+    expect(screen.getByText('Back to incidents')).toBeInTheDocument();
+    expect(screen.getByText('Reporter')).toBeInTheDocument();
   });
 
   it('filters by severity', async () => {
     await renderAndWait(<IncidentManagement />);
-    const severitySelect = screen.queryByDisplayValue(/All Severities|all/i);
-    if (severitySelect) {
-      fireEvent.change(severitySelect, { target: { value: 'SEV1' } });
-    }
+    // Filter controls are revealed by the filter toggle button.
+    fireEvent.click(screen.getByRole('button', { name: /common\.filter/i }));
+    const severitySelect = screen.getByDisplayValue('All Severities') as HTMLSelectElement;
+    fireEvent.change(severitySelect, { target: { value: 'SEV1' } });
+    expect(severitySelect.value).toBe('SEV1');
+    // Only SEV1 incidents remain; a SEV3 incident is filtered out.
+    expect(screen.getByText('Data Breach via Third-Party')).toBeInTheDocument();
+    expect(screen.queryByText('Malware Detection on Endpoint')).not.toBeInTheDocument();
   });
 
   it('filters by status', async () => {
     await renderAndWait(<IncidentManagement />);
-    const statusSelect = screen.queryByDisplayValue(/All Status|all/i);
-    if (statusSelect) {
-      fireEvent.change(statusSelect, { target: { value: 'Detected' } });
-    }
+    fireEvent.click(screen.getByRole('button', { name: /common\.filter/i }));
+    const statusSelect = screen.getByDisplayValue('All Statuses') as HTMLSelectElement;
+    fireEvent.change(statusSelect, { target: { value: 'Triaged' } });
+    expect(statusSelect.value).toBe('Triaged');
+    // inc-2 is Triaged and remains; inc-1 (Contained) is filtered out.
+    expect(screen.getByText('Unauthorized Access Attempt')).toBeInTheDocument();
+    expect(screen.queryByText('Data Breach via Third-Party')).not.toBeInTheDocument();
   });
 
   it('deletes an incident with confirmation', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     await renderAndWait(<IncidentManagement />);
-    const deleteButtons = document.querySelectorAll('[title="Delete"], button[class*="red"]');
-    if (deleteButtons.length > 0) {
-      await act(async () => { fireEvent.click(deleteButtons[0]); });
-    }
+    // Each incident card exposes a delete button titled "Delete incident".
+    const deleteButtons = screen.getAllByTitle('Delete incident');
+    expect(deleteButtons.length).toBeGreaterThan(0);
+    await act(async () => { fireEvent.click(deleteButtons[0]); });
+    // The DELETE call hits the incidents endpoint, then the row is removed.
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/incidents/'),
+        expect.objectContaining({ method: 'DELETE' }),
+      );
+    });
+    expect(screen.queryByText('Data Breach via Third-Party')).not.toBeInTheDocument();
   });
 
-  it('cancels delete when confirm returns false', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('advances incident status from the card', async () => {
     await renderAndWait(<IncidentManagement />);
-    const deleteButtons = document.querySelectorAll('[title="Delete"]');
-    if (deleteButtons.length > 0) {
-      fireEvent.click(deleteButtons[0]);
-    }
+    const advanceButtons = screen.getAllByTitle('Advance status');
+    expect(advanceButtons.length).toBeGreaterThan(0);
+    await act(async () => { fireEvent.click(advanceButtons[0]); });
+    // Advancing issues a PATCH to the incident endpoint.
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/incidents/'),
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+    });
   });
 });

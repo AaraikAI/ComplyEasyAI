@@ -18,6 +18,10 @@ import logger from '../../config/logger';
 import crypto from 'crypto';
 import { EventEmitter } from 'events';
 import { AppError } from '../../middleware/errorHandler';
+import cacheService from '../cache/redisCacheService';
+
+const SWARM_CACHE_NAMESPACE = 'swarm-task-allocation';
+const SWARM_STATE_KEY = 'swarm-state';
 
 // Task Types
 export interface SwarmTask {
@@ -233,6 +237,7 @@ class SwarmTaskAllocationService extends EventEmitter {
   private healthCheckInterval: NodeJS.Timeout | null = null;
   private taskProcessorInterval: NodeJS.Timeout | null = null;
   private timeoutCheckInterval: NodeJS.Timeout | null = null;
+  private persistInterval: NodeJS.Timeout | null = null;
   private historicalMetrics: Map<string, HistoricalMetric[]> = new Map(); // organizationId -> metrics
   private metricAlerts: Map<string, MetricAlert[]> = new Map(); // organizationId -> alerts
 
@@ -247,8 +252,99 @@ class SwarmTaskAllocationService extends EventEmitter {
       healthCheckInterval: 30000, // 30 seconds
       qualityThreshold: 0.8,
     };
-    logger.warn('[SwarmTaskAllocation] Service initialized — in-memory state cleared on restart. ' +
-      'Reset Maps: agents, taskQueue, activeTasks, completedTasks, historicalMetrics, metricAlerts');
+    this.hydrateSwarmState()
+      .then((counts) => {
+        logger.info(
+          `[SwarmTaskAllocation] Service initialized; hydrated state from cache ` +
+            `(agents=${counts.agents}, queued=${counts.queued}, active=${counts.active}, completed=${counts.completed})`,
+        );
+      })
+      .catch((err) => {
+        logger.warn('[SwarmTaskAllocation] Initial hydration from cache failed', err);
+      });
+  }
+
+  /**
+   * Mirror critical in-memory swarm state to Redis so a restart does not lose
+   * agent registrations, queued tasks, in-flight execution state, or completed
+   * task results (which downstream dep resolution consumes).
+   */
+  private persistTimer: NodeJS.Timeout | null = null;
+
+  /**
+   * Debounced persist: coalesces bursts of mutations into a single cache write
+   * within 500ms. The swarm scheduler can fire many mutations per second; this
+   * keeps the cache up-to-date without thrashing.
+   */
+  private schedulePersist(): void {
+    if (this.persistTimer) return;
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null;
+      this.persistSwarmState().catch(() => {});
+    }, 500);
+  }
+
+  private async persistSwarmState(): Promise<void> {
+    try {
+      const snapshot = {
+        agents: Array.from(this.agents.entries()),
+        taskQueue: Array.from(this.taskQueue.entries()),
+        activeTasks: Array.from(this.activeTasks.entries()),
+        completedTasks: Array.from(this.completedTasks.entries()),
+        historicalMetrics: Array.from(this.historicalMetrics.entries()),
+        metricAlerts: Array.from(this.metricAlerts.entries()),
+      };
+      await cacheService.set(SWARM_STATE_KEY, snapshot, {
+        ttl: 0,
+        namespace: SWARM_CACHE_NAMESPACE,
+      });
+    } catch (err) {
+      logger.warn('[SwarmTaskAllocation] Failed to persist swarm state to cache', err);
+    }
+  }
+
+  /**
+   * Restore swarm state from cache on startup.
+   */
+  private async hydrateSwarmState(): Promise<{
+    agents: number;
+    queued: number;
+    active: number;
+    completed: number;
+  }> {
+    const counts = { agents: 0, queued: 0, active: 0, completed: 0 };
+    const snapshot = await cacheService.get<{
+      agents: Array<[string, SwarmAgent]>;
+      taskQueue: Array<[TaskPriority, SwarmTask[]]>;
+      activeTasks: Array<[string, SwarmTask]>;
+      completedTasks: Array<[string, SwarmTask]>;
+      historicalMetrics: Array<[string, HistoricalMetric[]]>;
+      metricAlerts: Array<[string, MetricAlert[]]>;
+    }>(SWARM_STATE_KEY, { namespace: SWARM_CACHE_NAMESPACE });
+    if (!snapshot) return counts;
+    for (const [id, agent] of snapshot.agents || []) {
+      this.agents.set(id, agent);
+      counts.agents++;
+    }
+    for (const [prio, tasks] of snapshot.taskQueue || []) {
+      this.taskQueue.set(prio, tasks);
+      counts.queued += tasks.length;
+    }
+    for (const [id, task] of snapshot.activeTasks || []) {
+      this.activeTasks.set(id, task);
+      counts.active++;
+    }
+    for (const [id, task] of snapshot.completedTasks || []) {
+      this.completedTasks.set(id, task);
+      counts.completed++;
+    }
+    for (const [orgId, metrics] of snapshot.historicalMetrics || []) {
+      this.historicalMetrics.set(orgId, metrics);
+    }
+    for (const [orgId, alerts] of snapshot.metricAlerts || []) {
+      this.metricAlerts.set(orgId, alerts);
+    }
+    return counts;
   }
 
   /**
@@ -261,18 +357,29 @@ class SwarmTaskAllocationService extends EventEmitter {
         () => this.performHealthChecks(),
         this.config.healthCheckInterval
       );
+      this.healthCheckInterval?.unref?.();
 
       // Start task processor
       this.taskProcessorInterval = setInterval(
         () => this.processTaskQueue(),
         1000
       );
+      this.taskProcessorInterval?.unref?.();
 
       // Start timeout checker
       this.timeoutCheckInterval = setInterval(
         () => this.checkTaskTimeouts(),
         5000 // Check every 5 seconds
       );
+      this.timeoutCheckInterval?.unref?.();
+
+      // Periodic snapshot to Redis as a safety net (covers any mutation sites
+      // that don't call schedulePersist explicitly — e.g., timeout/cleanup paths).
+      this.persistInterval = setInterval(
+        () => this.schedulePersist(),
+        10000 // every 10 seconds
+      );
+      this.persistInterval?.unref?.();
 
       logger.info('[Swarm Tasks] Task allocation service initialized');
     } catch (error) {
@@ -324,6 +431,7 @@ class SwarmTaskAllocationService extends EventEmitter {
       };
 
       this.agents.set(agentId, swarmAgent);
+      this.schedulePersist();
 
       await prisma.auditLog.create({
         data: {
@@ -571,6 +679,7 @@ class SwarmTaskAllocationService extends EventEmitter {
         // Keep as pending until dependencies are met
         this.activeTasks.set(taskId, swarmTask);
       }
+      this.schedulePersist();
 
       await prisma.auditLog.create({
         data: {
@@ -1005,6 +1114,7 @@ class SwarmTaskAllocationService extends EventEmitter {
       task.metrics.queueTime = Date.now() - task.createdAt.getTime();
 
       this.activeTasks.set(task.id, task);
+      this.schedulePersist();
 
       this.emit('taskAssigned', task);
       logger.info(`[Swarm Tasks] Task ${task.id} assigned to ${agents.length} agents`);
@@ -1173,6 +1283,7 @@ class SwarmTaskAllocationService extends EventEmitter {
         // Move to completed
         this.activeTasks.delete(taskId);
         this.completedTasks.set(taskId, task);
+        this.schedulePersist();
 
         // Check for dependent tasks
         await this.checkAndQueueDependentTasks(taskId);
@@ -1223,6 +1334,7 @@ class SwarmTaskAllocationService extends EventEmitter {
       } else {
         this.activeTasks.delete(taskId);
       }
+      this.schedulePersist();
 
       if (!task) {
         return null;
@@ -1383,6 +1495,7 @@ class SwarmTaskAllocationService extends EventEmitter {
     });
 
     this.historicalMetrics.set(organizationId, history);
+    this.schedulePersist();
   }
 
   /**
@@ -1466,6 +1579,7 @@ class SwarmTaskAllocationService extends EventEmitter {
     }
 
     this.metricAlerts.set(organizationId, alerts);
+    this.schedulePersist();
 
     // Emit alert event
     this.emit('metricAlert', { organizationId, alert: newAlert });
@@ -1653,11 +1767,13 @@ class SwarmTaskAllocationService extends EventEmitter {
           }
 
           this.activeTasks.delete(taskId);
-          
+          this.schedulePersist();
+
           // Schedule retry with exponential backoff
           const backoffDelay = this.calculateExponentialBackoff(task.retryCount);
           setTimeout(() => {
             this.taskQueue.get(task.priority)?.push(task);
+            this.schedulePersist();
             logger.info(`[Swarm Tasks] Task ${taskId} requeued after agent failure (retry ${task.retryCount}/${task.maxRetries})`);
           }, backoffDelay);
         } else {
@@ -1666,6 +1782,7 @@ class SwarmTaskAllocationService extends EventEmitter {
           task.completedAt = new Date();
           this.activeTasks.delete(taskId);
           this.completedTasks.set(taskId, task);
+          this.schedulePersist();
 
           logger.warn(`[Swarm Tasks] Task ${taskId} failed after ${task.maxRetries} retries`);
         }

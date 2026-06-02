@@ -4,6 +4,8 @@ import { Send, Sparkles, ArrowRight, X } from 'lucide-react';
 import { useRisks } from '../hooks/queries/useRisks';
 import { useExecutiveDashboard } from '../hooks/queries/useDashboard';
 import { RisingSignals } from './RisingSignals';
+import { api } from '../services/api';
+import { logger } from '../utils/logger';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -187,6 +189,7 @@ const RiskCanvas: React.FC = () => {
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [chatInput, setChatInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   // Build graph data from risks
   const { nodes: initialNodes, links } = useMemo(() => {
@@ -265,55 +268,71 @@ const RiskCanvas: React.FC = () => {
     return () => cancelAnimationFrame(frameRef.current);
   }, [initialNodes, links]);
 
-  // Chat send
-  const handleSend = useCallback((text?: string) => {
+  // Map relevant compliance domains mentioned in a reply to navigation chips
+  const deriveActions = useCallback((text: string): Array<{ label: string; path: string }> => {
+    const lower = text.toLowerCase();
+    const actions: Array<{ label: string; path: string }> = [];
+    if (lower.includes('framework') || lower.includes('soc2') || lower.includes('iso')) {
+      actions.push({ label: 'View frameworks', path: '/frameworks' });
+    }
+    if (lower.includes('vendor')) actions.push({ label: 'View vendors', path: '/vendors' });
+    if (lower.includes('gap')) actions.push({ label: 'Start gap analysis', path: '/ai/document-tools?tab=gap' });
+    if (lower.includes('risk')) actions.push({ label: 'View risks', path: '/risks' });
+    if (lower.includes('report') || lower.includes('board') || lower.includes('executive')) {
+      actions.push({ label: 'Executive report', path: '/executive' });
+    }
+    return actions.slice(0, 2);
+  }, []);
+
+  // Chat send — calls the compliance copilot service with live dashboard context
+  const handleSend = useCallback(async (text?: string) => {
     const msg = text || chatInput.trim();
-    if (!msg) return;
+    if (!msg || isSending) return;
 
     const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: msg };
     setChatMessages(prev => [...prev, userMsg]);
     setChatInput('');
+    setIsSending(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const score = dashboard?.overallCompliance ?? dashboard?.complianceScore ?? 0;
-      let response: ChatMessage;
+    const conversationHistory = chatMessages.slice(-10).map(m => ({
+      role: m.role === 'ai' ? 'assistant' : 'user',
+      content: m.content,
+    }));
+    const context = {
+      currentView: 'risk-canvas',
+      complianceScore: dashboard?.overallCompliance ?? dashboard?.complianceScore ?? 0,
+      frameworksTracked: dashboard?.frameworkProgress?.length ?? 0,
+      criticalRisks: risks.filter(r => r.severity === 'Critical').length,
+      totalVendors: dashboard?.vendorRiskSummary?.totalVendors ?? 0,
+      highRiskVendors: dashboard?.vendorRiskSummary?.highRisk ?? 0,
+      pendingAudits: dashboard?.pendingAudits ?? 0,
+    };
 
-      if (msg.toLowerCase().includes('soc2') || msg.toLowerCase().includes('status')) {
-        response = {
-          id: (Date.now() + 1).toString(),
-          role: 'ai',
-          content: `Your overall compliance score is ${score}%. ${dashboard?.frameworkProgress?.length ?? 0} frameworks are being tracked. Would you like a detailed breakdown?`,
-          actions: [{ label: 'View frameworks', path: '/frameworks' }],
-        };
-      } else if (msg.toLowerCase().includes('vendor')) {
-        response = {
-          id: (Date.now() + 1).toString(),
-          role: 'ai',
-          content: `You have ${dashboard?.vendorRiskSummary?.totalVendors ?? 0} vendors being monitored. ${dashboard?.vendorRiskSummary?.highRisk ?? 0} are classified as high risk.`,
-          actions: [{ label: 'View vendors', path: '/vendors' }],
-        };
-      } else if (msg.toLowerCase().includes('gap') || msg.toLowerCase().includes('analysis')) {
-        response = {
-          id: (Date.now() + 1).toString(),
-          role: 'ai',
-          content: 'I can run a gap analysis across your active frameworks. This will identify controls that need implementation.',
-          actions: [{ label: 'Start gap analysis', path: '/ai/document-tools?tab=gap' }],
-        };
-      } else {
-        response = {
-          id: (Date.now() + 1).toString(),
-          role: 'ai',
-          content: `Based on current data: compliance score is ${score}%, ${risks.filter(r => r.severity === 'Critical').length} critical risks are active, and ${dashboard?.pendingAudits ?? 0} audits are pending. How can I help further?`,
-          actions: [
-            { label: 'View risks', path: '/risks' },
-            { label: 'Executive report', path: '/executive' },
-          ],
-        };
-      }
+    try {
+      const result = await api.ai.complianceCopilot(msg, conversationHistory, context) as {
+        response?: string;
+        suggestions?: string[];
+      };
+      const content = result?.response || 'I could not generate a response. Please try again.';
+      const response: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'ai',
+        content,
+        actions: deriveActions(content),
+      };
       setChatMessages(prev => [...prev, response]);
-    }, 800);
-  }, [chatInput, dashboard, risks]);
+    } catch (error: any) {
+      logger.error('Risk Canvas copilot request failed:', error);
+      const fallback: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'ai',
+        content: 'The AI copilot is temporarily unavailable. Please try again in a few moments.',
+      };
+      setChatMessages(prev => [...prev, fallback]);
+    } finally {
+      setIsSending(false);
+    }
+  }, [chatInput, chatMessages, dashboard, risks, isSending, deriveActions]);
 
   const nodeMap = useMemo(() => new Map(renderedNodes.map(n => [n.id, n])), [renderedNodes]);
 
@@ -355,6 +374,17 @@ const RiskCanvas: React.FC = () => {
               </div>
             </div>
           ))}
+          {isSending && (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] rounded-xl px-4 py-3 bg-surface-100 dark:bg-surface-700 text-surface-500 dark:text-surface-300">
+                <p className="text-sm flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-surface-400 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-surface-400 animate-pulse [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-surface-400 animate-pulse [animation-delay:300ms]" />
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Quick chips */}
@@ -378,12 +408,14 @@ const RiskCanvas: React.FC = () => {
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}
+              disabled={isSending}
               placeholder="Ask about risks, compliance, vendors..."
-              className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500"
+              className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 disabled:opacity-60"
             />
             <button
               onClick={() => handleSend()}
-              className="px-3 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors"
+              disabled={isSending}
+              className="px-3 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors disabled:opacity-60"
             >
               <Send className="w-4 h-4" />
             </button>

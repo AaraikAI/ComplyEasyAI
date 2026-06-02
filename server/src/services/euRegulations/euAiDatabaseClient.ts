@@ -11,6 +11,8 @@
 import axios from 'axios';
 import config from '../../config';
 import logger from '../../config/logger';
+import { isUrlSafe } from '../../utils/urlValidator';
+import { AppError } from '../../middleware/errorHandler';
 
 interface EUAIRegistrationPayload {
   organizationId: string;
@@ -57,6 +59,9 @@ class EUAiDatabaseClient {
 
     try {
       const url = `${euAiDb.apiBaseUrl.replace(/\/+$/, '')}/systems`;
+      if (!isUrlSafe(url)) {
+        throw new AppError('EU AI database URL is unsafe', 400);
+      }
 
       const response = await axios.post<EUAIRegistrationResponse>(
         url,

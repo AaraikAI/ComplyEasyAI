@@ -310,16 +310,18 @@ function IssueDetail({ issue, onBack }: { issue: Issue; onBack: () => void }) {
     if (!comment.trim()) return;
 
     try {
-      const result = await addComment(comment.trim());
-      setComments((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          content: comment.trim(),
-          author: 'You',
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      // `result` is the persisted comment returned by the server. The API stores
+      // the body under `comment` and the user reference under `author`; map those
+      // onto the screen's shape and only fall back to local values for fields the
+      // server omits, so the displayed comment survives a refetch.
+      const result: any = await addComment(comment.trim());
+      const persisted = {
+        id: String(result?.id ?? Date.now()),
+        content: result?.content ?? result?.comment ?? comment.trim(),
+        author: result?.authorName ?? result?.author ?? 'You',
+        createdAt: result?.createdAt ?? new Date().toISOString(),
+      };
+      setComments((prev) => [...prev, persisted]);
       setComment('');
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to add comment');

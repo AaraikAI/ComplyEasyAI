@@ -354,16 +354,19 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
 
   // Computed values
   const overallCurrentScore = useMemo(() => {
+    if (projections.length === 0) return 0;
     const sum = projections.reduce((acc, fw) => acc + fw.currentScore, 0);
     return Math.round(sum / projections.length);
   }, [projections]);
 
   const overallProjected90 = useMemo(() => {
+    if (projections.length === 0) return 0;
     const sum = projections.reduce((acc, fw) => acc + fw.projected90, 0);
     return Math.round(sum / projections.length);
-  }, []);
+  }, [projections]);
 
   const overallProjected180 = useMemo(() => {
+    if (projections.length === 0) return 0;
     const sum = projections.reduce((acc, fw) => acc + fw.projected180, 0);
     return Math.round(sum / projections.length);
   }, [projections]);
@@ -435,12 +438,46 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
     } finally {
       setIsRefreshing(false);
     }
-  }, []);
+  }, [projections, historicalData]);
 
   const handleExport = useCallback(() => {
     setIsExporting(true);
-    setTimeout(() => setIsExporting(false), 2000);
-  }, []);
+    try {
+      // Neutralize CSV formula-injection on any leading =,+,-,@ and RFC-4180 quote.
+      const csvCell = (value: unknown): string => {
+        let s = value === null || value === undefined ? '' : String(value);
+        if (/^[=+\-@]/.test(s)) s = `'${s}`;
+        if (/[",\n\r]/.test(s)) s = `"${s.replace(/"/g, '""')}"`;
+        return s;
+      };
+      const rows: string[] = [];
+      rows.push(['Section', 'Name', 'Current', '30d', '60d', '90d', '180d', 'Trend', 'Delta'].map(csvCell).join(','));
+      rows.push(['Summary', 'Overall', overallCurrentScore, '', '', overallProjected90, overallProjected180, '', overallProjected180 - overallCurrentScore].map(csvCell).join(','));
+      projections.forEach(fw => {
+        rows.push(['Framework', fw.name, fw.currentScore, fw.projected30, fw.projected60, fw.projected90, fw.projected180, fw.trend, fw.trendDelta].map(csvCell).join(','));
+      });
+      riskFactors.forEach(rf => {
+        rows.push(['Risk Factor', rf.title, rf.severity, '', '', '', '', rf.status, rf.impactScore].map(csvCell).join(','));
+      });
+      recommendations.forEach(rec => {
+        rows.push(['Recommendation', rec.title, rec.priority, '', '', '', '', rec.status, rec.estimatedImpact].map(csvCell).join(','));
+      });
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `compliance-forecast-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      logger.error('Failed to export forecast report', error);
+      setForecastError(error?.message || 'Failed to export report.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [projections, riskFactors, recommendations, overallCurrentScore, overallProjected90, overallProjected180]);
 
   // ---------------------------------------------------------------------------
   // Render: Bar Chart (div-based)
@@ -1484,9 +1521,10 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
                 {isExporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 {isExporting ? `${t('common.export')}...` : `${t('common.export')} Report`}
               </button>
-              <button className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5">
-                <RefreshCw className="w-4 h-4" />
-                {t('common.refresh')} Forecast
+              <button onClick={handleRefreshForecast} disabled={isRefreshing || projections.length === 0}
+                className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? `${t('common.refresh')}...` : `${t('common.refresh')} Forecast`}
               </button>
             </div>
           </div>

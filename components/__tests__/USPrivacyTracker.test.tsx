@@ -29,59 +29,69 @@ describe('USPrivacyTracker', () => {
 
   it('renders without crashing', () => {
     render(<USPrivacyTracker />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    // The page title is now i18n-keyed (t('privacy.title')); the mock returns the key.
+    expect(screen.getByText('privacy.title')).toBeInTheDocument();
   });
 
   it('displays US Privacy Tracker content', () => {
     render(<USPrivacyTracker />);
-    const content = document.body.textContent || '';
-    expect(content.length).toBeGreaterThan(0);
+    expect(
+      screen.getByText('Comprehensive tracking of all US state privacy laws and multi-state compliance')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Export Report')).toBeInTheDocument();
   });
 
   it('shows tab navigation for overview, map, comparison, gap analysis, tracker', () => {
     render(<USPrivacyTracker />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    // The overview tab label is now i18n-keyed (t('common.overview')); the per-file
+    // i18n mock returns the key verbatim. The remaining tabs use literal labels.
+    ['common.overview', 'State Map', 'Comparison', 'Gap Analysis', 'Compliance Tracker'].forEach(label => {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    });
   });
 
-  it('switches between tabs', () => {
+  it('switches to the state map tab when clicked', () => {
     render(<USPrivacyTracker />);
-    const buttons = screen.getAllByRole('button');
-    buttons.forEach(btn => {
-      const text = btn.textContent || '';
-      if (text.includes('Map') || text.includes('Comparison') || text.includes('Gap') || text.includes('Tracker')) {
-        fireEvent.click(btn);
-      }
-    });
-    expect(document.body.textContent).toBeTruthy();
+    fireEvent.click(screen.getByText('State Map'));
+    // The map tab renders its dedicated heading.
+    expect(screen.getByText('US State Privacy Law Map')).toBeInTheDocument();
   });
 
   it('renders with state privacy law data', () => {
     render(<USPrivacyTracker />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    // The overview shows the count card backed by the loaded law catalog.
+    expect(screen.getByText('State Laws Tracked')).toBeInTheDocument();
+    expect(screen.getByText('States with Private Right of Action')).toBeInTheDocument();
   });
 
   it('handles empty data', () => {
     render(<USPrivacyTracker />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    // Even without server data the overview summary cards render.
+    expect(screen.getByText('Compliance Rate')).toBeInTheDocument();
+    expect(screen.getByText('Pending Tasks')).toBeInTheDocument();
   });
 
-  it('handles API errors', () => {
+  it('handles API errors', async () => {
     mockGet.mockRejectedValue(new Error('API Error'));
     render(<USPrivacyTracker />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    // When the data load fails, the component surfaces a specific banner and
+    // falls back to its reference template instead of rendering blank.
+    expect(
+      await screen.findByText('Unable to connect to server. Showing reference template data.')
+    ).toBeInTheDocument();
+    expect(screen.getByText('State Laws Tracked')).toBeInTheDocument();
   });
 
   it('renders stat cards', () => {
     render(<USPrivacyTracker />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    expect(screen.getByText('Open Gaps')).toBeInTheDocument();
+    expect(screen.getByText('Effective Date Timeline')).toBeInTheDocument();
   });
 
   it('shows search functionality', () => {
     render(<USPrivacyTracker />);
-    const inputs = document.querySelectorAll('input');
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    // The search box lives on the State Map tab's law list.
+    fireEvent.click(screen.getByText('State Map'));
+    expect(screen.getByPlaceholderText('Search state or law...')).toBeInTheDocument();
   });
 });

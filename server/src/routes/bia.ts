@@ -178,9 +178,14 @@ router.get(
         throw new AppError('Business process not found', 404);
       }
 
-      // Also find processes that depend on this one (reverse dependencies)
+      // Also find processes that depend on this one (reverse dependencies).
+      // Scope the owning process by organizationId so only same-tenant
+      // dependent process names are surfaced even if ids ever collide.
       const dependents = await prisma.processDependency.findMany({
-        where: { dependsOn: req.params.id },
+        where: {
+          dependsOn: req.params.id,
+          process: { organizationId: user.organizationId },
+        },
         include: {
           process: {
             select: { id: true, name: true, criticality: true, department: true },
@@ -427,6 +432,19 @@ router.post(
       // Prevent self-dependency
       if (dependsOn === req.params.id) {
         throw new AppError('A process cannot depend on itself', 400);
+      }
+
+      // When the dependency targets another internal process, verify that
+      // referenced process belongs to the caller's organization. This blocks
+      // linking a dependency to a process id owned by a different tenant.
+      if (type === 'INTERNAL_PROCESS') {
+        const target = await prisma.businessProcess.findFirst({
+          where: { id: dependsOn, organizationId: user.organizationId },
+          select: { id: true },
+        });
+        if (!target) {
+          throw new AppError('Referenced process not found in your organization', 404);
+        }
       }
 
       // Check for duplicate dependency

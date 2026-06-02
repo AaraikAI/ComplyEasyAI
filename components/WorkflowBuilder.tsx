@@ -357,6 +357,114 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   const [showNodeModal, setShowNodeModal] = useState(false);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const [editingWorkflowName, setEditingWorkflowName] = useState('New Workflow');
+  const [builderWorkflowId, setBuilderWorkflowId] = useState<string | null>(null);
+  const [builderPreview, setBuilderPreview] = useState(false);
+
+  // Automation Rules editor state
+  const [showRuleModal, setShowRuleModal] = useState(false);
+  const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
+  const [ruleForm, setRuleForm] = useState<{ name: string; triggerEvent: string; status: RuleStatus }>({ name: '', triggerEvent: '', status: 'Active' });
+
+  // Persist the visual builder canvas as a workflow (create on first save, update thereafter).
+  const handleSaveBuilder = async () => {
+    setActionLoading('builder-save');
+    setError(null);
+    try {
+      const payload = {
+        name: editingWorkflowName.trim() || 'Untitled Workflow',
+        nodes: builderNodes.map(n => ({ type: n.type.toLowerCase(), title: n.title, config: { summary: n.configSummary }, step: n.step })),
+      };
+      if (builderWorkflowId) {
+        await api.workflows.update(builderWorkflowId, payload);
+      } else {
+        const created = await api.workflows.create(payload);
+        if (created?.id) setBuilderWorkflowId(created.id);
+      }
+      await loadWorkflows();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to save workflow');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Save the canvas (if needed) then trigger an execution run for it.
+  const handleTestRunBuilder = async () => {
+    if (builderNodes.length === 0) { setError('Add at least one node before running.'); return; }
+    setActionLoading('builder-run');
+    setError(null);
+    try {
+      let id = builderWorkflowId;
+      const payload = {
+        name: editingWorkflowName.trim() || 'Untitled Workflow',
+        nodes: builderNodes.map(n => ({ type: n.type.toLowerCase(), title: n.title, config: { summary: n.configSummary }, step: n.step })),
+      };
+      if (id) {
+        await api.workflows.update(id, payload);
+      } else {
+        const created = await api.workflows.create(payload);
+        id = created?.id || null;
+        if (id) setBuilderWorkflowId(id);
+      }
+      if (!id) throw new Error('Workflow could not be created for test run.');
+      await api.workflows.run(id);
+      await Promise.all([loadWorkflows(), loadRuns()]);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to test-run workflow');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openCreateRule = () => {
+    setEditingRule(null);
+    setRuleForm({ name: '', triggerEvent: '', status: 'Active' });
+    setShowRuleModal(true);
+  };
+
+  const openEditRule = (rule: AutomationRule) => {
+    setEditingRule(rule);
+    setRuleForm({ name: rule.name, triggerEvent: rule.triggerEvent, status: rule.status });
+    setShowRuleModal(true);
+  };
+
+  const handleSaveRule = async () => {
+    if (!ruleForm.name.trim()) return;
+    setActionLoading('rule-save');
+    setError(null);
+    try {
+      const payload = {
+        name: ruleForm.name.trim(),
+        status: ruleForm.status,
+        trigger: { type: 'event', config: { event: ruleForm.triggerEvent.trim() || 'Custom event' } },
+      };
+      if (editingRule) {
+        await api.workflows.updateRule(editingRule.id, payload);
+      } else {
+        await api.workflows.createRule(payload);
+      }
+      setShowRuleModal(false);
+      setEditingRule(null);
+      await loadRules();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to save rule');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteRule = async (id: string) => {
+    setActionLoading(id);
+    setError(null);
+    try {
+      await api.workflows.deleteRule(id);
+      await loadRules();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to delete rule');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const addNode = (type: NodeType, atIndex?: number) => {
     const defaultTitles: Record<NodeType, string> = {
@@ -652,11 +760,14 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               <p className="text-slate-400 text-xs mt-1">Visual workflow editor — {builderNodes.length} node{builderNodes.length !== 1 ? 's' : ''}</p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs transition-colors">
-                <Eye size={14} /> Preview
+              <button onClick={() => setBuilderPreview(p => !p)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs transition-colors ${builderPreview ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}>
+                <Eye size={14} /> {builderPreview ? 'Editing' : 'Preview'}
               </button>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs transition-colors">
-                <Play size={14} /> Test Run
+              <button onClick={handleSaveBuilder} disabled={actionLoading === 'builder-save'} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white rounded text-xs transition-colors">
+                {actionLoading === 'builder-save' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Save
+              </button>
+              <button onClick={handleTestRunBuilder} disabled={actionLoading === 'builder-run' || builderNodes.length === 0} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded text-xs transition-colors">
+                {actionLoading === 'builder-run' ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Test Run
               </button>
             </div>
           </div>
@@ -672,7 +783,9 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     {nodeTypeIcon(node.type)}
                     <span className={`px-2 py-0.5 text-xs rounded ${nodeTypeColor(node.type)}`}>{node.type}</span>
                     <span className="text-white text-sm font-medium flex-1">{node.title}</span>
-                    <button onClick={() => removeNode(node.id)} title="Remove node" className="p-1 text-slate-400 hover:text-red-400 rounded hover:bg-slate-700"><Trash2 size={14} /></button>
+                    {!builderPreview && (
+                      <button onClick={() => removeNode(node.id)} title="Remove node" className="p-1 text-slate-400 hover:text-red-400 rounded hover:bg-slate-700"><Trash2 size={14} /></button>
+                    )}
                   </div>
                   <p className="text-slate-400 text-xs ml-10">{node.configSummary}</p>
                 </div>
@@ -681,9 +794,11 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 {idx < builderNodes.length - 1 && (
                   <div className="flex flex-col items-center py-1">
                     <div className="w-px h-4 bg-slate-600" />
-                    <button onClick={() => openNodePicker(idx)} className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:text-white hover:border-blue-500 hover:bg-blue-600/20 transition-colors">
-                      <Plus size={12} />
-                    </button>
+                    {!builderPreview && (
+                      <button onClick={() => openNodePicker(idx)} className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:text-white hover:border-blue-500 hover:bg-blue-600/20 transition-colors">
+                        <Plus size={12} />
+                      </button>
+                    )}
                     <div className="w-px h-4 bg-slate-600" />
                     <ArrowDown size={14} className="text-slate-600" />
                   </div>
@@ -693,12 +808,14 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           </div>
 
           {/* Add node at end */}
-          <div className="flex flex-col items-center pt-2">
-            <div className="w-px h-4 bg-slate-600" />
-            <button onClick={() => openNodePicker()} className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-blue-500 transition-colors text-xs">
-              <Plus size={14} /> Add Node
-            </button>
-          </div>
+          {!builderPreview && (
+            <div className="flex flex-col items-center pt-2">
+              <div className="w-px h-4 bg-slate-600" />
+              <button onClick={() => openNodePicker()} className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-blue-500 transition-colors text-xs">
+                <Plus size={14} /> Add Node
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -835,7 +952,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <option value="Inactive">Inactive</option>
           </select>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
+        <button onClick={openCreateRule} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
           <Plus size={16} /> New Rule
         </button>
       </div>
@@ -850,8 +967,8 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <span className={`px-2 py-0.5 text-xs rounded ${rule.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-400'}`}>{rule.status}</span>
               </div>
               <div className="flex items-center gap-1">
-                <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded" title="Edit"><Edit3 size={14} /></button>
-                <button className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded" title="Delete"><Trash2 size={14} /></button>
+                <button onClick={() => openEditRule(rule)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded" title="Edit"><Edit3 size={14} /></button>
+                <button onClick={() => handleDeleteRule(rule.id)} disabled={actionLoading === rule.id} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded disabled:opacity-50" title="Delete">{actionLoading === rule.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}</button>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
@@ -941,6 +1058,65 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
             >
               {actionLoading === 'create' ? t('common.loading') : t('workflow.createWorkflow')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Automation Rule Modal ────────────────────────────────────────────
+
+  const renderRuleModal = () => {
+    if (!showRuleModal) return null;
+    return (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowRuleModal(false)}>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-5 border-b border-slate-700">
+            <h3 className="text-lg font-semibold text-white">{editingRule ? 'Edit Rule' : 'New Rule'}</h3>
+            <button onClick={() => setShowRuleModal(false)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Rule Name</label>
+              <input
+                type="text"
+                value={ruleForm.name}
+                onChange={e => setRuleForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Auto-escalate critical risks"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Trigger Event</label>
+              <input
+                type="text"
+                value={ruleForm.triggerEvent}
+                onChange={e => setRuleForm(f => ({ ...f, triggerEvent: e.target.value }))}
+                placeholder="e.g. risk.created"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Status</label>
+              <select
+                value={ruleForm.status}
+                onChange={e => setRuleForm(f => ({ ...f, status: e.target.value as RuleStatus }))}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
+            <button onClick={() => setShowRuleModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">{t('common.cancel')}</button>
+            <button
+              onClick={handleSaveRule}
+              disabled={actionLoading === 'rule-save' || !ruleForm.name.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+            >
+              {actionLoading === 'rule-save' ? t('common.loading') : t('common.save')}
             </button>
           </div>
         </div>
@@ -1117,6 +1293,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
       {renderCreateModal()}
       {renderNodePickerModal()}
+      {renderRuleModal()}
       {renderRunDetailModal()}
     </div>
   );

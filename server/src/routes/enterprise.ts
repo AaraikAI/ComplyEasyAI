@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../config/database';
-import { authenticate } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
 import { enforceLimit } from '../middleware/tierMiddleware';
 import { validateBody } from '../middleware/validate';
 import {
@@ -227,9 +227,17 @@ questionnaireRouter.get(
 // Update questionnaire
 questionnaireRouter.put(
   '/:id',
+  authorize('admin', 'editor'),
   validateBody(updateQuestionnaireSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
-    const prisma = require('../config/database').default;
+    // Scope the update to the caller's organization so one tenant cannot modify another's questionnaire by ID.
+    const owned = await prisma.questionnaire.findFirst({
+      where: { id: req.params.id, organizationId: req.user.organizationId },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new AppError('Questionnaire not found', 404);
+    }
     const updated = await prisma.questionnaire.update({
       where: { id: req.params.id },
       data: {
@@ -248,11 +256,21 @@ questionnaireRouter.put(
 // Delete questionnaire
 questionnaireRouter.delete(
   '/:id',
+  authorize('admin', 'editor'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
-    const prisma = require('../config/database').default;
-    await prisma.questionnaireResponse.deleteMany({ where: { questionnaireId: req.params.id } });
-    await prisma.questionnaireQuestion.deleteMany({ where: { questionnaireId: req.params.id } });
-    await prisma.questionnaire.delete({ where: { id: req.params.id } });
+    // Verify org ownership before deleting the questionnaire and its child rows.
+    const owned = await prisma.questionnaire.findFirst({
+      where: { id: req.params.id, organizationId: req.user.organizationId },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new AppError('Questionnaire not found', 404);
+    }
+    await prisma.$transaction([
+      prisma.questionnaireResponse.deleteMany({ where: { questionnaireId: req.params.id } }),
+      prisma.questionnaireQuestion.deleteMany({ where: { questionnaireId: req.params.id } }),
+      prisma.questionnaire.delete({ where: { id: req.params.id } }),
+    ]);
     res.json({ success: true });
   })
 );
@@ -531,8 +549,12 @@ workspaceRouter.get(
 // Move user between organizations
 workspaceRouter.post(
   '/move-user',
+  authorize('admin'),
   validateBody(moveUserSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    // Authorization is enforced inside moveUserToOrganization: the caller's org is resolved
+    // server-side from req.user.id (a trusted value, not request input) and both the source
+    // user and the target organization must belong to that workspace hierarchy, else it 403s.
     const result = await multiWorkspaceService.moveUserToOrganization(
       req.body.userId,
       req.body.targetOrganizationId,
@@ -892,9 +914,17 @@ issueRouter.get(
 // Update issue
 issueRouter.patch(
   '/:id',
+  authorize('admin', 'editor'),
   validateBody(updateIssueSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
-    const prisma = require('../config/database').default;
+    // Scope to the caller's organization, matching the GET /:id ownership filter.
+    const owned = await prisma.issue.findFirst({
+      where: { id: req.params.id, organizationId: req.user.organizationId },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new AppError('Issue not found', 404);
+    }
     const issue = await prisma.issue.update({
       where: { id: req.params.id },
       data: {
@@ -936,12 +966,20 @@ issueRouter.patch(
 // Delete issue
 issueRouter.delete(
   '/:id',
+  authorize('admin', 'editor'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
-    const prisma = require('../config/database').default;
-    // Delete comments first
-    await prisma.issueComment.deleteMany({ where: { issueId: req.params.id } });
-    // Delete the issue
-    await prisma.issue.delete({ where: { id: req.params.id } });
+    // Verify org ownership before deleting the issue and its comments.
+    const owned = await prisma.issue.findFirst({
+      where: { id: req.params.id, organizationId: req.user.organizationId },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new AppError('Issue not found', 404);
+    }
+    await prisma.$transaction([
+      prisma.issueComment.deleteMany({ where: { issueId: req.params.id } }),
+      prisma.issue.delete({ where: { id: req.params.id } }),
+    ]);
     res.json({ success: true });
   })
 );
@@ -950,7 +988,14 @@ issueRouter.delete(
 issueRouter.get(
   '/:id/comments',
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
-    const prisma = require('../config/database').default;
+    // Confirm the parent issue belongs to the caller's organization before returning its comments.
+    const owned = await prisma.issue.findFirst({
+      where: { id: req.params.id, organizationId: req.user.organizationId },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new AppError('Issue not found', 404);
+    }
     const comments = await prisma.issueComment.findMany({
       where: { issueId: req.params.id },
       orderBy: { createdAt: 'desc' },

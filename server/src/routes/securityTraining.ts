@@ -265,9 +265,13 @@ router.get(
 
       res.json({ modules, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error: any) {
+      // Do not mask a missing table as an empty-but-successful response: a
+      // P2021/P2010 ("does not exist") here means the SecurityTraining
+      // migration was not applied to this environment, which must surface as a
+      // 5xx so the global handler / Sentry records the deployment fault.
       if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
-        logger.warn('Security training table not yet available, returning empty data');
-        return res.json({ modules: [], total: 0, page, limit, totalPages: 0 });
+        logger.error('SecurityTraining table missing — migration not applied for this deployment', { code: error?.code });
+        throw new AppError('Security training is not available; required migration has not been applied', 500);
       }
       logger.error('Error fetching training modules:', error);
       throw new AppError('Failed to fetch training modules', 500);
@@ -277,10 +281,12 @@ router.get(
 
 // ============================================================================
 // CREATE TRAINING MODULE (Admin only)
+// Both '/' and '/modules' accepted; the frontend SecurityTrainingDashboard
+// posts to '/modules' so it's aliased to the same handler.
 // ============================================================================
 
 router.post(
-  '/',
+  ['/', '/modules'],
   authorize('admin'),
   validateBody(createSecurityTrainingSchema),
   asyncHandler(async (req: Request, res: Response) => {
@@ -468,17 +474,27 @@ router.delete(
 
 // ============================================================================
 // ASSIGN TRAINING TO SPECIFIC USERS
+// The frontend SecurityTrainingDashboard POSTs to '/assign' with a moduleId
+// in the body; older path '/:id/assign' is kept for backward compatibility.
 // ============================================================================
 
+// Frontend SecurityTrainingDashboard POSTs to '/assign' with moduleId in the
+// body; older clients use '/:id/assign'. Same handler covers both: when the
+// path doesn't include :id, we pull moduleId from the body before lookup.
 router.post(
-  '/:id/assign',
+  ['/:id/assign', '/assign'],
   authorize('admin', 'editor'),
   validateBody(assignTrainingSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
+      // Accept moduleId either as path param (/:id/assign) or in the body (/assign).
+      const moduleId = req.params.id || (req.body as any).moduleId;
+      if (!moduleId) {
+        throw new AppError('moduleId is required (path param or body)', 400);
+      }
       const training = await prisma.securityTraining.findFirst({
-        where: { id: req.params.id, organizationId: user.organizationId, status: 'Active' },
+        where: { id: moduleId, organizationId: user.organizationId, status: 'Active' },
       });
 
       if (!training) {

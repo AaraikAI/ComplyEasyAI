@@ -24,6 +24,31 @@ Going live requires more than clean code. It requires verified feature completen
 9. **Detect the stack.** Don't assume any framework — discover what's there and adapt all checks.
 10. **Evidence-based findings only.** NEVER flag a finding based on assumption or inference alone. Every finding MUST cite the specific file, line number, and code pattern that proves the issue exists. If an anti-pattern grep returns zero results, do NOT assume the problem exists anyway — instead, run a positive verification grep to confirm the correct pattern IS present. A finding without evidence is not a finding.
 
+## Mandatory Dynamic / Runtime Verification Phases (added 2026-05-31)
+
+Static reading finds most issues but is blind to version-specific runtime breaks,
+dependency CVEs, type errors, and capacity limits. Every audit MUST run these four
+dynamic phases and fold their results into the report as **findings**, not as a
+"not covered" limitation:
+
+- **D1 — `tsc --noEmit`** in every TS package (`server/`, frontend root, `mobile/`).
+  Use `NODE_OPTIONS=--max-old-space-size=8192` on OOM and verify CI sets it too.
+  Errors that block the build are HIGH.
+- **D2 — `npm audit --json`** per lockfile. Cross-reference against the
+  known-unfixable table in `.claude/CLAUDE.md`; only new/fixable advisories are
+  findings. Never re-flag a known-unfixable vuln.
+- **D3 — Runtime boot + smoke.** Actually start the server + frontend; confirm boot
+  without throwing, `/health` 200, DB connects, one authenticated request and one
+  mutating request round-trip. (Static analysis marks TLS "configured" while
+  `pg`/library version changes cause silent boot failures — only a boot test catches
+  this.) Boot/runtime failures are HIGH.
+- **D4 — Load / performance.** Drive hot read+write endpoints with `k6`/`autocannon`
+  at realistic concurrency; capture p95 latency, error rate, and pool/rate-limiter
+  exhaustion. Regressions or unbounded-resource behavior = MEDIUM+.
+
+Findings are static-analysis-grade until confirmed against the cited lines; D1–D4
+are how the audit graduates findings from "likely" to "verified."
+
 ## Known Audit Pitfalls (Lessons from Past False Positives)
 
 These are real mistakes made in previous audits of this codebase. They are documented here so they are never repeated.

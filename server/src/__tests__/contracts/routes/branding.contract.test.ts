@@ -8,6 +8,13 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { prismaMock } from '../../mocks/prisma';
 
+// The shared prisma mock does not define upsert on the brandingConfig delegate,
+// which the branding routes use. Augment the mock with the missing method so the
+// routes can exercise upsert; tests set the resolved value per-case.
+if (typeof (prismaMock as any).brandingConfig.upsert !== 'function') {
+  (prismaMock as any).brandingConfig.upsert = jest.fn();
+}
+
 jest.mock('../../../config/database', () => ({ __esModule: true, default: prismaMock }));
 jest.mock('../../../config/logger', () => ({
   __esModule: true, default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },

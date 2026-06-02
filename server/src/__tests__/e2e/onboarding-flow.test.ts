@@ -60,353 +60,231 @@ app.use('/api/onboarding', onboardingRoutes);
 app.use(errorHandler);
 
 describe('E2E: Onboarding Flow', () => {
-  const mockOnboardingProgress = {
+  const mockProgress = {
     id: 'onboard-123',
+    userId: 'user-123',
     organizationId: 'org-123',
-    currentStep: 1,
-    completedSteps: ['welcome'],
-    totalSteps: 8,
-    startedAt: new Date(),
-    preferences: {},
+    currentFlow: null,
+    currentStep: 0,
+    welcomeCompleted: false,
+    tierTourCompleted: false,
+    firstFrameworkCompleted: false,
+    skippedFlows: [],
+    showHints: true,
+    reducedMotion: false,
   };
 
-  const mockMilestone = {
-    id: 'mile-123',
+  const mockChecklist = {
+    id: 'checklist-123',
     organizationId: 'org-123',
-    name: 'First Framework',
-    description: 'Set up your first compliance framework',
-    completed: false,
-    targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    profileCompleted: false,
+    teamInvited: false,
+    firstFrameworkAdded: false,
+    firstEvidenceUploaded: false,
+    firstControlPassed: false,
+    integrationConnected: false,
+    aiFeatureUsed: false,
+    firstReportGenerated: false,
+    completedAt: null,
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Upsert/create/event fallbacks used across the controller.
+    prismaMock.onboardingProgress.upsert.mockResolvedValue(mockProgress as any);
+    prismaMock.onboardingProgress.create.mockResolvedValue(mockProgress as any);
+    prismaMock.onboardingProgress.findUnique.mockResolvedValue(mockProgress as any);
+    prismaMock.onboardingProgress.deleteMany.mockResolvedValue({ count: 1 } as any);
+    prismaMock.onboardingChecklist.upsert.mockResolvedValue(mockChecklist as any);
+    prismaMock.onboardingEvent.create.mockResolvedValue({ id: 'event-123' } as any);
+    prismaMock.organization.findUnique.mockResolvedValue({
+      plan: 'Growth',
+      name: 'Test Company',
+      onboardingCompleted: false,
+      onboardingStep: 0,
+    } as any);
+    prismaMock.organization.update.mockResolvedValue({ id: 'org-123' } as any);
   });
 
-  describe('Organization Setup Wizard', () => {
-    it('should get onboarding progress', async () => {
-      prismaMock.onboardingProgress.findFirst.mockResolvedValue(mockOnboardingProgress as any);
-
+  describe('Progress tracking', () => {
+    it('should get onboarding progress (upserting if absent)', async () => {
       const response = await request(app)
         .get('/api/onboarding/progress')
         .expect(200);
 
-      expect(response.body).toHaveProperty('currentStep');
-      expect(response.body).toHaveProperty('completedSteps');
-      expect(response.body).toHaveProperty('totalSteps');
+      expect(response.body).toHaveProperty('progress');
+      expect(response.body).toHaveProperty('organizationPlan', 'Growth');
+      expect(response.body).toHaveProperty('onboardingCompleted', false);
     });
 
-    it('should complete organization profile step', async () => {
-      prismaMock.onboardingProgress.findFirst.mockResolvedValue(mockOnboardingProgress as any);
-      prismaMock.organization.update.mockResolvedValue({
-        id: 'org-123',
-        name: 'Test Company',
-        industry: 'Technology',
-        size: '50-200',
-      } as any);
-      prismaMock.onboardingProgress.update.mockResolvedValue({
-        ...mockOnboardingProgress,
+    it('should update onboarding progress (whitelisted fields only)', async () => {
+      prismaMock.onboardingProgress.upsert.mockResolvedValue({
+        ...mockProgress,
         currentStep: 2,
-        completedSteps: ['welcome', 'organization-profile'],
+        welcomeCompleted: true,
       } as any);
 
       const response = await request(app)
-        .post('/api/onboarding/steps/organization-profile')
-        .send({
-          industry: 'Technology',
-          companySize: '50-200',
-          headquarters: 'United States',
-          website: 'https://example.com',
-        })
+        .put('/api/onboarding/progress')
+        .send({ currentStep: 2, currentFlow: 'main' })
         .expect(200);
 
-      expect(response.body.completedSteps).toContain('organization-profile');
+      expect(response.body.progress).toHaveProperty('currentStep', 2);
     });
 
-    it('should complete framework selection step', async () => {
-      prismaMock.onboardingProgress.findFirst.mockResolvedValue({
-        ...mockOnboardingProgress,
-        currentStep: 2,
-      } as any);
-      prismaMock.framework.createMany.mockResolvedValue({ count: 2 } as any);
-      prismaMock.onboardingProgress.update.mockResolvedValue({
-        ...mockOnboardingProgress,
-        currentStep: 3,
-        completedSteps: ['welcome', 'organization-profile', 'frameworks'],
-      } as any);
-
+    it('should reject progress update with an invalid field shape', async () => {
       const response = await request(app)
-        .post('/api/onboarding/steps/frameworks')
-        .send({
-          selectedFrameworks: ['SOC2', 'ISO27001'],
-          primaryFramework: 'SOC2',
-          targetDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-        })
-        .expect(200);
+        .put('/api/onboarding/progress')
+        .send({ currentStep: 'not-a-number', bogusField: true })
+        .expect(400);
 
-      expect(response.body.completedSteps).toContain('frameworks');
+      expect(response.body).toHaveProperty('error');
     });
 
-    it('should complete team invitation step', async () => {
-      prismaMock.onboardingProgress.findFirst.mockResolvedValue({
-        ...mockOnboardingProgress,
-        currentStep: 3,
-      } as any);
-      prismaMock.invite.createMany.mockResolvedValue({ count: 3 } as any);
-      prismaMock.onboardingProgress.update.mockResolvedValue({
-        ...mockOnboardingProgress,
-        currentStep: 4,
-        completedSteps: ['welcome', 'organization-profile', 'frameworks', 'team'],
-      } as any);
-
+    it('should reset onboarding progress', async () => {
       const response = await request(app)
-        .post('/api/onboarding/steps/team')
-        .send({
-          invites: [
-            { email: 'analyst@example.com', role: 'Analyst' },
-            { email: 'manager@example.com', role: 'Manager' },
-          ],
-        })
+        .post('/api/onboarding/reset')
         .expect(200);
 
-      expect(response.body.completedSteps).toContain('team');
-    });
-
-    it('should skip optional step', async () => {
-      prismaMock.onboardingProgress.findFirst.mockResolvedValue(mockOnboardingProgress as any);
-      prismaMock.onboardingProgress.update.mockResolvedValue({
-        ...mockOnboardingProgress,
-        currentStep: 3,
-        skippedSteps: ['integrations'],
-      } as any);
-
-      const response = await request(app)
-        .post('/api/onboarding/steps/integrations/skip')
-        .expect(200);
-
-      expect(response.body.skippedSteps).toContain('integrations');
-    });
-
-    it('should complete onboarding', async () => {
-      prismaMock.onboardingProgress.findFirst.mockResolvedValue({
-        ...mockOnboardingProgress,
-        currentStep: 8,
-        completedSteps: ['welcome', 'organization-profile', 'frameworks', 'team', 'integrations', 'security', 'preferences', 'review'],
-      } as any);
-      prismaMock.onboardingProgress.update.mockResolvedValue({
-        ...mockOnboardingProgress,
-        completedAt: new Date(),
-      } as any);
-
-      const response = await request(app)
-        .post('/api/onboarding/complete')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('completedAt');
-    });
-  });
-
-  describe('Onboarding Milestones', () => {
-    it('should get milestones', async () => {
-      prismaMock.onboardingMilestone.findMany.mockResolvedValue([mockMilestone] as any);
-
-      const response = await request(app)
-        .get('/api/onboarding/milestones')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should complete milestone', async () => {
-      prismaMock.onboardingMilestone.findFirst.mockResolvedValue(mockMilestone as any);
-      prismaMock.onboardingMilestone.update.mockResolvedValue({
-        ...mockMilestone,
-        completed: true,
-        completedAt: new Date(),
-      } as any);
-
-      const response = await request(app)
-        .post('/api/onboarding/milestones/mile-123/complete')
-        .expect(200);
-
-      expect(response.body.completed).toBe(true);
-    });
-
-    it('should get milestone progress summary', async () => {
-      prismaMock.onboardingMilestone.findMany.mockResolvedValue([
-        { ...mockMilestone, completed: true },
-        { ...mockMilestone, id: 'mile-2', completed: false },
-      ] as any);
-
-      const response = await request(app)
-        .get('/api/onboarding/milestones/summary')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('completed');
-      expect(response.body).toHaveProperty('total');
       expect(response.body).toHaveProperty('progress');
     });
   });
 
-  describe('Onboarding Preferences', () => {
-    it('should save user preferences', async () => {
-      prismaMock.onboardingProgress.findFirst.mockResolvedValue(mockOnboardingProgress as any);
-      prismaMock.onboardingProgress.update.mockResolvedValue({
-        ...mockOnboardingProgress,
-        preferences: {
-          notifications: { email: true, inApp: true },
-          theme: 'dark',
-          dashboardLayout: 'detailed',
-        },
+  describe('Milestones', () => {
+    it('should complete a known milestone', async () => {
+      prismaMock.onboardingProgress.upsert.mockResolvedValue({
+        ...mockProgress,
+        firstFrameworkCompleted: true,
       } as any);
 
       const response = await request(app)
-        .post('/api/onboarding/preferences')
-        .send({
-          notifications: { email: true, inApp: true },
-          theme: 'dark',
-          dashboardLayout: 'detailed',
-        })
+        .post('/api/onboarding/complete-milestone')
+        .send({ milestone: 'first_framework' })
         .expect(200);
 
-      expect(response.body.preferences).toHaveProperty('theme');
+      expect(response.body).toHaveProperty('progress');
     });
 
-    it('should get preferences', async () => {
-      prismaMock.onboardingProgress.findFirst.mockResolvedValue({
-        ...mockOnboardingProgress,
-        preferences: { theme: 'dark' },
-      } as any);
-
+    it('should reject an unknown milestone', async () => {
       const response = await request(app)
-        .get('/api/onboarding/preferences')
-        .expect(200);
+        .post('/api/onboarding/complete-milestone')
+        .send({ milestone: 'not_a_real_milestone' })
+        .expect(400);
 
-      expect(response.body).toHaveProperty('theme');
+      expect(response.body).toHaveProperty('error');
     });
   });
 
-  describe('Onboarding Checklist', () => {
-    it('should get checklist', async () => {
-      prismaMock.onboardingChecklist.findMany.mockResolvedValue([
-        { id: 'check-1', item: 'Create first policy', completed: true },
-        { id: 'check-2', item: 'Add team member', completed: false },
-        { id: 'check-3', item: 'Complete risk assessment', completed: false },
-      ] as any);
+  describe('Events', () => {
+    it('should track an onboarding event', async () => {
+      prismaMock.onboardingEvent.create.mockResolvedValue({
+        id: 'event-123',
+        eventType: 'step_viewed',
+      } as any);
 
+      // Frontend sends { eventType, flowName?, stepIndex?, metadata? }.
+      const response = await request(app)
+        .post('/api/onboarding/event')
+        .send({
+          eventType: 'step_viewed',
+          flowName: 'main',
+          stepIndex: 2,
+          metadata: { source: 'tour' },
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('event');
+      expect(response.body.event).toHaveProperty('id', 'event-123');
+    });
+
+    it('should reject an event without eventType', async () => {
+      const response = await request(app)
+        .post('/api/onboarding/event')
+        .send({ metadata: { foo: 'bar' } })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+    });
+  });
+
+  describe('Preferences', () => {
+    it('should update onboarding preferences', async () => {
+      prismaMock.onboardingProgress.upsert.mockResolvedValue({
+        ...mockProgress,
+        showHints: false,
+        reducedMotion: true,
+      } as any);
+
+      const response = await request(app)
+        .put('/api/onboarding/preferences')
+        .send({ showHints: false, reducedMotion: true })
+        .expect(200);
+
+      expect(response.body.progress).toHaveProperty('showHints', false);
+    });
+  });
+
+  describe('Checklist', () => {
+    it('should get the organization checklist (upserting if absent)', async () => {
       const response = await request(app)
         .get('/api/onboarding/checklist')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('checklist');
+      expect(response.body.checklist).toHaveProperty('organizationId', 'org-123');
     });
 
-    it('should mark checklist item complete', async () => {
-      prismaMock.onboardingChecklist.findFirst.mockResolvedValue({
-        id: 'check-2',
-        item: 'Add team member',
-        completed: false,
-      } as any);
-      prismaMock.onboardingChecklist.update.mockResolvedValue({
-        id: 'check-2',
-        completed: true,
-        completedAt: new Date(),
+    it('should update a checklist item', async () => {
+      prismaMock.onboardingChecklist.upsert.mockResolvedValue({
+        ...mockChecklist,
+        profileCompleted: true,
       } as any);
 
+      // Frontend sends Partial<OnboardingChecklist> (boolean field flags); the
+      // schema and controller both operate on those field names.
       const response = await request(app)
-        .post('/api/onboarding/checklist/check-2/complete')
+        .put('/api/onboarding/checklist')
+        .send({ profileCompleted: true })
         .expect(200);
 
-      expect(response.body.completed).toBe(true);
+      expect(response.body).toHaveProperty('checklist');
+      expect(response.body.checklist).toHaveProperty('profileCompleted', true);
+    });
+
+    it('should reject a checklist update with no recognized fields', async () => {
+      const response = await request(app)
+        .put('/api/onboarding/checklist')
+        .send({ itemId: 'profileCompleted', completed: true })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
     });
   });
 
-  describe('Onboarding Events', () => {
-    it('should track onboarding event', async () => {
-      prismaMock.onboardingEvent.create.mockResolvedValue({
-        id: 'event-123',
-        type: 'step_viewed',
-        step: 'frameworks',
-        timestamp: new Date(),
+  describe('Skip flow', () => {
+    it('should accept a skip-flow request shape', async () => {
+      prismaMock.onboardingProgress.upsert.mockResolvedValue({
+        ...mockProgress,
+        skippedFlows: ['tier_tour'],
       } as any);
 
+      // Frontend sends { flowName }; the schema and controller agree on that name.
       const response = await request(app)
-        .post('/api/onboarding/events')
-        .send({
-          type: 'step_viewed',
-          step: 'frameworks',
-          metadata: { timeSpent: 120 },
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should get onboarding analytics', async () => {
-      prismaMock.onboardingEvent.groupBy.mockResolvedValue([
-        { step: 'welcome', _count: { id: 1 }, _avg: { timeSpent: 30 } },
-        { step: 'frameworks', _count: { id: 1 }, _avg: { timeSpent: 180 } },
-      ] as any);
-
-      const response = await request(app)
-        .get('/api/onboarding/analytics')
+        .post('/api/onboarding/skip-flow')
+        .send({ flowName: 'tier_tour' })
         .expect(200);
 
-      expect(response.body).toHaveProperty('stepAnalytics');
-    });
-  });
-
-  describe('Demo Data', () => {
-    it('should load demo data', async () => {
-      prismaMock.riskItem.createMany.mockResolvedValue({ count: 5 } as any);
-      prismaMock.policy.createMany.mockResolvedValue({ count: 3 } as any);
-      prismaMock.control.createMany.mockResolvedValue({ count: 10 } as any);
-
-      const response = await request(app)
-        .post('/api/onboarding/demo-data')
-        .send({
-          includeRisks: true,
-          includePolicies: true,
-          includeControls: true,
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('loaded');
+      expect(response.body).toHaveProperty('progress');
+      expect(response.body.progress.skippedFlows).toContain('tier_tour');
     });
 
-    it('should clear demo data', async () => {
-      prismaMock.riskItem.deleteMany.mockResolvedValue({ count: 5 } as any);
-      prismaMock.policy.deleteMany.mockResolvedValue({ count: 3 } as any);
-
+    it('should reject a skip-flow request missing flowName', async () => {
       const response = await request(app)
-        .delete('/api/onboarding/demo-data')
-        .expect(200);
+        .post('/api/onboarding/skip-flow')
+        .send({ flow: 'tier_tour' })
+        .expect(400);
 
-      expect(response.body).toHaveProperty('cleared', true);
-    });
-  });
-
-  describe('Guided Tours', () => {
-    it('should get available tours', async () => {
-      const response = await request(app)
-        .get('/api/onboarding/tours')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should mark tour as completed', async () => {
-      prismaMock.userTourProgress.upsert.mockResolvedValue({
-        userId: 'user-123',
-        tourId: 'dashboard-tour',
-        completedAt: new Date(),
-      } as any);
-
-      const response = await request(app)
-        .post('/api/onboarding/tours/dashboard-tour/complete')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('completedAt');
+      expect(response.body).toHaveProperty('error');
     });
   });
 });

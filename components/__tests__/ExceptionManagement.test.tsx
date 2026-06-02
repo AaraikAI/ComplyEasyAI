@@ -66,10 +66,12 @@ describe('ExceptionManagement', () => {
     expect(screen.queryAllByText(/Exceptions|exceptions/i).length).toBeGreaterThan(0);
   });
 
-  it('displays mock exceptions in the list', async () => {
+  it('displays exceptions returned by the API in the list', async () => {
     await renderAndWait(<ExceptionManagement />);
-    const rows = document.querySelectorAll('tr, div[class*="cursor"]');
-    expect(rows.length).toBeGreaterThan(0);
+    // Titles come straight from the mocked /api/exceptions payload.
+    expect(screen.getByText('Legacy System MFA Exemption')).toBeInTheDocument();
+    expect(screen.getByText('Temporary Encryption Exception')).toBeInTheDocument();
+    expect(screen.getByText('Vendor Compliance Gap')).toBeInTheDocument();
   });
 
   it('shows stat cards', async () => {
@@ -80,8 +82,14 @@ describe('ExceptionManagement', () => {
 
   it('opens create exception form', async () => {
     await renderAndWait(<ExceptionManagement />);
-    const addBtn = screen.queryAllByText(/New Exception|Request Exception/i)[0] ?? null;
-    if (addBtn) fireEvent.click(addBtn);
+    // The toolbar action is labelled via t('exceptions.createException'); this suite
+    // stubs t() to echo the key, so query by that rendered text and require it.
+    const addBtn = screen.getByText('exceptions.createException');
+    expect(addBtn).toBeTruthy();
+    fireEvent.click(addBtn.closest('button')!);
+    // The modal exposes literal field labels that are not translated.
+    expect(screen.getByText('Control ID')).toBeInTheDocument();
+    expect(screen.getByText('Compensating Control')).toBeInTheDocument();
   });
 
   it('filters exceptions by search', async () => {
@@ -116,17 +124,23 @@ describe('ExceptionManagement', () => {
 
   it('opens detail view when exception is clicked', async () => {
     await renderAndWait(<ExceptionManagement />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) fireEvent.click(rows[0]);
+    const rows = document.querySelectorAll('div[class*="cursor-pointer"]');
+    expect(rows.length).toBeGreaterThan(0);
+    await act(async () => { fireEvent.click(rows[0]); });
+    // Detail view exposes literal, untranslated field labels.
+    expect(screen.getByText('Requested By')).toBeInTheDocument();
+    expect(screen.getByText('Framework')).toBeInTheDocument();
   });
 
   it('shows compensating controls in detail', async () => {
     await renderAndWait(<ExceptionManagement />);
-    const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');
-    if (rows.length > 0) {
-      fireEvent.click(rows[0]);
-      expect(screen.queryAllByText(/Compensating|compensating/i).length).toBeGreaterThan(0);
-    }
+    const rows = document.querySelectorAll('div[class*="cursor-pointer"]');
+    expect(rows.length).toBeGreaterThan(0);
+    await act(async () => { fireEvent.click(rows[0]); });
+    // The detail panel surfaces the compensating-controls section and the value
+    // mapped from the API record's compensatingControls string.
+    expect(screen.queryAllByText(/compensating/i).length).toBeGreaterThan(0);
+    expect(screen.getByText('VPN access required + IP whitelisting')).toBeInTheDocument();
   });
 
   it('approves an exception', async () => {

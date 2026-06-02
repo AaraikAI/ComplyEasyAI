@@ -8,7 +8,26 @@ vi.mock('@/contexts/AuthContext', () => ({ useAuth: vi.fn().mockReturnValue({ us
 vi.mock('@/services/api', () => ({ api: { euRegulations: { dsa: { getPlatforms: vi.fn().mockResolvedValue({ platforms: [] }), registerPlatform: vi.fn().mockResolvedValue({}), recordContentModeration: vi.fn().mockResolvedValue({}), getContentModerationHistory: vi.fn().mockResolvedValue([]), getTransparencyReports: vi.fn().mockResolvedValue([]) } } }, getAuthToken: vi.fn().mockReturnValue('token') }));
 
 describe('DSAPlatformManagement', () => {
-  it('should render', async () => { render(<DSAPlatformManagement />); await waitFor(() => { expect(screen.getAllByText(/DSA|Digital Services|platform/i).length).toBeGreaterThan(0); }); });
-  it('should handle empty data', async () => { render(<DSAPlatformManagement />); await waitFor(() => { expect(document.body.textContent!.length).toBeGreaterThan(0); }); });
-  it('should render content', async () => { render(<DSAPlatformManagement />); await waitFor(() => { expect(document.body.innerHTML.length).toBeGreaterThan(0); }); });
+  it('should render the platform statistics and registered-platforms panel', async () => {
+    render(<DSAPlatformManagement />);
+    await waitFor(() => { expect(screen.getByText('Registered Platforms')).toBeInTheDocument(); });
+    expect(screen.getByText('Total Platforms')).toBeInTheDocument();
+    expect(screen.getByText('VLOPs')).toBeInTheDocument();
+    expect(screen.getByText('VLOSE')).toBeInTheDocument();
+  });
+  it('should load platforms from the API and render the empty state when none exist', async () => {
+    const { api } = await import('@/services/api');
+    render(<DSAPlatformManagement />);
+    await waitFor(() => { expect(screen.getByText('No platforms registered yet')).toBeInTheDocument(); });
+    expect(api.euRegulations.dsa.getPlatforms).toHaveBeenCalled();
+  });
+  it('should render platform rows when the API returns platforms', async () => {
+    const { api } = await import('@/services/api');
+    (api.euRegulations.dsa.getPlatforms as any).mockResolvedValueOnce({
+      platforms: [{ id: 'p-1', platformName: 'Acme Social', platformType: 'online_platform', isVLOP: false, isVLOSE: false, complianceStatus: 'compliant' }],
+    });
+    render(<DSAPlatformManagement />);
+    await waitFor(() => { expect(screen.getByText('Acme Social')).toBeInTheDocument(); });
+    expect(screen.getByText('Record Moderation')).toBeInTheDocument();
+  });
 });

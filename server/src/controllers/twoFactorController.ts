@@ -6,6 +6,7 @@
 import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import twoFactorService from '../services/twoFactorService';
+import { logControllerAction } from '../services/auditLogService';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 
@@ -19,6 +20,10 @@ export const setupTwoFactor: RequestHandler = async (req: Request, res: Response
     const userEmail = authReq.user!.email;
 
     const setup = await twoFactorService.setupTwoFactor(userId, userEmail);
+
+    await logControllerAction(req, '2fa.setup_initiated', {
+      backupCodeCount: setup.backupCodes.length,
+    });
 
     res.json({
       success: true,
@@ -54,6 +59,8 @@ export const verifyAndEnable: RequestHandler = async (req: Request, res: Respons
     if (!verified) {
       throw new AppError('Invalid verification code', 400);
     }
+
+    await logControllerAction(req, '2fa.enabled', { ip: req.ip });
 
     res.json({
       success: true,
@@ -141,6 +148,8 @@ export const disableTwoFactor: RequestHandler = async (req: Request, res: Respon
       throw new AppError('Invalid token or backup code', 401);
     }
 
+    await logControllerAction(req, '2fa.disabled', { ip: req.ip });
+
     res.json({
       success: true,
       message: 'Two-factor authentication disabled successfully',
@@ -170,6 +179,10 @@ export const regenerateBackupCodes: RequestHandler = async (req: Request, res: R
     if (!backupCodes) {
       throw new AppError('Invalid token', 401);
     }
+
+    await logControllerAction(req, '2fa.backup_codes_regenerated', {
+      backupCodeCount: backupCodes.length,
+    });
 
     res.json({
       success: true,

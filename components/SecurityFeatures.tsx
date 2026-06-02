@@ -33,6 +33,22 @@ import { toast } from 'sonner';
 import { useSubmitGuard } from '../hooks/useSubmitGuard';
 import { logger } from '../utils/logger';
 
+/**
+ * Derive a fresh high-entropy proving secret for each ZK proof request.
+ * The backend binds the proof to whatever secret it receives, so every proof
+ * must use a unique cryptographically random value rather than a shared
+ * constant — reusing one secret across proofs would undermine the ZK binding.
+ */
+const generateProvingSecret = (): string => {
+  const bytes = new Uint8Array(32);
+  if (typeof globalThis.crypto?.getRandomValues === 'function') {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+};
+
 const SecurityFeatures: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { user } = useAuth();
   const { t } = useI18n();
@@ -651,7 +667,7 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
                 hash: credentialForm.credentialHash,
                 issuer: credentialForm.issuer,
                 expirationDate: credentialForm.expirationDate,
-              }, 'user-secret-key') as any;
+              }, generateProvingSecret()) as any;
               // Generate unique proof ID if not provided
               const proofWithId = {
                 ...proof,
@@ -762,7 +778,7 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
             try {
               const proof = await api.security.generateOwnershipProof(
                 ownershipForm.ownershipHash,
-                'user-secret-key',
+                generateProvingSecret(),
                 ownershipForm.assetId,
                 ownershipForm.assetType
               ) as any;

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { generatePhishingSim } from '../../services/geminiService';
-import { Mail, Loader2, ArrowLeft, RefreshCw, AlertTriangle, X, MessageSquare, HelpCircle } from 'lucide-react';
+import { Mail, Loader2, ArrowLeft, AlertTriangle, X, HelpCircle } from 'lucide-react';
 import { api } from '../../services/api';
 
 const DEPARTMENTS = [

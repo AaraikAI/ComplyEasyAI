@@ -18,6 +18,8 @@ import {
 import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import crypto from 'crypto';
+import { encryptField } from '../utils/credentialEncryption';
 
 const router = Router();
 router.use(authenticate);
@@ -499,6 +501,58 @@ router.get(
       if (error instanceof AppError) throw error;
       logger.error('Error fetching CI/CD gate result:', error);
       throw new AppError('Failed to fetch gate result', 500);
+    }
+  })
+);
+
+// ============================================================================
+// ROTATE INTEGRATION TOKEN (Admin only)
+// ============================================================================
+//
+// Generates a fresh server-side secret used to identify this organization's CI/CD
+// integration. Any client-supplied token in the body is ignored — the server is the
+// source of truth. The secret is encrypted at rest and persisted per-organization on
+// the shared Integration model under the 'cicd_gate' provider key, and returned in
+// plaintext exactly once so the operator can copy it.
+
+router.post(
+  '/integration/token',
+  authorize('admin'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as AuthRequest).user!;
+
+    try {
+      const secret = crypto.randomBytes(32).toString('hex');
+      const rotatedAt = new Date();
+
+      await prisma.integration.upsert({
+        where: {
+          organizationId_provider: {
+            organizationId: user.organizationId,
+            provider: 'cicd_gate',
+          },
+        },
+        create: {
+          organizationId: user.organizationId,
+          name: 'CI/CD Compliance Gate',
+          category: 'dev',
+          provider: 'cicd_gate',
+          connected: true,
+          config: { integrationSecret: encryptField(secret) },
+          lastSync: rotatedAt,
+        },
+        update: {
+          connected: true,
+          config: { integrationSecret: encryptField(secret) },
+          lastSync: rotatedAt,
+        },
+      });
+
+      res.json({ token: secret, rotatedAt: rotatedAt.toISOString() });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      logger.error('Error rotating CI/CD integration token:', error);
+      throw new AppError('Failed to rotate integration token', 500);
     }
   })
 );

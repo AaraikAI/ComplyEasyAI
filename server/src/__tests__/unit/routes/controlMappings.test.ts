@@ -14,6 +14,7 @@ jest.mock('../../../controllers/controlMappingsController', () => ({
   __esModule: true,
   default: {
     createMapping: jest.fn(),
+    listAllMappings: jest.fn(),
     getMappings: jest.fn(),
     updateMapping: jest.fn(),
     deleteMapping: jest.fn(),
@@ -79,8 +80,18 @@ describe('Control Mappings Routes', () => {
     expect(routes.find((r: any) => r.path === '/export/csv' && r.methods.includes('get'))).toBeDefined();
   });
 
-  it('should have exactly 5 routes', () => {
+  it('should have GET / route for listing all mappings', () => {
+    const routes = router.stack
+      .filter((layer: any) => layer.route)
+      .map((layer: any) => ({
+        path: layer.route.path,
+        methods: Object.keys(layer.route.methods),
+      }));
+    expect(routes.find((r: any) => r.path === '/' && r.methods.includes('get'))).toBeDefined();
+  });
+
+  it('should have exactly 6 routes', () => {
     const routes = router.stack.filter((layer: any) => layer.route);
-    expect(routes.length).toBe(5);
+    expect(routes.length).toBe(6);
   });
 });

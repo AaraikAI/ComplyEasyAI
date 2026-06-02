@@ -32,6 +32,12 @@ export interface TierRequest extends AuthRequest {
 // MIDDLEWARE FACTORIES
 // ============================================================================
 
+// Tier-gating responses (403/429/402) are returned directly rather than routed
+// through the global error handler: they are authorization decisions that carry
+// structured upgrade metadata (currentTier, requiredTier, upgradeUrl, code) that
+// the frontend consumes to render upgrade prompts. Unexpected internal failures
+// are still forwarded to the error handler via next(new AppError(...)).
+
 /**
  * Middleware to require a specific feature
  * Returns 403 if the feature is not available in the user's tier

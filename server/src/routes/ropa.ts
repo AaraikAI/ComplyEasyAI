@@ -386,49 +386,59 @@ router.get(
 
 // ============================================================================
 // UPDATE RECORD
+// PATCH and PUT both accepted. Frontend RoPAManagement.tsx uses PUT; older
+// callers use PATCH. Both forward to the same handler.
 // ============================================================================
+
+async function ropaUpdateHandler(req: Request, res: Response): Promise<void> {
+  const user = (req as AuthRequest).user!;
+  try {
+    const existing = await prisma.processingActivityRecord.findFirst({
+      where: { id: req.params.id, organizationId: user.organizationId },
+    });
+
+    if (!existing) {
+      throw new AppError('Processing activity record not found', 404);
+    }
+
+    const { pick } = await import('../utils/pick');
+    const updateData: Record<string, any> = pick(req.body, [
+      'activityName', 'activityDescription', 'controllerName', 'controllerContact',
+      'processorName', 'processorContact', 'dpoContact', 'purposes', 'lawfulBasis',
+      'legitimateInterestDetails', 'dataCategories', 'specialCategories',
+      'dataSubjectCategories', 'recipients', 'internationalTransfers',
+      'transferCountries', 'transferSafeguards', 'retentionPeriod',
+      'retentionJustification', 'technicalMeasures', 'organizationalMeasures',
+      'automatedDecisionMaking', 'automatedDecisionDetails', 'dpiaRequired',
+      'dpiaReference', 'status', 'nextReviewDate',
+    ]);
+
+    // Automatically update lastReviewDate on any edit
+    updateData.lastReviewDate = new Date();
+
+    const record = await prisma.processingActivityRecord.update({
+      where: { id: req.params.id },
+      data: updateData,
+    });
+
+    res.json(record);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    logger.error('Error updating RoPA record:', error);
+    throw new AppError('Failed to update RoPA record', 500);
+  }
+}
 
 router.patch(
   '/:id',
   validateBody(updateProcessingActivitySchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as AuthRequest).user!;
-    try {
-      const existing = await prisma.processingActivityRecord.findFirst({
-        where: { id: req.params.id, organizationId: user.organizationId },
-      });
+  asyncHandler(ropaUpdateHandler),
+);
 
-      if (!existing) {
-        throw new AppError('Processing activity record not found', 404);
-      }
-
-      const { pick } = await import('../utils/pick');
-      const updateData: Record<string, any> = pick(req.body, [
-        'activityName', 'activityDescription', 'controllerName', 'controllerContact',
-        'processorName', 'processorContact', 'dpoContact', 'purposes', 'lawfulBasis',
-        'legitimateInterestDetails', 'dataCategories', 'specialCategories',
-        'dataSubjectCategories', 'recipients', 'internationalTransfers',
-        'transferCountries', 'transferSafeguards', 'retentionPeriod',
-        'retentionJustification', 'technicalMeasures', 'organizationalMeasures',
-        'automatedDecisionMaking', 'automatedDecisionDetails', 'dpiaRequired',
-        'dpiaReference', 'status', 'nextReviewDate',
-      ]);
-
-      // Automatically update lastReviewDate on any edit
-      updateData.lastReviewDate = new Date();
-
-      const record = await prisma.processingActivityRecord.update({
-        where: { id: req.params.id },
-        data: updateData,
-      });
-
-      res.json(record);
-    } catch (error) {
-      if (error instanceof AppError) throw error;
-      logger.error('Error updating RoPA record:', error);
-      throw new AppError('Failed to update RoPA record', 500);
-    }
-  })
+router.put(
+  '/:id',
+  validateBody(updateProcessingActivitySchema),
+  asyncHandler(ropaUpdateHandler),
 );
 
 // ============================================================================

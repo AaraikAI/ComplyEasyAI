@@ -164,17 +164,67 @@ describe('E2E: Risk Management Flow', () => {
   });
 
   describe('Risk Scanning Workflow', () => {
-    it('should perform risk scan and process results', async () => {
-      // The /scan endpoint may not exist or returns different status codes
+    it('should perform risk scan and return detected risks with scan totals', async () => {
+      // POST /api/risks/scan -> risksController.scan reads frameworks + integrations,
+      // creates risk items for at-risk controls, then writes an audit log. With no
+      // frameworks or integrations the scan completes cleanly with an empty result set.
+      prismaMock.complianceFramework.findMany.mockResolvedValue([] as any);
+      prismaMock.integration.findMany.mockResolvedValue([] as any);
+      prismaMock.auditLog.create.mockResolvedValue({} as any);
+
       const response = await request(app)
         .post('/api/risks/scan')
         .send({
           organizationId: 'org-123',
           scanType: 'full',
-        });
+        })
+        .expect(200);
 
-      // The /scan route does not exist in the risks router; accept any error status
-      expect([200, 404, 500]).toContain(response.status);
+      expect(response.body).toHaveProperty('message', 'Risk scan completed');
+      expect(Array.isArray(response.body.newRisks)).toBe(true);
+      expect(response.body.newRisks).toHaveLength(0);
+      expect(response.body.totalScanned).toEqual({ frameworks: 0, integrations: 0 });
+    });
+
+    it('should create risk items for non-compliant controls during a scan', async () => {
+      // A framework with a Failed control must yield one new High-severity risk item.
+      prismaMock.complianceFramework.findMany.mockResolvedValue([
+        {
+          id: 'fw-1',
+          name: 'SOC 2',
+          organizationId: 'org-123',
+          progress: 80,
+          status: 'In_Progress',
+          nextAuditDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+          controls: [
+            { id: 'c-1', name: 'Access Control', status: 'Failed', description: 'desc', evidence: 'ev' },
+          ],
+        },
+      ] as any);
+      prismaMock.integration.findMany.mockResolvedValue([] as any);
+      prismaMock.riskItem.findFirst.mockResolvedValue(null);
+      const createdRisk = createMockRiskItem({ id: 'risk-scan-1', title: 'Non-Compliant Control: Access Control', severity: 'High' });
+      prismaMock.riskItem.create.mockResolvedValue(createdRisk);
+      prismaMock.auditLog.create.mockResolvedValue({} as any);
+
+      const response = await request(app)
+        .post('/api/risks/scan')
+        .send({ scanType: 'full' })
+        .expect(200);
+
+      expect(prismaMock.riskItem.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            title: 'Non-Compliant Control: Access Control',
+            severity: 'High',
+            category: 'Compliance',
+            organizationId: 'org-123',
+            status: 'Open',
+          }),
+        }),
+      );
+      expect(response.body.newRisks).toHaveLength(1);
+      expect(response.body.totalScanned.frameworks).toBe(1);
     });
   });
 });

@@ -130,8 +130,8 @@ describe('LivenessDetectionService', () => {
   // createChallenge
   // ===========================================================================
   describe('createChallenge', () => {
-    it('should create a challenge with default 3 actions', () => {
-      const challenge = livenessDetectionService.createChallenge();
+    it('should create a challenge with default 3 actions', async () => {
+      const challenge = await livenessDetectionService.createChallenge();
 
       expect(challenge).toHaveProperty('challengeId');
       expect(challenge).toHaveProperty('actions');
@@ -140,42 +140,42 @@ describe('LivenessDetectionService', () => {
       expect(challenge.actions.length).toBe(3);
     });
 
-    it('should create a challenge with specified number of actions', () => {
-      const challenge = livenessDetectionService.createChallenge(5);
+    it('should create a challenge with specified number of actions', async () => {
+      const challenge = await livenessDetectionService.createChallenge(5);
 
       expect(challenge.actions.length).toBe(5);
     });
 
-    it('should store the challenge for later verification', () => {
-      const challenge = livenessDetectionService.createChallenge();
+    it('should store the challenge for later verification', async () => {
+      const challenge = await livenessDetectionService.createChallenge();
 
       const stored = (livenessDetectionService as any).activeChallenges.get(challenge.challengeId);
       expect(stored).toBeDefined();
       expect(stored.challengeId).toBe(challenge.challengeId);
     });
 
-    it('should set an expiration in the future', () => {
-      const challenge = livenessDetectionService.createChallenge();
+    it('should set an expiration in the future', async () => {
+      const challenge = await livenessDetectionService.createChallenge();
 
       expect(new Date(challenge.expiresAt).getTime()).toBeGreaterThan(Date.now());
     });
 
-    it('should generate unique challenge IDs', () => {
-      const c1 = livenessDetectionService.createChallenge();
-      const c2 = livenessDetectionService.createChallenge();
+    it('should generate unique challenge IDs', async () => {
+      const c1 = await livenessDetectionService.createChallenge();
+      const c2 = await livenessDetectionService.createChallenge();
 
       expect(c1.challengeId).not.toBe(c2.challengeId);
     });
 
-    it('should include action order', () => {
-      const challenge = livenessDetectionService.createChallenge(3);
+    it('should include action order', async () => {
+      const challenge = await livenessDetectionService.createChallenge(3);
 
       const orders = challenge.actions.map(a => a.order);
       expect(orders).toEqual([1, 2, 3]);
     });
 
-    it('should include timeoutMs for each action', () => {
-      const challenge = livenessDetectionService.createChallenge();
+    it('should include timeoutMs for each action', async () => {
+      const challenge = await livenessDetectionService.createChallenge();
 
       for (const action of challenge.actions) {
         expect(typeof action.timeoutMs).toBe('number');
@@ -197,7 +197,7 @@ describe('LivenessDetectionService', () => {
     });
 
     it('should throw for expired challenge', async () => {
-      const challenge = livenessDetectionService.createChallenge();
+      const challenge = await livenessDetectionService.createChallenge();
       // Manually expire it
       const stored = (livenessDetectionService as any).activeChallenges.get(challenge.challengeId);
       stored.expiresAt = new Date(Date.now() - 10000);
@@ -210,7 +210,7 @@ describe('LivenessDetectionService', () => {
     });
 
     it('should clean up challenge after verification', async () => {
-      const challenge = livenessDetectionService.createChallenge(1);
+      const challenge = await livenessDetectionService.createChallenge(1);
       const frames = [
         { buffer: Buffer.alloc(100), timestamp: 0 },
         { buffer: Buffer.alloc(100), timestamp: 100 },
@@ -224,7 +224,7 @@ describe('LivenessDetectionService', () => {
     });
 
     it('should return LivenessResult with challengeResults', async () => {
-      const challenge = livenessDetectionService.createChallenge(2);
+      const challenge = await livenessDetectionService.createChallenge(2);
       const frames = [
         { buffer: Buffer.alloc(100), timestamp: 0 },
         { buffer: Buffer.alloc(100), timestamp: 100 },

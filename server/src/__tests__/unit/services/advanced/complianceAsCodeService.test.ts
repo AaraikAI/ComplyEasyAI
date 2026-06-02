@@ -23,6 +23,16 @@ jest.mock('fs', () => ({
   unlinkSync: jest.fn(),
 }));
 
+// In production OPA_ENDPOINT is a trusted internal host that passes the SSRF allowlist;
+// the default test endpoint (http://localhost:8181) is blocked by isUrlSafe. Treat the
+// configured OPA endpoint as safe here so these tests exercise the policy-evaluation flow
+// rather than the SSRF guard (which has its own dedicated tests in urlValidator).
+jest.mock('../../../../utils/urlValidator', () => ({
+  __esModule: true,
+  isUrlSafe: jest.fn().mockReturnValue(true),
+  isWebhookUrlSafe: jest.fn().mockReturnValue(true),
+}));
+
 jest.mock('../../../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
@@ -73,6 +83,11 @@ describe('ComplianceAsCodeService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // resetMocks:true clears the factory return value; re-arm the SSRF allowlist stub.
+    const { isUrlSafe, isWebhookUrlSafe } = require('../../../../utils/urlValidator');
+    isUrlSafe.mockReturnValue(true);
+    isWebhookUrlSafe.mockReturnValue(true);
 
     const axios = require('axios').default;
     axios.post.mockResolvedValue({ data: { result: true } });
@@ -163,12 +178,17 @@ describe('ComplianceAsCodeService', () => {
       const axios = require('axios').default;
       axios.post.mockRejectedValueOnce(new Error('OPA unavailable'));
 
-      // In production mode, OPA failure should propagate
+      // In production mode, OPA failure should propagate. Restore NODE_ENV in finally
+      // so a failed assertion cannot leak the 'production' value into later suites.
+      const priorNodeEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
-      await expect(
-        complianceAsCodeService.evaluatePolicy('nonexistent', {})
-      ).rejects.toThrow();
-      process.env.NODE_ENV = 'test';
+      try {
+        await expect(
+          complianceAsCodeService.evaluatePolicy('nonexistent', {})
+        ).rejects.toThrow();
+      } finally {
+        process.env.NODE_ENV = priorNodeEnv;
+      }
     });
 
     it('should handle OPA evaluation failure gracefully', async () => {

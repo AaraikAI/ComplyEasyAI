@@ -21,6 +21,8 @@ import {
   aiEvidenceCompletenessSchema,
   aiAgenticVendorRiskSchema,
   aiAuditSimulationSchema,
+  aiSaveAuditSimulationSchema,
+  aiUpdateAuditSimulationSchema,
   aiNlQuerySchema,
   aiCopilotSchema,
   aiForecastSchema,
@@ -52,6 +54,10 @@ router.post('/auto-remediation', ...requireAiFeature('aiGapAnalysis'), validateB
 router.post('/evidence-completeness', ...requireAiFeature('aiGapAnalysis'), validateBody(aiEvidenceCompletenessSchema), asyncHandler(aiController.checkEvidenceCompleteness.bind(aiController)));
 router.post('/agentic-vendor-risk', ...requireAiFeature('aiVendorScorer'), validateBody(aiAgenticVendorRiskSchema), asyncHandler(aiController.agenticVendorRisk.bind(aiController)));
 router.post('/audit-simulation', ...requireAiFeature('aiGapAnalysis'), validateBody(aiAuditSimulationSchema), asyncHandler(aiController.simulateAudit.bind(aiController)));
+// Persistence for completed audit-readiness simulations (SimulationScenario, scenarioType 'audit_readiness').
+router.get('/audit-simulations', ...requireAiFeature('aiGapAnalysis'), asyncHandler(aiController.listAuditSimulations.bind(aiController)));
+router.post('/audit-simulations', ...requireAiFeature('aiGapAnalysis'), validateBody(aiSaveAuditSimulationSchema), asyncHandler(aiController.saveAuditSimulation.bind(aiController)));
+router.patch('/audit-simulations/:id', ...requireAiFeature('aiGapAnalysis'), validateBody(aiUpdateAuditSimulationSchema), asyncHandler(aiController.updateAuditSimulation.bind(aiController)));
 router.post('/nl-query', enforceLimit('maxAiRequestsPerMonth'), validateBody(aiNlQuerySchema), asyncHandler(aiController.naturalLanguageQuery.bind(aiController)));
 router.post('/copilot', enforceLimit('maxAiRequestsPerMonth'), validateBody(aiCopilotSchema), asyncHandler(aiController.complianceCopilot.bind(aiController)));
 router.post('/forecast', ...requireAiFeature('aiGapAnalysis'), validateBody(aiForecastSchema), asyncHandler(aiController.forecastComplianceScore.bind(aiController)));

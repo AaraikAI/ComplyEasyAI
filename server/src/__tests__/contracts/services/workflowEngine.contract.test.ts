@@ -198,13 +198,17 @@ describe('WorkflowEngineService contract', () => {
 
       await workflowEngine.processEvent('risk.created', {}, 'org-123');
 
+      // Notification shape: unread state is tracked via status:'unread'
+      // (not a boolean read flag), with workflow category + in_app channel.
       expect(prismaMock.notification.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           userId: 'user-1',
           organizationId: 'org-123',
           title: 'Risk Alert',
           message: 'New risk detected',
-          read: false,
+          status: 'unread',
+          category: 'workflow',
+          channels: ['in_app'],
         }),
       });
     });

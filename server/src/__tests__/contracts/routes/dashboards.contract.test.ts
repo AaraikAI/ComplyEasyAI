@@ -18,8 +18,15 @@ jest.mock('../../../middleware/auth', () => ({
     if ((req as any).user) { next(); return; }
     res.status(401).json({ error: 'No token provided' });
   },
-  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => {
+  // Role-aware mock mirroring the real authorize(): 401 when unauthenticated, 403 when the
+  // caller's role is not in the allow-list. (Dashboard mutations additionally enforce
+  // owner-or-admin checks inline in the route handlers, which the tests below exercise.)
+  authorize: (...roles: string[]) => (req: any, res: any, next: any) => {
     if (!(req as any).user) { res.status(401).json({ error: 'Authentication required' }); return; }
+    if (roles.length > 0 && !roles.includes((req as any).user.role)) {
+      res.status(403).json({ error: 'Insufficient permissions' });
+      return;
+    }
     next();
   },
   AuthRequest: {},

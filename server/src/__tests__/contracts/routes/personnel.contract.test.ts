@@ -78,7 +78,14 @@ describe('Personnel API — Contract Tests', () => {
       const res = await request(app)
         .post('/api/personnel/')
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ department: 'Engineering', title: 'Engineer', startDate: '2025-01-01' });
+        .send({
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+          department: 'Engineering',
+          title: 'Engineer',
+          startDate: '2025-01-01',
+        });
       expect(res.status).toBe(201);
     });
 
@@ -118,7 +125,8 @@ describe('Personnel API — Contract Tests', () => {
       const res = await request(app)
         .post('/api/personnel/access-reviews')
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ personnelId: 'p-1', type: 'quarterly' });
+        // schema field is reviewType (not type); unknown fields are rejected
+        .send({ personnelId: 'p-1', reviewType: 'quarterly' });
       expect(res.status).toBe(201);
     });
   });
@@ -130,7 +138,9 @@ describe('Personnel API — Contract Tests', () => {
       const res = await request(app)
         .post('/api/personnel/access-reviews/ar-1/complete')
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ findings: [], decision: 'approve' });
+        // completeAccessReviewSchema requires `decision`; `findings` is not a
+        // schema field (recommendations/revokedAccess are), so omit it.
+        .send({ decision: 'approve', recommendations: [] });
       expect(res.status).toBe(200);
     });
   });

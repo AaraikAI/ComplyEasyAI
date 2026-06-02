@@ -2,6 +2,11 @@
  * E2E Tests - WebSocket Flow
  * Tests real-time WebSocket communication including authentication,
  * organization room broadcasting, and event handling.
+ *
+ * This suite drives the REAL WebSocketService (server/src/services/websocketService.ts):
+ * the production auth middleware, connection handler, ownership-checked subscribe
+ * flow, and public broadcast helpers are all exercised here, so regressions in that
+ * service are caught rather than masked by a hand-copied reimplementation.
  */
 
 import { jest, describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
@@ -35,6 +40,7 @@ jest.mock('../../config', () => ({
 
 import { Server as SocketIOServer } from 'socket.io';
 import { io as ioClient, Socket as ClientSocket } from 'socket.io-client';
+import websocketService from '../../services/websocketService';
 
 const JWT_SECRET = 'test-secret-key-minimum-32-chars!!!';
 const TEST_PORT = 9876;
@@ -56,91 +62,16 @@ describe('E2E: WebSocket Flow', () => {
   beforeAll((done) => {
     httpServer = createServer();
 
-    ioServer = new SocketIOServer(httpServer, {
-      cors: { origin: '*', credentials: true },
-      path: '/ws',
-      transports: ['websocket', 'polling'],
-    });
-
-    // Setup authentication middleware (mirrors WebSocketService)
-    ioServer.use(async (socket, next) => {
-      try {
-        const token = socket.handshake.auth.token ||
-          socket.handshake.headers.authorization?.split(' ')[1];
-
-        if (!token) {
-          return next(new Error('Authentication token required'));
-        }
-
-        const decoded = jwt.verify(token, JWT_SECRET) as {
-          userId: string;
-          email: string;
-          role: string;
-          organizationId: string;
-        };
-
-        const user = await prismaMock.user.findUnique({
-          where: { id: decoded.userId },
-          select: { id: true, email: true, role: true, organizationId: true },
-        });
-
-        if (!user) {
-          return next(new Error('User not found'));
-        }
-
-        (socket as any).userId = user.id;
-        (socket as any).organizationId = user.organizationId;
-        (socket as any).userEmail = user.email;
-        (socket as any).userRole = user.role;
-
-        next();
-      } catch (error) {
-        next(new Error('Authentication failed'));
-      }
-    });
-
-    // Setup connection handler (mirrors WebSocketService)
-    ioServer.on('connection', (socket) => {
-      const userId = (socket as any).userId;
-      const organizationId = (socket as any).organizationId;
-
-      if (!userId || !organizationId) {
-        socket.disconnect();
-        return;
-      }
-
-      // Join organization room
-      socket.join(`org:${organizationId}`);
-      socket.join(`user:${userId}`);
-
-      // Send connection confirmation
-      socket.emit('connected', {
-        message: 'Connected to real-time server',
-        userId,
-        organizationId,
-      });
-
-      // Ping/pong
-      socket.on('ping', () => {
-        socket.emit('pong', { timestamp: new Date() });
-      });
-
-      // Resource subscription
-      socket.on('subscribe', (data: { resource: string; id: string }) => {
-        socket.join(`${data.resource}:${data.id}`);
-        socket.emit('subscribed', { resource: data.resource, id: data.id });
-      });
-
-      socket.on('unsubscribe', (data: { resource: string; id: string }) => {
-        socket.leave(`${data.resource}:${data.id}`);
-      });
-    });
+    // Initialize the actual production WebSocket service against this http server.
+    // This wires the real authentication middleware + connection/subscribe handlers.
+    websocketService.initialize(httpServer);
+    ioServer = websocketService.getIO() as SocketIOServer;
 
     httpServer.listen(TEST_PORT, done);
   });
 
   afterAll((done) => {
-    ioServer.close();
+    if (ioServer) ioServer.close();
     httpServer.close(done);
   });
 
@@ -253,12 +184,14 @@ describe('E2E: WebSocket Flow', () => {
   });
 
   // ============================================================================
-  // RESOURCE SUBSCRIPTIONS
+  // RESOURCE SUBSCRIPTIONS (ownership-checked in the real service)
   // ============================================================================
 
   describe('Resource Subscriptions', () => {
-    it('should subscribe to resource room and receive targeted events', (done) => {
+    it('should subscribe to an owned resource room and receive targeted events', (done) => {
       const token = generateToken();
+      // The real handleSubscribe verifies org ownership via prisma.riskItem.findFirst.
+      prismaMock.riskItem.findFirst.mockResolvedValue({ id: 'risk-123' } as any);
 
       clientSocket = ioClient(`http://localhost:${TEST_PORT}`, {
         path: '/ws',
@@ -274,8 +207,16 @@ describe('E2E: WebSocket Flow', () => {
         expect(data.resource).toBe('risk');
         expect(data.id).toBe('risk-123');
 
-        // Now emit from server to the room
-        ioServer.to('risk:risk-123').emit('risk:updated', {
+        // Verify the ownership check ran against the correct org-scoped delegate.
+        expect(prismaMock.riskItem.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'risk-123', organizationId: 'org-123' },
+            select: { id: true },
+          }),
+        );
+
+        // Drive the production broadcastToResource helper to the joined room.
+        websocketService.broadcastToResource('risk', 'risk-123', 'risk:updated', {
           action: 'updated',
           risk: { id: 'risk-123', title: 'Updated Risk' },
         });
@@ -287,14 +228,35 @@ describe('E2E: WebSocket Flow', () => {
         done();
       });
     });
-  });
 
-  // ============================================================================
-  // SERVER-SIDE BROADCASTING
-  // ============================================================================
+    it('should reject subscribe for a resource not owned by the organization', (done) => {
+      const token = generateToken();
+      // Ownership check returns null -> subscribe must be denied (cross-tenant guard).
+      prismaMock.riskItem.findFirst.mockResolvedValue(null as any);
 
-  describe('Server-Side Event Broadcasting', () => {
-    it('should receive organization broadcast from server', (done) => {
+      clientSocket = ioClient(`http://localhost:${TEST_PORT}`, {
+        path: '/ws',
+        transports: ['websocket'],
+        auth: { token },
+      });
+
+      clientSocket.on('connected', () => {
+        clientSocket.emit('subscribe', { resource: 'risk', id: 'risk-foreign' });
+      });
+
+      clientSocket.on('subscribe:error', (data: any) => {
+        expect(data.resource).toBe('risk');
+        expect(data.id).toBe('risk-foreign');
+        expect(data.reason).toBe('not_found');
+        done();
+      });
+
+      clientSocket.on('subscribed', () => {
+        done(new Error('Should not have subscribed to a non-owned resource'));
+      });
+    });
+
+    it('should reject subscribe for an unknown resource type', (done) => {
       const token = generateToken();
 
       clientSocket = ioClient(`http://localhost:${TEST_PORT}`, {
@@ -304,12 +266,36 @@ describe('E2E: WebSocket Flow', () => {
       });
 
       clientSocket.on('connected', () => {
-        // Simulate server-side broadcast
-        ioServer.to('org:org-123').emit('integration:sync', {
-          provider: 'slack',
-          status: 'completed',
-          timestamp: new Date(),
-        });
+        clientSocket.emit('subscribe', { resource: 'unknownThing', id: 'x' });
+      });
+
+      clientSocket.on('subscribe:error', (data: any) => {
+        expect(data.reason).toBe('unknown_resource');
+        done();
+      });
+
+      clientSocket.on('subscribed', () => {
+        done(new Error('Should not have subscribed to an unknown resource type'));
+      });
+    });
+  });
+
+  // ============================================================================
+  // SERVER-SIDE BROADCASTING (real WebSocketService public methods)
+  // ============================================================================
+
+  describe('Server-Side Event Broadcasting', () => {
+    it('should receive organization broadcast via broadcastIntegrationSync', (done) => {
+      const token = generateToken();
+
+      clientSocket = ioClient(`http://localhost:${TEST_PORT}`, {
+        path: '/ws',
+        transports: ['websocket'],
+        auth: { token },
+      });
+
+      clientSocket.on('connected', () => {
+        websocketService.broadcastIntegrationSync('org-123', 'slack', 'completed');
       });
 
       clientSocket.on('integration:sync', (data: any) => {
@@ -319,7 +305,7 @@ describe('E2E: WebSocket Flow', () => {
       });
     });
 
-    it('should receive user-specific notification', (done) => {
+    it('should receive user-specific notification via sendNotification', (done) => {
       const token = generateToken();
 
       clientSocket = ioClient(`http://localhost:${TEST_PORT}`, {
@@ -329,8 +315,7 @@ describe('E2E: WebSocket Flow', () => {
       });
 
       clientSocket.on('connected', () => {
-        // Send notification to specific user
-        ioServer.to('user:user-123').emit('notification', {
+        websocketService.sendNotification('user-123', {
           title: 'Task Completed',
           message: 'Your risk assessment has been reviewed',
           type: 'success',
@@ -344,7 +329,7 @@ describe('E2E: WebSocket Flow', () => {
       });
     });
 
-    it('should receive framework update broadcast', (done) => {
+    it('should receive framework update broadcast via broadcastFrameworkUpdate', (done) => {
       const token = generateToken();
 
       clientSocket = ioClient(`http://localhost:${TEST_PORT}`, {
@@ -354,10 +339,9 @@ describe('E2E: WebSocket Flow', () => {
       });
 
       clientSocket.on('connected', () => {
-        ioServer.to('org:org-123').emit('framework:updated', {
-          action: 'created',
-          framework: { id: 'fw-1', name: 'SOC 2' },
-          timestamp: new Date(),
+        websocketService.broadcastFrameworkUpdate('org-123', 'created', {
+          id: 'fw-1',
+          name: 'SOC 2',
         });
       });
 
@@ -368,7 +352,7 @@ describe('E2E: WebSocket Flow', () => {
       });
     });
 
-    it('should receive AI task status updates', (done) => {
+    it('should receive AI task status updates via broadcastAITaskStatus', (done) => {
       const token = generateToken();
 
       clientSocket = ioClient(`http://localhost:${TEST_PORT}`, {
@@ -378,11 +362,8 @@ describe('E2E: WebSocket Flow', () => {
       });
 
       clientSocket.on('connected', () => {
-        ioServer.to('org:org-123').emit('ai:task:status', {
-          taskId: 'task-1',
-          status: 'completed',
-          data: { result: 'Risk assessment complete' },
-          timestamp: new Date(),
+        websocketService.broadcastAITaskStatus('org-123', 'task-1', 'completed', {
+          result: 'Risk assessment complete',
         });
       });
 
@@ -391,6 +372,33 @@ describe('E2E: WebSocket Flow', () => {
         expect(data.status).toBe('completed');
         done();
       });
+    });
+  });
+
+  // ============================================================================
+  // PRESENCE TRACKING (real connectedUsers map)
+  // ============================================================================
+
+  describe('Presence Tracking', () => {
+    it('should track the connected user in the organization presence map', (done) => {
+      const token = generateToken();
+
+      clientSocket = ioClient(`http://localhost:${TEST_PORT}`, {
+        path: '/ws',
+        transports: ['websocket'],
+        auth: { token },
+      });
+
+      clientSocket.on('connected', () => {
+        // Allow the connection handler to register the socket before asserting.
+        setTimeout(() => {
+          expect(websocketService.getConnectedUsersCount('org-123')).toBeGreaterThanOrEqual(1);
+          expect(websocketService.isUserOnline('user-123')).toBe(true);
+          done();
+        }, 20);
+      });
+
+      clientSocket.on('connect_error', (err: Error) => done(err));
     });
   });
 });

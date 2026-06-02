@@ -83,6 +83,26 @@ describe('EvidenceHub', () => {
     });
   });
 
+  it('switches to Evidence Detail tab when clicked', async () => {
+    // The detail tab opens the EvidenceDetailPanel when an evidence id is present
+    // in the URL (path or query); seed it via the query string.
+    renderWithRouter('/evidence?evidenceId=ev-123');
+    fireEvent.click(screen.getByText('Evidence Detail'));
+    await waitFor(() => {
+      expect(screen.getByTestId('evidence-detail-panel')).toBeInTheDocument();
+    });
+  });
+
+  it('prompts for an evidence id on the Detail tab when none is supplied', async () => {
+    renderWithRouter();
+    fireEvent.click(screen.getByText('Evidence Detail'));
+    // Without an id, the detail tab renders an input prompt rather than the panel.
+    await waitFor(() => {
+      expect(screen.getByText('Open Evidence Detail')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('evidence-detail-panel')).not.toBeInTheDocument();
+  });
+
   it('navigating between tabs preserves correct active state', async () => {
     renderWithRouter();
     fireEvent.click(screen.getByText('Exceptions'));

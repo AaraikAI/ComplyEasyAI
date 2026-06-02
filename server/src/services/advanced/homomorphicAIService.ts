@@ -1033,8 +1033,15 @@ class HomomorphicAIService {
   }
 
   /**
-   * Perform neural network inference on encrypted data
-   * Implements a simple feedforward network operating on CKKS-encrypted values
+   * Feedforward neural network inference over plaintext-encoded values.
+   *
+   * IMPORTANT: this path operates on the numeric `value` of each input directly and
+   * therefore provides NO homomorphic privacy guarantee — it is a fast reference
+   * evaluator for clients that have already decrypted their inputs. For inference
+   * that keeps data encrypted end-to-end, use `encryptedNeuralNetworkInference`,
+   * which evaluates the network on CKKS ciphertext via the SEAL evaluator.
+   * The audit record below is written with `encrypted:false` to avoid overstating
+   * the privacy level.
    */
   async performEncryptedNeuralInference(
     organizationId: string,
@@ -1160,10 +1167,11 @@ class HomomorphicAIService {
 
       const totalComputationTime = Date.now() - startTime;
 
-      // Store computation record
+      // Store computation record. This evaluator runs on plaintext-encoded inputs,
+      // so the record is explicit that no homomorphic encryption was applied.
       await prisma.auditLog.create({
         data: {
-          action: 'homomorphic.neural_inference',
+          action: 'inference.plaintext_neural',
           organizationId,
           hash: crypto.createHash('sha256').update(JSON.stringify({
             inputCount: encryptedInputs.length,
@@ -1177,6 +1185,8 @@ class HomomorphicAIService {
             layerCount: modelConfig.layers.length,
             totalComputationTime,
             noiseEstimate: totalNoise,
+            encrypted: false,
+            privacy: 'none',
           }),
         },
       });
@@ -1222,8 +1232,13 @@ class HomomorphicAIService {
   }
 
   /**
-   * Perform encrypted batch classification
-   * Classifies multiple encrypted data points in parallel
+   * Batch classifier over plaintext-encoded feature vectors.
+   *
+   * IMPORTANT: like `performEncryptedNeuralInference`, this evaluates logits/softmax
+   * on the numeric `value` of each feature directly and provides NO homomorphic
+   * privacy guarantee — callers must have already decrypted their features. It is
+   * intentionally NOT used for end-to-end encrypted classification; that requires
+   * the SEAL ciphertext path. The audit record is written with `encrypted:false`.
    */
   async performEncryptedBatchClassification(
     organizationId: string,
@@ -1295,6 +1310,26 @@ class HomomorphicAIService {
       }
 
       const processingTime = Date.now() - startTime;
+
+      // Audit record is explicit that this batch ran on plaintext-encoded features.
+      await prisma.auditLog.create({
+        data: {
+          action: 'inference.plaintext_batch_classification',
+          organizationId,
+          hash: crypto.createHash('sha256').update(JSON.stringify({
+            batchSize: encryptedBatch.length,
+            classifierType: classifierConfig.type,
+          })).digest('hex'),
+          details: JSON.stringify({
+            classifierType: classifierConfig.type,
+            batchSize: encryptedBatch.length,
+            classLabels: classifierConfig.classLabels,
+            processingTime,
+            encrypted: false,
+            privacy: 'none',
+          }),
+        },
+      });
 
       logger.info(`[HomomorphicAI] Batch classification: ${results.length} items in ${processingTime}ms`);
 

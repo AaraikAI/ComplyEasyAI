@@ -31,23 +31,46 @@ jest.mock('../../../middleware/auth', () => ({
 }));
 
 const mockSoxService = {
-  getSOXDashboard: jest.fn<any>().mockResolvedValue({ complianceScore: 85, totalControls: 50 }),
-  getSOXControls: jest.fn<any>().mockResolvedValue([]),
-  createSOXControl: jest.fn<any>().mockResolvedValue({ id: 'ctrl-1', name: 'Test' }),
-  getSOXControlById: jest.fn<any>().mockResolvedValue({ id: 'ctrl-1' }),
-  updateSOXControl: jest.fn<any>().mockResolvedValue({ id: 'ctrl-1', updated: true }),
-  deleteSOXControl: jest.fn<any>().mockResolvedValue(undefined),
-  getSOXTestResults: jest.fn<any>().mockResolvedValue([]),
-  createSOXTestResult: jest.fn<any>().mockResolvedValue({ id: 'test-1' }),
-  getSOXTestResultById: jest.fn<any>().mockResolvedValue({ id: 'test-1' }),
-  updateSOXTestResult: jest.fn<any>().mockResolvedValue({ id: 'test-1', updated: true }),
-  deleteSOXTestResult: jest.fn<any>().mockResolvedValue(undefined),
-  getSOXAssessments: jest.fn<any>().mockResolvedValue([]),
-  createSOXAssessment: jest.fn<any>().mockResolvedValue({ id: 'assess-1' }),
-  getSOXAssessmentById: jest.fn<any>().mockResolvedValue({ id: 'assess-1' }),
-  updateSOXAssessment: jest.fn<any>().mockResolvedValue({ id: 'assess-1', updated: true }),
-  deleteSOXAssessment: jest.fn<any>().mockResolvedValue(undefined),
-  generateSOXReport: jest.fn<any>().mockResolvedValue({ report: 'data' }),
+  getSOXDashboard: jest.fn<any>(),
+  getSOXControls: jest.fn<any>(),
+  createSOXControl: jest.fn<any>(),
+  getSOXControlById: jest.fn<any>(),
+  updateSOXControl: jest.fn<any>(),
+  deleteSOXControl: jest.fn<any>(),
+  getSOXTestResults: jest.fn<any>(),
+  createSOXTestResult: jest.fn<any>(),
+  getSOXTestResultById: jest.fn<any>(),
+  updateSOXTestResult: jest.fn<any>(),
+  deleteSOXTestResult: jest.fn<any>(),
+  getSOXAssessments: jest.fn<any>(),
+  createSOXAssessment: jest.fn<any>(),
+  getSOXAssessmentById: jest.fn<any>(),
+  updateSOXAssessment: jest.fn<any>(),
+  deleteSOXAssessment: jest.fn<any>(),
+  generateSOXReport: jest.fn<any>(),
+};
+
+// jest.config sets resetMocks:true, which clears these implementations before
+// each test. Re-install the default resolved values in beforeEach so handlers
+// receive a record (otherwise getById returns undefined → 404).
+const installSoxDefaults = () => {
+  mockSoxService.getSOXDashboard.mockResolvedValue({ complianceScore: 85, totalControls: 50 });
+  mockSoxService.getSOXControls.mockResolvedValue([]);
+  mockSoxService.createSOXControl.mockResolvedValue({ id: 'ctrl-1', name: 'Test' });
+  mockSoxService.getSOXControlById.mockResolvedValue({ id: 'ctrl-1' });
+  mockSoxService.updateSOXControl.mockResolvedValue({ id: 'ctrl-1', updated: true });
+  mockSoxService.deleteSOXControl.mockResolvedValue(undefined);
+  mockSoxService.getSOXTestResults.mockResolvedValue([]);
+  mockSoxService.createSOXTestResult.mockResolvedValue({ id: 'test-1' });
+  mockSoxService.getSOXTestResultById.mockResolvedValue({ id: 'test-1' });
+  mockSoxService.updateSOXTestResult.mockResolvedValue({ id: 'test-1', updated: true });
+  mockSoxService.deleteSOXTestResult.mockResolvedValue(undefined);
+  mockSoxService.getSOXAssessments.mockResolvedValue([]);
+  mockSoxService.createSOXAssessment.mockResolvedValue({ id: 'assess-1' });
+  mockSoxService.getSOXAssessmentById.mockResolvedValue({ id: 'assess-1' });
+  mockSoxService.updateSOXAssessment.mockResolvedValue({ id: 'assess-1', updated: true });
+  mockSoxService.deleteSOXAssessment.mockResolvedValue(undefined);
+  mockSoxService.generateSOXReport.mockResolvedValue({ report: 'data' });
 };
 
 jest.mock('../../../services/soxService', () => ({ __esModule: true, default: mockSoxService }));
@@ -77,7 +100,10 @@ describe('SOX Routes Contract Tests', () => {
   const editorToken = generateToken('editor');
   const viewerToken = generateToken('viewer');
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    installSoxDefaults();
+  });
 
   // ── Dashboard ────────────────────────────────────────────────────
 
@@ -208,7 +234,8 @@ describe('SOX Routes Contract Tests', () => {
       const res = await request(app)
         .patch('/api/sox/test-results/test-1')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ status: 'Completed' });
+        // updateSOXTestResultSchema has no `status` field; `result` is valid
+        .send({ result: 'Pass' });
       expect(res.status).toBe(200);
     });
   });

@@ -48,7 +48,7 @@ describe('PaymentModal Component', () => {
     render(
       <PaymentModal plan="Pro" price="$99" onClose={mockClose} onSuccess={mockSuccess} />
     );
-    
+
     const submitButton = screen.getByText(/Continue to Secure Checkout/i);
     fireEvent.click(submitButton);
 
@@ -56,9 +56,26 @@ describe('PaymentModal Component', () => {
     await waitFor(() => {
       expect(window.location.href).toBe('https://checkout.stripe.com/test');
     }, { timeout: 3000 });
-    
-    // Verify the checkout was called
+
+    // The modal defaults to the annual cycle when no billingCycle prop is supplied.
     const { api } = await import('../../services/api');
     expect(api.billing.createCheckout).toHaveBeenCalledWith('Pro', 'annual');
+  });
+
+  it('forwards the selected billing cycle to createCheckout', async () => {
+    // Drive the cycle through the prop so the assertion verifies real wiring
+    // rather than coupling to whichever default the modal currently uses.
+    const { api } = await import('../../services/api');
+    for (const cycle of ['monthly', 'annual'] as const) {
+      (api.billing.createCheckout as ReturnType<typeof vi.fn>).mockClear();
+      const { unmount } = render(
+        <PaymentModal plan="Enterprise" price="$299" billingCycle={cycle} onClose={mockClose} onSuccess={mockSuccess} />
+      );
+      fireEvent.click(screen.getByText(/Continue to Secure Checkout/i));
+      await waitFor(() => {
+        expect(api.billing.createCheckout).toHaveBeenCalledWith('Enterprise', cycle);
+      });
+      unmount();
+    }
   });
 });

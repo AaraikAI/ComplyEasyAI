@@ -182,7 +182,11 @@ class ComplianceDigitalTwinService {
         simulatedScore
       );
 
-      // Store simulation in database first to get scenario ID
+      // Store simulation in database first to get scenario ID. The returned
+      // result is keyed by this persisted scenarioId, so if persistence fails
+      // we surface the error rather than handing back a result tied to a
+      // record that does not exist (which later loadSimulationState /
+      // saveSimulationState calls could never resolve).
       const crypto = await import('crypto');
       let simulationScenario;
       try {
@@ -198,9 +202,7 @@ class ComplianceDigitalTwinService {
         });
       } catch (dbError: any) {
         logger.error('[Digital Twin] Error creating simulation scenario', dbError);
-        // If database creation fails, use a temporary ID
-        const tempId = `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        simulationScenario = { id: tempId } as any;
+        throw new AppError('Failed to persist simulation scenario', 500);
       }
 
       const scenarioId = simulationScenario.id;
@@ -321,11 +323,12 @@ class ComplianceDigitalTwinService {
       };
     }
 
-    // Try to find the control
+    // Try to find the control (scoped to the caller's organization via the
+    // parent framework so another org's control cannot be probed by ID).
     let control;
     try {
-      control = await prisma.frameworkControl.findUnique({
-        where: { id: controlId },
+      control = await prisma.frameworkControl.findFirst({
+        where: { id: controlId, framework: { organizationId } },
         include: { framework: true },
       });
     } catch (error) {
@@ -585,10 +588,11 @@ class ComplianceDigitalTwinService {
 
     const baselineScore = await this.calculateBaselineScore(organizationId);
 
-    // Get framework and controls
-    const framework = frameworkId 
-      ? await prisma.complianceFramework.findUnique({
-          where: { id: frameworkId },
+    // Get framework and controls (scoped to the caller's organization so a
+    // cross-org frameworkId returns null instead of leaking its controls).
+    const framework = frameworkId
+      ? await prisma.complianceFramework.findFirst({
+          where: { id: frameworkId, organizationId },
           include: { controls: true },
         })
       : null;
@@ -685,13 +689,13 @@ class ComplianceDigitalTwinService {
     // Removing a control decreases compliance score
     let scoreImpact = -5; // Base impact
     
-    // If specific control provided, check its importance
+    // If specific control provided, check its importance (org-scoped lookup).
     if (controlId) {
-      const control = await prisma.frameworkControl.findUnique({
-        where: { id: controlId },
+      const control = await prisma.frameworkControl.findFirst({
+        where: { id: controlId, framework: { organizationId } },
         include: { framework: true },
       });
-      
+
       if (control) {
         // Critical controls have higher impact
         if (control.status === 'Implemented' || control.status === 'Compliant') {
@@ -752,14 +756,14 @@ class ComplianceDigitalTwinService {
     
     const newScore = Math.min(100, Math.max(0, baselineScore + scoreImpact));
     
-    // Get affected frameworks
+    // Get affected frameworks (org-scoped lookup through the parent framework).
     const control = controlId
-      ? await prisma.frameworkControl.findUnique({
-          where: { id: controlId },
+      ? await prisma.frameworkControl.findFirst({
+          where: { id: controlId, framework: { organizationId } },
           include: { framework: true },
         })
       : null;
-    
+
     return {
       newScore,
       affectedControls: 1,

@@ -220,6 +220,8 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
   const [selectedFormat, setSelectedFormat] = useState<SBOMFormat>('CycloneDX');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
+  const [compareBaseId, setCompareBaseId] = useState<string>('');
+  const [compareTargetId, setCompareTargetId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -476,6 +478,51 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
     setVulnerabilities(prev => prev.filter(v => v.componentId !== entryId));
   }, []);
 
+  // EU CRA readiness derived from real state: share of generated reports flagged CRA-compliant,
+  // falling back to component health (components free of critical/high vulnerabilities) when no
+  // reports exist yet. Countdown is computed from the published September 2026 deadline.
+  const craReadiness = useMemo(() => {
+    if (reports.length > 0) {
+      const ready = reports.filter(r => r.craCompliant).length;
+      return Math.round((ready / reports.length) * 100);
+    }
+    if (components.length > 0) {
+      const clean = components.filter(c => c.criticalVulns === 0 && c.highVulns === 0).length;
+      return Math.round((clean / components.length) * 100);
+    }
+    return 0;
+  }, [reports, components]);
+
+  const craMonthsRemaining = useMemo(() => {
+    const deadline = new Date('2026-09-30T00:00:00Z');
+    const months = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30));
+    return Math.max(0, months);
+  }, []);
+
+  // Default the comparison selectors to the two most recent reports once data is available.
+  useEffect(() => {
+    if (reports.length > 0 && !compareBaseId) setCompareBaseId(reports[0].id);
+    if (reports.length > 1 && !compareTargetId) setCompareTargetId(reports[1].id);
+  }, [reports, compareBaseId, compareTargetId]);
+
+  // Diff between the two selected reports, computed from their persisted counts (componentCount,
+  // vulnerabilityCount) rather than static literals. "Added"/"Removed" are the net component delta;
+  // "Vuln Delta" is the net change in tracked vulnerabilities.
+  const compareResult = useMemo(() => {
+    const base = reports.find(r => r.id === compareBaseId);
+    const target = reports.find(r => r.id === compareTargetId);
+    if (!base || !target) return null;
+    const componentDelta = target.componentCount - base.componentCount;
+    const vulnDelta = target.vulnerabilityCount - base.vulnerabilityCount;
+    return {
+      base,
+      target,
+      added: Math.max(0, componentDelta),
+      removed: Math.max(0, -componentDelta),
+      vulnDelta,
+    };
+  }, [reports, compareBaseId, compareTargetId]);
+
   // ---------------------------------------------------------------------------
   // Tab Renderers
   // ---------------------------------------------------------------------------
@@ -530,11 +577,11 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div className="w-32 h-2 bg-blue-200 rounded-full">
-                  <div className="w-2/3 h-2 bg-blue-600 rounded-full" />
+                  <div className="h-2 bg-blue-600 rounded-full transition-all" style={{ width: `${craReadiness}%` }} />
                 </div>
-                <span className="text-sm font-medium text-blue-800">67% Ready</span>
+                <span className="text-sm font-medium text-blue-800">{craReadiness}% Ready</span>
               </div>
-              <span className="text-xs text-blue-600">~7 months until deadline</span>
+              <span className="text-xs text-blue-600">~{craMonthsRemaining} month{craMonthsRemaining === 1 ? '' : 's'} until deadline</span>
             </div>
           </div>
         </div>
@@ -1032,23 +1079,29 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
           </div>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div><label className="block text-xs text-gray-500 mb-1">Base Version</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+              <select value={compareBaseId} onChange={e => setCompareBaseId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                 {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
             <div><label className="block text-xs text-gray-500 mb-1">Compare To</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+              <select value={compareTargetId} onChange={e => setCompareTargetId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                 {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div><div className="text-lg font-bold text-green-600">+12</div><div className="text-xs text-gray-500">Components Added</div></div>
-              <div><div className="text-lg font-bold text-red-600">-3</div><div className="text-xs text-gray-500">Components Removed</div></div>
-              <div><div className="text-lg font-bold text-blue-600">8</div><div className="text-xs text-gray-500">Version Changes</div></div>
+          {compareResult ? (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div><div className="text-lg font-bold text-green-600">+{compareResult.added}</div><div className="text-xs text-gray-500">Components Added</div></div>
+                <div><div className="text-lg font-bold text-red-600">-{compareResult.removed}</div><div className="text-xs text-gray-500">Components Removed</div></div>
+                <div><div className={`text-lg font-bold ${compareResult.vulnDelta > 0 ? 'text-red-600' : compareResult.vulnDelta < 0 ? 'text-green-600' : 'text-blue-600'}`}>{compareResult.vulnDelta > 0 ? '+' : ''}{compareResult.vulnDelta}</div><div className="text-xs text-gray-500">Vulnerability Delta</div></div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-sm text-gray-500">
+              Select two reports to compare.
+            </div>
+          )}
         </div>
       )}
 

@@ -1066,7 +1066,7 @@ class DeepfakeDetectionService {
       for (const [key, entry] of this.resultCache.entries()) {
         if (now - entry.timestamp > this.CACHE_TTL_MS) this.resultCache.delete(key);
       }
-    }, 5 * 60 * 1000);
+    }, 5 * 60 * 1000).unref?.();
   }
 }
 

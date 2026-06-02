@@ -18,6 +18,7 @@ import homomorphicAIService from '../services/advanced/homomorphicAIService';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import prisma from '../config/database';
+import { logControllerAction } from '../services/auditLogService';
 
 class ACOSController {
   // aCOS Goals
@@ -407,6 +408,8 @@ class ACOSController {
         authReq.user!.organizationId,
         (format as 'json' | 'csv' | 'pdf') || 'json'
       );
+      
+      await prisma.auditLog.create({ data: { action: 'evidence.analysis_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'evidence' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(report);
     } catch (error) {
       logger.error('Export analysis report error', error);
@@ -417,9 +420,10 @@ class ACOSController {
   verifyFileHash: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { storedHash } = req.body;
+      // Multipart request body may be absent when no file/fields are sent; default safely.
+      const { storedHash } = (req.body ?? {}) as { storedHash?: string };
       const file = req.file;
-      
+
       if (!file?.buffer || !storedHash) {
         throw new AppError('File and stored hash are required', 400);
       }
@@ -876,13 +880,16 @@ class ACOSController {
       const { frameworkId } = req.params as Record<string, string>;
       const timeHorizonMonths = parseInt(req.query.months as string) || 6;
       const { withInterventions, compareScenarios } = req.query;
-      
+      // This is a GET route; an optional JSON body may be absent, so default to {}
+      // before reading optional scenario/intervention fields.
+      const body = (req.body ?? {}) as Record<string, unknown>;
+
       let trajectory;
-      if (compareScenarios === 'true' && req.body.scenarios) {
+      if (compareScenarios === 'true' && body.scenarios) {
         trajectory = await temporalGraphNetworkService.compareTrajectories(
           frameworkId,
           authReq.user!.organizationId,
-          req.body.scenarios,
+          body.scenarios as any,
           timeHorizonMonths
         );
       } else {
@@ -892,7 +899,7 @@ class ACOSController {
           timeHorizonMonths,
           {
             withInterventions: withInterventions === 'true',
-            interventions: req.body.interventions,
+            interventions: body.interventions as any,
             compareScenarios: compareScenarios === 'true',
           }
         );
@@ -1209,6 +1216,8 @@ class ACOSController {
         results,
         format || 'json'
       );
+      
+      await prisma.auditLog.create({ data: { action: 'redteam.scan_results_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'redteam' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(exportData);
     } catch (error) {
       logger.error('Export scan results error', error);
@@ -1429,6 +1438,8 @@ class ACOSController {
         insights,
         format || 'json'
       );
+      
+      await prisma.auditLog.create({ data: { action: 'swarm.insights_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'swarm' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(exportData);
     } catch (error) {
       logger.error('Export insights error', error);
@@ -1926,6 +1937,8 @@ class ACOSController {
         (format as 'json' | 'csv') || 'json',
         filters ? JSON.parse(filters as string) : undefined
       );
+      
+      await prisma.auditLog.create({ data: { action: 'vr.annotations_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'vr' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(exportData);
     } catch (error) {
       logger.error('Export VR annotations error', error);
@@ -2274,9 +2287,12 @@ class ACOSController {
 
   getSwarmTaskStatus: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { taskId } = req.params as Record<string, string>;
       const task = swarmTaskAllocationService.getTaskStatus(taskId);
-      if (!task) {
+      // Enforce tenant isolation: a task is only visible to its owning org.
+      // Return 404 (not 403) so callers cannot distinguish "wrong org" from "absent".
+      if (!task || task.organizationId !== authReq.user!.organizationId) {
         throw new AppError('Task not found', 404);
       }
       res.json(task);
@@ -2441,6 +2457,8 @@ class ACOSController {
         startDate ? new Date(startDate as string) : undefined,
         endDate ? new Date(endDate as string) : undefined
       );
+      
+      await prisma.auditLog.create({ data: { action: 'swarm.metrics_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'swarm' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(exportData);
     } catch (error) {
       logger.error('Export swarm metrics error', error);
@@ -2469,16 +2487,32 @@ class ACOSController {
     }
   };
 
+  /**
+   * Verify a swarm agent is associated with the caller's organization before
+   * exposing its state. Swarm agents are tracked globally, so org scoping is
+   * derived from the tasks the org owns: an agent is visible to an org only if
+   * it is (or was) assigned to one of that org's tasks. This prevents reading
+   * another tenant's agent state by enumerating agent IDs.
+   */
+  private agentBelongsToOrg(agentId: string, organizationId: string): boolean {
+    const { queued, active, completed, failed, cancelled } =
+      swarmTaskAllocationService.getAllTasks(organizationId);
+    const orgTasks = [...queued, ...active, ...completed, ...failed, ...cancelled];
+    return orgTasks.some(t => t.assignedAgents.some(a => a.agentId === agentId));
+  }
+
   getSwarmAgentById: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { agentId } = req.params as Record<string, string>;
       const agent = swarmTaskAllocationService.getAgentById(agentId);
-      if (!agent) {
+      if (!agent || !this.agentBelongsToOrg(agentId, authReq.user!.organizationId)) {
         throw new AppError('Agent not found', 404);
       }
       res.json(agent);
     } catch (error) {
       logger.error('Get swarm agent by ID error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError('Failed to get swarm agent', 500);
     }
   };
@@ -2535,7 +2569,12 @@ class ACOSController {
 
   getSwarmAgentWorkload: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { agentId } = req.params as Record<string, string>;
+      // Tenant isolation: only expose workload for agents tied to the caller's org.
+      if (!this.agentBelongsToOrg(agentId, authReq.user!.organizationId)) {
+        throw new AppError('Agent not found', 404);
+      }
       const workload = swarmTaskAllocationService.getAgentWorkload(agentId);
       res.json(workload);
     } catch (error: any) {
@@ -2692,6 +2731,8 @@ class ACOSController {
         authReq.user!.organizationId,
         (format as 'csv' | 'json') || 'json'
       );
+      
+      await prisma.auditLog.create({ data: { action: 'compliance.debt_report_exported', userId: (req as AuthRequest).user!.id, organizationId: (req as AuthRequest).user!.organizationId, hash: require('uuid').v4(), details: JSON.stringify({ kind: 'debt' }), ipAddress: req.ip || undefined, userAgent: req.headers['user-agent'] || undefined } });
       res.json(report);
     } catch (error: any) {
       logger.error('Export debt report error', error);
@@ -2842,12 +2883,10 @@ class ACOSController {
       const { privilege, reason, justification, duration } = req.body;
       
       logger.info('JIT Access request received', {
-        userId: authReq.user!.id,
         privilege,
-        reason,
         duration,
       });
-      
+
       const request = await jitAccessService.requestAccess(
         authReq.user!.id,
         authReq.user!.organizationId,
@@ -2856,13 +2895,12 @@ class ACOSController {
         justification,
         duration || 30
       );
-      
+
       res.json(request);
     } catch (error: any) {
       logger.error('Request JIT access error', {
         error: error.message || error,
         stack: error.stack,
-        body: req.body,
       });
       throw new AppError(error.message || 'Failed to request JIT access', 500);
     }
@@ -2885,8 +2923,21 @@ class ACOSController {
       const authReq = req as AuthRequest;
       const { sessionId } = req.params as Record<string, string>;
       const { reason } = req.body;
-      
+
       await jitAccessService.revokeSession(sessionId, reason || 'Manual revocation');
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'jit.session_revoked',
+          userId: authReq.user!.id,
+          organizationId: authReq.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ sessionId, reason: reason || 'Manual revocation' }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
       res.json({ success: true });
     } catch (error: any) {
       logger.error('Revoke JIT session error', error);
@@ -2933,9 +2984,13 @@ class ACOSController {
         })
       );
 
+      await logControllerAction(req, 'jit.pending_requests_viewed', { count: enrichedRequests.length });
+
       res.json(enrichedRequests);
     } catch (error: any) {
       logger.error('Get pending JIT access requests error', error);
+      // Preserve intentional client errors (e.g. 403 authorization) instead of masking them as 500.
+      if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to get pending access requests', 500);
     }
   };
@@ -2944,7 +2999,7 @@ class ACOSController {
     try {
       const authReq = req as AuthRequest;
       const { status } = req.query;
-      
+
       // Only admins can view all requests
       if (authReq.user!.role !== 'admin') {
         throw new AppError('Insufficient privileges. Admin access required.', 403);
@@ -2954,7 +3009,7 @@ class ACOSController {
         authReq.user!.organizationId,
         status as string | undefined
       );
-      
+
       // Enrich with user information
       const enrichedRequests = await Promise.all(
         requests.map(async (request) => {
@@ -2974,9 +3029,15 @@ class ACOSController {
         })
       );
 
+      await logControllerAction(req, 'jit.all_requests_viewed', {
+        count: enrichedRequests.length,
+        statusFilter: typeof status === 'string' ? status : null,
+      });
+
       res.json(enrichedRequests);
     } catch (error: any) {
       logger.error('Get all JIT access requests error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to get access requests', 500);
     }
   };
@@ -2997,9 +3058,22 @@ class ACOSController {
         authReq.user!.organizationId
       );
 
+      await prisma.auditLog.create({
+        data: {
+          action: 'jit.access_approved',
+          userId: authReq.user!.id,
+          organizationId: authReq.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ requestId, sessionId: (session as any)?.id }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
       res.json({ success: true, session });
     } catch (error: any) {
       logger.error('Approve JIT access request error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to approve access request', 500);
     }
   };
@@ -3025,9 +3099,15 @@ class ACOSController {
         reason.trim()
       );
 
+      await logControllerAction(req, 'jit.access_denied', {
+        requestId,
+        reasonLength: reason.trim().length,
+      });
+
       res.json({ success: true });
     } catch (error: any) {
       logger.error('Deny JIT access request error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to deny access request', 500);
     }
   };
@@ -3048,7 +3128,7 @@ class ACOSController {
       const keys = await homomorphicAIService.generateKeys(scheme as 'BFV' | 'CKKS', securityLevel as 128 | 192 | 256);
       
       // Store keys securely (use proper key management (e.g., AWS KMS, HashiCorp Vault))
-      logger.info(`Generated ${scheme} homomorphic keys for user ${authReq.user!.id}`);
+      logger.info(`Generated ${scheme} homomorphic keys`);
       
       res.json(keys);
     } catch (error: any) {
@@ -3081,6 +3161,7 @@ class ACOSController {
       res.json(encrypted);
     } catch (error: any) {
       logger.error('Encrypt data error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError(error.message || 'Failed to encrypt data', 500);
     }
   };

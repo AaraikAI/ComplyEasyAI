@@ -285,11 +285,14 @@ const AssetManagement: React.FC = () => {
         credentials: 'include',
       });
       if (!res.ok) throw new Error(`Failed to delete asset (${res.status})`);
-    } catch {
-      // Continue with local removal even if API call fails
+      // Only reflect the deletion locally once the server confirms it.
+      setFetchError(null);
+      setAssets(prev => prev.filter(a => a.id !== id));
+      if (selectedAsset?.id === id) setSelectedAsset(null);
+    } catch (err) {
+      // Keep the row; surface the failure so the user knows it did not persist.
+      setFetchError(err instanceof Error ? err.message : 'Failed to delete asset');
     }
-    setAssets(prev => prev.filter(a => a.id !== id));
-    if (selectedAsset?.id === id) setSelectedAsset(null);
   }, [selectedAsset]);
 
   const cycleLifecycle = useCallback(async (id: string) => {

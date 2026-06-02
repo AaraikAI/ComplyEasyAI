@@ -48,40 +48,41 @@ describe('CookieConsentBanner', () => {
 
   it('shows Accept All button', () => {
     render(<CookieConsentBanner />);
-    const buttons = screen.getAllByRole('button');
-    const acceptBtn = buttons.find(b => b.textContent?.includes('Accept') || b.textContent?.includes('accept'));
-    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Accept all cookies/i })).toBeInTheDocument();
   });
 
   it('shows Reject All button', () => {
     render(<CookieConsentBanner />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Reject all non-essential cookies/i })).toBeInTheDocument();
   });
 
   it('shows Customize/Settings button', () => {
     render(<CookieConsentBanner />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Customize cookie preferences/i })).toBeInTheDocument();
   });
 
   it('handles Accept All click', () => {
     render(<CookieConsentBanner />);
-    const buttons = screen.getAllByRole('button');
-    const acceptBtn = buttons.find(b => b.textContent?.includes('Accept All') || b.textContent?.includes('accept'));
-    if (acceptBtn) {
-      fireEvent.click(acceptBtn);
-      expect(localStorageMock.setItem).toHaveBeenCalled();
-    }
+    const acceptBtn = screen.getByRole('button', { name: /Accept all cookies/i });
+    expect(acceptBtn).toBeInTheDocument();
+    fireEvent.click(acceptBtn);
+    // Consent must be persisted under the consent storage key with all categories enabled.
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'complyeasy_cookie_consent',
+      expect.stringContaining('"analytics":true'),
+    );
   });
 
   it('handles Reject All click', () => {
     render(<CookieConsentBanner />);
-    const buttons = screen.getAllByRole('button');
-    const rejectBtn = buttons.find(b => b.textContent?.includes('Reject') || b.textContent?.includes('Decline') || b.textContent?.includes('Essential Only'));
-    if (rejectBtn) {
-      fireEvent.click(rejectBtn);
-    }
+    const rejectBtn = screen.getByRole('button', { name: /Reject all non-essential cookies/i });
+    expect(rejectBtn).toBeInTheDocument();
+    fireEvent.click(rejectBtn);
+    // Rejecting persists essential-only consent (non-essential categories disabled).
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'complyeasy_cookie_consent',
+      expect.stringContaining('"analytics":false'),
+    );
   });
 
   it('hides banner when consent is already stored', () => {
@@ -90,8 +91,8 @@ describe('CookieConsentBanner', () => {
       consentDate: '2026-01-01', consentVersion: '1.0',
     }));
     render(<CookieConsentBanner />);
-    // Banner should be hidden or collapsed
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    // With valid stored consent the banner dialog is not rendered at all.
+    expect(screen.queryByRole('dialog', { name: /Cookie consent preferences/i })).toBeNull();
   });
 
   it('toggles cookie category preferences', () => {

@@ -37,15 +37,42 @@ jest.mock('../../../middleware/tierMiddleware', () => ({
   requireAiFeature: () => [(_req: any, _res: any, next: any) => next()],
 }));
 
-// Build a mock handler factory
+// jest.config sets resetMocks:true, which wipes every mock implementation
+// before each test. If left wiped, the controller mocks become bare jest.fn()s
+// that never send a response, so each request hangs for the full test timeout.
+// To avoid that, each fm method's implementation is captured here as a factory
+// and re-installed in beforeEach (see implFor + the beforeEach loop below).
+const implHandler = (data: any = { id: 'mock-1' }, status = 200) =>
+  (_req: any, res: any) => res.status(status).json(data);
+const implCreate = (data: any = { id: 'mock-new' }) =>
+  (_req: any, res: any) => res.status(201).json(data);
+const implDelete = () =>
+  (_req: any, res: any) => res.json({ success: true });
+const implList = (data: any[] = []) =>
+  (_req: any, res: any) => res.json(data);
+
+// Each factory below builds the jest.fn with its implementation. The same
+// kind of implementation is re-installed in beforeEach (by name heuristic)
+// after resetMocks clears it.
 const mockHandler = (data: any = { id: 'mock-1' }, status = 200) =>
-  jest.fn<any>().mockImplementation((_req: any, res: any) => res.status(status).json(data));
+  jest.fn<any>().mockImplementation(implHandler(data, status));
 const mockCreate = (data: any = { id: 'mock-new' }) =>
-  jest.fn<any>().mockImplementation((_req: any, res: any) => res.status(201).json(data));
+  jest.fn<any>().mockImplementation(implCreate(data));
 const mockDelete = () =>
-  jest.fn<any>().mockImplementation((_req: any, res: any) => res.json({ success: true }));
+  jest.fn<any>().mockImplementation(implDelete());
 const mockList = (data: any[] = []) =>
-  jest.fn<any>().mockImplementation((_req: any, res: any) => res.json(data));
+  jest.fn<any>().mockImplementation(implList(data));
+
+// Returns the correct implementation for an fm method, inferred from its name.
+// Create-like verbs respond 201; list verbs respond with an array; everything
+// else (get/update/patch/upsert/sync/test) responds 200. Tests assert status
+// codes only, so a uniform 200/201 body is sufficient.
+const implFor = (name: string): ((req: any, res: any) => any) => {
+  if (/^(create|bulkCreate|generate|record)/.test(name)) return implCreate();
+  if (/^(delete)/.test(name)) return implDelete();
+  if (/^list/.test(name)) return implList();
+  return implHandler();
+};
 
 const fm: Record<string, jest.Mock<any>> = {
   // Governance
@@ -96,6 +123,11 @@ const fm: Record<string, jest.Mock<any>> = {
   getDPP: mockHandler(),
   updateDPP: mockHandler(),
   deleteDPP: mockDelete(),
+  getDPPMaterials: mockHandler(),
+  getDPPCarbon: mockHandler(),
+  getDPPSupplyChain: mockHandler(),
+  getDPPSustainability: mockHandler(),
+  getDPPCertifications: mockHandler(),
   // ESG
   listESGMetrics: mockList(),
   createESGMetric: mockCreate(),
@@ -107,6 +139,8 @@ const fm: Record<string, jest.Mock<any>> = {
   getMaterialityAssessment: mockHandler(),
   updateMaterialityAssessment: mockHandler(),
   deleteMaterialityAssessment: mockDelete(),
+  generateESGReport: mockCreate(),
+  listESGReports: mockList(),
   // SBOM
   listSBOMEntries: mockList(),
   createSBOMEntry: mockCreate(),
@@ -117,6 +151,7 @@ const fm: Record<string, jest.Mock<any>> = {
   createSBOMRepository: mockCreate(),
   updateSBOMRepository: mockHandler(),
   deleteSBOMRepository: mockDelete(),
+  listSBOMLicenses: mockList(),
   // Surveillance
   listSurveillancePlans: mockList(),
   createSurveillancePlan: mockCreate(),
@@ -132,6 +167,9 @@ const fm: Record<string, jest.Mock<any>> = {
   createProductDecommission: mockCreate(),
   updateProductDecommission: mockHandler(),
   deleteProductDecommission: mockDelete(),
+  listDecommissionNotifications: mockList(),
+  createDecommissionNotification: mockCreate(),
+  updateDecommissionNotification: mockHandler(),
   // Lifecycle
   listLifecycleAssessments: mockList(),
   createLifecycleAssessment: mockCreate(),
@@ -191,14 +229,38 @@ describe('Feature Modules Routes Contract Tests', () => {
   const editorToken = generateToken('editor');
   const viewerToken = generateToken('viewer');
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // resetMocks:true wipes implementations before each test — re-install them
+    // so every controller handler actually sends a response (otherwise requests
+    // hang until the test timeout).
+    for (const name of Object.keys(fm)) {
+      (fm[name] as jest.Mock<any>).mockImplementation(implFor(name) as any);
+    }
+  });
 
-  // Helper for testing standard CRUD patterns
+  // Helper for testing standard CRUD patterns. createBody/updateBody must
+  // satisfy the route's real validateBody Joi schema (the routes run the actual
+  // schemas, so a generic { name } no longer passes most modules).
   const testCRUD = (
     basePath: string,
-    opts: { listStatus?: number; getById?: boolean; createRole?: string; deleteRole?: string } = {}
+    opts: {
+      listStatus?: number;
+      getById?: boolean;
+      createRole?: string;
+      deleteRole?: string;
+      createBody?: Record<string, unknown>;
+      updateBody?: Record<string, unknown>;
+    } = {}
   ) => {
-    const { listStatus = 200, getById = false, createRole = 'editor', deleteRole = 'admin' } = opts;
+    const {
+      listStatus = 200,
+      getById = false,
+      createRole = 'editor',
+      deleteRole = 'admin',
+      createBody = { name: 'Test Item' },
+      updateBody = { name: 'Updated' },
+    } = opts;
 
     it(`GET ${basePath} returns ${listStatus}`, async () => {
       const res = await request(app).get(`/api/feature-modules${basePath}`).set('Authorization', `Bearer ${adminToken}`);
@@ -210,7 +272,7 @@ describe('Feature Modules Routes Contract Tests', () => {
       const res = await request(app)
         .post(`/api/feature-modules${basePath}`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ name: 'Test Item' });
+        .send(createBody);
       expect(res.status).toBe(201);
     });
 
@@ -235,7 +297,7 @@ describe('Feature Modules Routes Contract Tests', () => {
       const res = await request(app)
         .patch(`/api/feature-modules${basePath}/test-id`)
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ name: 'Updated' });
+        .send(updateBody);
       expect(res.status).toBe(200);
     });
 
@@ -268,7 +330,10 @@ describe('Feature Modules Routes Contract Tests', () => {
   // ── Governance ───────────────────────────────────────────────────
 
   describe('Governance Bodies', () => {
-    testCRUD('/governance/bodies');
+    testCRUD('/governance/bodies', {
+      createBody: { name: 'Audit Board', type: 'Board' },
+      updateBody: { name: 'Audit Board v2', status: 'active' },
+    });
   });
 
   describe('Governance Meetings', () => {
@@ -276,7 +341,11 @@ describe('Feature Modules Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/feature-modules/governance/meetings')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ title: 'Board Meeting' });
+        .send({
+          governanceBodyId: '11111111-1111-1111-1111-111111111111',
+          title: 'Board Meeting',
+          date: '2026-07-01T10:00:00.000Z',
+        });
       expect(res.status).toBe(201);
     });
 
@@ -284,7 +353,8 @@ describe('Feature Modules Routes Contract Tests', () => {
       const res = await request(app)
         .patch('/api/feature-modules/governance/meetings/m-1')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ status: 'Completed' });
+        // meeting status enum is lowercase
+        .send({ status: 'completed' });
       expect(res.status).toBe(200);
     });
 
@@ -308,7 +378,7 @@ describe('Feature Modules Routes Contract Tests', () => {
       const res = await request(app)
         .put('/api/feature-modules/governance/dpo')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ name: 'DPO Name' });
+        .send({ name: 'DPO Name', email: 'dpo@example.com' });
       expect(res.status).toBe(200);
     });
   });
@@ -316,21 +386,45 @@ describe('Feature Modules Routes Contract Tests', () => {
   // ── Breach ───────────────────────────────────────────────────────
 
   describe('Breach Incidents', () => {
-    testCRUD('/breach/incidents', { getById: true });
+    testCRUD('/breach/incidents', {
+      getById: true,
+      createBody: {
+        title: 'Data Leak',
+        breachType: 'Confidentiality',
+        severity: 'High',
+        discoveryDate: '2026-06-01T00:00:00.000Z',
+      },
+      updateBody: { status: 'investigating' },
+    });
   });
 
   describe('Breach Templates', () => {
-    testCRUD('/breach/templates');
+    testCRUD('/breach/templates', {
+      createBody: {
+        name: 'GDPR DPA Notice',
+        jurisdiction: 'EU',
+        recipientType: 'DPA',
+        body: 'Template body content.',
+      },
+      updateBody: { name: 'GDPR DPA Notice v2' },
+    });
   });
 
   describe('Regulatory Contacts', () => {
-    testCRUD('/breach/contacts');
+    testCRUD('/breach/contacts', {
+      createBody: { name: 'EU DPA', authority: 'Data Protection Authority', jurisdiction: 'EU' },
+      updateBody: { name: 'EU DPA Updated' },
+    });
   });
 
   // ── CE Marking ───────────────────────────────────────────────────
 
   describe('CE Products', () => {
-    testCRUD('/ce-marking/products', { getById: true });
+    testCRUD('/ce-marking/products', {
+      getById: true,
+      createBody: { name: 'Industrial Press', category: 'Machinery' },
+      updateBody: { status: 'assessment' },
+    });
   });
 
   describe('CE Read-Only Endpoints', () => {
@@ -354,17 +448,35 @@ describe('Feature Modules Routes Contract Tests', () => {
   // ── DPP ──────────────────────────────────────────────────────────
 
   describe('DPP Passports', () => {
-    testCRUD('/dpp/passports', { getById: true });
+    testCRUD('/dpp/passports', {
+      getById: true,
+      createBody: { productName: 'EcoWidget' },
+      updateBody: { productName: 'EcoWidget v2' },
+    });
   });
 
   // ── ESG ──────────────────────────────────────────────────────────
 
   describe('ESG Metrics', () => {
-    testCRUD('/esg/metrics', { getById: true });
+    testCRUD('/esg/metrics', {
+      getById: true,
+      createBody: {
+        category: 'Environmental',
+        subcategory: 'Emissions',
+        name: 'CO2 Output',
+        value: 123.4,
+        unit: 'tCO2e',
+      },
+      updateBody: { value: 200 },
+    });
   });
 
   describe('ESG Materiality', () => {
-    testCRUD('/esg/materiality', { getById: true });
+    testCRUD('/esg/materiality', {
+      getById: true,
+      createBody: { topic: 'Climate Resilience' },
+      updateBody: { description: 'Updated assessment description' },
+    });
   });
 
   // ── SBOM ─────────────────────────────────────────────────────────
@@ -381,7 +493,7 @@ describe('Feature Modules Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/feature-modules/sbom/entries')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ name: 'lodash', version: '4.17' });
+        .send({ componentName: 'lodash', componentVersion: '4.17.21' });
       expect(res.status).toBe(201);
     });
 
@@ -389,19 +501,25 @@ describe('Feature Modules Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/feature-modules/sbom/entries/bulk')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ entries: [{ name: 'lodash' }] });
+        .send({ entries: [{ componentName: 'lodash', componentVersion: '4.17.21' }] });
       expect(res.status).toBe(201);
     });
   });
 
   describe('SBOM Repositories', () => {
-    testCRUD('/sbom/repositories');
+    testCRUD('/sbom/repositories', {
+      createBody: { name: 'main-repo' },
+      updateBody: { name: 'main-repo-renamed' },
+    });
   });
 
   // ── Surveillance ─────────────────────────────────────────────────
 
   describe('Surveillance Plans', () => {
-    testCRUD('/surveillance/plans');
+    testCRUD('/surveillance/plans', {
+      createBody: { productName: 'Medical Pump', planType: 'Proactive', frequency: 'Monthly' },
+      updateBody: { status: 'active' },
+    });
   });
 
   describe('Surveillance Recalls', () => {
@@ -416,25 +534,40 @@ describe('Feature Modules Routes Contract Tests', () => {
   // ── Decommission ─────────────────────────────────────────────────
 
   describe('Product Decommissions', () => {
-    testCRUD('/decommission/products');
+    testCRUD('/decommission/products', {
+      createBody: { productName: 'Legacy API' },
+      updateBody: { lifecycleStage: 'end_of_life' },
+    });
   });
 
   // ── Lifecycle ────────────────────────────────────────────────────
 
   describe('Lifecycle Assessments', () => {
-    testCRUD('/lifecycle/assessments', { getById: true });
+    testCRUD('/lifecycle/assessments', {
+      getById: true,
+      createBody: { productName: 'Solar Panel' },
+      updateBody: { waterUsage: 42 },
+    });
   });
 
   // ── Product Lifecycle ────────────────────────────────────────────
 
   describe('Product Lifecycle', () => {
-    testCRUD('/product-lifecycle/products', { getById: true });
+    testCRUD('/product-lifecycle/products', {
+      getById: true,
+      createBody: { productName: 'Smart Sensor' },
+      updateBody: { currentStage: 'Active' },
+    });
   });
 
   // ── Process Maps ─────────────────────────────────────────────────
 
   describe('Process Maps', () => {
-    testCRUD('/process-maps', { getById: true });
+    testCRUD('/process-maps', {
+      getById: true,
+      createBody: { name: 'Onboarding Flow', nodes: [{ id: 'n1' }], edges: [] },
+      updateBody: { name: 'Onboarding Flow v2' },
+    });
   });
 
   // ── Sync ─────────────────────────────────────────────────────────
@@ -494,7 +627,8 @@ describe('Feature Modules Routes Contract Tests', () => {
       const res = await request(app)
         .put('/api/feature-modules/regulation-data/nis2/policies')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ data: [] });
+        // upsertRegulationModuleDataSchema requires `data` to be an object
+        .send({ data: { items: [] } });
       expect(res.status).toBe(200);
     });
 
@@ -520,7 +654,8 @@ describe('Feature Modules Routes Contract Tests', () => {
       const res = await request(app)
         .post('/api/feature-modules/metrics')
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ metricType: 'compliance', value: 95 });
+        // recordMetricSchema requires module + metricName + value
+        .send({ module: 'compliance', metricName: 'score', value: 95 });
       expect(res.status).toBe(201);
     });
 

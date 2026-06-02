@@ -1,0 +1,192 @@
+{
+  "audit_version": "v20.4",
+  "started_at": "2026-05-28T20:58:00Z",
+  "current_session": 3,
+  "scan_fingerprints": {
+    "1": "947c79eb1e3c1638dc59f80e92be257ccc2df5baceed9fc16c2fd2ee826274c1",
+    "2": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
+    "3": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64"
+  },
+  "previous_audit_state": ".claude/audit-v20/state.v20.3-backup.json (v20.3 session 8 baseline)",
+  "ledgers": {
+    "coverage_cookie_flags": {
+      "total": 6,
+      "verified": 6,
+      "tier": 1,
+      "strict_block": false
+    },
+    "coverage_rate_limit_values": {
+      "total": 16,
+      "verified": 16,
+      "tier": 2,
+      "strict_block": false
+    },
+    "coverage_webhook_hmac": {
+      "total": 20,
+      "verified": 20,
+      "tier": 2,
+      "strict_block": false
+    },
+    "coverage_jwt_algorithm": {
+      "total": 6,
+      "verified": 6,
+      "tier": 3,
+      "strict_block": false
+    },
+    "coverage_migration_status": {
+      "total": 2,
+      "verified": 2,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_token_revocation": {
+      "total": 17,
+      "verified": 17,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_openapi_drift": {
+      "total": 1,
+      "verified": 1,
+      "tier": 4,
+      "strict_block": false
+    },
+    "coverage_background_jobs": {
+      "total": 28,
+      "verified": 28,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_credential_encryption": {
+      "total": 113,
+      "verified": 113,
+      "tier": 1,
+      "strict_block": true
+    },
+    "coverage_ssrf": {
+      "total": 97,
+      "verified": 97,
+      "tier": 1,
+      "strict_block": true
+    },
+    "coverage_inmemory_state": {
+      "total": 121,
+      "verified": 121,
+      "tier": 4,
+      "strict_block": false
+    },
+    "coverage_input_validation": {
+      "total": 3723,
+      "verified": 0,
+      "tier": 2,
+      "strict_block": false
+    },
+    "coverage_csrf": {
+      "total": 719,
+      "verified": 150,
+      "tier": 2,
+      "strict_block": false
+    },
+    "coverage_auth_per_endpoint": {
+      "total": 1178,
+      "verified": 775,
+      "tier": 1,
+      "strict_block": false
+    },
+    "coverage_pii_in_logs": {
+      "total": 2942,
+      "verified": 0,
+      "tier": 3,
+      "strict_block": false
+    },
+    "coverage_l8_reads": {
+      "total": 4778,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_frontend_contract": {
+      "total": 1178,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": false
+    },
+    "coverage_audit_logs": {
+      "total": 252,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": false
+    },
+    "coverage_file_upload": {
+      "total": 328,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": true
+    },
+    "coverage_idempotency": {
+      "total": 719,
+      "verified": 0,
+      "tier": 4,
+      "strict_block": false
+    }
+  },
+  "sessions": {
+    "1": {
+      "timestamp": "2026-05-28T22:00:00Z",
+      "chunks_dispatched": 20,
+      "chunks_completed": 20,
+      "rows_verified": 356,
+      "findings_high_new": 0,
+      "findings_medium_new": 7,
+      "findings_low_new": 20,
+      "report_status": "INCOMPLETE_RESUMABLE",
+      "notes": "10 smallest ledgers verified (cookies, rate_limit, webhook_hmac, jwt, migration, token_revocation, openapi, background_jobs, credential_encryption, ssrf) + 50 of 121 inmemory_state rows. v20.4 ALL CSVs include file_hash_at_verify column for drift detection.",
+      "scan_fingerprint": "947c79eb1e3c1638dc59f80e92be257ccc2df5baceed9fc16c2fd2ee826274c1"
+    },
+    "2": {
+      "timestamp": "2026-05-28T22:30:00Z",
+      "chunks_dispatched": 20,
+      "chunks_completed": 20,
+      "chunks_session_limit_hit": 0,
+      "incomplete_chunks": [],
+      "rows_verified": 496,
+      "ledger_targeted": "inmemory_state chunks 3-5 + auth_per_endpoint chunks 1-17",
+      "findings_high_new": 0,
+      "findings_medium_new": 0,
+      "findings_low_new": 0,
+      "report_status": "INCOMPLETE_RESUMABLE",
+      "notes": "All 20 slots completed after retries. inmemory_state 100% complete (121/121). auth_per_endpoint at 425/1178 = 36.08%. Pre-session fixes (commit 33ca8e3) addressed all session 1 findings; drift detection confirmed 10 file changes. 0 GAP_HIGH, 0 GAP_MEDIUM new findings.",
+      "scan_fingerprint": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64",
+      "previous_fingerprint": "947c79eb1e3c1638dc59f80e92be257ccc2df5baceed9fc16c2fd2ee826274c1",
+      "drifted_files_count": 10,
+      "drifted_files": [
+        "server/src/middleware/rateLimiter.ts",
+        "server/src/services/advanced/complianceAsCodeService.ts",
+        "server/src/services/advanced/multimodalIntakeService.ts",
+        "server/src/services/advanced/physicalAIService.ts",
+        "server/src/services/advanced/whisperService.ts",
+        "server/src/services/advanced/zeroTrustService.ts",
+        "server/src/services/euRegulations/euAiDatabaseClient.ts",
+        "server/src/services/integrations/patValidationService.ts",
+        "server/src/services/queue/jobQueue.ts",
+        "server/src/services/s3Service.ts"
+      ],
+      "drift_remediation": "All 10 drifted files were modified as REMEDIATION for session 1 findings. Drift is expected and represents progress, not corruption. Future drift verification should treat these as POST_FIX_VERIFIED."
+    },
+    "3": {
+      "timestamp": "2026-05-29T00:00:00Z",
+      "chunks_dispatched": 20,
+      "chunks_completed": 20,
+      "rows_verified": 500,
+      "ledger_targeted": "14 auth_per_endpoint chunks (rows 426-775) + 6 csrf chunks (rows 1-150)",
+      "findings_high_new": 0,
+      "findings_medium_new": 0,
+      "findings_low_new": 0,
+      "report_status": "INCOMPLETE_RESUMABLE",
+      "notes": "No code changes between s2 and s3 \u2014 scan fingerprint identical. 350 auth_per_endpoint rows + 150 csrf rows verified clean. csrf protection confirmed via two-layer defense: (a) global app.use(/api, csrfProtection) in index.ts:380 + (b) sameSite:strict on access_token cookie + httpOnly. 0 findings.",
+      "scan_fingerprint": "44da5451380bca78112f00dd4034c33b56b4f8a65dc4a75374ea09851640ad64"
+    }
+  },
+  "report_status": "INCOMPLETE_RESUMABLE",
+  "gate_last_run_at": "2026-05-28T22:30:00Z"
+}

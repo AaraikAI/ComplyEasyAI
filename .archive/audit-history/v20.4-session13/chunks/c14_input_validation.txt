@@ -1,0 +1,25 @@
+server/src/routes/bulk.ts:358:  validateBody(bulkAssignSchema),
+server/src/routes/organization.ts:6:import { validateBody } from '../middleware/validate';
+server/src/routes/organization.ts:17:router.patch('/', apiLimiter, authorize('admin'), validateBody(updateOrganizationSchema), asyncHandler(organizationController.update.bind(organizationController)));
+server/src/routes/compliance.ts:15:import { validateQuery } from '../middleware/validate';
+server/src/routes/compliance.ts:26:  validateQuery(complianceHistoryQuerySchema),
+server/src/routes/sso.ts:12:import { validateBody } from '../middleware/validate';
+server/src/routes/sso.ts:462:  validateBody(upsertSSOConfigSchema),
+server/src/routes/roles.ts:12:import { validateBody } from '../middleware/validate';
+server/src/routes/roles.ts:106:  validateBody(createRoleSchema),
+server/src/routes/roles.ts:167:  validateBody(updateRoleSchema),
+server/src/routes/roles.ts:270:  validateBody(addPermissionSchema),
+server/src/routes/roles.ts:442:  validateBody(assignRoleSchema),
+server/src/routes/evidenceVersions.ts:5:import { validateBody } from '../middleware/validate';
+server/src/routes/evidenceVersions.ts:14:router.post('/control/:controlId', authorize('admin', 'editor'), validateBody(createEvidenceVersionSchema), asyncHandler(evidenceVersioningController.createVersion.bind(evidenceVersioningController)));
+server/src/routes/anonymization.ts:8:import { validateBody } from '../middleware/validate';
+server/src/routes/anonymization.ts:19:router.post('/preview', authorize('Admin', 'Owner'), validateBody(previewAnonymizationSchema), asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/anonymization.ts:29:router.post('/dsar-export', authorize('Admin', 'Owner'), validateBody(dsarExportAnonymizationSchema), asyncHandler(async (req: Request, res: Response) => {
+server/src/routes/branding.ts:10:import { validateBody } from '../middleware/validate';
+server/src/routes/branding.ts:100:  validateBody(upsertBrandingSchema),
+server/src/routes/billing.ts:12:import { validateBody } from '../middleware/validate';
+server/src/routes/billing.ts:127:router.post('/checkout', authorize('admin'), validateBody(checkoutSchema), asyncHandler(billingController.createCheckout.bind(billingController)));
+server/src/routes/billing.ts:140:router.post('/change-tier', authorize('admin'), validateBody(changeTierSchema), asyncHandler(billingController.changeTier.bind(billingController)));
+server/src/routes/billing.ts:143:router.post('/cancel', authorize('admin'), validateBody(cancelSubscriptionSchema), asyncHandler(billingController.cancelSubscription.bind(billingController)));
+server/src/routes/billing.ts:156:router.post('/addons', authorize('admin'), validateBody(addAddonSchema), asyncHandler(billingController.addAddOn.bind(billingController)));
+server/src/routes/billing.ts:166:router.post('/quote', authorize('admin'), validateBody(requestQuoteSchema), asyncHandler(billingController.requestQuote.bind(billingController)));

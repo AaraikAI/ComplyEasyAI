@@ -14,6 +14,12 @@ export interface FrontendStackProps extends cdk.StackProps {
   domainName?: string;
   /** ACM certificate ARN in us-east-1 for CloudFront — optional */
   certificateArn?: string;
+  /**
+   * Explicit allowed origins for the uploads-bucket CORS policy
+   * (e.g. ['https://app.example.com']). When unset, derived from
+   * domainName. A wildcard is never used for the write-capable bucket.
+   */
+  uploadAllowedOrigins?: string[];
 }
 
 /**
@@ -51,6 +57,19 @@ export class FrontendStack extends cdk.Stack {
     // ---------------------------------------------------------------
     // S3 Bucket for application file uploads
     // ---------------------------------------------------------------
+    // Resolve an explicit allow-list for presigned-upload CORS. The
+    // write-capable (PUT/POST) bucket is never opened to a wildcard origin.
+    const uploadAllowedOrigins =
+      props.uploadAllowedOrigins ??
+      (props.domainName ? [`https://${props.domainName}`] : undefined);
+    if (!uploadAllowedOrigins || uploadAllowedOrigins.length === 0) {
+      throw new Error(
+        'FrontendStack: uploads-bucket CORS requires explicit allowed origins. ' +
+          'Pass -c domainName=<host> (or uploadAllowedOrigins) so PUT/POST uploads ' +
+          'are restricted to the app origin instead of any origin.'
+      );
+    }
+
     const uploadsBucket = new s3.Bucket(this, 'UploadsBucket', {
       bucketName: `${prefix}-uploads-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -69,9 +88,7 @@ export class FrontendStack extends cdk.Stack {
             s3.HttpMethods.PUT,
             s3.HttpMethods.POST,
           ],
-          allowedOrigins: props.domainName
-            ? [`https://${props.domainName}`]
-            : ['*'],
+          allowedOrigins: uploadAllowedOrigins,
           allowedHeaders: ['*'],
           maxAge: 3600,
         },

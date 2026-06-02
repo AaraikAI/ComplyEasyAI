@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { logger } from '../utils/logger';
 
 interface WebSocketContextType {
   socket: Socket | null;
@@ -54,6 +55,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     socket.on('connect', () => {
       setIsConnected(true);
+      // Advisory only: the server authenticates the JWT on the handshake and
+      // derives the organization room from the verified session, ignoring this
+      // client-supplied id. Tenant isolation is enforced server-side.
       socket.emit('join:organization', { organizationId: user.organizationId });
     });
 
@@ -62,7 +66,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
 
     socket.on('connect_error', (error) => {
-      console.warn('WebSocket connection error:', error.message);
+      // Route through the central logger so the diagnostic is captured by
+      // monitoring instead of leaking to the browser console.
+      logger.warn('WebSocket connection error', { message: error.message });
     });
 
     // Presence tracking

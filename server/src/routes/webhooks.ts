@@ -9,7 +9,7 @@
  * - External webhook receiving
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import express, { Router, Request, Response, NextFunction } from 'express';
 import webhookController from '../controllers/webhookController';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
@@ -129,7 +129,11 @@ router.get('/event-types', asyncHandler(webhookController.getEventTypes.bind(web
 // INCOMING WEBHOOKS (API Key authenticated)
 // ============================================================================
 
-// HMAC signature verification middleware for incoming webhooks
+// HMAC signature verification middleware for incoming webhooks.
+// The HMAC MUST be computed over the exact raw request bytes the sender signed —
+// re-serializing parsed JSON can reorder keys / change whitespace and break
+// verification. The route below installs express.raw() so req.body is a Buffer
+// here; after verification we parse the JSON for the downstream handler.
 async function verifyWebhookSignature(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { organizationId } = req.params;
   const signature = req.headers['x-webhook-signature'] as string;
@@ -150,27 +154,60 @@ async function verifyWebhookSignature(req: Request, res: Response, next: NextFun
     throw new AppError('Webhook not configured for this organization', 401);
   }
 
-  // Compute HMAC-SHA256 of the raw request body
-  const rawBody = JSON.stringify(req.body);
+  // Use the raw bytes captured by express.raw(). Fall back to a canonical
+  // serialization only if a raw buffer is unavailable (e.g. a JSON body parser
+  // ran first), which is logged because it can cause byte-level mismatches.
+  let rawBody: Buffer;
+  if (Buffer.isBuffer(req.body)) {
+    rawBody = req.body;
+  } else {
+    logger.warn('Incoming webhook raw body unavailable; verifying over re-serialized JSON', { organizationId });
+    rawBody = Buffer.from(typeof req.body === 'string' ? req.body : JSON.stringify(req.body ?? {}));
+  }
+
   const expectedSignature = crypto
     .createHmac('sha256', webhookConfig.secret)
     .update(rawBody)
     .digest('hex');
 
+  // Strip an optional algorithm prefix (e.g. "sha256=") before comparison.
+  const provided = signature.includes('=') ? signature.slice(signature.indexOf('=') + 1) : signature;
+
   // Timing-safe comparison to prevent timing attacks
-  const sigBuffer = Buffer.from(signature, 'hex');
-  const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+  let sigBuffer: Buffer;
+  let expectedBuffer: Buffer;
+  try {
+    sigBuffer = Buffer.from(provided, 'hex');
+    expectedBuffer = Buffer.from(expectedSignature, 'hex');
+  } catch {
+    logger.warn('Incoming webhook signature is not valid hex', { organizationId });
+    throw new AppError('Invalid webhook signature', 401);
+  }
   if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
     logger.warn('Incoming webhook signature mismatch', { organizationId });
     throw new AppError('Invalid webhook signature', 401);
   }
 
+  // Parse the verified raw JSON so downstream validation/handlers receive an object.
+  if (Buffer.isBuffer(req.body)) {
+    try {
+      req.body = rawBody.length ? JSON.parse(rawBody.toString('utf-8')) : {};
+    } catch (parseError) {
+      logger.warn('Incoming webhook body is not valid JSON after signature verification', { organizationId });
+      const wrapped = new AppError('Invalid webhook payload: body must be JSON', 400);
+      (wrapped as any).cause = parseError;
+      throw wrapped;
+    }
+  }
+
   next();
 }
 
-// Receive webhook from external service (HMAC-authenticated)
+// Receive webhook from external service (HMAC-authenticated).
+// express.raw() captures the exact bytes so the HMAC is verified over the raw body.
 router.post(
   '/incoming/:organizationId/:action',
+  express.raw({ type: '*/*', limit: '5mb' }),
   asyncHandler(verifyWebhookSignature),
   validateBody(incomingWebhookSchema),
   asyncHandler(webhookController.receiveIncomingWebhook.bind(webhookController))

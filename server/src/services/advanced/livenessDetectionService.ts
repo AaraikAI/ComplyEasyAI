@@ -19,6 +19,10 @@ import fs from 'fs';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
 import { promisify } from 'util';
+import cacheService from '../cache/redisCacheService';
+
+const LIVENESS_CACHE_NAMESPACE = 'liveness';
+const ACTIVE_CHALLENGES_KEY = 'active-challenges';
 
 const writeFile = promisify(fs.writeFile);
 const unlinkFile = promisify(fs.unlink);
@@ -93,9 +97,53 @@ interface FrameLivenessData {
 
 class LivenessDetectionService {
   private antiSpoofModel: tf.LayersModel | null = null;
+  // True only when real pre-trained anti-spoof weights were loaded. When false the
+  // model's weights are untrained, so neural classification is skipped in favour of
+  // the deterministic texture/depth heuristics. Surfaced via getModelHealth().
+  private antiSpoofModelTrained = false;
   private isInitialized = false;
+  // Working set kept in-process for fast access; mirrored to Redis (via cacheService)
+  // so a restart doesn't leave in-flight liveness challenges stranded.
   private activeChallenges: Map<string, LivenessChallenge> = new Map();
   private sessionHistory: Map<string, FrameLivenessData[]> = new Map();
+  private hydrationPromise: Promise<void> | null = null;
+
+  private async hydrateActiveChallenges(): Promise<void> {
+    if (this.hydrationPromise) return this.hydrationPromise;
+    this.hydrationPromise = (async () => {
+      const entries = await cacheService.get<Array<[string, LivenessChallenge]>>(
+        ACTIVE_CHALLENGES_KEY,
+        { namespace: LIVENESS_CACHE_NAMESPACE },
+      );
+      if (!entries || !Array.isArray(entries)) return;
+      const now = Date.now();
+      for (const [id, raw] of entries) {
+        const challenge: LivenessChallenge = {
+          ...raw,
+          createdAt: new Date(raw.createdAt),
+          expiresAt: new Date(raw.expiresAt),
+        };
+        if (challenge.expiresAt.getTime() <= now) continue;
+        this.activeChallenges.set(id, challenge);
+      }
+      logger.info(`[LivenessDetection] Hydrated ${this.activeChallenges.size} active challenges from cache.`);
+    })().catch((err) => {
+      logger.warn('[LivenessDetection] Failed to hydrate challenges from cache', err);
+    });
+    return this.hydrationPromise;
+  }
+
+  private async persistActiveChallenges(): Promise<void> {
+    try {
+      const entries = Array.from(this.activeChallenges.entries());
+      await cacheService.set(ACTIVE_CHALLENGES_KEY, entries, {
+        ttl: 0,
+        namespace: LIVENESS_CACHE_NAMESPACE,
+      });
+    } catch (err) {
+      logger.warn('[LivenessDetection] Failed to persist active challenges to cache', err);
+    }
+  }
 
   // Configurable thresholds
   private readonly EAR_BLINK_THRESHOLD = parseFloat(process.env.LIVENESS_EAR_THRESHOLD || '0.21');
@@ -131,19 +179,40 @@ class LivenessDetectionService {
     model.add(tf.layers.dense({ units: 4, activation: 'softmax' })); // live, print, screen, mask
     model.compile({ optimizer: tf.train.adam(0.001), loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
 
-    // Try to load pre-trained weights
+    // Try to load pre-trained weights. The neural classifier is only used when real
+    // weights are present; otherwise the service falls back to deterministic heuristics
+    // so a security control never runs on untrained weights.
+    this.antiSpoofModelTrained = false;
     try {
       const weightsPath = path.join(process.cwd(), 'server', 'models', 'antispoof_weights.json');
       if (fs.existsSync(weightsPath)) {
         const data = JSON.parse(fs.readFileSync(weightsPath, 'utf-8'));
         model.setWeights(data.map((w: any) => tf.tensor(w.data, w.shape)));
+        this.antiSpoofModelTrained = true;
         logger.info('[LivenessDetection] Loaded anti-spoof model weights');
+      } else {
+        logger.warn(
+          `[LivenessDetection] Anti-spoof weights not found at ${weightsPath}; ` +
+          'neural classification disabled, using texture/depth heuristics. ' +
+          'Provision the weights file to enable the trained classifier.'
+        );
       }
-    } catch {
-      logger.info('[LivenessDetection] Using random initialization for anti-spoof model');
+    } catch (err) {
+      logger.warn('[LivenessDetection] Failed to load anti-spoof weights; using heuristic fallback', err);
     }
 
     this.antiSpoofModel = model;
+  }
+
+  /**
+   * Health snapshot for readiness/health-check endpoints. `antiSpoofModelTrained`
+   * is false when the anti-spoof classifier is running on heuristics only.
+   */
+  getModelHealth(): { initialized: boolean; antiSpoofModelTrained: boolean } {
+    return {
+      initialized: this.isInitialized,
+      antiSpoofModelTrained: this.antiSpoofModelTrained,
+    };
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
@@ -265,7 +334,7 @@ class LivenessDetectionService {
   /**
    * Create a challenge-response verification.
    */
-  createChallenge(numActions: number = 3): LivenessChallenge {
+  async createChallenge(numActions: number = 3): Promise<LivenessChallenge> {
     const actionPool: LivenessChallenge['actions'][0]['action'][] = [
       'blink', 'turn_left', 'turn_right', 'look_up', 'look_down', 'smile', 'open_mouth',
     ];
@@ -286,6 +355,7 @@ class LivenessDetectionService {
     };
 
     this.activeChallenges.set(challenge.challengeId, challenge);
+    await this.persistActiveChallenges();
     logger.info(`[LivenessDetection] Challenge created: ${challenge.challengeId} with ${challenge.actions.length} actions`);
     return challenge;
   }
@@ -302,10 +372,14 @@ class LivenessDetectionService {
     await this.initialize();
     const sid = sessionId || crypto.randomUUID();
 
+    // Ensure we've hydrated from cache before reading — challenge may have been
+    // created by a different process that wrote to Redis.
+    await this.hydrateActiveChallenges();
     const challenge = this.activeChallenges.get(challengeId);
     if (!challenge) throw new AppError('Challenge not found or expired', 404);
     if (new Date() > challenge.expiresAt) {
       this.activeChallenges.delete(challengeId);
+      await this.persistActiveChallenges();
       throw new AppError('Challenge has expired', 400);
     }
 
@@ -345,6 +419,7 @@ class LivenessDetectionService {
 
       // Clean up used challenge
       this.activeChallenges.delete(challengeId);
+      await this.persistActiveChallenges();
 
       return {
         isLive: overallScore >= this.LIVENESS_THRESHOLD,
@@ -1012,8 +1087,10 @@ class LivenessDetectionService {
   // ── Spoof Classification ────────────────────────────────────────────────
 
   private async classifySpoofType(imageBuffer: Buffer, frameData: FrameLivenessData): Promise<'print' | 'screen' | 'mask' | 'video_replay' | 'none'> {
-    if (!this.antiSpoofModel) {
-      // Heuristic fallback
+    // Only use the neural classifier when real weights were loaded; an untrained
+    // model would produce meaningless verdicts, so fall back to deterministic
+    // texture/depth heuristics instead.
+    if (!this.antiSpoofModel || !this.antiSpoofModelTrained) {
       if (frameData.textureScore < 0.3) return 'print';
       if (frameData.depthScore < 0.3) return 'screen';
       return 'video_replay';
@@ -1124,12 +1201,21 @@ class LivenessDetectionService {
   }
 
   private startChallengeCleanup(): void {
-    setInterval(() => {
+    const cleanupTimer = setInterval(() => {
       const now = new Date();
+      let deleted = 0;
       for (const [id, challenge] of this.activeChallenges.entries()) {
-        if (now > challenge.expiresAt) this.activeChallenges.delete(id);
+        if (now > challenge.expiresAt) {
+          this.activeChallenges.delete(id);
+          deleted++;
+        }
+      }
+      if (deleted > 0) {
+        this.persistActiveChallenges().catch(() => {});
       }
     }, 30000);
+    // Do not keep the event loop alive solely for this background timer.
+    cleanupTimer.unref?.();
   }
 }
 

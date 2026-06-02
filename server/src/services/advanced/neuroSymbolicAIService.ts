@@ -959,10 +959,13 @@ Format as JSON with: {prediction, confidence, factors}`;
     confidence: number;
   }> {
     try {
-      // Get control and related data
+      // Get control and related data. FrameworkControl has no direct organizationId,
+      // so scope ownership through its parent framework to prevent cross-tenant reads
+      // (controlId/frameworkId are request-supplied).
       const control = await prisma.frameworkControl.findFirst({
         where: {
           id: violation.controlId,
+          framework: { organizationId },
         },
         include: {
           framework: true,
@@ -1004,10 +1007,13 @@ Format as JSON with: {prediction, confidence, factors}`;
       }
 
       try {
-        // Get related controls and risks for context
+        // Get related controls and risks for context — scoped to the caller's org
+        // through the parent framework so a supplied frameworkId cannot pull another
+        // tenant's controls into the prompt.
         const relatedControls = await prisma.frameworkControl.findMany({
           where: {
             frameworkId: violation.frameworkId,
+            framework: { organizationId },
             id: { not: violation.controlId },
           },
           take: 10,

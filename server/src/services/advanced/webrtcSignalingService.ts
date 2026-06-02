@@ -471,7 +471,7 @@ class WebRTCSignalingService {
         return next(new Error('Authentication token required'));
       }
 
-      const decoded = jwt.verify(token, config.jwt.secret) as {
+      const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] }) as {
         userId: string;
         email: string;
         role: string;
@@ -516,7 +516,6 @@ class WebRTCSignalingService {
     logger.info('[WebRTC Signaling] Peer connected', {
       userId,
       socketId: socket.id,
-      email: userEmail,
     });
 
     socket.emit('authenticated', {
@@ -1621,6 +1620,7 @@ class WebRTCSignalingService {
         }
       }
     }, HEARTBEAT_INTERVAL_MS);
+    this.heartbeatTimer?.unref?.();
   }
 
   private startQualityLogger(): void {
@@ -1656,6 +1656,7 @@ class WebRTCSignalingService {
         }
       }
     }, QUALITY_LOG_INTERVAL_MS);
+    this.qualityLogTimer?.unref?.();
   }
 
   private startStaleSessionCleanup(): void {
@@ -1678,6 +1679,7 @@ class WebRTCSignalingService {
         }
       }
     }, STALE_SESSION_CLEANUP_INTERVAL_MS);
+    this.cleanupTimer?.unref?.();
   }
 
   // -----------------------------------------------------------------------
@@ -1730,19 +1732,17 @@ class WebRTCSignalingService {
   ): void {
     (async () => {
       try {
-        await prisma.$executeRaw`
-          INSERT INTO "AuditLog" ("id", "organizationId", "userId", "action", "resourceType", "resourceId", "details", "createdAt")
-          VALUES (
-            ${crypto.randomUUID()},
-            ${this.sessions.get(sessionId)?.organizationId ?? 'unknown'},
-            ${userId},
-            ${`webrtc.peer.${action}`},
-            ${'webrtc_session'},
-            ${sessionId},
-            ${JSON.stringify({ peerId, sessionId, action, timestamp: new Date().toISOString() })}::jsonb,
-            NOW()
-          )
-        `;
+        await prisma.auditLog.create({
+          data: {
+            organizationId: this.sessions.get(sessionId)?.organizationId ?? 'unknown',
+            userId,
+            action: `webrtc.peer.${action}`,
+            resourceType: 'webrtc_session',
+            resourceId: sessionId,
+            details: JSON.stringify({ peerId, sessionId, action, timestamp: new Date().toISOString() }),
+            hash: crypto.randomBytes(16).toString('hex'),
+          },
+        });
       } catch (error: any) {
         // Non-critical: log and continue
         logger.debug('[WebRTC Signaling] Could not persist peer event', {
@@ -1765,19 +1765,17 @@ class WebRTCSignalingService {
       try {
         const room = this.sessions.get(sessionId);
         const peer = room?.peers.get(peerId);
-        await prisma.$executeRaw`
-          INSERT INTO "AuditLog" ("id", "organizationId", "userId", "action", "resourceType", "resourceId", "details", "createdAt")
-          VALUES (
-            ${crypto.randomUUID()},
-            ${room?.organizationId ?? 'unknown'},
-            ${peer?.userId ?? 'unknown'},
-            ${`webrtc.annotation.${action}`},
-            ${'webrtc_session'},
-            ${sessionId},
-            ${JSON.stringify({ peerId, annotation, timestamp: new Date().toISOString() })}::jsonb,
-            NOW()
-          )
-        `;
+        await prisma.auditLog.create({
+          data: {
+            organizationId: room?.organizationId ?? 'unknown',
+            userId: peer?.userId ?? 'unknown',
+            action: `webrtc.annotation.${action}`,
+            resourceType: 'webrtc_session',
+            resourceId: sessionId,
+            details: JSON.stringify({ peerId, annotation, timestamp: new Date().toISOString() }),
+            hash: crypto.randomBytes(16).toString('hex'),
+          },
+        });
       } catch (error: any) {
         logger.debug('[WebRTC Signaling] Could not persist annotation event', {
           error: error.message,
@@ -1795,19 +1793,17 @@ class WebRTCSignalingService {
     try {
       const room = this.sessions.get(sessionId);
       const peer = room?.peers.get(peerId);
-      await prisma.$executeRaw`
-        INSERT INTO "AuditLog" ("id", "organizationId", "userId", "action", "resourceType", "resourceId", "details", "createdAt")
-        VALUES (
-          ${crypto.randomUUID()},
-          ${room?.organizationId ?? 'unknown'},
-          ${peer?.userId ?? 'unknown'},
-          ${'webrtc.stats.report'},
-          ${'webrtc_session'},
-          ${sessionId},
-          ${JSON.stringify({ peerId, stats, timestamp: new Date().toISOString() })}::jsonb,
-          NOW()
-        )
-      `;
+      await prisma.auditLog.create({
+        data: {
+          organizationId: room?.organizationId ?? 'unknown',
+          userId: peer?.userId ?? 'unknown',
+          action: 'webrtc.stats.report',
+          resourceType: 'webrtc_session',
+          resourceId: sessionId,
+          details: JSON.stringify({ peerId, stats, timestamp: new Date().toISOString() }),
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
     } catch (error: any) {
       logger.debug('[WebRTC Signaling] Could not persist stats report', {
         error: error.message,

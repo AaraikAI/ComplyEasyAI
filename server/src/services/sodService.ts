@@ -304,7 +304,7 @@ export class SoDService {
       },
     });
 
-    logger.warn(`[SoD] Violation detected: rule ${data.ruleId} for user ${data.userName}`);
+    logger.warn(`[SoD] Violation detected: rule ${data.ruleId} for user ${data.userId}`);
     return violation;
   }
 

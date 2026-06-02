@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { validateBody } from '../middleware/validate';
 import {
@@ -31,6 +31,11 @@ function paginate(query: any): { skip: number; take: number; page: number; limit
   const limit = Math.min(100, Math.max(1, parseInt(query.limit as string, 10) || 20));
   return { skip: (page - 1) * limit, take: limit, page, limit };
 }
+
+// Sentinel controlId used when a regulatory change is logged before it is
+// mapped to a concrete control. Readers display it as "Unmapped" and exclude
+// it from mapped-control counts. (`controlId` is non-nullable in the schema.)
+const UNMAPPED_CONTROL = 'pending-review';
 
 // ============================================================================
 // STATS (registered before /:id to avoid route conflicts)
@@ -120,6 +125,10 @@ router.get(
         }
         const severity = topSev.toLowerCase() as 'critical' | 'high' | 'medium' | 'low';
 
+        // Count only impacts mapped to a concrete control; unmapped sentinel
+        // rows exist solely to link the change to the org's dashboard.
+        const mappedControls = d.impacts.filter((imp) => imp.controlId !== UNMAPPED_CONTROL).length;
+
         // Status mapping
         const statusMap: Record<string, string> = {
           NEW: 'pending',
@@ -141,11 +150,11 @@ router.get(
           status: statusMap[d.status] || 'pending',
           summary: d.summary,
           affectedFrameworks: [] as string[],
-          affectedControls: d.impacts.length,
+          affectedControls: mappedControls,
           affectedPolicies: 0,
           affectedProcedures: 0,
-          complianceImpact: { before: 80, after: Math.max(40, 80 - d.impacts.length * 2) },
-          rifScore: Math.min(99, 50 + d.impacts.length * 5),
+          complianceImpact: { before: 80, after: Math.max(40, 80 - mappedControls * 2) },
+          rifScore: Math.min(99, 50 + mappedControls * 5),
         };
       });
 
@@ -237,7 +246,8 @@ router.get(
 
       const items = impacts.map((imp) => ({
         id: imp.id,
-        name: imp.controlId,
+        name: imp.controlId === UNMAPPED_CONTROL ? 'Unmapped (pending review)' : imp.controlId,
+        unmapped: imp.controlId === UNMAPPED_CONTROL,
         type: 'control' as const,
         framework: imp.regulatoryChange?.regulationName || 'Unknown',
         currentStatus: imp.status === 'REG_RESOLVED' ? 'Implemented' : 'Pending',
@@ -457,8 +467,13 @@ router.post(
         },
       });
 
-      // Create impact record using controlId from request or a placeholder
-      const controlId = req.body.controlId || 'pending-review';
+      // Create the org's linking impact so the change is visible on its
+      // dashboard. When no concrete control is identified yet, the impact is
+      // flagged unmapped via the UNMAPPED_CONTROL sentinel rather than storing
+      // an opaque string as a real controlId; dashboard/stats readers treat the
+      // sentinel as "not yet mapped" so it does not inflate affectedControls.
+      const providedControlId = typeof req.body.controlId === 'string' ? req.body.controlId.trim() : '';
+      const controlId = providedControlId || UNMAPPED_CONTROL;
       await prisma.regulatoryChangeImpact.create({
         data: {
           regulatoryChangeId: change.id,
@@ -492,7 +507,9 @@ router.patch(
   '/:id',
   validateBody(updateRegulatoryChangeSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const orgId = (req as any).user.organizationId;
+    const authReq = req as AuthRequest;
+    const orgId = authReq.user!.organizationId;
+    const isAdmin = authReq.user!.role === 'admin';
 
     try {
       // Verify org has access
@@ -506,25 +523,73 @@ router.patch(
 
       const { status, impactAnalysis, title, summary, sourceUrl, effectiveDate } = req.body;
 
-      const updateData: any = {};
-      if (status) {
-        const validStatuses = ['NEW', 'REVIEWING', 'IN_PROGRESS', 'REG_RESOLVED', 'DISMISSED'];
-        if (!validStatuses.includes(status)) {
-          throw new AppError(`status must be one of: ${validStatuses.join(', ')}`, 400);
-        }
-        updateData.status = status;
-      }
-      if (impactAnalysis !== undefined) updateData.impactAnalysis = impactAnalysis;
-      if (title) updateData.title = title;
-      if (summary) updateData.summary = summary;
-      if (sourceUrl !== undefined) updateData.sourceUrl = sourceUrl;
-      if (effectiveDate !== undefined) {
-        updateData.effectiveDate = effectiveDate ? new Date(effectiveDate) : null;
+      const validStatuses = ['NEW', 'REVIEWING', 'IN_PROGRESS', 'REG_RESOLVED', 'DISMISSED'];
+      if (status && !validStatuses.includes(status)) {
+        throw new AppError(`status must be one of: ${validStatuses.join(', ')}`, 400);
       }
 
-      const change = await prisma.regulatoryChangeDetection.update({
+      // RegulatoryChangeDetection has no organizationId and is shared across
+      // every org that holds an impact. Mutating its authoritative content
+      // (title/summary/sourceUrl/effectiveDate/impactAnalysis) affects all
+      // tenants, so those edits are restricted to org admins. Per-org "status"
+      // is applied to this org's own impact rows, not the shared detection.
+      const sharedFieldsRequested =
+        impactAnalysis !== undefined ||
+        title !== undefined ||
+        summary !== undefined ||
+        sourceUrl !== undefined ||
+        effectiveDate !== undefined;
+
+      if (sharedFieldsRequested && !isAdmin) {
+        throw new AppError(
+          'Editing shared regulatory change details requires an admin role',
+          403
+        );
+      }
+
+      // Apply this org's status to its own impact rows (per-org, isolated).
+      if (status) {
+        await prisma.regulatoryChangeImpact.updateMany({
+          where: { regulatoryChangeId: req.params.id, organizationId: orgId },
+          data: { status },
+        });
+      }
+
+      // Only an admin may mutate the cross-tenant content fields.
+      if (sharedFieldsRequested && isAdmin) {
+        const sharedData: any = {};
+        if (impactAnalysis !== undefined) sharedData.impactAnalysis = impactAnalysis;
+        if (title) sharedData.title = title;
+        if (summary) sharedData.summary = summary;
+        if (sourceUrl !== undefined) sharedData.sourceUrl = sourceUrl;
+        if (effectiveDate !== undefined) {
+          sharedData.effectiveDate = effectiveDate ? new Date(effectiveDate) : null;
+        }
+        await prisma.regulatoryChangeDetection.update({
+          where: { id: req.params.id },
+          data: sharedData,
+        });
+      }
+
+      // Advance the shared detection status only when no org still has an
+      // active (non-terminal) impact, so one tenant cannot flip the shared row.
+      if (status && (status === 'DISMISSED' || status === 'REG_RESOLVED')) {
+        const activeImpacts = await prisma.regulatoryChangeImpact.count({
+          where: {
+            regulatoryChangeId: req.params.id,
+            status: { notIn: ['DISMISSED', 'REG_RESOLVED'] },
+          },
+        });
+        if (activeImpacts === 0) {
+          await prisma.regulatoryChangeDetection.update({
+            where: { id: req.params.id },
+            data: { status },
+          });
+        }
+      }
+
+      const change = await prisma.regulatoryChangeDetection.findUnique({
         where: { id: req.params.id },
-        data: updateData,
         include: { impacts: { where: { organizationId: orgId } } },
       });
 

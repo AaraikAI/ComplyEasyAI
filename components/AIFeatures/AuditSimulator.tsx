@@ -118,130 +118,8 @@ const AUDIT_TYPES: AuditType[] = [
   { id: 'nist-csf', name: 'NIST CSF 2.0', description: 'National Institute of Standards and Technology Cybersecurity Framework assessment across Govern, Identify, Protect, Detect, Respond, and Recover functions.', controlCount: 106, estimatedDuration: '60-90 min', icon: 'cpu' },
 ];
 
-const SIMULATION_RUNS: SimulationRun[] = [
-  {
-    id: 'SIM-001',
-    auditType: 'SOC 2 Type II',
-    status: 'completed',
-    progress: 100,
-    startedAt: '2026-02-15T10:00:00Z',
-    completedAt: '2026-02-15T11:15:00Z',
-    readinessScore: 71,
-    findingsCount: { critical: 2, major: 5, minor: 8, observation: 3 },
-    controlsTested: 64,
-    totalControls: 64,
-    questionsAsked: 42,
-    questionsAnswered: 38,
-  },
-  {
-    id: 'SIM-002',
-    auditType: 'ISO 27001:2022',
-    status: 'running',
-    progress: 58,
-    startedAt: '2026-02-17T09:00:00Z',
-    readinessScore: 78,
-    findingsCount: { critical: 1, major: 3, minor: 4, observation: 2 },
-    controlsTested: 54,
-    totalControls: 93,
-    questionsAsked: 28,
-    questionsAnswered: 25,
-  },
-  {
-    id: 'SIM-003',
-    auditType: 'GDPR',
-    status: 'completed',
-    progress: 100,
-    startedAt: '2026-02-10T14:00:00Z',
-    completedAt: '2026-02-10T15:00:00Z',
-    readinessScore: 85,
-    findingsCount: { critical: 0, major: 2, minor: 3, observation: 4 },
-    controlsTested: 48,
-    totalControls: 48,
-    questionsAsked: 30,
-    questionsAnswered: 29,
-  },
-  {
-    id: 'SIM-004',
-    auditType: 'HIPAA',
-    status: 'completed',
-    progress: 100,
-    startedAt: '2026-02-08T11:00:00Z',
-    completedAt: '2026-02-08T12:10:00Z',
-    readinessScore: 64,
-    findingsCount: { critical: 3, major: 6, minor: 5, observation: 2 },
-    controlsTested: 54,
-    totalControls: 54,
-    questionsAsked: 38,
-    questionsAnswered: 32,
-  },
-];
-
-const AUDIT_FINDINGS: AuditFinding[] = [
-  {
-    id: 'AF-001', simulationId: 'SIM-001', controlId: 'CC6.1', controlName: 'Logical Access Security',
-    severity: 'critical', title: 'Multi-factor authentication not enforced for all production access',
-    description: 'During the simulated audit, the AI auditor identified that MFA is not consistently enforced across all production system access points. Two production systems allow single-factor authentication for administrative access.',
-    evidence: 'Expected: MFA enrollment reports showing 100% coverage. Found: 87% MFA enrollment with 2 systems excluded from MFA policy.',
-    recommendation: 'Immediately extend MFA policy to cover all production systems. Deploy hardware security keys for administrative access. Implement conditional access policies requiring MFA for all elevated privilege sessions.',
-    estimatedEffort: '8 hours', category: 'Access Control', status: 'open',
-  },
-  {
-    id: 'AF-002', simulationId: 'SIM-001', controlId: 'CC7.2', controlName: 'Security Monitoring',
-    severity: 'critical', title: 'SIEM alert coverage gaps for critical infrastructure',
-    description: 'The AI auditor found that SIEM monitoring does not cover 3 critical infrastructure components including the database replication service, API gateway failover system, and backup encryption service.',
-    evidence: 'Expected: Comprehensive SIEM coverage for all critical infrastructure. Found: 85% coverage with 3 critical gaps.',
-    recommendation: 'Extend SIEM agent deployment to uncovered infrastructure components. Create specific alert rules for database replication anomalies, API gateway failover events, and backup encryption status changes.',
-    estimatedEffort: '12 hours', category: 'Monitoring', status: 'remediation-planned',
-  },
-  {
-    id: 'AF-003', simulationId: 'SIM-001', controlId: 'A1.2', controlName: 'Business Continuity Testing',
-    severity: 'major', title: 'BCP tabletop exercise has not been conducted in over 8 months',
-    description: 'Business continuity plan testing evidence is from June 2025. SOC 2 requires regular testing to demonstrate the effectiveness of business continuity procedures.',
-    evidence: 'Expected: BCP test within the audit period (last 12 months, recommended semi-annual). Found: Last test June 2025 (8 months ago).',
-    recommendation: 'Schedule a tabletop exercise within the next 30 days. Include all critical business functions. Document test scenarios, participant actions, lessons learned, and improvement items.',
-    estimatedEffort: '16 hours', category: 'Business Continuity', status: 'open',
-  },
-  {
-    id: 'AF-004', simulationId: 'SIM-001', controlId: 'CC6.3', controlName: 'Access Reviews',
-    severity: 'major', title: 'User access reviews are 45 days past due',
-    description: 'Quarterly user access reviews for production systems were last completed 135 days ago, exceeding the quarterly review requirement by 45 days.',
-    evidence: 'Expected: Quarterly access review completed within 90 days. Found: Last review 135 days ago.',
-    recommendation: 'Initiate immediate access review for all production systems. Implement automated access review scheduling with escalation alerts. Consider deploying identity governance tools for continuous certification.',
-    estimatedEffort: '6 hours', category: 'Access Control', status: 'open',
-  },
-  {
-    id: 'AF-005', simulationId: 'SIM-001', controlId: 'C1.1', controlName: 'Data Classification',
-    severity: 'major', title: 'Data classification incomplete for 4 repositories',
-    description: 'The data classification inventory does not cover all data repositories. 4 repositories including staging database, analytics data lake, log archive, and development sandbox lack classification labels.',
-    evidence: 'Expected: 100% data repository classification. Found: 28 of 32 repositories classified (87.5%).',
-    recommendation: 'Classify the remaining 4 repositories according to organizational data classification policy. Update the data classification inventory and apply appropriate handling controls based on classification levels.',
-    estimatedEffort: '4 hours', category: 'Data Protection', status: 'open',
-  },
-  {
-    id: 'AF-006', simulationId: 'SIM-001', controlId: 'CC6.6', controlName: 'Encryption Management',
-    severity: 'major', title: 'Encryption key rotation not documented',
-    description: 'While encryption is implemented for data at rest and in transit, there is no documented evidence of encryption key rotation schedule adherence.',
-    evidence: 'Expected: Documented key rotation schedule and evidence of adherence. Found: Key rotation policy exists but no rotation evidence for last 6 months.',
-    recommendation: 'Document all key rotation events. Implement automated key rotation where possible. Create a key management dashboard showing rotation status for all encryption keys.',
-    estimatedEffort: '8 hours', category: 'Cryptography', status: 'open',
-  },
-  {
-    id: 'AF-007', simulationId: 'SIM-001', controlId: 'P6.1', controlName: 'Data Retention',
-    severity: 'major', title: 'Data retention schedules not enforced for 3 systems',
-    description: 'Data retention policies are defined but automated enforcement is not configured for 3 systems: customer analytics database, email archive, and application logs.',
-    evidence: 'Expected: Automated data retention enforcement. Found: Manual processes for 3 systems with no verification of adherence.',
-    recommendation: 'Implement automated data lifecycle management for the 3 identified systems. Configure automated deletion/archival workflows. Set up monitoring alerts for retention policy violations.',
-    estimatedEffort: '12 hours', category: 'Privacy', status: 'open',
-  },
-  {
-    id: 'AF-008', simulationId: 'SIM-004', controlId: '164.312(a)', controlName: 'Access Control',
-    severity: 'critical', title: 'No unique user identification for 2 ePHI systems',
-    description: 'Two systems containing electronic Protected Health Information allow shared account access, violating the HIPAA unique user identification requirement.',
-    evidence: 'Expected: Unique user accounts for all ePHI system access. Found: Shared service accounts used for routine access in 2 systems.',
-    recommendation: 'Immediately provision unique user accounts for all ePHI system access. Disable shared accounts. Implement audit logging for all individual user access. Deploy privileged access management for administrative accounts.',
-    estimatedEffort: '16 hours', category: 'Access Control', status: 'open',
-  },
-];
+// Simulation runs and findings are loaded per-organization from the backend
+// (see component state below); no run history is fabricated client-side.
 
 const QUESTION_BANK: AuditQuestion[] = [
   { id: 'Q-001', category: 'Access Control', controlRef: 'CC6.1', question: 'Can you demonstrate that multi-factor authentication is enforced for all users accessing the production environment?', context: 'The auditor wants to verify the scope and enforcement of MFA controls.', difficulty: 'basic', expectedEvidence: ['MFA policy document', 'MFA enrollment report', 'Conditional access policy configuration'], auditType: 'SOC 2 Type II' },
@@ -361,14 +239,79 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   const [selectedSimForResults, setSelectedSimForResults] = useState<string | null>(null);
   const [simulationAnswer, setSimulationAnswer] = useState('');
 
-  // Stats
-  const totalSimulations = SIMULATION_RUNS.length;
-  const completedSims = SIMULATION_RUNS.filter(s => s.status === 'completed').length;
-  const activeSims = SIMULATION_RUNS.filter(s => s.status === 'running').length;
-  const totalFindings = AUDIT_FINDINGS.length;
-  const avgReadiness = Math.round(SIMULATION_RUNS.filter(s => s.status === 'completed').reduce((s, r) => s + r.readinessScore, 0) / completedSims);
+  // Persisted simulation runs + findings for this organization (loaded from backend).
+  const [simulationRuns, setSimulationRuns] = useState<SimulationRun[]>([]);
+  const [auditFindings, setAuditFindings] = useState<AuditFinding[]>([]);
+  // Maps each in-memory SimulationRun id to the persisted SimulationScenario id so
+  // status changes (pause/stop/re-run/remediation) can PATCH the stored record.
+  const [persistedScenarioIds, setPersistedScenarioIds] = useState<Record<string, string>>({});
 
-  const filteredFindings = AUDIT_FINDINGS.filter(f => {
+  // Load prior persisted audit-readiness simulations on mount. Defensive: a failure
+  // leaves the empty state intact rather than surfacing fabricated data.
+  const loadPersistedSimulations = useCallback(async () => {
+    try {
+      const res = await api.ai.listAuditSimulations();
+      const simulations = Array.isArray(res?.simulations) ? res.simulations : [];
+      const runs: SimulationRun[] = [];
+      const findings: AuditFinding[] = [];
+      const idMap: Record<string, string> = {};
+      for (const sim of simulations) {
+        const run = (sim?.run || {}) as Partial<SimulationRun>;
+        if (run && run.id) {
+          runs.push(run as SimulationRun);
+          idMap[run.id] = sim.id;
+        }
+        if (Array.isArray(sim?.findings)) findings.push(...(sim.findings as AuditFinding[]));
+      }
+      setSimulationRuns(runs);
+      setAuditFindings(findings);
+      setPersistedScenarioIds(idMap);
+    } catch (err: any) {
+      logger.error('Failed to load persisted audit simulations:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPersistedSimulations();
+  }, [loadPersistedSimulations]);
+
+  // Persist a completed simulation run (and its findings) to the backend so it
+  // survives reloads. Returns the persisted scenario id when successful.
+  const persistSimulationRun = useCallback(async (run: SimulationRun, findings: AuditFinding[]) => {
+    try {
+      const saved = await api.ai.saveAuditSimulation({
+        name: run.auditType,
+        description: `Audit readiness simulation (${run.auditType})`,
+        run,
+        findings,
+      });
+      if (saved?.id) {
+        setPersistedScenarioIds(prev => ({ ...prev, [run.id]: saved.id }));
+      }
+    } catch (err: any) {
+      logger.error('Failed to persist audit simulation run:', err);
+    }
+  }, []);
+
+  // PATCH the persisted scenario for a run after a local status/findings change.
+  const persistSimulationUpdate = useCallback((runId: string, run: SimulationRun, findings: AuditFinding[]) => {
+    const scenarioId = persistedScenarioIds[runId];
+    if (!scenarioId) return;
+    api.ai.updateAuditSimulation(scenarioId, { run, findings }).catch((err: any) => {
+      logger.error('Failed to update persisted audit simulation:', err);
+    });
+  }, [persistedScenarioIds]);
+
+  // Stats
+  const totalSimulations = simulationRuns.length;
+  const completedSims = simulationRuns.filter(s => s.status === 'completed').length;
+  const activeSims = simulationRuns.filter(s => s.status === 'running').length;
+  const totalFindings = auditFindings.length;
+  const avgReadiness = completedSims > 0
+    ? Math.round(simulationRuns.filter(s => s.status === 'completed').reduce((s, r) => s + r.readinessScore, 0) / completedSims)
+    : 0;
+
+  const filteredFindings = auditFindings.filter(f => {
     if (selectedSimForResults && f.simulationId !== selectedSimForResults) return false;
     if (severityFilter !== 'all' && f.severity !== severityFilter) return false;
     if (categoryFilter !== 'all' && f.category !== categoryFilter) return false;
@@ -383,7 +326,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     return true;
   });
 
-  const findingCategories = [...new Set(AUDIT_FINDINGS.map(f => f.category))];
+  const findingCategories = [...new Set(auditFindings.map(f => f.category))];
 
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiQuestions, setAiQuestions] = useState<any[]>([]);
@@ -411,20 +354,34 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
 
   const handlePauseSim = (simId: string) => {
+    let nextPaused = false;
     setPausedSims(prev => {
       const next = new Set(prev);
       if (next.has(simId)) {
         next.delete(simId);
       } else {
         next.add(simId);
+        nextPaused = true;
       }
       return next;
+    });
+    setSimulationRuns(prev => {
+      const updated = prev.map(s => (s.id === simId ? { ...s, status: (nextPaused ? 'paused' : 'running') as SimulationRun['status'] } : s));
+      const run = updated.find(s => s.id === simId);
+      if (run) persistSimulationUpdate(simId, run, auditFindings.filter(f => f.simulationId === simId));
+      return updated;
     });
   };
 
   const handleStopSim = (simId: string) => {
     setStoppedSims(prev => new Set(prev).add(simId));
     setPausedSims(prev => { const n = new Set(prev); n.delete(simId); return n; });
+    setSimulationRuns(prev => {
+      const updated = prev.map(s => (s.id === simId ? { ...s, status: 'completed' as SimulationRun['status'], completedAt: s.completedAt || new Date().toISOString() } : s));
+      const run = updated.find(s => s.id === simId);
+      if (run) persistSimulationUpdate(simId, run, auditFindings.filter(f => f.simulationId === simId));
+      return updated;
+    });
   };
 
   const handleViewLive = (simId: string) => {
@@ -433,13 +390,28 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     setActiveTab('results');
   };
 
+  // Apply a finding status change to local state and PATCH the owning persisted run.
+  const updateFindingStatus = (findingId: string, status: AuditFinding['status']) => {
+    setAuditFindings(prev => {
+      const updated = prev.map(f => (f.id === findingId ? { ...f, status } : f));
+      const finding = updated.find(f => f.id === findingId);
+      if (finding) {
+        const run = simulationRuns.find(s => s.id === finding.simulationId);
+        if (run) persistSimulationUpdate(run.id, run, updated.filter(f => f.simulationId === run.id));
+      }
+      return updated;
+    });
+  };
+
   const handleCreateRemediationTask = (findingId: string) => {
     setRemediationPlanned(prev => new Set(prev).add(findingId));
+    updateFindingStatus(findingId, 'remediation-planned');
   };
 
   const handleMarkRemediated = (findingId: string) => {
     setRemediatedFindings(prev => new Set(prev).add(findingId));
     setRemediationPlanned(prev => { const n = new Set(prev); n.delete(findingId); return n; });
+    updateFindingStatus(findingId, 'remediated');
   };
 
   const handleRerunSim = (simId: string) => {
@@ -591,6 +563,59 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         setAiQuestions(result.questions);
       }
 
+      // Build a completed run record from the AI result so the run, its readiness
+      // score, and any returned findings are captured and persisted for this org.
+      const resultFindings: any[] = Array.isArray(result?.findings) ? result.findings : [];
+      const now = new Date().toISOString();
+      const runId = `sim-${Date.now()}`;
+      const findingsCount = resultFindings.reduce(
+        (acc, f) => {
+          const sev = (f?.severity as keyof SimulationRun['findingsCount']) || 'observation';
+          if (acc[sev] !== undefined) acc[sev] += 1; else acc.observation += 1;
+          return acc;
+        },
+        { critical: 0, major: 0, minor: 0, observation: 0 },
+      );
+      const totalControls = controlsToAudit.length || (Array.isArray(result?.questions) ? result.questions.length : 0);
+      const readinessScore = typeof result?.readinessScore === 'number'
+        ? result.readinessScore
+        : typeof result?.score === 'number' ? result.score : 0;
+
+      const run: SimulationRun = {
+        id: runId,
+        auditType: auditConfig.framework,
+        status: 'completed',
+        progress: 100,
+        startedAt: now,
+        completedAt: now,
+        readinessScore,
+        findingsCount,
+        controlsTested: totalControls,
+        totalControls,
+        questionsAsked: Array.isArray(result?.questions) ? result.questions.length : 0,
+        questionsAnswered: 0,
+      };
+
+      const mappedFindings: AuditFinding[] = resultFindings.map((f: any, idx: number) => ({
+        id: f?.id || `${runId}-finding-${idx + 1}`,
+        simulationId: runId,
+        controlId: f?.controlId || '',
+        controlName: f?.controlName || f?.control || '',
+        severity: f?.severity || 'observation',
+        title: f?.title || f?.summary || 'Finding',
+        description: f?.description || '',
+        evidence: f?.evidence || '',
+        recommendation: f?.recommendation || '',
+        estimatedEffort: f?.estimatedEffort || '',
+        category: f?.category || auditConfig.domain,
+        status: 'open',
+      }));
+
+      setSimulationRuns(prev => [run, ...prev]);
+      if (mappedFindings.length > 0) setAuditFindings(prev => [...mappedFindings, ...prev]);
+      // Persist the completed run; the empty AI-run flow is unaffected on failure.
+      await persistSimulationRun(run, mappedFindings);
+
       setActiveTab('active');
     } catch (error: any) {
       logger.error('Audit simulation error:', error);
@@ -599,11 +624,11 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     } finally {
       setIsSimulating(false);
     }
-  }, [selectedAuditType, interviewQuestions]);
+  }, [selectedAuditType, interviewQuestions, persistSimulationRun]);
 
   const handleExportReport = useCallback((simId: string) => {
-    const sim = SIMULATION_RUNS.find(s => s.id === simId);
-    const findings = AUDIT_FINDINGS.filter(f => f.simulationId === simId);
+    const sim = simulationRuns.find(s => s.id === simId);
+    const findings = auditFindings.filter(f => f.simulationId === simId);
     const exportData = {
       simulation: sim,
       findings,
@@ -672,7 +697,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             <AlertCircle size={16} className="text-orange-500" />
           </div>
           <p className="text-2xl font-bold text-orange-600">{totalFindings}</p>
-          <p className="text-xs text-gray-400">{AUDIT_FINDINGS.filter(f => f.severity === 'critical').length} critical</p>
+          <p className="text-xs text-gray-400">{auditFindings.filter(f => f.severity === 'critical').length} critical</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-1">
@@ -902,7 +927,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         {/* ─── Active Simulations Tab ───────────────────────────── */}
         {activeTab === 'active' && (
           <div className="p-4 space-y-4">
-            {SIMULATION_RUNS.filter(s => s.status !== 'completed').length === 0 && (
+            {simulationRuns.filter(s => s.status !== 'completed').length === 0 && (
               <div className="text-center py-12">
                 <Play size={40} className="text-gray-300 mx-auto mb-3" />
                 <p className="text-sm font-medium text-gray-700">No active simulations</p>
@@ -913,7 +938,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
               </div>
             )}
 
-            {SIMULATION_RUNS.filter(s => s.status === 'running' || s.status === 'paused').map(sim => (
+            {simulationRuns.filter(s => s.status === 'running' || s.status === 'paused').map(sim => (
               <div key={sim.id} className="bg-white border border-blue-200 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -999,10 +1024,10 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             ))}
 
             {/* Completed Simulations (Recent) */}
-            {SIMULATION_RUNS.filter(s => s.status === 'completed').length > 0 && (
+            {simulationRuns.filter(s => s.status === 'completed').length > 0 && (
               <div className="mt-4">
                 <h4 className="text-sm font-semibold text-gray-500 mb-3">Recently Completed</h4>
-                {SIMULATION_RUNS.filter(s => s.status === 'completed').map(sim => (
+                {simulationRuns.filter(s => s.status === 'completed').map(sim => (
                   <div key={sim.id} className="bg-white border border-green-200 rounded-xl p-4 mb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -1076,7 +1101,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                   className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="">All Simulations</option>
-                  {SIMULATION_RUNS.filter(s => s.status === 'completed').map(sim => (
+                  {simulationRuns.filter(s => s.status === 'completed').map(sim => (
                     <option key={sim.id} value={sim.id}>{sim.id}: {sim.auditType}</option>
                   ))}
                 </select>
@@ -1117,7 +1142,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                   Audit Readiness Trend
                 </h4>
                 <div className="flex items-center gap-6">
-                  {SIMULATION_RUNS.filter(s => s.status === 'completed').map(sim => (
+                  {simulationRuns.filter(s => s.status === 'completed').map(sim => (
                     <div key={sim.id} className="flex items-center gap-2">
                       <ReadinessGauge score={sim.readinessScore} size="sm" />
                       <div>

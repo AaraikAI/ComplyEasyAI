@@ -9,6 +9,11 @@ import { AppError } from './errorHandler';
 
 type SchemaLike = Joi.ObjectSchema | Joi.ArraySchema;
 
+// Strip context.value (carries rejected input — passwords, tokens, etc.) before logging.
+function sanitizeDetails(details: Joi.ValidationErrorItem[]) {
+  return details.map((d) => ({ message: d.message, path: d.path, type: d.type }));
+}
+
 export function validateBody(schema: SchemaLike) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const { error, value } = schema.validate(req.body, {
@@ -19,7 +24,7 @@ export function validateBody(schema: SchemaLike) {
 
     if (error) {
       const message = error.details.map((d) => d.message).join('; ');
-      logger.warn('Validation failed', { path: req.path, method: req.method, errors: error.details });
+      logger.warn('Validation failed', { path: req.path, method: req.method, errors: sanitizeDetails(error.details) });
       next(new AppError(message, 400));
       return;
     }
@@ -39,12 +44,15 @@ export function validateQuery(schema: SchemaLike) {
 
     if (error) {
       const message = error.details.map((d) => d.message).join('; ');
-      logger.warn('Query validation failed', { path: req.path, method: req.method, errors: error.details });
+      logger.warn('Query validation failed', { path: req.path, method: req.method, errors: sanitizeDetails(error.details) });
       next(new AppError(message, 400));
       return;
     }
 
-    req.query = value;
+    // Express 5 exposes req.query via a getter with no setter, so a direct
+    // assignment throws. Shadow it with the validated/coerced value as an own
+    // data property instead.
+    Object.defineProperty(req, 'query', { value, writable: true, configurable: true, enumerable: true });
     next();
   };
 }
@@ -59,12 +67,13 @@ export function validateParams(schema: SchemaLike) {
 
     if (error) {
       const message = error.details.map((d) => d.message).join('; ');
-      logger.warn('Params validation failed', { path: req.path, method: req.method, errors: error.details });
+      logger.warn('Params validation failed', { path: req.path, method: req.method, errors: sanitizeDetails(error.details) });
       next(new AppError(message, 400));
       return;
     }
 
-    req.params = value as Record<string, string>;
+    // Same Express 5 getter caveat as req.query — define an own data property.
+    Object.defineProperty(req, 'params', { value: value as Record<string, string>, writable: true, configurable: true, enumerable: true });
     next();
   };
 }
@@ -97,7 +106,7 @@ export function validateMultipartBody(schema: SchemaLike, options: MultipartVali
 
     if (error) {
       const message = error.details.map((d) => d.message).join('; ');
-      logger.warn('Multipart body validation failed', { path: req.path, method: req.method, errors: error.details });
+      logger.warn('Multipart body validation failed', { path: req.path, method: req.method, errors: sanitizeDetails(error.details) });
       next(new AppError(message, 400));
       return;
     }

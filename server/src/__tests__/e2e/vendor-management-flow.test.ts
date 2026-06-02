@@ -42,6 +42,27 @@ jest.mock('../../middleware/rateLimiter', () => ({
   frameworkLimiter: (req: any, res: any, next: any) => next(),
 }));
 
+// The vendors route gates creation with enforceLimit('maxVendors'); without a
+// mock the real tier middleware queries tierService and returns 429. Provide
+// pass-through implementations for every export the route layer may use.
+jest.mock('../../middleware/tierMiddleware', () => {
+  const passthrough = (_req: any, _res: any, next: any) => next();
+  return {
+    enforceLimit: () => passthrough,
+    requireFeature: () => passthrough,
+    requireTier: () => passthrough,
+    attachTierInfo: () => passthrough,
+    trackUsage: () => passthrough,
+    requireFeatureAndLimit: () => passthrough,
+    requireActiveSubscription: () => passthrough,
+    requireAiFeature: () => [passthrough],
+    requireResourceCreation: () => [passthrough],
+    requireEnterpriseFeature: () => [passthrough],
+    requireAcosFeature: () => [passthrough],
+    requireVisionaryFeature: () => [passthrough],
+  };
+});
+
 jest.mock('../../services/geminiService', () => ({
   __esModule: true,
   default: {
@@ -72,11 +93,22 @@ describe('E2E: Vendor Management Flow', () => {
     name: 'Cloud Provider Inc',
     category: 'Cloud Services',
     riskLevel: 'High',
+    riskScore: 65,
     status: 'Active',
     organizationId: 'org-123',
     contactEmail: 'contact@cloudprovider.com',
-    contractStartDate: new Date(),
-    contractEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    contractStart: new Date(),
+    contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    annualSpend: 50000,
+    hasDataAccess: true,
+    dataTypes: ['PII'],
+    soc2Report: true,
+    iso27001Certified: false,
+    gdprCompliant: true,
+    hipaaBaa: false,
+    assessments: [],
+    reviews: [],
+    monitors: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -84,29 +116,27 @@ describe('E2E: Vendor Management Flow', () => {
   const mockAssessment = {
     id: 'assess-123',
     vendorId: 'vendor-123',
-    type: 'Annual',
-    status: 'Completed',
+    assessmentType: 'Annual',
+    status: 'In_Progress',
     score: 78,
     findings: [],
-    completedAt: new Date(),
-  };
-
-  const mockQuestionnaire = {
-    id: 'quest-123',
-    vendorId: 'vendor-123',
-    templateId: 'template-123',
-    status: 'Sent',
-    responses: {},
-    sentAt: new Date(),
+    assessedBy: 'user-123',
+    createdAt: new Date(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // resetMocks:true wipes the shared $transaction implementation between tests;
+    // re-establish it to run the supplied callback against the prisma mock.
+    (prismaMock.$transaction as jest.Mock).mockImplementation(
+      (cb: any) => cb(prismaMock)
+    );
+    prismaMock.vendorAssessment.create.mockResolvedValue(mockAssessment as any);
   });
 
   describe('Complete Vendor Onboarding Workflow', () => {
-    it('should complete full vendor onboarding lifecycle', async () => {
-      // Step 1: Create vendor
+    it('should create a vendor and run an assessment lifecycle', async () => {
+      // Step 1: Create vendor (createVendor wraps create + initial assessment in $transaction)
       prismaMock.vendor.create.mockResolvedValue(mockVendor as any);
 
       const createResponse = await request(app)
@@ -115,217 +145,177 @@ describe('E2E: Vendor Management Flow', () => {
           name: 'Cloud Provider Inc',
           category: 'Cloud Services',
           contactEmail: 'contact@cloudprovider.com',
-          services: ['Infrastructure', 'Storage'],
+          hasDataAccess: true,
         })
         .expect(201);
 
-      expect(createResponse.body).toHaveProperty('id');
+      expect(createResponse.body).toHaveProperty('id', 'vendor-123');
       const vendorId = createResponse.body.id;
 
-      // Step 2: Send assessment questionnaire
+      // Step 2: Create a follow-up assessment for the vendor
       prismaMock.vendor.findFirst.mockResolvedValue(mockVendor as any);
-      prismaMock.vendorQuestionnaire.create.mockResolvedValue(mockQuestionnaire as any);
-
-      const questionnaireResponse = await request(app)
-        .post(`/api/vendors/${vendorId}/questionnaires`)
-        .send({
-          templateId: 'template-123',
-          type: 'Security',
-        })
-        .expect(201);
-
-      expect(questionnaireResponse.body).toHaveProperty('id');
-
-      // Step 3: Record questionnaire responses
-      prismaMock.vendorQuestionnaire.findFirst.mockResolvedValue(mockQuestionnaire as any);
-      prismaMock.vendorQuestionnaire.update.mockResolvedValue({
-        ...mockQuestionnaire,
-        status: 'Completed',
-        responses: { q1: 'Yes', q2: 'Implemented' },
+      prismaMock.vendorAssessment.create.mockResolvedValue({
+        ...mockAssessment,
+        vendor: mockVendor,
       } as any);
-
-      const responseUpdate = await request(app)
-        .patch(`/api/vendors/${vendorId}/questionnaires/quest-123`)
-        .send({
-          responses: { q1: 'Yes', q2: 'Implemented' },
-          status: 'Completed',
-        })
-        .expect(200);
-
-      expect(responseUpdate.body.status).toBe('Completed');
-
-      // Step 4: Create assessment from responses
-      prismaMock.vendorAssessment.create.mockResolvedValue(mockAssessment as any);
 
       const assessResponse = await request(app)
         .post(`/api/vendors/${vendorId}/assessments`)
-        .send({
-          type: 'Initial',
-          questionnaireId: 'quest-123',
-        })
+        .send({ assessmentType: 'Security' })
         .expect(201);
 
-      expect(assessResponse.body).toHaveProperty('score');
+      expect(assessResponse.body).toHaveProperty('id');
+      expect(assessResponse.body).toHaveProperty('status', 'In_Progress');
 
-      // Step 5: Approve vendor
-      prismaMock.vendor.findFirst.mockResolvedValue(mockVendor as any);
+      // Step 3: Complete the assessment (updates assessment + vendor risk score in a $transaction)
+      prismaMock.vendorAssessment.findFirst.mockResolvedValue({
+        id: 'assess-123',
+        vendorId: 'vendor-123',
+        vendor: { organizationId: 'org-123' },
+      } as any);
+      prismaMock.vendorAssessment.update.mockResolvedValue({
+        ...mockAssessment,
+        status: 'Completed',
+        score: 82,
+        riskLevel: 'Medium',
+        vendor: mockVendor,
+      } as any);
       prismaMock.vendor.update.mockResolvedValue({
         ...mockVendor,
-        status: 'Approved',
-        approvedAt: new Date(),
-        approvedBy: 'user-123',
+        riskScore: 82,
+        riskLevel: 'Medium',
       } as any);
 
-      const approveResponse = await request(app)
-        .post(`/api/vendors/${vendorId}/approve`)
-        .send({ notes: 'Passed security review' })
+      const completeResponse = await request(app)
+        .post('/api/vendors/assessments/assess-123/complete')
+        .send({
+          findings: { summary: 'Adequate controls' },
+          score: 82,
+          riskLevel: 'Medium',
+          recommendations: 'Quarterly review',
+        })
         .expect(200);
 
-      expect(approveResponse.body.status).toBe('Approved');
+      expect(completeResponse.body.status).toBe('Completed');
     });
   });
 
   describe('Vendor Risk Assessment Workflow', () => {
-    it('should perform comprehensive risk assessment', async () => {
+    it('should create a risk assessment for an existing vendor', async () => {
       prismaMock.vendor.findFirst.mockResolvedValue(mockVendor as any);
       prismaMock.vendorAssessment.create.mockResolvedValue({
         ...mockAssessment,
-        riskFactors: {
-          dataAccess: 'High',
-          businessCriticality: 'High',
-          regulatoryImpact: 'Medium',
-        },
+        assessmentType: 'Risk',
+        vendor: mockVendor,
       } as any);
 
       const response = await request(app)
         .post('/api/vendors/vendor-123/assessments')
-        .send({
-          type: 'Risk',
-          assessmentDate: new Date(),
-          assessor: 'user-123',
-        })
+        .send({ assessmentType: 'Risk' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('riskFactors');
+      expect(response.body).toHaveProperty('assessmentType', 'Risk');
     });
 
-    it('should calculate inherent risk score', async () => {
-      prismaMock.vendor.findFirst.mockResolvedValue({
-        ...mockVendor,
-        dataTypes: ['PII', 'PHI'],
-        accessLevel: 'Critical',
-      } as any);
+    it('should return 404 when assessing a vendor from another organization', async () => {
+      // Vendor not found in caller's org scope
+      prismaMock.vendor.findFirst.mockResolvedValue(null as any);
 
       const response = await request(app)
-        .get('/api/vendors/vendor-123/risk-score')
-        .expect(200);
+        .post('/api/vendors/vendor-999/assessments')
+        .send({ assessmentType: 'Risk' })
+        .expect(404);
 
-      expect(response.body).toHaveProperty('inherentRisk');
-      expect(response.body).toHaveProperty('residualRisk');
+      expect(response.body).toHaveProperty('error');
     });
   });
 
-  describe('Continuous Vendor Monitoring', () => {
-    it('should track vendor compliance over time', async () => {
-      const complianceHistory = [
-        { date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), score: 85 },
-        { date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), score: 82 },
-        { date: new Date(), score: 78 },
-      ];
-
-      prismaMock.vendorAssessment.findMany.mockResolvedValue(complianceHistory as any);
-
-      const response = await request(app)
-        .get('/api/vendors/vendor-123/compliance-history')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should detect contract renewal needs', async () => {
-      const expiringVendors = [
-        { ...mockVendor, contractEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
-      ];
-
-      prismaMock.vendor.findMany.mockResolvedValue(expiringVendors as any);
-
-      const response = await request(app)
-        .get('/api/vendors/expiring')
-        .query({ days: 60 })
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should alert on compliance degradation', async () => {
-      prismaMock.vendor.findFirst.mockResolvedValue({
-        ...mockVendor,
-        complianceScore: 65,
-        previousScore: 85,
-      } as any);
-
-      const response = await request(app)
-        .get('/api/vendors/vendor-123/alerts')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('alerts');
-    });
-  });
-
-  describe('Vendor Offboarding Workflow', () => {
-    it('should complete vendor offboarding', async () => {
-      // Step 1: Initiate offboarding
-      prismaMock.vendor.findFirst.mockResolvedValue(mockVendor as any);
-      prismaMock.vendor.update.mockResolvedValue({
-        ...mockVendor,
-        status: 'Offboarding',
-        offboardingStartedAt: new Date(),
-      } as any);
-
-      const initiateResponse = await request(app)
-        .post('/api/vendors/vendor-123/offboard')
-        .send({
-          reason: 'Contract ended',
-          effectiveDate: new Date(),
-        })
-        .expect(200);
-
-      expect(initiateResponse.body.status).toBe('Offboarding');
-
-      // Step 2: Complete data return/deletion tasks
-      prismaMock.vendorTask.findMany.mockResolvedValue([
-        { id: 't1', type: 'DataReturn', status: 'Completed' },
-        { id: 't2', type: 'AccessRevocation', status: 'Completed' },
-      ] as any);
-
-      const tasksResponse = await request(app)
-        .get('/api/vendors/vendor-123/offboarding-tasks')
-        .expect(200);
-
-      expect(Array.isArray(tasksResponse.body)).toBe(true);
-
-      // Step 3: Finalize offboarding
-      prismaMock.vendor.update.mockResolvedValue({
-        ...mockVendor,
-        status: 'Inactive',
-        offboardingCompletedAt: new Date(),
-      } as any);
-
-      const finalizeResponse = await request(app)
-        .post('/api/vendors/vendor-123/offboard/complete')
-        .send({ confirmDataDeletion: true })
-        .expect(200);
-
-      expect(finalizeResponse.body.status).toBe('Inactive');
-    });
-  });
-
-  describe('Vendor Dashboard', () => {
-    it('should get vendor risk dashboard', async () => {
+  describe('Vendor Listing & Detail', () => {
+    it('should list vendors for the organization', async () => {
       prismaMock.vendor.findMany.mockResolvedValue([
         { ...mockVendor, riskLevel: 'High' },
         { ...mockVendor, id: 'v2', riskLevel: 'Medium' },
-        { ...mockVendor, id: 'v3', riskLevel: 'Low' },
+      ] as any);
+      prismaMock.vendor.count.mockResolvedValue(2);
+
+      const response = await request(app)
+        .get('/api/vendors')
+        .expect(200);
+
+      // The route passes req.query as the pagination arg, so the service returns
+      // the paginated envelope { data, pagination } rather than a bare array.
+      expect(response.body).toHaveProperty('data');
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data).toHaveLength(2);
+      expect(response.body.data[0]).toHaveProperty('id', 'vendor-123');
+      expect(response.body).toHaveProperty('pagination');
+      expect(response.body.pagination).toHaveProperty('totalItems', 2);
+    });
+
+    it('should get a single vendor by id', async () => {
+      prismaMock.vendor.findFirst.mockResolvedValue(mockVendor as any);
+
+      const response = await request(app)
+        .get('/api/vendors/vendor-123')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', 'vendor-123');
+    });
+
+    it('should return the assessment queue for the organization', async () => {
+      prismaMock.vendorAssessment.findMany.mockResolvedValue([
+        { id: 'a1', status: 'In_Progress', vendor: { id: 'vendor-123', name: 'Cloud Provider Inc', organizationId: 'org-123' } },
+      ] as any);
+
+      const response = await request(app)
+        .get('/api/vendors/assessments/queue')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('queue');
+      expect(Array.isArray(response.body.queue)).toBe(true);
+    });
+  });
+
+  describe('Vendor Update & Archive', () => {
+    it('should update a vendor', async () => {
+      prismaMock.vendor.findFirst.mockResolvedValue(mockVendor as any);
+      prismaMock.vendor.update.mockResolvedValue({
+        ...mockVendor,
+        category: 'Managed Services',
+      } as any);
+
+      const response = await request(app)
+        .put('/api/vendors/vendor-123')
+        .send({ category: 'Managed Services' })
+        .expect(200);
+
+      expect(response.body.category).toBe('Managed Services');
+    });
+
+    it('should archive a vendor (soft-delete to Inactive)', async () => {
+      prismaMock.vendor.findFirst.mockResolvedValue(mockVendor as any);
+      prismaMock.vendor.update.mockResolvedValue({
+        ...mockVendor,
+        status: 'Inactive',
+      } as any);
+
+      const response = await request(app)
+        .delete('/api/vendors/vendor-123')
+        .expect(200);
+
+      expect(response.body.status).toBe('Inactive');
+    });
+  });
+
+  describe('Vendor Dashboard & Scorecard', () => {
+    it('should get vendor risk dashboard', async () => {
+      // Dashboard runs many parallel count() queries plus a findMany for top vendors.
+      prismaMock.vendor.count.mockResolvedValue(3);
+      prismaMock.vendorAssessment.count.mockResolvedValue(5);
+      prismaMock.vendorReview.count.mockResolvedValue(2);
+      prismaMock.vendorMonitor.count.mockResolvedValue(1);
+      prismaMock.vendor.findMany.mockResolvedValue([
+        { id: 'vendor-123', name: 'Cloud Provider Inc', riskScore: 65, riskLevel: 'High', hasDataAccess: true },
       ] as any);
 
       const response = await request(app)
@@ -333,22 +323,26 @@ describe('E2E: Vendor Management Flow', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('totalVendors');
-      expect(response.body).toHaveProperty('byRiskLevel');
+      expect(response.body).toHaveProperty('riskDistribution');
+      expect(response.body.riskDistribution).toHaveProperty('high');
+      expect(Array.isArray(response.body.topRiskVendors)).toBe(true);
     });
 
     it('should get vendor scorecard', async () => {
       prismaMock.vendor.findFirst.mockResolvedValue({
         ...mockVendor,
-        assessments: [mockAssessment],
-        questionnaires: [mockQuestionnaire],
+        assessments: [{ ...mockAssessment, assessedDate: new Date(), score: 78, riskLevel: 'High' }],
+        reviews: [],
+        monitors: [],
       } as any);
 
       const response = await request(app)
         .get('/api/vendors/vendor-123/scorecard')
         .expect(200);
 
-      expect(response.body).toHaveProperty('overallScore');
-      expect(response.body).toHaveProperty('categories');
+      expect(response.body).toHaveProperty('complianceScore');
+      expect(response.body).toHaveProperty('securityScore');
+      expect(response.body).toHaveProperty('certifications');
     });
   });
 });

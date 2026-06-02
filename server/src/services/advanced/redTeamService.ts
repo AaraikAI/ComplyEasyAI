@@ -1365,6 +1365,9 @@ class RedTeamService {
           {
             delay: schedule.interval * 60 * 1000,
             attempts: 3,
+            // Exponential backoff between retries; exhausted-retry jobs are routed to
+            // the dead-letter queue centrally by the job queue's failed-job handler.
+            backoff: { type: 'exponential', delay: 30000 },
           }
         );
       }

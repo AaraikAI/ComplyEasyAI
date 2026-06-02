@@ -2,12 +2,43 @@
  * AI RMF Routes Integration Tests
  *
  * Tests for NIST AI Risk Management Framework implementation.
+ *
+ * These tests exercise the REAL aiRmfController (route -> asyncHandler -> controller)
+ * and stub only the data-access layer (aiRmfService). This verifies that:
+ *  - each route is mounted on the correct method/path and reaches the right handler,
+ *  - the controller passes the authenticated org/user scope down to the service,
+ *  - the controller maps service results/errors to the documented HTTP shape
+ *    (e.g. delete -> { success: true }, calculate -> { score }, AppError -> status).
  */
 
 import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express, { Express } from 'express';
 import { prismaMock } from '../../mocks/prisma';
+
+// Service stub: the controller delegates all persistence to aiRmfService.
+const aiRmfServiceMock = {
+  createAISystem: jest.fn() as any,
+  getAISystems: jest.fn() as any,
+  getAISystemById: jest.fn() as any,
+  updateAISystem: jest.fn() as any,
+  deleteAISystem: jest.fn() as any,
+  updateCoreFunction: jest.fn() as any,
+  updateCategory: jest.fn() as any,
+  updateSubcategory: jest.fn() as any,
+  updateTrustworthinessCharacteristic: jest.fn() as any,
+  updateLifecycleStage: jest.fn() as any,
+  addActor: jest.fn() as any,
+  removeActor: jest.fn() as any,
+  createAssessment: jest.fn() as any,
+  getAssessments: jest.fn() as any,
+  deleteAssessment: jest.fn() as any,
+  createProfile: jest.fn() as any,
+  createRiskActivity: jest.fn() as any,
+  updateRiskActivity: jest.fn() as any,
+  calculateTrustworthinessScore: jest.fn() as any,
+  getDashboardData: jest.fn() as any,
+};
 
 // Mock dependencies
 jest.mock('../../../config/database', () => ({
@@ -32,7 +63,7 @@ jest.mock('../../../utils/auditLogger', () => ({
 }));
 
 jest.mock('../../../middleware/auth', () => ({
-  authenticate: (req: any, res: any, next: any) => {
+  authenticate: (req: any, _res: any, next: any) => {
     req.user = {
       id: 'user-123',
       email: 'test@example.com',
@@ -41,693 +72,468 @@ jest.mock('../../../middleware/auth', () => ({
     };
     next();
   },
-  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => next(),
+  authorize: (..._roles: string[]) => (_req: any, _res: any, next: any) => next(),
   AuthRequest: {},
 }));
 
 jest.mock('../../../middleware/tierMiddleware', () => ({
-  requireVisionaryFeature: () => [(req: any, res: any, next: any) => next()],
+  requireVisionaryFeature: () => [(_req: any, _res: any, next: any) => next()],
 }));
 
+// Real validateBody is permissive enough for the payloads below; stub it so the
+// suite focuses on controller<->service wiring rather than Joi schema specifics.
 jest.mock('../../../middleware/validate', () => ({
-  validateBody: () => (req: any, res: any, next: any) => next(),
+  validateBody: () => (_req: any, _res: any, next: any) => next(),
 }));
 
-// Mock AI RMF controller
-jest.mock('../../../controllers/aiRmfController', () => ({
+// Stub the data-access service (the unit under test is the controller above it).
+jest.mock('../../../services/aiRmfService', () => ({
   __esModule: true,
-  default: {
-    // AI System Management
-    createAISystem: jest.fn().mockImplementation((req, res) => {
-      res.status(201).json({
-        id: 'ai-rmf-system-123',
-        name: req.body.name,
-        description: req.body.description,
-        purpose: req.body.purpose,
-        status: 'Active',
-        organizationId: 'org-123',
-      });
-    }),
-    getAISystems: jest.fn().mockImplementation((req, res) => {
-      res.json([
-        { id: 'sys-1', name: 'ML Model A', purpose: 'Classification', status: 'Active' },
-        { id: 'sys-2', name: 'ML Model B', purpose: 'Prediction', status: 'Development' },
-      ]);
-    }),
-    getAISystemById: jest.fn().mockImplementation((req, res) => {
-      if (req.params.id === 'nonexistent') {
-        return res.status(404).json({ error: 'AI System not found' });
-      }
-      res.json({
-        id: req.params.id,
-        name: 'AI System',
-        purpose: 'Risk Analysis',
-        status: 'Active',
-        coreFunctions: [],
-        trustworthinessCharacteristics: [],
-        lifecycleStages: [],
-        actors: [],
-      });
-    }),
-    updateAISystem: jest.fn().mockImplementation((req, res) => {
-      res.json({ id: req.params.id, ...req.body, updated: true });
-    }),
-    deleteAISystem: jest.fn().mockImplementation((req, res) => {
-      res.json({ deleted: true, id: req.params.id });
-    }),
-
-    // Core Functions
-    updateCoreFunction: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        aiSystemId: req.params.aiSystemId,
-        functionName: req.params.functionName,
-        status: req.body.status,
-        updated: true,
-      });
-    }),
-
-    // Categories and Subcategories
-    updateCategory: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        id: req.params.categoryId,
-        ...req.body,
-        updated: true,
-      });
-    }),
-    updateSubcategory: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        id: req.params.subcategoryId,
-        ...req.body,
-        updated: true,
-      });
-    }),
-
-    // Trustworthiness Characteristics
-    updateTrustworthinessCharacteristic: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        aiSystemId: req.params.aiSystemId,
-        characteristic: req.params.characteristic,
-        score: req.body.score,
-        evidence: req.body.evidence,
-        updated: true,
-      });
-    }),
-
-    // Lifecycle Stages
-    updateLifecycleStage: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        aiSystemId: req.params.aiSystemId,
-        stage: req.params.stage,
-        status: req.body.status,
-        updated: true,
-      });
-    }),
-
-    // AI Actors
-    addActor: jest.fn().mockImplementation((req, res) => {
-      res.status(201).json({
-        id: 'actor-123',
-        aiSystemId: req.params.aiSystemId,
-        name: req.body.name,
-        role: req.body.role,
-        responsibilities: req.body.responsibilities,
-      });
-    }),
-    removeActor: jest.fn().mockImplementation((req, res) => {
-      res.json({ deleted: true, actorId: req.params.actorId });
-    }),
-
-    // Assessments
-    createAssessment: jest.fn().mockImplementation((req, res) => {
-      res.status(201).json({
-        id: 'assessment-123',
-        aiSystemId: req.params.aiSystemId,
-        assessmentType: req.body.assessmentType,
-        status: 'In Progress',
-        createdAt: new Date().toISOString(),
-      });
-    }),
-    getAssessments: jest.fn().mockImplementation((req, res) => {
-      res.json([
-        { id: 'assess-1', aiSystemId: req.params.aiSystemId, type: 'Impact', status: 'Completed' },
-        { id: 'assess-2', aiSystemId: req.params.aiSystemId, type: 'Bias', status: 'In Progress' },
-      ]);
-    }),
-    deleteAssessment: jest.fn().mockImplementation((req, res) => {
-      res.json({ deleted: true, assessmentId: req.params.assessmentId });
-    }),
-
-    // Profiles
-    createProfile: jest.fn().mockImplementation((req, res) => {
-      res.status(201).json({
-        id: 'profile-123',
-        aiSystemId: req.params.aiSystemId,
-        profileType: req.body.profileType,
-        targetState: req.body.targetState,
-        createdAt: new Date().toISOString(),
-      });
-    }),
-
-    // Risk Activities
-    createRiskActivity: jest.fn().mockImplementation((req, res) => {
-      res.status(201).json({
-        id: 'risk-activity-123',
-        aiSystemId: req.params.aiSystemId,
-        activityType: req.body.activityType,
-        description: req.body.description,
-        status: 'Pending',
-      });
-    }),
-    updateRiskActivity: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        id: req.params.riskActivityId,
-        ...req.body,
-        updated: true,
-      });
-    }),
-
-    // Analytics and Reporting
-    calculateTrustworthinessScore: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        aiSystemId: req.params.aiSystemId,
-        overallScore: 78,
-        dimensions: {
-          validity: 85,
-          reliability: 80,
-          safety: 75,
-          security: 82,
-          accountability: 70,
-          transparency: 78,
-          explainability: 72,
-          privacy: 80,
-          fairness: 76,
-        },
-        calculatedAt: new Date().toISOString(),
-      });
-    }),
-    getDashboardData: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        totalSystems: 5,
-        systemsByStatus: { Active: 3, Development: 1, Archived: 1 },
-        averageTrustworthiness: 76,
-        pendingAssessments: 2,
-        recentActivities: [],
-        riskDistribution: { High: 1, Medium: 2, Low: 2 },
-      });
-    }),
-  },
+  default: aiRmfServiceMock,
 }));
 
-// Setup app once (controller is fully mocked, no need to re-import per test)
 let app: Express;
 
 beforeAll(async () => {
   app = express();
   app.use(express.json());
-
+  const { errorHandler } = await import('../../../middleware/errorHandler');
   const aiRmfRoutes = (await import('../../../routes/aiRmf')).default;
   app.use('/api/ai-rmf', aiRmfRoutes);
+  app.use(errorHandler);
 });
 
 beforeEach(() => {
-  jest.clearAllMocks();
-
-  // Re-setup controller mocks after clearAllMocks
-  const controller = require('../../../controllers/aiRmfController').default;
-  controller.createAISystem.mockImplementation((req: any, res: any) => {
-    res.status(201).json({ id: 'ai-rmf-system-123', name: req.body.name, description: req.body.description, purpose: req.body.purpose, status: 'Active', organizationId: 'org-123' });
-  });
-  controller.getAISystems.mockImplementation((_req: any, res: any) => {
-    res.json([{ id: 'sys-1', name: 'ML Model A', purpose: 'Classification', status: 'Active' }, { id: 'sys-2', name: 'ML Model B', purpose: 'Prediction', status: 'Development' }]);
-  });
-  controller.getAISystemById.mockImplementation((req: any, res: any) => {
-    if (req.params.id === 'nonexistent') return res.status(404).json({ error: 'AI System not found' });
-    res.json({ id: req.params.id, name: 'AI System', purpose: 'Risk Analysis', status: 'Active', coreFunctions: [], trustworthinessCharacteristics: [], lifecycleStages: [], actors: [] });
-  });
-  controller.updateAISystem.mockImplementation((req: any, res: any) => {
-    res.json({ id: req.params.id, ...req.body, updated: true });
-  });
-  controller.deleteAISystem.mockImplementation((req: any, res: any) => {
-    res.json({ deleted: true, id: req.params.id });
-  });
-  controller.updateCoreFunction.mockImplementation((req: any, res: any) => {
-    res.json({ aiSystemId: req.params.aiSystemId, functionName: req.params.functionName, status: req.body.status, updated: true });
-  });
-  controller.updateCategory.mockImplementation((req: any, res: any) => {
-    res.json({ id: req.params.categoryId, ...req.body, updated: true });
-  });
-  controller.updateSubcategory.mockImplementation((req: any, res: any) => {
-    res.json({ id: req.params.subcategoryId, ...req.body, updated: true });
-  });
-  controller.updateTrustworthinessCharacteristic.mockImplementation((req: any, res: any) => {
-    res.json({ aiSystemId: req.params.aiSystemId, characteristic: req.params.characteristic, score: req.body.score, evidence: req.body.evidence, updated: true });
-  });
-  controller.updateLifecycleStage.mockImplementation((req: any, res: any) => {
-    res.json({ aiSystemId: req.params.aiSystemId, stage: req.params.stage, status: req.body.status, updated: true });
-  });
-  controller.addActor.mockImplementation((req: any, res: any) => {
-    res.status(201).json({ id: 'actor-123', aiSystemId: req.params.aiSystemId, name: req.body.name, role: req.body.role, responsibilities: req.body.responsibilities });
-  });
-  controller.removeActor.mockImplementation((req: any, res: any) => {
-    res.json({ deleted: true, actorId: req.params.actorId });
-  });
-  controller.createAssessment.mockImplementation((req: any, res: any) => {
-    res.status(201).json({ id: 'assessment-123', aiSystemId: req.params.aiSystemId, assessmentType: req.body.assessmentType, status: 'In Progress', createdAt: new Date().toISOString() });
-  });
-  controller.getAssessments.mockImplementation((req: any, res: any) => {
-    res.json([{ id: 'assess-1', aiSystemId: req.params.aiSystemId, type: 'Impact', status: 'Completed' }, { id: 'assess-2', aiSystemId: req.params.aiSystemId, type: 'Bias', status: 'In Progress' }]);
-  });
-  controller.deleteAssessment.mockImplementation((req: any, res: any) => {
-    res.json({ deleted: true, assessmentId: req.params.assessmentId });
-  });
-  controller.createProfile.mockImplementation((req: any, res: any) => {
-    res.status(201).json({ id: 'profile-123', aiSystemId: req.params.aiSystemId, profileType: req.body.profileType, targetState: req.body.targetState, createdAt: new Date().toISOString() });
-  });
-  controller.createRiskActivity.mockImplementation((req: any, res: any) => {
-    res.status(201).json({ id: 'risk-activity-123', aiSystemId: req.params.aiSystemId, activityType: req.body.activityType, description: req.body.description, status: 'Pending' });
-  });
-  controller.updateRiskActivity.mockImplementation((req: any, res: any) => {
-    res.json({ id: req.params.riskActivityId, ...req.body, updated: true });
-  });
-  controller.calculateTrustworthinessScore.mockImplementation((req: any, res: any) => {
-    res.json({ aiSystemId: req.params.aiSystemId, overallScore: 78, dimensions: { validity: 85, reliability: 80, safety: 75, security: 82, accountability: 70, transparency: 78, explainability: 72, privacy: 80, fairness: 76 }, calculatedAt: new Date().toISOString() });
-  });
-  controller.getDashboardData.mockImplementation((_req: any, res: any) => {
-    res.json({ totalSystems: 5, systemsByStatus: { Active: 3, Development: 1, Archived: 1 }, averageTrustworthiness: 76, pendingAssessments: 2, recentActivities: [], riskDistribution: { High: 1, Medium: 2, Low: 2 } });
-  });
+  Object.values(aiRmfServiceMock).forEach((fn: any) => fn.mockReset());
 });
 
 describe('AI RMF Routes Integration', () => {
   // ===========================================================================
-  // AI System Management Tests
+  // AI System Management
   // ===========================================================================
   describe('AI System Management', () => {
     describe('POST /api/ai-rmf/systems', () => {
-      it('should create new AI system', async () => {
+      it('creates a system scoped to the caller org and returns 201 with the service result', async () => {
+        aiRmfServiceMock.createAISystem.mockResolvedValue({
+          id: 'ai-rmf-system-123',
+          name: 'Risk Assessment Model',
+          status: 'Active',
+          organizationId: 'org-123',
+        });
+
         const response = await request(app)
           .post('/api/ai-rmf/systems')
           .send({
             name: 'Risk Assessment Model',
             description: 'ML model for risk assessment',
-            purpose: 'Automated risk scoring',
+            useCase: 'Automated risk scoring',
             deploymentContext: 'Production',
           })
           .expect(201);
 
-        expect(response.body).toHaveProperty('id');
-        expect(response.body.status).toBe('Active');
+        expect(response.body).toEqual(
+          expect.objectContaining({ id: 'ai-rmf-system-123', status: 'Active' })
+        );
+        // Controller must scope to org-123 and forward the payload fields.
+        expect(aiRmfServiceMock.createAISystem).toHaveBeenCalledTimes(1);
+        const [orgArg, payloadArg, userArg] = aiRmfServiceMock.createAISystem.mock.calls[0];
+        expect(orgArg).toBe('org-123');
+        expect(userArg).toBe('user-123');
+        expect(payloadArg).toEqual(
+          expect.objectContaining({
+            name: 'Risk Assessment Model',
+            useCase: 'Automated risk scoring',
+            deploymentContext: 'Production',
+          })
+        );
+      });
+
+      it('maps a service AppError to its HTTP status', async () => {
+        const { AppError } = await import('../../../middleware/errorHandler');
+        aiRmfServiceMock.createAISystem.mockRejectedValue(new AppError('Name already exists', 409));
+
+        const response = await request(app)
+          .post('/api/ai-rmf/systems')
+          .send({ name: 'dup' })
+          .expect(409);
+
+        expect(response.body.error || response.body.message).toMatch(/already exists/i);
       });
     });
 
     describe('GET /api/ai-rmf/systems', () => {
-      it('should list AI systems', async () => {
+      it('returns systems for the caller org and passes query filters through', async () => {
+        aiRmfServiceMock.getAISystems.mockResolvedValue([
+          { id: 'sys-1', name: 'ML Model A', status: 'Active' },
+          { id: 'sys-2', name: 'ML Model B', status: 'Development' },
+        ]);
+
         const response = await request(app)
-          .get('/api/ai-rmf/systems')
+          .get('/api/ai-rmf/systems?status=Active')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.body.length).toBe(2);
+        expect(response.body).toHaveLength(2);
+        expect(aiRmfServiceMock.getAISystems).toHaveBeenCalledWith(
+          'org-123',
+          expect.objectContaining({ status: 'Active' })
+        );
       });
     });
 
     describe('GET /api/ai-rmf/systems/:id', () => {
-      it('should get AI system by ID', async () => {
+      it('fetches the system by id within the caller org', async () => {
+        aiRmfServiceMock.getAISystemById.mockResolvedValue({
+          id: 'sys-123',
+          name: 'AI System',
+          coreFunctions: [],
+          trustworthinessCharacteristics: [],
+        });
+
         const response = await request(app)
           .get('/api/ai-rmf/systems/sys-123')
           .expect(200);
 
         expect(response.body).toHaveProperty('id', 'sys-123');
-        expect(response.body).toHaveProperty('coreFunctions');
-        expect(response.body).toHaveProperty('trustworthinessCharacteristics');
+        expect(aiRmfServiceMock.getAISystemById).toHaveBeenCalledWith('org-123', 'sys-123');
       });
 
-      it('should return 404 for non-existent system', async () => {
-        await request(app)
-          .get('/api/ai-rmf/systems/nonexistent')
-          .expect(404);
+      it('returns 404 when the service reports the system is absent', async () => {
+        const { AppError } = await import('../../../middleware/errorHandler');
+        aiRmfServiceMock.getAISystemById.mockRejectedValue(new AppError('AI System not found', 404));
+
+        await request(app).get('/api/ai-rmf/systems/nonexistent').expect(404);
+        expect(aiRmfServiceMock.getAISystemById).toHaveBeenCalledWith('org-123', 'nonexistent');
       });
     });
 
     describe('PATCH /api/ai-rmf/systems/:id', () => {
-      it('should update AI system', async () => {
+      it('updates the system with the org scope and request body', async () => {
+        aiRmfServiceMock.updateAISystem.mockResolvedValue({ id: 'sys-123', status: 'Development' });
+
         const response = await request(app)
           .patch('/api/ai-rmf/systems/sys-123')
-          .send({
-            status: 'Development',
-            description: 'Updated description',
-          })
+          .send({ status: 'Development', description: 'Updated description' })
           .expect(200);
 
-        expect(response.body).toHaveProperty('updated', true);
+        expect(response.body).toEqual(
+          expect.objectContaining({ id: 'sys-123', status: 'Development' })
+        );
+        const [orgArg, idArg, bodyArg] = aiRmfServiceMock.updateAISystem.mock.calls[0];
+        expect(orgArg).toBe('org-123');
+        expect(idArg).toBe('sys-123');
+        expect(bodyArg).toEqual(expect.objectContaining({ status: 'Development' }));
       });
     });
 
     describe('DELETE /api/ai-rmf/systems/:id', () => {
-      it('should delete AI system', async () => {
+      it('deletes and returns the documented { success: true } shape', async () => {
+        aiRmfServiceMock.deleteAISystem.mockResolvedValue(undefined);
+
         const response = await request(app)
           .delete('/api/ai-rmf/systems/sys-123')
           .expect(200);
 
-        expect(response.body).toHaveProperty('deleted', true);
+        // Controller normalizes delete to { success: true } regardless of service return.
+        expect(response.body).toEqual({ success: true });
+        // Controller forwards request context: ipAddress (string) and userAgent (undefined here).
+        expect(aiRmfServiceMock.deleteAISystem).toHaveBeenCalledWith(
+          'org-123',
+          'sys-123',
+          'user-123',
+          expect.any(String),
+          undefined
+        );
       });
     });
   });
 
   // ===========================================================================
-  // Core Functions Tests
+  // Core Functions
   // ===========================================================================
   describe('Core Functions', () => {
-    describe('PATCH /api/ai-rmf/systems/:aiSystemId/functions/:functionName', () => {
-      it('should update core function', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/functions/GOVERN')
-          .send({
-            status: 'Implemented',
-            maturityLevel: 3,
-            evidence: ['Policy documents', 'Training records'],
-          })
-          .expect(200);
-
-        expect(response.body).toHaveProperty('functionName', 'GOVERN');
-        expect(response.body).toHaveProperty('updated', true);
+    it('updates a core function, forwarding org/system/function and body', async () => {
+      aiRmfServiceMock.updateCoreFunction.mockResolvedValue({
+        functionName: 'GOVERN',
+        status: 'Implemented',
       });
 
-      it('should update MAP function', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/functions/MAP')
-          .send({
-            status: 'In Progress',
-            maturityLevel: 2,
-          })
-          .expect(200);
+      const response = await request(app)
+        .patch('/api/ai-rmf/systems/sys-123/functions/GOVERN')
+        .send({ status: 'Implemented', maturityLevel: 3 })
+        .expect(200);
 
-        expect(response.body.functionName).toBe('MAP');
-      });
-
-      it('should update MEASURE function', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/functions/MEASURE')
-          .send({
-            status: 'Implemented',
-            maturityLevel: 4,
-          })
-          .expect(200);
-
-        expect(response.body.functionName).toBe('MEASURE');
-      });
-
-      it('should update MANAGE function', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/functions/MANAGE')
-          .send({
-            status: 'Partial',
-            maturityLevel: 2,
-          })
-          .expect(200);
-
-        expect(response.body.functionName).toBe('MANAGE');
-      });
+      expect(response.body).toHaveProperty('functionName', 'GOVERN');
+      const [orgArg, sysArg, fnArg, bodyArg] = aiRmfServiceMock.updateCoreFunction.mock.calls[0];
+      expect(orgArg).toBe('org-123');
+      expect(sysArg).toBe('sys-123');
+      expect(fnArg).toBe('GOVERN');
+      expect(bodyArg).toEqual(expect.objectContaining({ status: 'Implemented', maturityLevel: 3 }));
     });
   });
 
   // ===========================================================================
-  // Categories and Subcategories Tests
+  // Categories and Subcategories
   // ===========================================================================
   describe('Categories and Subcategories', () => {
-    describe('PATCH /api/ai-rmf/categories/:categoryId', () => {
-      it('should update category', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/categories/cat-123')
-          .send({
-            status: 'Compliant',
-            notes: 'All requirements met',
-          })
-          .expect(200);
+    it('updates a category scoped to the org', async () => {
+      aiRmfServiceMock.updateCategory.mockResolvedValue({ id: 'cat-123', status: 'Compliant' });
 
-        expect(response.body).toHaveProperty('updated', true);
-      });
+      await request(app)
+        .patch('/api/ai-rmf/categories/cat-123')
+        .send({ status: 'Compliant', notes: 'All requirements met' })
+        .expect(200);
+
+      expect(aiRmfServiceMock.updateCategory).toHaveBeenCalledWith(
+        'org-123',
+        'cat-123',
+        expect.objectContaining({ status: 'Compliant' }),
+        'user-123',
+        expect.any(String),
+        undefined
+      );
     });
 
-    describe('PATCH /api/ai-rmf/subcategories/:subcategoryId', () => {
-      it('should update subcategory', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/subcategories/subcat-123')
-          .send({
-            status: 'In Progress',
-            implementation: 'Partial',
-          })
-          .expect(200);
+    it('updates a subcategory scoped to the org', async () => {
+      aiRmfServiceMock.updateSubcategory.mockResolvedValue({ id: 'subcat-123', status: 'In Progress' });
 
-        expect(response.body).toHaveProperty('updated', true);
-      });
+      await request(app)
+        .patch('/api/ai-rmf/subcategories/subcat-123')
+        .send({ status: 'In Progress' })
+        .expect(200);
+
+      expect(aiRmfServiceMock.updateSubcategory).toHaveBeenCalledWith(
+        'org-123',
+        'subcat-123',
+        expect.objectContaining({ status: 'In Progress' }),
+        'user-123',
+        expect.any(String),
+        undefined
+      );
     });
   });
 
   // ===========================================================================
-  // Trustworthiness Characteristics Tests
+  // Trustworthiness Characteristics
   // ===========================================================================
   describe('Trustworthiness Characteristics', () => {
-    describe('PATCH /api/ai-rmf/systems/:aiSystemId/trustworthiness/:characteristic', () => {
-      it('should update validity characteristic', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/trustworthiness/validity')
-          .send({
-            score: 85,
-            evidence: ['Validation reports', 'Accuracy metrics'],
-          })
-          .expect(200);
-
-        expect(response.body).toHaveProperty('characteristic', 'validity');
-        expect(response.body).toHaveProperty('score', 85);
+    it('updates a characteristic, forwarding the score in the body', async () => {
+      aiRmfServiceMock.updateTrustworthinessCharacteristic.mockResolvedValue({
+        characteristic: 'validity',
+        score: 85,
       });
 
-      it('should update fairness characteristic', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/trustworthiness/fairness')
-          .send({
-            score: 78,
-            evidence: ['Bias audit report'],
-          })
-          .expect(200);
+      const response = await request(app)
+        .patch('/api/ai-rmf/systems/sys-123/trustworthiness/validity')
+        .send({ score: 85, evidence: ['Validation reports'] })
+        .expect(200);
 
-        expect(response.body.characteristic).toBe('fairness');
-      });
-
-      it('should update explainability characteristic', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/trustworthiness/explainability')
-          .send({
-            score: 72,
-            evidence: ['SHAP values documentation'],
-          })
-          .expect(200);
-
-        expect(response.body.characteristic).toBe('explainability');
-      });
+      expect(response.body).toHaveProperty('characteristic', 'validity');
+      const call = aiRmfServiceMock.updateTrustworthinessCharacteristic.mock.calls[0];
+      expect(call[0]).toBe('org-123');
+      expect(call[1]).toBe('sys-123');
+      expect(call[2]).toBe('validity');
+      expect(call[3]).toEqual(expect.objectContaining({ score: 85 }));
     });
   });
 
   // ===========================================================================
-  // Lifecycle Stages Tests
+  // Lifecycle Stages
   // ===========================================================================
   describe('Lifecycle Stages', () => {
-    describe('PATCH /api/ai-rmf/systems/:aiSystemId/lifecycle/:stage', () => {
-      it('should update planning stage', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/lifecycle/planning')
-          .send({
-            status: 'Completed',
-            completedAt: new Date().toISOString(),
-          })
-          .expect(200);
+    it('updates a lifecycle stage scoped to the org/system', async () => {
+      aiRmfServiceMock.updateLifecycleStage.mockResolvedValue({ stage: 'deployment', status: 'In Progress' });
 
-        expect(response.body).toHaveProperty('stage', 'planning');
-        expect(response.body).toHaveProperty('updated', true);
-      });
+      const response = await request(app)
+        .patch('/api/ai-rmf/systems/sys-123/lifecycle/deployment')
+        .send({ status: 'In Progress' })
+        .expect(200);
 
-      it('should update deployment stage', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/lifecycle/deployment')
-          .send({
-            status: 'In Progress',
-            targetDate: new Date().toISOString(),
-          })
-          .expect(200);
-
-        expect(response.body.stage).toBe('deployment');
-      });
-
-      it('should update monitoring stage', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/systems/sys-123/lifecycle/monitoring')
-          .send({
-            status: 'Active',
-            monitoringTools: ['MLflow', 'Custom Dashboard'],
-          })
-          .expect(200);
-
-        expect(response.body.stage).toBe('monitoring');
-      });
+      expect(response.body).toHaveProperty('stage', 'deployment');
+      const call = aiRmfServiceMock.updateLifecycleStage.mock.calls[0];
+      expect(call[0]).toBe('org-123');
+      expect(call[1]).toBe('sys-123');
+      expect(call[2]).toBe('deployment');
     });
   });
 
   // ===========================================================================
-  // AI Actors Tests
+  // AI Actors
   // ===========================================================================
   describe('AI Actors', () => {
-    describe('POST /api/ai-rmf/systems/:aiSystemId/actors', () => {
-      it('should add actor to system', async () => {
-        const response = await request(app)
-          .post('/api/ai-rmf/systems/sys-123/actors')
-          .send({
-            name: 'ML Engineer',
-            role: 'Developer',
-            responsibilities: ['Model training', 'Performance optimization'],
-          })
-          .expect(201);
+    it('adds an actor (201) scoped to the org/system', async () => {
+      aiRmfServiceMock.addActor.mockResolvedValue({ id: 'actor-123', name: 'ML Engineer' });
 
-        expect(response.body).toHaveProperty('id');
-        expect(response.body.name).toBe('ML Engineer');
-      });
+      const response = await request(app)
+        .post('/api/ai-rmf/systems/sys-123/actors')
+        .send({ name: 'ML Engineer', role: 'Developer' })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id', 'actor-123');
+      expect(aiRmfServiceMock.addActor).toHaveBeenCalledWith(
+        'org-123',
+        'sys-123',
+        expect.objectContaining({ name: 'ML Engineer', role: 'Developer' })
+      );
     });
 
-    describe('DELETE /api/ai-rmf/actors/:actorId', () => {
-      it('should remove actor', async () => {
-        const response = await request(app)
-          .delete('/api/ai-rmf/actors/actor-123')
-          .expect(200);
+    it('removes an actor and returns { success: true }', async () => {
+      aiRmfServiceMock.removeActor.mockResolvedValue(undefined);
 
-        expect(response.body).toHaveProperty('deleted', true);
-      });
+      const response = await request(app)
+        .delete('/api/ai-rmf/actors/actor-123')
+        .expect(200);
+
+      expect(response.body).toEqual({ success: true });
+      expect(aiRmfServiceMock.removeActor).toHaveBeenCalledWith('org-123', 'actor-123');
     });
   });
 
   // ===========================================================================
-  // Assessments Tests
+  // Assessments
   // ===========================================================================
   describe('Assessments', () => {
-    describe('POST /api/ai-rmf/systems/:aiSystemId/assessments', () => {
-      it('should create assessment', async () => {
-        const response = await request(app)
-          .post('/api/ai-rmf/systems/sys-123/assessments')
-          .send({
-            assessmentType: 'Impact',
-            scope: 'Full system',
-            assessor: 'user-123',
-          })
-          .expect(201);
+    it('creates an assessment (201) scoped to the org/system', async () => {
+      aiRmfServiceMock.createAssessment.mockResolvedValue({ id: 'assessment-123', status: 'In Progress' });
 
-        expect(response.body).toHaveProperty('id');
-        expect(response.body.status).toBe('In Progress');
-      });
+      const response = await request(app)
+        .post('/api/ai-rmf/systems/sys-123/assessments')
+        .send({ assessmentType: 'Impact', scope: 'Full system' })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id', 'assessment-123');
+      const call = aiRmfServiceMock.createAssessment.mock.calls[0];
+      expect(call[0]).toBe('org-123');
+      expect(call[1]).toBe('sys-123');
+      expect(call[2]).toEqual(expect.objectContaining({ assessmentType: 'Impact' }));
     });
 
-    describe('GET /api/ai-rmf/systems/:aiSystemId/assessments', () => {
-      it('should list assessments', async () => {
-        const response = await request(app)
-          .get('/api/ai-rmf/systems/sys-123/assessments')
-          .expect(200);
+    it('lists assessments for the org/system', async () => {
+      aiRmfServiceMock.getAssessments.mockResolvedValue([
+        { id: 'assess-1', status: 'Completed' },
+        { id: 'assess-2', status: 'In Progress' },
+      ]);
 
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.body.length).toBe(2);
-      });
+      const response = await request(app)
+        .get('/api/ai-rmf/systems/sys-123/assessments')
+        .expect(200);
+
+      expect(response.body).toHaveLength(2);
+      expect(aiRmfServiceMock.getAssessments).toHaveBeenCalledWith('org-123', 'sys-123');
     });
 
-    describe('DELETE /api/ai-rmf/assessments/:assessmentId', () => {
-      it('should delete assessment', async () => {
-        const response = await request(app)
-          .delete('/api/ai-rmf/assessments/assess-123')
-          .expect(200);
+    it('deletes an assessment and returns { success: true }', async () => {
+      aiRmfServiceMock.deleteAssessment.mockResolvedValue(undefined);
 
-        expect(response.body).toHaveProperty('deleted', true);
-      });
+      const response = await request(app)
+        .delete('/api/ai-rmf/assessments/assess-123')
+        .expect(200);
+
+      expect(response.body).toEqual({ success: true });
+      expect(aiRmfServiceMock.deleteAssessment).toHaveBeenCalledWith(
+        'org-123',
+        'assess-123',
+        'user-123',
+        expect.any(String),
+        undefined
+      );
     });
   });
 
   // ===========================================================================
-  // Profiles Tests
+  // Profiles
   // ===========================================================================
   describe('Profiles', () => {
-    describe('POST /api/ai-rmf/systems/:aiSystemId/profiles', () => {
-      it('should create profile', async () => {
-        const response = await request(app)
-          .post('/api/ai-rmf/systems/sys-123/profiles')
-          .send({
-            profileType: 'Current',
-            targetState: { governMaturity: 3, mapMaturity: 2 },
-          })
-          .expect(201);
+    it('creates a profile (201) scoped to the org/system', async () => {
+      aiRmfServiceMock.createProfile.mockResolvedValue({ id: 'profile-123', profileType: 'Current' });
 
-        expect(response.body).toHaveProperty('id');
-        expect(response.body).toHaveProperty('profileType');
-      });
+      const response = await request(app)
+        .post('/api/ai-rmf/systems/sys-123/profiles')
+        .send({ profileType: 'Current', targetState: { governMaturity: 3 } })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id', 'profile-123');
+      expect(aiRmfServiceMock.createProfile).toHaveBeenCalledWith(
+        'org-123',
+        'sys-123',
+        expect.objectContaining({ profileType: 'Current' })
+      );
     });
   });
 
   // ===========================================================================
-  // Risk Activities Tests
+  // Risk Activities
   // ===========================================================================
   describe('Risk Activities', () => {
-    describe('POST /api/ai-rmf/systems/:aiSystemId/risk-activities', () => {
-      it('should create risk activity', async () => {
-        const response = await request(app)
-          .post('/api/ai-rmf/systems/sys-123/risk-activities')
-          .send({
-            activityType: 'Risk Identification',
-            description: 'Identify potential bias in training data',
-          })
-          .expect(201);
+    it('creates a risk activity (201) scoped to the org/system', async () => {
+      aiRmfServiceMock.createRiskActivity.mockResolvedValue({ id: 'risk-activity-123', status: 'Pending' });
 
-        expect(response.body).toHaveProperty('id');
-        expect(response.body.status).toBe('Pending');
-      });
+      const response = await request(app)
+        .post('/api/ai-rmf/systems/sys-123/risk-activities')
+        .send({ activityType: 'Risk Identification', description: 'Identify bias' })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id', 'risk-activity-123');
+      const call = aiRmfServiceMock.createRiskActivity.mock.calls[0];
+      expect(call[0]).toBe('org-123');
+      expect(call[1]).toBe('sys-123');
     });
 
-    describe('PATCH /api/ai-rmf/risk-activities/:riskActivityId', () => {
-      it('should update risk activity', async () => {
-        const response = await request(app)
-          .patch('/api/ai-rmf/risk-activities/risk-act-123')
-          .send({
-            status: 'Completed',
-            findings: 'No significant bias detected',
-          })
-          .expect(200);
+    it('updates a risk activity scoped to the org', async () => {
+      aiRmfServiceMock.updateRiskActivity.mockResolvedValue({ id: 'risk-act-123', status: 'Completed' });
 
-        expect(response.body).toHaveProperty('updated', true);
-      });
+      await request(app)
+        .patch('/api/ai-rmf/risk-activities/risk-act-123')
+        .send({ status: 'Completed' })
+        .expect(200);
+
+      expect(aiRmfServiceMock.updateRiskActivity).toHaveBeenCalledWith(
+        'org-123',
+        'risk-act-123',
+        expect.objectContaining({ status: 'Completed' }),
+        'user-123',
+        expect.any(String),
+        undefined
+      );
     });
   });
 
   // ===========================================================================
-  // Analytics and Reporting Tests
+  // Analytics and Reporting
   // ===========================================================================
   describe('Analytics and Reporting', () => {
-    describe('POST /api/ai-rmf/systems/:aiSystemId/calculate-trustworthiness', () => {
-      it('should calculate trustworthiness score', async () => {
-        const response = await request(app)
-          .post('/api/ai-rmf/systems/sys-123/calculate-trustworthiness')
-          .expect(200);
-
-        expect(response.body).toHaveProperty('overallScore');
-        expect(response.body).toHaveProperty('dimensions');
-        expect(response.body.dimensions).toHaveProperty('validity');
-        expect(response.body.dimensions).toHaveProperty('fairness');
-        expect(response.body.dimensions).toHaveProperty('explainability');
+    it('returns the trustworthiness score wrapped as { score }', async () => {
+      aiRmfServiceMock.calculateTrustworthinessScore.mockResolvedValue({
+        overallScore: 78,
+        dimensions: { validity: 85, fairness: 76, explainability: 72 },
       });
+
+      const response = await request(app)
+        .post('/api/ai-rmf/systems/sys-123/calculate-trustworthiness')
+        .expect(200);
+
+      // Controller wraps the service result under a `score` key.
+      expect(response.body).toHaveProperty('score');
+      expect(response.body.score).toHaveProperty('overallScore', 78);
+      expect(response.body.score.dimensions).toHaveProperty('validity', 85);
+      expect(aiRmfServiceMock.calculateTrustworthinessScore).toHaveBeenCalledWith('org-123', 'sys-123');
     });
 
-    describe('GET /api/ai-rmf/dashboard', () => {
-      it('should return dashboard data', async () => {
-        const response = await request(app)
-          .get('/api/ai-rmf/dashboard')
-          .expect(200);
-
-        expect(response.body).toHaveProperty('totalSystems');
-        expect(response.body).toHaveProperty('systemsByStatus');
-        expect(response.body).toHaveProperty('averageTrustworthiness');
-        expect(response.body).toHaveProperty('pendingAssessments');
-        expect(response.body).toHaveProperty('riskDistribution');
+    it('returns dashboard data for the caller org', async () => {
+      aiRmfServiceMock.getDashboardData.mockResolvedValue({
+        totalSystems: 5,
+        systemsByStatus: { Active: 3 },
+        averageTrustworthiness: 76,
+        pendingAssessments: 2,
+        riskDistribution: { High: 1, Medium: 2, Low: 2 },
       });
+
+      const response = await request(app)
+        .get('/api/ai-rmf/dashboard')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('totalSystems', 5);
+      expect(response.body).toHaveProperty('riskDistribution');
+      expect(aiRmfServiceMock.getDashboardData).toHaveBeenCalledWith('org-123');
     });
   });
 });

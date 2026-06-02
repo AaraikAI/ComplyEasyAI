@@ -118,113 +118,6 @@ interface Workpaper {
   size: string;
 }
 
-const ENGAGEMENTS: Engagement[] = [
-  {
-    id: 'ENG-001',
-    name: 'SOC 2 Type II Annual Audit',
-    framework: 'SOC 2',
-    auditorFirm: 'Deloitte',
-    leadAuditor: 'Sarah Chen',
-    status: 'fieldwork',
-    phase: 'Control Testing',
-    startDate: '2026-01-15',
-    endDate: '2026-04-30',
-    progress: 62,
-    findingsCount: 4,
-    evidenceRequests: 18,
-  },
-  {
-    id: 'ENG-002',
-    name: 'ISO 27001 Certification Audit',
-    framework: 'ISO 27001',
-    auditorFirm: 'EY',
-    leadAuditor: 'Michael Torres',
-    status: 'planning',
-    phase: 'Scope Definition',
-    startDate: '2026-03-01',
-    endDate: '2026-06-30',
-    progress: 15,
-    findingsCount: 0,
-    evidenceRequests: 5,
-  },
-  {
-    id: 'ENG-003',
-    name: 'SOX ITGC Compliance Audit',
-    framework: 'SOX',
-    auditorFirm: 'PwC',
-    leadAuditor: 'Jennifer Walsh',
-    status: 'reporting',
-    phase: 'Report Drafting',
-    startDate: '2025-10-01',
-    endDate: '2026-02-28',
-    progress: 88,
-    findingsCount: 6,
-    evidenceRequests: 32,
-  },
-  {
-    id: 'ENG-004',
-    name: 'PCI DSS v4.0 Assessment',
-    framework: 'PCI DSS',
-    auditorFirm: 'KPMG',
-    leadAuditor: 'David Park',
-    status: 'planning',
-    phase: 'Pre-Assessment',
-    startDate: '2026-04-01',
-    endDate: '2026-07-31',
-    progress: 5,
-    findingsCount: 0,
-    evidenceRequests: 2,
-  },
-];
-
-const FINDINGS: Finding[] = [
-  { id: 'FND-001', title: 'Inadequate access review process', engagement: 'SOC 2 Type II', severity: 'high', status: 'open', category: 'Access Control', description: 'Quarterly access reviews not consistently performed across all systems.', assignee: 'John Miller', dueDate: '2026-03-15', createdDate: '2026-02-01' },
-  { id: 'FND-002', title: 'Missing encryption at rest for backup data', engagement: 'SOC 2 Type II', severity: 'critical', status: 'in-progress', category: 'Data Protection', description: 'Backup storage volumes lack AES-256 encryption.', assignee: 'Lisa Wang', dueDate: '2026-02-28', createdDate: '2026-01-20' },
-  { id: 'FND-003', title: 'Incomplete change management documentation', engagement: 'SOC 2 Type II', severity: 'medium', status: 'remediated', category: 'Change Management', description: 'Change tickets missing required approval signatures.', assignee: 'Tom Harris', dueDate: '2026-03-01', createdDate: '2026-01-25' },
-  { id: 'FND-004', title: 'Vendor risk assessments overdue', engagement: 'SOC 2 Type II', severity: 'medium', status: 'open', category: 'Vendor Management', description: 'Annual vendor risk assessments not completed for 3 critical vendors.', assignee: 'Sarah Kim', dueDate: '2026-03-10', createdDate: '2026-02-05' },
-  { id: 'FND-005', title: 'Segregation of duties violation in finance', engagement: 'SOX ITGC', severity: 'critical', status: 'in-progress', category: 'Segregation of Duties', description: 'Same individual can create and approve journal entries.', assignee: 'Mark Davis', dueDate: '2026-02-20', createdDate: '2025-12-15' },
-  { id: 'FND-006', title: 'Privileged access not monitored', engagement: 'SOX ITGC', severity: 'high', status: 'open', category: 'Access Control', description: 'Admin account usage not logged or reviewed.', assignee: 'John Miller', dueDate: '2026-03-05', createdDate: '2026-01-10' },
-  { id: 'FND-007', title: 'Patch management gaps identified', engagement: 'SOX ITGC', severity: 'high', status: 'remediated', category: 'Patch Management', description: 'Critical patches not applied within 30-day SLA.', assignee: 'Lisa Wang', dueDate: '2026-02-15', createdDate: '2025-11-20' },
-  { id: 'FND-008', title: 'Disaster recovery plan not tested', engagement: 'SOX ITGC', severity: 'medium', status: 'open', category: 'Business Continuity', description: 'DR plan has not been tested in over 18 months.', assignee: 'Tom Harris', dueDate: '2026-04-01', createdDate: '2026-01-05' },
-  { id: 'FND-009', title: 'Weak password policy enforcement', engagement: 'SOX ITGC', severity: 'medium', status: 'closed', category: 'Access Control', description: 'Minimum password length set to 6 characters on legacy system.', assignee: 'Mark Davis', dueDate: '2026-01-31', createdDate: '2025-11-10' },
-  { id: 'FND-010', title: 'Logging gaps in production environment', engagement: 'SOX ITGC', severity: 'high', status: 'in-progress', category: 'Monitoring', description: 'Application-level audit logs not enabled on 2 production servers.', assignee: 'Sarah Kim', dueDate: '2026-02-25', createdDate: '2026-01-15' },
-  { id: 'FND-011', title: 'Incident response SLA not met', engagement: 'SOC 2 Type II', severity: 'low', status: 'accepted', category: 'Incident Management', description: 'P2 incidents occasionally exceeding 4-hour response SLA.', assignee: 'John Miller', dueDate: '2026-03-20', createdDate: '2026-02-10' },
-  { id: 'FND-012', title: 'Training records incomplete', engagement: 'SOC 2 Type II', severity: 'informational', status: 'closed', category: 'Security Awareness', description: 'Security awareness training completion records missing for 5 contractors.', assignee: 'Tom Harris', dueDate: '2026-02-10', createdDate: '2026-01-28' },
-];
-
-const EVIDENCE_REQUESTS: EvidenceRequest[] = [
-  { id: 'EVR-001', title: 'Access review logs Q4 2025', engagement: 'SOC 2 Type II', status: 'pending', requestedBy: 'Sarah Chen', assignee: 'John Miller', dueDate: '2026-02-20', priority: 'high', description: 'Provide access review logs for all critical systems for Q4 2025.', attachments: 0, isOverdue: false },
-  { id: 'EVR-002', title: 'Encryption configuration evidence', engagement: 'SOC 2 Type II', status: 'submitted', requestedBy: 'Sarah Chen', assignee: 'Lisa Wang', dueDate: '2026-02-18', priority: 'high', description: 'Screenshots showing encryption at rest configuration for all databases.', attachments: 3, isOverdue: false },
-  { id: 'EVR-003', title: 'Change management tickets sample', engagement: 'SOC 2 Type II', status: 'accepted', requestedBy: 'Sarah Chen', assignee: 'Tom Harris', dueDate: '2026-02-15', priority: 'medium', description: 'Sample of 25 change management tickets from the audit period.', attachments: 5, isOverdue: false },
-  { id: 'EVR-004', title: 'Vendor SOC reports', engagement: 'SOC 2 Type II', status: 'pending', requestedBy: 'Sarah Chen', assignee: 'Sarah Kim', dueDate: '2026-02-14', priority: 'high', description: 'SOC 2 reports for all critical third-party vendors.', attachments: 0, isOverdue: true },
-  { id: 'EVR-005', title: 'User provisioning workflow documentation', engagement: 'SOC 2 Type II', status: 'under-review', requestedBy: 'Sarah Chen', assignee: 'Mark Davis', dueDate: '2026-02-22', priority: 'medium', description: 'Documentation of user provisioning and deprovisioning processes.', attachments: 2, isOverdue: false },
-  { id: 'EVR-006', title: 'SOD matrix for financial applications', engagement: 'SOX ITGC', status: 'rejected', requestedBy: 'Jennifer Walsh', assignee: 'Mark Davis', dueDate: '2026-02-10', priority: 'high', description: 'Segregation of duties matrix for all financial applications.', attachments: 1, isOverdue: true },
-  { id: 'EVR-007', title: 'Privileged account inventory', engagement: 'SOX ITGC', status: 'submitted', requestedBy: 'Jennifer Walsh', assignee: 'John Miller', dueDate: '2026-02-25', priority: 'high', description: 'Complete inventory of all privileged accounts across production systems.', attachments: 2, isOverdue: false },
-  { id: 'EVR-008', title: 'Patch deployment reports', engagement: 'SOX ITGC', status: 'accepted', requestedBy: 'Jennifer Walsh', assignee: 'Lisa Wang', dueDate: '2026-02-12', priority: 'medium', description: 'Monthly patch deployment and compliance reports for the past 6 months.', attachments: 6, isOverdue: false },
-  { id: 'EVR-009', title: 'DR test results', engagement: 'SOX ITGC', status: 'pending', requestedBy: 'Jennifer Walsh', assignee: 'Tom Harris', dueDate: '2026-03-01', priority: 'low', description: 'Most recent disaster recovery test results and lessons learned.', attachments: 0, isOverdue: false },
-  { id: 'EVR-010', title: 'Network architecture diagram', engagement: 'PCI DSS v4.0', status: 'pending', requestedBy: 'David Park', assignee: 'Lisa Wang', dueDate: '2026-03-15', priority: 'medium', description: 'Updated network architecture diagram showing CDE segmentation.', attachments: 0, isOverdue: false },
-];
-
-const AUDITOR_FIRMS: AuditorFirm[] = [
-  { id: 'AF-001', name: 'Deloitte', logo: 'D', specializations: ['SOC 2', 'ISO 27001', 'SOX', 'HIPAA', 'FedRAMP'], rating: 4.8, reviewCount: 342, location: 'New York, NY', contactEmail: 'audit@deloitte.com', contactPhone: '+1 (212) 555-0100', website: 'deloitte.com', certifications: ['AICPA', 'ISACA', 'IIA'], yearsExperience: 175, clientCount: 5200, priceRange: '$$$$$' },
-  { id: 'AF-002', name: 'EY', logo: 'EY', specializations: ['ISO 27001', 'SOC 2', 'GDPR', 'SOX', 'NIST'], rating: 4.7, reviewCount: 298, location: 'London, UK', contactEmail: 'cybersecurity@ey.com', contactPhone: '+1 (212) 555-0200', website: 'ey.com', certifications: ['AICPA', 'ISACA', 'BSI'], yearsExperience: 135, clientCount: 4800, priceRange: '$$$$$' },
-  { id: 'AF-003', name: 'PwC', logo: 'PwC', specializations: ['SOX', 'SOC 2', 'ISO 27001', 'PCI DSS', 'CMMC'], rating: 4.7, reviewCount: 310, location: 'London, UK', contactEmail: 'risk@pwc.com', contactPhone: '+1 (646) 555-0300', website: 'pwc.com', certifications: ['AICPA', 'PCAOB', 'ISACA'], yearsExperience: 160, clientCount: 4500, priceRange: '$$$$$' },
-  { id: 'AF-004', name: 'KPMG', logo: 'K', specializations: ['PCI DSS', 'SOC 2', 'HITRUST', 'SOX', 'ISO 27001'], rating: 4.6, reviewCount: 275, location: 'Amsterdam, NL', contactEmail: 'advisory@kpmg.com', contactPhone: '+1 (212) 555-0400', website: 'kpmg.com', certifications: ['AICPA', 'PCI SSC', 'ISACA'], yearsExperience: 150, clientCount: 4100, priceRange: '$$$$' },
-  { id: 'AF-005', name: 'BDO', logo: 'B', specializations: ['SOC 2', 'SOX', 'ISO 27001', 'HIPAA'], rating: 4.4, reviewCount: 185, location: 'Chicago, IL', contactEmail: 'assurance@bdo.com', contactPhone: '+1 (312) 555-0500', website: 'bdo.com', certifications: ['AICPA', 'ISACA'], yearsExperience: 60, clientCount: 2100, priceRange: '$$$' },
-  { id: 'AF-006', name: 'Grant Thornton', logo: 'GT', specializations: ['SOC 2', 'SOX', 'CMMC', 'FedRAMP', 'StateRAMP'], rating: 4.3, reviewCount: 162, location: 'Chicago, IL', contactEmail: 'advisory@gt.com', contactPhone: '+1 (312) 555-0600', website: 'grantthornton.com', certifications: ['AICPA', 'ISACA', 'IIA'], yearsExperience: 100, clientCount: 1800, priceRange: '$$$' },
-];
-
-const WORKPAPERS: Workpaper[] = [
-  { id: 'WP-001', name: 'Access Control Testing Workpaper', engagement: 'SOC 2 Type II', type: 'Testing', status: 'in-review', author: 'Sarah Chen', reviewer: 'James Liu', lastModified: '2026-02-18', version: '2.1', size: '2.4 MB' },
-  { id: 'WP-002', name: 'Change Management Walkthrough', engagement: 'SOC 2 Type II', type: 'Walkthrough', status: 'approved', author: 'Sarah Chen', reviewer: 'James Liu', lastModified: '2026-02-15', version: '1.3', size: '1.8 MB' },
-  { id: 'WP-003', name: 'Risk Assessment Summary', engagement: 'SOC 2 Type II', type: 'Summary', status: 'final', author: 'James Liu', reviewer: 'Patricia Moore', lastModified: '2026-02-10', version: '3.0', size: '3.1 MB' },
-  { id: 'WP-004', name: 'ITGC Control Matrix', engagement: 'SOX ITGC', type: 'Matrix', status: 'draft', author: 'Jennifer Walsh', reviewer: 'Robert Kim', lastModified: '2026-02-17', version: '0.5', size: '4.2 MB' },
-  { id: 'WP-005', name: 'SOD Conflict Analysis', engagement: 'SOX ITGC', type: 'Analysis', status: 'in-review', author: 'Jennifer Walsh', reviewer: 'Robert Kim', lastModified: '2026-02-16', version: '1.2', size: '1.5 MB' },
-  { id: 'WP-006', name: 'Patch Management Evidence Log', engagement: 'SOX ITGC', type: 'Evidence', status: 'approved', author: 'Robert Kim', reviewer: 'Patricia Moore', lastModified: '2026-02-12', version: '2.0', size: '5.7 MB' },
-  { id: 'WP-007', name: 'Network Segmentation Review', engagement: 'PCI DSS v4.0', type: 'Review', status: 'draft', author: 'David Park', reviewer: 'James Liu', lastModified: '2026-02-19', version: '0.2', size: '0.8 MB' },
-  { id: 'WP-008', name: 'Audit Planning Memo', engagement: 'ISO 27001', type: 'Memo', status: 'approved', author: 'Michael Torres', reviewer: 'Patricia Moore', lastModified: '2026-02-08', version: '1.0', size: '1.1 MB' },
-];
-
 const severityColor: Record<string, string> = {
   critical: 'bg-red-500/20 text-red-400 border-red-500/30',
   high: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
@@ -268,65 +161,135 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
   const [findingStatusFilter, setFindingStatusFilter] = useState<string>('all');
   const [evidenceStatusFilter, setEvidenceStatusFilter] = useState<string>('all');
   const [selectedFirms, setSelectedFirms] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [workpaperStatusFilter, setWorkpaperStatusFilter] = useState<string>('all');
-  const [engagements, setEngagements] = useState<Engagement[]>(ENGAGEMENTS);
-  const [findings, setFindings] = useState<Finding[]>(FINDINGS);
-  const [evidenceRequests, setEvidenceRequests] = useState<EvidenceRequest[]>(EVIDENCE_REQUESTS);
-  const [workpapers, setWorkpapers] = useState<Workpaper[]>(WORKPAPERS);
-  const [auditorFirms, setAuditorFirms] = useState<AuditorFirm[]>(AUDITOR_FIRMS);
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
+  const [findings, setFindings] = useState<Finding[]>([]);
+  const [evidenceRequests, setEvidenceRequests] = useState<EvidenceRequest[]>([]);
+  const [workpapers, setWorkpapers] = useState<Workpaper[]>([]);
+  const [auditorFirms, setAuditorFirms] = useState<AuditorFirm[]>([]);
 
-  // Fetch live data from API; fall back to hardcoded demo data on error
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [engRes, findRes, wpRes, evRes, dirRes] = await Promise.all([
-          fetch('/api/auditor/engagements', { credentials: 'include' }),
-          fetch('/api/auditor/findings', { credentials: 'include' }),
-          fetch('/api/auditor/workpapers', { credentials: 'include' }),
-          fetch('/api/auditor/requests', { credentials: 'include' }),
-          fetch('/api/auditor/profiles', { credentials: 'include' }),
-        ]);
-        if (engRes.ok) {
-          const engData = await engRes.json();
-          if (Array.isArray(engData.data) && engData.data.length > 0) {
-            setEngagements(engData.data);
-          }
-        }
-        if (findRes.ok) {
-          const findData = await findRes.json();
-          if (Array.isArray(findData.data) && findData.data.length > 0) {
-            setFindings(findData.data);
-          }
-        }
-        if (wpRes.ok) {
-          const wpData = await wpRes.json();
-          if (Array.isArray(wpData.data) && wpData.data.length > 0) {
-            setWorkpapers(wpData.data);
-          }
-        }
-        if (evRes.ok) {
-          const evData = await evRes.json();
-          if (Array.isArray(evData.data) && evData.data.length > 0) {
-            setEvidenceRequests(evData.data);
-          }
-        }
-        if (dirRes.ok) {
-          const dirData = await dirRes.json();
-          if (Array.isArray(dirData.data) && dirData.data.length > 0) {
-            setAuditorFirms(dirData.data);
-          }
-        }
-      } catch {
-        // Keep hardcoded fallback data
-      } finally {
-        setLoading(false);
+  // Normalize an API list response that may be a bare array or { data: [...] }.
+  const asArray = <T,>(payload: any): T[] =>
+    Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
+
+  // Fetch live data from API. A successful-but-empty response yields an empty list
+  // (real empty state), not seeded demo data; a transport failure surfaces an error.
+  const fetchData = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [engRes, findRes, wpRes, evRes, dirRes] = await Promise.all([
+        fetch('/api/auditor/engagements', { credentials: 'include' }),
+        fetch('/api/auditor/findings', { credentials: 'include' }),
+        fetch('/api/auditor/workpapers', { credentials: 'include' }),
+        fetch('/api/auditor/requests', { credentials: 'include' }),
+        fetch('/api/auditor/profiles', { credentials: 'include' }),
+      ]);
+      if (engRes.ok) setEngagements(asArray<Engagement>(await engRes.json()));
+      if (findRes.ok) setFindings(asArray<Finding>(await findRes.json()));
+      if (wpRes.ok) setWorkpapers(asArray<Workpaper>(await wpRes.json()));
+      if (evRes.ok) setEvidenceRequests(asArray<EvidenceRequest>(await evRes.json()));
+      if (dirRes.ok) setAuditorFirms(asArray<AuditorFirm>(await dirRes.json()));
+      if (!engRes.ok && !findRes.ok && !wpRes.ok && !evRes.ok && !dirRes.ok) {
+        setError('Unable to load auditor data. Please try again.');
       }
-    };
-    fetchData();
+    } catch {
+      setError('Unable to reach the server. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── Write actions (wired to /api/auditor/*) ───────────────────────────────
+  const [engForm, setEngForm] = useState({ name: '', framework: '', auditorFirm: '', startDate: '', endDate: '', leadAuditor: '' });
+  const [engSubmitting, setEngSubmitting] = useState(false);
+  const [showCreateWorkpaper, setShowCreateWorkpaper] = useState(false);
+  const [wpForm, setWpForm] = useState({ name: '', engagementId: '', type: 'Testing' });
+  const [wpSubmitting, setWpSubmitting] = useState(false);
+  const [busyWorkpaperId, setBusyWorkpaperId] = useState<string | null>(null);
+
+  const postJson = async (url: string, body: unknown): Promise<boolean> => {
+    setActionError(null);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const msg = await res.json().catch(() => null);
+        throw new Error(msg?.error || msg?.message || `Request failed (${res.status})`);
+      }
+      return true;
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Action failed');
+      return false;
+    }
+  };
+
+  const handleCreateEngagement = async () => {
+    if (!engForm.name.trim()) { setActionError('Engagement name is required'); return; }
+    setEngSubmitting(true);
+    const ok = await postJson('/api/auditor/engagements', {
+      name: engForm.name.trim(),
+      framework: engForm.framework || undefined,
+      auditorFirm: engForm.auditorFirm || undefined,
+      leadAuditor: engForm.leadAuditor || undefined,
+      startDate: engForm.startDate || undefined,
+      endDate: engForm.endDate || undefined,
+    });
+    setEngSubmitting(false);
+    if (ok) {
+      setShowCreateEngagement(false);
+      setEngForm({ name: '', framework: '', auditorFirm: '', startDate: '', endDate: '', leadAuditor: '' });
+      fetchData();
+    }
+  };
+
+  const handleCreateWorkpaper = async () => {
+    if (!wpForm.name.trim() || !wpForm.engagementId) { setActionError('Workpaper name and engagement are required'); return; }
+    setWpSubmitting(true);
+    const ok = await postJson('/api/auditor/workpapers', {
+      name: wpForm.name.trim(),
+      engagementId: wpForm.engagementId,
+      type: wpForm.type,
+      status: 'draft',
+    });
+    setWpSubmitting(false);
+    if (ok) {
+      setShowCreateWorkpaper(false);
+      setWpForm({ name: '', engagementId: '', type: 'Testing' });
+      fetchData();
+    }
+  };
+
+  const handleWorkpaperStatus = async (id: string, status: 'in-review' | 'approved') => {
+    setBusyWorkpaperId(id);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/auditor/workpapers/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const msg = await res.json().catch(() => null);
+        throw new Error(msg?.error || msg?.message || `Update failed (${res.status})`);
+      }
+      await fetchData();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to update workpaper');
+    } finally {
+      setBusyWorkpaperId(null);
+    }
+  };
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: t('common.overview'), icon: <BarChart3 size={16} /> },
@@ -347,7 +310,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
         f.id.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSeverity && matchesStatus && matchesSearch;
     });
-  }, [findingSeverityFilter, findingStatusFilter, searchQuery]);
+  }, [findings, findingSeverityFilter, findingStatusFilter, searchQuery]);
 
   const filteredEvidence = useMemo(() => {
     return evidenceRequests.filter((e) => {
@@ -421,7 +384,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
           </div>
           <div className="text-3xl font-bold text-white">{overviewStats.remediatedFindings}</div>
           <div className="text-xs text-green-400 mt-1">
-            {Math.round((overviewStats.remediatedFindings / findings.length) * 100)}% closure rate
+            {findings.length > 0 ? Math.round((overviewStats.remediatedFindings / findings.length) * 100) : 0}% closure rate
           </div>
         </div>
       </div>
@@ -625,17 +588,28 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
               </button>
             </div>
             <div className="p-5 space-y-4">
+              {actionError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-400 flex items-center gap-2">
+                  <AlertCircle size={14} className="flex-shrink-0" /> {actionError}
+                </div>
+              )}
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Engagement Name</label>
                 <input
                   type="text"
+                  value={engForm.name}
+                  onChange={(e) => setEngForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="e.g., SOC 2 Type II Annual Audit"
                   className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 />
               </div>
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Framework</label>
-                <select className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                <select
+                  value={engForm.framework}
+                  onChange={(e) => setEngForm((f) => ({ ...f, framework: e.target.value }))}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                >
                   <option value="">Select framework</option>
                   <option>SOC 2</option>
                   <option>ISO 27001</option>
@@ -647,10 +621,14 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
               </div>
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Auditor Firm</label>
-                <select className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                <select
+                  value={engForm.auditorFirm}
+                  onChange={(e) => setEngForm((f) => ({ ...f, auditorFirm: e.target.value }))}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                >
                   <option value="">Select firm</option>
                   {auditorFirms.map((firm) => (
-                    <option key={firm.id}>{firm.name}</option>
+                    <option key={firm.id} value={firm.name}>{firm.name}</option>
                   ))}
                 </select>
               </div>
@@ -659,6 +637,8 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
                   <label className="block text-sm text-slate-300 mb-1">Start Date</label>
                   <input
                     type="date"
+                    value={engForm.startDate}
+                    onChange={(e) => setEngForm((f) => ({ ...f, startDate: e.target.value }))}
                     className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -666,6 +646,8 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
                   <label className="block text-sm text-slate-300 mb-1">End Date</label>
                   <input
                     type="date"
+                    value={engForm.endDate}
+                    onChange={(e) => setEngForm((f) => ({ ...f, endDate: e.target.value }))}
                     className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -674,6 +656,8 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
                 <label className="block text-sm text-slate-300 mb-1">Lead Auditor</label>
                 <input
                   type="text"
+                  value={engForm.leadAuditor}
+                  onChange={(e) => setEngForm((f) => ({ ...f, leadAuditor: e.target.value }))}
                   placeholder="Auditor name"
                   className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 />
@@ -681,16 +665,17 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
             </div>
             <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-700">
               <button
-                onClick={() => setShowCreateEngagement(false)}
+                onClick={() => { setShowCreateEngagement(false); setActionError(null); }}
                 className="px-4 py-2 text-slate-300 hover:text-white text-sm transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={() => setShowCreateEngagement(false)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                onClick={handleCreateEngagement}
+                disabled={engSubmitting || !engForm.name.trim()}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Engagement
+                {engSubmitting ? 'Creating...' : 'Create Engagement'}
               </button>
             </div>
           </div>
@@ -1061,7 +1046,10 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
             <option value="approved">Approved</option>
             <option value="final">Final</option>
           </select>
-          <button className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+          <button
+            onClick={() => { setActionError(null); setShowCreateWorkpaper(true); }}
+            className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+          >
             <Plus size={14} /> New Workpaper
           </button>
         </div>
@@ -1128,12 +1116,22 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
                     <Edit size={14} />
                   </button>
                   {wp.status === 'draft' && (
-                    <button className="text-green-400 hover:text-green-300 text-xs flex items-center gap-1" title="Submit for review">
+                    <button
+                      onClick={() => handleWorkpaperStatus(wp.id, 'in-review')}
+                      disabled={busyWorkpaperId === wp.id}
+                      className="text-green-400 hover:text-green-300 text-xs flex items-center gap-1 disabled:opacity-50"
+                      title="Submit for review"
+                    >
                       <Send size={12} /> Submit
                     </button>
                   )}
                   {wp.status === 'in-review' && (
-                    <button className="text-green-400 hover:text-green-300 text-xs flex items-center gap-1" title="Approve">
+                    <button
+                      onClick={() => handleWorkpaperStatus(wp.id, 'approved')}
+                      disabled={busyWorkpaperId === wp.id}
+                      className="text-green-400 hover:text-green-300 text-xs flex items-center gap-1 disabled:opacity-50"
+                      title="Approve"
+                    >
                       <Check size={12} /> Approve
                     </button>
                   )}
@@ -1176,6 +1174,81 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
           ))}
         </div>
       </div>
+
+      {showCreateWorkpaper && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg">
+            <div className="flex items-center justify-between p-5 border-b border-slate-700">
+              <h3 className="text-white font-semibold">New Workpaper</h3>
+              <button onClick={() => { setShowCreateWorkpaper(false); setActionError(null); }} className="text-slate-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              {actionError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-400 flex items-center gap-2">
+                  <AlertCircle size={14} className="flex-shrink-0" /> {actionError}
+                </div>
+              )}
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Workpaper Name</label>
+                <input
+                  type="text"
+                  value={wpForm.name}
+                  onChange={(e) => setWpForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g., Access Control Testing Workpaper"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Engagement</label>
+                <select
+                  value={wpForm.engagementId}
+                  onChange={(e) => setWpForm((f) => ({ ...f, engagementId: e.target.value }))}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">Select engagement</option>
+                  {engagements.map((eng) => (
+                    <option key={eng.id} value={eng.id}>{eng.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Type</label>
+                <select
+                  value={wpForm.type}
+                  onChange={(e) => setWpForm((f) => ({ ...f, type: e.target.value }))}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option>Testing</option>
+                  <option>Walkthrough</option>
+                  <option>Summary</option>
+                  <option>Matrix</option>
+                  <option>Analysis</option>
+                  <option>Evidence</option>
+                  <option>Review</option>
+                  <option>Memo</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-700">
+              <button
+                onClick={() => { setShowCreateWorkpaper(false); setActionError(null); }}
+                className="px-4 py-2 text-slate-300 hover:text-white text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateWorkpaper}
+                disabled={wpSubmitting || !wpForm.name.trim() || !wpForm.engagementId}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {wpSubmitting ? 'Creating...' : 'Create Workpaper'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1283,6 +1356,12 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {actionError && !showCreateEngagement && !showCreateWorkpaper && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400 flex items-center justify-between">
+            <span className="flex items-center gap-2"><AlertCircle size={14} /> {actionError}</span>
+            <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+          </div>
+        )}
         {renderContent()}
       </div>
     </div>

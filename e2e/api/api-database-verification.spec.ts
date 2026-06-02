@@ -57,14 +57,19 @@ test.describe('Framework API with Database Verification', () => {
       failOnStatusCode: false,
     });
 
+    // The endpoint must respond deterministically: 200 when authenticated,
+    // 401 when not. Any other status (notably 5xx) is a failure, not a skip.
+    expect([200, 401]).toContain(response.status());
+
     if (response.ok()) {
       const frameworks = await response.json();
       expect(Array.isArray(frameworks)).toBe(true);
 
-      // Verify count matches database if available
+      // When the DB client is configured, the API list must be a superset of
+      // the rows the database returns for the same org (API may add joins).
       if (db.client && frameworks.length > 0) {
         const dbFrameworks = await db.getFrameworks('');
-        expect(frameworks.length).toBeGreaterThanOrEqual(0);
+        expect(frameworks.length).toBeGreaterThanOrEqual(dbFrameworks.length);
       }
     }
   });
@@ -85,14 +90,22 @@ test.describe('Framework API with Database Verification', () => {
       failOnStatusCode: false,
     });
 
+    // Create must either succeed or be rejected for missing auth — never 5xx.
+    expect([200, 201, 401]).toContain(createResponse.status());
+
     if (createResponse.ok()) {
       const framework = await createResponse.json();
+      expect(framework.id).toBeTruthy();
 
       // Update framework
       const updateResponse = await request.patch(`${API_BASE}/api/frameworks/${framework.id}`, {
         data: { status: 'Compliant', progress: 100 },
         headers: { 'X-CSRF-Token': csrfToken },
+        failOnStatusCode: false,
       });
+
+      // A persisted resource owned by the caller must update successfully.
+      expect(updateResponse.ok()).toBe(true);
 
       if (updateResponse.ok()) {
         const updated = await updateResponse.json();
@@ -123,8 +136,12 @@ test.describe('Framework API with Database Verification', () => {
       failOnStatusCode: false,
     });
 
+    // Create must either succeed or be rejected for missing auth — never 5xx.
+    expect([200, 201, 401]).toContain(createResponse.status());
+
     if (createResponse.ok()) {
       const framework = await createResponse.json();
+      expect(framework.id).toBeTruthy();
 
       // Delete framework
       const deleteResponse = await request.delete(`${API_BASE}/api/frameworks/${framework.id}`, {

@@ -193,7 +193,7 @@ describe('aiRmfSchemas contract tests', () => {
   });
 
   // ==========================================================================
-  // updateAISystemSchema (inherits from create, adds min(1))
+  // updateAISystemSchema (forks name to optional, adds min(1))
   // ==========================================================================
   describe('updateAISystemSchema', () => {
     it('should accept partial update with name only', () => {
@@ -201,10 +201,10 @@ describe('aiRmfSchemas contract tests', () => {
       expect(error).toBeUndefined();
     });
 
-    it('should still require name (inherits required from create schema)', () => {
-      const { error } = updateAISystemSchema.validate({ riskLevel: 'Low' }, JOI_OPTS);
-      expect(error).toBeDefined();
-      expect(error!.details.some((d) => d.message.includes('name'))).toBe(true);
+    it('should allow partial update without name (name forked to optional)', () => {
+      const { error, value } = updateAISystemSchema.validate({ riskLevel: 'Low' }, JOI_OPTS);
+      expect(error).toBeUndefined();
+      expect(value.riskLevel).toBe('Low');
     });
 
     it('should reject empty object (min 1 key)', () => {

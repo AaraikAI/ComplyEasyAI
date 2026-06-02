@@ -97,12 +97,20 @@ test.describe('AI Features', () => {
 
         const submitBtn = page.getByRole('button', { name: /generate|analyze|run|submit|start|check|create|simulate/i }).first();
         if (await submitBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await submitBtn.click();
+          // Cap the click so a submit button that stays disabled (form requires
+          // fields this generic filler did not populate) fails fast instead of
+          // blocking on Playwright's 60s actionability wait. The request
+          // assertion below is already guarded on whether a call actually fired.
+          await submitBtn.click({ timeout: 6000 }).catch(() => {});
           await page.waitForTimeout(3000);
 
           if (apiCalled) {
-            // Verify CSRF on POST/PUT
-            expect(apiMethod).toBeTruthy();
+            // A mutating AI request must carry the double-submit CSRF token.
+            // The frontend api wrapper attaches X-CSRF-Token to every
+            // POST/PUT/PATCH/DELETE (services/api.ts), so an observed mutation
+            // without it indicates a CSRF-protection regression.
+            expect(['POST', 'PUT']).toContain(apiMethod);
+            expect(hasCsrf).toBeTruthy();
           }
         }
       });

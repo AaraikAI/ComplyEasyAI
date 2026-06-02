@@ -93,12 +93,12 @@ describe('GeminiService', () => {
 
       mockGenerateContent.mockResolvedValue(mockResponse);
 
-      // Make requests rapidly
-      const requests = Array(60).fill(0).map(() =>
-        geminiService.generateContent({ prompt: 'test' }, rateLimitUserId)
-      );
-
-      await Promise.all(requests);
+      // The rate limiter is backed by an async read-modify-write cache, so the
+      // requests must be made sequentially for each increment to be observed by
+      // the next (a concurrent burst would race on the shared counter).
+      for (let i = 0; i < 60; i++) {
+        await geminiService.generateContent({ prompt: 'test' }, rateLimitUserId);
+      }
 
       // 61st request should fail
       await expect(

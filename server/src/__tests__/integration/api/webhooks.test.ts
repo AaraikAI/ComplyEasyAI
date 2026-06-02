@@ -352,6 +352,7 @@ describe('Webhook Routes Integration', () => {
         const response = await request(app)
           .post('/api/webhooks')
           .send({
+            name: 'New Service Webhook',
             url: 'https://newservice.com/webhook',
             events: ['policy.created', 'risk.identified'],
           })

@@ -73,6 +73,10 @@ describe('Assets API', () => {
       expect(response.body.data).toHaveProperty('total');
       expect(response.body.data).toHaveProperty('byType');
       expect(response.body.data).toHaveProperty('byClassification');
+      // Multi-tenant: stats must be scoped to the caller's organization.
+      expect(prismaMock.asset.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ organizationId: 'org-123' }) }),
+      );
     });
 
     it('should return 401 without authentication', async () => {
@@ -92,6 +96,13 @@ describe('Assets API', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.meta).toHaveProperty('total');
+      // Multi-tenant: list query and count must both filter by organizationId.
+      expect(prismaMock.asset.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ organizationId: 'org-123' }) }),
+      );
+      expect(prismaMock.asset.count).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ organizationId: 'org-123' }) }),
+      );
     });
   });
 
@@ -108,6 +119,20 @@ describe('Assets API', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveProperty('linkedRisks');
       expect(response.body.data).toHaveProperty('linkedIncidents');
+      // Multi-tenant: the lookup must be scoped by both id AND organizationId so
+      // an asset belonging to another tenant cannot be fetched by guessing its id.
+      expect(prismaMock.asset.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'asset-123', organizationId: 'org-123' }),
+        }),
+      );
+      // Linked risks/incidents are also tenant-scoped.
+      expect(prismaMock.riskItem.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ organizationId: 'org-123' }) }),
+      );
+      expect(prismaMock.grcIncident.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ organizationId: 'org-123' }) }),
+      );
     });
 
     it('should return 404 for non-existent asset', async () => {
@@ -172,6 +197,13 @@ describe('Assets API', () => {
         .send({ name: 'Updated' });
 
       expect(response.status).toBe(200);
+      // Multi-tenant: update must be gated by an org-scoped ownership lookup so
+      // a cross-tenant id cannot be mutated.
+      expect(prismaMock.asset.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'asset-123', organizationId: 'org-123' }),
+        }),
+      );
     });
 
     it('should return 404 for non-existent asset', async () => {
@@ -197,6 +229,12 @@ describe('Assets API', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveProperty('message');
+      // Multi-tenant: decommission must be gated by an org-scoped ownership lookup.
+      expect(prismaMock.asset.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'asset-123', organizationId: 'org-123' }),
+        }),
+      );
     });
 
     it('should return 404 for non-existent asset', async () => {

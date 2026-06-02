@@ -60,7 +60,7 @@ router.get(
     try {
       const allDpias = await prisma.dataProtectionImpactAssessment.findMany({
         where: { organizationId: orgId },
-        select: { status: true, dpoConsulted: true, overallRiskLevel: true },
+        select: { id: true, status: true, dpoConsulted: true, overallRiskLevel: true },
       });
 
       const byStatus: Record<string, number> = {};
@@ -70,13 +70,8 @@ router.get(
         if (d.dpoConsulted) requiresDpoConsultation++;
       }
 
-      // Fetch all risk assessments for DPIAs belonging to this org
-      const dpiaIds = allDpias.map(() => undefined); // We need to get risk assessments differently
-      const orgDpias = await prisma.dataProtectionImpactAssessment.findMany({
-        where: { organizationId: orgId },
-        select: { id: true },
-      });
-      const dpiaIdList = orgDpias.map((d) => d.id);
+      // Aggregate risk assessments across this org's DPIAs.
+      const dpiaIdList = allDpias.map((d) => d.id);
 
       const riskAssessments = await prisma.dPIARiskAssessment.findMany({
         where: { dpiaId: { in: dpiaIdList } },
@@ -598,8 +593,9 @@ router.delete(
 // DPO CONSULTATION
 // ============================================================================
 
+// Frontend DPIAWorkflow.tsx calls /dpo-review — alias to the same handler.
 router.post(
-  '/:id/dpo-consultation',
+  ['/:id/dpo-consultation', '/:id/dpo-review'],
   validateBody(dpoConsultationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;

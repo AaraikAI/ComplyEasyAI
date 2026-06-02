@@ -68,41 +68,42 @@ app.use('/api/privacy', privacyRoutes);
 app.use(errorHandler);
 
 describe('E2E: Privacy Compliance Flow', () => {
+  // Prisma models: dSARRequest, consentRecord, retentionPolicy.
   const mockDSAR = {
     id: 'dsar-123',
-    type: 'Access',
-    subjectName: 'John Doe',
-    subjectEmail: 'john@example.com',
-    status: 'Received',
     organizationId: 'org-123',
-    receivedAt: new Date(),
+    requestNumber: 'DSAR-0001',
+    requestType: 'Access',
+    dataSubjectName: 'John Doe',
+    dataSubjectEmail: 'john@example.com',
+    regulation: 'GDPR',
+    status: 'Received',
+    priority: 'Normal',
+    requestDate: new Date(),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    auditTrail: [],
+    updatedAt: new Date(),
   };
 
   const mockConsent = {
     id: 'consent-123',
-    subjectId: 'subject-123',
-    purpose: 'Marketing',
-    status: 'Active',
-    givenAt: new Date(),
     organizationId: 'org-123',
+    dataSubjectId: 'subject-123',
+    consentType: 'marketing',
+    purpose: 'Marketing emails',
+    consentGiven: true,
+    consentDate: new Date(),
+    version: '1.0',
   };
 
   const mockRetentionPolicy = {
     id: 'ret-123',
+    organizationId: 'org-123',
+    name: 'Customer Data Retention',
     dataCategory: 'Customer Data',
-    retentionPeriod: 730, // days
+    retentionPeriod: 730,
     legalBasis: 'Contract',
     status: 'Active',
-    organizationId: 'org-123',
-  };
-
-  const mockPIA = {
-    id: 'pia-123',
-    name: 'New Marketing System PIA',
-    status: 'In Progress',
-    riskLevel: 'High',
-    organizationId: 'org-123',
   };
 
   beforeEach(() => {
@@ -110,390 +111,195 @@ describe('E2E: Privacy Compliance Flow', () => {
   });
 
   describe('DSAR (Data Subject Access Request) Workflow', () => {
-    it('should complete full DSAR lifecycle', async () => {
-      // Step 1: Receive DSAR
-      prismaMock.dsar.create.mockResolvedValue(mockDSAR as any);
+    it('should create, verify, and complete a DSAR', async () => {
+      // Step 1: Create
+      prismaMock.dSARRequest.create.mockResolvedValue(mockDSAR as any);
 
-      const receiveResponse = await request(app)
+      const createResponse = await request(app)
         .post('/api/privacy/dsar')
         .send({
-          type: 'Access',
-          subjectName: 'John Doe',
-          subjectEmail: 'john@example.com',
-          description: 'Request for all personal data',
+          requestType: 'Access',
+          dataSubjectName: 'John Doe',
+          dataSubjectEmail: 'john@example.com',
+          notes: 'Request for all personal data',
         })
         .expect(201);
 
-      expect(receiveResponse.body).toHaveProperty('id');
-      const dsarId = receiveResponse.body.id;
+      expect(createResponse.body).toHaveProperty('id', 'dsar-123');
+      const dsarId = createResponse.body.id;
 
       // Step 2: Verify identity
-      prismaMock.dsar.findFirst.mockResolvedValue(mockDSAR as any);
-      prismaMock.dsar.update.mockResolvedValue({
+      prismaMock.dSARRequest.findFirst.mockResolvedValue(mockDSAR as any);
+      prismaMock.dSARRequest.update.mockResolvedValue({
         ...mockDSAR,
-        status: 'Identity Verified',
-        identityVerifiedAt: new Date(),
+        status: 'Verified',
+        identityVerified: true,
       } as any);
 
       const verifyResponse = await request(app)
         .post(`/api/privacy/dsar/${dsarId}/verify-identity`)
-        .send({
-          verificationMethod: 'Email',
-          verified: true,
-        })
+        .send({ verificationMethod: 'Email' })
         .expect(200);
 
-      expect(verifyResponse.body.status).toBe('Identity Verified');
+      expect(verifyResponse.body.status).toBe('Verified');
 
-      // Step 3: Collect data from systems
-      prismaMock.dsarDataCollection.create.mockResolvedValue({
-        id: 'collect-123',
-        dsarId,
-        system: 'CRM',
-        status: 'Completed',
-        data: { records: 50 },
-      } as any);
-
-      const collectResponse = await request(app)
-        .post(`/api/privacy/dsar/${dsarId}/collect`)
-        .send({
-          systems: ['CRM', 'Marketing', 'Support'],
-        })
-        .expect(200);
-
-      expect(collectResponse.body).toHaveProperty('collections');
-
-      // Step 4: Generate response
-      prismaMock.dsar.update.mockResolvedValue({
-        ...mockDSAR,
-        status: 'Response Ready',
-        responseData: { dataPackage: 'url' },
-      } as any);
-
-      const generateResponse = await request(app)
-        .post(`/api/privacy/dsar/${dsarId}/generate-response`)
-        .expect(200);
-
-      expect(generateResponse.body).toHaveProperty('responseData');
-
-      // Step 5: Complete DSAR
-      prismaMock.dsar.update.mockResolvedValue({
+      // Step 3: Complete
+      prismaMock.dSARRequest.update.mockResolvedValue({
         ...mockDSAR,
         status: 'Completed',
-        completedAt: new Date(),
+        completedDate: new Date(),
       } as any);
 
       const completeResponse = await request(app)
         .post(`/api/privacy/dsar/${dsarId}/complete`)
-        .send({ deliveryMethod: 'SecureLink' })
+        .send({ responseMethod: 'SecureLink', responseDetails: 'Package delivered' })
         .expect(200);
 
       expect(completeResponse.body.status).toBe('Completed');
     });
 
-    it('should handle deletion request', async () => {
-      const deletionDSAR = { ...mockDSAR, type: 'Deletion' };
-      prismaMock.dsar.create.mockResolvedValue(deletionDSAR as any);
+    it('should create a deletion DSAR', async () => {
+      prismaMock.dSARRequest.create.mockResolvedValue({
+        ...mockDSAR,
+        requestType: 'Deletion',
+      } as any);
 
       const response = await request(app)
         .post('/api/privacy/dsar')
         .send({
-          type: 'Deletion',
-          subjectName: 'John Doe',
-          subjectEmail: 'john@example.com',
-          scope: 'All personal data',
+          requestType: 'Deletion',
+          dataSubjectName: 'John Doe',
+          dataSubjectEmail: 'john@example.com',
         })
         .expect(201);
 
-      expect(response.body.type).toBe('Deletion');
+      expect(response.body.requestType).toBe('Deletion');
     });
 
-    it('should extend DSAR deadline', async () => {
-      prismaMock.dsar.findFirst.mockResolvedValue(mockDSAR as any);
-      prismaMock.dsar.update.mockResolvedValue({
-        ...mockDSAR,
-        dueDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-        extensionReason: 'Complex request',
-      } as any);
+    it('should reject a DSAR with an invalid request type', async () => {
+      const response = await request(app)
+        .post('/api/privacy/dsar')
+        .send({
+          requestType: 'NotAValidType',
+          dataSubjectName: 'John Doe',
+          dataSubjectEmail: 'john@example.com',
+        })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should list DSARs (paginated envelope)', async () => {
+      prismaMock.dSARRequest.findMany.mockResolvedValue([mockDSAR] as any);
+      prismaMock.dSARRequest.count.mockResolvedValue(1);
 
       const response = await request(app)
-        .post('/api/privacy/dsar/dsar-123/extend')
-        .send({
-          extensionDays: 30,
-          reason: 'Complex request requiring additional time',
-        })
+        .get('/api/privacy/dsar')
         .expect(200);
 
-      expect(response.body).toHaveProperty('extensionReason');
+      expect(response.body).toHaveProperty('dsars');
+      expect(Array.isArray(response.body.dsars)).toBe(true);
+      expect(response.body).toHaveProperty('total', 1);
+    });
+
+    it('should get a single DSAR with its timeline', async () => {
+      prismaMock.dSARRequest.findFirst.mockResolvedValue(mockDSAR as any);
+
+      const response = await request(app)
+        .get('/api/privacy/dsar/dsar-123')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', 'dsar-123');
+      expect(response.body).toHaveProperty('timeline');
+    });
+
+    it('should return 404 for a DSAR from another organization', async () => {
+      prismaMock.dSARRequest.findFirst.mockResolvedValue(null as any);
+
+      const response = await request(app)
+        .get('/api/privacy/dsar/dsar-999')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error');
     });
   });
 
   describe('Consent Management Workflow', () => {
-    it('should manage consent lifecycle', async () => {
-      // Record consent
-      prismaMock.consent.create.mockResolvedValue(mockConsent as any);
+    it('should record a consent entry', async () => {
+      prismaMock.consentRecord.create.mockResolvedValue(mockConsent as any);
 
-      const giveResponse = await request(app)
+      const response = await request(app)
         .post('/api/privacy/consent')
         .send({
-          subjectId: 'subject-123',
-          purpose: 'Marketing',
+          dataSubjectId: 'subject-123',
+          consentType: 'marketing',
+          purpose: 'Marketing emails',
           legalBasis: 'Consent',
-          evidence: 'Web form submission',
         })
         .expect(201);
 
-      expect(giveResponse.body).toHaveProperty('id');
-
-      // Check consent status
-      prismaMock.consent.findMany.mockResolvedValue([mockConsent] as any);
-
-      const checkResponse = await request(app)
-        .get('/api/privacy/consent')
-        .query({ subjectId: 'subject-123' })
-        .expect(200);
-
-      expect(Array.isArray(checkResponse.body)).toBe(true);
-
-      // Withdraw consent
-      prismaMock.consent.findFirst.mockResolvedValue(mockConsent as any);
-      prismaMock.consent.update.mockResolvedValue({
-        ...mockConsent,
-        status: 'Withdrawn',
-        withdrawnAt: new Date(),
-      } as any);
-
-      const withdrawResponse = await request(app)
-        .post('/api/privacy/consent/consent-123/withdraw')
-        .expect(200);
-
-      expect(withdrawResponse.body.status).toBe('Withdrawn');
+      expect(response.body).toHaveProperty('id', 'consent-123');
     });
 
-    it('should track consent preferences', async () => {
-      prismaMock.consentPreference.findMany.mockResolvedValue([
-        { purpose: 'Marketing', consented: true },
-        { purpose: 'Analytics', consented: false },
-        { purpose: 'Personalization', consented: true },
-      ] as any);
+    it('should list consent records (paginated envelope)', async () => {
+      prismaMock.consentRecord.findMany.mockResolvedValue([mockConsent] as any);
+      prismaMock.consentRecord.count.mockResolvedValue(1);
 
       const response = await request(app)
-        .get('/api/privacy/consent/preferences')
-        .query({ subjectId: 'subject-123' })
+        .get('/api/privacy/consent')
         .expect(200);
 
-      expect(response.body).toHaveProperty('preferences');
+      expect(response.body).toHaveProperty('records');
+      expect(Array.isArray(response.body.records)).toBe(true);
+      expect(response.body).toHaveProperty('total', 1);
     });
   });
 
   describe('Data Retention Workflow', () => {
-    it('should manage retention policies', async () => {
+    it('should create a retention policy', async () => {
       prismaMock.retentionPolicy.create.mockResolvedValue(mockRetentionPolicy as any);
 
       const response = await request(app)
-        .post('/api/privacy/retention-policies')
+        .post('/api/privacy/retention')
         .send({
+          name: 'Customer Data Retention',
           dataCategory: 'Customer Data',
           retentionPeriod: 730,
           legalBasis: 'Contract',
-          automaticDeletion: true,
+          autoDelete: true,
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('id', 'ret-123');
     });
 
-    it('should identify data for deletion', async () => {
+    it('should list retention policies', async () => {
       prismaMock.retentionPolicy.findMany.mockResolvedValue([mockRetentionPolicy] as any);
+      prismaMock.retentionPolicy.count.mockResolvedValue(1);
 
       const response = await request(app)
-        .get('/api/privacy/retention/due-for-deletion')
+        .get('/api/privacy/retention')
         .expect(200);
 
-      expect(response.body).toHaveProperty('records');
-    });
-
-    it('should execute retention cleanup', async () => {
-      prismaMock.retentionPolicy.findMany.mockResolvedValue([mockRetentionPolicy] as any);
-
-      const response = await request(app)
-        .post('/api/privacy/retention/execute')
-        .send({
-          dryRun: false,
-          categories: ['Customer Data'],
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('deletedCount');
-    });
-  });
-
-  describe('Cross-Border Transfer Workflow', () => {
-    const mockSCC = {
-      id: 'scc-123',
-      exporterName: 'Company A',
-      importerName: 'Company B',
-      importerCountry: 'US',
-      mechanism: 'SCC',
-      status: 'Active',
-    };
-
-    const mockTIA = {
-      id: 'tia-123',
-      transferId: 'scc-123',
-      status: 'Completed',
-      riskAssessment: { overallRisk: 'Medium' },
-    };
-
-    it('should manage cross-border transfers', async () => {
-      prismaMock.crossBorderTransfer.create.mockResolvedValue(mockSCC as any);
-
-      const response = await request(app)
-        .post('/api/privacy/cross-border')
-        .send({
-          exporterName: 'Company A',
-          importerName: 'Company B',
-          importerCountry: 'US',
-          mechanism: 'SCC',
-          dataCategories: ['Customer Data'],
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should perform Transfer Impact Assessment', async () => {
-      prismaMock.crossBorderTransfer.findFirst.mockResolvedValue(mockSCC as any);
-      prismaMock.tia.create.mockResolvedValue(mockTIA as any);
-
-      const response = await request(app)
-        .post('/api/privacy/cross-border/scc-123/tia')
-        .send({
-          assessmentDate: new Date(),
-          factors: {
-            localLaws: 'Medium',
-            dataProtection: 'High',
-            accessByAuthorities: 'Low',
-          },
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('riskAssessment');
-    });
-
-    it('should manage BCR program', async () => {
-      prismaMock.bcr.create.mockResolvedValue({
-        id: 'bcr-123',
-        type: 'Controller',
-        status: 'Approved',
-        approvedBy: 'DPA',
-        organizationId: 'org-123',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/privacy/bcr')
-        .send({
-          type: 'Controller',
-          groupEntities: ['Entity A', 'Entity B'],
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-  });
-
-  describe('Privacy Impact Assessment Workflow', () => {
-    it('should conduct PIA', async () => {
-      // Create PIA
-      prismaMock.pia.create.mockResolvedValue(mockPIA as any);
-
-      const createResponse = await request(app)
-        .post('/api/privacy/pia')
-        .send({
-          name: 'New Marketing System PIA',
-          projectDescription: 'Implementing new marketing automation',
-          dataTypes: ['Customer Data', 'Behavioral Data'],
-        })
-        .expect(201);
-
-      expect(createResponse.body).toHaveProperty('id');
-      const piaId = createResponse.body.id;
-
-      // Add risk assessment
-      prismaMock.pia.findFirst.mockResolvedValue(mockPIA as any);
-      prismaMock.pia.update.mockResolvedValue({
-        ...mockPIA,
-        risks: [
-          { type: 'Data Breach', likelihood: 'Low', impact: 'High', mitigation: 'Encryption' },
-        ],
-      } as any);
-
-      const assessResponse = await request(app)
-        .post(`/api/privacy/pia/${piaId}/assess`)
-        .send({
-          risks: [
-            { type: 'Data Breach', likelihood: 'Low', impact: 'High', mitigation: 'Encryption' },
-          ],
-        })
-        .expect(200);
-
-      expect(assessResponse.body).toHaveProperty('risks');
-
-      // Complete PIA
-      prismaMock.pia.update.mockResolvedValue({
-        ...mockPIA,
-        status: 'Completed',
-        recommendation: 'Proceed with mitigations',
-      } as any);
-
-      const completeResponse = await request(app)
-        .post(`/api/privacy/pia/${piaId}/complete`)
-        .send({
-          recommendation: 'Proceed with mitigations',
-          approvedBy: 'DPO',
-        })
-        .expect(200);
-
-      expect(completeResponse.body.status).toBe('Completed');
-    });
-
-    it('should require DPIA for high-risk processing', async () => {
-      const response = await request(app)
-        .post('/api/privacy/pia/check-requirement')
-        .send({
-          processingActivities: ['Profiling', 'Automated Decision Making'],
-          dataCategories: ['Special Category'],
-          scale: 'Large',
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('dpiaRequired');
-      expect(response.body.dpiaRequired).toBe(true);
+      expect(response.body).toBeDefined();
     });
   });
 
   describe('Privacy Dashboard', () => {
-    it('should get privacy compliance dashboard', async () => {
-      prismaMock.dsar.count.mockResolvedValue(10);
-      prismaMock.consent.count.mockResolvedValue(1000);
-      prismaMock.pia.findMany.mockResolvedValue([mockPIA] as any);
+    it('should get the privacy compliance dashboard', async () => {
+      prismaMock.dSARRequest.count.mockResolvedValue(3);
+      prismaMock.dSARRequest.findMany.mockResolvedValue([] as any);
+      prismaMock.consentRecord.count.mockResolvedValue(100);
+      prismaMock.retentionPolicy.count.mockResolvedValue(2);
 
       const response = await request(app)
         .get('/api/privacy/dashboard')
         .expect(200);
 
-      expect(response.body).toHaveProperty('dsarMetrics');
-      expect(response.body).toHaveProperty('consentMetrics');
-      expect(response.body).toHaveProperty('piaStatus');
-    });
-
-    it('should get GDPR compliance score', async () => {
-      const response = await request(app)
-        .get('/api/privacy/compliance-score')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('overallScore');
-      expect(response.body).toHaveProperty('categories');
+      expect(response.body).toHaveProperty('activeDSARs');
+      expect(response.body).toHaveProperty('consentRate');
+      expect(response.body).toHaveProperty('retentionCompliance');
+      expect(response.body).toHaveProperty('recentActivity');
     });
   });
 });

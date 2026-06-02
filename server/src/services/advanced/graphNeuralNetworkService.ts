@@ -777,12 +777,22 @@ class GraphNeuralNetworkService {
   }
 
   /**
-   * Process a temporal event and update node memory states.
+   * Namespace a TGN memory key by organization so one tenant's temporal node
+   * memory cannot be read or overwritten by another tenant. When no
+   * organization is supplied a shared global namespace is used.
    */
-  processTemporalEvent(event: TemporalEvent, currentTime: number): void {
+  private tgnKey(nodeId: string, organizationId?: string): string {
+    return `${organizationId ?? '_global'}::${nodeId}`;
+  }
+
+  /**
+   * Process a temporal event and update node memory states.
+   * Memory is scoped to the supplied organization.
+   */
+  processTemporalEvent(event: TemporalEvent, currentTime: number, organizationId?: string): void {
     const dim = this.config.embeddingDim;
-    const srcMem = this.getNodeMemory(event.sourceId);
-    const tgtMem = this.getNodeMemory(event.targetId);
+    const srcMem = this.getNodeMemory(event.sourceId, organizationId);
+    const tgtMem = this.getNodeMemory(event.targetId, organizationId);
     const timeEnc = this.encodeTime(currentTime - event.timestamp);
 
     // Pad / truncate edge features to embeddingDim
@@ -801,11 +811,11 @@ class GraphNeuralNetworkService {
 
     // Update source memory with GRU-like gating
     const updatedSrc = this.gruUpdate(srcMem, message);
-    this.setNodeMemory(event.sourceId, updatedSrc);
+    this.setNodeMemory(event.sourceId, updatedSrc, organizationId);
 
     // Update target memory
     const updatedTgt = this.gruUpdate(tgtMem, message);
-    this.setNodeMemory(event.targetId, updatedTgt);
+    this.setNodeMemory(event.targetId, updatedTgt, organizationId);
   }
 
   /** Simple GRU-like memory update. */
@@ -819,20 +829,21 @@ class GraphNeuralNetworkService {
     return updated;
   }
 
-  /** Retrieve node memory, initialise if absent. */
-  private getNodeMemory(nodeId: string): number[] {
-    const existing = this.tgnMemory.get(nodeId);
+  /** Retrieve node memory (org-scoped), initialise if absent. */
+  private getNodeMemory(nodeId: string, organizationId?: string): number[] {
+    const existing = this.tgnMemory.get(this.tgnKey(nodeId, organizationId));
     if (existing) {
       return Array.from(existing.dataSync());
     }
     return new Array(this.config.embeddingDim).fill(0);
   }
 
-  /** Persist updated memory for a node. */
-  private setNodeMemory(nodeId: string, memory: number[]): void {
-    const old = this.tgnMemory.get(nodeId);
+  /** Persist updated memory for a node (org-scoped). */
+  private setNodeMemory(nodeId: string, memory: number[], organizationId?: string): void {
+    const key = this.tgnKey(nodeId, organizationId);
+    const old = this.tgnMemory.get(key);
     if (old) old.dispose();
-    this.tgnMemory.set(nodeId, tf.tensor1d(memory));
+    this.tgnMemory.set(key, tf.tensor1d(memory));
   }
 
   /**
@@ -843,9 +854,10 @@ class GraphNeuralNetworkService {
     queryNodeId: string,
     historicalEvents: TemporalEvent[],
     currentTime: number,
+    organizationId?: string,
   ): number[] {
     const dim = this.config.embeddingDim;
-    const queryMem = this.getNodeMemory(queryNodeId);
+    const queryMem = this.getNodeMemory(queryNodeId, organizationId);
 
     if (historicalEvents.length === 0) return queryMem;
 
@@ -856,7 +868,7 @@ class GraphNeuralNetworkService {
 
     for (const event of historicalEvents) {
       const partnerId = event.sourceId === queryNodeId ? event.targetId : event.sourceId;
-      const partnerMem = this.getNodeMemory(partnerId);
+      const partnerMem = this.getNodeMemory(partnerId, organizationId);
       const timeEnc = this.encodeTime(currentTime - event.timestamp);
       // Key = partnerMem + timeEnc (element-wise)
       const key = partnerMem.map((v, i) => v + (timeEnc[i] ?? 0));
@@ -1114,6 +1126,13 @@ class GraphNeuralNetworkService {
    * 4. Classify nodes for risk severity
    * 5. Predict links for risk propagation
    * 6. Detect anomalies via autoencoder
+   *
+   * Tenancy: the GCN/GAT/classifier weights are a single globally-trained
+   * model. Inference here is organization-scoped because the graph and all
+   * features are derived exclusively from this organization's own records
+   * (every query in buildGraphFromDatabase is filtered by organizationId) and
+   * temporal node memory is namespaced per organization. The shared weights
+   * are not specialized per tenant.
    */
   async predictRisks(organizationId: string): Promise<GNNPrediction[]> {
     await this.ensureInitialized();
@@ -2432,16 +2451,32 @@ class GraphNeuralNetworkService {
     }
   }
 
-  /** Attempt to load the most recent persisted weights on startup. */
+  /**
+   * Attempt to restore a shared baseline model on startup.
+   *
+   * Note on tenancy: the GCN/GAT/classifier weights held on this instance form
+   * a single globally-trained model. Risk prediction (`predictRisks`) is still
+   * organization-safe because the graph it scores is built strictly from the
+   * caller's own data (`buildGraphFromDatabase` filters every query by
+   * organizationId) and the temporal node memory is namespaced per
+   * organization. To avoid one tenant's training run silently becoming the
+   * model another tenant infers with, startup restores ONLY a designated
+   * shared baseline checkpoint (`global_baseline.json`); per-run training
+   * artifacts are never auto-loaded across organizations.
+   */
   private async loadPersistedWeights(): Promise<void> {
     try {
       await fs.promises.mkdir(MODELS_DIR, { recursive: true });
-      const files = await fs.promises.readdir(MODELS_DIR);
-      const jsonFiles = files.filter(f => f.endsWith('.json')).sort().reverse();
-      if (jsonFiles.length > 0) {
-        const modelId = jsonFiles[0].replace('.json', '');
-        await this.loadModel(modelId);
-        logger.info('[GNN] Restored weights from latest checkpoint', { modelId });
+      const baselinePath = path.join(MODELS_DIR, 'global_baseline.json');
+      const hasBaseline = await fs.promises
+        .access(baselinePath)
+        .then(() => true)
+        .catch(() => false);
+      if (hasBaseline) {
+        await this.loadModel('global_baseline');
+        logger.info('[GNN] Restored weights from shared baseline checkpoint');
+      } else {
+        logger.info('[GNN] No shared baseline checkpoint – using fresh initialization');
       }
     } catch {
       logger.info('[GNN] No persisted weights found – using fresh initialization');
@@ -2684,7 +2719,7 @@ class GraphNeuralNetworkService {
     const affectedNodes = new Set<string>();
 
     for (const event of events) {
-      this.processTemporalEvent(event, currentTime);
+      this.processTemporalEvent(event, currentTime, organizationId);
       affectedNodes.add(event.sourceId);
       affectedNodes.add(event.targetId);
     }
@@ -2695,7 +2730,7 @@ class GraphNeuralNetworkService {
       const relevantEvents = events.filter(
         e => e.sourceId === nodeId || e.targetId === nodeId,
       );
-      const embedding = this.temporalAttention(nodeId, relevantEvents, currentTime);
+      const embedding = this.temporalAttention(nodeId, relevantEvents, currentTime, organizationId);
       embeddings.set(nodeId, embedding);
     }
 

@@ -1,13 +1,6 @@
-export interface FrameworkControlTemplate {
-  controlId: string;
-  name: string;
-  description: string;
-  category: string;
-  implementationGuidance: string;
-  evidenceRequirements: string[];
-  testProcedures: string[];
-  status: string;
-}
+// Re-use the canonical control template type so the two definitions cannot drift apart.
+import type { FrameworkControlTemplate } from './soc2Controls';
+export type { FrameworkControlTemplate };
 
 export const ISO27001_CONTROLS: FrameworkControlTemplate[] = [
   // A.5 Organizational Controls (37 controls)

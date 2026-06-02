@@ -382,8 +382,15 @@ router.get(
 router.get(
   '/runs/:runId',
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const execution = await prisma.workflowExecution.findUnique({
-      where: { id: req.params.runId },
+    const user = req.user;
+
+    // Scope through the parent workflow's organizationId so a run from another
+    // org cannot be read by ID.
+    const execution = await prisma.workflowExecution.findFirst({
+      where: {
+        id: req.params.runId,
+        workflow: { organizationId: user.organizationId },
+      },
       include: { workflow: true },
     });
 
@@ -401,8 +408,13 @@ router.post(
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
 
-    const original = await prisma.workflowExecution.findUnique({
-      where: { id: req.params.runId },
+    // Scope through the parent workflow's organizationId so a run from another
+    // org cannot be retried/mutated by ID.
+    const original = await prisma.workflowExecution.findFirst({
+      where: {
+        id: req.params.runId,
+        workflow: { organizationId: user.organizationId },
+      },
       include: { workflow: true },
     });
 

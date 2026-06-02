@@ -11,6 +11,7 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import tokenBlacklist from '../services/tokenBlacklistService';
 import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
+import { logControllerAction } from '../services/auditLogService';
 import DOMPurify from 'isomorphic-dompurify';
 
 // Cookie configuration for httpOnly secure token storage
@@ -175,7 +176,7 @@ class AuthController {
           return newUser;
         });
 
-        logger.info(`New user registered: ${email}`);
+        logger.info('New user registered');
       }
 
       // Generate magic link token
@@ -195,11 +196,11 @@ class AuthController {
       try {
         const emailSent = await emailService.sendMagicLink(email, token);
         if (!emailSent) {
-          logger.warn(`Failed to send magic link email to ${email}, but continuing with token generation`);
+          logger.warn('Failed to send magic link email, but continuing with token generation');
           // In development, we still return the token even if email fails
         }
       } catch (error: any) {
-        logger.error(`Failed to send magic link email to ${email}:`, error.message);
+        logger.error('Failed to send magic link email', error.message);
         // In development mode, we still return the token for testing
         if (process.env.NODE_ENV !== 'development') {
           throw new AppError(`Failed to send email: ${error.message}`, 500);
@@ -215,7 +216,6 @@ class AuthController {
       // This allows the "Simulate Click" button to work without checking emails
       if (process.env.NODE_ENV === 'development') {
         response.devToken = token;
-        logger.debug(`[DEV] Magic link token for ${response.email || 'user'}: ${token}`);
       }
 
       res.json(response);
@@ -225,7 +225,6 @@ class AuthController {
         stack: error?.stack,
         code: error?.code,
         meta: error?.meta,
-        email: req.body?.email,
       });
       if (error instanceof AppError) throw error;
       
@@ -391,7 +390,7 @@ class AuthController {
         organizationId: user.organizationId,
       });
 
-      logger.info(`User logged in: ${user.email}`);
+      logger.info('User logged in');
     } catch (error) {
       logger.error('Verify magic link error', error);
       if (error instanceof AppError) throw error;
@@ -411,6 +410,30 @@ class AuthController {
       // Check if the refresh token has been revoked
       const isRevoked = await tokenBlacklist.isRevoked(refreshToken);
       if (isRevoked) {
+        try {
+          const revokedUserId = verifyRefreshToken(refreshToken);
+          if (revokedUserId) {
+            const revokedUser = await prisma.user.findUnique({
+              where: { id: revokedUserId },
+              select: { id: true, organizationId: true },
+            });
+            if (revokedUser) {
+              await prisma.auditLog.create({
+                data: {
+                  action: 'auth.refresh_denied_revoked',
+                  userId: revokedUser.id,
+                  organizationId: revokedUser.organizationId,
+                  hash: uuidv4(),
+                  details: JSON.stringify({ reason: 'refresh_token_revoked' }),
+                  ipAddress: req.ip || undefined,
+                  userAgent: req.headers['user-agent'] || undefined,
+                },
+              });
+            }
+          }
+        } catch (auditErr) {
+          logger.warn('[Auth] Failed to write refresh-denied audit log', auditErr);
+        }
         throw new AppError('Refresh token has been revoked', 401);
       }
 
@@ -430,6 +453,22 @@ class AuthController {
 
       // Blacklist the old refresh token (rotation)
       await tokenBlacklist.revoke(refreshToken, 'token_rotation');
+
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'auth.refresh_rotated',
+            userId: user.id,
+            organizationId: user.organizationId,
+            hash: uuidv4(),
+            details: JSON.stringify({ reason: 'token_rotation' }),
+            ipAddress: req.ip || undefined,
+            userAgent: req.headers['user-agent'] || undefined,
+          },
+        });
+      } catch (auditErr) {
+        logger.warn('[Auth] Failed to write refresh-rotated audit log', auditErr);
+      }
 
       // Generate new tokens
       const accessToken = generateToken({
@@ -551,7 +590,7 @@ class AuthController {
             where: { id: user.id },
             data: { passwordHash: newHash },
           });
-          logger.info(`[Auth] Migrated password hash to PBKDF2-SHA256 for user ${user.id}`);
+          logger.info('[Auth] Migrated password hash to PBKDF2-SHA256');
         } catch (err: any) {
           logger.warn('[Auth] Failed to rehash password during login', err?.message);
         }
@@ -703,7 +742,7 @@ class AuthController {
 
       if (existingUser) {
         // User already exists - send them a magic link instead of error
-        logger.info(`User ${email} already exists, sending magic link for login`);
+        logger.info('User already exists, sending magic link for login');
         
         // Generate magic link token
         const token = uuidv4();
@@ -722,10 +761,10 @@ class AuthController {
         try {
           const emailSent = await emailService.sendMagicLink(email, token);
           if (!emailSent) {
-            logger.warn(`Failed to send magic link email to ${email}, but continuing with token generation`);
+            logger.warn('Failed to send magic link email, but continuing with token generation');
           }
         } catch (error: any) {
-          logger.error(`Failed to send magic link email to ${email}:`, error.message);
+          logger.error('Failed to send magic link email', error.message);
           if (process.env.NODE_ENV !== 'development') {
             throw new AppError(`Failed to send email: ${error.message}`, 500);
           }
@@ -741,7 +780,6 @@ class AuthController {
         // In development mode, include the token for testing
         if (process.env.NODE_ENV === 'development') {
           response.devToken = token;
-          logger.debug(`[Dev] Magic link token for existing user ${email}: ${token}`);
         }
 
         res.status(200).json(response);
@@ -790,6 +828,19 @@ class AuthController {
           },
         });
 
+        // Audit log: account creation (inside transaction so it rolls back with the user)
+        await tx.auditLog.create({
+          data: {
+            action: 'auth.user_registered',
+            userId: newUser.id,
+            organizationId: organization.id,
+            hash: uuidv4(),
+            details: JSON.stringify({ role: newUser.role, organizationName: organization.name }),
+            ipAddress: req.ip || undefined,
+            userAgent: req.headers['user-agent'] || undefined,
+          },
+        });
+
         return { user: newUser };
       });
 
@@ -798,7 +849,7 @@ class AuthController {
         await emailService.sendWelcomeEmail(email, name);
         await emailService.sendMagicLink(email, token);
       } catch (emailError: any) {
-        logger.warn('Registration: email send failed', { email, error: emailError?.message });
+        logger.warn('Registration: email send failed', { userId: user.id, error: emailError?.message });
         if (process.env.NODE_ENV !== 'development') {
           throw new AppError('Failed to send welcome email. Please try again or contact support.', 500);
         }
@@ -816,12 +867,11 @@ class AuthController {
       // In development mode, include the token for testing
       if (process.env.NODE_ENV === 'development') {
         response.devToken = token;
-        logger.debug(`[DEV] Magic link token for ${email}: ${token}`);
       }
 
       res.status(201).json(response);
 
-      logger.info(`New user registered: ${email}`);
+      logger.info('New user registered');
     } catch (error) {
       logger.error('Registration error', error);
       if (error instanceof AppError) throw error;
@@ -840,7 +890,7 @@ class AuthController {
       // Verify the short-lived 2FA pending JWT to extract userId securely
       let userId: string;
       try {
-        const decoded = jwt.verify(twoFactorToken, config.jwt.secret) as {
+        const decoded = jwt.verify(twoFactorToken, config.jwt.secret, { algorithms: ['HS256'] }) as {
           userId: string;
           purpose: string;
         };
@@ -960,7 +1010,7 @@ class AuthController {
         organizationId: user.organizationId,
       });
 
-      logger.info(`User completed 2FA login: ${user.email}`);
+      logger.info('User completed 2FA login');
     } catch (error) {
       logger.error('Complete 2FA login error', error);
       if (error instanceof AppError) throw error;
@@ -1056,7 +1106,7 @@ class AuthController {
       });
 
       res.json(updatedUser);
-      logger.info(`User profile updated: ${userId}`);
+      logger.info('User profile updated');
     } catch (error) {
       logger.error('Update profile error', error);
       if (error instanceof AppError) throw error;
@@ -1114,6 +1164,13 @@ class AuthController {
         data: { passwordHash: newPasswordHash },
       });
 
+      // Revoke all existing tokens and sessions issued before the password change.
+      // Without this step, tokens minted before the change remain valid until they expire.
+      await tokenBlacklist.revokeAllForUser(userId);
+      await prisma.userSession.updateMany({ where: { userId, terminatedAt: null }, data: { terminatedAt: new Date(), terminationReason: 'password_change' } }).catch((err) => {
+        logger.warn('[Auth] Failed to purge sessions after password change', err);
+      });
+
       // Log audit
       await prisma.auditLog.create({
         data: {
@@ -1137,8 +1194,11 @@ class AuthController {
         organizationId,
       });
 
+      // Clear cookies so the caller is forced to re-authenticate with the new password.
+      clearAuthCookies(res);
+
       res.json({ message: 'Password changed successfully' });
-      logger.info(`Password changed for user: ${userId}`);
+      logger.info('Password changed');
     } catch (error) {
       logger.error('Change password error', error);
       if (error instanceof AppError) throw error;
@@ -1205,7 +1265,7 @@ class AuthController {
       });
 
       res.json({ user: updatedUser, avatarUrl: uploadResult.url });
-      logger.info(`Avatar uploaded for user: ${userId}`);
+      logger.info('Avatar uploaded');
     } catch (error) {
       logger.error('Upload avatar error', error);
       if (error instanceof AppError) throw error;
@@ -1251,6 +1311,11 @@ class AuthController {
       // Read access token from header or httpOnly cookie
       const accessToken = req.headers.authorization?.substring(7) || req.cookies?.access_token;
 
+      // Capture user context BEFORE token revocation for the audit log entry
+      const authReq = req as any;
+      const actorUserId: string | undefined = authReq.user?.id;
+      const actorOrgId: string | undefined = authReq.user?.organizationId;
+
       // Blacklist the access token so it cannot be reused
       if (accessToken) {
         await tokenBlacklist.revoke(accessToken, 'logout');
@@ -1260,6 +1325,28 @@ class AuthController {
       const refreshToken = req.body?.refreshToken || req.cookies?.refresh_token;
       if (refreshToken) {
         await tokenBlacklist.revoke(refreshToken, 'logout');
+      }
+
+      // Audit log: emit one entry summarising which tokens were revoked
+      if (actorUserId && actorOrgId && (accessToken || refreshToken)) {
+        try {
+          await prisma.auditLog.create({
+            data: {
+              action: 'auth.logout',
+              userId: actorUserId,
+              organizationId: actorOrgId,
+              hash: uuidv4(),
+              details: JSON.stringify({
+                accessTokenRevoked: !!accessToken,
+                refreshTokenRevoked: !!refreshToken,
+              }),
+              ipAddress: req.ip || undefined,
+              userAgent: req.headers['user-agent'] || undefined,
+            },
+          });
+        } catch (auditErr) {
+          logger.warn('[Auth] Failed to write logout audit log', auditErr);
+        }
       }
 
       // Terminate session if session management is enabled
@@ -1312,9 +1399,9 @@ class AuthController {
         });
 
         await emailService.sendPasswordReset(email, resetToken);
-        logger.info(`[Auth] Password reset requested for ${email}`);
+        logger.info('[Auth] Password reset requested');
       } else {
-        logger.info(`[Auth] Password reset requested for unknown/inactive email: ${email}`);
+        logger.info('[Auth] Password reset requested for unknown/inactive account');
       }
     } catch (error) {
       logger.error('[Auth] Error processing forgot password', error);
@@ -1360,7 +1447,33 @@ class AuthController {
       },
     });
 
-    logger.info(`[Auth] Password reset completed for user ${user.email}`);
+    // Revoke all existing tokens and sessions after a reset. The user's credentials
+    // may have been compromised, so any previously-issued token must stop working.
+    await tokenBlacklist.revokeAllForUser(user.id);
+    await prisma.userSession.updateMany({
+      where: { userId: user.id, terminatedAt: null },
+      data: { terminatedAt: new Date(), terminationReason: 'password_reset' },
+    }).catch((err) => {
+      logger.warn('[Auth] Failed to purge sessions after password reset', err);
+    });
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: 'auth.password_reset',
+          userId: user.id,
+          organizationId: user.organizationId,
+          hash: uuidv4(),
+          details: JSON.stringify({ sessionsTerminated: true, tokensRevoked: true }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+    } catch (auditErr) {
+      logger.warn('[Auth] Failed to write password-reset audit log', auditErr);
+    }
+
+    logger.info('[Auth] Password reset completed');
     res.json({ message: 'Password has been reset successfully' });
   }
 }

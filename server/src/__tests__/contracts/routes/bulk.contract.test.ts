@@ -8,6 +8,16 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { prismaMock } from '../../mocks/prisma';
 
+// The shared prisma mock does not define updateMany for the resource models the
+// bulk routes operate on. Augment the mock with the missing delegate methods so
+// the routes can exercise updateMany; tests set the resolved value per-case.
+for (const model of ['riskItem', 'policy', 'vendor', 'grcIncident', 'asset'] as const) {
+  const delegate = (prismaMock as any)[model];
+  if (delegate && typeof delegate.updateMany !== 'function') {
+    delegate.updateMany = jest.fn();
+  }
+}
+
 jest.mock('../../../config/database', () => ({ __esModule: true, default: prismaMock }));
 jest.mock('../../../config/logger', () => ({
   __esModule: true, default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },

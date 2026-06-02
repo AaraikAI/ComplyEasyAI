@@ -65,9 +65,10 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
 
     try {
       setDeletingAssessment(assessmentId);
-      // Note: Delete endpoint would need to be added to the API
-      // For now, we'll just remove it from the list
-      setAllAssessments(allAssessments.filter(a => a.id !== assessmentId));
+      // Persist the deletion to the backend, then reflect it locally on success.
+      await api.aiRmf.deleteAssessment(assessmentId);
+      setAllAssessments(prev => prev.filter(a => a.id !== assessmentId));
+      toast.success('Assessment deleted');
     } catch (error: unknown) {
       logger.error('Failed to delete assessment:', error);
       toast.error(`Failed to delete assessment: ${error instanceof Error ? error.message : String(error)}`);

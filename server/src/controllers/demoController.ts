@@ -107,7 +107,7 @@ class DemoController {
         },
       });
 
-      logger.info(`Demo request submitted: ${demoRequest.email} (${demoRequest.company})`);
+      logger.info(`Demo request submitted (requestId: ${demoRequest.id})`);
 
       // Send email notification to contact@complyeasyai.com
       await this.sendDemoRequestEmail(demoRequest);
@@ -256,6 +256,18 @@ class DemoController {
         data: updateData,
       });
 
+      await prisma.auditLog.create({
+        data: {
+          action: 'demo_request.updated',
+          userId: req.user!.id,
+          organizationId: req.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ id, changes: Object.keys(updateData), previousStatus: existing.status, newStatus: status }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
       logger.info(`Demo request updated: ${id} - Status: ${status}`);
 
       // Dispatch status change webhook
@@ -296,7 +308,19 @@ class DemoController {
         },
       });
 
-      logger.info(`Demo scheduled for ${demoRequest.email} at ${scheduledAt}`);
+      await prisma.auditLog.create({
+        data: {
+          action: 'demo_request.scheduled',
+          userId: req.user!.id,
+          organizationId: req.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ id, scheduledAt, assignedTo, email: demoRequest.email }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
+      logger.info(`Demo scheduled (requestId: ${demoRequest.id}) at ${scheduledAt}`);
 
       // Send confirmation email via webhook
       if (sendConfirmation) {
@@ -335,6 +359,18 @@ class DemoController {
           status: 'converted',
           convertedToUserId: userId,
           convertedAt: new Date(),
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'demo_request.converted',
+          userId: req.user!.id,
+          organizationId: req.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ id, convertedToUserId: userId, email: demoRequest.email }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
         },
       });
 
@@ -455,6 +491,18 @@ class DemoController {
         where: { id },
       });
 
+      await prisma.auditLog.create({
+        data: {
+          action: 'demo_request.deleted',
+          userId: req.user!.id,
+          organizationId: req.user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ id, email: existing.email, status: existing.status }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
       logger.info(`Demo request deleted: ${id}`);
 
       res.json({
@@ -471,10 +519,27 @@ class DemoController {
   // ============================================================================
 
   /**
+   * Escape values that originate from untrusted submitter input before
+   * interpolating them into an HTML email body, so markup/links cannot be
+   * injected into the internal notification.
+   */
+  private escapeHtml(value: unknown): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string)
+    );
+  }
+
+  /**
    * Send demo request notification email to contact@complyeasyai.com
    */
   private async sendDemoRequestEmail(demoRequest: any) {
     try {
+      const e = (value: unknown) => this.escapeHtml(value);
       const emailHtml = `
         <!DOCTYPE html>
         <html>
@@ -500,95 +565,95 @@ class DemoController {
               
               <div class="info-row">
                 <div class="label">Name:</div>
-                <div class="value">${demoRequest.firstName} ${demoRequest.lastName}</div>
+                <div class="value">${e(demoRequest.firstName)} ${e(demoRequest.lastName)}</div>
               </div>
-              
+
               <div class="info-row">
                 <div class="label">Email:</div>
-                <div class="value">${demoRequest.email}</div>
+                <div class="value">${e(demoRequest.email)}</div>
               </div>
-              
+
               <div class="info-row">
                 <div class="label">Company:</div>
-                <div class="value">${demoRequest.company}</div>
+                <div class="value">${e(demoRequest.company)}</div>
               </div>
-              
+
               ${demoRequest.jobTitle ? `
               <div class="info-row">
                 <div class="label">Job Title:</div>
-                <div class="value">${demoRequest.jobTitle}</div>
+                <div class="value">${e(demoRequest.jobTitle)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.phone ? `
               <div class="info-row">
                 <div class="label">Phone:</div>
-                <div class="value">${demoRequest.phone}</div>
+                <div class="value">${e(demoRequest.phone)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.companySize ? `
               <div class="info-row">
                 <div class="label">Company Size:</div>
-                <div class="value">${demoRequest.companySize}</div>
+                <div class="value">${e(demoRequest.companySize)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.industry ? `
               <div class="info-row">
                 <div class="label">Industry:</div>
-                <div class="value">${demoRequest.industry}</div>
+                <div class="value">${e(demoRequest.industry)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.country ? `
               <div class="info-row">
                 <div class="label">Country:</div>
-                <div class="value">${demoRequest.country}</div>
+                <div class="value">${e(demoRequest.country)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.interestedTier ? `
               <div class="info-row">
                 <div class="label">Interested Plan:</div>
-                <div class="value">${demoRequest.interestedTier}</div>
+                <div class="value">${e(demoRequest.interestedTier)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.currentChallenge ? `
               <div class="info-row">
                 <div class="label">Main Challenge:</div>
-                <div class="value">${demoRequest.currentChallenge}</div>
+                <div class="value">${e(demoRequest.currentChallenge)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.howDidYouHear ? `
               <div class="info-row">
                 <div class="label">How did they hear about us:</div>
-                <div class="value">${demoRequest.howDidYouHear}</div>
+                <div class="value">${e(demoRequest.howDidYouHear)}</div>
               </div>
               ` : ''}
-              
+
               ${demoRequest.message ? `
               <div class="info-row">
                 <div class="label">Additional Message:</div>
-                <div class="value">${demoRequest.message}</div>
+                <div class="value">${e(demoRequest.message)}</div>
               </div>
               ` : ''}
-              
+
               <div class="info-row">
                 <div class="label">Source:</div>
-                <div class="value">${demoRequest.source || 'Unknown'}</div>
+                <div class="value">${e(demoRequest.source || 'Unknown')}</div>
               </div>
-              
+
               <div class="info-row">
                 <div class="label">Request ID:</div>
-                <div class="value">${demoRequest.id}</div>
+                <div class="value">${e(demoRequest.id)}</div>
               </div>
-              
+
               <div class="info-row">
                 <div class="label">Submitted At:</div>
-                <div class="value">${new Date(demoRequest.createdAt).toLocaleString()}</div>
+                <div class="value">${e(new Date(demoRequest.createdAt).toLocaleString())}</div>
               </div>
               
               <div class="footer">
@@ -626,7 +691,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         `.trim(),
       });
 
-      logger.info(`Demo request email sent to contact@complyeasyai.com for ${demoRequest.email}`);
+      logger.info(`Demo request email sent (requestId: ${demoRequest.id})`);
     } catch (error: any) {
       logger.error('Failed to send demo request email', error);
       // Log detailed error for debugging
@@ -689,7 +754,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         data: { welcomeEmailSentAt: new Date() },
       });
 
-      logger.info(`Welcome email webhook dispatched for ${demoRequest.email}`);
+      logger.info(`Welcome email webhook dispatched (requestId: ${demoRequest.id})`);
     } catch (error) {
       logger.error('Failed to dispatch welcome email webhook', error);
       // Don't throw - this is a non-critical operation
@@ -740,7 +805,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         );
       }
 
-      logger.info(`Demo request notification webhook dispatched for ${demoRequest.email}`);
+      logger.info(`Demo request notification webhook dispatched (requestId: ${demoRequest.id})`);
     } catch (error) {
       logger.error('Failed to dispatch demo request notification webhook', error);
     }
@@ -822,7 +887,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         );
       }
 
-      logger.info(`Schedule confirmation webhook dispatched for ${demoRequest.email}`);
+      logger.info(`Schedule confirmation webhook dispatched (requestId: ${demoRequest.id})`);
     } catch (error) {
       logger.error('Failed to dispatch schedule confirmation webhook', error);
     }
@@ -864,7 +929,7 @@ Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
         );
       }
 
-      logger.info(`Conversion webhook dispatched for ${demoRequest.email}`);
+      logger.info(`Conversion webhook dispatched (requestId: ${demoRequest.id})`);
     } catch (error) {
       logger.error('Failed to dispatch conversion webhook', error);
     }

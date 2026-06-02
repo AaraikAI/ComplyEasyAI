@@ -140,8 +140,11 @@ const config: Config = {
   },
   gemini: {
     apiKey: process.env.GEMINI_API_KEY || '',
-    model: process.env.GEMINI_MODEL || 'gemini-3.5-pro',
-    fastModel: process.env.GEMINI_FAST_MODEL || 'gemini-3.5-flash',
+    // Defaults must be valid @google/generative-ai model identifiers — these are
+    // passed straight to getGenerativeModel({ model }). gemini-1.5-pro /
+    // gemini-1.5-flash are stable GA model IDs; override via env for newer models.
+    model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
+    fastModel: process.env.GEMINI_FAST_MODEL || 'gemini-1.5-flash',
   },
   sendgrid: {
     apiKey: process.env.SENDGRID_API_KEY || '',
@@ -309,8 +312,11 @@ export const validateConfig = (): void => {
     }
   }
 
-  // Log warnings in non-production (config loads before logger to avoid circular dependency)
-  if (warnings.length > 0 && process.env.NODE_ENV !== 'production') {
+  // Surface warnings in every environment so optional-feature misconfigurations
+  // (e.g. an unset MQTT_BROKER_URL that makes IoT compliance features no-op) are
+  // visible in production logs instead of being silently dropped. Config loads
+  // before the logger to avoid a circular dependency, so write to stdout directly.
+  if (warnings.length > 0) {
     process.stdout.write(`⚠️  Configuration Warnings:\n${warnings.map((w: string) => `   - ${w}\n`).join('')}`);
   }
 

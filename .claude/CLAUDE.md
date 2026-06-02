@@ -1,444 +1,262 @@
 # ComplyEasyAI — Claude Code Instructions
 
-## Audit-Specific Rules
+## Production-Readiness Audit Methodology (Findings-Driven — corrected 2026-05-31)
 
-### Components That Are INTENTIONALLY Static (Do Not Flag as PRODUCTION_GAP)
+> **The v20.x multi-session ledger / queue / gate apparatus has been RETIRED.**
+> It was archived to `.archive/audit-history/retired-v20-machinery-20260531/`.
+> Do NOT resurrect it. Audits are **findings-driven**, not grep-count-driven.
 
-These components display reference/catalog data by design. They do NOT need backend API wiring:
+### Why the old apparatus was retired (read this before re-inventing it)
 
-- `FeatureLibrary.tsx` — static catalog of platform capabilities for onboarding (reads from FEATURE_CATALOG constant + localStorage)
-- Any `HelpCenter` / `DocumentationPage` — help content rendered from markdown
-- Any `LandingPage` / `PricingPage` / marketing pages — static marketing content
-- `OnboardingWizard` step descriptions — static instructional text
-- `CommunityPage.tsx` — community marketing/forum landing page (static curated content)
-- `LearnPage.tsx` — courses/tutorials catalog landing page (static curated content)
-- `components/hubs/*` — navigation hub components (route shells with link grids; child components are wired)
-- `components/Breadcrumbs.tsx`, `Pagination.tsx`, `TabbedContainer.tsx`, `SkipNavLink.tsx`, `DarkModeToggle.tsx`, `ThemeToggle.tsx`, `TierCard.tsx`, `TierLimitBanner.tsx`, `SlimSidebar.tsx`, `Onboarding/Onboarding{Hint,Progress,TierBadge}.tsx` — UI primitives (presentational only)
+The v20.x system claimed a deep scan required **30–50 sessions** to drain a
+"Re-Do Queue" of ~16,500 "rows." That number was an **artifact of three bugs**,
+not a reflection of real work:
 
-### Components That LOOK Static But Are Wired Via Hooks/Services (Do Not Flag)
+1. **The scanner scanned machine-generated code.** `server/src/generated/` is a
+   **739,290-line** auto-generated Prisma client. The master `find` in the
+   scan-runner did not exclude it, so JSDoc `@example prisma.user.findMany()`
+   snippets became "audit candidate rows." In the largest ledger (`l8_reads`),
+   **946 of 1,366 rows (69%) pointed at this generated file.** *(Fixed: the
+   scan-runner now excludes `*/generated/*`.)*
+2. **Grep-hits were treated as the completion metric.** Each grep match became a
+   "row" that had to reach "100% coverage," processed ~500/session by process
+   design — not by any real compute limit. A contaminated denominator made the
+   forecast explode. Real audits **triage**: most matches are instantly
+   dismissible (generated code, enum string values, test files); effort goes to
+   the actual risk surface.
+3. **The drift logger was buggy.** `check_gates.sh` used an awk variable named
+   `log`, which collides with awk's built-in `log()` function — it wrote 72
+   junk files named `ln(row_number)` (`1.09861`, `5.52545`, …) into the repo
+   root. *(Fixed: variable renamed to `outlog`.)*
 
-The scan-runner's STATIC_ONLY classifier looks for raw `api.*` or `fetch(/axios.*` calls. These components are wired through abstractions and are FULLY_WIRED:
+### True scope of "the entire codebase"
 
-- `HomeOS.tsx` — uses `useExecutiveDashboard()` + `useRisks()` React Query hooks (which call the API internally)
-- `RisingSignals.tsx` — uses `useNotifications()` hook
-- `components/AIFeatures/VendorScorer.tsx` — uses `scoreVendorRisk()` from `services/geminiService` (Gemini API wrapper)
-- Any component using TanStack Query hooks from `hooks/queries/*` — those hooks ARE the API calls
+Measured 2026-05-31 (excludes `node_modules/`, `server/src/generated/`,
+`.claude/worktrees/` duplicate copies, `dist/`, `build/`, `coverage/`, `.archive/`):
 
-### Known Unfixable Upstream Vulnerabilities (Do NOT Count Against Score)
+| | Files | LOC |
+|---|---|---|
+| Production source (server, components, hooks, mobile, contexts, services, infra) | 657 | ~410k |
+| Test / e2e | 523 | ~157k |
+| **Entire hand-written codebase** | **1,180** | **~567k** |
 
-These vulnerabilities exist in upstream dependencies with no available fix. Do NOT flag them as actionable findings or reduce the audit score for them:
+The canonical deep-scan file list lives at **`.claude/deep-scan/filelist.txt`**
+(regenerate with the `find` command in that directory's workflow).
 
-| Package | Severity | Reason Unfixable |
+### How to run a deep scan now
+
+A full deep-read of 1,180 files is **one comprehensive parallel pass**, not
+33 sessions. Fan out subagents (≈10–12 files each, ~100 batches, ~16 concurrent),
+each reading its assigned files **end-to-end** and returning structured findings.
+Synthesize into a single `PRODUCTION_READINESS_REPORT.md`. Exclude only
+generated/vendored/duplicate code.
+
+### Mandatory dynamic / runtime verification phases (NOT optional)
+
+Static reads alone miss version-specific runtime breaks, dependency CVEs, type
+errors, and capacity limits. A deep scan is **incomplete** until these phases run
+and their results are folded into the report (no longer a "limitations" caveat):
+
+**Phase D1 — Type check (`tsc --noEmit`).** Run in every TS package
+(`server/`, root frontend, `mobile/`). Use `NODE_OPTIONS=--max-old-space-size=8192`
+if it OOMs, and confirm CI sets the same. Any error = finding (HIGH if it blocks build).
+```bash
+cd server && npx tsc --noEmit ; cd .. && npx tsc --noEmit ; cd mobile && npx tsc --noEmit
+```
+
+**Phase D2 — Dependency audit (`npm audit`).** Run in each package with a
+lockfile. Cross-reference every result against the **known-unfixable list** below —
+only *new* / *fixable* advisories are findings (severity = audit severity). Never
+re-flag a known-unfixable vuln.
+```bash
+npm audit --json ; cd server && npm audit --json
+```
+
+**Phase D3 — Runtime boot + smoke.** Actually start the server and frontend and
+hit critical paths — static analysis sees `sslmode=require` in a URL and calls TLS
+"configured," but `pg`/library version changes cause silent boot failures (see the
+DB-config lessons below). Verify: server boots without throwing, `/health` 200,
+DB connects, one authenticated request round-trips, one mutating request persists.
+Boot/runtime failures are HIGH.
+
+**Phase D4 — Load / performance.** Drive the hot read + write endpoints with a
+load tool (`k6`/`autocannon`) at a realistic concurrency. Capture p95 latency,
+error rate, and any rate-limiter/connection-pool exhaustion. Regressions or
+unbounded-resource behavior under load = MEDIUM+.
+
+Findings remain **static-analysis-grade until confirmed against the cited lines**;
+D1–D4 are how the report graduates from "likely" to "verified."
+
+### What to look for (real findings criteria, severity-graded)
+
+These are the genuine production-readiness checks. Report them as **findings**
+(file:line + evidence + fix), not as coverage percentages:
+
+- **Multi-tenant isolation (HIGH):** every Prisma `create/update/delete/findMany/
+  findFirst/count/aggregate` returning user-scoped data must filter by
+  `organizationId` (or be preceded by an ownership check). Enforced at the
+  **service layer**. Child entities must verify the **parent's** org ownership.
+- **Credential encryption-at-rest (HIGH):** OAuth tokens / API keys / webhook
+  secrets / SCIM tokens must be `encryptField()`'d before the DB write.
+- **SSRF (MEDIUM+):** outbound `axios`/`fetch`/`got` with any user-controllable
+  or parameter-overridable URL must pass `isUrlSafe()`/`isWebhookUrlSafe()`.
+- **Auth guard (HIGH):** every non-public route covered by `requireAuth` /
+  `authenticateJWT` at route or mount level.
+- **Input validation (HIGH on mutating routes):** POST/PUT/PATCH/DELETE wired to
+  `validateBody`/`validateQuery`. Auth endpoints (login/register/reset) are
+  mandatory.
+- **CSRF (HIGH):** mutating endpoints protected by `csrfProtection` or
+  `sameSite:'strict'`. Webhook receivers with HMAC are intentionally exempt —
+  **verify per-route**, never extrapolate from one mount line.
+- **Webhook HMAC (HIGH):** every receiver verifies the signature first.
+- **JWT algorithm pinning (HIGH):** `jwt.verify(..., { algorithms: [...] })`,
+  never `'none'`.
+- **Cookie flags (HIGH/MEDIUM):** `httpOnly` on auth cookies; `secure` in prod + `sameSite`.
+- **Token revocation on logout/password-change (HIGH):** clearing the cookie
+  alone is insufficient — revoke the jti / destroy the session.
+- **PII in logs (HIGH/MEDIUM):** no `logger.X(req.body / accessToken / password /
+  full req.user)`.
+- **File upload limits (HIGH/MEDIUM):** multer routes need `limits.fileSize` +
+  MIME `fileFilter`.
+- **Background jobs (HIGH/MEDIUM):** bounded `attempts` + `backoff` + a dead-letter destination.
+- **In-memory state (HIGH if critical):** security sessions / job queues /
+  transaction state must be Redis/DB-backed.
+- **Frontend↔backend contracts (HIGH/MEDIUM):** HTTP method + path + required-field shape must match.
+- **Migration-dependency comments (HIGH):** "requires migration" comments must
+  have a matching applied migration, else the feature silently fails.
+- **Mocks/stubs/TODOs/incomplete impls:** real production gaps (but mind the
+  known-intentional patterns below).
+- **Error handling:** routes/controllers sending `res.status().json()` directly
+  bypass the global error handler (Sentry).
+- **Deployment config:** Dockerfile/compose fail-open `:-` defaults on
+  secrets/passwords; `:latest` tags pushed to prod; missing HEALTHCHECKs;
+  Node-version mismatch across CI/Docker/`engines`.
+
+### Known-intentional patterns — do NOT flag as gaps
+
+- **Fire-and-forget cleanup:** `.catch(() => {})` after
+  `unlink/rmdir/rmSync/worker.close/disconnect/cleanup/teardown` — intentional.
+- **Enum/union status literals:** `'NotImplemented'` / `'NOT_IMPLEMENTED'` as a
+  *value* of a status type/enum/comparison is a compliance-control status, not
+  an unimplemented marker.
+- **`throw new Error()` in pure math/crypto libs:** files under
+  `services/advanced/{dp,bayesian,byzantine*,scaffold*,secretSharing*,rdp*}/`
+  and `utils/blockchain/anchor*` use bare `Error` for precondition guards (no
+  HTTP context); `AppError` would be misleading.
+- **Comment-only references:** `throw new Error(...)` inside `//` or `/* */` is documentation.
+
+### Components that are INTENTIONALLY static (do not flag as PRODUCTION_GAP)
+
+Reference/catalog/marketing content by design — no backend wiring needed:
+- `FeatureLibrary.tsx` (FEATURE_CATALOG + localStorage), any `HelpCenter` /
+  `DocumentationPage`, any `LandingPage` / `PricingPage` / marketing pages,
+  `OnboardingWizard` step text, `CommunityPage.tsx`, `LearnPage.tsx`,
+  `components/hubs/*` (route shells with link grids; children are wired).
+- UI primitives (presentational only): `Breadcrumbs`, `Pagination`,
+  `TabbedContainer`, `SkipNavLink`, `DarkModeToggle`, `ThemeToggle`, `TierCard`,
+  `TierLimitBanner`, `SlimSidebar`, `Onboarding/Onboarding{Hint,Progress,TierBadge}`.
+
+### Components that LOOK static but ARE wired (do not flag)
+
+Wired through hooks/services (a raw-`api.*`/`fetch` grep misses these):
+- `HomeOS.tsx` → `useExecutiveDashboard()` + `useRisks()`
+- `RisingSignals.tsx` → `useNotifications()`
+- `components/AIFeatures/VendorScorer.tsx` → `scoreVendorRisk()` (geminiService)
+- Any component using TanStack Query hooks from `hooks/queries/*` — those hooks ARE the API calls.
+
+### Known unfixable upstream vulnerabilities (do NOT count against score)
+
+**Refreshed 2026-06-01.** Root = **0 vulnerabilities**. Server = **29** (0 critical, **0 high**,
+15 moderate, 14 low) — down from 31; **both previously-HIGH advisories are now FIXED** (see below).
+Every remaining advisory was re-checked: each fix requires a **breaking major upgrade** of a toolchain
+dep (`npm audit fix --force` → ethers v6 / aws-sdk v3 / circom / fabric-network / exceljs / jest-junit
+majors), which is out-of-scope dependency-replacement work, not a code fix.
+
+**Fixed this pass (were flagged "unfixable" or newly appeared):**
+- `dompurify` (HIGH, GHSA-87xg-pxx2-7hvx, affects `=3.4.4`) → `overrides.dompurify: ^3.4.7`. Resolved.
+- `tmp` (HIGH, GHSA-ph9p-34f9-6g65, affects `<0.2.6`) → direct dep bumped `^0.2.5`→`^0.2.7`
+  (it is a DIRECT dep, so an `overrides` entry errors `EOVERRIDE`; the prior override pinned the
+  still-vulnerable `0.2.5`). `circom.tmp` override also bumped to `^0.2.7`. Resolved.
+
+**Genuinely unfixable today (breaking-major chains; verified `npm ls` + `npm audit` 2026-06-01):**
+
+| Package | Severity | Reason Unfixable (current) |
 |---------|----------|-----------------|
-| `lodash 4.x` | Moderate | No lodash 5.x exists; used transitively by chevrotain/prisma |
-| `elliptic *` | High | ALL versions affected; used by fabric-network crypto |
-| `aws-sdk v2` | Low | Migration to v3 is a separate project; tracked |
-| `serialize-javascript <=7.0.2` | High | Pinned by mocha@8.4.0 via circom_runtime; exact version lock |
-| `effect <3.20.0` | High | Prisma/@prisma/config dependency; awaiting Prisma update |
-
-### Prisma Model Names (Correct References)
-
-- `riskItem` (NOT `risk`)
-- `frameworkControl` (NOT `control`)
-- `evidenceAnalysis` (NOT standalone `Evidence`)
-
-### Files That Must NEVER Be Committed or Merged
-
-These files/directories must NEVER be included in any git commit, merge, or PR:
-
-- `node_modules/` — dependency install artifacts; always regenerated by `npm install`
-- `.DS_Store` — macOS Finder metadata; has no place in version control
-- Any `.env` file containing real secrets (`.env.local`, `.env.production`, etc.)
-
-**Pre-commit check:** If `git status` shows `node_modules/` or `.DS_Store` files staged, UNSTAGE them immediately with `git reset HEAD <file>`. Never use `git add -A` or `git add .` without verifying no excluded files are staged.
-
-**Cleanup:** If `.DS_Store` files exist in the working tree, remove them:
-```bash
-find . -name ".DS_Store" -delete
-```
-
-### Multi-Tenant Query Rule
-
-ALL database queries returning user-scoped data MUST filter by `organizationId`. This is enforced at the **service layer**, not middleware. When auditing, check the service file — not just the route handler.
-
-### v4 Audit Rules — Exhaustive Coverage (Added 2026-03-25)
-
-These rules were added after an audit found 20 NEW issues that previous scans missed. The root cause was checking for the EXISTENCE of security controls without measuring their COVERAGE.
-
-#### Rule: Existence ≠ Coverage
-Finding one correct implementation does NOT mean the entire codebase is correct. When auditing:
-1. **Multi-tenant writes:** Check EVERY `.create()`, `.update()`, `.delete()` in service files for organizationId — not just the first one you find.
-2. **SSRF protection:** Check EVERY outbound HTTP call (`axios`, `fetch`, `got`) — not just the dedicated webhook service.
-3. **Input validation:** Count route files WITH validation / total route files. Report the exact percentage.
-4. **Rate limiting:** List ALL route mounts and mark which have rate limiting.
-5. **Error class consistency:** Check ALL service `throw` statements use `AppError`, not bare `Error`.
-6. **Credential storage:** Check ALL token/key storage patterns (not just JWT/passwords) — SCIM tokens, API keys, webhook secrets.
-7. **Default-value security:** Verify what happens when security-related env vars are UNSET — the default must be deny/reject, not allow.
-8. **Error propagation:** Routes that catch errors and send `res.status(N).json(...)` bypass the global error handler (Sentry, logging, consistent format).
-9. **Frontend↔Backend contracts:** Match HTTP methods, exact paths, and parameter shapes — not just path existence.
-10. **Silent catch completeness:** Process EVERY `.catch(() => {})` match — do not flag some and miss others.
-
-### v5 Audit Rules — Depth & Verification (Added 2026-03-26)
-
-These rules were added after a v4 audit found 18 MORE new issues. The root cause was that v4 measured coverage but didn't verify depth (large files in subdirectories), fix effectiveness, migration status, or runtime compatibility.
-
-#### Rule: No File Size Exemptions
-Files over 2000 lines (e.g., `regulatoryIntelligenceFabricService.ts` at ~2700 lines) MUST be read in full using offset+limit chunking. Do NOT "representatively sample" from large files.
-
-#### Rule: Fix Effectiveness, Not Just Presence
-When a previous finding is marked "FIXED," verify the fix is EFFECTIVE:
-- ReDoS fix with length guard only → INSUFFICIENT (need `re2` or timeout)
-- SSRF fix with format validation only → INSUFFICIENT (need private IP blocking)
-- Multi-tenant fix with pre-check only → INSUFFICIENT (need orgId in the actual query)
-
-#### Rule: Migration Status Verification
-Code that references `"requires migration"` in comments → check if the migration file exists and has been applied. If code depends on a migration that hasn't run, ALL functionality using that code path silently fails.
-
-#### Rule: Runtime Compatibility
-`--force-fips` on Alpine Linux = crash. Verify that Dockerfile flags are compatible with the base image.
-
-#### Rule: Exhaustive State Array Verification for DEV_FALLBACK
-When classifying a component as DEV_FALLBACK, list ALL `DEMO_*`/`DEFAULT_*` arrays and ALL `useEffect`/`setState` calls. If `useEffect` replaces 2 of 5 arrays but 3 remain static → PARTIALLY_WIRED, not DEV_FALLBACK.
-
-#### Rule: ALL Config Defaults, Not Just Common Ones
-Check MQTT, AMQP, Kafka, Elasticsearch, Redis defaults — not just CORS/JWT/rate-limits. Encryption key minimums must match algorithm requirements (AES-256 → 32 bytes).
-
-### v6 Audit Rules — Complete Enumeration (Added 2026-03-27)
-
-These rules were added after a v5 audit still found new issues by reading only ~5 of 15 service files in depth.
-
-#### Rule: Read EVERY Service File, Not Just "Main" Ones
-`find server/src/services -name "*.ts"` — Read ALL files individually. Integration services (`services/integrations/`), advanced services (`services/advanced/`), and utility services need the same depth of review as top-level services. 12 multi-tenant gaps were found in 5 services that were spot-checked rather than fully read.
-
-#### Rule: ALL Dockerfiles and Compose Files
-`find . -name "Dockerfile*" -o -name "docker-compose*"` — Read EVERY file. OPA Dockerfile, nginx config, security compose, monitoring compose. Check: non-root user, image pinning, default passwords (Grafana admin), secrets management.
-
-#### Rule: Cross-File Version Consistency
-CI Node version MUST match Dockerfile Node version. `engines` field should exist in package.json.
-
-#### Rule: Error PATH Runtime Testing
-When the server is running, test what happens when middleware ITSELF errors (CORS error, body parser error), not just normal request/auth rejection. Middleware errors often bypass Helmet/security headers.
-
-#### Rule: Package.json Production Readiness
-Check that production-critical packages (`@sentry/node`, `winston`, `helmet`) are in `dependencies`, NOT `devDependencies`.
-
-### v7 Audit Rules — Completion Gates & Anti-Rationalization (Added 2026-03-30)
-
-These rules were added after a v6 audit still sampled (15 of 100+ components) despite explicit anti-sampling instructions, left F7 SSRF matches as "Review needed" instead of classifying them, omitted mandatory report sections (3.5/3.6/3.7), and downgraded a real multi-tenant gap to "Non-Blocking."
-
-#### Rule: Machine-Verifiable Completion Gates
-The scan-runner outputs hard counts to `/tmp/audit_*_count.txt`. The report MUST include Section 3.8 (Completion Gate Verification) proving every count was met. If components checked < components counted, the audit is INCOMPLETE.
-
-#### Rule: "Review needed" Is Not a Classification
-Every scan output match MUST be classified as FALSE_POSITIVE, DEV_FALLBACK, INTENTIONAL_FEATURE, PARTIALLY_WIRED, or PRODUCTION_GAP. "Review needed" or "TBD" in a final report is an audit failure.
-
-#### Rule: No Severity Downgrading of Multi-Tenant Write Gaps
-A `.create()/.update()/.delete()` without organizationId verification is ALWAYS at least HIGH severity. The agent may not rationalize it down to "Low" or "Non-Blocking" based on speculative reasoning about data sensitivity.
-
-#### Rule: Explicit Incompleteness Over Silent Truncation
-If context limits prevent processing all items: state "Checked X of Y — Z remaining for follow-up." Do NOT present a sample as the full set.
-
-### v8 Audit Rules — Scan Infrastructure & Parallelization (Added 2026-04-01)
-
-These rules were added after the scan-runner.sh was restructured from v2 → v3 to fix a hang at Step 2 that prevented the script from ever completing. The root cause was 68 sequential `grep -rn .` commands each re-traversing 1.18M LOC including 2+ GB of node_modules.
-
-#### Rule: Scan-Runner v3 Architecture
-The v3 scan-runner (`scan-runner.sh`) uses pre-built file lists instead of per-pattern directory traversal:
-- `/tmp/audit_all_source.txt` — ALL source files (master list, built by `find` once)
-- `/tmp/audit_source_lean.txt` — Production files only (excludes test files + generated code)
-- `/tmp/audit_source_components.txt` — Component files only
-- `/tmp/audit_source_server.txt` — Server source files only
-- `/tmp/audit_source_services.txt` — Service files only (for multi-tenant checks)
-- Each pattern runs `xargs grep < file_list` instead of `grep -rn .` — no re-traversal
-
-#### Rule: Use Pre-Built File Lists for Supplementary Greps
-When the audit agent needs to run additional grep commands during classification (e.g., checking if a component imports from `services/api`), it should use the pre-built file lists:
-```bash
-# CORRECT: Use pre-built file list
-xargs grep -l "import.*from.*services/api" < /tmp/audit_source_components.txt
-# WRONG: Re-traverse the entire directory tree
-grep -rl "import.*from.*services/api" components/ | grep -v node_modules
-```
-
-#### Rule: JSONL Files Are Empty Stubs
-The v3 scan-runner creates empty `.jsonl` files for backward compatibility. The agent MUST read `/tmp/audit_*.txt` files directly for grep results, and read the actual source files for classification context. Do NOT expect JSONL context-enriched output.
-
-#### Rule: Check Scan Completeness After Execution
-After the scan-runner completes, verify:
-1. `/tmp/audit_scan_log.txt` — must show 0 timeouts (any timeout means partial results for that pattern)
-2. `/tmp/audit_metrics.json` — must have `"scanner_version": "3.0"` and valid `production_files_scanned` count
-3. Completeness verification section at end of scan output must show "✅ All patterns completed — full coverage"
-
-#### Rule: EXIT Trap Guarantees Baseline Save
-The v3 scan-runner registers `trap save_baseline EXIT` so `.claude/audit-baseline/` is always updated, even if the script is interrupted (Ctrl-C) or a pattern hangs. This means delta comparison is always available on the next run.
-
-#### Rule: Parallelize Audit Phases for Large Codebases
-For codebases with 500+ source files, the audit agent SHOULD launch parallel sub-agents for independent phases:
-- Phase 2 (pattern classification) + Phase 4 (component wiring) + Phase 6 (security) + Phase 8 (deployment) can all run in parallel
-- Phase 5 (app logic) + Phase 7 (API completeness) can run together
-- Phase 0-1 (stack detection + build) must run first (provides baseline context)
-- All agents report back; the main agent merges results into the final report
-
-### v9 Audit Rules — Methodology Completeness & Triage (Added 2026-04-02)
-
-These rules were added after a v8 audit found 18 issues, of which 9 required agent initiative rather than being guaranteed by the methodology. The root cause was missing triage algorithms for high-volume scan output, absent scans for Docker Compose variable syntax, no CI artifact tag scanning, and no verification that security wrappers are used at ALL call sites.
-
-#### Rule: L7 Multi-Tenant Triage Algorithm
-When L7 returns >100 write operations, triage by inconsistency:
-1. Group L7 output by file. Count org-scoped writes vs unscoped writes per file.
-2. **Priority 1:** Files with MIXED org checks (some have, some don't) — inconsistency = highest bug signal. (This caught monitoringService.ts: some functions had orgId, others didn't.)
-3. **Priority 2:** Files with ZERO org references — entire service may be unscoped.
-4. **Priority 3:** Files where ALL writes have org checks — verify correctness, not just presence.
-
-#### Rule: Lint Config Existence Before Execution
-Before running any linter in Phase 1, verify the config file EXISTS for each sub-project:
-```bash
-for dir in $(find . -name "package.json" -not -path "*/node_modules/*" -maxdepth 2 -exec dirname {} \;); do
-  [ -d "$dir/src" ] && ! ls "$dir"/eslint.config.* "$dir"/.eslintrc* 2>/dev/null | head -1 && echo "GAP: No ESLint config in $dir"
-done
-```
-ESLint 9 flat config silently ignores all files when no config exists — "0 errors" is not a pass, it's a non-run.
-
-#### Rule: Docker Compose Fail-Open Variable Scan
-Scan ALL compose files for security-sensitive `:-` (fail-open) defaults:
-```bash
-grep -n ':-' $(find . -name "docker-compose*" -not -path "*/node_modules/*") | grep -iE 'password|secret|key|token|admin|credential'
-```
-Security variables MUST use `:?` (fail-closed). `:-changeme` or `:-dev-secret...` = HIGH finding. Empty defaults `:-` (empty string) for optional API keys are acceptable.
-
-#### Rule: CI Pipeline Image Tag Scan
-Extend R3 to scan CI workflow files for `:latest` in push/tag/deploy steps:
-```bash
-grep -rn ':latest' .github/workflows/ | grep -iE 'push|tag|deploy|ecr|registry|gcr|docker'
-```
-`:latest` pushed to production registries = MEDIUM finding. Sign-only references are lower priority.
-
-#### Rule: Security Function Call-Site Completeness
-When a security wrapper (safeRegexTest, isUrlSafe, isWebhookUrlSafe, sanitize) is found:
-1. Identify the unsafe pattern it wraps (`new RegExp(`, raw `axios.get(`, `dangerouslySetInnerHTML`)
-2. Grep for ALL instances of the unsafe pattern in production code
-3. Any instance NOT routed through the safe wrapper = PRODUCTION_GAP
-```bash
-# Example: verify all RegExp calls use safeRegexTest
-grep -rn "new RegExp(" server/src/ --include="*.ts" | grep -v test | grep -v generated | grep -v "safeRegexTest"
-```
-
-#### Rule: In-Memory State Criticality Classification
-When O3 returns >20 matches, classify by business impact before reporting:
-- **CRITICAL (MUST persist):** Security sessions, job queues, transaction state
-- **HIGH (SHOULD persist):** User preferences, notification state, cache without TTL
-- **MEDIUM (CAN be lost):** ML model weights, computed caches (recomputable)
-- **LOW (EXPECTED ephemeral):** WebRTC connections, rate limit counters, connection pools
-Only CRITICAL and HIGH appear as findings. MEDIUM/LOW are informational.
-
-#### Rule: Startup Env Validation Depth
-If P9 (env var validation at startup) returns < 5 matches, explicitly verify these critical vars crash the app when missing: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ENCRYPTION_KEY`. If any can be unset without a startup crash, that's a MEDIUM finding.
-
-#### Rule: Docker HEALTHCHECK Per-Dockerfile
-For EVERY Dockerfile found (not just the root one), verify HEALTHCHECK is present. Missing = MEDIUM finding. OPA, Redis, sidecars all need health checks for container orchestration.
-
-#### Rule: Cross-Compose Variable Consistency
-When the same env variable appears in multiple compose files/services, verify they use the SAME fail-safe syntax. If `REDIS_PASSWORD` uses `:-localredis123` in one service but `:?Set REDIS_PASSWORD` in another, that's an inconsistency finding. Dev-profile defaults with weak passwords should be documented as known-acceptable or changed to `:?`.
-
-#### Rule: Lint Warning Threshold
-If frontend ESLint warnings exceed 500, report as LOW finding (systematic code quality debt). The warning count should be tracked across audits for regression detection.
-
-### v10 Audit Rules — Scan Robustness & CI Quality Gates (Added 2026-04-02)
-
-These rules were added after a v9 scan-runner crashed at T3 due to shell compatibility issues, and the v9 audit missed CI `continue-on-error` bypasses in mobile and dependency-scan workflows.
-
-#### Rule: Scan-Runner Shell Compatibility
-All scan-runner shell operations MUST be compatible with both bash and zsh under `set -euo pipefail`:
-- NEVER use `ls GLOB` to check for file existence — use `find DIR -maxdepth 1 -name "PATTERN"` instead (glob expansion failure kills the script under `set -e`)
-- All `grep` calls MUST use the `safe_grep` wrapper or `|| true` suffix
-- After the scan-runner completes, verify exit code is 0. If non-zero, inspect output to find which T-scan failed and run remaining T-scans manually.
-
-#### Rule: Scan-Runner Failure Recovery
-If the scan-runner exits non-zero:
-1. Read the output to identify the last successful step
-2. Run the remaining T-scans manually using the commands from scan-patterns.md Category T
-3. Report which T-scans were manual vs automated
-4. Do NOT skip T-scans — all are mandatory
-
-#### Rule: CI Quality Gate Bypass Scan
-Scan ALL CI workflow files (not just the main ci.yml) for `continue-on-error: true`:
-```bash
-grep -rn "continue-on-error" $(find . -path "*/.github/workflows/*" -o -path "*/.gitlab-ci*") | grep -v "# Known unfixable"
-```
-Each `continue-on-error: true` on a test/build/scan step = MEDIUM finding (quality gate bypass). Acceptable on known-unfixable dependency audits (document with comment).
-
-#### Rule: Peer Dependency Completeness
-After Phase 1 TypeScript compilation, check for unmet peer dependencies:
-```bash
-npm ls --all 2>&1 | grep -i "UNMET PEER\|missing peer"
-```
-Missing peer deps cause type errors or runtime failures that may not surface in local dev but break CI or production. Each unmet peer = MEDIUM finding.
-
-#### Rule: ALL CI Workflow Files, Not Just Main
-Scan ALL files in `.github/workflows/`, not just `ci.yml`. Projects often have separate workflows for mobile, dependency scanning, staging, and security that contain their own quality gates, deployment steps, and `:latest` tag references.
-
-### v11 Audit Rules — Depth Gaps & Honest Incompleteness (Added 2026-04-02)
-
-These rules were added after comparing Claude Code (90.9%), Cursor (80.35%), and Claude Desktop (76.83%) reports on the same codebase. Claude Code scored highest because it missed 9 items the other tools found. The root causes: (1) credential encryption-at-rest not checked, (2) function parameters missed in SSRF scan, (3) parent-child entity org chains missed in L7, (4) non-compose infrastructure config files not scanned for defaults, (5) L10 scope too narrow (routes only, not controllers), (6) honest incompleteness not declared when L7/F7 weren't fully classified.
-
-#### Rule: Credential Encryption-at-Rest Verification
-F8 checks credential *patterns* but not whether credentials are **encrypted before DB storage**. For every credential type stored in the database (OAuth tokens, API keys, integration secrets), verify encryption is applied before the Prisma `.create()`/`.update()` call. Plaintext credential storage = MEDIUM finding even if the credential type is less sensitive than passwords.
-```bash
-# Find integration/credential DB writes
-grep -rn "prisma\.\(integration\|credential\|oauthToken\).*\(create\|update\|upsert\)" server/src/ --include="*.ts" | grep -v test
-# For each: verify encrypt() is called on token/secret fields before storage
-```
-
-#### Rule: SSRF Parameter-Level Inspection
-F7 classifies outbound HTTP calls by *file* (env URL = safe). But functions may accept **optional URL parameters** that override the safe default. For every outbound HTTP function, check ALL parameters — not just the default URL constant.
-```bash
-# Find functions with URL/baseUrl parameters
-grep -rn "baseUrl\?: string\|url: string\|endpoint: string" server/src/services/ --include="*.ts" | grep -v test | grep -v node_modules
-```
-Any function parameter that can override a safe URL without `isUrlSafe()` validation = PRODUCTION_GAP.
-
-#### Rule: Parent-Child Entity Org Verification (L7 Enhancement)
-When a write operation targets a **child entity** (e.g., SOXTestResult belongs to SOXControl belongs to Organization), verifying orgId on the child is insufficient — verify the **parent entity's** org ownership. `prisma.sOXTestResult.create({ data: { controlId } })` without verifying `controlId` belongs to the caller's org = HIGH multi-tenant gap.
-```bash
-# Find child entity creates that accept a parentId without org verification
-grep -rn "\.create(" server/src/services/ --include="*.ts" | grep -v test | grep "Id:" | grep -v "organizationId"
-```
-
-#### Rule: Infrastructure Config File Default Scan (Beyond Compose)
-T1 scans `docker-compose*` for `:-` fail-open defaults. But infrastructure config files (logstash.conf, nginx.conf, prometheus.yml, etc.) also contain default passwords. Extend the scan:
-```bash
-# Scan ALL infrastructure config files for fail-open defaults
-find . -path "*/logstash/*" -o -path "*/nginx/*" -o -path "*/prometheus/*" -o -path "*/grafana/*" -o -path "*/falco/*" | grep -v node_modules | xargs grep -n ':-\|changeme\|default.*password' 2>/dev/null
-```
-Any `changeme` or weak default password in infrastructure config = HIGH finding.
-
-#### Rule: L10 Must Cover Controllers AND Routes
-L10 scans `server/src/routes/` for manual error responses. But controllers also send `res.status(N).json(...)` — often MORE than routes (247 instances in controllers vs 29 in routes). Extend L10:
-```bash
-grep -rn "res\.status(" server/src/controllers/ server/src/routes/ --include="*.ts" | grep -v test | grep -v node_modules
-```
-
-#### Rule: StatusPage/Health Display Components Must Be Wired
-Any component displaying operational status (uptime, incidents, service health) with inline constants instead of live API data = PRODUCTION_GAP. These are NOT "UI utility" components — they display real-time operational data.
-
-#### Rule: Honest Incompleteness Declaration
-When L7 (682 ops) or F7 (97 calls) cannot be fully classified in a single pass, the report MUST explicitly state "INCOMPLETE — X of Y classified" in Section 3.8 completion gates. Cursor correctly did this; Claude Code claimed 100% processed. Presenting partial work as complete is worse than declaring incompleteness.
-
-#### Rule: Security Score Must Use Strict Formula
-When HIGH findings exist, the security formula `max(0, 100 - H*10 - M*3)` often yields 0%. This is by design — it surfaces the severity of accumulated security debt. Do NOT artificially inflate the security score by under-counting HIGH findings or reclassifying them as MEDIUM.
-
-### v12 Audit Rules — Cross-Audit Reconciliation & Enforcement (Added 2026-04-02)
-
-These rules were added after cross-comparing Claude Code (97.95%), Cursor (~72%), and Claude Desktop (76.83%) reports on the same codebase. Claude Code scored highest by missing 9 findings the other tools found. Root causes: (1) no Node version consistency grep, (2) server console.log not distinguished from frontend/scripts, (3) dev compose literal security values not scanned, (4) auth-critical endpoint validation not checked, (5) fixable vulns reported but not acted on, (6) tsc OOM not detected, (7) SSO/SCIM error paths not audited for security logging, (8) no cross-report comparison mechanism, (9) rate limit gaps not enumerated, (10) ReDoS wrapper effectiveness not verified.
-
-#### Rule: Cross-Audit Finding Reconciliation
-When previous audit reports exist (from any tool — Claude Code, Cursor, Claude Desktop, etc.), the current audit MUST:
-1. Read all available previous reports
-2. Build the UNION of all findings across all reports
-3. For each finding: verify against current code as FIXED, STILL_OPEN, or DISAGREEMENT
-4. Include the reconciliation table in Section 0 (Delta Summary)
-Any finding flagged by ANY tool is a candidate until verified. This prevents tools from achieving high scores by missing findings.
-
-#### Rule: Node Version Cross-Consistency Scan (T16)
-CI Node version, Dockerfile Node version, and package.json `engines` field MUST all match on major version. Run T16 scan and compare. CI=Node22 vs Docker=Node25 means code is tested on a different runtime than production = HIGH finding.
-
-#### Rule: Server-Only Console Audit (T17)
-G1 scans all source files for `console.*` but cannot distinguish server production code from frontend/scripts/CLI. T17 specifically scans `server/src/` excluding test/scripts. Any `console.log` in server production code = LOW finding. Claude Desktop found 10 instances that Claude Code missed because G1 was too broad.
-
-#### Rule: Dev Compose Literal Security Values (T18)
-T1 scans for `:-` fail-open syntax. But dev compose files may have literal `JWT_SECRET=dev-jwt-secret-...` (not `${VAR:-...}` syntax). T18 catches these. Literal hardcoded security values in compose = LOW if dev-only, MEDIUM if no profile separation ensures they never reach production.
-
-#### Rule: Auth-Critical Endpoint Validation (T19)
-Input validation coverage (route file percentage) is necessary but insufficient. These specific endpoints MUST have `validateBody()`: `login`, `register`, `forgot-password`, `reset-password`, `change-password`. Missing validation on auth endpoints = MEDIUM (higher than general validation gaps).
-
-#### Rule: Fixable Vulnerability Action (T20)
-Reporting a fixable vulnerability without acting on it is insufficient. For each fixable vuln from `npm audit`: either run `npm audit fix` or document why it can't be fixed. "1 fixable moderate" without action = audit gap.
-
-#### Rule: Build Memory Requirements (T21)
-If `tsc --noEmit` requires `NODE_OPTIONS=--max-old-space-size=8192` to avoid OOM, verify CI workflows also set this. Missing NODE_OPTIONS in CI = MEDIUM (CI build will silently crash).
-
-#### Rule: SSO/SCIM Error Path Security Logging (T22)
-SSO and SCIM are security-sensitive auth flows. Every catch block in `sso.ts` and `scim.ts` MUST include `logger.error()` with security context (IP, session, ssoConfigId). Inline `res.status()` responses in auth flows that bypass Sentry = HIGH (security events not tracked).
-
-#### Rule: Rate Limit Gap Enumeration (T24)
-L9 counts rate limit references but doesn't enumerate specific gaps. T24 lists every `app.use('/api/...')` mount and marks which lack rate limiters. Each gap must be reported by name.
-
-#### Rule: ReDoS Wrapper Effectiveness Verification (T25)
-T4 checks that `safeRegexTest` is used at all `new RegExp()` call sites. But the wrapper itself may be insufficient (Pitfall 17). T25 checks the wrapper IMPLEMENTATION: if it uses only `.length` guards without `re2` or timeout, ALL call sites are still vulnerable despite passing T4.
-
-### v13 Audit Rules — Known-Intentional Patterns (Added 2026-05-24, after v22)
-
-These rules were added after the v22 audit found 28 GAP_FOUND_PER_SCAN entries that were ALL false positives — intentional code patterns the scan-runner regex couldn't distinguish from real defects. Scanner v3.4 now post-filters these at scan time; the audit prompt (v20.1 §1.3) also instructs subagents to recognize them.
-
-#### Rule: Allow Fire-and-Forget Temp/Worker Cleanup (E1 exception)
-Empty catch blocks attached to cleanup operations are intentional:
-- `await unlink(tempPath).catch(() => {})`
-- `await rmdir(scratchDir).catch(() => {})`
-- `worker.close().catch(() => {})`
-- Any `.catch(() => {})` immediately following `unlink|rmdir|rmSync|rm\(|worker\.close|tempDir|tmpFile|temp[A-Z]|cleanup|teardown|disconnect`
-
-Rationale: cleanup failures are expected (file already gone, worker already closed) and re-throwing would mask the original error. The catch deliberately drops the error.
-
-When scanning: scan-runner v3.4 auto-suppresses these via `safe_grep -Ev` in pattern E1. If the agent encounters one anyway → verdict `INTENTIONAL_FIRE_AND_FORGET` per AUDIT_PROMPT_v20.1 §1.3.
-
-#### Rule: Allow TypeScript Enum/Union String Literals for "NotImplemented" (C1 exception)
-`'NotImplemented'`, `'Not_Implemented'`, `'NOT_IMPLEMENTED'` appearing as string-literal VALUES of:
-- Type annotations: `status: 'Implemented' | 'NotImplemented' | 'InProgress'`
-- Enum assignments: `const STATUS = { NotImplemented: 'NotImplemented' as const }`
-- Comparisons: `if (control.status === 'NotImplemented')`
-- Object literals: `{ status: 'NotImplemented', count: 0 }`
-
-…are STATUS VALUES in implementation-tracking systems (SOC2/NIST/ISO controls, compliance frameworks). They are NOT actual unimplemented markers.
-
-When scanning: scan-runner v3.4 auto-suppresses lines where these literals appear after `:|=|=>|\||===|!==|<>`. If the agent encounters one anyway → verdict `ENUM_STATUS_VALUE_NOT_GAP`.
-
-#### Rule: Allow `throw new Error(...)` in Pure Math/Crypto Libraries (F11 exception)
-Files under these directories use `throw new Error()` for domain-validation guards, not HTTP-routed exceptions:
-- `server/src/services/advanced/dp/` (differential privacy: RDP accountant, privacy budget)
-- `server/src/services/advanced/bayesian/` (Bayesian networks)
-- `server/src/services/advanced/byzantine*` (byzantine-robust aggregation)
-- `server/src/services/advanced/scaffold*` (SCAFFOLD federated learning)
-- `server/src/services/advanced/secretSharing*` (Shamir secret sharing)
-- `server/src/services/advanced/rdp*` (Rényi DP)
-- `server/src/utils/blockchain/anchor*` (chain anchor store config preconditions)
-
-Rationale: AppError carries HTTP status codes and is for request-handler error paths. Pure math libraries have no HTTP context — using AppError would be misleading. These throws are precondition guards (`if (epsilon <= 0) throw new Error('epsilon must be positive')`).
-
-When scanning: scan-runner v3.4 auto-suppresses F11 hits in these directories. If the agent encounters one anyway → verdict `MATH_LIBRARY_PRECONDITION_NOT_GAP`.
-
-#### Rule: Comment-Only References Are Not Active Code (F11 exception)
-`throw new Error(...)` appearing inside `//` line comments or `/* */` block comments is documentation, not active code.
-
-Example: `// Alternative: throw new Error('Phone number not configured') for strict mode`
-
-When scanning: scan-runner v3.4 auto-suppresses lines matching `^[^:]+:[0-9]+:[[:space:]]*(//|\*)`. If the agent encounters one anyway → verdict `COMMENT_NOT_ACTIVE_CODE`.
+| `elliptic *` | Low | ALL versions affected; via `fabric-network`→`fabric-common` and `aws-sdk`→ requires fabric-network major |
+| `ws 8.0.0–8.20.0` | Moderate | via `ethers`/`@ethersproject/providers`; fix = ethers v6 (breaking) |
+| `@ethersproject/*` / `ethers` | Low/Moderate | ethers v5 line; fix = ethers v6 major (breaking) |
+| `aws-sdk v2` (→`uuid`) | Moderate | v3 migration is a separate tracked project |
+| `uuid` (via `@azure/ms-rest-js`, `exceljs`, `jest-junit`) | Moderate | needs major bumps of those parents (breaking) |
+| `serialize-javascript` (via `mocha`←`ffjavascript`←`circom_runtime`) | Moderate | overridden to `7.0.4` where allowed; `mocha`/`circom` pin transitively; needs circom major |
+| `circom`/`circom_runtime`/`ffjavascript`/`mocha` | Moderate | circom toolchain; fix = circom major (breaking) |
+| `fabric-common`/`fabric-network` | Low | Hyperledger SDK; fix = fabric major (breaking) |
+
+`lodash 4.x` and `effect <3.20.0` from the prior table no longer appear in the current server audit.
+
+### Prisma model names (correct references)
+
+- `riskItem` (NOT `risk`), `frameworkControl` (NOT `control`),
+  `evidenceAnalysis` (no standalone `Evidence`).
+
+### Files that must NEVER be committed
+
+- `node_modules/`, `.DS_Store`, any `.env` with real secrets.
+- **Pre-commit:** if `git status` shows `node_modules/` or `.DS_Store` staged,
+  `git reset HEAD <file>`. Never `git add -A`/`git add .` without checking.
+- Remove stray `.DS_Store`: `find . -name ".DS_Store" -delete`.
 
 ---
 
-## Fix Implementation Guidelines
+## Fix Implementation Guidelines (avoid the "hydra effect")
 
-When generating code fixes for audit findings, follow these rules to avoid triggering new scan pattern matches (the "hydra effect"):
+When fixing findings, write code that doesn't trip the scanner's own patterns:
 
-### Logging
-- ✅ Use `logger.warn()`, `logger.error()`, `logger.info()` from `server/src/utils/logger.ts`
-- ❌ NEVER use `console.warn()`, `console.error()`, `console.log()` in server code
+- **Logging:** use `logger.warn/error/info` from `server/src/config/logger.ts`.
+  Never `console.*` in server code.
+- **Errors:** `throw new AppError('message', statusCode)` from
+  `server/src/middleware/errorHandler.ts`. Never `throw new Error('not implemented'/'TODO')`.
+- **Comments:** neutral wording. Avoid `hardcoded`, `mock`, `fake`,
+  `placeholder`, `dummy`, `sample data`, `for now`, `temporarily`, `would use`,
+  `in production` in comments.
+- **DB:** wrap multi-step writes in `prisma.$transaction()`; preserve caught
+  errors via `{ cause: error }`.
+- **Catch blocks:** `logger.error` + re-throw, OR `logger.warn` + fallback.
+  Never empty; never only `console.log`.
 
-### Error Handling
-- ✅ Use `throw new AppError('message', statusCode)` from `server/src/utils/errors.ts`
-- ❌ NEVER use `throw new Error('not implemented')` or `throw new Error('TODO')` — these match scan pattern C2
+---
 
-### Comments in Fix Code
-- ✅ Use neutral descriptions: `// Error recovery handler`, `// Fallback for offline mode`
-- ❌ NEVER include these words in comments: `hardcoded`, `mock`, `fake`, `placeholder`, `dummy`, `sample data`, `for now`, `temporarily`, `would use`, `in production` — these match scan patterns A4, B2, B3, B4
+## Discrepancies found & corrected during v21 remediation (2026-05-31)
 
-### Database Operations
-- ✅ Wrap multi-step writes in `prisma.$transaction()`
-- ✅ Preserve caught errors via `{ cause: error }` pattern
+Running log of doc-vs-code drift caught while remediating the v21 findings. Corrected in place; logged here for the audit trail.
 
-### Catch Blocks
-- ✅ Always include either `logger.error()` + re-throw, or `logger.warn()` + return fallback
-- ❌ NEVER leave empty catch blocks
-- ❌ NEVER use only `console.log` in catch blocks
+- **`AppError` location:** defined in `server/src/middleware/errorHandler.ts` (line 7), **not** `server/src/utils/errors.ts` (which does not exist). All references corrected.
+- **Server logger location:** `server/src/config/logger.ts` (`export default logger`), **not** `server/src/utils/logger.ts` (which does not exist). Import as `import logger from '../config/logger'`. All references corrected.
+- **Shared primitives already present (do NOT rebuild):** JWT algorithm pinning (`middleware/auth.ts:80,215` → `algorithms:['HS256']`), rate-limiter Redis store (`middleware/rateLimiter.ts:12-26`), `encryptField`/`decryptField`/`encryptConfigFields` (`utils/credentialEncryption.ts`), `isUrlSafe`/`isWebhookUrlSafe` (`utils/urlValidator.ts`), `verifyWebhookHmac` (`routes/ticketing.ts`).
+- **New shared primitives added in v21:** `utils/orgOwnership.ts` → `assertOrgOwned(model,id,orgId)` / `assertOwnedByOrg(model,id,orgWhere)` / `getOwnedOrThrow(...)`; `encryptConfigSecrets`/`decryptConfigSecrets` in `utils/credentialEncryption.ts`; `escapeCsvCell`/`neutralizeCsvFormula` in `utils/csvExport.ts`.
+- **Dependency audit drift (2026-05-31):** root = **0 vulns**; server = **30** (1 high `tmp` path-traversal — fixable; the rest rooted in `elliptic`, `serialize-javascript`-via-`mocha`-via-`circom_runtime`, `aws-sdk` v2, and legacy `@azure/*`→`uuid`). The known-unfixable table below is being refreshed with current evidence.
+
+### Discrepancies found & corrected during the final-run reconciliation (2026-06-01)
+
+- **`tmp` is a DIRECT server dependency**, so it cannot be pinned via `overrides` (npm errors `EOVERRIDE`). To raise it above the path-traversal advisory (`<0.2.6`), bump the direct dep in `dependencies` (`^0.2.5`→`^0.2.7`) and update the `circom.tmp` override; do NOT add a top-level `tmp` override. `dompurify` (HIGH, `=3.4.4`) IS a transitive dep and is correctly fixed with `overrides.dompurify: ^3.4.7`.
+- **`updateProductLifecycleSchema` / decommission-notification schemas live in `server/src/validators/featureModulesSchemas.ts`, NOT `coreModulesSchemas.ts`.** The featureModules controller imports from `featureModulesSchemas.ts`; `coreModulesSchemas.ts` holds incident/certification schemas. (The L787/799 `documents` field in `coreModulesSchemas.ts` belongs to the Certification schema.)
+- **The prior run built several escalation backends but never flipped the `NEEDS_ESCALATION` log rows:** `POST /api/sso/parse-metadata` (sso.ts, real SSRF-guarded SAML metadata fetch+parse), `GET /api/status/uptime` (status.ts), and the `auditController.list` non-admin `where.userId` server-side restriction all already existed. Always verify the CURRENT code before assuming an escalation is unbuilt.
+- **2 D1 regressions were left by the prior run's frontend edits:** `components/AccountDeletionWorkflow.tsx` (a `useEffect` placed before the `selectedExecRequest` state declaration → use-before-declaration) and `mobile/src/services/api.ts:307` (assigning a module-scoped `string|null` where `string` is required — pass the locally-narrowed `nextAccess` instead). Root+mobile `tsc` was red until these were fixed.
+- **8 escalations needed NO Supabase migration:** all map onto existing models/fields (`Integration` for the CICD token, `ProductDecommission.customerNotifications` JSON, `ProductLifecycle.documents` JSON, `SimulationScenario` for audit-sim runs). Prefer reusing existing JSON columns / models over additive DDL on the live DB.
+
+#### Real production bugs surfaced by the full server test suite (fixed 2026-06-01)
+
+The full server jest suite was never kept green (68 suites / ~427 tests failing) — overwhelmingly **test-code rot** (mocks/assertions lagging legitimate source hardening), but it also masked **genuine production bugs**, now fixed:
+
+- **`middleware/validate.ts` (HIGH):** `validateQuery` did `req.query = value` and `validateParams` did `req.params = value`. Under **Express 5** `req.query` is a getter with no setter, so the assignment **throws → every `validateQuery` route returned 500** (executive, hipaa, soc2, nistCsf, pciDss, nps, realTimeCompliance, compliance). Fixed by shadowing with `Object.defineProperty(req, 'query'|'params', { value, writable, configurable, enumerable })`.
+- **`controllers/billingController.ts` `changeTier` (HIGH):** read `req.body.tier` but the schema + frontend use `targetTier` → endpoint always 400. Now reads `targetTier` (with `tier` alias).
+- **`validators/webhookSchemas.ts` `createWebhookSchema` (HIGH):** omitted `name` while the controller requires it and the schema is `.unknown(false)` → `POST /api/webhooks` could never succeed. Added `name` (required on create, optional on update).
+- **`controllers/billingController.ts` `requestQuote` (MED):** read `userCount/features/addOns` but frontend/schema send `{tier, requirements}` → derived from `requirements` now (and `stripeService.createQuote` consumes `tier`).
+- **onboarding schemas in `validators/coreModulesSchemas.ts` (MED):** `trackOnboardingEventSchema`/`skipFlowSchema`/`updateChecklistSchema` field names didn't match the controllers/frontend (`eventData`→`flowName/stepIndex/metadata`; `flow`→`flowName`; `itemId/completed`→checklist boolean flags) → fields silently stripped / 400s. Aligned to the frontend contract.
+- **`controllers/securityController.ts` `updateBYOKConfig` (MED):** read `enabled/defaultProvider/rotationIntervalDays` vs schema `defaultKeyId/autoRotation/rotationInterval` → body ignored. Aligned to the schema's names.
+- **`utils/csvExport.ts` (MED):** `Content-Length` excluded the 3-byte UTF-8 BOM it writes → strict HTTP clients rejected CSV exports. Now `res.end(bom + csv)` with the BOM-inclusive length.
+- **`routes/vendors.ts` (LOW):** `GET /api/vendors` passed `req.query` only as `filters`, never as the pagination arg → returned a bare array instead of the `{data, pagination}` envelope. Fixed.
+- **Test-infra trap (root cause of most timeouts):** `server/jest.config.js` sets `resetMocks:true` + `restoreMocks:true`, which **wipes mock implementations defined at module-load** (inside `jest.mock` factories / `.mockResolvedValue()` next to the declaration). Contract/route tests must re-establish controller/service mock implementations in a `beforeEach`, else handlers return `undefined` → 30s timeouts.
+- **Timer leak (LOW):** `jitAccessService` (module-load `setInterval`), `livenessDetectionService`, `vrCollaborativeReviewService` didn't `.unref()` their intervals → "worker failed to exit gracefully". Added `.unref?.()`.
 
 ---
 
@@ -448,10 +266,8 @@ When generating code fixes for audit findings, follow these rules to avoid trigg
 - **Frontend:** React + TypeScript + Vite
 - **Mobile:** React Native
 - **Auth:** JWT with httpOnly cookies, passport-jwt, PBKDF2-SHA256 (600k iterations)
-- **Email:** SendGrid via `@sendgrid/mail`
-- **File storage:** AWS S3
-- **Logging:** Winston with JSON format, Elasticsearch transport
-- **Error tracking:** Sentry (conditional on SENTRY_ENABLED)
+- **Email:** SendGrid (`@sendgrid/mail`); **File storage:** AWS S3
+- **Logging:** Winston (JSON, Elasticsearch transport); **Errors:** Sentry (on `SENTRY_ENABLED`)
 
 ### Key File Paths
 
@@ -462,6 +278,8 @@ When generating code fixes for audit findings, follow these rules to avoid trigg
 - Database config: `server/src/config/database.ts`
 - Error handler: `server/src/middleware/errorHandler.ts`
 - Tier middleware: `server/src/middleware/tierMiddleware.ts`
-- Logger utility: `server/src/utils/logger.ts`
-- AppError class: `server/src/utils/errors.ts`
+- Logger utility: `server/src/config/logger.ts`
+- AppError class: `server/src/middleware/errorHandler.ts`
 - API service (frontend): `src/services/api.ts`
+- Deep-scan file list: `.claude/deep-scan/filelist.txt`
+- Scan-runner (lightweight triage helper, fixed): `.claude/skills/productions-readiness-audit/scripts/Production Readiness scan-runner.sh`

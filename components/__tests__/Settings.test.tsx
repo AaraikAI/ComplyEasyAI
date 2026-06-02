@@ -234,7 +234,9 @@ describe('Settings Component', () => {
     it('shows role field as disabled', async () => {
       render(<Settings />);
       await waitFor(() => {
-        expect(screen.getByDisplayValue('Administrator')).toBeDisabled();
+        // The role field is now derived from the user's role (capitalized), so an
+        // admin user renders "Admin"; it remains a disabled, read-only field.
+        expect(screen.getByDisplayValue('Admin')).toBeDisabled();
       });
     });
   });

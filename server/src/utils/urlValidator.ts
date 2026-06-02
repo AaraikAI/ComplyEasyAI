@@ -4,6 +4,8 @@
  */
 
 import { URL } from 'url';
+import net from 'net';
+import { lookup as dnsLookup } from 'dns/promises';
 import { logSecurityEvent, SecurityEventType } from './securityEventLogger';
 import { AppError } from '../middleware/errorHandler';
 
@@ -29,6 +31,49 @@ const BLOCKED_IP_RANGES = [
   /^fe80:/, // IPv6 link-local
 ];
 
+// Maximum number of redirect hops safeFetch will follow, each re-validated.
+const MAX_REDIRECTS = 5;
+
+/**
+ * Determine whether a resolved IP literal (v4 or v6) points at a private,
+ * loopback, link-local, or otherwise non-routable/internal address. Also
+ * normalizes IPv4-mapped IPv6 (::ffff:a.b.c.d) to its embedded IPv4 so those
+ * cannot smuggle an internal IPv4 past the dotted-decimal checks.
+ */
+export function isPrivateIp(ip: string): boolean {
+  let addr = ip.trim().toLowerCase();
+  // Strip an IPv6 zone identifier (e.g. fe80::1%eth0) before classification.
+  const zoneIdx = addr.indexOf('%');
+  if (zoneIdx !== -1) addr = addr.slice(0, zoneIdx);
+
+  const kind = net.isIP(addr);
+
+  if (kind === 6) {
+    // Unspecified / loopback.
+    if (addr === '::' || addr === '::1') return true;
+    // Unique-local (fc00::/7) and link-local (fe80::/10).
+    if (/^f[cd]/.test(addr)) return true;
+    if (/^fe[89ab]/.test(addr)) return true;
+    // IPv4-mapped / IPv4-compatible: extract trailing dotted-quad or hex words.
+    const mapped = addr.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+    if (mapped) return isPrivateIp(mapped[1]);
+    const hexMapped = addr.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (hexMapped) {
+      const hi = parseInt(hexMapped[1], 16);
+      const lo = parseInt(hexMapped[2], 16);
+      const v4 = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
+      return isPrivateIp(v4);
+    }
+    return false;
+  }
+
+  if (kind === 4) {
+    return BLOCKED_IP_RANGES.some((r) => r.test(addr));
+  }
+
+  return false;
+}
+
 /**
  * Check if a URL is safe to fetch (SSRF protection)
  * @param urlString - URL to validate
@@ -49,7 +94,14 @@ export function isUrlSafe(urlString: string): boolean {
       return false;
     }
 
-    const hostname = url.hostname.toLowerCase();
+    const rawHostname = url.hostname.toLowerCase();
+    // url.hostname keeps the brackets for IPv6 literals (e.g. "[::1]"); strip
+    // them so the literal is classified correctly. The WHATWG URL parser already
+    // normalizes decimal/hex/octal/short-form IPv4 (e.g. 2130706433 -> 127.0.0.1).
+    const hostname =
+      rawHostname.startsWith('[') && rawHostname.endsWith(']')
+        ? rawHostname.slice(1, -1)
+        : rawHostname;
 
     // Check against blocked hosts
     if (BLOCKED_HOSTS.includes(hostname)) {
@@ -62,7 +114,20 @@ export function isUrlSafe(urlString: string): boolean {
       return false;
     }
 
-    // Check against private IP ranges
+    // Check IP literals (v4 or v6, including IPv4-mapped IPv6) against private,
+    // loopback, and link-local ranges.
+    if (net.isIP(hostname) !== 0 && isPrivateIp(hostname)) {
+      logSecurityEvent({
+        type: SecurityEventType.SSRF_ATTEMPT,
+        severity: 'critical',
+        message: `Blocked request to private IP range: ${hostname}`,
+        details: { url: sanitizeUrlForLogging(urlString), hostname },
+      });
+      return false;
+    }
+
+    // Defense-in-depth: also apply the dotted-decimal range checks directly
+    // (covers any hostname string form the parser left as a v4 literal).
     for (const range of BLOCKED_IP_RANGES) {
       if (range.test(hostname)) {
         logSecurityEvent({
@@ -99,42 +164,110 @@ export function isUrlSafe(urlString: string): boolean {
 }
 
 /**
- * Safe fetch wrapper with SSRF protection
+ * Resolve a hostname and confirm every resolved address is public. This is a
+ * defense-in-depth guard against DNS rebinding / hostnames that resolve to
+ * internal IPs. IP literals are validated synchronously by isUrlSafe already,
+ * so only DNS names are resolved here. Resolution failures are logged and
+ * treated as non-blocking (the request will fail naturally without having
+ * connected to an internal host).
+ */
+async function assertResolvedHostIsPublic(urlString: string): Promise<void> {
+  let hostname: string;
+  try {
+    hostname = new URL(urlString).hostname.toLowerCase();
+  } catch {
+    return;
+  }
+  const stripped =
+    hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
+
+  // IP literals are already validated by isUrlSafe; skip DNS resolution.
+  if (net.isIP(stripped) !== 0) return;
+
+  let addresses: { address: string }[];
+  try {
+    addresses = await dnsLookup(stripped, { all: true });
+  } catch {
+    // Could not resolve — do not block here; isUrlSafe already passed and no
+    // connection to an internal address has been made.
+    return;
+  }
+
+  for (const { address } of addresses) {
+    if (isPrivateIp(address)) {
+      logSecurityEvent({
+        type: SecurityEventType.SSRF_ATTEMPT,
+        severity: 'critical',
+        message: 'Blocked request to hostname resolving to a private IP (DNS rebinding guard)',
+        details: { url: sanitizeUrlForLogging(urlString), resolved: address },
+      });
+      throw new AppError('Host resolves to a private address (SSRF protection)', 400);
+    }
+  }
+}
+
+/**
+ * Safe fetch wrapper with SSRF protection. Validates the URL, resolves the host
+ * to confirm it is public, and follows redirects through a bounded loop where
+ * every hop is re-validated (callers do NOT need to re-invoke per hop).
  * @param url - URL to fetch
  * @param options - Fetch options
  * @returns Fetch response
- * @throws Error if URL is not safe
+ * @throws AppError if the URL, a resolved address, or any redirect target is unsafe
  */
 export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
-  if (!isUrlSafe(url)) {
-    throw new AppError('URL is not allowed for security reasons (SSRF protection)', 400);
-  }
+  let currentUrl = url;
 
-  const response = await fetch(url, {
-    ...options,
-    redirect: 'manual', // Don't follow redirects automatically
-  });
-
-  // Check for redirects to internal URLs
-  if (response.status >= 300 && response.status < 400) {
-    const redirectUrl = response.headers.get('location');
-    if (redirectUrl) {
-      // Resolve relative URLs
-      const resolvedUrl = new URL(redirectUrl, url).href;
-
-      if (!isUrlSafe(resolvedUrl)) {
-        logSecurityEvent({
-          type: SecurityEventType.SSRF_ATTEMPT,
-          severity: 'critical',
-          message: 'Blocked redirect to internal URL',
-          details: { originalUrl: sanitizeUrlForLogging(url), redirectUrl: sanitizeUrlForLogging(resolvedUrl) },
-        });
-        throw new AppError('Redirect to internal URL blocked (SSRF protection)', 400);
-      }
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!isUrlSafe(currentUrl)) {
+      throw new AppError('URL is not allowed for security reasons (SSRF protection)', 400);
     }
+
+    await assertResolvedHostIsPublic(currentUrl);
+
+    const response = await fetch(currentUrl, {
+      ...options,
+      redirect: 'manual', // Validate each redirect target ourselves
+    });
+
+    // Non-redirect response: return it.
+    if (response.status < 300 || response.status >= 400) {
+      return response;
+    }
+
+    const redirectUrl = response.headers.get('location');
+    if (!redirectUrl) {
+      return response;
+    }
+
+    // Resolve relative redirects against the current URL and re-validate.
+    const resolvedUrl = new URL(redirectUrl, currentUrl).href;
+    if (!isUrlSafe(resolvedUrl)) {
+      logSecurityEvent({
+        type: SecurityEventType.SSRF_ATTEMPT,
+        severity: 'critical',
+        message: 'Blocked redirect to internal URL',
+        details: { originalUrl: sanitizeUrlForLogging(currentUrl), redirectUrl: sanitizeUrlForLogging(resolvedUrl) },
+      });
+      throw new AppError('Redirect to internal URL blocked (SSRF protection)', 400);
+    }
+
+    // If this was the last allowed hop, stop following and return the response.
+    if (hop === MAX_REDIRECTS) {
+      logSecurityEvent({
+        type: SecurityEventType.SUSPICIOUS_INPUT,
+        severity: 'medium',
+        message: 'Maximum redirect depth reached in safeFetch',
+        details: { url: sanitizeUrlForLogging(currentUrl) },
+      });
+      return response;
+    }
+
+    currentUrl = resolvedUrl;
   }
 
-  return response;
+  // Unreachable: the loop always returns or throws.
+  throw new AppError('Redirect handling failed (SSRF protection)', 400);
 }
 
 /**

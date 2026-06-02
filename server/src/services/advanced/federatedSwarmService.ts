@@ -315,19 +315,15 @@ class FederatedSwarmService {
 
     for (const [key, value] of Object.entries(weights)) {
       if (typeof value === 'number') {
-        // Add Laplace noise for differential privacy
+        // Add Laplace noise for differential privacy (CSPRNG-sourced)
         const scale = sensitivity / epsilon;
-        const u = Math.random() - 0.5;
-        const noise = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
-        anonymized[key] = value + noise;
+        anonymized[key] = value + this.secureLaplaceNoise(scale);
       } else if (Array.isArray(value)) {
         // Apply noise to numeric arrays (e.g., weight vectors)
         anonymized[key] = value.map((v: any) => {
           if (typeof v === 'number') {
             const scale = sensitivity / epsilon;
-            const u = Math.random() - 0.5;
-            const noise = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
-            return v + noise;
+            return v + this.secureLaplaceNoise(scale);
           }
           return v;
         });
@@ -402,6 +398,40 @@ class FederatedSwarmService {
   }
 
   /**
+   * Draw a cryptographically-secure uniform in [0, 1) from the CSPRNG.
+   * Differential-privacy noise must not be derived from Math.random(), whose
+   * predictable/low-entropy output would weaken the (epsilon, delta) guarantee
+   * accounted for by the privacy budget ledger.
+   */
+  private secureUniform(): number {
+    // 53 bits of entropy → uniform in [0, 1).
+    const buf = randomBytes(8);
+    const hi = buf.readUInt32BE(0) & 0x001fffff; // top 21 bits
+    const lo = buf.readUInt32BE(4); // low 32 bits
+    const u = hi * 0x100000000 + lo; // 53-bit unsigned integer
+    return u / 0x20000000000000; // divide by 2^53
+  }
+
+  /**
+   * Draw zero-centered Laplace noise with the given scale using the CSPRNG.
+   */
+  private secureLaplaceNoise(scale: number): number {
+    // Map a secure uniform in (-0.5, 0.5) through the inverse Laplace CDF.
+    const u = this.secureUniform() - 0.5;
+    return -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
+  }
+
+  /**
+   * Draw zero-mean Gaussian noise with std dev sigma via Box-Muller, seeded
+   * from the CSPRNG.
+   */
+  private secureGaussianNoise(sigma: number): number {
+    const u1 = Math.max(1e-12, this.secureUniform());
+    const u2 = this.secureUniform();
+    return sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+
+  /**
    * Apply advanced differential privacy to model weights (Laplace mechanism)
    */
   private applyDifferentialPrivacy(weights: any, epsilon: number = 1.0): any {
@@ -415,10 +445,8 @@ class FederatedSwarmService {
     if (Array.isArray(weights)) {
       return weights.map(w => {
         if (typeof w === 'number') {
-          // Generate Laplacian noise: L(0, scale)
-          const u = Math.random() - 0.5;
-          const noise = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
-          return w + noise;
+          // Generate Laplacian noise: L(0, scale) from a CSPRNG
+          return w + this.secureLaplaceNoise(scale);
         }
         return this.applyDifferentialPrivacy(w, epsilon);
       });
@@ -433,9 +461,7 @@ class FederatedSwarmService {
     }
 
     if (typeof weights === 'number') {
-      const u = Math.random() - 0.5;
-      const noise = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
-      return weights + noise;
+      return weights + this.secureLaplaceNoise(scale);
     }
 
     return weights;
@@ -824,83 +850,6 @@ class FederatedSwarmService {
   }
 
   /**
-   * Enhanced federated averaging algorithm with adaptive learning and Byzantine fault tolerance
-   */
-  private async federatedAveraging(
-    contributions: any[],
-    modelType: string,
-    round: number = 0
-  ): Promise<any> {
-    try {
-      // Parse contributions and extract metadata
-      const validContributions = contributions
-        .map(c => {
-          try {
-            const parsed = JSON.parse(c.details || '{}');
-            return {
-              ...parsed,
-              organizationId: c.organizationId,
-              timestamp: c.timestamp,
-            };
-          } catch {
-            return null;
-          }
-        })
-        .filter(c => c && c.metadata);
-
-      if (validContributions.length === 0) {
-        return this.getDefaultModelWeights(modelType);
-      }
-
-      // Byzantine fault tolerance: Remove outliers
-      const filteredContributions = this.filterByzantineContributions(validContributions);
-
-      // Calculate weighted average based on data size and quality
-      const totalWeight = filteredContributions.reduce((sum, c) => {
-        const dataSize = (c.metadata.frameworkCount || 1) +
-                        (c.metadata.controlCount || 1) +
-                        (c.metadata.riskCount || 1);
-        const quality = this.assessContributionQuality(c);
-        return sum + dataSize * quality;
-      }, 0);
-
-      // Adaptive learning rate based on round
-      const adaptiveLR = this.calculateAdaptiveLearningRate(
-        { metadata: { frameworkCount: 1, controlCount: 1, riskCount: 1 } },
-        round
-      );
-
-      // Generate aggregated weights with quality-weighted averaging
-      const aggregatedWeights: Record<string, number> = {
-        risk_baseline: 0,
-        control_effectiveness_weight: 0,
-        compliance_decay_rate: 0,
-        learning_rate: adaptiveLR,
-        regularization: 0.001,
-      };
-
-      for (const contribution of filteredContributions) {
-        const dataSize = (contribution.metadata.frameworkCount || 1) +
-                        (contribution.metadata.controlCount || 1) +
-                        (contribution.metadata.riskCount || 1);
-        const quality = this.assessContributionQuality(contribution);
-        const weight = (dataSize * quality) / totalWeight;
-
-        // Aggregate with quality weighting
-        aggregatedWeights.risk_baseline += (0.5 + this.generateLaplacianNoise(0.05)) * weight;
-        aggregatedWeights.control_effectiveness_weight += (0.7 + this.generateLaplacianNoise(0.05)) * weight;
-        aggregatedWeights.compliance_decay_rate += (0.02 + this.generateLaplacianNoise(0.005)) * weight;
-      }
-
-      // Apply model compression (quantization) for efficiency
-      return this.compressModelWeights(aggregatedWeights);
-    } catch (error) {
-      logger.error('[Federated Swarm] Error in federated averaging', error);
-      return this.getDefaultModelWeights(modelType);
-    }
-  }
-
-  /**
    * Byzantine-robust filter operating on the actual numeric weight values
    * of each contribution (not on metadata). Validates each contribution
    * against the per-coordinate MAD of the rest of the cohort and rejects
@@ -983,14 +932,6 @@ class FederatedSwarmService {
     }
 
     return compressed;
-  }
-
-  /**
-   * Generate Laplacian noise for differential privacy
-   */
-  private generateLaplacianNoise(scale: number): number {
-    const u = Math.random() - 0.5;
-    return -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
   }
 
   /**
@@ -2535,12 +2476,9 @@ class FederatedSwarmService {
         }
       }
 
-      // Add calibrated Gaussian DP noise to the aggregate
+      // Add calibrated Gaussian DP noise to the aggregate (CSPRNG-sourced)
       for (let i = 0; i < aggregatedWeights.length; i++) {
-        const u1 = Math.max(1e-12, Math.random());
-        const u2 = Math.random();
-        const z = sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-        aggregatedWeights[i] += z;
+        aggregatedWeights[i] += this.secureGaussianNoise(sigma);
       }
 
       // Convergence metric (cosine similarity with previous global model)

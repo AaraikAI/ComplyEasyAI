@@ -215,7 +215,7 @@ describe('TemporalGraphNetworkService', () => {
   describe('predictComplianceTrajectory', () => {
     it('should predict compliance trajectory', async () => {
       setupPredictionMocks();
-      (prismaMock.complianceFramework.findUnique as jest.Mock<any>).mockResolvedValue({
+      (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue({
         id: 'fw-1',
         name: 'SOC2',
         status: 'In_Progress',
@@ -252,7 +252,7 @@ describe('TemporalGraphNetworkService', () => {
     });
 
     it('should throw error if framework not found', async () => {
-      (prismaMock.complianceFramework.findUnique as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         temporalGraphNetworkService.predictComplianceTrajectory(orgId, 'nonexistent', 6)

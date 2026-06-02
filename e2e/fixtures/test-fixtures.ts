@@ -73,7 +73,9 @@ export class DatabaseHelper {
       try {
         this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
       } catch (e) {
-        console.log('Supabase initialization failed:', e);
+        // Surface on stderr so CI does not silently drop the database-backed
+        // assertion branch when the Supabase client cannot be created.
+        console.warn('Supabase initialization failed:', e);
         this.supabase = null;
       }
     }
@@ -324,32 +326,52 @@ export class TestDataFactory {
 }
 
 // API Helper Class
+//
+// NOTE: this is a Playwright test FIXTURE helper (not a spec). The backend issues
+// auth via httpOnly cookies set on the login response (server/src/controllers/
+// authController.ts setAuthCookies) and does NOT return a token in the body. The
+// APIRequestContext automatically persists and resends those cookies, so the
+// helper relies on the cookie session rather than a bearer token.
 export class APIHelper {
   private request: APIRequestContext;
-  private authToken: string | null = null;
+  private authenticated = false;
   private csrfToken: string | null = null;
 
   constructor(request: APIRequestContext) {
     this.request = request;
   }
 
-  async authenticate(email: string, password: string): Promise<string> {
+  async authenticate(email: string, password: string): Promise<void> {
     const response = await this.request.post(`${API_BASE}/api/auth/login`, {
       data: { email, password },
     });
 
-    if (response.ok()) {
-      const body = await response.json();
-      this.authToken = body.accessToken;
-      return this.authToken;
+    if (!response.ok()) {
+      throw new Error(`Authentication failed: ${response.status()}`);
     }
 
-    throw new Error(`Authentication failed: ${response.status()}`);
+    // The session is established via httpOnly cookies on this response; the body
+    // carries the user record. Confirm a real session was returned.
+    const body = await response.json();
+    if (!body.user || body.twoFactorRequired) {
+      throw new Error(`Authentication did not establish a session (2FA required: ${!!body.twoFactorRequired})`);
+    }
+    this.authenticated = true;
+  }
+
+  isAuthenticated(): boolean {
+    return this.authenticated;
   }
 
   async getCsrfToken(): Promise<string> {
     const response = await this.request.get(`${API_BASE}/api/csrf-token`);
+    if (!response.ok()) {
+      throw new Error(`Failed to obtain CSRF token: ${response.status()}`);
+    }
     const body = await response.json();
+    if (!body.csrfToken || typeof body.csrfToken !== 'string') {
+      throw new Error('CSRF token endpoint returned no token');
+    }
     this.csrfToken = body.csrfToken;
     return this.csrfToken;
   }
@@ -359,10 +381,8 @@ export class APIHelper {
       'Content-Type': 'application/json',
     };
 
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
-    }
-
+    // Auth is carried by the httpOnly session cookie (auto-sent by the request
+    // context). Only the CSRF token needs to be forwarded explicitly.
     if (this.csrfToken) {
       headers['X-CSRF-Token'] = this.csrfToken;
     }

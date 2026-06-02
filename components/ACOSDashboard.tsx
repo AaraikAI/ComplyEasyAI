@@ -2358,9 +2358,9 @@ const VRCollaborationsTab: React.FC = () => {
           }
           // Log failed health checks
           if (checkResult.status === 'rejected') {
-            console.warn(`Session ${session.id} health check failed:`, checkResult.reason);
+            logger.warn(`Session ${session.id} health check failed:`, checkResult.reason);
           } else if ((checkResult as any).value && !(checkResult as any).value.valid) {
-            console.warn(`Session ${session.id} is invalid:`, (checkResult as any).value.reason);
+            logger.warn(`Session ${session.id} is invalid:`, (checkResult as any).value.reason);
           }
           return false;
         });

@@ -38,8 +38,8 @@ describe('DORADashboard', () => {
 
   it('displays DORA-related content', () => {
     render(<DORADashboard onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content.length).toBeGreaterThan(0);
+    expect(screen.getByText('DORA Compliance')).toBeInTheDocument();
+    expect(screen.getByText('Digital Operational Resilience Act (EU) 2022/2554')).toBeInTheDocument();
   });
 
   it('calls onBack when back button clicked', () => {
@@ -59,8 +59,10 @@ describe('DORADashboard', () => {
 
   it('renders overview tab by default', () => {
     render(<DORADashboard onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    // The overview metric cards are unique to the default tab.
+    expect(screen.getByText('Compliance Score')).toBeInTheDocument();
+    expect(screen.getByText('DORA Readiness')).toBeInTheDocument();
+    expect(screen.getByText('ICT Risk Level Distribution')).toBeInTheDocument();
   });
 
   it('switches between tabs', () => {
@@ -88,9 +90,11 @@ describe('DORADashboard', () => {
     expect(document.body.innerHTML.length).toBeGreaterThan(0);
   });
 
-  it('renders metric cards', () => {
+  it('renders the four DORA domain tabs', () => {
     render(<DORADashboard onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    expect(screen.getByText('ICT Risk Management')).toBeInTheDocument();
+    expect(screen.getByText('Incident Reporting')).toBeInTheDocument();
+    expect(screen.getByText('Third-Party Risk')).toBeInTheDocument();
+    expect(screen.getByText('Resilience Testing')).toBeInTheDocument();
   });
 });

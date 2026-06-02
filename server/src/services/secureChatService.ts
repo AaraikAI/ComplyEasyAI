@@ -31,7 +31,10 @@ interface UserContext {
 interface ChatResponse {
   response: string;
   sources?: string[];
+  /** True only when the response is produced via encrypted compute; local rule matching is not. */
   encrypted?: boolean;
+  /** True when context was processed on-instance with no external transmission. */
+  locallyProcessed?: boolean;
   tierRestricted?: boolean;
 }
 
@@ -1824,7 +1827,7 @@ class SecureChatService {
       await prisma.auditLog.create({
         data: {
           action: 'Secure Chat Query',
-          details: `Query processed locally using homomorphic AI. No external data transmission.${fileContext ? ` File context included: ${fileContext.length} file(s).` : ''}`,
+          details: `Query processed on-instance with local rule-based matching. No external data transmission.${fileContext ? ` File context included: ${fileContext.length} file(s).` : ''}`,
           userId,
           organizationId,
           hash: require('crypto').randomBytes(32).toString('hex'),
@@ -1833,16 +1836,21 @@ class SecureChatService {
         logger.warn('Failed to log chat interaction', err);
       });
 
+      // Processing is local rule-based matching on plaintext context (no external LLM call),
+      // so report `locallyProcessed: true` and `encrypted: false` rather than overstating
+      // homomorphic/encrypted compute that this path does not perform.
       return {
         response,
         sources: ['Local AI Processing', 'User Account Data', ...(fileContext ? ['File Context'] : [])],
-        encrypted: true,
+        locallyProcessed: true,
+        encrypted: false,
       };
     } catch (error: any) {
       logger.error('[Secure Chat] Error processing query', error);
       return {
         response: 'I encountered an error processing your query. Please try again or contact support if the issue persists.',
-        encrypted: true,
+        locallyProcessed: true,
+        encrypted: false,
       };
     }
   }

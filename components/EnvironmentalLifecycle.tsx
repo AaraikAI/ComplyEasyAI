@@ -325,6 +325,10 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
   const [circularMetrics, setCircularMetrics] = useState<CircularMetrics>(DEMO_CIRCULAR);
   const [serverReachable, setServerReachable] = useState<boolean>(true);
 
+  // Comparative-LCA selectors (compare two real products / versions)
+  const [compareA, setCompareA] = useState<string>('');
+  const [compareB, setCompareB] = useState<string>('');
+
   // --- Load data from backend (falls back to DEMO data on error) ---
   const loadData = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setIsLoading(true);
@@ -391,7 +395,32 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Default the comparison selectors to the first two products once loaded.
+  useEffect(() => {
+    if (products.length === 0) return;
+    setCompareA(prev => (prev && products.some(p => p.id === prev)) ? prev : products[0].id);
+    setCompareB(prev => (prev && products.some(p => p.id === prev)) ? prev : (products[1]?.id || products[0].id));
+  }, [products]);
+
   const totalCO2e = useMemo(() => stages.reduce((sum, s) => sum + s.co2eKg, 0), [stages]);
+
+  // Derived comparison metrics computed from the two selected products' real
+  // assessment data (no static literals).
+  const comparison = useMemo(() => {
+    const a = products.find(p => p.id === compareA);
+    const b = products.find(p => p.id === compareB);
+    if (!a || !b) return null;
+    const pctChange = (from: number, to: number) => (from === 0 ? 0 : Math.round(((to - from) / from) * 100));
+    return {
+      a, b,
+      metrics: [
+        { label: 'Climate Change', from: a.totalCO2e, to: b.totalCO2e, unit: 'kg', lowerIsBetter: true, change: pctChange(a.totalCO2e, b.totalCO2e) },
+        { label: 'Recyclability', from: a.recyclability, to: b.recyclability, unit: '%', lowerIsBetter: false, change: pctChange(a.recyclability, b.recyclability) },
+        { label: 'Repairability', from: a.repairabilityScore, to: b.repairabilityScore, unit: '/10', lowerIsBetter: false, change: pctChange(a.repairabilityScore, b.repairabilityScore) },
+        { label: 'Durability', from: a.durabilityYears, to: b.durabilityYears, unit: 'yrs', lowerIsBetter: false, change: pctChange(a.durabilityYears, b.durabilityYears) },
+      ],
+    };
+  }, [products, compareA, compareB]);
   const totalEnergy = useMemo(() => stages.reduce((sum, s) => sum + s.energyMJ, 0), [stages]);
   const totalWater = useMemo(() => stages.reduce((sum, s) => sum + s.waterL, 0), [stages]);
   const totalWaste = useMemo(() => stages.reduce((sum, s) => sum + s.wasteKg, 0), [stages]);
@@ -448,6 +477,69 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
       setIsSaving(false);
     }
   }, [loadData]);
+
+  // ── LCA report export helpers (client-side, derived from report data) ──────
+  const buildReportRows = useCallback((rpt: LCAReport): string[][] => {
+    const product = products.find(p => p.id === rpt.productId);
+    const header = ['Field', 'Value'];
+    const rows: string[][] = [
+      ['Report Name', rpt.name],
+      ['Product', product?.name || rpt.productId],
+      ['Methodology', rpt.methodology],
+      ['Scope', rpt.scope],
+      ['Status', rpt.status],
+      ['Compliance Status', rpt.complianceStatus],
+      ['Total CO2e (kg)', String(rpt.totalCO2e)],
+      ['Regulations', rpt.regulations.join('; ')],
+      ['Generated', rpt.generatedDate],
+    ];
+    // Append the lifecycle-stage breakdown for the report's product, if loaded.
+    stages.forEach(s => rows.push([`Stage: ${s.label} CO2e (kg)`, String(s.co2eKg)]));
+    return [header, ...rows];
+  }, [products, stages]);
+
+  const handleExportReportCsv = useCallback((rpt: LCAReport) => {
+    const escape = (v: string) => {
+      const safe = /^[=+\-@]/.test(v) ? `'${v}` : v;
+      return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+    };
+    const csv = buildReportRows(rpt).map(r => r.map(escape).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lca-report-${rpt.id}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [buildReportRows]);
+
+  const buildReportHtml = useCallback((rpt: LCAReport): string => {
+    const rows = buildReportRows(rpt).slice(1);
+    const esc = (s: string) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+    const body = rows.map(([k, v]) => `<tr><th style="text-align:left;padding:6px 12px;border-bottom:1px solid #e5e7eb;color:#374151">${esc(k)}</th><td style="padding:6px 12px;border-bottom:1px solid #e5e7eb">${esc(v)}</td></tr>`).join('');
+    return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(rpt.name)}</title>` +
+      `<style>body{font-family:system-ui,Arial,sans-serif;color:#111827;padding:32px;max-width:760px;margin:auto}h1{font-size:20px}table{border-collapse:collapse;width:100%;margin-top:16px}</style></head>` +
+      `<body><h1>${esc(rpt.name)}</h1><p>Life Cycle Assessment report — ${esc(rpt.methodology)} (${esc(rpt.scope)})</p>` +
+      `<table>${body}</table></body></html>`;
+  }, [buildReportRows]);
+
+  const handlePreviewReport = useCallback((rpt: LCAReport) => {
+    const win = window.open('', '_blank', 'noopener,noreferrer,width=820,height=900');
+    if (!win) { setLoadError('Unable to open preview window. Please allow pop-ups for this site.'); return; }
+    win.document.open();
+    win.document.write(buildReportHtml(rpt));
+    win.document.close();
+  }, [buildReportHtml]);
+
+  const handleDownloadReportPdf = useCallback((rpt: LCAReport) => {
+    const win = window.open('', '_blank', 'noopener,noreferrer,width=820,height=900');
+    if (!win) { setLoadError('Unable to open the report for printing. Please allow pop-ups to save as PDF.'); return; }
+    win.document.open();
+    win.document.write(buildReportHtml(rpt) + '<script>window.onload=function(){window.print();};<' + '/script>');
+    win.document.close();
+  }, [buildReportHtml]);
 
   // ---------------------------------------------------------------------------
   // Tab Renderers
@@ -959,13 +1051,13 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 inline-flex items-center gap-1">
+                <button onClick={() => handleDownloadReportPdf(rpt)} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 inline-flex items-center gap-1">
                   <Download className="w-3 h-3" />Download PDF
                 </button>
-                <button className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
+                <button onClick={() => handlePreviewReport(rpt)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
                   <Eye className="w-3 h-3" />Preview
                 </button>
-                <button className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
+                <button onClick={() => handleExportReportCsv(rpt)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
                   <Download className="w-3 h-3" />Export CSV
                 </button>
               </div>
@@ -977,52 +1069,50 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
       {/* Comparative LCA Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-5">
         <h3 className="font-semibold text-gray-900 mb-4">Comparative LCA</h3>
-        <p className="text-sm text-gray-600 mb-4">Compare environmental impact across product versions to track improvements.</p>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Product Version A</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-              <option>IoT Sensor Hub v1.0 (Legacy)</option>
-              <option>IoT Sensor Hub v2.0 (Current)</option>
-            </select>
+        <p className="text-sm text-gray-600 mb-4">Compare environmental impact across products and versions to track improvements.</p>
+        {products.length < 2 ? (
+          <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-4">
+            At least two assessed products are required to run a comparison.
           </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Product Version B</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-              <option>IoT Sensor Hub v2.0 (Current)</option>
-              <option>IoT Sensor Hub v1.0 (Legacy)</option>
-            </select>
-          </div>
-        </div>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-center">
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Climate Change</div>
-              <div className="text-lg font-bold text-green-600">-23%</div>
-              <div className="text-xs text-gray-400">{'58.5 → 45.8 kg'}</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Product Version A (baseline)</label>
+                <select value={compareA} onChange={e => setCompareA(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  {products.map(p => <option key={p.id} value={p.id}>{p.name} v{p.version}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Product Version B (comparison)</label>
+                <select value={compareB} onChange={e => setCompareB(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  {products.map(p => <option key={p.id} value={p.id}>{p.name} v{p.version}</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Energy Demand</div>
-              <div className="text-lg font-bold text-green-600">-15%</div>
-              <div className="text-xs text-gray-400">{'1720 → 1460 MJ'}</div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              {comparison ? (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                  {comparison.metrics.map(m => {
+                    const improved = m.lowerIsBetter ? m.change < 0 : m.change > 0;
+                    const neutral = m.change === 0;
+                    return (
+                      <div key={m.label}>
+                        <div className="text-sm text-gray-500 mb-1">{m.label}</div>
+                        <div className={`text-lg font-bold ${neutral ? 'text-gray-500' : improved ? 'text-green-600' : 'text-red-600'}`}>
+                          {m.change > 0 ? '+' : ''}{m.change}%
+                        </div>
+                        <div className="text-xs text-gray-400">{`${m.from} → ${m.to} ${m.unit}`}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">Select two products to compare.</div>
+              )}
             </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Water Usage</div>
-              <div className="text-lg font-bold text-green-600">-8%</div>
-              <div className="text-xs text-gray-400">{'1530 → 1405 L'}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Recyclability</div>
-              <div className="text-lg font-bold text-green-600">+12%</div>
-              <div className="text-xs text-gray-400">{'64% → 72%'}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500 mb-1">Repairability</div>
-              <div className="text-lg font-bold text-green-600">+30%</div>
-              <div className="text-xs text-gray-400">{'5.0 → 6.5 / 10'}</div>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

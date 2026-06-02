@@ -14,6 +14,12 @@ jest.mock('../../../config/logger', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
 jest.mock('../../../utils/auditLogger', () => ({ AuditLogger: { log: jest.fn() } }));
+// Control-testing routes are auth-only by design: routes/controlTesting.ts
+// guards every endpoint with `router.use(authenticate)` and per-route
+// `validateBody` but does NOT apply `authorize(...)` role gating (any
+// authenticated org member may manage their org's control tests). The
+// authorize mock therefore intentionally only enforces authentication; there
+// is no role-rejection (403) path to exercise here.
 jest.mock('../../../middleware/auth', () => ({
   authenticate: (req: any, res: any, next: any) => {
     if ((req as any).user) { next(); return; }
@@ -176,6 +182,10 @@ describe('Control Testing API', () => {
 
   describe('POST /api/control-testing', () => {
     it('should create a control test', async () => {
+      // The test binds to a FrameworkControl; the route verifies the parent
+      // control belongs to the caller's org (scoped through its framework)
+      // before creating the ControlTest.
+      prismaMock.frameworkControl.findFirst.mockResolvedValue({ id: 'ctrl-123' } as any);
       prismaMock.controlTest.create.mockResolvedValue(mockTest());
 
       const response = await request(app)
@@ -184,6 +194,27 @@ describe('Control Testing API', () => {
         .send({ controlId: 'ctrl-123', testType: 'ACCESS_REVIEW_TEST' });
 
       expect(response.status).toBe(201);
+      // Parent-control ownership must be AND-scoped by control id AND org.
+      expect(prismaMock.frameworkControl.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: 'ctrl-123',
+            framework: expect.objectContaining({ organizationId: 'org-123' }),
+          }),
+        }),
+      );
+    });
+
+    it('should 404 when the parent control belongs to another org', async () => {
+      prismaMock.frameworkControl.findFirst.mockResolvedValue(null);
+
+      const response = await request(app)
+        .post('/api/control-testing')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ controlId: 'ctrl-foreign', testType: 'ACCESS_REVIEW_TEST' });
+
+      expect(response.status).toBe(404);
+      expect(prismaMock.controlTest.create).not.toHaveBeenCalled();
     });
 
     it('should validate required fields', async () => {

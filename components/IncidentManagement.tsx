@@ -177,8 +177,8 @@ function mapApiIncident(raw: any): Incident {
     id: raw.id,
     title: raw.title || '',
     description: raw.description || '',
-    severity: raw.severity as IncidentSeverity,
-    status: STATUS_MAP[raw.status] || raw.status || 'Detected',
+    severity: (raw.severity in severityConfig ? raw.severity : 'SEV3') as IncidentSeverity,
+    status: STATUS_MAP[raw.status] || (raw.status in statusConfig ? raw.status : 'Detected'),
     category: raw.category as IncidentCategory,
     detectedAt: raw.detectedAt || raw.createdAt || new Date().toISOString(),
     triagedAt: raw.triagedAt || null,
@@ -392,8 +392,11 @@ const IncidentManagement: React.FC = () => {
         credentials: 'include',
       });
       if (!res.ok) throw new Error(`Failed to delete incident (${res.status})`);
-    } catch {
-      // Continue with local removal even if API call fails
+    } catch (err) {
+      // Keep the incident in the list when the server delete fails — removing it
+      // locally would falsely imply success while the record still exists in the DB.
+      setFetchError(err instanceof Error ? err.message : 'Failed to delete incident');
+      return;
     }
     setIncidents(prev => prev.filter(i => i.id !== id));
     if (selectedIncident?.id === id) setSelectedIncident(null);

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { analyzeContract } from '../../services/geminiService';
 import { Search, Loader2, ArrowLeft, AlertTriangle, Upload, FileText, X, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { logger } from '../../utils/logger';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_FILE_TYPES = [
@@ -81,7 +82,7 @@ export const ContractAnalyzer: React.FC<{ onBack: () => void }> = ({ onBack }) =
             if (data) resolve(data.text || '');
           })
           .catch((error) => {
-            console.warn('Failed to fetch data:', error);
+            logger.warn('Contract text extraction request failed', { error });
             reject(new Error(`Failed to send ${file.name} to server for text extraction. Please paste the content manually.`));
           });
       } else {

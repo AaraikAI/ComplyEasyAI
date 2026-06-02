@@ -147,7 +147,12 @@ describe('Reports API — Contract Tests', () => {
       });
       prismaMock.riskItem.findMany.mockResolvedValue([]);
       prismaMock.riskItem.count.mockResolvedValue(0);
-      prismaMock.riskItem.groupBy.mockResolvedValue([]);
+      // The report generator calls riskItem.groupBy (by severity); the shared
+      // prisma mock predates that query and omits the method, so define it here.
+      if (!(prismaMock.riskItem as any).groupBy) {
+        (prismaMock.riskItem as any).groupBy = jest.fn();
+      }
+      (prismaMock.riskItem as any).groupBy.mockResolvedValue([]);
       prismaMock.reportTemplate.update.mockResolvedValue({ id: 'r-1' });
 
       const res = await request(app)

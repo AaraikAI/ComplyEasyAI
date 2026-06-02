@@ -16,10 +16,19 @@ export interface BackendStackProps extends cdk.StackProps {
   ecsSecurityGroup: ec2.SecurityGroup;
   redisEndpoint: string;
   redisPort: string;
+  /** Secrets Manager secret holding the Redis AUTH token. */
+  redisAuthTokenSecret: secretsmanager.ISecret;
   /** ACM certificate ARN for HTTPS on ALB — optional */
   certificateArn?: string;
   /** S3 bucket name for file uploads */
   s3BucketName?: string;
+  /**
+   * Immutable ECR image tag (git SHA / semver / digest) to deploy.
+   * Must be supplied — the mutable 'latest' tag and an unset value are
+   * rejected so deployments are deterministic and circuit-breaker
+   * rollbacks target a known image.
+   */
+  imageTag?: string;
 }
 
 /**
@@ -44,6 +53,16 @@ export class BackendStack extends cdk.Stack {
     super(scope, id, props);
 
     const prefix = `complyeasy-${props.envName}`;
+
+    // Reject the mutable 'latest' tag (and an empty/unset tag) so every
+    // deployment pins an immutable image and rollbacks are deterministic.
+    const imageTag = props.imageTag?.trim();
+    if (!imageTag || imageTag === 'latest') {
+      throw new Error(
+        `BackendStack requires an immutable imageTag (git SHA / semver / digest); ` +
+          `received "${props.imageTag ?? '<unset>'}". Pass -c imageTag=<sha> to cdk.`
+      );
+    }
 
     // ---------------------------------------------------------------
     // ECR Repository
@@ -86,8 +105,9 @@ export class BackendStack extends cdk.Stack {
       memoryLimitMiB: 1024,
     });
 
-    // IAM — read app secrets
+    // IAM — read app secrets and the Redis AUTH token
     appSecret.grantRead(taskDef.taskRole);
+    props.redisAuthTokenSecret.grantRead(taskDef.taskRole);
 
     // IAM — S3 file uploads
     if (props.s3BucketName) {
@@ -128,11 +148,12 @@ export class BackendStack extends cdk.Stack {
       })
     );
 
-    // CloudWatch log group
+    // CloudWatch log group — retained on stack teardown so API logs (which
+    // can carry audit/compliance-relevant operational data) survive deletion.
     const logGroup = new logs.LogGroup(this, 'ApiLogs', {
       logGroupName: `/ecs/${prefix}-api`,
-      retention: logs.RetentionDays.ONE_MONTH,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      retention: logs.RetentionDays.ONE_YEAR,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     // ---------------------------------------------------------------
@@ -140,7 +161,7 @@ export class BackendStack extends cdk.Stack {
     // ---------------------------------------------------------------
     taskDef.addContainer('api', {
       containerName: `${prefix}-api`,
-      image: ecs.ContainerImage.fromEcrRepository(this.ecrRepository, 'latest'),
+      image: ecs.ContainerImage.fromEcrRepository(this.ecrRepository, imageTag),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'api',
         logGroup,
@@ -148,12 +169,19 @@ export class BackendStack extends cdk.Stack {
       environment: {
         NODE_ENV: 'production',
         PORT: '3001',
-        REDIS_URL: `redis://${props.redisEndpoint}:${props.redisPort}/0`,
+        // rediss:// — TLS is enforced on the cache (transitEncryptionEnabled).
+        // Host/port are non-sensitive; the AUTH token is injected separately.
+        REDIS_HOST: props.redisEndpoint,
+        REDIS_PORT: props.redisPort,
+        REDIS_TLS: 'true',
+        REDIS_URL: `rediss://${props.redisEndpoint}:${props.redisPort}/0`,
         AWS_REGION: cdk.Stack.of(this).region,
         AWS_S3_BUCKET: props.s3BucketName ?? '',
         LOG_LEVEL: 'info',
       },
       secrets: {
+        // Redis AUTH token — required to authenticate to the encrypted cache.
+        REDIS_AUTH_TOKEN: ecs.Secret.fromSecretsManager(props.redisAuthTokenSecret),
         // Supabase DATABASE_URL — stored as a single connection string
         DATABASE_URL: ecs.Secret.fromSecretsManager(appSecret, 'DATABASE_URL'),
         // Application secrets
@@ -233,6 +261,14 @@ export class BackendStack extends cdk.Stack {
         }),
       });
     } else {
+      // An internet-facing ALB with no certificate would terminate traffic
+      // over plaintext HTTP. Refuse to expose that for a production deploy.
+      if (props.envName === 'production') {
+        throw new Error(
+          'BackendStack: an internet-facing production ALB requires a TLS certificate. ' +
+            'Pass -c apiCertificateArn=<acm-arn> so traffic is served over HTTPS.'
+        );
+      }
       this.alb.addListener('HttpListener', {
         port: 80,
         protocol: elbv2.ApplicationProtocol.HTTP,
