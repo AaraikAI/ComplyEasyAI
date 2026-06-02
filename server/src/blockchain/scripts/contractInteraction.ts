@@ -16,6 +16,7 @@
 import { ethers } from 'ethers';
 import * as fs from 'fs';
 import * as path from 'path';
+import logger from '../../config/logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -268,7 +269,7 @@ export class ContractInteraction {
             txOverrides.gasPrice = (feeData.gasPrice * bumpMultiplier) / 100n;
           }
 
-          console.log(
+          logger.warn(
             `[retry ${attempt}/${this.maxRetries}] Bumping gas ${this.gasBumpPercent * attempt}% for ${method}`,
           );
         }
@@ -306,7 +307,7 @@ export class ContractInteraction {
 
         // Back off before retrying
         const delay = Math.min(1000 * Math.pow(2, attempt), 30_000);
-        console.log(`[retry] Waiting ${delay}ms before retry...`);
+        logger.warn(`[retry] Waiting ${delay}ms before retry...`);
         await new Promise((r) => setTimeout(r, delay));
       }
     }
@@ -417,13 +418,19 @@ export class ContractInteraction {
     ]);
   }
 
+  /**
+   * Read a certificate's verification result (valid / status / score / expiry).
+   *
+   * `verifyCertificate` is declared state-mutating on-chain only for a lazy-expiry
+   * optimisation (it may flip an Active-but-expired certificate to Expired). The
+   * `staticCall` simulation evaluates that same logic, so the returned status and
+   * validity already reflect current expiry. Reading via `staticCall` therefore
+   * yields correct values without spending gas and without a read-after-write race.
+   *
+   * If the on-chain Expired flag must be persisted, drive it through a normal write
+   * path (e.g. the certificate lifecycle methods); a read does not pay to persist it.
+   */
   async verifyCertificate(certId: string): Promise<VerificationResult> {
-    const tx = await this.contract.verifyCertificate(certId);
-    const receipt = await tx.wait(this.confirmations);
-
-    // Parse the return values from the transaction - since verifyCertificate is
-    // a state-changing function (lazy expiry), we need to use staticCall to get
-    // return values and a regular call to update state.
     const result = await this.contract.verifyCertificate.staticCall(certId);
     return {
       valid: result[0],

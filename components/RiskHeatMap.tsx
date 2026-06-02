@@ -50,6 +50,25 @@ function getRiskLevel(likelihood: number, impact: number): 'critical' | 'high' |
   return 'minimal';
 }
 
+// Keep likelihood/impact within the 1-5 matrix bounds regardless of how the record was stored.
+function clampScore(value: number): number {
+  if (!Number.isFinite(value)) return 3;
+  return Math.min(5, Math.max(1, Math.round(value)));
+}
+
+// Derive a trend only from data the backend actually provides (current vs. previous score).
+// Returns undefined when no historical signal exists so the UI can omit the indicator.
+function deriveTrend(r: any): 'up' | 'down' | 'stable' | undefined {
+  if (r.trend === 'up' || r.trend === 'down' || r.trend === 'stable') return r.trend;
+  const current = typeof r.riskScore === 'number' ? r.riskScore
+    : (typeof r.likelihood === 'number' && typeof r.impact === 'number' ? r.likelihood * r.impact : undefined);
+  const previous = typeof r.previousRiskScore === 'number' ? r.previousRiskScore : undefined;
+  if (current === undefined || previous === undefined) return undefined;
+  if (current > previous) return 'up';
+  if (current < previous) return 'down';
+  return 'stable';
+}
+
 const RiskHeatMap: React.FC = () => {
   const { t } = useI18n();
   const [risks, setRisks] = useState<RiskItem[]>([]);
@@ -71,17 +90,26 @@ const RiskHeatMap: React.FC = () => {
       const response = await api.get('/risks?pageSize=100');
       // Risks endpoint returns raw array or { status, data: [...] }
       const rawItems = Array.isArray(response) ? response : (response?.data ?? []);
-      const items = rawItems.map((r: any) => ({
-        id: r.id,
-        title: r.title,
-        severity: r.severity,
-        likelihood: r.likelihood || Math.ceil(Math.random() * 5),
-        impact: r.impact || Math.ceil(Math.random() * 5),
-        status: r.status,
-        category: r.category,
-        owner: r.owner,
-        trend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable',
-      }));
+      const items = rawItems.map((r: any) => {
+        // likelihood/impact are non-null on the server (schema default 3); clamp to the 1-5
+        // matrix range and fall back to the neutral midpoint when a legacy record omits them,
+        // so cell placement is deterministic rather than fabricated.
+        const likelihood = clampScore(typeof r.likelihood === 'number' ? r.likelihood : 3);
+        const impact = clampScore(typeof r.impact === 'number' ? r.impact : 3);
+        return {
+          id: r.id,
+          title: r.title,
+          severity: r.severity,
+          likelihood,
+          impact,
+          status: r.status,
+          category: r.category,
+          owner: r.owner ?? r.remediationOwner,
+          // trend is derived from the persisted score delta when the backend supplies it;
+          // absent historical data, it stays undefined and the trend UI hides itself.
+          trend: deriveTrend(r),
+        };
+      });
       setRisks(items);
     } catch (err: any) {
       setError(err.message || 'Failed to load risks');
@@ -90,12 +118,28 @@ const RiskHeatMap: React.FC = () => {
     }
   };
 
+  // Target (residual) posture: deterministically reduce the inherent score for risks that are
+  // being mitigated or have a mitigation plan. Resolved risks land at the minimum band. This is a
+  // real transform of persisted fields (status / mitigationPlan), so the Target view differs from
+  // Current only where mitigation actually exists.
+  const displayRisks = useMemo(() => {
+    if (!showTarget) return risks;
+    return risks.map(r => {
+      const resolved = r.status === 'Mitigated' || r.status === 'Closed' || r.status === 'Resolved' || r.status === 'Accepted';
+      const beingMitigated = r.status === 'InProgress' || r.status === 'In Progress' || r.status === 'Mitigating' || (r as any).mitigationPlan;
+      let targetLikelihood = r.likelihood;
+      if (resolved) targetLikelihood = 1;
+      else if (beingMitigated) targetLikelihood = Math.max(1, r.likelihood - 1);
+      return { ...r, likelihood: targetLikelihood };
+    });
+  }, [risks, showTarget]);
+
   const heatMapData = useMemo(() => {
     const cells: HeatMapCell[][] = [];
     for (let l = 5; l >= 1; l--) {
       const row: HeatMapCell[] = [];
       for (let i = 1; i <= 5; i++) {
-        const cellRisks = risks.filter(r => r.likelihood === l && r.impact === i);
+        const cellRisks = displayRisks.filter(r => r.likelihood === l && r.impact === i);
         row.push({
           likelihood: l,
           impact: i,
@@ -106,17 +150,18 @@ const RiskHeatMap: React.FC = () => {
       cells.push(row);
     }
     return cells;
-  }, [risks]);
+  }, [displayRisks]);
 
   const stats = useMemo(() => {
-    const critical = risks.filter(r => getRiskLevel(r.likelihood, r.impact) === 'critical').length;
-    const high = risks.filter(r => getRiskLevel(r.likelihood, r.impact) === 'high').length;
-    const avgScore = risks.length > 0
-      ? (risks.reduce((sum, r) => sum + r.likelihood * r.impact, 0) / risks.length).toFixed(1)
+    const critical = displayRisks.filter(r => getRiskLevel(r.likelihood, r.impact) === 'critical').length;
+    const high = displayRisks.filter(r => getRiskLevel(r.likelihood, r.impact) === 'high').length;
+    const avgScore = displayRisks.length > 0
+      ? (displayRisks.reduce((sum, r) => sum + r.likelihood * r.impact, 0) / displayRisks.length).toFixed(1)
       : '0';
-    const trendingUp = risks.filter(r => r.trend === 'up').length;
-    return { total: risks.length, critical, high, avgScore, trendingUp };
-  }, [risks]);
+    const trendingUp = displayRisks.filter(r => r.trend === 'up').length;
+    const hasTrendData = displayRisks.some(r => r.trend === 'up' || r.trend === 'down' || r.trend === 'stable');
+    return { total: displayRisks.length, critical, high, avgScore, trendingUp, hasTrendData };
+  }, [displayRisks]);
 
   const exportHeatMap = () => {
     const canvas = document.createElement('canvas');
@@ -234,12 +279,14 @@ const RiskHeatMap: React.FC = () => {
           <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase">Avg Score</p>
           <p className="text-2xl font-bold text-surface-900 dark:text-surface-100 mt-1">{stats.avgScore}</p>
         </div>
-        <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-4">
-          <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase">Trending Up</p>
-          <p className="text-2xl font-bold text-red-500 mt-1 flex items-center gap-1">
-            {stats.trendingUp} <TrendingUp size={16} />
-          </p>
-        </div>
+        {stats.hasTrendData && (
+          <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-4">
+            <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase">Trending Up</p>
+            <p className="text-2xl font-bold text-red-500 mt-1 flex items-center gap-1">
+              {stats.trendingUp} <TrendingUp size={16} />
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -388,8 +435,8 @@ const RiskHeatMap: React.FC = () => {
             </thead>
             <tbody>
               {['critical', 'high', 'medium', 'low', 'minimal'].map(level => {
-                const count = risks.filter(r => getRiskLevel(r.likelihood, r.impact) === level).length;
-                const pct = risks.length > 0 ? Math.round((count / risks.length) * 100) : 0;
+                const count = displayRisks.filter(r => getRiskLevel(r.likelihood, r.impact) === level).length;
+                const pct = displayRisks.length > 0 ? Math.round((count / displayRisks.length) * 100) : 0;
                 return (
                   <tr key={level} className="border-b border-surface-100 dark:border-surface-700/50">
                     <td className="py-2 px-3">

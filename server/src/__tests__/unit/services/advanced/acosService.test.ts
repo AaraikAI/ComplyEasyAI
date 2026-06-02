@@ -124,7 +124,7 @@ describe('ACOSService', () => {
         framework: { id: 'fw-1', organizationId: orgId },
       };
 
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(mockControl);
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(mockControl);
       (prismaMock.controlLoop as any) = {
         create: jest.fn<any>().mockResolvedValue({
           id: 'loop-1',
@@ -150,7 +150,7 @@ describe('ACOSService', () => {
     });
 
     it('should throw error if control is not found', async () => {
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         acosService.createControlLoop(orgId, 'nonexistent', userId)
@@ -216,7 +216,7 @@ describe('ACOSService', () => {
         framework: { id: 'fw-1', name: 'SOC2', organizationId: orgId },
       };
 
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(mockControl);
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(mockControl);
       (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([mockControl]);
       (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([
         { id: 'fw-1', name: 'SOC2', organizationId: orgId, controls: [mockControl] },
@@ -243,7 +243,7 @@ describe('ACOSService', () => {
     });
 
     it('should handle errors when entity is not found', async () => {
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         acosService.forecastChangeImpact(orgId, {

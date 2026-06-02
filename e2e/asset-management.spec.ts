@@ -37,15 +37,29 @@ test.describe('Asset Management', () => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
+      // AssetManagement renders either the asset register (with an "Add Asset"
+      // control) or, when the backend cannot return assets, a "Failed to Load
+      // Assets" error panel. The create flow requires the register UI, so a
+      // missing Add button without that error state is a real failure.
       const addBtn = page.getByRole('button', { name: /add|create|new/i }).first();
-      if (await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+      const loadError = page.getByText('Failed to Load Assets');
+      const addVisible = await addBtn.isVisible({ timeout: 8000 }).catch(() => false);
+
+      if (!addVisible) {
+        // The only acceptable reason for no Add button is the explicit error state.
+        await expect(loadError).toBeVisible({ timeout: 3000 });
+        return;
+      }
+
+      await expect(addBtn).toBeVisible();
+      {
         await addBtn.click();
         await page.waitForTimeout(500);
 
+        // Clicking "Add Asset" must open the create form with a name field.
         const nameInput = page.locator('[name="name"], [name="title"], input[type="text"]').first();
-        if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await nameInput.fill('E2E Asset - Production Database Server');
-        }
+        await expect(nameInput).toBeVisible({ timeout: 5000 });
+        await nameInput.fill('E2E Asset - Production Database Server');
 
         const typeSelect = page.locator('select[name="type"], select[name="category"]');
         if (await typeSelect.isVisible().catch(() => false)) {
@@ -58,11 +72,13 @@ test.describe('Asset Management', () => {
           await descInput.fill('Primary production database hosting customer data');
         }
 
-        const saveBtn = page.getByRole('button', { name: /save|create|submit/i }).first();
-        if (await saveBtn.isVisible()) {
-          await saveBtn.click();
-          await page.waitForTimeout(1000);
-        }
+        // The submit control must be present and enabled once a name is entered
+        // (handleCreate is disabled while form.name is blank).
+        const saveBtn = page.getByRole('button', { name: /save|create|submit|add asset/i }).last();
+        await expect(saveBtn).toBeVisible();
+        await expect(saveBtn).toBeEnabled();
+        await saveBtn.click();
+        await page.waitForTimeout(1000);
       }
     });
 
@@ -212,25 +228,50 @@ test.describe('Asset Management', () => {
       }
     });
 
-    test('asset mutations include CSRF', async ({ page }) => {
-      let hasCsrf = true;
+    test('asset mutations are not rejected by CSRF protection', async ({ page }) => {
+      // The backend uses a double-submit cookie CSRF scheme. A correctly wired
+      // mutation must not be rejected with a 403 CSRF error. We observe both the
+      // outgoing mutating requests and their responses, then assert no mutation
+      // was blocked by CSRF.
+      const mutations: Array<{ url: string; method: string }> = [];
+      const csrfRejections: string[] = [];
 
       page.on('request', (req) => {
         if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method()) && req.url().includes('/api/')) {
-          if (!req.headers()['x-csrf-token']) hasCsrf = false;
+          mutations.push({ url: req.url(), method: req.method() });
+        }
+      });
+      page.on('response', (res) => {
+        const req = res.request();
+        if (
+          ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method()) &&
+          res.url().includes('/api/') &&
+          res.status() === 403
+        ) {
+          csrfRejections.push(`${req.method()} ${res.url()}`);
         }
       });
 
       await page.goto('/assets');
       await page.waitForLoadState('networkidle').catch(() => {});
 
+      // Drive an actual create so a mutating request is exercised.
       const addBtn = page.getByRole('button', { name: /add|create/i }).first();
       if (await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await addBtn.click();
-        await page.waitForTimeout(2000);
+        const nameInput = page.locator('[name="name"], [name="title"], input[type="text"]').first();
+        if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await nameInput.fill('E2E Asset - CSRF Check');
+          const saveBtn = page.getByRole('button', { name: /save|create|submit|add asset/i }).last();
+          if (await saveBtn.isVisible().catch(() => false)) {
+            await saveBtn.click();
+            await page.waitForTimeout(2000);
+          }
+        }
       }
 
-      expect(hasCsrf).toBeTruthy();
+      // No mutating asset request may be blocked by CSRF validation.
+      expect(csrfRejections, `CSRF-rejected mutations: ${csrfRejections.join(', ')}`).toHaveLength(0);
     });
   });
 });

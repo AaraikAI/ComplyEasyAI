@@ -78,12 +78,16 @@ jest.mock('../../../services/twoFactorService', () => ({
 
 const mockIsRevoked = jest.fn<any>().mockResolvedValue(false);
 const mockRevoke = jest.fn<any>().mockResolvedValue(undefined);
+const mockRevokeAllForUser = jest.fn<any>().mockResolvedValue(undefined);
+const mockIsRevokedByUserReset = jest.fn<any>().mockResolvedValue(false);
 
 jest.mock('../../../services/tokenBlacklistService', () => ({
   __esModule: true,
   default: {
     isRevoked: mockIsRevoked,
     revoke: mockRevoke,
+    revokeAllForUser: mockRevokeAllForUser,
+    isRevokedByUserReset: mockIsRevokedByUserReset,
   },
 }));
 
@@ -1145,6 +1149,7 @@ describe('AuthController', () => {
       require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(true);
       require('../../../utils/fipsPasswordHashing').hashPassword.mockResolvedValue('new-hashed');
       (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({});
+      (prismaMock.userSession.updateMany as jest.Mock<any>).mockResolvedValue({ count: 0 });
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
       await authController.changePassword(mockReq as Request, mockRes as Response);

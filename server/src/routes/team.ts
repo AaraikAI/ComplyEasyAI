@@ -8,6 +8,7 @@ import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import { validateBody } from '../middleware/validate';
 import { inviteSchema, bulkInviteSchema, updateMemberSchema } from '../validators/teamSchemas';
+import tierService from '../services/tierService';
 
 const router = Router();
 
@@ -80,38 +81,40 @@ router.post(
       throw new AppError('User with this email already exists', 409);
     }
 
-    // Create new user
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        name,
-        role: role || 'viewer',
-        organizationId,
-        avatar: name.substring(0, 2).toUpperCase(),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        avatar: true,
-        lastLogin: true,
-        createdAt: true,
-      },
-    });
-
-    // Generate magic link for the new user
+    // Generate magic link token for the new user
     const { v4: uuidv4 } = await import('uuid');
     const token = uuidv4();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    await prisma.magicLink.create({
-      data: {
-        email,
-        token,
-        expiresAt,
-      },
-    });
+    // Create the user and its invite token atomically so an invited user can
+    // never be left behind without a working magic link.
+    const [newUser] = await prisma.$transaction([
+      prisma.user.create({
+        data: {
+          email,
+          name,
+          role: role || 'viewer',
+          organizationId,
+          avatar: name.substring(0, 2).toUpperCase(),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          avatar: true,
+          lastLogin: true,
+          createdAt: true,
+        },
+      }),
+      prisma.magicLink.create({
+        data: {
+          email,
+          token,
+          expiresAt,
+        },
+      }),
+    ]);
 
     // Send invitation email (magic link)
     try {
@@ -134,7 +137,7 @@ router.post(
       },
     });
 
-    logger.info(`Team member invited: ${email} to organization ${organizationId}`);
+    logger.info(`Team member invited: user ${newUser.id} to organization ${organizationId}`);
 
     res.status(201).json(newUser);
   })
@@ -210,8 +213,47 @@ router.post(
       throw new AppError('Validation failed: please fix validation errors before sending invites', 400);
     }
 
+    // Enforce the maxUsers tier quota for the whole batch (the single-invite
+    // route applies enforceLimit('maxUsers'); bulk must check the projected total
+    // so it cannot bypass the quota by inviting many users at once).
+    const requestedEmails = Array.from(
+      new Set(invites.map((inv: { email: string }) => inv.email))
+    );
+    const alreadyPresent = await prisma.user.findMany({
+      where: { email: { in: requestedEmails } },
+      select: { email: true },
+    });
+    const presentEmails = new Set(alreadyPresent.map((u: { email: string }) => u.email));
+    const netNewCount = requestedEmails.filter((e) => !presentEmails.has(e)).length;
+
+    if (netNewCount > 0) {
+      const currentUserCount = await prisma.user.count({ where: { organizationId } });
+      // Pass the projected post-invite total minus one: checkLimit allows when
+      // current < limit, so projectedTotal - 1 < limit ⇒ projectedTotal <= limit.
+      const projectedTotal = currentUserCount + netNewCount;
+      const limitCheck = await tierService.checkLimit(organizationId, 'maxUsers', projectedTotal - 1);
+      if (!limitCheck.allowed) {
+        logger.info(
+          `Bulk invite blocked: maxUsers limit for org ${organizationId} (current ${currentUserCount}, +${netNewCount} new, limit ${limitCheck.limit})`
+        );
+        res.status(429).json({
+          error: 'Limit exceeded',
+          message:
+            limitCheck.upgradeMessage ||
+            `This invite would exceed your ${limitCheck.displayName || 'user'} limit`,
+          code: 'TIER_LIMIT_EXCEEDED',
+          limitType: limitCheck.limitType,
+          current: currentUserCount,
+          limit: limitCheck.limit,
+          requested: netNewCount,
+          upgradeUrl: '/settings?tab=billing',
+        });
+        return;
+      }
+    }
+
     // Process invites
-    for (const invite of invites) {
+    for (const [i, invite] of invites.entries()) {
       try {
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
@@ -227,43 +269,45 @@ router.post(
           continue;
         }
 
-        // Create new user
-        const newUser = await prisma.user.create({
-          data: {
-            email: invite.email,
-            name: invite.name,
-            role: invite.role || 'viewer',
-            organizationId,
-            avatar: invite.name.substring(0, 2).toUpperCase(),
-          },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            avatar: true,
-            lastLogin: true,
-            createdAt: true,
-          },
-        });
-
-        // Generate magic link
+        // Generate magic link token
         const token = uuidv4();
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-        await prisma.magicLink.create({
-          data: {
-            email: invite.email,
-            token,
-            expiresAt,
-          },
-        });
+        // Create the user and its invite token atomically so a bulk-invited user
+        // can never be left behind without a working magic link.
+        const [newUser] = await prisma.$transaction([
+          prisma.user.create({
+            data: {
+              email: invite.email,
+              name: invite.name,
+              role: invite.role || 'viewer',
+              organizationId,
+              avatar: invite.name.substring(0, 2).toUpperCase(),
+            },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              avatar: true,
+              lastLogin: true,
+              createdAt: true,
+            },
+          }),
+          prisma.magicLink.create({
+            data: {
+              email: invite.email,
+              token,
+              expiresAt,
+            },
+          }),
+        ]);
 
         // Send invitation email
         try {
           await emailService.sendMagicLink(invite.email, token);
         } catch (emailError) {
-          logger.warn(`Failed to send invitation email to ${invite.email}`, emailError);
+          logger.warn(`Failed to send invitation email for user ${newUser.id}`, emailError);
         }
 
         results.successful.push(newUser);
@@ -280,7 +324,7 @@ router.post(
           },
         });
       } catch (error: any) {
-        logger.error(`Failed to invite ${invite.email}`, error);
+        logger.error(`Failed to invite at index ${i}`, error);
         results.failed.push({
           email: invite.email,
           name: invite.name,

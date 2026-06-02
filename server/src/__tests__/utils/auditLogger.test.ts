@@ -4,6 +4,9 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 const mockAuditLog = {
   create: jest.fn() as jest.Mock<any>,
   createMany: jest.fn() as jest.Mock<any>,
+  // log()/logBatch() now chain a tamper-evident hash to the previous entry via
+  // findFirst; without this the chain lookup throws and create is never reached.
+  findFirst: jest.fn() as jest.Mock<any>,
   findMany: jest.fn() as jest.Mock<any>,
   count: jest.fn() as jest.Mock<any>,
   deleteMany: jest.fn() as jest.Mock<any>,
@@ -32,7 +35,9 @@ import { AuditLogger } from '../../utils/auditLogger';
 describe('AuditLogger', () => {
   beforeEach(() => {
     // Re-establish mock implementations cleared by resetMocks: true
-    // (individual tests will set mockResolvedValue as needed)
+    // (individual tests will set mockResolvedValue as needed).
+    // Default the hash-chain lookup to "no prior entry" (genesis hash path).
+    mockAuditLog.findFirst.mockResolvedValue(null);
   });
 
   describe('log', () => {

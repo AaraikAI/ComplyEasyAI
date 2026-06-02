@@ -24,10 +24,14 @@ interface GoogleUserInfo {
 }
 
 class GoogleService {
-  private oauth2Client: Auth.OAuth2Client;
-
-  constructor() {
-    this.oauth2Client = new google.auth.OAuth2(
+  /**
+   * Build a fresh OAuth2 client per request/org. A single shared instance would
+   * let concurrent multi-tenant calls overwrite each other's credentials between
+   * setCredentials() and the awaited API call, leaking one org's access token
+   * into another org's request.
+   */
+  private createOAuthClient(): Auth.OAuth2Client {
+    return new google.auth.OAuth2(
       config.oauth.google.clientId,
       config.oauth.google.clientSecret,
       config.oauth.google.callbackUrl
@@ -47,7 +51,7 @@ class GoogleService {
       'https://www.googleapis.com/auth/admin.reports.audit.readonly',
     ];
 
-    return this.oauth2Client.generateAuthUrl({
+    return this.createOAuthClient().generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
       state,
@@ -60,7 +64,7 @@ class GoogleService {
    */
   async getTokensFromCode(code: string): Promise<GoogleTokens> {
     try {
-      const { tokens } = await this.oauth2Client.getToken(code);
+      const { tokens } = await this.createOAuthClient().getToken(code);
 
       if (!tokens.access_token) {
         throw new AppError('No access token received from Google', 500);
@@ -82,8 +86,9 @@ class GoogleService {
    */
   async getUserInfo(accessToken: string): Promise<GoogleUserInfo> {
     try {
-      this.oauth2Client.setCredentials({ access_token: accessToken });
-      const oauth2 = google.oauth2({ version: 'v2', auth: this.oauth2Client });
+      const oauth2Client = this.createOAuthClient();
+      oauth2Client.setCredentials({ access_token: accessToken });
+      const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
 
       const { data } = await oauth2.userinfo.get();
 
@@ -106,8 +111,9 @@ class GoogleService {
     try {
       // Caller may pass an encrypted refresh token from the DB; ensure plaintext for the API call.
       const plaintextRefreshToken = decryptField(refreshToken);
-      this.oauth2Client.setCredentials({ refresh_token: plaintextRefreshToken });
-      const { credentials } = await this.oauth2Client.refreshAccessToken();
+      const oauth2Client = this.createOAuthClient();
+      oauth2Client.setCredentials({ refresh_token: plaintextRefreshToken });
+      const { credentials } = await oauth2Client.refreshAccessToken();
 
       return {
         access_token: credentials.access_token!,
@@ -297,9 +303,10 @@ class GoogleService {
   async syncUsers(organizationId: string): Promise<any[]> {
     try {
       const accessToken = await this.ensureValidToken(organizationId);
-      this.oauth2Client.setCredentials({ access_token: accessToken });
+      const oauth2Client = this.createOAuthClient();
+      oauth2Client.setCredentials({ access_token: accessToken });
 
-      const admin = google.admin({ version: 'directory_v1', auth: this.oauth2Client });
+      const admin = google.admin({ version: 'directory_v1', auth: oauth2Client });
 
       const { data } = await admin.users.list({
         customer: 'my_customer',
@@ -336,9 +343,10 @@ class GoogleService {
   async syncGroups(organizationId: string): Promise<any[]> {
     try {
       const accessToken = await this.ensureValidToken(organizationId);
-      this.oauth2Client.setCredentials({ access_token: accessToken });
+      const oauth2Client = this.createOAuthClient();
+      oauth2Client.setCredentials({ access_token: accessToken });
 
-      const admin = google.admin({ version: 'directory_v1', auth: this.oauth2Client });
+      const admin = google.admin({ version: 'directory_v1', auth: oauth2Client });
 
       const { data } = await admin.groups.list({
         customer: 'my_customer',
@@ -377,9 +385,10 @@ class GoogleService {
   ): Promise<any[]> {
     try {
       const accessToken = await this.ensureValidToken(organizationId);
-      this.oauth2Client.setCredentials({ access_token: accessToken });
+      const oauth2Client = this.createOAuthClient();
+      oauth2Client.setCredentials({ access_token: accessToken });
 
-      const reports = google.admin({ version: 'reports_v1', auth: this.oauth2Client });
+      const reports = google.admin({ version: 'reports_v1', auth: oauth2Client });
 
       const { data } = await reports.activities.list({
         userKey: 'all',
@@ -420,9 +429,10 @@ class GoogleService {
   ): Promise<any[]> {
     try {
       const accessToken = await this.ensureValidToken(organizationId);
-      this.oauth2Client.setCredentials({ access_token: accessToken });
+      const oauth2Client = this.createOAuthClient();
+      oauth2Client.setCredentials({ access_token: accessToken });
 
-      const drive = google.drive({ version: 'v3', auth: this.oauth2Client });
+      const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
       const { data } = await drive.files.list({
         q: query || 'trashed=false',
@@ -466,7 +476,7 @@ class GoogleService {
       if (integration && integration.accessToken) {
         // Revoke the token
         try {
-          await this.oauth2Client.revokeToken(decryptField(integration.accessToken));
+          await this.createOAuthClient().revokeToken(decryptField(integration.accessToken));
         } catch (error) {
           logger.warn('Error revoking Google token (may already be revoked)', error);
         }

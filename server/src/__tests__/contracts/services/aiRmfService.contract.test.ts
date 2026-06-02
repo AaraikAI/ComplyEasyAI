@@ -13,6 +13,8 @@ jest.mock('../../../config/database', () => ({
   default: prismaMock,
 }));
 
+// aiRmfService imports its logger from config/logger (see service line 2);
+// this mock path matches that import so log side-effects are observable.
 jest.mock('../../../config/logger', () => ({
   __esModule: true,
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },

@@ -193,6 +193,65 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     });
   }, [devices, platformFilter, statusFilter, searchQuery]);
 
+  // Relative-time helper for alert timestamps.
+  const relativeTime = (iso: string): string => {
+    const then = new Date(iso).getTime();
+    if (Number.isNaN(then)) return '';
+    const diffMs = Date.now() - then;
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? '' : 's'} ago`;
+  };
+
+  interface AlertItem { icon: React.ElementType; color: string; bg: string; message: string; time: string; sortKey: number }
+
+  // Recent Alerts are derived from live fleet state (jailbroken / unencrypted / stale
+  // / non-compliant devices), open compliance violations, and the remote-action log —
+  // all already loaded from api.mdm.*. No fabricated device or user names.
+  const recentAlerts = useMemo<AlertItem[]>(() => {
+    const STALE_CHECKIN_DAYS = 3;
+    const now = Date.now();
+    const alerts: AlertItem[] = [];
+
+    devices.forEach(d => {
+      const checkIn = new Date(d.lastCheckIn).getTime();
+      const staleDays = Number.isNaN(checkIn) ? 0 : Math.floor((now - checkIn) / 86400000);
+      if (d.jailbroken) {
+        alerts.push({ icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10', message: `Jailbroken device detected: ${d.deviceName} (${d.user})`, time: relativeTime(d.lastCheckIn), sortKey: 4 });
+      }
+      if (!d.encryptionEnabled && d.complianceStatus !== 'Pending') {
+        alerts.push({ icon: ShieldAlert, color: 'text-amber-400', bg: 'bg-amber-500/10', message: `Encryption disabled: ${d.deviceName} (${d.user})`, time: relativeTime(d.lastCheckIn), sortKey: 3 });
+      }
+      if (staleDays >= STALE_CHECKIN_DAYS) {
+        alerts.push({ icon: WifiOff, color: 'text-orange-400', bg: 'bg-orange-500/10', message: `${d.deviceName} (${d.user}) has not checked in for ${staleDays} days`, time: relativeTime(d.lastCheckIn), sortKey: 2 });
+      }
+    });
+
+    violations
+      .filter(v => v.severity === 'Critical' || v.severity === 'High')
+      .forEach(v => {
+        alerts.push({ icon: ShieldAlert, color: v.severity === 'Critical' ? 'text-red-400' : 'text-amber-400', bg: v.severity === 'Critical' ? 'bg-red-500/10' : 'bg-amber-500/10', message: `${v.type}: ${v.deviceCount} device${v.deviceCount === 1 ? '' : 's'} affected`, time: relativeTime(v.firstDetected), sortKey: v.severity === 'Critical' ? 4 : 3 });
+      });
+
+    actionLog.slice(0, 5).forEach(a => {
+      const ok = a.status === 'Completed';
+      alerts.push({
+        icon: ok ? Lock : a.status === 'Failed' ? XCircle : Clock,
+        color: ok ? 'text-emerald-400' : a.status === 'Failed' ? 'text-red-400' : 'text-blue-400',
+        bg: ok ? 'bg-emerald-500/10' : a.status === 'Failed' ? 'bg-red-500/10' : 'bg-blue-500/10',
+        message: `${a.actionType} ${a.status.toLowerCase()}: ${a.targetDevice}${a.targetUser ? ` (${a.targetUser})` : ''}`,
+        time: relativeTime(a.timestamp),
+        sortKey: 1,
+      });
+    });
+
+    return alerts.sort((x, y) => y.sortKey - x.sortKey).slice(0, 6);
+  }, [devices, violations, actionLog]);
+
   const complianceBg = (s: ComplianceStatus) =>
     s === 'Compliant' ? 'bg-emerald-500/20 text-emerald-400' :
     s === 'Non-Compliant' ? 'bg-red-500/20 text-red-400' :
@@ -348,24 +407,25 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
         <h3 className="text-lg font-semibold text-white mb-4">Recent Alerts</h3>
-        <div className="space-y-3">
-          {[
-            { icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10', message: 'Jailbroken device detected: iPhone 15 (Jessica Liu)', time: '2 hours ago' },
-            { icon: ShieldAlert, color: 'text-amber-400', bg: 'bg-amber-500/10', message: '2 devices missing encryption - immediate action required', time: '5 hours ago' },
-            { icon: WifiOff, color: 'text-orange-400', bg: 'bg-orange-500/10', message: 'MacBook Air M3 (Nina Petrov) has not checked in for 4 days', time: '1 day ago' },
-            { icon: Bell, color: 'text-blue-400', bg: 'bg-blue-500/10', message: 'OS update available for 3 devices - compliance deadline in 7 days', time: '1 day ago' },
-            { icon: Lock, color: 'text-emerald-400', bg: 'bg-emerald-500/10', message: 'Remote lock completed successfully: Surface Pro 10 (David Kim)', time: '2 days ago' },
-          ].map((alert, i) => (
-            <div key={i} className={`flex items-center gap-3 p-3 ${alert.bg} rounded-lg`}>
-              <alert.icon size={16} className={`${alert.color} flex-shrink-0`} />
-              <div className="flex-1">
-                <div className="text-sm text-white">{alert.message}</div>
-                <div className="text-xs text-slate-400">{alert.time}</div>
+        {recentAlerts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Bell size={24} className="text-slate-600 mb-2" />
+            <p className="text-sm text-slate-400">No active alerts for your fleet</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentAlerts.map((alert, i) => (
+              <div key={i} className={`flex items-center gap-3 p-3 ${alert.bg} rounded-lg`}>
+                <alert.icon size={16} className={`${alert.color} flex-shrink-0`} />
+                <div className="flex-1">
+                  <div className="text-sm text-white">{alert.message}</div>
+                  <div className="text-xs text-slate-400">{alert.time}</div>
+                </div>
+                <ChevronRight size={14} className="text-slate-500" />
               </div>
-              <ChevronRight size={14} className="text-slate-500" />
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

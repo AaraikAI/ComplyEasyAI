@@ -173,7 +173,7 @@ class WhisperService {
           },
         });
 
-        logger.info(`[Whisper] Transcription completed: ${result.text.substring(0, 50)}...`);
+        logger.info('[Whisper] Transcription completed', { charCount: result.text.length, durationSec: result.duration, language: result.language });
 
         return result;
       } catch (error) {
@@ -314,7 +314,7 @@ class WhisperService {
         },
       });
 
-      logger.info(`[Whisper] Video transcription completed: ${result.text.substring(0, 50)}...`);
+      logger.info('[Whisper] Video transcription completed', { charCount: result.text.length, durationSec: result.duration, language: result.language });
       return result;
     } catch (error: any) {
       logger.error('[Whisper] Error transcribing video', error);
@@ -530,7 +530,12 @@ class WhisperService {
           formData.append('audio', audioBuffer, { filename: 'audio.wav' });
           formData.append('max_speakers', String(maxSpeakers));
 
-          const response = await axios.post(`${pyannoteServiceUrl}/diarize`, formData, {
+          const diarizeUrl = `${pyannoteServiceUrl}/diarize`;
+          const { isUrlSafe } = await import('../../utils/urlValidator');
+          if (!isUrlSafe(diarizeUrl)) {
+            throw new AppError('Pyannote service URL is unsafe', 400);
+          }
+          const response = await axios.post(diarizeUrl, formData, {
             headers: formData.getHeaders(),
             timeout: 60000,
           });

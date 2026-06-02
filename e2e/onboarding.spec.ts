@@ -171,12 +171,14 @@ test.describe('Onboarding', () => {
   });
 
   test.describe('Network & Security', () => {
-    test('onboarding state is persisted via API', async ({ page }) => {
-      const apiCalls: string[] = [];
+    test('onboarding state is persisted via API without server errors', async ({ page }) => {
+      // Capture onboarding API responses so we can assert they resolve cleanly.
+      const onboardingResponses: Array<{ url: string; status: number }> = [];
 
-      page.on('request', (req) => {
-        if (req.url().includes('/api/') && req.url().includes('onboarding')) {
-          apiCalls.push(req.url());
+      page.on('response', (res) => {
+        const url = res.url();
+        if (url.includes('/api/') && url.includes('onboarding')) {
+          onboardingResponses.push({ url, status: res.status() });
         }
       });
 
@@ -184,9 +186,15 @@ test.describe('Onboarding', () => {
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.waitForTimeout(2000);
 
-      // Onboarding API calls may have been made
-      // Verify no errors on these calls
-      expect(true).toBeTruthy();
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      // Any onboarding persistence call must resolve to a defined, non-5xx
+      // status (success, an auth status, or not-found) — never a server error.
+      for (const res of onboardingResponses) {
+        expect(res.status, `Server error from ${res.url}`).toBeLessThan(500);
+        expect([200, 201, 204, 304, 400, 401, 403, 404]).toContain(res.status);
+      }
     });
 
     test('onboarding does not expose organization internals', async ({ page }) => {

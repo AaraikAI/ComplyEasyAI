@@ -18,6 +18,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
+import { generateQrMatrix, matrixToSvg, matrixToPngDataUrl } from './qrCode';
 import {
   ArrowLeft,
   Package,
@@ -712,6 +713,48 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
     return { total, active, avgRecyclability, avgRepairability, totalCarbon, ecoCompliant };
   }, [products]);
 
+  // Public passport URL encoded into the QR code for product labelling.
+  const passportUrl = useMemo(() => {
+    if (!selectedProduct.id) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/passport/${selectedProduct.id}`;
+  }, [selectedProduct.id]);
+
+  // Real QR module matrix for the selected passport (regenerated on change).
+  const qrMatrix = useMemo(() => {
+    if (!passportUrl) return null;
+    try {
+      return generateQrMatrix(passportUrl);
+    } catch {
+      return null;
+    }
+  }, [passportUrl]);
+
+  const qrSvgMarkup = useMemo(() => (qrMatrix ? matrixToSvg(qrMatrix, 6) : ''), [qrMatrix]);
+
+  const triggerDownload = useCallback((href: string, filename: string) => {
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, []);
+
+  const handleDownloadQrPng = useCallback(() => {
+    if (!qrMatrix) return;
+    const dataUrl = matrixToPngDataUrl(qrMatrix, 8);
+    if (dataUrl) triggerDownload(dataUrl, `dpp-${selectedProduct.gtin || selectedProduct.id}-qr.png`);
+  }, [qrMatrix, selectedProduct, triggerDownload]);
+
+  const handleDownloadQrSvg = useCallback(() => {
+    if (!qrSvgMarkup) return;
+    const blob = new Blob([qrSvgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    triggerDownload(url, `dpp-${selectedProduct.gtin || selectedProduct.id}-qr.svg`);
+    URL.revokeObjectURL(url);
+  }, [qrSvgMarkup, selectedProduct, triggerDownload]);
+
   // Tab definitions
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -1277,23 +1320,30 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           <button onClick={() => setShowQRModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} className="text-gray-500" /></button>
         </div>
         <div className="p-8 flex flex-col items-center">
-          <div className="w-48 h-48 bg-gray-100 border-2 border-gray-300 rounded-xl flex flex-col items-center justify-center mb-4">
-            <QrCode size={80} className="text-gray-600" />
-            <p className="text-xs text-gray-400 mt-2">QR Code Preview</p>
+          <div className="w-48 h-48 bg-white border-2 border-gray-300 rounded-xl flex flex-col items-center justify-center mb-4 p-2">
+            {qrSvgMarkup ? (
+              <div className="w-full h-full" aria-label={`QR code for ${selectedProduct.name}`} dangerouslySetInnerHTML={{ __html: qrSvgMarkup }} />
+            ) : (
+              <>
+                <QrCode size={80} className="text-gray-300" />
+                <p className="text-xs text-gray-400 mt-2">Select a saved passport to generate its QR code</p>
+              </>
+            )}
           </div>
           <p className="text-sm font-semibold text-gray-900">{selectedProduct.name}</p>
           <p className="text-xs text-gray-500 mt-1">GTIN: {selectedProduct.gtin}</p>
           <p className="text-xs text-gray-400 mt-0.5">Passport v{selectedProduct.passportVersion}</p>
+          {passportUrl && <p className="text-[10px] text-gray-400 mt-1 break-all text-center">{passportUrl}</p>}
           <div className="mt-4 p-3 bg-blue-50 rounded-lg w-full">
             <p className="text-xs text-blue-700 text-center">
               Scan to access the Digital Product Passport with full material composition, carbon footprint, and recyclability data.
             </p>
           </div>
           <div className="mt-4 flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
+            <button onClick={handleDownloadQrPng} disabled={!qrMatrix} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <Download size={14} /> Download PNG
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+            <button onClick={handleDownloadQrSvg} disabled={!qrMatrix} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <Download size={14} /> Download SVG
             </button>
           </div>

@@ -545,12 +545,14 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
 
   const addSubmission = useCallback(async (jurisdiction: string) => {
     const authority = detectedJurisdictions.find(j => j.jurisdiction === jurisdiction.split(' - ')[0])?.authority || 'Unknown';
-    const refNumber = `REF-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+    // The official acknowledgement reference is assigned by the regulator/backend on
+    // receipt — it is not fabricated client-side. Until the server returns one the
+    // submission shows "Pending" rather than a locally invented value.
     const newSub: SubmissionRecord = {
       id: `SUB-${Date.now()}`, jurisdiction,
       authority,
       sentDate: new Date().toISOString(), method: 'Online Portal',
-      status: 'sent', referenceNumber: refNumber,
+      status: 'sent', referenceNumber: '',
       responseDate: null, responseNotes: '',
     };
     setSubmissions(prev => [...prev, newSub]);
@@ -565,15 +567,128 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
         authority,
         sentAt: newSub.sentDate,
         status: 'sent',
-        acknowledgement: { referenceNumber: refNumber },
       });
       if (created?.id) {
-        setSubmissions(prev => prev.map(s => s.id === newSub.id ? { ...s, id: created.id } : s));
+        const serverRef = created.acknowledgement?.referenceNumber ?? created.referenceNumber ?? '';
+        setSubmissions(prev => prev.map(s => s.id === newSub.id
+          ? { ...s, id: created.id, referenceNumber: serverRef, status: created.status || s.status }
+          : s));
       }
     } catch {
       setLoadError('Submission recorded locally; failed to persist notification on server.');
     }
   }, [detectedJurisdictions, ensureBreachIncident]);
+
+  // ---------------------------------------------------------------------------
+  // Copy / download / edit + create handlers (templates, contacts, letters)
+  // ---------------------------------------------------------------------------
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const copyText = useCallback(async (text: string, key: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(prev => (prev === key ? null : prev)), 2000);
+    } catch {
+      setLoadError('Unable to copy to clipboard.');
+    }
+  }, []);
+
+  const downloadText = useCallback((text: string, filename: string) => {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  // Letter inline editing
+  const [editingLetterIndex, setEditingLetterIndex] = useState<number | null>(null);
+  const [letterDraft, setLetterDraft] = useState('');
+
+  const startEditLetter = (index: number) => {
+    setEditingLetterIndex(index);
+    setLetterDraft(draftedLetters[index]?.content || '');
+  };
+  const saveEditLetter = (index: number) => {
+    setDraftedLetters(prev => prev.map((l, i) => i === index ? { ...l, content: letterDraft } : l));
+    setEditingLetterIndex(null);
+  };
+
+  // Template create/edit modal
+  const emptyTemplateForm = { name: '', jurisdiction: '', regulation: '', type: 'authority' as NotificationTemplate['type'], content: '' };
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<NotificationTemplate | null>(null);
+  const [templateForm, setTemplateForm] = useState(emptyTemplateForm);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
+  const openCreateTemplate = () => {
+    setEditingTemplate(null);
+    setTemplateForm(emptyTemplateForm);
+    setShowTemplateModal(true);
+  };
+  const openEditTemplate = (tpl: NotificationTemplate) => {
+    setEditingTemplate(tpl);
+    setTemplateForm({ name: tpl.name, jurisdiction: tpl.jurisdiction, regulation: tpl.regulation, type: tpl.type, content: tpl.content });
+    setShowTemplateModal(true);
+  };
+  const saveTemplate = async () => {
+    if (!templateForm.name.trim()) { setLoadError('Template name is required.'); return; }
+    setSavingTemplate(true);
+    const nowIso = new Date().toISOString();
+    try {
+      if (editingTemplate) {
+        const updated = await api.modules.breach.updateTemplate(editingTemplate.id, templateForm);
+        setTemplates(prev => prev.map(tp => tp.id === editingTemplate.id
+          ? { ...tp, ...templateForm, lastUpdated: updated?.updatedAt || nowIso }
+          : tp));
+      } else {
+        const created = await api.modules.breach.createTemplate(templateForm);
+        setTemplates(prev => [{
+          id: created?.id || `TPL-${Date.now()}`,
+          ...templateForm,
+          lastUpdated: created?.updatedAt || nowIso,
+        }, ...prev]);
+      }
+      setShowTemplateModal(false);
+    } catch {
+      setLoadError(editingTemplate ? 'Failed to update template on server.' : 'Failed to create template on server.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  // Contact create modal
+  const emptyContactForm = { name: '', type: 'DPA' as RegulatoryContact['type'], jurisdiction: '', email: '', phone: '', website: '', portalUrl: '', notes: '' };
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactForm, setContactForm] = useState(emptyContactForm);
+  const [savingContact, setSavingContact] = useState(false);
+
+  const openCreateContact = () => {
+    setContactForm(emptyContactForm);
+    setShowContactModal(true);
+  };
+  const saveContact = async () => {
+    if (!contactForm.name.trim()) { setLoadError('Contact name is required.'); return; }
+    if (contactForm.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactForm.email.trim())) {
+      setLoadError('Contact email must be a valid email address.');
+      return;
+    }
+    setSavingContact(true);
+    try {
+      const created = await api.modules.breach.createContact(contactForm);
+      setContacts(prev => [{ id: created?.id || `RC-${Date.now()}`, ...contactForm }, ...prev]);
+      setShowContactModal(false);
+    } catch {
+      setLoadError('Failed to create contact on server.');
+    } finally {
+      setSavingContact(false);
+    }
+  };
 
   // Filtered data
   const filteredHistory = useMemo(() =>
@@ -1054,20 +1169,31 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
                   <span className="font-medium text-sm">{letter.jurisdiction}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Copy">
-                    <Copy className="w-4 h-4" />
+                  <button onClick={() => copyText(letter.content, `letter-${i}`)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Copy">
+                    {copiedKey === `letter-${i}` ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                   </button>
-                  <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Download">
+                  <button onClick={() => downloadText(letter.content, `${letter.jurisdiction.replace(/[^a-z0-9]+/gi, '-')}.txt`)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Download">
                     <Download className="w-4 h-4" />
                   </button>
-                  <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Edit">
-                    <Edit3 className="w-4 h-4" />
-                  </button>
+                  {editingLetterIndex === i ? (
+                    <button onClick={() => saveEditLetter(i)} className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Save">
+                      <CheckCircle className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button onClick={() => startEditLetter(i)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Edit">
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
-              <pre className="p-4 text-sm text-gray-700 whitespace-pre-wrap bg-white max-h-64 overflow-y-auto font-sans leading-relaxed">
-                {letter.content}
-              </pre>
+              {editingLetterIndex === i ? (
+                <textarea value={letterDraft} onChange={e => setLetterDraft(e.target.value)}
+                  className="w-full p-4 text-sm text-gray-700 bg-white max-h-64 overflow-y-auto font-sans leading-relaxed border-0 focus:ring-2 focus:ring-blue-500" rows={12} />
+              ) : (
+                <pre className="p-4 text-sm text-gray-700 whitespace-pre-wrap bg-white max-h-64 overflow-y-auto font-sans leading-relaxed">
+                  {letter.content}
+                </pre>
+              )}
             </div>
           ))}
         </div>
@@ -1137,7 +1263,7 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <div className="font-medium text-sm">{sub.jurisdiction}</div>
-                    <div className="text-xs text-gray-500">{sub.authority} | Ref: {sub.referenceNumber}</div>
+                    <div className="text-xs text-gray-500">{sub.authority} | Ref: {sub.referenceNumber || 'Pending'}</div>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(sub.status)}`}>
                     {sub.status.replace('_', ' ').toUpperCase()}
@@ -1322,7 +1448,7 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
             <input type="text" value={templateSearch} onChange={e => setTemplateSearch(e.target.value)}
               placeholder="Search templates..." className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
           </div>
-          <button className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
+          <button onClick={openCreateTemplate} className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
             <Plus className="w-4 h-4" />New Template
           </button>
         </div>
@@ -1354,13 +1480,13 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
                   {tpl.content}
                 </pre>
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
-                  <button className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1">
-                    <Copy className="w-3 h-3" />Copy
+                  <button onClick={e => { e.stopPropagation(); copyText(tpl.content, `tpl-${tpl.id}`); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1">
+                    {copiedKey === `tpl-${tpl.id}` ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}Copy
                   </button>
-                  <button className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
+                  <button onClick={e => { e.stopPropagation(); openEditTemplate(tpl); }} className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
                     <Edit3 className="w-3 h-3" />{t('common.edit')}
                   </button>
-                  <button className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
+                  <button onClick={e => { e.stopPropagation(); downloadText(tpl.content, `${tpl.name.replace(/[^a-z0-9]+/gi, '-')}.txt`); }} className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
                     <Download className="w-3 h-3" />{t('common.export')}
                   </button>
                 </div>
@@ -1382,7 +1508,7 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
             <input type="text" value={contactSearch} onChange={e => setContactSearch(e.target.value)}
               placeholder="Search contacts..." className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
           </div>
-          <button className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
+          <button onClick={openCreateContact} className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
             <Plus className="w-4 h-4" />Add Contact
           </button>
         </div>
@@ -1503,6 +1629,130 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
         {activeTab === 'templates' && renderTemplatesTab()}
         {activeTab === 'contacts' && renderContactsTab()}
       </div>
+
+      {/* Template Create/Edit Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">{editingTemplate ? 'Edit Template' : 'New Notification Template'}</h3>
+              <button onClick={() => setShowTemplateModal(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input type="text" value={templateForm.name} onChange={e => setTemplateForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="e.g., GDPR DPA Notification" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Jurisdiction</label>
+                  <input type="text" value={templateForm.jurisdiction} onChange={e => setTemplateForm(prev => ({ ...prev, jurisdiction: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="European Union" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Regulation</label>
+                  <input type="text" value={templateForm.regulation} onChange={e => setTemplateForm(prev => ({ ...prev, regulation: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="GDPR" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select value={templateForm.type} onChange={e => setTemplateForm(prev => ({ ...prev, type: e.target.value as NotificationTemplate['type'] }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                    <option value="authority">Authority</option>
+                    <option value="data_subject">Data Subject</option>
+                    <option value="media">Media</option>
+                    <option value="internal">Internal</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <textarea value={templateForm.content} onChange={e => setTemplateForm(prev => ({ ...prev, content: e.target.value }))} rows={10}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-sans focus:ring-2 focus:ring-blue-500" placeholder="Template body with [PLACEHOLDERS]..." />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <button onClick={() => setShowTemplateModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
+              <button onClick={saveTemplate} disabled={savingTemplate || !templateForm.name.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2">
+                {savingTemplate && <Loader2 className="w-4 h-4 animate-spin" />}
+                {editingTemplate ? t('common.save') : t('common.create')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Create Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Add Regulatory Contact</h3>
+              <button onClick={() => setShowContactModal(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <input type="text" value={contactForm.name} onChange={e => setContactForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="e.g., ICO (United Kingdom)" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select value={contactForm.type} onChange={e => setContactForm(prev => ({ ...prev, type: e.target.value as RegulatoryContact['type'] }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                    <option value="DPA">DPA</option>
+                    <option value="AG_Office">AG Office</option>
+                    <option value="Sector_Regulator">Sector Regulator</option>
+                    <option value="CERT">CERT</option>
+                    <option value="Law_Enforcement">Law Enforcement</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Jurisdiction</label>
+                  <input type="text" value={contactForm.jurisdiction} onChange={e => setContactForm(prev => ({ ...prev, jurisdiction: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="United Kingdom" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input type="email" value={contactForm.email} onChange={e => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="casework@ico.org.uk" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input type="text" value={contactForm.phone} onChange={e => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="+44 303 123 1113" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                  <input type="text" value={contactForm.website} onChange={e => setContactForm(prev => ({ ...prev, website: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="https://ico.org.uk" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Reporting Portal URL</label>
+                  <input type="text" value={contactForm.portalUrl} onChange={e => setContactForm(prev => ({ ...prev, portalUrl: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="https://ico.org.uk/for-organisations/report-a-breach/" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea value={contactForm.notes} onChange={e => setContactForm(prev => ({ ...prev, notes: e.target.value }))} rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="72 hour notification via online portal" />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <button onClick={() => setShowContactModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
+              <button onClick={saveContact} disabled={savingContact || !contactForm.name.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2">
+                {savingContact && <Loader2 className="w-4 h-4 animate-spin" />}
+                {t('common.create')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

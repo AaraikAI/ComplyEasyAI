@@ -132,6 +132,10 @@ describe('RiskManagementService contract', () => {
   describe('addRiskToAssessment', () => {
     it('should calculate riskScore as likelihood * impact', async () => {
       const mockRisk = createMockRiskItem({ likelihood: 4, impact: 5, riskScore: 20 });
+      // Multi-tenant parent ownership pre-check inside the transaction.
+      prismaMock.riskAssessment.findFirst.mockResolvedValue(
+        { id: 'assessment-1', organizationId: 'org-123' } as never,
+      );
       prismaMock.riskItem.create.mockResolvedValue(mockRisk);
 
       await riskManagementService.addRiskToAssessment('assessment-1', {
@@ -156,6 +160,9 @@ describe('RiskManagementService contract', () => {
     it('should assign severity based on risk score', async () => {
       // High severity: score >= 15 based on service logic
       const mockRisk = createMockRiskItem({ severity: 'Critical' });
+      prismaMock.riskAssessment.findFirst.mockResolvedValue(
+        { id: 'assessment-1', organizationId: 'org-123' } as never,
+      );
       prismaMock.riskItem.create.mockResolvedValue(mockRisk);
 
       await riskManagementService.addRiskToAssessment('assessment-1', {
@@ -177,6 +184,10 @@ describe('RiskManagementService contract', () => {
     });
 
     it('should propagate database errors on risk creation', async () => {
+      // Parent ownership check passes so the create() rejection is what surfaces.
+      prismaMock.riskAssessment.findFirst.mockResolvedValue(
+        { id: 'assessment-1', organizationId: 'org-123' } as never,
+      );
       prismaMock.riskItem.create.mockRejectedValue(
         new Error('Foreign key constraint failed')
       );

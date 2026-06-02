@@ -54,13 +54,14 @@ describe('AuditPrepAssistant', () => {
     expect(stepIndicators.length).toBeGreaterThanOrEqual(0);
   });
 
-  it('calls onBack when back button clicked', () => {
+  it('does not render a wizard back button on the initial framework step', () => {
     render(<AuditPrepAssistant onBack={mockOnBack} />);
-    const backBtn = document.querySelector('[data-testid="icon-ArrowLeft"]')?.closest('button');
-    if (backBtn) {
-      fireEvent.click(backBtn);
-      expect(mockOnBack).toHaveBeenCalled();
-    }
+    // On the framework-selection step the wizard intentionally hides the
+    // step-back control (there is no earlier step), so no ArrowLeft is shown
+    // and onBack is not invoked. Assert this unconditionally so a future
+    // change that adds/removes the control is caught instead of silently passing.
+    expect(document.querySelector('[data-testid="icon-ArrowLeft"]')).toBeNull();
+    expect(mockOnBack).not.toHaveBeenCalled();
   });
 
   it('renders without onBack prop', () => {

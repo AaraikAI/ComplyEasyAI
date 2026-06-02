@@ -222,15 +222,26 @@ describe('MLModelsService', () => {
   });
 
   describe('detectDeepfake', () => {
-    it('should detect deepfake from feature vector', async () => {
+    it('should detect deepfake from media buffer', async () => {
       await mlModelsService.initialize();
 
-      const features = new Array(256).fill(0).map(() => Math.random());
+      // detectDeepfake fails closed unless trained weights are provisioned, so
+      // train the model first (sets deepfakeModelTrained = true) before detecting.
+      const trainingData = Array.from({ length: 20 }, (_, i) => ({
+        features: new Array(256).fill(0).map(() => Math.random()),
+        label: i % 2,
+      }));
+      await mlModelsService.trainDeepfakeModel(trainingData, { epochs: 1, augmentData: false });
 
-      const result = await mlModelsService.detectDeepfake(features, 'image');
+      const mediaBuffer = Buffer.alloc(1024);
+      for (let i = 0; i < mediaBuffer.length; i++) {
+        mediaBuffer[i] = Math.floor(Math.random() * 256);
+      }
+
+      const result = await mlModelsService.detectDeepfake(mediaBuffer, 'image');
 
       expect(result).toBeDefined();
-      expect(result.isDeepfake).toBeDefined();
+      expect(typeof result.isDeepfake).toBe('boolean');
       expect(typeof result.confidence).toBe('number');
     });
   });

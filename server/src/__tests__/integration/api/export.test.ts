@@ -108,21 +108,22 @@ describe('Export Routes Integration', () => {
       expect(response.headers['content-type']).toContain('text/csv');
     });
 
-    it('should filter vendors by status', async () => {
+    it('scopes the vendor export to the org and does NOT apply the ?status filter (documented gap)', async () => {
+      // routes/export.ts intentionally queries vendors by organizationId only; the
+      // status/category/severity query params are accepted but NOT applied to the where
+      // clause. This test pins that exact contract so a future change that starts (or
+      // stops) honoring the filter is caught deliberately rather than silently.
       prismaMock.vendor.findMany.mockResolvedValue([]);
 
       await request(app)
         .get('/api/export/vendors?status=Active')
         .expect(200);
 
-      // Route queries by organizationId (filtering by query params not implemented)
-      expect(prismaMock.vendor.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            organizationId: 'org-123',
-          }),
-        })
-      );
+      const call = prismaMock.vendor.findMany.mock.calls[0][0];
+      // Org isolation is enforced...
+      expect(call.where).toEqual(expect.objectContaining({ organizationId: 'org-123' }));
+      // ...but the where clause carries NO status filter (the param is ignored today).
+      expect(call.where).not.toHaveProperty('status');
     });
   });
 

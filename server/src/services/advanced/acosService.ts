@@ -219,9 +219,9 @@ class ACOSService {
     }
   ): Promise<ControlLoop> {
     try {
-      // Verify control exists
-      const control = await prisma.frameworkControl.findUnique({
-        where: { id: controlId },
+      // Verify control exists and its parent framework belongs to this organization
+      const control = await prisma.frameworkControl.findFirst({
+        where: { id: controlId, framework: { organizationId } },
       });
 
       if (!control) {
@@ -970,8 +970,8 @@ class ACOSService {
     severity: 'critical' | 'high' | 'medium' | 'low';
     estimatedResolutionDays: number;
   }> {
-    const control = await prisma.frameworkControl.findUnique({
-      where: { id: controlId },
+    const control = await prisma.frameworkControl.findFirst({
+      where: { id: controlId, framework: { organizationId } },
       include: {
         framework: {
           include: { controls: true },
@@ -1057,9 +1057,9 @@ class ACOSService {
     severity: 'critical' | 'high' | 'medium' | 'low';
     estimatedResolutionDays: number;
   }> {
-    // Find all controls related to this policy
-    const policy = await prisma.policy.findUnique({
-      where: { id: policyId },
+    // Find all controls related to this policy (scoped to the organization)
+    const policy = await prisma.policy.findFirst({
+      where: { id: policyId, organizationId },
     });
 
     if (!policy) {
@@ -1127,8 +1127,8 @@ class ACOSService {
     severity: 'critical' | 'high' | 'medium' | 'low';
     estimatedResolutionDays: number;
   }> {
-    const framework = await prisma.complianceFramework.findUnique({
-      where: { id: frameworkId },
+    const framework = await prisma.complianceFramework.findFirst({
+      where: { id: frameworkId, organizationId },
       include: { controls: true },
     });
 
@@ -1929,12 +1929,16 @@ class ACOSService {
         throw new AppError('Control loop not found', 404);
       }
 
-      const updated = await prisma.controlLoop.update({
-        where: { id: loopId },
+      // Org-scoped update for defense-in-depth; re-read to return the row.
+      await prisma.controlLoop.updateMany({
+        where: { id: loopId, organizationId },
         data: {
           ...updates,
           updatedAt: new Date(),
         },
+      });
+      const updated = await prisma.controlLoop.findFirstOrThrow({
+        where: { id: loopId, organizationId },
       });
 
       logger.info(`[aCOS] Control loop updated: ${loopId}`);

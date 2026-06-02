@@ -10,6 +10,7 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import { Prisma } from '../generated/prisma/client';
 import { encryptField, decryptField } from '../utils/credentialEncryption';
+import { isUrlSafe } from '../utils/urlValidator';
 
 // Import integration services
 import googleService from '../services/integrations/googleService';
@@ -20,6 +21,36 @@ import awsService from '../services/integrations/awsService';
 import azureService from '../services/integrations/azureService';
 import prisma from '../config/database';
 import cacheService from '../services/cache/redisCacheService';
+
+/**
+ * Audit-log helper for integration handlers (COV-16 fix). Records the actor,
+ * action, organization, and provider context. Best-effort: a failure to write
+ * the audit log does not abort the original request.
+ */
+async function logIntegrationAudit(
+  req: Request,
+  action: string,
+  details: Record<string, unknown> = {},
+): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const user = authReq.user;
+    if (!user) return;
+    await prisma.auditLog.create({
+      data: {
+        action,
+        userId: user.id,
+        organizationId: user.organizationId,
+        hash: uuidv4(),
+        details: JSON.stringify(details),
+        ipAddress: req.ip || undefined,
+        userAgent: req.headers['user-agent'] || undefined,
+      },
+    });
+  } catch (err) {
+    logger.warn(`[Integrations] Failed to write audit log for ${action}`, err);
+  }
+}
 
 // ============================================================================
 // OAuth State Storage — Redis-backed with in-memory fallback
@@ -118,7 +149,7 @@ setInterval(() => {
       memoryActiveWindows.delete(key);
     }
   }
-}, 600000);
+}, 600000).unref?.();
 
 // ============================================================================
 // GOOGLE OAUTH
@@ -210,6 +241,8 @@ export const callbackGoogle: RequestHandler = async (req: Request, res: Response
       await googleService.saveIntegration(organizationId, tokens, userInfo);
 
       // Redirect to frontend with success message
+      
+      await logIntegrationAudit(req, 'integration.connected', { provider: 'google' });
       res.redirect(`${process.env.CLIENT_URL}/settings?integration=google&status=success`);
       return;
     } catch (error: any) {
@@ -268,6 +301,10 @@ export const syncGoogleData: RequestHandler = async (req: Request, res: Response
         throw new AppError('Invalid sync type', 400);
     }
 
+    
+
+    await logIntegrationAudit(req, 'integration.synced', { provider: 'google' });
+
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing Google data', error);
@@ -281,6 +318,8 @@ export const disconnectGoogle: RequestHandler = async (req: Request, res: Respon
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await googleService.disconnect(organizationId);
+    
+    await logIntegrationAudit(req, 'integration.disconnected', { provider: 'google' });
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting Google', error);
@@ -331,6 +370,10 @@ export const callbackGitHub: RequestHandler = async (req: Request, res: Response
     // Save integration
     await githubService.saveIntegration(organizationId, accessToken, userInfo);
 
+    
+
+    await logIntegrationAudit(req, 'integration.connected', { provider: 'github' });
+
     res.redirect(`${process.env.CLIENT_URL}/settings?integration=github&status=success`);
   } catch (error) {
     logger.error('Error in GitHub OAuth callback', error);
@@ -369,6 +412,10 @@ export const syncGitHubData: RequestHandler = async (req: Request, res: Response
         throw new AppError('Invalid sync type', 400);
     }
 
+    
+
+    await logIntegrationAudit(req, 'integration.synced', { provider: 'github' });
+
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing GitHub data', error);
@@ -382,6 +429,8 @@ export const disconnectGitHub: RequestHandler = async (req: Request, res: Respon
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await githubService.disconnect(organizationId);
+    
+    await logIntegrationAudit(req, 'integration.disconnected', { provider: 'github' });
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting GitHub', error);
@@ -429,6 +478,10 @@ export const callbackSlack: RequestHandler = async (req: Request, res: Response)
     // Save integration
     await slackService.saveIntegration(organizationId, tokenResponse);
 
+    
+
+    await logIntegrationAudit(req, 'integration.connected', { provider: 'slack' });
+
     res.redirect(`${process.env.CLIENT_URL}/settings?integration=slack&status=success`);
   } catch (error) {
     logger.error('Error in Slack OAuth callback', error);
@@ -460,6 +513,10 @@ export const syncSlackData: RequestHandler = async (req: Request, res: Response)
       default:
         throw new AppError('Invalid sync type', 400);
     }
+
+    
+
+    await logIntegrationAudit(req, 'integration.synced', { provider: 'slack' });
 
     res.json({ success: true, data: result });
   } catch (error: any) {
@@ -493,6 +550,8 @@ export const disconnectSlack: RequestHandler = async (req: Request, res: Respons
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await slackService.disconnect(organizationId);
+    
+    await logIntegrationAudit(req, 'integration.disconnected', { provider: 'slack' });
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting Slack', error);
@@ -541,6 +600,8 @@ export const callbackJira: RequestHandler = async (req: Request, res: Response):
     const resources = await jiraService.getAccessibleResources(tokenResponse.access_token);
 
     if (resources.length === 0) {
+      
+      await logIntegrationAudit(req, 'integration.connected', { provider: 'jira' });
       res.redirect(`${process.env.CLIENT_URL}/settings?integration=jira&status=error&reason=no_resources`);
       return;
     }
@@ -589,6 +650,10 @@ export const syncJiraData: RequestHandler = async (req: Request, res: Response):
         throw new AppError('Invalid sync type', 400);
     }
 
+    
+
+    await logIntegrationAudit(req, 'integration.synced', { provider: 'jira' });
+
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing Jira data', error);
@@ -627,6 +692,8 @@ export const disconnectJira: RequestHandler = async (req: Request, res: Response
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await jiraService.disconnect(organizationId);
+    
+    await logIntegrationAudit(req, 'integration.disconnected', { provider: 'jira' });
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting Jira', error);
@@ -668,6 +735,10 @@ export const connectAWS: RequestHandler = async (req: Request, res: Response): P
       validation.accountId!
     );
 
+    
+
+    await logIntegrationAudit(req, 'integration.connected', { provider: 'aws' });
+
     res.json({ success: true, accountId: validation.accountId });
   } catch (error: any) {
     logger.error('Error connecting AWS', error);
@@ -707,6 +778,10 @@ export const syncAWSData: RequestHandler = async (req: Request, res: Response): 
         throw new AppError('Invalid sync type', 400);
     }
 
+    
+
+    await logIntegrationAudit(req, 'integration.synced', { provider: 'aws' });
+
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing AWS data', error);
@@ -720,6 +795,8 @@ export const disconnectAWS: RequestHandler = async (req: Request, res: Response)
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await awsService.disconnect(organizationId);
+    
+    await logIntegrationAudit(req, 'integration.disconnected', { provider: 'aws' });
     res.json({ success: true });
   } catch (error) {
     logger.error('Error disconnecting AWS', error);
@@ -814,7 +891,12 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
     let azureAccessToken: string | null = null;
     try {
       const axios = (await import('axios')).default;
-      const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+      const safeTenantId = encodeURIComponent(tenantId);
+      const safeSubscriptionId = encodeURIComponent(subscriptionId);
+      const tokenUrl = `https://login.microsoftonline.com/${safeTenantId}/oauth2/v2.0/token`;
+      if (!isUrlSafe(tokenUrl)) {
+        throw new AppError('Azure tenant ID resolved to an unsafe URL', 400);
+      }
       const tokenResponse = await axios.post(tokenUrl, new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
@@ -831,8 +913,12 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
       }
 
       // Verify subscription access with the management API
+      const subUrl = `https://management.azure.com/subscriptions/${safeSubscriptionId}?api-version=2022-12-01`;
+      if (!isUrlSafe(subUrl)) {
+        throw new AppError('Azure subscription ID resolved to an unsafe URL', 400);
+      }
       const subResponse = await axios.get(
-        `https://management.azure.com/subscriptions/${subscriptionId}?api-version=2022-12-01`,
+        subUrl,
         {
           headers: { Authorization: `Bearer ${azureAccessToken}` },
           timeout: 15000,
@@ -899,6 +985,10 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
       },
     });
 
+    
+
+    await logIntegrationAudit(req, 'integration.connected', { provider: 'azure' });
+
     res.json({ message: 'Azure integration connected successfully' });
   } catch (error) {
     logger.error('Error connecting Azure', error);
@@ -957,6 +1047,10 @@ export const syncAzureData: RequestHandler = async (req: Request, res: Response)
         throw new AppError('Invalid sync type. Valid types: resources, resource-groups, security-recommendations, security-alerts, policy-compliance, users, subscription, compliance-scan', 400);
     }
 
+    
+
+    await logIntegrationAudit(req, 'integration.synced', { provider: 'azure' });
+
     res.json({ success: true, data: result });
   } catch (error: any) {
     logger.error('Error syncing Azure data', error);
@@ -994,6 +1088,10 @@ export const disconnectAzure: RequestHandler = async (req: Request, res: Respons
       },
     });
 
+    
+
+    await logIntegrationAudit(req, 'integration.disconnected', { provider: 'azure' });
+
     res.json({ message: 'Azure integration disconnected successfully' });
   } catch (error) {
     logger.error('Error disconnecting Azure', error);
@@ -1029,6 +1127,13 @@ export const runAzureFullSync: RequestHandler = async (req: Request, res: Respon
     }
 
     const result = await azureSyncService.runFullSync(organizationId, authReq.user!.id);
+
+    await logIntegrationAudit(req, 'integration.full_sync', {
+      provider: 'azure',
+      jobId: result.jobId,
+      success: result.success,
+      duration: result.totalDuration,
+    });
 
     res.json({
       success: result.success,
@@ -1331,7 +1436,6 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
 
           logger.info(`API key validated successfully for ${provider}`, {
             organizationId,
-            userInfo: validation.userInfo,
           });
         } catch (validationError: any) {
           if (validationError instanceof AppError) throw validationError;
@@ -1445,7 +1549,6 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
 
         logger.info(`PAT validated successfully for ${provider}`, {
           organizationId,
-          userInfo: validation.userInfo,
         });
       } catch (validationError: any) {
         if (validationError instanceof AppError) throw validationError;

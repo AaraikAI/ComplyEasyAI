@@ -1,7 +1,12 @@
 /**
- * E2E Tests - Audit & Evidence Management Flow
- * Tests complete audit workflows including evidence collection,
- * version control, auditor access, and audit report generation.
+ * E2E Tests - Audit Log & Evidence Versioning Flow
+ * Tests the audit-trail (audit log) API and the per-control evidence
+ * versioning API.
+ *
+ * Exercises the real routes in src/routes/audit.ts and
+ * src/routes/evidenceVersions.ts. Both controllers operate directly on prisma
+ * (auditLog, frameworkControl, evidenceVersion) which are present on the shared
+ * prismaMock, so the mock is configured with correct shapes per test.
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
@@ -25,13 +30,9 @@ jest.mock('../../config/logger', () => ({
   },
 }));
 
-jest.mock('../../utils/auditLogger', () => ({
-  AuditLogger: { log: jest.fn() },
-}));
-
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req: any, res: any, next: any) => next(),
-  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => next(),
+  authenticate: (req: any, _res: any, next: any) => next(),
+  authorize: (..._roles: string[]) => (req: any, _res: any, next: any) => next(),
   AuthRequest: {},
 }));
 
@@ -52,7 +53,7 @@ app.use((req, _res, next) => {
   (req as any).user = {
     id: 'user-123',
     organizationId: 'org-123',
-    role: 'Admin',
+    role: 'admin',
     email: 'admin@example.com',
   };
   next();
@@ -61,411 +62,215 @@ app.use('/api/audit', auditRoutes);
 app.use('/api/evidence-versions', evidenceVersionsRoutes);
 app.use(errorHandler);
 
-describe('E2E: Audit & Evidence Management Flow', () => {
-  const mockAudit = {
-    id: 'audit-123',
-    name: 'SOC 2 Type II Annual Audit',
-    type: 'External',
-    status: 'Planning',
-    frameworkId: 'fw-123',
-    organizationId: 'org-123',
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    auditorName: 'Big Four Auditor',
-    createdAt: new Date(),
-  };
-
-  const mockEvidence = {
-    id: 'ev-123',
-    title: 'Access Control Policy',
-    type: 'Document',
-    controlId: 'ctrl-123',
-    status: 'Approved',
-    fileUrl: 'https://storage.example.com/evidence/policy.pdf',
-    organizationId: 'org-123',
-    collectedAt: new Date(),
-    collectedBy: 'user-123',
-  };
-
-  const mockEvidenceVersion = {
-    id: 'ev-v-123',
-    evidenceId: 'ev-123',
-    version: 2,
-    fileUrl: 'https://storage.example.com/evidence/policy-v2.pdf',
-    changes: 'Updated access levels',
-    createdBy: 'user-123',
-    createdAt: new Date(),
-  };
-
-  const mockFinding = {
-    id: 'find-123',
-    auditId: 'audit-123',
-    title: 'Missing access review documentation',
-    severity: 'Medium',
-    status: 'Open',
-    description: 'Quarterly access reviews not documented',
-  };
-
+describe('E2E: Audit Log & Evidence Versioning Flow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('Audit Planning Workflow', () => {
-    it('should complete full audit planning lifecycle', async () => {
-      // Step 1: Create audit
-      prismaMock.audit.create.mockResolvedValue(mockAudit as any);
+  // ===========================================================================
+  // Audit Log (audit trail)
+  // ===========================================================================
+  describe('Audit Log', () => {
+    const mockLog = {
+      id: 'audit-123',
+      action: 'framework.created',
+      userId: 'user-123',
+      organizationId: 'org-123',
+      details: null,
+      hash: 'h-1',
+      timestamp: new Date(),
+      ipAddress: '127.0.0.1',
+      user: { id: 'user-123', name: 'Admin', email: 'admin@example.com' },
+    };
 
-      const createResponse = await request(app)
+    it('should create an audit log entry', async () => {
+      prismaMock.auditLog.create.mockResolvedValue(mockLog as any);
+
+      const response = await request(app)
         .post('/api/audit')
-        .send({
-          name: 'SOC 2 Type II Annual Audit',
-          type: 'External',
-          frameworkId: 'fw-123',
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          auditorName: 'Big Four Auditor',
-        })
+        .send({ action: 'framework.created', details: { frameworkId: 'fw-1' } })
         .expect(201);
 
-      expect(createResponse.body).toHaveProperty('id');
-      const auditId = createResponse.body.id;
-
-      // Step 2: Define audit scope
-      prismaMock.audit.findFirst.mockResolvedValue(mockAudit as any);
-      prismaMock.audit.update.mockResolvedValue({
-        ...mockAudit,
-        scope: ['Access Control', 'Data Protection', 'Incident Response'],
-      } as any);
-
-      const scopeResponse = await request(app)
-        .patch(`/api/audit/${auditId}/scope`)
-        .send({
-          scope: ['Access Control', 'Data Protection', 'Incident Response'],
-          exclusions: ['Physical Security'],
+      expect(response.body).toHaveProperty('id', 'audit-123');
+      expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ organizationId: 'org-123', userId: 'user-123' }),
         })
+      );
+    });
+
+    it('should reject an audit log entry without an action with 400', async () => {
+      const response = await request(app)
+        .post('/api/audit')
+        .send({ details: 'no action provided' })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should list audit logs (org-scoped) with total', async () => {
+      prismaMock.auditLog.findMany.mockResolvedValue([mockLog] as any);
+      prismaMock.auditLog.count.mockResolvedValue(1);
+
+      const response = await request(app)
+        .get('/api/audit')
         .expect(200);
 
-      expect(scopeResponse.body.scope).toHaveLength(3);
+      expect(response.body).toHaveProperty('logs');
+      expect(response.body).toHaveProperty('total', 1);
+      expect(Array.isArray(response.body.logs)).toBe(true);
+      expect(prismaMock.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ organizationId: 'org-123' }) })
+      );
+    });
 
-      // Step 3: Generate evidence request list
-      prismaMock.auditEvidenceRequest.createMany.mockResolvedValue({ count: 25 } as any);
+    it('should export audit logs as JSON', async () => {
+      prismaMock.auditLog.findMany.mockResolvedValue([mockLog] as any);
+      prismaMock.auditLog.create.mockResolvedValue({} as any);
 
-      const evidenceReqResponse = await request(app)
-        .post(`/api/audit/${auditId}/evidence-requests`)
-        .send({
-          controls: ['ctrl-1', 'ctrl-2', 'ctrl-3'],
-        })
-        .expect(201);
-
-      expect(evidenceReqResponse.body).toHaveProperty('count');
-
-      // Step 4: Start audit
-      prismaMock.audit.update.mockResolvedValue({
-        ...mockAudit,
-        status: 'In Progress',
-        startedAt: new Date(),
-      } as any);
-
-      const startResponse = await request(app)
-        .post(`/api/audit/${auditId}/start`)
+      const response = await request(app)
+        .get('/api/audit/export')
         .expect(200);
 
-      expect(startResponse.body.status).toBe('In Progress');
+      expect(response.body).toHaveProperty('logs');
+      expect(response.body).toHaveProperty('total', 1);
+      expect(response.body).toHaveProperty('exportedAt');
+    });
+
+    it('should archive audit logs before a cutoff date', async () => {
+      prismaMock.auditLog.findMany.mockResolvedValue([{ id: 'audit-123' }] as any);
+      prismaMock.auditLog.create.mockResolvedValue({} as any);
+
+      const response = await request(app)
+        .post('/api/audit/archive')
+        .send({ beforeDate: '2023-01-01T00:00:00.000Z' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('archived', 1);
+      expect(response.body.message).toContain('archived');
     });
   });
 
-  describe('Evidence Collection Workflow', () => {
-    it('should upload and manage evidence', async () => {
-      // Step 1: Upload evidence
-      prismaMock.evidence.create.mockResolvedValue(mockEvidence as any);
+  // ===========================================================================
+  // Evidence Versioning (per control)
+  // ===========================================================================
+  describe('Evidence Versioning', () => {
+    const mockControl = {
+      id: 'ctrl-123',
+      name: 'CC6.1 - Logical Access',
+      framework: { id: 'fw-123', organizationId: 'org-123' },
+    };
 
-      const uploadResponse = await request(app)
-        .post('/api/audit/evidence')
-        .send({
-          title: 'Access Control Policy',
-          type: 'Document',
-          controlId: 'ctrl-123',
-          fileUrl: 'https://storage.example.com/evidence/policy.pdf',
-          description: 'Current access control policy document',
-        })
-        .expect(201);
+    const mockVersion = {
+      id: 'ev-v-123',
+      controlId: 'ctrl-123',
+      versionNumber: 2,
+      fileUrl: 'https://storage.example.com/evidence/policy-v2.pdf',
+      fileName: 'policy-v2.pdf',
+      isCurrent: true,
+      uploadedBy: 'user-123',
+      uploader: { id: 'user-123', name: 'Admin', email: 'admin@example.com' },
+    };
 
-      expect(uploadResponse.body).toHaveProperty('id');
-      const evidenceId = uploadResponse.body.id;
+    it('should list version history for a control', async () => {
+      prismaMock.frameworkControl.findFirst.mockResolvedValue(mockControl as any);
+      prismaMock.evidenceVersion.findMany.mockResolvedValue([
+        mockVersion,
+        { ...mockVersion, id: 'ev-v-122', versionNumber: 1, isCurrent: false },
+      ] as any);
 
-      // Step 2: Review evidence
-      prismaMock.evidence.findFirst.mockResolvedValue(mockEvidence as any);
-      prismaMock.evidence.update.mockResolvedValue({
-        ...mockEvidence,
-        status: 'Under Review',
-        reviewedBy: 'user-456',
-      } as any);
-
-      const reviewResponse = await request(app)
-        .post(`/api/audit/evidence/${evidenceId}/review`)
-        .send({ status: 'Under Review' })
+      const response = await request(app)
+        .get('/api/evidence-versions/control/ctrl-123')
         .expect(200);
 
-      expect(reviewResponse.body.status).toBe('Under Review');
-
-      // Step 3: Approve evidence
-      prismaMock.evidence.update.mockResolvedValue({
-        ...mockEvidence,
-        status: 'Approved',
-        approvedBy: 'user-789',
-        approvedAt: new Date(),
-      } as any);
-
-      const approveResponse = await request(app)
-        .post(`/api/audit/evidence/${evidenceId}/approve`)
-        .expect(200);
-
-      expect(approveResponse.body.status).toBe('Approved');
+      expect(response.body).toHaveProperty('versions');
+      expect(response.body.versions).toHaveLength(2);
     });
 
-    it('should request additional evidence', async () => {
-      prismaMock.evidenceRequest.create.mockResolvedValue({
-        id: 'req-123',
-        auditId: 'audit-123',
-        controlId: 'ctrl-123',
-        description: 'Need screenshots of access review process',
-        status: 'Pending',
-        requestedBy: 'auditor-123',
+    it('should 404 when the control is in another organization', async () => {
+      prismaMock.frameworkControl.findFirst.mockResolvedValue({
+        ...mockControl,
+        framework: { id: 'fw-999', organizationId: 'org-OTHER' },
       } as any);
 
       const response = await request(app)
-        .post('/api/audit/audit-123/request-evidence')
-        .send({
-          controlId: 'ctrl-123',
-          description: 'Need screenshots of access review process',
-          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        })
-        .expect(201);
+        .get('/api/evidence-versions/control/ctrl-123')
+        .expect(404);
 
-      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('error');
     });
-  });
 
-  describe('Evidence Version Control', () => {
-    it('should create new evidence version', async () => {
-      prismaMock.evidenceVersion.create.mockResolvedValue(mockEvidenceVersion as any);
-      prismaMock.evidence.update.mockResolvedValue({
-        ...mockEvidence,
-        currentVersion: 2,
-      } as any);
+    it('should create a new evidence version', async () => {
+      prismaMock.frameworkControl.findFirst.mockResolvedValue(mockControl as any);
+      prismaMock.evidenceVersion.findFirst.mockResolvedValue({ versionNumber: 1 } as any);
+      prismaMock.evidenceVersion.updateMany.mockResolvedValue({ count: 1 } as any);
+      prismaMock.evidenceVersion.create.mockResolvedValue(mockVersion as any);
+      prismaMock.auditLog.create.mockResolvedValue({} as any);
 
       const response = await request(app)
-        .post('/api/evidence-versions')
+        .post('/api/evidence-versions/control/ctrl-123')
         .send({
-          evidenceId: 'ev-123',
+          fileName: 'policy-v2.pdf',
           fileUrl: 'https://storage.example.com/evidence/policy-v2.pdf',
-          changes: 'Updated access levels',
         })
         .expect(201);
 
-      expect(response.body.version).toBe(2);
+      expect(response.body).toHaveProperty('version');
+      expect(response.body.version).toHaveProperty('versionNumber', 2);
+      // New version is one above the current max.
+      expect(prismaMock.evidenceVersion.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ versionNumber: 2, isCurrent: true }) })
+      );
     });
 
-    it('should list version history', async () => {
-      prismaMock.evidenceVersion.findMany.mockResolvedValue([
-        mockEvidenceVersion,
-        { ...mockEvidenceVersion, id: 'ev-v-122', version: 1 },
-      ] as any);
+    it('should restore a previous version', async () => {
+      prismaMock.frameworkControl.findFirst.mockResolvedValue(mockControl as any);
+      prismaMock.evidenceVersion.findFirst.mockResolvedValue({
+        ...mockVersion,
+        id: 'ev-v-122',
+        versionNumber: 1,
+        isCurrent: false,
+      } as any);
+      prismaMock.evidenceVersion.updateMany.mockResolvedValue({ count: 2 } as any);
+      prismaMock.evidenceVersion.update.mockResolvedValue({ id: 'ev-v-122', isCurrent: true } as any);
+      prismaMock.frameworkControl.update.mockResolvedValue(mockControl as any);
+      prismaMock.auditLog.create.mockResolvedValue({} as any);
 
       const response = await request(app)
-        .get('/api/evidence-versions')
-        .query({ evidenceId: 'ev-123' })
+        .post('/api/evidence-versions/control/ctrl-123/restore/ev-v-122')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(1);
+      expect(response.body).toHaveProperty('message', 'Version restored successfully');
     });
 
-    it('should compare versions', async () => {
-      prismaMock.evidenceVersion.findMany.mockResolvedValue([
-        mockEvidenceVersion,
-        { ...mockEvidenceVersion, id: 'ev-v-122', version: 1 },
-      ] as any);
+    it('should refuse to delete the current version with 400', async () => {
+      prismaMock.frameworkControl.findFirst.mockResolvedValue(mockControl as any);
+      prismaMock.evidenceVersion.findFirst.mockResolvedValue({ ...mockVersion, isCurrent: true } as any);
 
       const response = await request(app)
-        .get('/api/evidence-versions/compare')
-        .query({ version1: 1, version2: 2, evidenceId: 'ev-123' })
+        .delete('/api/evidence-versions/control/ctrl-123/ev-v-123')
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('current version');
+    });
+
+    it('should delete a non-current version', async () => {
+      prismaMock.frameworkControl.findFirst.mockResolvedValue(mockControl as any);
+      prismaMock.evidenceVersion.findFirst.mockResolvedValue({
+        ...mockVersion,
+        id: 'ev-v-122',
+        versionNumber: 1,
+        isCurrent: false,
+      } as any);
+      prismaMock.evidenceVersion.delete.mockResolvedValue({ id: 'ev-v-122' } as any);
+      prismaMock.auditLog.create.mockResolvedValue({} as any);
+
+      const response = await request(app)
+        .delete('/api/evidence-versions/control/ctrl-123/ev-v-122')
         .expect(200);
 
-      expect(response.body).toHaveProperty('differences');
-    });
-
-    it('should rollback to previous version', async () => {
-      prismaMock.evidenceVersion.findFirst.mockResolvedValue(mockEvidenceVersion as any);
-      prismaMock.evidence.update.mockResolvedValue({
-        ...mockEvidence,
-        currentVersion: 1,
-      } as any);
-
-      const response = await request(app)
-        .post('/api/evidence-versions/ev-123/rollback')
-        .send({ targetVersion: 1 })
-        .expect(200);
-
-      expect(response.body.currentVersion).toBe(1);
-    });
-  });
-
-  describe('Audit Findings Management', () => {
-    it('should record audit finding', async () => {
-      prismaMock.auditFinding.create.mockResolvedValue(mockFinding as any);
-
-      const response = await request(app)
-        .post('/api/audit/audit-123/findings')
-        .send({
-          title: 'Missing access review documentation',
-          severity: 'Medium',
-          description: 'Quarterly access reviews not documented',
-          controlId: 'ctrl-123',
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should respond to finding', async () => {
-      prismaMock.auditFinding.findFirst.mockResolvedValue(mockFinding as any);
-      prismaMock.auditFinding.update.mockResolvedValue({
-        ...mockFinding,
-        managementResponse: 'Will implement automated documentation',
-        remediationPlan: 'Implement access review tool by Q2',
-        status: 'Remediation Planned',
-      } as any);
-
-      const response = await request(app)
-        .patch('/api/audit/audit-123/findings/find-123')
-        .send({
-          managementResponse: 'Will implement automated documentation',
-          remediationPlan: 'Implement access review tool by Q2',
-          targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-        })
-        .expect(200);
-
-      expect(response.body.status).toBe('Remediation Planned');
-    });
-
-    it('should track finding remediation', async () => {
-      prismaMock.auditFinding.findFirst.mockResolvedValue({
-        ...mockFinding,
-        status: 'Remediation Planned',
-      } as any);
-      prismaMock.auditFinding.update.mockResolvedValue({
-        ...mockFinding,
-        status: 'Remediated',
-        remediatedAt: new Date(),
-        evidence: ['ev-456'],
-      } as any);
-
-      const response = await request(app)
-        .post('/api/audit/audit-123/findings/find-123/remediate')
-        .send({
-          evidenceIds: ['ev-456'],
-          notes: 'Access review tool implemented',
-        })
-        .expect(200);
-
-      expect(response.body.status).toBe('Remediated');
-    });
-  });
-
-  describe('Audit Report Generation', () => {
-    it('should generate audit report', async () => {
-      prismaMock.audit.findFirst.mockResolvedValue({
-        ...mockAudit,
-        findings: [mockFinding],
-        evidence: [mockEvidence],
-      } as any);
-
-      const response = await request(app)
-        .post('/api/audit/audit-123/report')
-        .send({
-          format: 'pdf',
-          includeFindings: true,
-          includeEvidence: true,
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('reportUrl');
-    });
-
-    it('should complete audit', async () => {
-      prismaMock.audit.findFirst.mockResolvedValue({
-        ...mockAudit,
-        status: 'In Progress',
-      } as any);
-      prismaMock.audit.update.mockResolvedValue({
-        ...mockAudit,
-        status: 'Completed',
-        completedAt: new Date(),
-        opinion: 'Unqualified',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/audit/audit-123/complete')
-        .send({
-          opinion: 'Unqualified',
-          summary: 'All controls operating effectively',
-        })
-        .expect(200);
-
-      expect(response.body.status).toBe('Completed');
-      expect(response.body.opinion).toBe('Unqualified');
-    });
-  });
-
-  describe('Auditor Portal Access', () => {
-    it('should create auditor access', async () => {
-      prismaMock.auditorAccess.create.mockResolvedValue({
-        id: 'access-123',
-        auditId: 'audit-123',
-        auditorEmail: 'auditor@bigfour.com',
-        permissions: ['view_evidence', 'add_findings'],
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      } as any);
-
-      const response = await request(app)
-        .post('/api/audit/audit-123/auditor-access')
-        .send({
-          auditorEmail: 'auditor@bigfour.com',
-          permissions: ['view_evidence', 'add_findings'],
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should revoke auditor access', async () => {
-      prismaMock.auditorAccess.update.mockResolvedValue({
-        id: 'access-123',
-        revokedAt: new Date(),
-      } as any);
-
-      const response = await request(app)
-        .delete('/api/audit/audit-123/auditor-access/access-123')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('revokedAt');
-    });
-  });
-
-  describe('Audit Dashboard', () => {
-    it('should get audit status dashboard', async () => {
-      prismaMock.audit.findMany.mockResolvedValue([
-        { ...mockAudit, status: 'Completed' },
-        { ...mockAudit, id: 'audit-2', status: 'In Progress' },
-      ] as any);
-
-      const response = await request(app)
-        .get('/api/audit/dashboard')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('total');
-      expect(response.body).toHaveProperty('byStatus');
+      expect(response.body).toHaveProperty('message', 'Version deleted successfully');
     });
   });
 });

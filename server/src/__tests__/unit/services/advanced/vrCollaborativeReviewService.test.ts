@@ -25,6 +25,7 @@ const vrPrismaMock = {
   },
   vRTrainingSession: {
     findUnique: jest.fn() as jest.Mock<any>,
+    findFirst: jest.fn() as jest.Mock<any>,
     findMany: jest.fn() as jest.Mock<any>,
     create: jest.fn() as jest.Mock<any>,
     update: jest.fn() as jest.Mock<any>,
@@ -400,7 +401,7 @@ describe('VRCollaborativeReviewService', () => {
     });
 
     it('should return not valid for a completed DB session', async () => {
-      (vrPrismaMock.vRCollaborativeSession.findUnique as jest.Mock).mockResolvedValue({
+      (vrPrismaMock.vRCollaborativeSession.findFirst as jest.Mock).mockResolvedValue({
         sessionId: 'completed-session',
         status: 'completed',
       } as any);
@@ -436,7 +437,7 @@ describe('VRCollaborativeReviewService', () => {
 
     it('should return session details for an in-memory session', async () => {
       mockCreateSessionDeps();
-      (vrPrismaMock.vRTrainingSession.findUnique as jest.Mock).mockResolvedValue(null);
+      (vrPrismaMock.vRTrainingSession.findFirst as jest.Mock).mockResolvedValue(null);
 
       const session = await vrService.createSession(
         orgId,

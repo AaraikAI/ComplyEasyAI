@@ -5,7 +5,7 @@
  * app information, and logout functionality.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,16 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Platform,
+  Linking,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
+import {
+  loadPreferences,
+  savePreference,
+  type NotificationPreferences,
+} from '../services/preferences';
 import {
   Card,
   Badge,
@@ -29,11 +37,200 @@ import {
   borderRadius,
 } from '../components/shared';
 
+const SUPPORT_EMAIL = 'support@complyeasy.ai';
+const PRIVACY_POLICY_URL = 'https://complyeasy.ai/privacy';
+const TERMS_URL = 'https://complyeasy.ai/terms';
+
 export default function SettingsScreen({ navigation }: any) {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, updateUser } = useAuth();
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [biometricAuth, setBiometricAuth] = useState(false);
+
+  // Hydrate toggles from the persisted on-device preferences so they survive
+  // app restarts instead of resetting to their defaults on every launch.
+  useEffect(() => {
+    let active = true;
+    loadPreferences().then((prefs: NotificationPreferences) => {
+      if (!active) return;
+      setPushNotifications(prefs.pushNotifications);
+      setEmailNotifications(prefs.emailNotifications);
+      setBiometricAuth(prefs.biometricAuth);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Optimistically update the UI, then persist; revert on a write failure.
+  const handleToggle = (
+    key: keyof NotificationPreferences,
+    setter: (v: boolean) => void,
+    value: boolean
+  ) => {
+    setter(value);
+    savePreference(key, value).catch(() => {
+      setter(!value);
+      Alert.alert('Could not save', 'Your preference could not be saved. Please try again.');
+    });
+  };
+
+  const handleEditProfile = () => {
+    if (Platform.OS !== 'ios' || typeof Alert.prompt !== 'function') {
+      Alert.alert(
+        'Edit Profile',
+        'Editing your profile name from this view is available on iOS. Use the web app to update your full profile.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    const currentName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+    Alert.prompt(
+      'Edit Profile',
+      'Update your display name.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          onPress: async (value?: string) => {
+            const name = (value || '').trim();
+            if (!name) {
+              Alert.alert('Name Required', 'Please enter a name.');
+              return;
+            }
+            try {
+              const result = await api.auth.updateProfile({ name });
+              const updated = result.data || {};
+              const [firstName, ...rest] = name.split(' ');
+              // Reflect the saved name locally; the API persists the full record.
+              updateUser({
+                firstName: updated.firstName || firstName || '',
+                lastName: updated.lastName || rest.join(' ') || '',
+              });
+              Alert.alert('Profile Updated', 'Your profile has been updated.');
+            } catch (err: any) {
+              Alert.alert('Update Failed', err.message || 'Could not update your profile.');
+            }
+          },
+        },
+      ],
+      'plain-text',
+      currentName
+    );
+  };
+
+  const handleChangePassword = () => {
+    if (Platform.OS !== 'ios' || typeof Alert.prompt !== 'function') {
+      Alert.alert(
+        'Change Password',
+        'Changing your password from this view is available on iOS. You can also reset it from the sign-in screen.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    // Collect the current password, then the new one, then call the API.
+    Alert.prompt(
+      'Current Password',
+      'Enter your current password.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Next',
+          onPress: (current?: string) => {
+            const currentPassword = current || '';
+            if (!currentPassword) {
+              Alert.alert('Required', 'Please enter your current password.');
+              return;
+            }
+            Alert.prompt(
+              'New Password',
+              'Enter a new password (at least 8 characters).',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Change',
+                  onPress: async (next?: string) => {
+                    const newPassword = next || '';
+                    if (newPassword.length < 8) {
+                      Alert.alert('Too Short', 'New password must be at least 8 characters.');
+                      return;
+                    }
+                    try {
+                      await api.auth.changePassword(currentPassword, newPassword);
+                      // The server invalidates the session on password change, so
+                      // sign the user out to force re-authentication.
+                      Alert.alert(
+                        'Password Changed',
+                        'Your password has been changed. Please sign in again.',
+                        [{ text: 'OK', onPress: () => { logout(); } }]
+                      );
+                    } catch (err: any) {
+                      Alert.alert('Change Failed', err.message || 'Could not change your password.');
+                    }
+                  },
+                },
+              ],
+              'secure-text'
+            );
+          },
+        },
+      ],
+      'secure-text'
+    );
+  };
+
+  const handleTwoFactor = async () => {
+    try {
+      const result = await api.auth.twoFactorStatus();
+      const enabled = !!result.data?.enabled;
+      Alert.alert(
+        'Two-Factor Authentication',
+        enabled
+          ? 'Two-factor authentication is currently enabled on your account.'
+          : 'Two-factor authentication is not enabled. Set it up in the web app to scan the authenticator QR code, then sign in here as usual.',
+        [{ text: 'OK' }]
+      );
+    } catch (err: any) {
+      Alert.alert('Unavailable', err.message || 'Could not load your two-factor status.');
+    }
+  };
+
+  const handleDataExport = () => {
+    // The export endpoints stream downloadable files, which require a file-save
+    // capability not yet bundled in the mobile build. Direct users to the web
+    // app to download their data rather than presenting a control that no-ops.
+    Alert.alert(
+      'Data Export',
+      'Compliance data exports are available as downloadable files in the ComplyEasy web app. Open it on your computer to export and download your data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Web App', onPress: () => openUrl('https://app.complyeasy.ai/settings/export', 'Data Export') },
+      ]
+    );
+  };
+
+  const openUrl = async (url: string, label: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(label, `Unable to open ${url} on this device.`);
+      }
+    } catch {
+      Alert.alert(label, `Unable to open ${url} on this device.`);
+    }
+  };
+
+  const handleSupport = () => openUrl(`mailto:${SUPPORT_EMAIL}?subject=ComplyEasy%20Mobile%20Support`, 'Support');
+  const handlePrivacyPolicy = () => openUrl(PRIVACY_POLICY_URL, 'Privacy Policy');
+  const handleTerms = () => openUrl(TERMS_URL, 'Terms of Service');
+  const handleLicenses = () =>
+    Alert.alert(
+      'Open Source Licenses',
+      'ComplyEasy AI Mobile is built with React Native, Expo, and other open-source software. Full license texts are bundled with the app and available at complyeasy.ai/licenses.',
+      [{ text: 'OK' }]
+    );
 
   const handleLogout = () => {
     Alert.alert(
@@ -100,19 +297,19 @@ export default function SettingsScreen({ navigation }: any) {
           title="Edit Profile"
           subtitle="Name, email, and avatar"
           leftIcon="👤"
-          onPress={() => {}}
+          onPress={handleEditProfile}
         />
         <ListItem
           title="Change Password"
           subtitle="Update your password"
           leftIcon="🔒"
-          onPress={() => {}}
+          onPress={handleChangePassword}
         />
         <ListItem
           title="Two-Factor Authentication"
           subtitle="Add extra security"
           leftIcon="🛡️"
-          onPress={() => {}}
+          onPress={handleTwoFactor}
         />
       </Card>
 
@@ -128,7 +325,7 @@ export default function SettingsScreen({ navigation }: any) {
           </View>
           <Switch
             value={pushNotifications}
-            onValueChange={setPushNotifications}
+            onValueChange={(v) => handleToggle('pushNotifications', setPushNotifications, v)}
             trackColor={{ false: colors.gray200, true: colors.primaryLight }}
             thumbColor={pushNotifications ? colors.primary : colors.gray400}
           />
@@ -143,7 +340,7 @@ export default function SettingsScreen({ navigation }: any) {
           </View>
           <Switch
             value={emailNotifications}
-            onValueChange={setEmailNotifications}
+            onValueChange={(v) => handleToggle('emailNotifications', setEmailNotifications, v)}
             trackColor={{ false: colors.gray200, true: colors.primaryLight }}
             thumbColor={emailNotifications ? colors.primary : colors.gray400}
           />
@@ -162,7 +359,7 @@ export default function SettingsScreen({ navigation }: any) {
           </View>
           <Switch
             value={biometricAuth}
-            onValueChange={setBiometricAuth}
+            onValueChange={(v) => handleToggle('biometricAuth', setBiometricAuth, v)}
             trackColor={{ false: colors.gray200, true: colors.primaryLight }}
             thumbColor={biometricAuth ? colors.primary : colors.gray400}
           />
@@ -176,19 +373,19 @@ export default function SettingsScreen({ navigation }: any) {
           title="Data Export"
           subtitle="Download your compliance data"
           leftIcon="📥"
-          onPress={() => {}}
+          onPress={handleDataExport}
         />
         <ListItem
           title="Privacy Policy"
           subtitle="How we handle your data"
           leftIcon="📜"
-          onPress={() => {}}
+          onPress={handlePrivacyPolicy}
         />
         <ListItem
           title="Terms of Service"
           subtitle="Legal terms and conditions"
           leftIcon="📋"
-          onPress={() => {}}
+          onPress={handleTerms}
         />
       </Card>
 
@@ -210,12 +407,12 @@ export default function SettingsScreen({ navigation }: any) {
           title="Support"
           subtitle="Get help with the app"
           leftIcon="💬"
-          onPress={() => {}}
+          onPress={handleSupport}
         />
         <ListItem
           title="Open Source Licenses"
           leftIcon="📄"
-          onPress={() => {}}
+          onPress={handleLicenses}
         />
       </Card>
 

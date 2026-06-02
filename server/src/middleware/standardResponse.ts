@@ -170,6 +170,12 @@ export class ApiError extends Error {
 /**
  * Standardized error handler middleware.
  * Converts all errors to a consistent response format.
+ *
+ * Note: the application's single terminal error handler is `errorHandler` from
+ * `./errorHandler` (mounted last in index.ts). This handler is an opt-in
+ * alternative for routers that want the enveloped `{ status, error }` shape; do
+ * not mount both as terminal handlers, to keep client-facing error shapes
+ * consistent.
  */
 export function standardErrorHandler(
   err: Error | ApiError,

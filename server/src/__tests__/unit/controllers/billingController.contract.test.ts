@@ -418,7 +418,7 @@ describe('BillingController Contract Tests', () => {
   // ===========================================================================
   describe('requestQuote()', () => {
     it('should throw 400 for small user count', async () => {
-      mockReq.body = { userCount: 50 };
+      mockReq.body = { tier: 'Growth', requirements: { userCount: 50 } };
 
       await expect(
         billingController.requestQuote(
@@ -430,7 +430,7 @@ describe('BillingController Contract Tests', () => {
     });
 
     it('should return quote for large org', async () => {
-      mockReq.body = { userCount: 2000, features: [], addOns: [] };
+      mockReq.body = { tier: 'Growth', requirements: { userCount: 2000, features: [], addOns: [] } };
 
       await billingController.requestQuote(
         mockReq as Request,

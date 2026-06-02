@@ -1,0 +1,2 @@
+site_number,file,line,call_signature,verdict,input_source,wrapper_call_line,evidence_quote,severity,verified_at,verified_by
+1,SYSTEM,0,NO_STATIC_OPENAPI_FILES,NEEDS_HUMAN_REVIEW,N/A,N/A,find returned 0 static OpenAPI files BUT server uses swagger-jsdoc to dynamically generate spec (config in server/src/config/swagger.ts) — drift check would require dynamic spec extraction; deferred to future session,INFORMATIONAL,2026-05-28T15:55:00Z,subagent-cov19-7

@@ -119,7 +119,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: response.user.email,
           role: 'admin',
           avatar: name.substring(0, 2).toUpperCase(),
-          organizationId: response.user.organizationId || 'org1' // Will be updated after verification
+          // Use the org id the backend assigned at registration. Fall back to an
+          // empty id (never a literal tenant) so no misleading tenant is shown
+          // until magic-link verification returns the confirmed organization.
+          organizationId: response.user.organizationId || ''
         };
         localStorage.setItem('user_data', JSON.stringify(partialUser));
         // Don't set user yet - wait for magic link verification
@@ -138,6 +141,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await api.auth.logout();
     // Clear non-sensitive cached user profile data
     localStorage.removeItem('user_data');
+    // Purge any org-scoped API responses the service worker cached for offline
+    // use, so the next user on a shared device cannot read them.
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker?.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_API_CACHE' });
+    }
     setUser(null);
   };
 

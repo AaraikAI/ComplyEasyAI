@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { mapGDPRData } from '../../services/geminiService';
 import { Database, Loader2, ArrowLeft, Shield, Globe, Clock, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../../services/api';

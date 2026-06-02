@@ -315,17 +315,14 @@ class ZeroKnowledgeService {
         }
       }
 
-      // Load circuit WASM and proving key
-      const wasmBuffer = fs.readFileSync(circuitPaths.wasm);
-      const zkeyBuffer = fs.readFileSync(circuitPaths.zkey);
-
-      // Generate zk-SNARK proof using Groth16
-      // snarkjs.groth16.fullProve handles witness generation internally
-      // It accepts input object, WASM buffer, and zkey buffer
+      // Generate zk-SNARK proof using Groth16.
+      // snarkjs.groth16.fullProve handles witness generation internally and
+      // expects the WASM and zkey as file paths (or Uint8Array buffers) — NOT
+      // base64-encoded strings, which it would treat as bogus file paths.
       const { proof, publicSignals } = await snarkjs.groth16.fullProve(
         input,
-        wasmBuffer.toString('base64'),
-        zkeyBuffer.toString('base64')
+        circuitPaths.wasm,
+        circuitPaths.zkey
       );
 
       logger.info(`Generated real zk-SNARK proof for ${circuitName}`);

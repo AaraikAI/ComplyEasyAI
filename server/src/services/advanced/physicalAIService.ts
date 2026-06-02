@@ -15,6 +15,12 @@ import logger from '../../config/logger';
 import crypto from 'crypto';
 import { AppError } from '../../middleware/errorHandler';
 import mqttService from './mqttService';
+import cacheService from '../cache/redisCacheService';
+import { isUrlSafe } from '../../utils/urlValidator';
+import { encryptConfigSecrets } from '../../utils/credentialEncryption';
+
+const PHYSICAL_AI_CACHE_NAMESPACE = 'physical-ai';
+const DEVICE_POLICIES_KEY = 'device-policies';
 
 export interface IoTDevice {
   id: string;
@@ -96,12 +102,46 @@ export interface AttestationEntry {
 }
 
 class PhysicalAIService {
+  // Mirrored to cacheService (Redis-backed in prod) so any runtime-added policies
+  // survive restarts. Follow-up: migrate to a `DeviceCompliancePolicy` Prisma model
+  // for org-scoped persistence.
   private devicePolicies: Map<string, DeviceCompliancePolicy> = new Map();
   private deviceHealth: Map<string, DeviceHealthStatus> = new Map();
   private healthCheckInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     this.initializeDefaultPolicies();
+    this.hydrateDevicePolicies().catch((err) => {
+      logger.warn('[PhysicalAI] Failed to hydrate device policies from cache', err);
+    });
+  }
+
+  private async persistDevicePolicies(): Promise<void> {
+    try {
+      await cacheService.set(
+        DEVICE_POLICIES_KEY,
+        Array.from(this.devicePolicies.entries()),
+        { ttl: 0, namespace: PHYSICAL_AI_CACHE_NAMESPACE },
+      );
+    } catch (err) {
+      logger.warn('[PhysicalAI] Failed to persist device policies to cache', err);
+    }
+  }
+
+  private async hydrateDevicePolicies(): Promise<void> {
+    const entries = await cacheService.get<Array<[string, DeviceCompliancePolicy]>>(
+      DEVICE_POLICIES_KEY,
+      { namespace: PHYSICAL_AI_CACHE_NAMESPACE },
+    );
+    if (!entries || !Array.isArray(entries)) {
+      // Nothing cached yet — persist the defaults so they survive future restarts.
+      await this.persistDevicePolicies();
+      return;
+    }
+    for (const [id, policy] of entries) {
+      this.devicePolicies.set(id, policy);
+    }
+    logger.info(`[PhysicalAI] Restored ${entries.length} device policies from cache.`);
   }
 
   /**
@@ -139,6 +179,7 @@ class PhysicalAIService {
     this.healthCheckInterval = setInterval(() => {
       this.checkAllDevicesHealth();
     }, intervalMs);
+    this.healthCheckInterval?.unref?.();
 
     logger.info('[Physical AI] Health monitoring started');
   }
@@ -194,13 +235,23 @@ class PhysicalAIService {
       // Generate UUID for the device
       const deviceUuid = crypto.randomUUID();
 
+      // Encrypt device credential material at rest. The credentials object may carry
+      // api_key/apiKey/token/secret/password/accessToken depending on auth type.
+      let encryptedAuthentication = device.authentication;
+      if (device.authentication?.credentials && typeof device.authentication.credentials === 'object') {
+        encryptedAuthentication = {
+          ...device.authentication,
+          credentials: encryptConfigSecrets(device.authentication.credentials, ['accessToken', 'refreshToken', 'privateKey']),
+        };
+      }
+
       // Prepare sensor data with authentication and metadata
       const sensorData: any = {
         firmware: device.firmware,
         capabilities: device.capabilities || [],
         registeredBy: userId,
         registeredAt: new Date(),
-        authentication: device.authentication,
+        authentication: encryptedAuthentication,
         certificates: device.certificates,
         metadata: device.metadata || {},
       };
@@ -1156,13 +1207,21 @@ class PhysicalAIService {
       const dataString = JSON.stringify(data);
       const attestationHash = crypto.createHash('sha256').update(dataString).digest('hex');
 
+      // Require a dedicated attestation signing key — never fall back to a static
+      // secret, which would make sensor attestation signatures forgeable and defeat
+      // chain-of-custody integrity.
+      const attestationSecret = process.env.ATTESTATION_SECRET;
+      if (!attestationSecret) {
+        throw new AppError('ATTESTATION_SECRET environment variable is required for sensor data attestation', 500);
+      }
+
       // Create attestation record
       const attestation: SensorAttestation = {
         deviceId,
         sensorType: data.sensorType || 'unknown',
         dataHash: attestationHash,
         timestamp: new Date(),
-        signature: crypto.createHmac('sha256', process.env.ATTESTATION_SECRET || 'default_secret')
+        signature: crypto.createHmac('sha256', attestationSecret)
           .update(attestationHash)
           .digest('hex'),
         chainOfCustody: [
@@ -1224,9 +1283,9 @@ class PhysicalAIService {
       const anomalies: string[] = [];
       const anomalyScores: Record<string, number> = {};
 
-      // Get historical data for statistical analysis
+      // Get historical data for statistical analysis (org-scoped for tenant isolation)
       const device = await prisma.ioTDevice.findFirst({
-        where: { deviceId },
+        where: { deviceId, organizationId },
       });
 
       if (!device) {
@@ -1505,7 +1564,7 @@ class PhysicalAIService {
         location: d.location,
         complianceStatus: d.complianceStatus as any,
         lastSeen: d.lastSeen,
-        sensorData: d.sensorData,
+        sensorData: this.redactDeviceCredentials(d.sensorData),
         complianceScore: d.complianceChecks.length > 0 ?
           this.calculateComplianceScore(d.complianceChecks) : undefined,
       }));
@@ -1513,6 +1572,21 @@ class PhysicalAIService {
       logger.error('[Physical AI] Error getting devices', error);
       return [];
     }
+  }
+
+  /**
+   * Strip stored device credential material from sensorData before returning it to
+   * callers. Credentials are encrypted at rest and must not leave the service layer.
+   */
+  private redactDeviceCredentials(sensorData: any): any {
+    if (!sensorData || typeof sensorData !== 'object') {
+      return sensorData;
+    }
+    if (sensorData.authentication?.credentials) {
+      const { credentials: _omitted, ...authRest } = sensorData.authentication;
+      return { ...sensorData, authentication: { ...authRest } };
+    }
+    return sensorData;
   }
 
   /**
@@ -1738,7 +1812,7 @@ class PhysicalAIService {
         latency = networkInfo.latency;
       } else {
         // Real latency measurement using ping or device API
-        const measuredLatency = await this.measureNetworkLatency(device.deviceId, device.mqttTopic || undefined);
+        const measuredLatency = await this.measureNetworkLatency(device.deviceId, organizationId, device.mqttTopic || undefined);
         latency = measuredLatency || 0;
       }
       
@@ -1746,7 +1820,7 @@ class PhysicalAIService {
         signalStrength = networkInfo.signalStrength;
       } else {
         // Real signal strength from device or network interface
-        signalStrength = await this.measureSignalStrength(device.deviceId, device.deviceType);
+        signalStrength = await this.measureSignalStrength(device.deviceId, organizationId, device.deviceType);
       }
 
       let connectionQuality: 'excellent' | 'good' | 'fair' | 'poor' = 'good';
@@ -2040,7 +2114,7 @@ class PhysicalAIService {
       }
 
       // 2. Firmware age and security vulnerability prediction
-      const firmwareInfo = await this.checkFirmwareVersion(deviceId, device.deviceType);
+      const firmwareInfo = await this.checkFirmwareVersion(deviceId, organizationId, device.deviceType);
       if (firmwareInfo.updateAvailable || (firmwareInfo.ageDays && firmwareInfo.ageDays > 365)) {
         const vulnerabilityRisk = firmwareInfo.ageDays && firmwareInfo.ageDays > 365 ? 0.8 : 0.6;
         issues.push({
@@ -2364,7 +2438,7 @@ class PhysicalAIService {
   /**
    * Measure network latency using ping or device API
    */
-  private async measureNetworkLatency(deviceId: string, mqttTopic?: string): Promise<number> {
+  private async measureNetworkLatency(deviceId: string, organizationId: string, mqttTopic?: string): Promise<number> {
     try {
       // Real latency measurement using ping or MQTT round-trip
       if (mqttTopic && mqttService.getConnectionStatus()) {
@@ -2394,9 +2468,9 @@ class PhysicalAIService {
       const { promisify } = require('util');
       const execAsync = promisify(exec);
 
-      // Real network latency measurement using device APIs
+      // Real network latency measurement using device APIs (org-scoped)
       const device = await prisma.ioTDevice.findFirst({
-        where: { deviceId },
+        where: { deviceId, organizationId },
       });
 
       if (device) {
@@ -2502,13 +2576,13 @@ class PhysicalAIService {
   /**
    * Measure signal strength from device or network interface
    */
-  private async measureSignalStrength(deviceId: string, deviceType: string): Promise<number> {
+  private async measureSignalStrength(deviceId: string, organizationId: string, deviceType: string): Promise<number> {
     try {
       // Signal strength measurement: first checks device sensor data from DB,
       // then falls back to OS-level WiFi/network interface queries (iwconfig/airport).
-      
+      // Org-scoped lookup for tenant isolation.
       const device = await prisma.ioTDevice.findFirst({
-        where: { deviceId },
+        where: { deviceId, organizationId },
       });
 
       if (device) {
@@ -2628,7 +2702,7 @@ class PhysicalAIService {
   /**
    * Check firmware version and age using real device API or registry
    */
-  private async checkFirmwareVersion(deviceId: string, deviceType: string): Promise<{
+  private async checkFirmwareVersion(deviceId: string, organizationId: string, deviceType: string): Promise<{
     currentVersion: string;
     latestVersion?: string;
     releaseDate?: Date;
@@ -2636,8 +2710,9 @@ class PhysicalAIService {
     updateAvailable: boolean;
   }> {
     try {
+      // Org-scoped lookup for tenant isolation.
       const device = await prisma.ioTDevice.findFirst({
-        where: { deviceId },
+        where: { deviceId, organizationId },
       });
 
       if (!device) {
@@ -2693,7 +2768,12 @@ class PhysicalAIService {
       if (firmwareRegistry) {
         try {
           const safeDeviceType = encodeURIComponent(deviceType);
-          const response = await axios.get(`${firmwareRegistry}/firmware/${safeDeviceType}/latest`, {
+          const firmwareUrl = `${firmwareRegistry}/firmware/${safeDeviceType}/latest`;
+          if (!isUrlSafe(firmwareUrl)) {
+            logger.warn('[Physical AI] Firmware registry URL rejected by isUrlSafe');
+            return undefined;
+          }
+          const response = await axios.get(firmwareUrl, {
             timeout: 5000,
             headers: {
               'User-Agent': 'ComplyEasyAI-PhysicalAI/1.0',
@@ -2716,16 +2796,20 @@ class PhysicalAIService {
           : null;
         
         if (nvdUrl) {
-          const response = await axios.get(nvdUrl, {
-            timeout: 5000,
-            headers: nvdApiKey ? { 'apiKey': nvdApiKey } : {},
-          });
-          
-          // Extract latest affected version from CVE data
-          if (response.data?.vulnerabilities?.length > 0) {
-            const cve = response.data.vulnerabilities[0].cve;
-            // Note: CVE data doesn't directly provide latest firmware, but indicates if current version has vulnerabilities
-            logger.debug(`[Physical AI] Found CVE data for ${deviceType}`);
+          if (!isUrlSafe(nvdUrl)) {
+            logger.warn('[Physical AI] Rejected unsafe NVD URL', { deviceType });
+          } else {
+            const response = await axios.get(nvdUrl, {
+              timeout: 5000,
+              headers: nvdApiKey ? { 'apiKey': nvdApiKey } : {},
+            });
+
+            // Extract latest affected version from CVE data
+            if (response.data?.vulnerabilities?.length > 0) {
+              const cve = response.data.vulnerabilities[0].cve;
+              // Note: CVE data doesn't directly provide latest firmware, but indicates if current version has vulnerabilities
+              logger.debug(`[Physical AI] Found CVE data for ${deviceType}`);
+            }
           }
         }
       } catch (nvdError: any) {
@@ -2743,6 +2827,10 @@ class PhysicalAIService {
       for (const [manufacturer, apiUrl] of Object.entries(manufacturerApis)) {
         if (deviceType.toLowerCase().includes(manufacturer)) {
           try {
+            if (!isUrlSafe(apiUrl)) {
+              logger.warn(`[Physical AI] Manufacturer API URL rejected by isUrlSafe: ${manufacturer}`);
+              continue;
+            }
             const response = await axios.get(apiUrl, {
               timeout: 5000,
               headers: {

@@ -17,6 +17,10 @@ import crypto from 'crypto';
 import webrtcSignalingService, { WebRTCSessionConfig, WebRTCPeer } from './webrtcSignalingService';
 import { Prisma } from '../../generated/prisma/client';
 import { AppError } from '../../middleware/errorHandler';
+import cacheService from '../cache/redisCacheService';
+
+const VR_CACHE_NAMESPACE = 'vr-collab-review';
+const VR_SESSION_CONTENT_KEY = 'session-content';
 
 // VR Session Types
 export interface SessionSummary {
@@ -296,6 +300,7 @@ export interface VoiceChatState {
 export interface TrainingProgress {
   sessionId: string;
   userId: string;
+  organizationId: string;
   scenarioId: string;
   currentScene: string;
   completedTasks: string[];
@@ -349,7 +354,54 @@ class VRCollaborativeReviewService {
   private voiceChatStates: Map<string, VoiceChatState> = new Map();
   private trainingProgress: Map<string, TrainingProgress> = new Map();
   private annotations: Map<string, VRAnnotation[]> = new Map();
-  
+  private contentPersistTimer: NodeJS.Timeout | null = null;
+
+  /**
+   * Debounced snapshot of user-content Maps (sessionChats, trainingProgress,
+   * annotations) to Redis so VR review content survives restarts.
+   */
+  private scheduleContentPersist(): void {
+    if (this.contentPersistTimer) return;
+    this.contentPersistTimer = setTimeout(() => {
+      this.contentPersistTimer = null;
+      this.persistSessionContent().catch(() => {});
+    }, 500);
+  }
+
+  private async persistSessionContent(): Promise<void> {
+    try {
+      await cacheService.set(
+        VR_SESSION_CONTENT_KEY,
+        {
+          chats: Array.from(this.sessionChats.entries()),
+          training: Array.from(this.trainingProgress.entries()),
+          annotations: Array.from(this.annotations.entries()),
+        },
+        { ttl: 0, namespace: VR_CACHE_NAMESPACE },
+      );
+    } catch (err) {
+      logger.warn('[VR Review] Failed to persist session content to cache', err);
+    }
+  }
+
+  private async hydrateSessionContent(): Promise<void> {
+    const snapshot = await cacheService.get<{
+      chats: Array<[string, ChatMessage[]]>;
+      training: Array<[string, TrainingProgress]>;
+      annotations: Array<[string, VRAnnotation[]]>;
+    }>(VR_SESSION_CONTENT_KEY, { namespace: VR_CACHE_NAMESPACE });
+    if (!snapshot) return;
+    for (const [id, chats] of snapshot.chats || []) {
+      this.sessionChats.set(id, chats);
+    }
+    for (const [id, progress] of snapshot.training || []) {
+      this.trainingProgress.set(id, progress);
+    }
+    for (const [id, anns] of snapshot.annotations || []) {
+      this.annotations.set(id, anns);
+    }
+  }
+
   // Session expiration settings (in milliseconds)
   private readonly SESSION_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours
   private readonly INACTIVE_SESSION_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours of inactivity
@@ -360,8 +412,8 @@ class VRCollaborativeReviewService {
    */
   async initialize(): Promise<void> {
     try {
-      logger.warn('[VR Review] Service initialized — in-memory VR session state (6 Maps: activeSessions, sessionParticipants, sessionChats, voiceChatStates, trainingProgress, annotations) cleared on restart. Any previously active sessions have been invalidated.');
-      logger.info('[VR Review] Initializing service - restoring sessions from database...');
+      await this.hydrateSessionContent();
+      logger.info('[VR Review] Initializing service - restoring sessions from database and cache...');
       await this.restoreSessionsFromDatabase();
       this.startCleanupJob();
       logger.info('[VR Review] Service initialized successfully');
@@ -478,6 +530,8 @@ class VRCollaborativeReviewService {
         logger.error('[VR Review] Error in cleanup job', error);
       }
     }, 60 * 60 * 1000); // 1 hour
+    // Do not keep the event loop alive solely for this background timer.
+    this.cleanupInterval.unref?.();
 
     // Also run cleanup immediately
     this.cleanupExpiredSessions().catch(error => {
@@ -1120,11 +1174,17 @@ class VRCollaborativeReviewService {
       attachedTo?: string;
       type: VRAnnotation['type'];
       visibility: VRAnnotation['visibility'];
-    }
+    },
+    organizationId?: string,
   ): Promise<VRAnnotation> {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
+        throw new AppError('Session not found', 404);
+      }
+
+      // Verify caller's org matches the session's org to block cross-tenant writes.
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
         throw new AppError('Session not found', 404);
       }
 
@@ -1151,6 +1211,7 @@ class VRCollaborativeReviewService {
       const sessionAnnotations = this.annotations.get(sessionId) || [];
       sessionAnnotations.push(vrAnnotation);
       this.annotations.set(sessionId, sessionAnnotations);
+      this.scheduleContentPersist();
 
       // Add history entry
       vrAnnotation.history = [{
@@ -1343,6 +1404,7 @@ class VRCollaborativeReviewService {
       const progress: TrainingProgress = {
         sessionId,
         userId,
+        organizationId,
         scenarioId,
         currentScene: currentScene.id,
         completedTasks: [],
@@ -1351,6 +1413,7 @@ class VRCollaborativeReviewService {
         lastUpdated: new Date(),
       };
       this.trainingProgress.set(`${sessionId}_${userId}`, progress);
+      this.scheduleContentPersist();
 
       return {
         sessionId,
@@ -1388,6 +1451,7 @@ class VRCollaborativeReviewService {
       progress.lastUpdated = new Date();
 
       this.trainingProgress.set(progressKey, progress);
+      this.scheduleContentPersist();
 
       return progress;
     } catch (error) {
@@ -1472,6 +1536,21 @@ class VRCollaborativeReviewService {
         throw new AppError('Training progress not found', 404);
       }
 
+      // Resolve the real organization id. Prefer the value tracked on the progress
+      // record; fall back to the durable VRTrainingSession row for entries that were
+      // created/rehydrated before organizationId was tracked in memory.
+      let organizationId = progress.organizationId;
+      if (!organizationId) {
+        const dbSession = await prisma.vRTrainingSession.findFirst({
+          where: { sessionId: progress.sessionId, userId },
+          select: { organizationId: true },
+        });
+        organizationId = dbSession?.organizationId || '';
+      }
+      if (!organizationId) {
+        throw new AppError('Training session organization could not be resolved', 404);
+      }
+
       // Evaluate performance
       const evaluation = await this.evaluateTrainingPerformance(sessionId, userId);
 
@@ -1503,7 +1582,7 @@ class VRCollaborativeReviewService {
           action: 'vr_training.completed',
           details: JSON.stringify(certificate),
           userId,
-          organizationId: progress.sessionId.split('_')[0], // Extract org ID if available
+          organizationId,
           hash: crypto.randomBytes(16).toString('hex'),
         },
       });
@@ -1521,7 +1600,7 @@ class VRCollaborativeReviewService {
             completedAt: new Date(),
           }),
           userId,
-          organizationId: progress.sessionId.split('_')[0],
+          organizationId,
           hash: crypto.randomBytes(16).toString('hex'),
         },
       });
@@ -1805,11 +1884,17 @@ class VRCollaborativeReviewService {
       content?: string;
       position?: Vector3D;
       visibility?: VRAnnotation['visibility'];
-    }
+    },
+    organizationId?: string,
   ): Promise<VRAnnotation> {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
+        throw new AppError('Session not found', 404);
+      }
+
+      // Verify caller's org matches the session's org to block cross-tenant writes.
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
         throw new AppError('Session not found', 404);
       }
 
@@ -1862,11 +1947,17 @@ class VRCollaborativeReviewService {
   async deleteAnnotation(
     sessionId: string,
     annotationId: string,
-    userId: string
+    userId: string,
+    organizationId?: string,
   ): Promise<void> {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
+        throw new AppError('Session not found', 404);
+      }
+
+      // Verify caller's org matches the session's org to block cross-tenant writes.
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
         throw new AppError('Session not found', 404);
       }
 
@@ -1884,6 +1975,7 @@ class VRCollaborativeReviewService {
       // Remove annotation
       const updatedAnnotations = annotations.filter(a => a.id !== annotationId);
       this.annotations.set(sessionId, updatedAnnotations);
+      this.scheduleContentPersist();
 
       await prisma.auditLog.create({
         data: {
@@ -1978,11 +2070,17 @@ class VRCollaborativeReviewService {
       position: Vector3D;
       attachedTo?: string;
       visibility: VRAnnotation['visibility'];
-    }
+    },
+    organizationId?: string,
   ): Promise<VRAnnotation> {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
+        throw new AppError('Session not found', 404);
+      }
+
+      // Verify caller's org matches the session's org to block cross-tenant writes.
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
         throw new AppError('Session not found', 404);
       }
 
@@ -2015,6 +2113,7 @@ class VRCollaborativeReviewService {
       const sessionAnnotations = this.annotations.get(sessionId) || [];
       sessionAnnotations.push(vrAnnotation);
       this.annotations.set(sessionId, sessionAnnotations);
+      this.scheduleContentPersist();
 
       await prisma.auditLog.create({
         data: {
@@ -2132,11 +2231,17 @@ class VRCollaborativeReviewService {
   async sendChatMessage(
     sessionId: string,
     userId: string,
-    message: string
+    message: string,
+    organizationId?: string,
   ): Promise<ChatMessage> {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
+        throw new AppError('Session not found', 404);
+      }
+
+      // Verify caller's org matches the session's org to block cross-tenant writes.
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
         throw new AppError('Session not found', 404);
       }
 
@@ -2158,6 +2263,7 @@ class VRCollaborativeReviewService {
       const chatHistory = this.sessionChats.get(sessionId) || [];
       chatHistory.push(chatMessage);
       this.sessionChats.set(sessionId, chatHistory);
+      this.scheduleContentPersist();
 
       return chatMessage;
     } catch (error) {
@@ -2334,7 +2440,8 @@ class VRCollaborativeReviewService {
    */
   async joinVoiceChat(
     sessionId: string,
-    userId: string
+    userId: string,
+    organizationId?: string,
   ): Promise<{
     connectionId: string;
     webrtcConfig: VoiceChatState['webrtcConfig'];
@@ -2343,6 +2450,11 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
+        throw new AppError('Session not found', 404);
+      }
+
+      // Verify caller's org matches the session's org to block cross-tenant access.
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
         throw new AppError('Session not found', 404);
       }
 
@@ -2534,7 +2646,8 @@ class VRCollaborativeReviewService {
   async enableScreenSharing(
     sessionId: string,
     userId: string,
-    sharedView: any
+    sharedView: any,
+    organizationId?: string,
   ): Promise<{
     screenShareId: string;
     webrtcConfig: VoiceChatState['webrtcConfig'];
@@ -2543,6 +2656,11 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
+        throw new AppError('Session not found', 404);
+      }
+
+      // Verify caller's org matches the session's org to block cross-tenant access.
+      if (organizationId && session.organizationId && session.organizationId !== organizationId) {
         throw new AppError('Session not found', 404);
       }
 

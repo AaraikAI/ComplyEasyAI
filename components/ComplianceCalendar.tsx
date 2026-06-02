@@ -229,7 +229,29 @@ const ComplianceCalendar: React.FC = () => {
 
   useEffect(() => { fetchDeadlines(); }, [fetchDeadlines]);
 
+  // Client-side guards mirror the backend createDeadlineSchema/updateDeadlineSchema
+  // validators so the user gets immediate feedback before the request is sent.
+  const validateForm = (): string | null => {
+    if (!form.title.trim()) return 'Title is required.';
+    if (!form.dueDate) return 'Due date is required.';
+    if (Number.isNaN(new Date(form.dueDate).getTime())) return 'Due date is invalid.';
+    if (form.assignee.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.assignee.trim())) {
+      return 'Assignee must be a valid email address.';
+    }
+    for (const r of form.reminders) {
+      if (!Number.isFinite(r.amount) || r.amount < 1 || r.amount > 365) {
+        return 'Each reminder must be between 1 and 365 units before the due date.';
+      }
+    }
+    return null;
+  };
+
   const saveDeadline = async () => {
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setSaving(true);
     try {
       const url = editingDeadline ? `${apiUrl}/calendar/deadlines/${editingDeadline.id}` : `${apiUrl}/calendar/deadlines`;

@@ -51,6 +51,20 @@ export const AIReportGenerator: React.FC = () => {
     setLoading(false);
   };
 
+  const handleDownload = () => {
+    if (!report) return;
+    const safeName = `${companyName || 'company'}-${framework}`.replace(/[^a-z0-9-]+/gi, '-').toLowerCase();
+    const blob = new Blob([report], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${safeName}-compliance-report.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
       {/* Configuration Panel */}
@@ -141,10 +155,20 @@ export const AIReportGenerator: React.FC = () => {
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
           <h3 className="font-semibold text-gray-700">Report Preview</h3>
           <div className="flex space-x-2">
-             <button className="p-2 text-gray-500 hover:text-brand-600 hover:bg-white rounded-lg transition-colors" title={t('common.refresh')}>
-              <RefreshCw size={18} />
+             <button
+              onClick={handleGenerate}
+              disabled={loading || !context}
+              className="p-2 text-gray-500 hover:text-brand-600 hover:bg-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title={t('common.refresh')}
+            >
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             </button>
-            <button className="p-2 text-gray-500 hover:text-brand-600 hover:bg-white rounded-lg transition-colors" title={t('common.export')}>
+            <button
+              onClick={handleDownload}
+              disabled={!report}
+              className="p-2 text-gray-500 hover:text-brand-600 hover:bg-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title={t('common.export')}
+            >
               <Download size={18} />
             </button>
           </div>

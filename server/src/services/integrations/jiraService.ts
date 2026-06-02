@@ -660,12 +660,14 @@ class JiraService {
 
           for (const issue of localIssues) {
             try {
-              // Check if issue already synced
+              // Check if issue already synced. Pushed records store the local
+              // issue id in `hash`, so match on that exactly rather than a
+              // substring search on the JSON `details`.
               const existingSync = await prisma.auditLog.findFirst({
                 where: {
                   organizationId,
                   action: 'jira_sync.pushed',
-                  details: { contains: issue.id },
+                  hash: issue.id,
                 },
               });
 
@@ -711,14 +713,18 @@ class JiraService {
         try {
           const jiraIssues = await this.getComplianceIssues(organizationId);
 
+          const syncCreatorId = await this.resolveSyncCreatorId(organizationId);
+
           for (const jiraIssue of jiraIssues) {
             try {
-              // Check if already synced
+              // Check if already synced. The pulled record stores the Jira key
+              // exactly in `hash`, so match on that instead of a substring search
+              // on `details` (where 'AB-1' would also match 'AB-10'/'AB-100').
               const existingSync = await prisma.auditLog.findFirst({
                 where: {
                   organizationId,
                   action: 'jira_sync.pulled',
-                  details: { contains: jiraIssue.key },
+                  hash: jiraIssue.key,
                 },
               });
 
@@ -745,7 +751,7 @@ class JiraService {
                     issueType: 'compliance',
                     priority: this.mapJiraPriorityToSeverity(jiraIssue.fields?.priority?.name) as any,
                     status: this.mapJiraStatusToLocal(jiraIssue.fields?.status?.name),
-                    createdById: 'system',
+                    createdById: syncCreatorId,
                     tags: JSON.stringify({ source: 'jira', jiraKey: jiraIssue.key }),
                   },
                 });
@@ -945,6 +951,26 @@ class JiraService {
   }
 
   /**
+   * Resolve a real user id in the organization to own externally-synced issues.
+   * `Issue.createdById` is a required FK to User, so a literal 'system' string
+   * would violate referential integrity. Prefer an admin/compliance owner.
+   */
+  private async resolveSyncCreatorId(organizationId: string): Promise<string> {
+    const creator = await prisma.user.findFirst({
+      where: { organizationId },
+      orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+    if (!creator) {
+      throw new AppError(
+        `Cannot sync Jira issues: organization ${organizationId} has no user to own synced issues`,
+        400
+      );
+    }
+    return creator.id;
+  }
+
+  /**
    * Process Jira webhook events for real-time sync
    */
   async processWebhookEvent(
@@ -960,15 +986,28 @@ class JiraService {
 
       switch (eventType) {
         case 'jira:issue_updated': {
-          // Find synced local issue and update it
+          // Find synced local issue and update it. Pulled records key the Jira
+          // issue key exactly in `hash`; match that first, then fall back to
+          // push-originated records whose key lives in `details` under the fully
+          // delimited token `"jiraIssueKey":"<key>"`. A delimited match avoids the
+          // substring collision a raw `contains` would cause ('AB-1' vs 'AB-10').
           if (event.issue?.key) {
-            const syncRecord = await prisma.auditLog.findFirst({
-              where: {
-                organizationId,
-                action: { startsWith: 'jira_sync.' },
-                details: { contains: event.issue.key },
-              },
-            });
+            const issueKey: string = event.issue.key;
+            const syncRecord =
+              (await prisma.auditLog.findFirst({
+                where: {
+                  organizationId,
+                  action: { startsWith: 'jira_sync.' },
+                  hash: issueKey,
+                },
+              })) ||
+              (await prisma.auditLog.findFirst({
+                where: {
+                  organizationId,
+                  action: { startsWith: 'jira_sync.' },
+                  details: { contains: `"jiraIssueKey":"${issueKey}"` },
+                },
+              }));
 
             if (syncRecord) {
               const syncDetails = JSON.parse(syncRecord.details || '{}');

@@ -128,7 +128,7 @@ async function buildContext(req: Request): Promise<GraphQLContext> {
 
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, config.jwt.secret) as {
+    const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] }) as {
       userId: string;
       email: string;
       role: string;
@@ -258,6 +258,25 @@ export function graphqlMiddleware() {
           errors: [{ message: `GraphQL syntax error: ${parseError.message}` }],
         });
         return;
+      }
+
+      // CSRF protection: graphql-js will execute any operation (including mutations
+      // and subscriptions) over GET, which the global csrfProtection middleware skips.
+      // With cookie-based auth that would allow a forged GET to run a state-changing
+      // operation using the victim's session, so only read-only queries are allowed on GET.
+      if (req.method === 'GET') {
+        const hasNonQueryOperation = document.definitions.some(
+          (def) => def.kind === 'OperationDefinition' && def.operation !== 'query'
+        );
+        if (hasNonQueryOperation) {
+          res.status(405).json({
+            errors: [{
+              message: 'Only read-only query operations are permitted over GET. Use POST for mutations.',
+              extensions: { code: 'METHOD_NOT_ALLOWED' },
+            }],
+          });
+          return;
+        }
       }
 
       // Validate against schema with depth limiting

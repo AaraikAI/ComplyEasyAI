@@ -188,6 +188,85 @@ describe('TwoFactorService', () => {
       );
     }));
 
+    it('round-trips the secret through the REAL AES-256-GCM encrypt/decrypt path', async () => {
+      // Unlike the monkey-patched-crypto tests above, this exercises the actual
+      // encryptSecret -> decryptSecret implementation (real IV, PBKDF2 key derivation,
+      // and GCM auth-tag verification). setupTwoFactor encrypts the base32 secret and
+      // verifyAndEnableTwoFactor decrypts it; we assert the ORIGINAL secret is recovered,
+      // which would fail if IV handling, key derivation, or auth-tag verification regressed.
+      const priorKey = process.env.ENCRYPTION_KEY;
+      process.env.ENCRYPTION_KEY = 'unit-test-encryption-key-at-least-32-chars-long';
+      try {
+        prismaMock.user.update.mockResolvedValue({} as any);
+        prismaMock.twoFactorBackupCode.createMany.mockResolvedValue({ count: 8 } as any);
+
+        // Encrypt via the real path; capture the stored ciphertext.
+        await twoFactorService.setupTwoFactor('user-123', 'user@example.com');
+        const storedSecret = prismaMock.user.update.mock.calls[0][0].data.twoFactorSecret as string;
+
+        // Real GCM output is iv:authTag:ciphertext and must NOT be the plaintext.
+        expect(storedSecret.split(':')).toHaveLength(3);
+        expect(storedSecret).not.toContain('MFRGG43FMZQXIZLS');
+
+        // Now decrypt via the real path inside verifyAndEnableTwoFactor.
+        prismaMock.user.findUnique.mockResolvedValue({
+          id: 'user-123',
+          twoFactorSecret: storedSecret,
+          twoFactorEnabled: false,
+        } as any);
+        mockTotpVerify.mockReturnValue(true);
+
+        const result = await twoFactorService.verifyAndEnableTwoFactor('user-123', '123456');
+
+        expect(result).toBe(true);
+        // The decrypted secret handed to speakeasy must equal the original base32 secret,
+        // proving the encrypt->decrypt round-trip is correct end to end.
+        expect(mockTotpVerify).toHaveBeenCalledWith(
+          expect.objectContaining({ secret: 'MFRGG43FMZQXIZLS', encoding: 'base32', token: '123456' })
+        );
+      } finally {
+        if (priorKey === undefined) delete process.env.ENCRYPTION_KEY;
+        else process.env.ENCRYPTION_KEY = priorKey;
+      }
+    });
+
+    it('fails login verification CLOSED when the GCM auth tag is tampered (integrity check)', async () => {
+      // A real GCM decrypt must reject a ciphertext whose auth tag was altered. The login
+      // path (verifyTwoFactorToken) catches the decrypt failure and returns false rather
+      // than accepting a forged/garbled secret — proving the auth tag is actually verified.
+      const priorKey = process.env.ENCRYPTION_KEY;
+      process.env.ENCRYPTION_KEY = 'unit-test-encryption-key-at-least-32-chars-long';
+      try {
+        prismaMock.user.update.mockResolvedValue({} as any);
+        prismaMock.twoFactorBackupCode.createMany.mockResolvedValue({ count: 8 } as any);
+
+        await twoFactorService.setupTwoFactor('user-123', 'user@example.com');
+        const storedSecret = prismaMock.user.update.mock.calls[0][0].data.twoFactorSecret as string;
+
+        // Flip a hex digit in the auth-tag segment (iv:authTag:ciphertext) to corrupt integrity.
+        const [iv, authTag, ct] = storedSecret.split(':');
+        const tamperedTag = (authTag[0] === '0' ? '1' : '0') + authTag.slice(1);
+        const tampered = `${iv}:${tamperedTag}:${ct}`;
+
+        prismaMock.user.findUnique.mockResolvedValue({
+          id: 'user-123',
+          twoFactorSecret: tampered,
+          twoFactorEnabled: true,
+          twoFactorVerified: true,
+        } as any);
+        // Even if TOTP would "verify", the decrypt must fail first so verify is never trusted.
+        mockTotpVerify.mockReturnValue(true);
+
+        const result = await twoFactorService.verifyTwoFactorToken('user-123', '123456');
+
+        // GCM integrity failure -> decrypt throws -> caught -> fails closed (false).
+        expect(result).toBe(false);
+      } finally {
+        if (priorKey === undefined) delete process.env.ENCRYPTION_KEY;
+        else process.env.ENCRYPTION_KEY = priorKey;
+      }
+    });
+
     it('should reject if user not found', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 

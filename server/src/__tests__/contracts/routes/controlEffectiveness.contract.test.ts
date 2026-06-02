@@ -144,6 +144,10 @@ describe('Control Effectiveness API', () => {
 
   describe('POST /api/control-effectiveness', () => {
     it('should create an effectiveness assessment', async () => {
+      // The record is a child of a FrameworkControl; the route first verifies
+      // the parent control belongs to the caller's org (org-scoped through its
+      // framework) before stamping the assessment.
+      prismaMock.frameworkControl.findFirst.mockResolvedValue({ id: 'ctrl-123' } as any);
       prismaMock.controlEffectivenessRecord.create.mockResolvedValue(mockRecord());
 
       const response = await request(app)
@@ -152,6 +156,30 @@ describe('Control Effectiveness API', () => {
         .send({ controlId: 'ctrl-123', rating: 'EFFECTIVE', testMethod: 'Manual review' });
 
       expect(response.status).toBe(201);
+      // Parent-control ownership must be AND-scoped: the control id AND the
+      // caller's organizationId (via framework relation).
+      expect(prismaMock.frameworkControl.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: 'ctrl-123',
+            framework: expect.objectContaining({ organizationId: 'org-123' }),
+          }),
+        }),
+      );
+    });
+
+    it('should 404 when the parent control belongs to another org', async () => {
+      // Parent-control lookup resolves to null because the control is not in the
+      // caller's org → the route must reject with 404 and never create the record.
+      prismaMock.frameworkControl.findFirst.mockResolvedValue(null);
+
+      const response = await request(app)
+        .post('/api/control-effectiveness')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ controlId: 'ctrl-foreign', rating: 'EFFECTIVE', testMethod: 'Manual review' });
+
+      expect(response.status).toBe(404);
+      expect(prismaMock.controlEffectivenessRecord.create).not.toHaveBeenCalled();
     });
 
     it('should validate required fields', async () => {

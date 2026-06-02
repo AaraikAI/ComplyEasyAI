@@ -19,6 +19,13 @@ class AuditController {
       if (action) where.action = { contains: action as string, mode: 'insensitive' };
       if (userId) where.userId = userId as string;
 
+      // Non-admins may only read their own audit entries; this server-side
+      // restriction overrides any client-supplied userId filter so the access
+      // control is not enforced in the UI alone.
+      if (authReq.user!.role !== 'admin') {
+        where.userId = authReq.user!.id;
+      }
+
       if (startDate || endDate) {
         where.timestamp = {};
         if (startDate) where.timestamp.gte = new Date(startDate as string);
@@ -167,6 +174,19 @@ class AuditController {
           },
         },
         orderBy: { timestamp: 'desc' },
+      });
+
+      // Audit the export itself: meta-auditing per COV-16.
+      await prisma.auditLog.create({
+        data: {
+          action: 'audit_log.exported',
+          userId: authReq.user!.id,
+          organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ format, recordCount: logs.length, startDate, endDate }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
       });
 
       if (format === 'csv') {

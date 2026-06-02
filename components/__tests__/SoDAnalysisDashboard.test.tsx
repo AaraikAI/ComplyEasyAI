@@ -32,72 +32,72 @@ describe('SoDAnalysisDashboard', () => {
 
   it('renders without crashing', async () => {
     render(<SoDAnalysisDashboard onBack={mockOnBack} />);
-    await waitFor(() => expect(document.body.innerHTML.length).toBeGreaterThan(0));
+    expect(await screen.findByText('Separation of Duties Analysis')).toBeInTheDocument();
   });
 
   it('calls onBack when back button clicked', async () => {
     render(<SoDAnalysisDashboard onBack={mockOnBack} />);
-    await waitFor(() => {
-      const backBtn = screen.getByTestId('icon-ArrowLeft')?.closest('button');
-      if (backBtn) {
-        fireEvent.click(backBtn);
-        expect(mockOnBack).toHaveBeenCalled();
-      }
-    });
+    // getByTestId throws if the icon is missing; assert the wrapping button exists too.
+    const backBtn = screen.getByTestId('icon-ArrowLeft').closest('button');
+    expect(backBtn).not.toBeNull();
+    fireEvent.click(backBtn as HTMLButtonElement);
+    expect(mockOnBack).toHaveBeenCalledTimes(1);
   });
 
   it('shows tab navigation for rules, violations, matrix, controls', async () => {
     render(<SoDAnalysisDashboard onBack={mockOnBack} />);
-    await waitFor(() => {
-      const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBeGreaterThan(0);
+    await screen.findByText('Separation of Duties Analysis');
+    // All five tab labels are present.
+    ['Overview', 'Rules', 'Violations', 'Matrix', 'Compensating Controls'].forEach(label => {
+      expect(screen.getByText(label)).toBeInTheDocument();
     });
   });
 
   it('renders overview tab by default', async () => {
     render(<SoDAnalysisDashboard onBack={mockOnBack} />);
-    await waitFor(() => {
-      const content = document.body.textContent || '';
-      expect(content).toBeTruthy();
-    });
+    // The overview tab shows its risk-score and metric headings.
+    expect(await screen.findByText('Risk Score')).toBeInTheDocument();
+    expect(screen.getByText('Total Rules')).toBeInTheDocument();
+    expect(screen.getByText('Violations by Status')).toBeInTheDocument();
   });
 
-  it('switches between tabs', async () => {
+  it('switches to the rules tab when clicked', async () => {
     render(<SoDAnalysisDashboard onBack={mockOnBack} />);
-    await waitFor(() => {
-      const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBeGreaterThan(0);
-    });
-    const buttons = screen.getAllByRole('button');
-    buttons.forEach(btn => {
-      const text = btn.textContent || '';
-      if (text.includes('Rules') || text.includes('Violation') || text.includes('Matrix') || text.includes('Control')) {
-        fireEvent.click(btn);
-      }
-    });
+    fireEvent.click(await screen.findByText('Rules'));
+    // The rules table header column appears only on the rules tab.
+    expect(await screen.findByText('Rule ID')).toBeInTheDocument();
+    expect(screen.getByText('Function A')).toBeInTheDocument();
+  });
+
+  it('switches to the violations tab when clicked', async () => {
+    render(<SoDAnalysisDashboard onBack={mockOnBack} />);
+    fireEvent.click(await screen.findByText('Violations'));
+    // The violations table header column appears only on the violations tab.
+    expect(await screen.findByText('Violation ID')).toBeInTheDocument();
+    expect(screen.getByText('Rule Violated')).toBeInTheDocument();
   });
 
   it('handles empty data gracefully', async () => {
     render(<SoDAnalysisDashboard onBack={mockOnBack} />);
-    await waitFor(() => {
-      const content = document.body.textContent || '';
-      expect(content).toBeTruthy();
-    });
+    // With no rules/violations, the rules tab still renders its empty count summary.
+    fireEvent.click(await screen.findByText('Rules'));
+    expect(await screen.findByText('0 of 0 rules shown')).toBeInTheDocument();
   });
 
   it('renders MATRIX_FUNCTIONS reference data', async () => {
     render(<SoDAnalysisDashboard onBack={mockOnBack} />);
-    await waitFor(() => {
-      const content = document.body.textContent || '';
-      expect(content).toBeTruthy();
-    });
+    fireEvent.click(await screen.findByText('Matrix'));
+    // The matrix tab renders the SoD conflict matrix heading and reference functions.
+    expect(await screen.findByText('SoD Conflict Matrix')).toBeInTheDocument();
+    expect(screen.getAllByText('Create Purchase Order').length).toBeGreaterThan(0);
   });
 
   it('renders with metric and stat cards', async () => {
     render(<SoDAnalysisDashboard onBack={mockOnBack} />);
-    await waitFor(() => {
-      const content = document.body.textContent || '';
-      expect(content).toBeTruthy();
-    });
+    // The overview metric cards render their labels.
+    expect(await screen.findByText('Active Violations')).toBeInTheDocument();
+    expect(screen.getByText('High Risk Open')).toBeInTheDocument();
+    // 'Mitigated' appears on both a metric card and the status breakdown.
+    expect(screen.getAllByText('Mitigated').length).toBeGreaterThanOrEqual(2);
   });
 });

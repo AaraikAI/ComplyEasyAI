@@ -407,19 +407,56 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
   };
 
   // ── Integration ───────────────────────────────────────────────────────
-  // The server does not currently expose a token-rotation endpoint for CI/CD gate integrations;
-  // a new token is generated locally so the operator can copy it into their pipeline secret store.
+  // Token rotation is persisted on the server so the webhook receiver can validate
+  // the secret. The server is the source of truth: it generates/stores the secret
+  // (hashed) and returns the plaintext once for the operator to copy. We display
+  // exactly what the server returns rather than fabricating a local value.
+  const [isRotatingToken, setIsRotatingToken] = useState(false);
+
+  const generateStrongToken = (): string => {
+    // Cryptographically strong fallback used only for the request body the server
+    // may choose to accept; the server's returned secret always takes precedence.
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+    }
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const bytes = new Uint8Array(32);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    return '';
+  };
+
   const rotateToken = async () => {
+    setIsRotatingToken(true);
     try {
-      const newToken = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID().replace(/-/g, '')
-        : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      const apiBase = ((import.meta as ImportMeta & { env: Record<string, string> }).env.VITE_API_URL || 'http://localhost:3001/api');
+      const base = apiBase.endsWith('/api') ? apiBase : apiBase.replace(/\/?$/, '') + '/api';
+
+      // CSRF double-submit token for the mutating request.
+      let csrf: string | null = null;
+      try {
+        const csrfRes = await fetch(`${base}/csrf-token`, { credentials: 'include' });
+        if (csrfRes.ok) csrf = (await csrfRes.json())?.csrfToken ?? null;
+      } catch { /* CSRF fetch is best-effort; request may still succeed without it */ }
+
+      const res = await fetch(`${base}/cicd-gates/integration/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
+        credentials: 'include',
+        body: JSON.stringify({ token: generateStrongToken() }),
+      });
+      if (!res.ok) throw new Error(`Token rotation failed: ${res.status}`);
+      const data = await res.json().catch(() => ({}));
+      const serverToken = data?.token || data?.secret || '';
       setIntegration(prev => prev
-        ? { ...prev, token: newToken, tokenLastRotated: new Date().toISOString() }
+        ? { ...prev, token: serverToken, tokenLastRotated: data?.rotatedAt || new Date().toISOString() }
         : prev);
       setShowTokenValue(true);
     } catch {
-      setError('Failed to rotate token.');
+      setError('Failed to rotate token. The integration token endpoint may be unavailable.');
+    } finally {
+      setIsRotatingToken(false);
     }
   };
 
@@ -778,8 +815,9 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     Last rotated: {integration?.tokenLastRotated ? new Date(integration.tokenLastRotated).toLocaleDateString() : 'Never'}
                   </span>
-                  <button onClick={rotateToken} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
-                    Rotate Token
+                  <button onClick={rotateToken} disabled={isRotatingToken} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1">
+                    {isRotatingToken && <Loader2 className="w-3 h-3 animate-spin" />}
+                    {isRotatingToken ? 'Rotating...' : 'Rotate Token'}
                   </button>
                 </div>
               </div>

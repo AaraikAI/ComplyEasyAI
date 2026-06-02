@@ -11,12 +11,14 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express, { Express } from 'express';
+// Use the shared Prisma mock so this suite stays in sync with the canonical model set
+// and reset semantics used by every other integration test (no ad-hoc local mock that
+// can silently drift from the real schema).
+import { prismaMock } from '../../mocks/prisma';
 
 // ---------------------------------------------------------------------------
 // Mock factories
 // ---------------------------------------------------------------------------
-
-const createMockFn = () => jest.fn() as any;
 
 const createMockConsentRecord = (overrides: Record<string, unknown> = {}) => ({
   id: 'consent-123',
@@ -49,22 +51,6 @@ const createMockConsentRecord = (overrides: Record<string, unknown> = {}) => ({
   updatedAt: new Date('2026-01-01'),
   ...overrides,
 });
-
-const prismaMock: Record<string, any> = {
-  consentRecord: {
-    findUnique: createMockFn(),
-    findFirst: createMockFn(),
-    findMany: createMockFn(),
-    create: createMockFn(),
-    update: createMockFn(),
-    delete: createMockFn(),
-    count: createMockFn(),
-  },
-  auditLog: { create: createMockFn() },
-  user: { findUnique: createMockFn() },
-  organization: { findUnique: createMockFn() },
-  $transaction: jest.fn((fn: any) => fn(prismaMock)) as any,
-};
 
 // ---------------------------------------------------------------------------
 // Module mocks — MUST be before route import
@@ -115,6 +101,11 @@ let app: Express;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  // resetMocks:true clears the shared $transaction implementation; restore the
+  // callback-passthrough form the routes rely on.
+  prismaMock.$transaction.mockImplementation((cb: any) =>
+    typeof cb === 'function' ? cb(prismaMock) : Promise.all(cb)
+  );
   app = express();
   app.use(express.json());
 

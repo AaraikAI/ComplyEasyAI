@@ -827,13 +827,20 @@ class SlackService {
           case 'message':
             // Handle compliance-related messages
             if (slackEvent.text?.includes('[compliance]') || slackEvent.text?.includes('[alert]')) {
-              logger.info(`[Slack] Compliance message received: ${slackEvent.text?.substring(0, 100)}`);
+              logger.info('[Slack] Compliance message received', {
+                channel: slackEvent.channel,
+                ts: slackEvent.ts,
+                team_id: event.team_id,
+              });
             }
             break;
 
           case 'app_mention':
-            // Handle bot mentions for compliance queries
-            logger.info(`[Slack] Bot mentioned: ${slackEvent.text?.substring(0, 100)}`);
+            logger.info('[Slack] Bot mentioned', {
+              channel: slackEvent.channel,
+              ts: slackEvent.ts,
+              team_id: event.team_id,
+            });
             break;
 
           default:

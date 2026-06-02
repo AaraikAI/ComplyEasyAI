@@ -172,11 +172,10 @@ router.delete(
 
       const { reason } = req.body;
 
-      // Log the removal reason before deleting
+      // Log the removal reason before deleting (DB audit trail retains the prior DPO record)
       logger.info('DPO designation removed', {
         organizationId: user.organizationId,
         removedBy: user.id,
-        previousDPO: existing.name,
         reason: reason || 'No reason provided',
       });
 

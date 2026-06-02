@@ -1,0 +1,25 @@
+./server/src/controllers/securityController.ts:1234:      const logs = await prisma.auditLog.findMany({
+./server/src/controllers/securityController.ts:277:      const logs = await prisma.auditLog.findMany({
+./server/src/controllers/securityController.ts:558:      const log = await prisma.auditLog.findFirst({
+./server/src/controllers/securityController.ts:742:      const logs = await prisma.auditLog.findMany({
+./server/src/controllers/securityController.ts:818:      const log = await prisma.auditLog.findFirst({
+./server/src/controllers/securityController.ts:960:      const log = await prisma.auditLog.findFirst({
+./server/src/controllers/webhookController.ts:320:      const apiKeys = await prisma.apiKey.findMany({
+./server/src/controllers/webhookController.ts:455:      const org = await prisma.organization.findUnique({
+./server/src/controllers/webhookController.ts:623:      const validKey = await prisma.apiKey.findUnique({
+./server/src/examples/newPagesExamples.ts:137:    const certifications = await prisma.userCertification.findMany({
+./server/src/examples/newPagesExamples.ts:695:    const courses = await prisma.course.findMany({
+./server/src/examples/newPagesExamples.ts:740:      prisma.forumPost.findMany({
+./server/src/examples/newPagesExamples.ts:766:      prisma.forumPost.count({
+./server/src/examples/newPagesExamples.ts:795:      prisma.serviceStatus.findUnique({
+./server/src/examples/newPagesExamples.ts:798:      prisma.statusHistory.findMany({
+./server/src/generated/prisma/client/index.d.ts:100064:     * const count = await prisma.keyUsage.count({
+./server/src/generated/prisma/client/index.d.ts:100089:     * const aggregations = await prisma.user.aggregate({
+./server/src/generated/prisma/client/index.d.ts:100113:     * const result = await prisma.user.groupBy({
+./server/src/generated/prisma/client/index.d.ts:101010:     * const keyRotationPolicy = await prisma.keyRotationPolicy.findUnique({
+./server/src/generated/prisma/client/index.d.ts:101024:     * const keyRotationPolicy = await prisma.keyRotationPolicy.findUniqueOrThrow({
+./server/src/generated/prisma/client/index.d.ts:101039:     * const keyRotationPolicy = await prisma.keyRotationPolicy.findFirst({
+./server/src/generated/prisma/client/index.d.ts:101055:     * const keyRotationPolicy = await prisma.keyRotationPolicy.findFirstOrThrow({
+./server/src/generated/prisma/client/index.d.ts:101070:     * const keyRotationPolicies = await prisma.keyRotationPolicy.findMany()
+./server/src/generated/prisma/client/index.d.ts:101073:     * const keyRotationPolicies = await prisma.keyRotationPolicy.findMany({ take: 10 })
+./server/src/generated/prisma/client/index.d.ts:101076:     * const keyRotationPolicyWithIdOnly = await prisma.keyRotationPolicy.findMany({ select: { id: true } })

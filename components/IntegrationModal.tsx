@@ -577,9 +577,8 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
       } else if (errorMsg.includes('permission') || errorMsg.includes('denied')) {
         setError('Service account does not have required permissions. Please check IAM roles.');
       } else {
-        setError(errorMsg);
+        setError(err.message || 'Failed to connect. Please check your service account JSON.');
       }
-      setError(err.message || 'Failed to connect. Please check your service account JSON.');
       setIsConnecting(false);
       setStatus('error');
     }

@@ -484,6 +484,7 @@ class MultiRegionService {
       const timer = setInterval(async () => {
         await this.checkRegionHealth(code as RegionCode);
       }, config.failover.healthCheckInterval * 1000);
+      timer.unref?.();
 
       this.healthCheckTimers.set(code as RegionCode, timer);
     }

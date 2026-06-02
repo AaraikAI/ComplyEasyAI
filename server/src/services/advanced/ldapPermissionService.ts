@@ -11,8 +11,12 @@
 
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import cacheService from '../cache/redisCacheService';
 import net from 'net';
 import tls from 'tls';
+
+const LDAP_CACHE_NAMESPACE = 'ldap-permission';
+const ROLE_MAPPINGS_KEY = 'role-mappings';
 import crypto from 'crypto';
 import { EventEmitter } from 'events';
 
@@ -334,6 +338,18 @@ class LDAPConnection extends EventEmitter {
   }
 
   async bind(dn: string, password: string): Promise<{ resultCode: number }> {
+    // Refuse to transmit a non-empty bind password over a non-encrypted socket.
+    // Simple-auth BIND sends the password in the clear, so a plaintext transport
+    // would expose admin/user credentials on the wire. Anonymous binds (empty
+    // password) remain permitted. Set LDAP_USE_TLS or pass useTLS to enable LDAPS.
+    const usingTls = this.config.useTLS === true || this.socket instanceof tls.TLSSocket;
+    if (password && password.length > 0 && !usingTls) {
+      throw new AppError(
+        'Refusing LDAP simple bind with a password over a non-TLS connection; enable LDAPS (useTLS).',
+        500
+      );
+    }
+
     const msgId = ++this.messageId;
 
     // Build bind request
@@ -829,7 +845,9 @@ class LDAPPermissionService {
       baseDN: config?.baseDN || process.env.LDAP_BASE_DN || 'dc=company,dc=com',
       bindDN: config?.bindDN || process.env.LDAP_BIND_DN || 'cn=admin,dc=company,dc=com',
       bindPassword: config?.bindPassword || process.env.LDAP_BIND_PASSWORD || '',
-      useTLS: config?.useTLS ?? (process.env.LDAP_USE_TLS === 'true'),
+      // Secure by default: use LDAPS unless TLS is explicitly disabled. A non-empty
+      // bind password is refused over a non-TLS socket (see LDAPConnection.bind).
+      useTLS: config?.useTLS ?? (process.env.LDAP_USE_TLS !== 'false'),
       tlsOptions: config?.tlsOptions || {
         rejectUnauthorized: process.env.LDAP_TLS_REJECT_UNAUTHORIZED !== 'false',
       },
@@ -844,11 +862,13 @@ class LDAPPermissionService {
       await this.pool.initialize();
       this.startCacheCleanup();
       this.isInitialized = true;
-      logger.info('[LDAP] Service initialized successfully');
+      const restored = await this.hydrateRoleMappings();
+      logger.info(`[LDAP] Service initialized successfully (restored ${restored} role mappings)`);
     } catch (error) {
       logger.error('[LDAP] Initialization failed', error);
       // Graceful degradation: service initializes but operates in offline mode
       this.isInitialized = true;
+      await this.hydrateRoleMappings().catch(() => {});
       logger.warn('[LDAP] Running in offline mode - LDAP operations will use cached data');
     }
   }
@@ -1047,18 +1067,48 @@ class LDAPPermissionService {
   }
 
   // ── Role Mapping ────────────────────────────────────────────────────────
+  //
+  // Role mappings are mirrored to cacheService (Redis-backed in prod) so admin-
+  // configured authorization survives restarts. Follow-up: migrate to a dedicated
+  // `LDAPRoleMapping` Prisma model for org-scoped persistence and queryability.
+
+  private async persistRoleMappings(): Promise<void> {
+    try {
+      await cacheService.set(
+        ROLE_MAPPINGS_KEY,
+        Array.from(this.roleMappings.entries()),
+        { ttl: 0, namespace: LDAP_CACHE_NAMESPACE },
+      );
+    } catch (err) {
+      logger.warn('[LDAP] Failed to persist role mappings to cache', err);
+    }
+  }
+
+  async hydrateRoleMappings(): Promise<number> {
+    const entries = await cacheService.get<Array<[string, RoleMapping]>>(
+      ROLE_MAPPINGS_KEY,
+      { namespace: LDAP_CACHE_NAMESPACE },
+    );
+    if (!entries || !Array.isArray(entries)) return 0;
+    for (const [dn, mapping] of entries) {
+      this.roleMappings.set(dn, mapping);
+    }
+    return entries.length;
+  }
 
   /**
    * Configure a mapping from AD group to application role.
    */
-  addRoleMapping(mapping: RoleMapping): void {
+  async addRoleMapping(mapping: RoleMapping): Promise<void> {
     this.roleMappings.set(mapping.adGroupDN, mapping);
+    await this.persistRoleMappings();
     logger.info(`[LDAP] Role mapping added: ${mapping.adGroupName} -> ${mapping.applicationRole}`);
     this.logAudit('role_mapping_add', undefined, `Mapped ${mapping.adGroupName} to ${mapping.applicationRole}`);
   }
 
-  removeRoleMapping(adGroupDN: string): void {
+  async removeRoleMapping(adGroupDN: string): Promise<void> {
     this.roleMappings.delete(adGroupDN);
+    await this.persistRoleMappings();
     this.logAudit('role_mapping_remove', undefined, `Removed mapping for ${adGroupDN}`);
   }
 
@@ -1485,7 +1535,7 @@ class LDAPPermissionService {
       for (const [key, entry] of this.userCache.entries()) {
         if (now - entry.timestamp > this.CACHE_TTL_MS) this.userCache.delete(key);
       }
-    }, 60000);
+    }, 60000).unref?.();
   }
 }
 

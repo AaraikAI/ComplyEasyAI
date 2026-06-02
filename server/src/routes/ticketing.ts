@@ -6,9 +6,11 @@
  * from any compliance resource (risks, incidents, findings, etc.).
  */
 
+import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
+import { encryptField, decryptField } from '../utils/credentialEncryption';
 import {
   saveTicketingConfigSchema, testTicketingConnectionSchema,
   syncTicketingSchema, createTicketSchema, bulkTicketSyncSchema,
@@ -193,7 +195,8 @@ router.post(
                   instanceUrl: config.instanceUrl,
                   authType: 'basic',
                   username: config.username,
-                  apiToken: config.password,
+                  // Encrypt the Jira API token at rest (mirrors jiraService OAuth token handling).
+                  apiToken: config.password ? encryptField(config.password) : null,
                   projectKey: config.projectKey,
                   defaultIssueType: config.defaultIssueType || 'Task',
                   syncEnabled: config.syncEnabled ?? false,
@@ -208,7 +211,8 @@ router.post(
                   instanceUrl: config.instanceUrl,
                   authType: 'basic',
                   username: config.username,
-                  apiToken: config.password,
+                  // Encrypt the Jira API token at rest (mirrors jiraService OAuth token handling).
+                  apiToken: config.password ? encryptField(config.password) : null,
                   projectKey: config.projectKey,
                   defaultIssueType: config.defaultIssueType || 'Task',
                   syncEnabled: config.syncEnabled ?? false,
@@ -798,7 +802,8 @@ router.post(
                   instanceUrl: config.instanceUrl,
                   authType: 'basic',
                   username: config.username,
-                  apiToken: config.password,
+                  // Encrypt the Jira API token at rest (mirrors jiraService OAuth token handling).
+                  apiToken: config.password ? encryptField(config.password) : null,
                   projectKey: config.projectKey,
                   defaultIssueType: config.defaultIssueType || 'Task',
                   syncEnabled: config.syncEnabled ?? false,
@@ -813,7 +818,8 @@ router.post(
                   instanceUrl: config.instanceUrl,
                   authType: 'basic',
                   username: config.username,
-                  apiToken: config.password,
+                  // Encrypt the Jira API token at rest (mirrors jiraService OAuth token handling).
+                  apiToken: config.password ? encryptField(config.password) : null,
                   projectKey: config.projectKey,
                   defaultIssueType: config.defaultIssueType || 'Task',
                   syncEnabled: config.syncEnabled ?? false,
@@ -1330,20 +1336,85 @@ router.put(
 // POST /webhook/:provider - Webhook endpoint for receiving updates
 // ============================================================================
 
+// Per-provider HMAC signature config. Each provider uses a different header and algorithm.
+const PROVIDER_HMAC_CONFIG: Record<TicketingProvider, { header: string; algo: 'sha256' | 'sha1'; prefix?: string }> = {
+  jira: { header: 'x-hub-signature-256', algo: 'sha256', prefix: 'sha256=' },
+  servicenow: { header: 'x-servicenow-webhook-signature', algo: 'sha256' },
+  azure_devops: { header: 'x-vss-signature', algo: 'sha1', prefix: 'sha1=' },
+};
+
+function verifyWebhookHmac(
+  raw: Buffer,
+  signature: string | undefined,
+  secret: string,
+  algo: 'sha256' | 'sha1',
+  prefix?: string,
+): boolean {
+  if (!signature) return false;
+  let sig = signature;
+  if (prefix && sig.toLowerCase().startsWith(prefix)) sig = sig.slice(prefix.length);
+  const expected = crypto.createHmac(algo, secret).update(raw).digest('hex');
+  try {
+    const a = Buffer.from(sig.toLowerCase(), 'hex');
+    const b = Buffer.from(expected, 'hex');
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
 router.post(
   '/webhook/:provider',
   asyncHandler(async (req: Request, res: Response) => {
     const { provider } = req.params as { provider: TicketingProvider };
-
-    // Webhooks need to identify the org. Strategy: use a shared secret in headers
-    // or derive from the webhook payload.
     const orgId =
       (req.headers['x-complyeasy-org-id'] as string) ||
       (req.query.orgId as string);
 
     if (!orgId) {
-      logger.warn(`[Ticketing Webhook] No organization ID in ${provider} webhook`);
-      return res.status(200).json({ message: 'Accepted (no org context)' });
+      logger.warn(`[Ticketing Webhook] No organization ID in ${provider} webhook`, { ip: req.ip });
+      return res.status(400).json({ error: 'Missing organization context' });
+    }
+
+    const cfg = PROVIDER_HMAC_CONFIG[provider];
+    if (!cfg) {
+      throw new AppError('Invalid provider', 400);
+    }
+
+    // Look up the org's integration to get the webhook secret. The secret is stored
+    // encrypted in integration.config.webhookSecret per the credential encryption rule.
+    const integration = await prisma.integration.findFirst({
+      where: { organizationId: orgId, provider, connected: true },
+      select: { config: true },
+    });
+
+    const encryptedSecret = (integration?.config as any)?.webhookSecret as string | undefined;
+    if (!encryptedSecret) {
+      logger.warn(`[Ticketing Webhook] No webhook secret configured for ${provider}/${orgId}`, { ip: req.ip });
+      return res.status(401).json({ error: 'Webhook secret not configured for this integration' });
+    }
+
+    const secret = decryptField(encryptedSecret);
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
+    const signatureHeader = req.headers[cfg.header] as string | undefined;
+
+    if (!verifyWebhookHmac(rawBody, signatureHeader, secret, cfg.algo, cfg.prefix)) {
+      logger.warn(`[Ticketing Webhook] Invalid HMAC signature on ${provider} webhook`, {
+        provider,
+        orgId,
+        ip: req.ip,
+        hasSignature: !!signatureHeader,
+      });
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+
+    // Signature verified — parse JSON
+    let payload: any;
+    try {
+      payload = JSON.parse(rawBody.toString('utf8'));
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON body' });
     }
 
     try {
@@ -1351,13 +1422,13 @@ router.post(
 
       switch (provider) {
         case 'jira':
-          result = await jiraService.processWebhookEvent(orgId, req.body);
+          result = await jiraService.processWebhookEvent(orgId, payload);
           break;
         case 'servicenow':
-          result = await servicenowService.processWebhookEvent(orgId, req.body);
+          result = await servicenowService.processWebhookEvent(orgId, payload);
           break;
         case 'azure_devops':
-          result = await azureDevOpsService.processWebhookEvent(orgId, req.body);
+          result = await azureDevOpsService.processWebhookEvent(orgId, payload);
           break;
         default:
           throw new AppError('Invalid provider', 400);
@@ -1370,10 +1441,10 @@ router.post(
         err: error,
         provider,
         orgId,
-        ticketId: req.params?.id,
+        ticketId: (payload as any)?.id,
         ip: req.ip,
       });
-      // Intentionally return 200 to prevent webhook retry storms.
+      // Intentionally return 200 to prevent webhook retry storms (signature already verified).
       res.status(200).json({ received: true, processed: false, error: 'logged' });
     }
   })

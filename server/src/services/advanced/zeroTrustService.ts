@@ -15,6 +15,7 @@ import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment, Prisma } from '../../generated/prisma/client';
 import ldapPermissionService, { ADUser, PermissionEvaluationResult, RoleMapping } from './ldapPermissionService';
+import { isUrlSafe } from '../../utils/urlValidator';
 
 // --- Safe regex helpers (ReDoS protection) ---
 const REDOS_PATTERNS = [
@@ -350,7 +351,7 @@ class ZeroTrustService {
 
     // Check IP reputation (15 points)
     if (metadata.ipAddress) {
-      const ipReputation = await this.checkIPReputation(metadata.ipAddress);
+      const ipReputation = await this.checkIPReputation(metadata.ipAddress, organizationId);
       score += ipReputation * 15;
     }
 
@@ -458,8 +459,9 @@ class ZeroTrustService {
       return true;
     } catch (error) {
       logger.error(`[Zero Trust] Error checking known location for ${organizationId}`, error);
-      // Fail open in case of error (can be configured to fail closed)
-      return true;
+      // Zero Trust posture: deny (location not considered known) when the check
+      // itself errors, rather than granting the location-trust points by default.
+      return false;
     }
   }
 
@@ -467,7 +469,7 @@ class ZeroTrustService {
    * Check IP reputation (0-1)
    * Production-ready: Integrates with IP reputation services (AbuseIPDB, VirusTotal, etc.)
    */
-  private async checkIPReputation(ipAddress: string): Promise<number> {
+  private async checkIPReputation(ipAddress: string, organizationId: string): Promise<number> {
     try {
       // Check if IP is in private/local range (trusted)
       if (
@@ -498,6 +500,9 @@ class ZeroTrustService {
       // Production-ready: Uses database caching (can be upgraded to Redis for higher performance)
       const cachedReputation = await prisma.deviceTrust.findFirst({
         where: {
+          // Scope to the caller's org so a cached trustScore cannot be sourced
+          // from another tenant's DeviceTrust record for the same IP.
+          organizationId,
           metadata: {
             path: ['ipAddress'],
             equals: ipAddress,
@@ -521,6 +526,9 @@ class ZeroTrustService {
       if (abuseIPDBKey) {
         try {
           const axios = require('axios');
+          if (!isUrlSafe('https://api.abuseipdb.com/api/v2/check')) {
+            throw new AppError('AbuseIPDB URL is unsafe', 400);
+          }
           const response = await axios.get('https://api.abuseipdb.com/api/v2/check', {
             params: {
               ipAddress,
@@ -571,6 +579,9 @@ class ZeroTrustService {
       if (virusTotalKey) {
         try {
           const axios = require('axios');
+          if (!isUrlSafe('https://www.virustotal.com/vtapi/v2/ip-address/report')) {
+            throw new AppError('VirusTotal URL is unsafe', 400);
+          }
           const response = await axios.get(`https://www.virustotal.com/vtapi/v2/ip-address/report`, {
             params: {
               apikey: virusTotalKey,
@@ -601,13 +612,24 @@ class ZeroTrustService {
         return 0.0; // Known malicious IP
       }
 
-      // Default: moderate trust for unknown IPs
-      logger.debug(`[Zero Trust] IP ${ipAddress} reputation: default moderate trust (no reputation service configured)`);
-      return 0.8;
+      // Unknown IP with no reputation provider configured. Zero Trust posture
+      // defaults to LOW trust here rather than near-trusted (0.8); operators can
+      // raise this explicitly via ZERO_TRUST_UNKNOWN_IP_TRUST (0-1) if they
+      // intentionally run without a reputation provider.
+      const configuredUnknownTrust = Number(process.env.ZERO_TRUST_UNKNOWN_IP_TRUST);
+      const unknownTrust =
+        Number.isFinite(configuredUnknownTrust) &&
+        configuredUnknownTrust >= 0 &&
+        configuredUnknownTrust <= 1
+          ? configuredUnknownTrust
+          : 0.3;
+      logger.debug(`[Zero Trust] IP ${ipAddress} reputation: ${unknownTrust} (no reputation service configured)`);
+      return unknownTrust;
     } catch (error) {
       logger.error(`[Zero Trust] Error checking IP reputation for ${ipAddress}`, error);
-      // Fail open: return moderate trust on error
-      return 0.7;
+      // Zero Trust posture: fail closed (zero trust) when the reputation check
+      // itself errors instead of granting moderate trust by default.
+      return 0.0;
     }
   }
 
@@ -943,7 +965,10 @@ class ZeroTrustService {
           organizationId,
           name: policy.name,
           description: policy.description,
-          rules: JSON.stringify(policy.rules),
+          // `rules` is a Json column — store the native array so every reader
+          // (loadPolicies / isKnownLocation / getNetworkSegment) gets an object,
+          // not a double-encoded JSON string.
+          rules: policy.rules as unknown as object,
           enabled: policy.enabled,
           priority: policy.priority,
         },
@@ -1088,11 +1113,17 @@ class ZeroTrustService {
       });
 
       for (const policy of policies) {
+        // `rules` is a Json column read back as a native value. Tolerate legacy
+        // rows that were written as a JSON-encoded string by parsing those.
+        const rawRules = policy.rules as unknown;
+        const rules: ZeroTrustRule[] =
+          typeof rawRules === 'string' ? JSON.parse(rawRules) : (rawRules as ZeroTrustRule[]);
+
         this.policyCache.set(policy.id, {
           id: policy.id,
           name: policy.name,
           description: policy.description,
-          rules: JSON.parse(policy.rules as string),
+          rules,
           enabled: policy.enabled,
           priority: policy.priority,
         });
@@ -1302,7 +1333,10 @@ class ZeroTrustService {
     try {
       return await ldapPermissionService.authenticateUser(username, password);
     } catch (error: any) {
-      logger.error(`[ZeroTrust] AD authentication error for ${username}`, error);
+      logger.error('[ZeroTrust] AD authentication error', {
+        username_hash: crypto.createHash('sha256').update(username).digest('hex').slice(0, 16),
+        error,
+      });
       return { authenticated: false, error: error.message };
     }
   }

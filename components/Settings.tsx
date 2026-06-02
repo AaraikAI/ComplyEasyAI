@@ -894,9 +894,9 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                  <input 
-                    type="text" 
-                    value="Administrator"
+                  <input
+                    type="text"
+                    value={currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : '—'}
                     disabled
                     className="w-full px-4 py-2 border border-gray-200 bg-gray-50 rounded-lg text-gray-500 cursor-not-allowed"
                   />

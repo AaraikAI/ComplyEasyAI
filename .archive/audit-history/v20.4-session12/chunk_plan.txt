@@ -1,0 +1,22 @@
+SLOT  LEDGER                         COV_FILE                  RANGE                         
+----  ------                         --------                  -----                         
+1     input_validation               COV5_validation_refs      rows 1-25                     
+2     input_validation               COV5_validation_refs      rows 26-50                    
+3     input_validation               COV5_validation_refs      rows 51-75                    
+4     input_validation               COV5_validation_refs      rows 76-100                   
+5     input_validation               COV5_validation_refs      rows 101-125                  
+6     l8_reads                       COV11_l8_reads            rows 1-25                     
+7     l8_reads                       COV11_l8_reads            rows 26-50                    
+8     l8_reads                       COV11_l8_reads            rows 51-75                    
+9     l8_reads                       COV11_l8_reads            rows 76-100                   
+10    l8_reads                       COV11_l8_reads            rows 101-125                  
+11    frontend_contract              COV12_frontend_calls      rows 1-25                     
+12    frontend_contract              COV12_frontend_calls      rows 26-50                    
+13    frontend_contract              COV12_frontend_calls      rows 51-75                    
+14    audit_logs                     COV16_privileged_actions  rows 1-25                     
+15    audit_logs                     COV16_privileged_actions  rows 26-50                    
+16    audit_logs                     COV16_privileged_actions  rows 51-75                    
+17    file_upload                    COV17_uploads             rows 1-25                     
+18    file_upload                    COV17_uploads             rows 26-50                    
+19    idempotency                    COV18_idempotency         rows 1-25                     
+20    idempotency                    COV18_idempotency         rows 26-50                    

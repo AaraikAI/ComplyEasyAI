@@ -117,7 +117,9 @@ function main() {
   validate('JWT_REFRESH_EXPIRES_IN', false);
 
   printSection('2FA Encryption');
-  validate('ENCRYPTION_KEY', true, (v) => v.length >= 16);
+  // AES-256 (2FA secret / credential encryption) requires a 32-byte key. This
+  // matches the runtime config schema in config/index.ts (>= 32 chars).
+  validate('ENCRYPTION_KEY', true, (v) => v.length >= 32);
 
   printSection('AI Services');
   validate('GEMINI_API_KEY', true);
@@ -160,6 +162,21 @@ function main() {
   validate('JIRA_CLIENT_ID', false);
   validate('JIRA_CLIENT_SECRET', false);
   validate('JIRA_CALLBACK_URL', false, isValidUrl);
+
+  printSection('Caching & Sessions');
+  // REDIS_URL is enforced as REQUIRED in production by the runtime config schema
+  // (config/index.ts) for CSRF tokens, rate limiting, and session storage across
+  // instances. It is validated as required here when running in production.
+  validate('REDIS_URL', process.env.NODE_ENV === 'production', isValidUrl);
+
+  printSection('Webhook Signing Secrets');
+  // Verified per-receiver before any side effect; used for inbound webhook HMAC.
+  // (STRIPE_WEBHOOK_SECRET is validated above under Payment Processing.)
+  validate('GITHUB_WEBHOOK_SECRET', false);
+
+  printSection('Error Monitoring (Sentry)');
+  // When Sentry is enabled, a DSN is required for errors to be reported.
+  validate('SENTRY_DSN', process.env.SENTRY_ENABLED === 'true', isValidUrl);
 
   printSection('Security');
   validate('RATE_LIMIT_WINDOW_MS', false);

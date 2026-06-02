@@ -153,7 +153,7 @@ describe('SecureChatService', () => {
   // chatWithUser - basic behavior
   // ======================================================================
   describe('chatWithUser()', () => {
-    it('should return a response with sources and encrypted flag', async () => {
+    it('should return a response with sources and accurate processing flags', async () => {
       setupChatMocks();
 
       const result = await secureChatService.chatWithUser(
@@ -164,7 +164,11 @@ describe('SecureChatService', () => {
 
       expect(result).toHaveProperty('response');
       expect(result).toHaveProperty('sources');
-      expect(result.encrypted).toBe(true);
+      // This path is local rule-based matching on plaintext context, not encrypted
+      // (homomorphic) compute, so it must accurately report encrypted=false /
+      // locallyProcessed=true rather than overstating an encryption guarantee.
+      expect(result.encrypted).toBe(false);
+      expect(result.locallyProcessed).toBe(true);
       expect(result.sources).toContain('Local AI Processing');
       expect(result.sources).toContain('User Account Data');
     });
@@ -242,7 +246,9 @@ describe('SecureChatService', () => {
       const result = await secureChatService.chatWithUser('Hello', 'user-123', 'org-123');
 
       expect(result.response).toContain('error');
-      expect(result.encrypted).toBe(true);
+      // The error path also runs locally and performs no encrypted compute.
+      expect(result.encrypted).toBe(false);
+      expect(result.locallyProcessed).toBe(true);
     });
   });
 

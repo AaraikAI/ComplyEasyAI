@@ -4,9 +4,9 @@
  * Profiles Prisma queries and identifies slow queries
  */
 
+const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { PrismaClient } = require('@prisma/client');
-const path = require('path');
 
 const prisma = new PrismaClient({
   log: [

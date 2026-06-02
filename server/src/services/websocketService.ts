@@ -23,6 +23,23 @@ interface WebSocketMessage {
   timestamp: Date;
 }
 
+/**
+ * Maps a subscribe `resource` name to the Prisma delegate that owns it. Only
+ * organization-scoped resources are subscribable; a client may only join the
+ * room for a record whose organizationId matches the socket's organizationId.
+ * Unknown resources are rejected (deny-by-default).
+ */
+const SUBSCRIBABLE_RESOURCES: Record<string, () => { findFirst: (args: any) => Promise<any> }> = {
+  risk: () => prisma.riskItem,
+  control: () => prisma.frameworkControl,
+  vendor: () => prisma.vendor,
+  policy: () => prisma.policy,
+  incident: () => prisma.grcIncident,
+  workflow: () => prisma.gRCWorkflow,
+  audit: () => prisma.auditEngagement,
+  deadline: () => prisma.complianceDeadline,
+};
+
 class WebSocketService {
   private io: SocketIOServer | null = null;
   private connectedUsers: Map<string, Set<string>> = new Map(); // organizationId -> Set of socketIds
@@ -70,7 +87,7 @@ class WebSocketService {
       }
 
       // Verify JWT token
-      const decoded = jwt.verify(token, config.jwt.secret) as {
+      const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] }) as {
         userId: string;
         email: string;
         role: string;
@@ -116,7 +133,7 @@ class WebSocketService {
       return;
     }
 
-    logger.info(`WebSocket connected: ${userEmail} (${socket.id})`);
+    logger.info(`WebSocket connected: user ${userId} (${socket.id})`);
 
     // Join organization room
     socket.join(`org:${organizationId}`);
@@ -174,7 +191,7 @@ class WebSocketService {
       });
     }
 
-    logger.info(`WebSocket disconnected: ${userEmail} (${socket.id})`);
+    logger.info(`WebSocket disconnected: user ${userId} (${socket.id})`);
   }
 
   /**
@@ -186,11 +203,10 @@ class WebSocketService {
       socket.emit('pong', { timestamp: new Date() });
     });
 
-    // Subscribe to specific resources
+    // Subscribe to specific resources — only after verifying the resource
+    // belongs to this socket's organization (prevents cross-tenant room joins).
     socket.on('subscribe', (data: { resource: string; id: string }) => {
-      const room = `${data.resource}:${data.id}`;
-      socket.join(room);
-      logger.debug(`Socket ${socket.id} subscribed to ${room}`);
+      void this.handleSubscribe(socket, data);
     });
 
     // Unsubscribe from resources
@@ -199,6 +215,58 @@ class WebSocketService {
       socket.leave(room);
       logger.debug(`Socket ${socket.id} unsubscribed from ${room}`);
     });
+  }
+
+  /**
+   * Verify a subscribe request targets a resource owned by the socket's
+   * organization before joining the corresponding broadcast room. Rejects
+   * unknown resource types and cross-organization ids.
+   */
+  private async handleSubscribe(
+    socket: AuthenticatedSocket,
+    data: { resource: string; id: string }
+  ): Promise<void> {
+    try {
+      const organizationId = socket.organizationId;
+      if (!organizationId || !data || typeof data.resource !== 'string' || typeof data.id !== 'string') {
+        socket.emit('subscribe:error', { resource: data?.resource, id: data?.id, reason: 'invalid_request' });
+        return;
+      }
+
+      const delegateFactory = SUBSCRIBABLE_RESOURCES[data.resource];
+      if (!delegateFactory) {
+        logger.warn('WebSocket subscribe rejected: unknown resource', {
+          socketId: socket.id,
+          resource: data.resource,
+        });
+        socket.emit('subscribe:error', { resource: data.resource, id: data.id, reason: 'unknown_resource' });
+        return;
+      }
+
+      const owned = await delegateFactory().findFirst({
+        where: { id: data.id, organizationId },
+        select: { id: true },
+      });
+
+      if (!owned) {
+        logger.warn('WebSocket subscribe rejected: resource not owned by organization', {
+          socketId: socket.id,
+          resource: data.resource,
+          resourceId: data.id,
+          organizationId,
+        });
+        socket.emit('subscribe:error', { resource: data.resource, id: data.id, reason: 'not_found' });
+        return;
+      }
+
+      const room = `${data.resource}:${data.id}`;
+      socket.join(room);
+      socket.emit('subscribed', { resource: data.resource, id: data.id });
+      logger.debug(`Socket ${socket.id} subscribed to ${room}`);
+    } catch (error) {
+      logger.error('WebSocket subscribe error', { error, socketId: socket.id });
+      socket.emit('subscribe:error', { resource: data?.resource, id: data?.id, reason: 'error' });
+    }
   }
 
   /**

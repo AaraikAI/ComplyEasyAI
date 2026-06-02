@@ -213,7 +213,7 @@ const TimelineCard: React.FC<{ title: string; data: any }> = ({ title, data }) =
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{item.label}</p>
-              <p className="text-xs text-gray-500">Due: {item.date}, 2026</p>
+              <p className="text-xs text-gray-500">Due: {item.date}</p>
             </div>
             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
               item.status === 'good' ? 'bg-green-500' :
@@ -239,6 +239,15 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Live organization compliance posture used to ground AI queries and the data banner
+  const [orgContext, setOrgContext] = useState<{
+    frameworkNames: string[];
+    frameworkCount: number;
+    controlCount: number;
+    evidenceCount: number;
+    complianceScore: number | null;
+  }>({ frameworkNames: [], frameworkCount: 0, controlCount: 0, evidenceCount: 0, complianceScore: null });
+
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsEndRef = useRef<HTMLDivElement>(null);
 
@@ -246,6 +255,32 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
     if (inputRef.current) {
       inputRef.current.focus();
     }
+  }, []);
+
+  // Load the tenant's real frameworks, control coverage, evidence count, and score
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [dashboard, completeness] = await Promise.all([
+          api.executive.getDashboard(),
+          api.evidenceCollection.getCompleteness(),
+        ]);
+        if (!active) return;
+        const frameworkScores: any[] = dashboard?.frameworkScores || [];
+        const readiness: any[] = (completeness as any)?.readiness || [];
+        setOrgContext({
+          frameworkNames: frameworkScores.map((f: any) => f.name).filter(Boolean),
+          frameworkCount: frameworkScores.length,
+          controlCount: frameworkScores.reduce((sum: number, f: any) => sum + (f.totalControls || 0), 0),
+          evidenceCount: readiness.reduce((sum: number, r: any) => sum + (r.evidenceComplete || 0), 0),
+          complianceScore: typeof dashboard?.overallCompliance === 'number' ? dashboard.overallCompliance : null,
+        });
+      } catch (err: any) {
+        logger.warn('Failed to load organization compliance context:', err);
+      }
+    })();
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -264,8 +299,8 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
 
     try {
       const aiResult = await api.ai.naturalLanguageQuery(text, {
-        frameworks: ['SOC 2', 'GDPR', 'ISO 27001', 'HIPAA', 'PCI DSS', 'NIST CSF'],
-        complianceScore: 78,
+        frameworks: orgContext.frameworkNames,
+        ...(orgContext.complianceScore !== null ? { complianceScore: orgContext.complianceScore } : {}),
       });
 
       const newResult: QueryResult = {
@@ -308,7 +343,7 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
     } finally {
       setIsProcessing(false);
     }
-  }, [queryInput, isProcessing]);
+  }, [queryInput, isProcessing, orgContext]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -430,7 +465,11 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
         <div className="flex items-center gap-2 mt-2 ml-13 pl-13">
           <span className="text-xs text-gray-400">Powered by AI</span>
           <span className="text-xs text-gray-300">|</span>
-          <span className="text-xs text-gray-400">Queries your actual compliance data across {6} frameworks, {443} controls, and {312} evidence items</span>
+          <span className="text-xs text-gray-400">
+            {orgContext.frameworkCount > 0
+              ? `Queries your actual compliance data across ${orgContext.frameworkCount} ${orgContext.frameworkCount === 1 ? 'framework' : 'frameworks'}, ${orgContext.controlCount} ${orgContext.controlCount === 1 ? 'control' : 'controls'}, and ${orgContext.evidenceCount} evidence ${orgContext.evidenceCount === 1 ? 'item' : 'items'}`
+              : 'Queries your actual compliance data across your frameworks, controls, and evidence'}
+          </span>
         </div>
       </div>
 

@@ -134,6 +134,20 @@ export const Reports: React.FC = () => {
     loadData();
   }, []);
 
+  // Load saved-report count so the maxCustomReports tier limit is enforced.
+  useEffect(() => {
+    const loadSavedReportCount = async () => {
+      try {
+        const saved = await api.enterprise.reports.list();
+        const list = Array.isArray(saved) ? saved : (saved?.reports ?? saved?.data ?? []);
+        setSavedReportsCount(Array.isArray(list) ? list.length : 0);
+      } catch (error) {
+        logger.error('Failed to load saved report count:', error);
+      }
+    };
+    loadSavedReportCount();
+  }, []);
+
   // Calculate dashboard metrics
   const dashboardMetrics = useMemo(() => {
     const totalFrameworks = frameworks.length;

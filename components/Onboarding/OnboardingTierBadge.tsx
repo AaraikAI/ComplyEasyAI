@@ -39,7 +39,8 @@ const tierConfig: Record<TierName, { icon: React.ElementType; color: string; bg:
 };
 
 export const OnboardingTierBadge: React.FC<OnboardingTierBadgeProps> = ({ tier, variant = 'small' }) => {
-  const config = tierConfig[tier];
+  // Fall back to Foundation styling if an unrecognized tier value reaches the badge.
+  const config = tierConfig[tier] ?? tierConfig.Foundation;
   const Icon = config.icon;
 
   if (variant === 'large') {

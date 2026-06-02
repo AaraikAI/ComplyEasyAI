@@ -25,9 +25,39 @@ interface AuthRequest extends Request {
 }
 
 const router = Router();
+// Framework control evidence is documents-only (audit reports, screenshots,
+// policies, attestations). Audio/video isn't accepted on this route. Per audit
+// COV-17 §5.5.17.
+const FRAMEWORK_EVIDENCE_ALLOWED_MIMES = new Set<string>([
+  'application/pdf',
+  'application/json',
+  'application/xml',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/zip',
+  'text/plain',
+  'text/csv',
+  'text/xml',
+  'text/markdown',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+]);
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB max for evidence files
+  fileFilter: (_req, file, cb) => {
+    if (FRAMEWORK_EVIDENCE_ALLOWED_MIMES.has(file.mimetype.toLowerCase())) {
+      cb(null, true);
+    } else {
+      cb(new AppError(`Unsupported file type: ${file.mimetype}`, 415));
+    }
+  },
 });
 
 router.use(authenticate);

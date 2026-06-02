@@ -407,7 +407,7 @@ router.post(
       });
 
       logger.info(
-        `Bulk assign: ${result.count} ${resourceType} assigned to ${assignee.name} (${assigneeId}) by user ${userId} in org ${orgId}`
+        `Bulk assign: ${result.count} ${resourceType} assigned to ${assigneeId} by user ${userId} in org ${orgId}`
       );
 
       res.json({

@@ -112,32 +112,42 @@ function mapTopRisks(apiData: any): TopRisk[] {
   }));
 }
 
-function buildPeriodComparison(apiData: any) {
-  return {
-    current: {
-      complianceScore: apiData?.overallCompliance ?? 0,
-      riskScore: apiData?.riskPosture?.averageScore ? Math.round(apiData.riskPosture.averageScore * 25) : 0,
-      incidents: apiData?.incidents?.totalOpen ?? 0,
-      openFindings: apiData?.riskPosture?.totalOpen ?? 0,
-      controlCoverage: apiData?.auditReadiness?.score ?? 0,
-      vendorCompliance: apiData?.vendorRiskSummary?.avgScore ?? 0,
-    },
-    previous: {
-      complianceScore: 0,
-      riskScore: 0,
-      incidents: 0,
-      openFindings: 0,
-      controlCoverage: 0,
-      vendorCompliance: 0,
-    },
+function buildPeriodComparison(apiData: any, trendsData: any) {
+  const current = {
+    complianceScore: apiData?.overallCompliance ?? 0,
+    riskScore: apiData?.riskPosture?.averageScore ? Math.round(apiData.riskPosture.averageScore * 25) : 0,
+    incidents: apiData?.incidents?.totalOpen ?? 0,
+    openFindings: apiData?.riskPosture?.totalOpen ?? 0,
+    controlCoverage: apiData?.auditReadiness?.score ?? 0,
+    vendorCompliance: apiData?.vendorRiskSummary?.avgScore ?? 0,
   };
+
+  // The /executive/trends endpoint exposes genuine prior-period counts for the
+  // metrics it tracks over time (incidents, risks/findings). Those are populated
+  // from real data; metrics the backend does not yet track historically are left
+  // at the sentinel 0 so the UI renders "No prior period data" instead of
+  // fabricating a baseline and showing misleading deltas.
+  const cmp = trendsData?.comparison;
+  const previous = {
+    complianceScore: 0,
+    riskScore: 0,
+    incidents: typeof cmp?.newIncidents?.previous === 'number' ? cmp.newIncidents.previous : 0,
+    openFindings: typeof cmp?.newRisks?.previous === 'number' ? cmp.newRisks.previous : 0,
+    controlCoverage: 0,
+    vendorCompliance: 0,
+  };
+
+  return { current, previous };
 }
 
+// Builds the current-snapshot severity breakdown of open incidents from
+// /executive/dashboard (incidents.bySeverity). This is a point-in-time view, not a
+// multi-month time series — the panel is labelled accordingly.
 function buildIncidentTrends(apiData: any): IncidentTrend[] {
   const bySev = apiData?.incidents?.bySeverity;
   if (!bySev || typeof bySev !== 'object') return [];
   return [{
-    month: 'Current',
+    month: 'Open',
     sev1: bySev['SEV1'] || bySev['Critical'] || 0,
     sev2: bySev['SEV2'] || bySev['High'] || 0,
     sev3: bySev['SEV3'] || bySev['Medium'] || 0,
@@ -153,6 +163,10 @@ const ExecutiveDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [trendsData, setTrendsData] = useState<any>(null);
+
+  // Quarterly view compares 90-day windows; annual compares 365-day windows.
+  const periodDays = selectedPeriod === 'year' ? 365 : 90;
 
   useEffect(() => {
     let cancelled = false;
@@ -160,13 +174,23 @@ const ExecutiveDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/executive/dashboard', { credentials: 'include' });
-        if (!res.ok) {
-          throw new Error(`Failed to load dashboard (${res.status})`);
+        const [dashRes, trendsRes] = await Promise.all([
+          fetch('/api/executive/dashboard', { credentials: 'include' }),
+          fetch(`/api/executive/trends?periodDays=${periodDays}`, { credentials: 'include' }),
+        ]);
+        if (!dashRes.ok) {
+          throw new Error(`Failed to load dashboard (${dashRes.status})`);
         }
-        const json = await res.json();
+        const dashJson = await dashRes.json();
+        // Trends power the period-over-period comparison; treat them as best-effort
+        // so a trends failure never blocks the primary dashboard render.
+        let trendsJson: any = null;
+        if (trendsRes.ok) {
+          trendsJson = await trendsRes.json();
+        }
         if (!cancelled) {
-          setDashboardData(json.data ?? json);
+          setDashboardData(dashJson.data ?? dashJson);
+          setTrendsData(trendsJson ? (trendsJson.data ?? trendsJson) : null);
         }
       } catch (err) {
         if (!cancelled) {
@@ -180,12 +204,12 @@ const ExecutiveDashboard: React.FC = () => {
     }
     fetchDashboard();
     return () => { cancelled = true; };
-  }, [selectedPeriod]);
+  }, [selectedPeriod, periodDays]);
 
   const frameworks = useMemo(() => mapFrameworks(dashboardData), [dashboardData]);
   const topRisks = useMemo(() => mapTopRisks(dashboardData), [dashboardData]);
   const incidentTrends = useMemo(() => buildIncidentTrends(dashboardData), [dashboardData]);
-  const periodComparison = useMemo(() => buildPeriodComparison(dashboardData), [dashboardData]);
+  const periodComparison = useMemo(() => buildPeriodComparison(dashboardData, trendsData), [dashboardData, trendsData]);
 
   const overallScore = useMemo(() => {
     // eslint-disable-next-line eqeqeq -- Intentional: catches both null and undefined
@@ -377,9 +401,9 @@ const ExecutiveDashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Incident Trends */}
+        {/* Open incidents broken down by severity (current snapshot from /executive/dashboard) */}
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-          <h3 className="text-sm font-semibold mb-4">Incident Trends (6 Months)</h3>
+          <h3 className="text-sm font-semibold mb-4">Open Incidents by Severity</h3>
           {incidentTrends.length === 0 ? (
             <p className="text-slate-500 text-sm text-center py-8">No incident data available</p>
           ) : (

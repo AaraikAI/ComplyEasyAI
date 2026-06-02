@@ -4,8 +4,9 @@
  */
 
 import { Router, Request, Response } from 'express';
+import Joi from 'joi';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
-import { validateBody } from '../middleware/validate';
+import { validateBody, validateParams } from '../middleware/validate';
 import {
   createSoDRuleSchema, updateSoDRuleSchema, importSoDRulesSchema,
   mitigateSoDViolationSchema, acceptSoDViolationSchema, remediateSoDViolationSchema,
@@ -19,6 +20,12 @@ import logger from '../config/logger';
 const router = Router();
 router.use(authenticate);
 
+// Param validation: fail fast on malformed identifiers. Tenancy is already
+// enforced by organizationId-scoped service calls; this guards format/shape.
+const idParamSchema = Joi.object({
+  id: Joi.string().trim().min(1).max(100).pattern(/^[A-Za-z0-9_-]+$/).required(),
+});
+
 // ============================================================================
 // DASHBOARD
 // ============================================================================
@@ -31,8 +38,9 @@ router.get(
       const dashboard = await sodService.getSoDDashboard(user.organizationId);
       res.json(dashboard);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching SoD dashboard:', error);
-      res.json({ totalViolations: 0, rules: 0, matrix: [] });
+      throw new AppError('Failed to fetch SoD dashboard', 500);
     }
   })
 );
@@ -49,8 +57,9 @@ router.get(
       const rules = await sodService.getSoDRules(user.organizationId);
       res.json(rules);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching SoD rules:', error);
-      res.json([]);
+      throw new AppError('Failed to fetch SoD rules', 500);
     }
   })
 );
@@ -72,6 +81,7 @@ router.post(
 
 router.get(
   '/rules/:id',
+  validateParams(idParamSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const rule = await sodService.getSoDRuleById(req.params.id, user.organizationId);
@@ -126,14 +136,16 @@ router.get(
       const violations = await sodService.getSoDViolations(user.organizationId);
       res.json(violations);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching SoD violations:', error);
-      res.json([]);
+      throw new AppError('Failed to fetch SoD violations', 500);
     }
   })
 );
 
 router.get(
   '/violations/:id',
+  validateParams(idParamSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const violation = await sodService.getSoDViolationById(req.params.id, user.organizationId);
@@ -251,8 +263,9 @@ router.get(
       const matrix = await sodService.getSoDMatrix(user.organizationId, system as string);
       res.json(matrix);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching SoD matrix:', error);
-      res.json({ functions: [], conflicts: [] });
+      throw new AppError('Failed to fetch SoD matrix', 500);
     }
   })
 );

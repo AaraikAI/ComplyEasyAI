@@ -1,7 +1,13 @@
 /**
  * E2E Tests - Billing & Subscription Flow
- * Tests complete billing workflows including subscription management,
- * payment processing, invoicing, and usage tracking.
+ * Tests the tier-based subscription system: subscription details, available
+ * tiers, tier comparison, usage metrics, history, cancel/reactivate, and the
+ * a-la-carte feature subscription endpoints.
+ *
+ * Exercises the real routes in src/routes/billing.ts. Handlers delegate to
+ * stripeService / tierService / featureService / webhookService, which are
+ * mocked here so assertions verify route wiring (path + method + status +
+ * response envelope) deterministically without a live Stripe account.
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
@@ -25,62 +31,62 @@ jest.mock('../../config/logger', () => ({
   },
 }));
 
-jest.mock('../../utils/auditLogger', () => ({
-  AuditLogger: { log: jest.fn() },
-}));
-
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req: any, res: any, next: any) => next(),
-  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => next(),
+  authenticate: (req: any, _res: any, next: any) => next(),
+  authorize: (..._roles: string[]) => (req: any, _res: any, next: any) => next(),
   AuthRequest: {},
 }));
 
-jest.mock('../../middleware/rateLimiter', () => ({
-  authLimiter: (req: any, res: any, next: any) => next(),
-  apiLimiter: (req: any, res: any, next: any) => next(),
-  aiLimiter: (req: any, res: any, next: any) => next(),
-  frameworkLimiter: (req: any, res: any, next: any) => next(),
+jest.mock('../../services/stripeService', () => ({
+  __esModule: true,
+  default: {
+    getSubscriptionDetails: jest.fn(),
+    cancelSubscription: jest.fn(),
+    reactivateSubscription: jest.fn(),
+    previewTierChange: jest.fn(),
+    changeTier: jest.fn(),
+    createCheckoutSession: jest.fn(),
+    createPortalSession: jest.fn(),
+    createQuote: jest.fn(),
+  },
 }));
 
-// Mock Stripe
-jest.mock('stripe', () => {
-  return jest.fn().mockImplementation(() => ({
-    customers: {
-      create: jest.fn().mockResolvedValue({ id: 'cus_123' }),
-      retrieve: jest.fn().mockResolvedValue({ id: 'cus_123', email: 'test@example.com' }),
-    },
-    subscriptions: {
-      create: jest.fn().mockResolvedValue({
-        id: 'sub_123',
-        status: 'active',
-        current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-      }),
-      update: jest.fn().mockResolvedValue({ id: 'sub_123', status: 'active' }),
-      cancel: jest.fn().mockResolvedValue({ id: 'sub_123', status: 'canceled' }),
-    },
-    invoices: {
-      list: jest.fn().mockResolvedValue({ data: [] }),
-      retrieve: jest.fn().mockResolvedValue({ id: 'inv_123' }),
-    },
-    paymentMethods: {
-      list: jest.fn().mockResolvedValue({ data: [] }),
-      attach: jest.fn().mockResolvedValue({ id: 'pm_123' }),
-    },
-    billingPortal: {
-      sessions: {
-        create: jest.fn().mockResolvedValue({ url: 'https://billing.stripe.com/session' }),
-      },
-    },
-    checkout: {
-      sessions: {
-        create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/session' }),
-      },
-    },
-  }));
-});
+jest.mock('../../services/tierService', () => ({
+  __esModule: true,
+  default: {
+    getOrganizationTier: jest.fn(),
+    getAvailableTiers: jest.fn(),
+    getAllUsageMetrics: jest.fn(),
+    getUsageVsLimits: jest.fn(),
+    compareTiers: jest.fn(),
+    canDowngrade: jest.fn(),
+  },
+}));
+
+jest.mock('../../services/featureService', () => ({
+  __esModule: true,
+  default: {
+    getAvailableFeaturesForOrganization: jest.fn(),
+    hasFeatureAccess: jest.fn(),
+  },
+}));
+
+jest.mock('../../services/webhookService', () => ({
+  __esModule: true,
+  default: {
+    dispatchEvent: jest.fn().mockResolvedValue(undefined),
+  },
+}));
 
 import billingRoutes from '../../routes/billing';
 import { errorHandler } from '../../middleware/errorHandler';
+import stripeService from '../../services/stripeService';
+import tierService from '../../services/tierService';
+import featureService from '../../services/featureService';
+
+const stripe = stripeService as unknown as Record<string, jest.Mock>;
+const tier = tierService as unknown as Record<string, jest.Mock>;
+const feature = featureService as unknown as Record<string, jest.Mock>;
 
 const app = express();
 app.use(express.json());
@@ -88,7 +94,7 @@ app.use((req, _res, next) => {
   (req as any).user = {
     id: 'user-123',
     organizationId: 'org-123',
-    role: 'Admin',
+    role: 'admin',
     email: 'admin@example.com',
   };
   next();
@@ -97,278 +103,182 @@ app.use('/api/billing', billingRoutes);
 app.use(errorHandler);
 
 describe('E2E: Billing & Subscription Flow', () => {
-  const mockOrganization = {
-    id: 'org-123',
-    name: 'Test Company',
-    stripeCustomerId: 'cus_123',
-    subscriptionId: 'sub_123',
-    subscriptionStatus: 'active',
-    plan: 'Professional',
-    billingEmail: 'billing@example.com',
-  };
-
-  const mockSubscription = {
-    id: 'sub-123',
-    organizationId: 'org-123',
-    stripeSubscriptionId: 'sub_123',
-    plan: 'Professional',
-    status: 'active',
-    currentPeriodStart: new Date(),
-    currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-  };
-
-  const mockInvoice = {
-    id: 'inv-123',
-    organizationId: 'org-123',
-    stripeInvoiceId: 'inv_123',
-    amount: 9900,
-    currency: 'usd',
-    status: 'paid',
-    paidAt: new Date(),
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
-    prismaMock.organization.findUnique.mockResolvedValue(mockOrganization as any);
+    // Default org tier used by tier-comparison routes.
+    tier.getOrganizationTier.mockResolvedValue('Foundation');
   });
 
-  describe('Subscription Signup Flow', () => {
-    it('should complete new subscription signup', async () => {
-      // Step 1: Create checkout session
-      const checkoutResponse = await request(app)
-        .post('/api/billing/checkout')
-        .send({
-          plan: 'Professional',
-          billingCycle: 'monthly',
-        })
-        .expect(200);
+  // ===========================================================================
+  // Subscription details
+  // ===========================================================================
+  describe('Subscription Details', () => {
+    it('should get current subscription', async () => {
+      stripe.getSubscriptionDetails.mockResolvedValue({
+        tier: 'Foundation',
+        status: 'active',
+        currentPeriodEnd: new Date().toISOString(),
+      });
 
-      expect(checkoutResponse.body).toHaveProperty('url');
-      expect(checkoutResponse.body.url).toContain('checkout.stripe.com');
-
-      // Step 2: Verify subscription after webhook (simulated)
-      prismaMock.subscription.findFirst.mockResolvedValue(mockSubscription as any);
-
-      const statusResponse = await request(app)
+      const response = await request(app)
         .get('/api/billing/subscription')
         .expect(200);
 
-      expect(statusResponse.body).toHaveProperty('plan');
-      expect(statusResponse.body).toHaveProperty('status');
+      expect(response.body).toHaveProperty('tier', 'Foundation');
+      expect(response.body).toHaveProperty('status', 'active');
     });
-  });
 
-  describe('Plan Upgrade/Downgrade Flow', () => {
-    it('should upgrade subscription plan', async () => {
-      prismaMock.subscription.findFirst.mockResolvedValue(mockSubscription as any);
-      prismaMock.subscription.update.mockResolvedValue({
-        ...mockSubscription,
-        plan: 'Enterprise',
-      } as any);
+    it('should 404 when no subscription exists', async () => {
+      stripe.getSubscriptionDetails.mockResolvedValue(null);
 
       const response = await request(app)
-        .post('/api/billing/upgrade')
-        .send({
-          newPlan: 'Enterprise',
-          immediate: true,
-        })
-        .expect(200);
+        .get('/api/billing/subscription')
+        .expect(404);
 
-      expect(response.body.plan).toBe('Enterprise');
+      expect(response.body).toHaveProperty('error');
     });
 
-    it('should downgrade subscription with proration', async () => {
-      prismaMock.subscription.findFirst.mockResolvedValue({
-        ...mockSubscription,
-        plan: 'Enterprise',
-      } as any);
-      prismaMock.subscription.update.mockResolvedValue({
-        ...mockSubscription,
-        plan: 'Professional',
-        scheduledDowngrade: true,
-      } as any);
-
-      const response = await request(app)
-        .post('/api/billing/downgrade')
-        .send({
-          newPlan: 'Professional',
-          atPeriodEnd: true,
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('scheduledDowngrade');
-    });
-  });
-
-  describe('Payment Method Management', () => {
-    it('should add payment method', async () => {
-      const response = await request(app)
-        .post('/api/billing/payment-methods')
-        .send({
-          paymentMethodId: 'pm_test_123',
-          setAsDefault: true,
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should list payment methods', async () => {
-      const response = await request(app)
-        .get('/api/billing/payment-methods')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should update default payment method', async () => {
-      const response = await request(app)
-        .patch('/api/billing/payment-methods/pm_123/default')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('success');
-    });
-  });
-
-  describe('Invoice Management', () => {
-    it('should list invoices', async () => {
-      prismaMock.invoice.findMany.mockResolvedValue([mockInvoice] as any);
-
-      const response = await request(app)
-        .get('/api/billing/invoices')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should get invoice PDF', async () => {
-      prismaMock.invoice.findFirst.mockResolvedValue({
-        ...mockInvoice,
-        pdfUrl: 'https://stripe.com/invoice.pdf',
-      } as any);
-
-      const response = await request(app)
-        .get('/api/billing/invoices/inv-123/pdf')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('url');
-    });
-
-    it('should get upcoming invoice preview', async () => {
-      const response = await request(app)
-        .get('/api/billing/invoices/upcoming')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('amount');
-      expect(response.body).toHaveProperty('dueDate');
-    });
-  });
-
-  describe('Usage Tracking', () => {
-    it('should get current usage', async () => {
-      prismaMock.usageRecord.findMany.mockResolvedValue([
-        { type: 'api_calls', count: 5000, limit: 10000 },
-        { type: 'storage_gb', count: 25, limit: 100 },
-        { type: 'users', count: 15, limit: 50 },
+    it('should get subscription history', async () => {
+      prismaMock.subscriptionHistory.findMany.mockResolvedValue([
+        { id: 'sh-1', organizationId: 'org-123', action: 'tier.changed' },
       ] as any);
+      prismaMock.subscriptionHistory.count.mockResolvedValue(1);
+
+      const response = await request(app)
+        .get('/api/billing/history')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('history');
+      expect(response.body).toHaveProperty('total', 1);
+    });
+  });
+
+  // ===========================================================================
+  // Tiers & comparison
+  // ===========================================================================
+  describe('Tiers & Comparison', () => {
+    it('should list available tiers', async () => {
+      tier.getAvailableTiers.mockResolvedValue([
+        { name: 'Foundation', current: true },
+        { name: 'Growth', current: false },
+      ]);
+
+      const response = await request(app)
+        .get('/api/billing/tiers')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('tiers');
+      expect(response.body).toHaveProperty('addOns');
+      expect(Array.isArray(response.body.tiers)).toBe(true);
+    });
+
+    it('should compare current tier to a target tier', async () => {
+      tier.compareTiers.mockReturnValue({ priceDelta: 100 });
+
+      const response = await request(app)
+        .get('/api/billing/compare/Growth')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('currentTier');
+      expect(response.body).toHaveProperty('targetTier');
+      expect(response.body).toHaveProperty('direction', 'upgrade');
+      expect(response.body).toHaveProperty('featureChanges');
+    });
+
+    it('should reject comparison to an invalid tier with 400', async () => {
+      const response = await request(app)
+        .get('/api/billing/compare/NotARealTier')
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should preview a tier change', async () => {
+      tier.compareTiers.mockReturnValue({ priceDelta: 100 });
+      stripe.previewTierChange.mockResolvedValue({ proratedAmount: 4500 });
+
+      const response = await request(app)
+        .post('/api/billing/preview-change')
+        .send({ tier: 'Growth', billingCycle: 'annual' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('comparison');
+      expect(response.body).toHaveProperty('stripePreview');
+    });
+  });
+
+  // ===========================================================================
+  // Usage metrics
+  // ===========================================================================
+  describe('Usage Metrics', () => {
+    it('should get usage metrics and limits', async () => {
+      tier.getAllUsageMetrics.mockResolvedValue({ apiCalls: 5000, users: 15 });
+      tier.getUsageVsLimits.mockResolvedValue({ apiCalls: { used: 5000, limit: 10000 } });
 
       const response = await request(app)
         .get('/api/billing/usage')
         .expect(200);
 
-      expect(response.body).toHaveProperty('api_calls');
-      expect(response.body).toHaveProperty('storage_gb');
-    });
-
-    it('should get usage history', async () => {
-      prismaMock.usageRecord.findMany.mockResolvedValue([
-        { period: '2024-01', api_calls: 8000, storage_gb: 20 },
-        { period: '2024-02', api_calls: 9500, storage_gb: 25 },
-      ] as any);
-
-      const response = await request(app)
-        .get('/api/billing/usage/history')
-        .query({ months: 6 })
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('metrics');
+      expect(response.body).toHaveProperty('limits');
     });
   });
 
-  describe('Subscription Cancellation Flow', () => {
+  // ===========================================================================
+  // Cancel & reactivate
+  // ===========================================================================
+  describe('Cancellation & Reactivation', () => {
     it('should cancel subscription at period end', async () => {
-      prismaMock.subscription.findFirst.mockResolvedValue(mockSubscription as any);
-      prismaMock.subscription.update.mockResolvedValue({
-        ...mockSubscription,
-        cancelAtPeriodEnd: true,
-      } as any);
+      stripe.cancelSubscription.mockResolvedValue(true);
 
       const response = await request(app)
         .post('/api/billing/cancel')
-        .send({
-          reason: 'Too expensive',
-          feedback: 'Great product but budget constraints',
-          immediate: false,
-        })
+        .send({ atPeriodEnd: true, reason: 'Budget constraints' })
         .expect(200);
 
-      expect(response.body).toHaveProperty('cancelAtPeriodEnd', true);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.message).toContain('end of the current billing period');
+      expect(stripe.cancelSubscription).toHaveBeenCalledWith('org-123', true, 'Budget constraints');
     });
 
-    it('should reactivate canceled subscription', async () => {
-      prismaMock.subscription.findFirst.mockResolvedValue({
-        ...mockSubscription,
-        cancelAtPeriodEnd: true,
-      } as any);
-      prismaMock.subscription.update.mockResolvedValue({
-        ...mockSubscription,
-        cancelAtPeriodEnd: false,
-      } as any);
+    it('should reactivate a canceled subscription', async () => {
+      stripe.reactivateSubscription.mockResolvedValue(true);
 
       const response = await request(app)
         .post('/api/billing/reactivate')
         .expect(200);
 
-      expect(response.body).toHaveProperty('cancelAtPeriodEnd', false);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message');
     });
   });
 
-  describe('Billing Portal', () => {
-    it('should create billing portal session', async () => {
+  // ===========================================================================
+  // A-la-carte feature subscriptions
+  // ===========================================================================
+  describe('Feature Subscriptions', () => {
+    it('should list available features', async () => {
+      feature.getAvailableFeaturesForOrganization.mockResolvedValue([
+        { id: 'sso', name: 'Single Sign-On' },
+      ]);
+
       const response = await request(app)
-        .post('/api/billing/portal')
-        .send({
-          returnUrl: 'https://app.example.com/settings/billing',
-        })
+        .get('/api/billing/features')
         .expect(200);
 
-      expect(response.body).toHaveProperty('url');
-      expect(response.body.url).toContain('billing.stripe.com');
-    });
-  });
-
-  describe('Plan Features & Limits', () => {
-    it('should get plan features', async () => {
-      const response = await request(app)
-        .get('/api/billing/plans')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body[0]).toHaveProperty('features');
-      expect(response.body[0]).toHaveProperty('limits');
+      expect(response.body).toHaveProperty('features');
+      expect(Array.isArray(response.body.features)).toBe(true);
     });
 
     it('should check feature access', async () => {
-      prismaMock.subscription.findFirst.mockResolvedValue({
-        ...mockSubscription,
-        features: ['sso', 'advanced_reporting', 'api_access'],
-      } as any);
+      feature.hasFeatureAccess.mockResolvedValue(true);
 
       const response = await request(app)
-        .get('/api/billing/features/sso')
+        .get('/api/billing/features/sso/access')
         .expect(200);
 
-      expect(response.body).toHaveProperty('hasAccess');
+      expect(response.body).toHaveProperty('hasAccess', true);
+      expect(feature.hasFeatureAccess).toHaveBeenCalledWith('org-123', 'sso');
     });
   });
 });

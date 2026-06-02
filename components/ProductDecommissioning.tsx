@@ -280,6 +280,10 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
   const [workflowTasks, setWorkflowTasks] = useState<WorkflowTask[]>([]);
   const [dataPlans, setDataPlans] = useState<DataMigrationPlan[]>([]);
   const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
+  const [showCreateNotif, setShowCreateNotif] = useState(false);
+  const [notifForm, setNotifForm] = useState<{ productId: string; type: CustomerNotification['type']; subject: string; channel: CustomerNotification['channel']; scheduledDate: string; template: string }>({
+    productId: '', type: 'end_of_life', subject: '', channel: 'email', scheduledDate: '', template: '',
+  });
 
   const loadData = useCallback(async (showRefresh = false) => {
     if (showRefresh) setIsRefreshing(true); else setIsLoading(true);
@@ -379,6 +383,47 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
       setLoadError('Failed to create product on server. Local entry retained.');
     }
   }, [serverReachable]);
+
+  const handleCreateNotification = useCallback(async () => {
+    if (!notifForm.productId || !notifForm.subject.trim()) return;
+    const localId = `notif-local-${Date.now()}`;
+    const optimistic: CustomerNotification = {
+      id: localId,
+      productId: notifForm.productId,
+      type: notifForm.type,
+      subject: notifForm.subject.trim(),
+      recipientCount: 0,
+      sentDate: null,
+      scheduledDate: notifForm.scheduledDate || new Date().toISOString().split('T')[0],
+      status: 'draft',
+      channel: notifForm.channel,
+      template: notifForm.template,
+    };
+    // Optimistic insert keeps the UI responsive; the entry is reconciled with the
+    // server-persisted notification once the create call resolves.
+    setNotifications(prev => [optimistic, ...prev]);
+    setShowCreateNotif(false);
+    const payload = {
+      productId: notifForm.productId,
+      channel: notifForm.channel,
+      type: notifForm.type,
+      subject: notifForm.subject.trim(),
+      scheduledDate: notifForm.scheduledDate || undefined,
+      template: notifForm.template || undefined,
+      status: 'draft' as const,
+    };
+    setNotifForm({ productId: '', type: 'end_of_life', subject: '', channel: 'email', scheduledDate: '', template: '' });
+    if (!serverReachable) return;
+    try {
+      await api.modules.decommission.createNotification(payload);
+      // Reload from the server so the locally inserted draft is replaced by the
+      // canonical persisted record (which carries the server-generated id).
+      await loadData(true);
+    } catch {
+      setNotifications(prev => prev.filter(n => n.id !== localId));
+      setLoadError('Failed to create notification on server. The draft was not saved.');
+    }
+  }, [notifForm, serverReachable, loadData]);
 
 
   const filteredProducts = useMemo(() =>
@@ -797,7 +842,11 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
           <option value="All">All Products</option>
           {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <button className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
+        <button
+          onClick={() => { setNotifForm(f => ({ ...f, productId: notifProductFilter !== 'All' ? notifProductFilter : (products[0]?.id ?? '') })); setShowCreateNotif(true); }}
+          disabled={products.length === 0}
+          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1 disabled:opacity-50"
+        >
           <Plus className="w-4 h-4" />Create Notification
         </button>
       </div>
@@ -853,6 +902,66 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
       </div>
     </div>
   );
+
+  const renderCreateNotifModal = () => {
+    if (!showCreateNotif) return null;
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Create Notification</h3>
+            <button onClick={() => setShowCreateNotif(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
+              <select value={notifForm.productId} onChange={e => setNotifForm(f => ({ ...f, productId: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <option value="" disabled>Select a product</option>
+                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <select value={notifForm.type} onChange={e => setNotifForm(f => ({ ...f, type: e.target.value as CustomerNotification['type'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <option value="end_of_sale">End of Sale</option>
+                  <option value="end_of_support">End of Support</option>
+                  <option value="end_of_life">End of Life</option>
+                  <option value="migration_guide">Migration Guide</option>
+                  <option value="final_notice">Final Notice</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Channel</label>
+                <select value={notifForm.channel} onChange={e => setNotifForm(f => ({ ...f, channel: e.target.value as CustomerNotification['channel'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <option value="email">Email</option>
+                  <option value="in_app">In-App</option>
+                  <option value="portal">Portal</option>
+                  <option value="all">All</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+              <input type="text" value={notifForm.subject} onChange={e => setNotifForm(f => ({ ...f, subject: e.target.value }))} placeholder="Notification subject" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Scheduled Date</label>
+              <input type="date" value={notifForm.scheduledDate} onChange={e => setNotifForm(f => ({ ...f, scheduledDate: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Template / Message</label>
+              <textarea rows={3} value={notifForm.template} onChange={e => setNotifForm(f => ({ ...f, template: e.target.value }))} placeholder="Notification body" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 px-5 py-4 border-t border-gray-200">
+            <button onClick={() => setShowCreateNotif(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
+            <button onClick={handleCreateNotification} disabled={!notifForm.productId || !notifForm.subject.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm disabled:opacity-50">Create</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // ---------------------------------------------------------------------------
   // Main Render
@@ -934,6 +1043,8 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
         {activeTab === 'data_management' && renderDataManagement()}
         {activeTab === 'notifications' && renderNotifications()}
       </div>
+
+      {renderCreateNotifModal()}
     </div>
   );
 };

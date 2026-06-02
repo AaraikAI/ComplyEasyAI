@@ -214,11 +214,16 @@ test.describe('Audit Preparation', () => {
 
   test.describe('Network & Security', () => {
     test('audit API calls are properly authenticated', async ({ page }) => {
-      const apiCalls: string[] = [];
+      // Capture audit/evidence API responses. Authenticated requests carry the
+      // httpOnly auth cookie automatically; a properly secured endpoint must
+      // therefore respond with success, a client-side auth status (401/403), or
+      // a not-found — but never a server error, and never leak data on a 401.
+      const apiResponses: Array<{ url: string; status: number }> = [];
 
-      page.on('request', (req) => {
-        if (req.url().includes('/api/') && (req.url().includes('audit') || req.url().includes('evidence'))) {
-          apiCalls.push(req.url());
+      page.on('response', (res) => {
+        const url = res.url();
+        if (url.includes('/api/') && (url.includes('audit') || url.includes('evidence'))) {
+          apiResponses.push({ url, status: res.status() });
         }
       });
 
@@ -226,9 +231,14 @@ test.describe('Audit Preparation', () => {
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.waitForTimeout(2000);
 
-      // API calls should have been made (if authenticated)
-      for (const url of apiCalls) {
-        expect(url).toContain('/api/');
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      // Every audit/evidence API call must resolve to a defined, non-5xx status.
+      for (const res of apiResponses) {
+        expect(res.url).toContain('/api/');
+        expect(res.status, `Unexpected status for ${res.url}`).toBeLessThan(500);
+        expect([200, 201, 204, 304, 401, 403, 404]).toContain(res.status);
       }
     });
 

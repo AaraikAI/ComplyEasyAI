@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { performGapAnalysis } from '../../services/geminiService';
 import { ArrowLeft, Loader2, AlertTriangle, X, Download, TrendingUp, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { AVAILABLE_FRAMEWORKS } from '../../constants';

@@ -20,6 +20,7 @@ import {
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
+import { authenticate as cookieAuthenticate, authorize as roleAuthorize } from '../middleware/auth';
 import crypto from 'crypto';
 
 const router = Router();
@@ -251,6 +252,89 @@ router.get(
       },
     });
   })
+);
+
+// ============================================================================
+// ADMIN UI ROUTES (session-cookie auth, NOT bearer)
+// These match the frontend SCIMSettings.tsx admin actions.
+// ============================================================================
+
+router.post(
+  '/sync',
+  cookieAuthenticate,
+  roleAuthorize('admin'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const organizationId = user?.organizationId as string | undefined;
+    if (!organizationId) {
+      throw new AppError('Missing organization context', 400);
+    }
+
+    const cfg = await prisma.sCIMConfiguration.findUnique({ where: { organizationId } });
+    if (!cfg || !cfg.enabled) {
+      throw new AppError('SCIM is not enabled for this organization', 400);
+    }
+
+    await prisma.sCIMConfiguration.update({
+      where: { organizationId },
+      data: { lastSyncAt: new Date() },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'scim.sync_triggered',
+        userId: user.id,
+        organizationId,
+        hash: crypto.randomUUID(),
+        details: JSON.stringify({ triggeredBy: user.id, triggeredAt: new Date().toISOString() }),
+        ipAddress: req.ip || undefined,
+        userAgent: req.headers['user-agent'] || undefined,
+      },
+    });
+
+    res.status(202).json({ status: 'accepted', lastSyncAt: new Date().toISOString() });
+  }),
+);
+
+router.delete(
+  '/group-mappings/:id',
+  cookieAuthenticate,
+  roleAuthorize('admin'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const organizationId = user?.organizationId as string | undefined;
+    if (!organizationId) {
+      throw new AppError('Missing organization context', 400);
+    }
+
+    const role = await prisma.customRole.findFirst({
+      where: { id: req.params.id, organizationId },
+    });
+    if (!role) {
+      throw new AppError('Group mapping not found', 404);
+    }
+    if (role.isSystem) {
+      throw new AppError('Cannot delete a system role', 403);
+    }
+
+    await prisma.userRole.deleteMany({ where: { roleId: role.id } });
+    await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
+    await prisma.customRole.delete({ where: { id: role.id } });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'scim.group_mapping_deleted',
+        userId: user.id,
+        organizationId,
+        hash: crypto.randomUUID(),
+        details: JSON.stringify({ roleId: role.id, roleName: role.name }),
+        ipAddress: req.ip || undefined,
+        userAgent: req.headers['user-agent'] || undefined,
+      },
+    });
+
+    res.json({ status: 'success', data: { id: role.id, deleted: true } });
+  }),
 );
 
 // ============================================================================
@@ -782,17 +866,27 @@ router.post(
         },
       });
 
-      // Add members if provided
+      // Add members if provided. Member userIds come from the IdP payload and
+      // are NOT trusted: restrict to users that belong to this SCIM config's
+      // organization so a misconfigured/malicious IdP cannot assign roles to
+      // users in another tenant.
       if (members && Array.isArray(members) && members.length > 0) {
         const memberIds = members.map((m: any) => m.value).filter(Boolean);
         if (memberIds.length > 0) {
-          await Promise.allSettled(
-            memberIds.map((userId: string) =>
-              prisma.userRole.create({
-                data: { userId, roleId: role.id },
-              })
-            )
-          );
+          const orgUsers = await prisma.user.findMany({
+            where: { id: { in: memberIds }, organizationId: orgId },
+            select: { id: true },
+          });
+          const validUserIds = orgUsers.map((u) => u.id);
+          if (validUserIds.length > 0) {
+            await Promise.allSettled(
+              validUserIds.map((userId: string) =>
+                prisma.userRole.create({
+                  data: { userId, roleId: role.id },
+                })
+              )
+            );
+          }
         }
       }
 

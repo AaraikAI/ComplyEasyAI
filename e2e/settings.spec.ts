@@ -7,6 +7,16 @@ import { test, expect } from '@playwright/test';
 
 const API_BASE = process.env.VITE_API_URL || 'http://localhost:3001';
 
+// Paths the server intentionally exempts from CSRF validation (pre-login auth
+// endpoints and HMAC-verified webhook receivers — see server/src/middleware/csrf.ts).
+const CSRF_EXEMPT = [
+  '/auth/login', '/auth/register', '/auth/refresh', '/auth/magic-link',
+  '/auth/verify', '/auth/2fa/complete', '/webhook', '/csrf-token',
+];
+function isCsrfExempt(url: string): boolean {
+  return CSRF_EXEMPT.some((p) => url.includes(p));
+}
+
 test.describe('Settings', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/settings');
@@ -89,16 +99,32 @@ test.describe('Settings', () => {
 
       const nameField = page.locator('[name="name"], [data-testid="profile-name"]');
       if (await nameField.isVisible({ timeout: 3000 }).catch(() => false)) {
+        // Capture any profile-update mutation so we can confirm the empty value is
+        // not silently persisted. handleSaveProfile validates the name client-side
+        // (toast.warning 'Name is required') and returns before calling the API.
+        let profileUpdateSent = false;
+        page.on('request', (req) => {
+          if (['PUT', 'PATCH', 'POST'].includes(req.method()) && /\/api\/.*(profile|auth|users)/.test(req.url())) {
+            profileUpdateSent = true;
+          }
+        });
+
         await nameField.clear();
         const saveBtn = page.getByRole('button', { name: /save/i }).first();
         if (await saveBtn.isVisible()) {
           await saveBtn.click();
-          await page.waitForTimeout(1000);
-          // Should show validation error or prevent submit
-          const error = page.locator('[role="alert"], .error, :text("required"), :text("invalid")').first();
+          await page.waitForTimeout(1500);
+
+          // A validation message must surface (the "Name is required" warning,
+          // an alert/status toast, or a field error)...
+          const error = page.locator(
+            '[role="alert"], [role="status"], .error, :text("required"), :text("Name is required"), :text("invalid")'
+          ).first();
           const hasError = await error.isVisible({ timeout: 3000 }).catch(() => false);
-          // Either an error message or the form prevented submission
-          expect(true).toBeTruthy(); // Form handled empty input
+
+          // ...OR the empty submission was prevented entirely (no update request).
+          // Either way, an empty name must never be accepted by a successful save.
+          expect(hasError || !profileUpdateSent).toBeTruthy();
         }
       }
     });
@@ -213,13 +239,16 @@ test.describe('Settings', () => {
     });
 
     test('mutation requests include CSRF tokens', async ({ page }) => {
-      const mutations: Array<{ method: string; hasCsrf: boolean }> = [];
+      const mutations: Array<{ method: string; url: string; hasCsrf: boolean }> = [];
 
       page.on('request', (req) => {
         const method = req.method();
-        if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && req.url().includes('/api/')) {
+        if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
+          && req.url().includes('/api/')
+          && !isCsrfExempt(req.url())) {
           mutations.push({
             method,
+            url: req.url(),
             hasCsrf: !!req.headers()['x-csrf-token'],
           });
         }
@@ -238,10 +267,15 @@ test.describe('Settings', () => {
         }
       }
 
-      // Verify CSRF was included if any mutations were sent
-      for (const m of mutations) {
-        expect(m.hasCsrf).toBeTruthy();
-      }
+      // If the save produced no mutating request (e.g. nothing changed or the
+      // affordance is unavailable in this session) there is nothing to verify —
+      // skip so the absence is surfaced rather than passing vacuously.
+      if (mutations.length === 0) test.skip();
+
+      // Every captured mutating request must carry an x-csrf-token. A missing
+      // token on any of them is a regression and fails the test.
+      const missing = mutations.filter((m) => !m.hasCsrf).map((m) => `${m.method} ${m.url}`);
+      expect(missing, `mutating requests missing CSRF: ${missing.join(', ')}`).toHaveLength(0);
     });
   });
 });

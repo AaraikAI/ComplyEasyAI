@@ -138,11 +138,12 @@ describe('Rate Limiter Middleware', () => {
   });
 
   describe('frameworkLimiter configuration', () => {
-    it('should use 10-second window with 100 max requests', () => {
+    it('should use a 10-second window with 50 max requests outside development', () => {
       const options = rateLimitConfigs['frameworkLimiter'];
       expect(options).toBeDefined();
       expect(options.windowMs).toBe(10000);
-      expect(options.max).toBe(100);
+      // env is mocked as 'test', so the non-development cap (50) applies.
+      expect(options.max).toBe(50);
     });
   });
 

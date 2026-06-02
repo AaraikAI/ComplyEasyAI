@@ -166,11 +166,19 @@ describe('changeTierSchema contract', () => {
   });
 
   it('should reject non-boolean immediate', () => {
+    // Joi boolean() only coerces the literal strings 'true'/'false' (with convert:true);
+    // an arbitrary string like 'yes' is not a valid boolean and must be rejected.
     const { error } = changeTierSchema.validate(
       { targetTier: 'Growth', immediate: 'yes' }, opts,
     );
-    // Joi may convert string 'yes' - check that it doesn't crash
-    expect(true).toBe(true);
+    expect(error).toBeDefined();
+    expect(error!.details.some((d) => d.path.includes('immediate'))).toBe(true);
+    // And under strict (convert:false), even 'true'/'false' strings are rejected.
+    const strict = changeTierSchema.validate(
+      { targetTier: 'Growth', immediate: 'true' }, { abortEarly: false, convert: false },
+    );
+    expect(strict.error).toBeDefined();
+    expect(strict.error!.details.some((d) => d.path.includes('immediate'))).toBe(true);
   });
 
   it('should reject unknown fields', () => {

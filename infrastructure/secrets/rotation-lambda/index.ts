@@ -51,7 +51,9 @@ const secretsManager = new SecretsManagerClient({
 export const handler = async (event: RotationEvent): Promise<void> => {
   const { SecretId, ClientRequestToken, Step } = event;
 
-  console.log(`Processing rotation step: ${Step} for secret: ${SecretId}`);
+  // Log only the non-sensitive rotation step; the secret identifier/ARN
+  // is intentionally omitted from logs.
+  console.log(`Processing rotation step: ${Step}`);
 
   // Get secret metadata to determine rotation strategy
   const describeResponse = await secretsManager.send(
@@ -323,12 +325,26 @@ async function setDatabasePassword(
   secret: Record<string, any>,
   metadata: SecretMetadata
 ): Promise<void> {
+  // Require explicit identities — never default to a well-known role.
+  const adminUser = secret.adminUsername || process.env.DB_ADMIN_USER;
+  if (!adminUser) {
+    throw new Error(
+      'Rotation aborted: admin username not provided (set secret.adminUsername or DB_ADMIN_USER).'
+    );
+  }
+  const dbUser = secret.username;
+  if (!dbUser) {
+    throw new Error(
+      'Rotation aborted: target database username not provided (set secret.username).'
+    );
+  }
+
   const { Client } = await import('pg');
   const adminClient = new Client({
     host: secret.host || process.env.DB_HOST,
     port: secret.port || parseInt(process.env.DB_PORT || '5432'),
     database: secret.dbname || process.env.DB_NAME,
-    user: secret.adminUsername || process.env.DB_ADMIN_USER || 'postgres',
+    user: adminUser,
     password: secret.adminPassword || process.env.DB_ADMIN_PASSWORD,
     ssl: {
       rejectUnauthorized: true,
@@ -338,7 +354,6 @@ async function setDatabasePassword(
 
   try {
     await adminClient.connect();
-    const dbUser = secret.username || 'app_user';
     // Use parameterized query — password is passed safely via SET PASSWORD
     await adminClient.query(
       `ALTER USER ${adminClient.escapeIdentifier(dbUser)} WITH PASSWORD $1`,
@@ -357,13 +372,18 @@ async function testDatabaseConnection(
   if (!secret.password || secret.password.length < 16) {
     throw new Error('Invalid database password');
   }
+  if (!secret.username) {
+    throw new Error(
+      'Rotation test aborted: target database username not provided (set secret.username).'
+    );
+  }
 
   const { Client } = await import('pg');
   const client = new Client({
     host: secret.host || process.env.DB_HOST,
     port: secret.port || parseInt(process.env.DB_PORT || '5432'),
     database: secret.dbname || process.env.DB_NAME,
-    user: secret.username || 'app_user',
+    user: secret.username,
     password: secret.password,
     ssl: {
       rejectUnauthorized: true,

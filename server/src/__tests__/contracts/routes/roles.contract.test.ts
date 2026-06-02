@@ -121,7 +121,12 @@ describe('Roles API — Contract Tests', () => {
   // PATCH /:id (admin)
   describe('PATCH /api/roles/:id', () => {
     it('should update a role', async () => {
-      prismaMock.customRole.findFirst.mockResolvedValue({ id: 'role-1', organizationId: 'org-123', isSystem: false, name: 'Old' });
+      // First findFirst loads the role being updated; because the name changes,
+      // the handler runs a second findFirst to check for a duplicate name —
+      // that must resolve to null so no 409 conflict is raised.
+      prismaMock.customRole.findFirst
+        .mockResolvedValueOnce({ id: 'role-1', organizationId: 'org-123', isSystem: false, name: 'Old' })
+        .mockResolvedValueOnce(null);
       prismaMock.customRole.update.mockResolvedValue({ id: 'role-1', name: 'New', permissions: [] });
 
       const res = await request(app).patch('/api/roles/role-1').set('Authorization', `Bearer ${authToken}`).send({ name: 'New' });

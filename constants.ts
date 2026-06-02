@@ -1,6 +1,9 @@
 
 import { ComplianceFramework, ComplianceStatus, FrameworkType, RiskItem, AuditLog, User, Integration } from './types';
 
+// Development/test seed fixtures. Consumed solely by the @deprecated offline
+// services/storage.ts module (no production importers). Live data is served by
+// the backend API via services/api.ts; these seeds never reach production views.
 export const MOCK_USERS: User[] = [
   {
     id: 'u1',

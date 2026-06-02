@@ -318,6 +318,8 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const [isRunningAgent, setIsRunningAgent] = useState(false);
   const [vendorAssessmentRunning, setVendorAssessmentRunning] = useState<Record<string, boolean>>({});
   const [vendorAssessmentComplete, setVendorAssessmentComplete] = useState<Record<string, boolean>>({});
+  const [vendorAssessmentError, setVendorAssessmentError] = useState<Record<string, string>>({});
+  const [vendorAssessmentResult, setVendorAssessmentResult] = useState<Record<string, any>>({});
   const [alertThresholdVendor, setAlertThresholdVendor] = useState<string | null>(null);
   const [socReportRequested, setSocReportRequested] = useState<Record<string, boolean>>({});
   const [assessmentDetailView, setAssessmentDetailView] = useState<string | null>(null);
@@ -325,6 +327,8 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const [generatingReports, setGeneratingReports] = useState<Record<number, boolean>>({});
   const [generatedReports, setGeneratedReports] = useState<Record<number, boolean>>({});
   const [scheduleReportIdx, setScheduleReportIdx] = useState<number | null>(null);
+  // Reports actually generated in this session (real downloadable files built from live data).
+  const [recentReports, setRecentReports] = useState<Array<{ name: string; date: string; type: string; size: string; content: string; mime: string }>>([]);
 
   // Live data loaded from backend on mount.
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -415,6 +419,40 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
     }
   }, [assessmentQueue, vendors]);
 
+  // Run a real AI risk assessment for a single vendor against the backend.
+  const handleRunVendorAssessment = useCallback(async (vendor: Vendor) => {
+    if (vendorAssessmentRunning[vendor.id]) return;
+    setVendorAssessmentRunning(prev => ({ ...prev, [vendor.id]: true }));
+    setVendorAssessmentComplete(prev => ({ ...prev, [vendor.id]: false }));
+    setVendorAssessmentError(prev => {
+      const next = { ...prev };
+      delete next[vendor.id];
+      return next;
+    });
+    try {
+      const result = await api.ai.agenticVendorRisk(
+        {
+          name: vendor.name,
+          service: vendor.category || 'Cloud Services',
+          dataAccess: vendor.dataAccess || 'Unknown data access',
+          certifications: vendor.certifications,
+          subProcessors: vendor.fourthParties,
+        },
+        ['Security', 'Privacy', 'Operational', 'Financial', 'Compliance', 'Fourth-Party']
+      );
+      setVendorAssessmentResult(prev => ({ ...prev, [vendor.id]: result }));
+      setVendorAssessmentComplete(prev => ({ ...prev, [vendor.id]: true }));
+    } catch (error: any) {
+      logger.error('Vendor assessment error:', error);
+      setVendorAssessmentError(prev => ({
+        ...prev,
+        [vendor.id]: error?.message || 'Failed to run assessment. Please try again.',
+      }));
+    } finally {
+      setVendorAssessmentRunning(prev => ({ ...prev, [vendor.id]: false }));
+    }
+  }, [vendorAssessmentRunning]);
+
   const handleExport = useCallback(() => {
     const exportData = {
       vendors,
@@ -430,6 +468,73 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
     a.click();
     URL.revokeObjectURL(url);
   }, [vendors, assessmentQueue, avgRiskScore]);
+
+  // Trigger a browser download for arbitrary text content.
+  const downloadFile = useCallback((fileName: string, content: string, mime: string) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  // Build a real report file from the live vendor data currently loaded.
+  const buildReportContent = useCallback((title: string, type: string): string => {
+    const generatedAt = new Date().toISOString();
+    if (type === 'CSV') {
+      const header = 'Vendor,Tier,Status,Overall Risk,Security,Privacy,Operational,Financial,Compliance,SLA %,Country';
+      const rows = vendors.map(v => [
+        v.name, v.tier, v.status, v.overallRiskScore,
+        v.riskBreakdown.security, v.riskBreakdown.privacy, v.riskBreakdown.operational,
+        v.riskBreakdown.financial, v.riskBreakdown.compliance, v.slaCompliance, v.country,
+      ].map(cell => {
+        const s = String(cell ?? '');
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      }).join(','));
+      return [`# ${title}`, `# Generated: ${generatedAt}`, header, ...rows].join('\n');
+    }
+    // Non-CSV reports: emit a populated JSON summary built from live data.
+    return JSON.stringify({
+      title,
+      generatedAt,
+      summary: {
+        totalVendors: vendors.length,
+        criticalTier: criticalVendors,
+        avgRiskScore,
+        openFindings,
+        activeAssessments,
+      },
+      vendors,
+      assessmentQueue,
+    }, null, 2);
+  }, [vendors, assessmentQueue, avgRiskScore, criticalVendors, openFindings, activeAssessments]);
+
+  // Generate a report from live data, download it, and record it in the session list.
+  const handleGenerateReport = useCallback((idx: number, title: string, type: string) => {
+    if (generatingReports[idx]) return;
+    setGeneratingReports(prev => ({ ...prev, [idx]: true }));
+    setGeneratedReports(prev => ({ ...prev, [idx]: false }));
+    try {
+      const content = buildReportContent(title, type);
+      const ext = type.toLowerCase() === 'csv' ? 'csv' : 'json';
+      const mime = type.toLowerCase() === 'csv' ? 'text/csv' : 'application/json';
+      const dateStr = new Date().toISOString().split('T')[0];
+      const fileName = `${title.replace(/\s+/g, '_')}_${dateStr}.${ext}`;
+      downloadFile(fileName, content, mime);
+      const sizeKb = `${Math.max(1, Math.round(new Blob([content]).size / 1024))} KB`;
+      setRecentReports(prev => [
+        { name: `${title} - ${dateStr}`, date: dateStr, type, size: sizeKb, content, mime },
+        ...prev,
+      ].slice(0, 10));
+      setGeneratedReports(prev => ({ ...prev, [idx]: true }));
+    } catch (error: any) {
+      logger.error('Report generation error:', error);
+    } finally {
+      setGeneratingReports(prev => ({ ...prev, [idx]: false }));
+    }
+  }, [generatingReports, buildReportContent, downloadFile]);
 
   const tabs = [
     { key: 'queue', label: 'Vendor Queue', icon: <Layers size={16} />, count: vendors.length },
@@ -824,15 +929,7 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
                     <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
                       <button
-                        onClick={() => {
-                          if (vendorAssessmentRunning[vendor.id]) return;
-                          setVendorAssessmentRunning(prev => ({ ...prev, [vendor.id]: true }));
-                          setVendorAssessmentComplete(prev => ({ ...prev, [vendor.id]: false }));
-                          setTimeout(() => {
-                            setVendorAssessmentRunning(prev => ({ ...prev, [vendor.id]: false }));
-                            setVendorAssessmentComplete(prev => ({ ...prev, [vendor.id]: true }));
-                          }, 2000);
-                        }}
+                        onClick={() => handleRunVendorAssessment(vendor)}
                         disabled={vendorAssessmentRunning[vendor.id]}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
                       >
@@ -873,6 +970,30 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
                         )}
                       </button>
                     </div>
+
+                    {/* Assessment outcome */}
+                    {vendorAssessmentError[vendor.id] && (
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-red-700 text-xs">
+                        <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
+                        {vendorAssessmentError[vendor.id]}
+                      </div>
+                    )}
+                    {vendorAssessmentComplete[vendor.id] && vendorAssessmentResult[vendor.id] && (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-gray-700">
+                        <p className="font-semibold text-green-800 flex items-center gap-1 mb-1">
+                          <Sparkles size={12} />AI Assessment Result
+                        </p>
+                        {typeof vendorAssessmentResult[vendor.id]?.overallRiskScore === 'number' && (
+                          <p>Overall risk score: <span className="font-medium">{vendorAssessmentResult[vendor.id].overallRiskScore}</span></p>
+                        )}
+                        {vendorAssessmentResult[vendor.id]?.summary && (
+                          <p className="mt-1 text-gray-600">{vendorAssessmentResult[vendor.id].summary}</p>
+                        )}
+                        {Array.isArray(vendorAssessmentResult[vendor.id]?.findings) && vendorAssessmentResult[vendor.id].findings.length > 0 && (
+                          <p className="mt-1 text-gray-600">{vendorAssessmentResult[vendor.id].findings.length} finding(s) identified.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1135,16 +1256,8 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
                       <p className="text-xs text-gray-500 mt-0.5">{report.desc}</p>
                       <div className="flex items-center gap-2 mt-3">
                         <button
-                          onClick={() => {
-                            if (generatingReports[idx]) return;
-                            setGeneratingReports(prev => ({ ...prev, [idx]: true }));
-                            setGeneratedReports(prev => ({ ...prev, [idx]: false }));
-                            setTimeout(() => {
-                              setGeneratingReports(prev => ({ ...prev, [idx]: false }));
-                              setGeneratedReports(prev => ({ ...prev, [idx]: true }));
-                            }, 2000);
-                          }}
-                          disabled={generatingReports[idx]}
+                          onClick={() => handleGenerateReport(idx, report.title, report.type)}
+                          disabled={generatingReports[idx] || loading}
                           className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
                         >
                           {generatingReports[idx] ? (
@@ -1170,8 +1283,8 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
                       {scheduleReportIdx === idx && (
                         <div className="mt-2 p-2 bg-brand-50 border border-brand-200 rounded-lg">
                           <p className="text-xs text-brand-700 flex items-center gap-1">
-                            <CheckCircle2 size={10} />
-                            Report scheduled for automatic weekly generation every Monday at 9:00 AM.
+                            <Info size={10} />
+                            Recurring report scheduling is configured by an administrator under Reporting settings.
                           </p>
                         </div>
                       )}
@@ -1181,47 +1294,40 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
               ))}
             </div>
 
-            {/* Recent Reports */}
+            {/* Recent Reports (generated this session from live data) */}
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="p-4 border-b border-gray-100">
                 <h4 className="text-sm font-semibold text-gray-900">Recently Generated Reports</h4>
               </div>
-              <div className="divide-y divide-gray-100">
-                {[
-                  { name: 'Vendor Risk Summary - February 2026', date: '2026-02-15', type: 'PDF', size: '2.4 MB' },
-                  { name: 'CloudSync Analytics Emergency Assessment', date: '2026-02-10', type: 'PDF', size: '1.8 MB' },
-                  { name: 'Q4 2025 Vendor Review', date: '2026-01-15', type: 'PDF', size: '3.1 MB' },
-                  { name: 'Fourth-Party Risk Analysis', date: '2026-01-10', type: 'PDF', size: '1.2 MB' },
-                ].map((report, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <FileText size={16} className="text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-700">{report.name}</p>
-                        <p className="text-xs text-gray-400">{new Date(report.date).toLocaleDateString()} | {report.type} | {report.size}</p>
+              {recentReports.length === 0 ? (
+                <div className="p-6 text-center text-sm text-gray-500">
+                  No reports generated yet. Use the Generate buttons above to create a report from your current vendor data.
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {recentReports.map((report, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <FileText size={16} className="text-gray-400" />
+                        <div>
+                          <p className="text-sm text-gray-700">{report.name}</p>
+                          <p className="text-xs text-gray-400">{new Date(report.date).toLocaleDateString()} | {report.type} | {report.size}</p>
+                        </div>
                       </div>
+                      <button
+                        onClick={() => {
+                          const ext = report.type.toLowerCase() === 'csv' ? 'csv' : 'json';
+                          downloadFile(`${report.name.replace(/\s+/g, '_')}.${ext}`, report.content, report.mime);
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-brand-600 hover:text-brand-700 font-medium hover:bg-brand-50 rounded transition-colors"
+                      >
+                        <Download size={12} />
+                        Download
+                      </button>
                     </div>
-                    <button
-                      onClick={() => {
-                        const blob = new Blob(
-                          [`${report.name}\n\nGenerated: ${report.date}\nType: ${report.type}\nSize: ${report.size}\n\nThis is a placeholder report document.`],
-                          { type: report.type === 'CSV' ? 'text/csv' : 'application/pdf' }
-                        );
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `${report.name.replace(/\s+/g, '_')}.${report.type.toLowerCase()}`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }}
-                      className="flex items-center gap-1 px-2 py-1 text-xs text-brand-600 hover:text-brand-700 font-medium hover:bg-brand-50 rounded transition-colors"
-                    >
-                      <Download size={12} />
-                      Download
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

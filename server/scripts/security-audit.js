@@ -24,16 +24,37 @@ try {
   const auditData = JSON.parse(auditOutput);
   
   if (auditData.vulnerabilities) {
-    const vulnCount = Object.keys(auditData.vulnerabilities).length;
-    console.log(`   Found ${vulnCount} vulnerabilities`);
-    
+    // npm audit v7+ keys `vulnerabilities` by package name, so its length is the
+    // count of affected packages. The true vulnerability total lives under
+    // metadata.vulnerabilities.total.
+    const totals = (auditData.metadata && auditData.metadata.vulnerabilities) || {};
+    const vulnCount = totals.total != null
+      ? totals.total
+      : Object.keys(auditData.vulnerabilities).length;
+    const affectedPackages = Object.keys(auditData.vulnerabilities).length;
+    console.log(`   Found ${vulnCount} vulnerabilities across ${affectedPackages} packages`);
+
     Object.entries(auditData.vulnerabilities).forEach(([pkg, vuln]) => {
       if (vuln.severity === 'high' || vuln.severity === 'critical') {
+        // In v7+ advisory detail (title/url) lives on the `via` entries, which
+        // are either advisory objects or plain dependency-name strings.
+        const advisory = Array.isArray(vuln.via)
+          ? vuln.via.find((v) => v && typeof v === 'object')
+          : null;
+        const title = advisory ? advisory.title : `Vulnerable dependency: ${pkg}`;
+        // fixAvailable may be a boolean or an object describing the fixing version.
+        let patched;
+        if (vuln.fixAvailable && typeof vuln.fixAvailable === 'object') {
+          patched = `${vuln.fixAvailable.name}@${vuln.fixAvailable.version}`;
+        } else if (vuln.fixAvailable === true) {
+          patched = 'run `npm audit fix`';
+        }
+
         auditResults.dependencyVulnerabilities.push({
           package: pkg,
           severity: vuln.severity,
-          title: vuln.title,
-          patched: vuln.patched_versions,
+          title,
+          patched,
         });
       }
     });

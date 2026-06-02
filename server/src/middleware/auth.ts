@@ -77,7 +77,7 @@ const authenticateMiddleware = async (
     }
 
     try {
-      const decoded = jwt.verify(token, config.jwt.secret) as {
+      const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] }) as {
         userId: string;
         email: string;
         role: string;
@@ -212,7 +212,7 @@ export const generateRefreshToken = (userId: string): string => {
 
 export const verifyRefreshToken = (token: string): string | null => {
   try {
-    const decoded = jwt.verify(token, config.jwt.refreshSecret) as { userId: string };
+    const decoded = jwt.verify(token, config.jwt.refreshSecret, { algorithms: ['HS256'] }) as { userId: string };
     return decoded.userId;
   } catch (error) {
     logger.error('Refresh token verification failed', error);

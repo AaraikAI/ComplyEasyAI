@@ -85,6 +85,8 @@ describe('VendorRiskService contract', () => {
         userId: 'user-1',
       });
 
+      // The in-transaction initial assessment create no longer eager-loads the
+      // vendor relation; it writes only the assessment data.
       expect(prismaMock.vendorAssessment.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           vendorId: 'vendor-new',
@@ -92,7 +94,6 @@ describe('VendorRiskService contract', () => {
           status: 'In_Progress',
           assessedBy: 'user-1',
         }),
-        include: { vendor: true },
       });
     });
 

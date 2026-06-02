@@ -12,9 +12,17 @@ test.describe('Accessibility', () => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
-    // Should have at least one h1
-    const h1Count = await page.locator('h1').count();
-    expect(h1Count).toBeGreaterThanOrEqual(0);
+    // A landmark heading must exist so screen readers can establish document structure.
+    // The app shell always renders at least one h1 (route headings) or, on the
+    // unauthenticated landing page, the marketing h1.
+    const headingCount = await page.locator('h1, h2').count();
+    expect(headingCount).toBeGreaterThan(0);
+
+    // The top-level heading must carry visible text (not an empty/icon-only h1).
+    const topHeading = page.locator('h1, h2').first();
+    await expect(topHeading).toBeVisible({ timeout: 10000 });
+    const topHeadingText = (await topHeading.textContent())?.trim() ?? '';
+    expect(topHeadingText.length).toBeGreaterThan(0);
   });
 
   test('Interactive elements are keyboard accessible', async ({ page }) => {
@@ -39,22 +47,37 @@ test.describe('Accessibility', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
-    // Get all buttons and check they have text or aria-label
+    // Every visible button must expose an accessible name (text, aria-label,
+    // aria-labelledby, or title) so assistive technology can announce it.
     const buttons = page.locator('button');
     const count = await buttons.count();
+    expect(count).toBeGreaterThan(0);
 
-    for (let i = 0; i < Math.min(count, 10); i++) {
+    const unnamed: number[] = [];
+    let visibleChecked = 0;
+
+    for (let i = 0; i < count; i++) {
       const button = buttons.nth(i);
-      const text = await button.textContent();
+      if (!(await button.isVisible())) continue;
+      visibleChecked += 1;
+
+      const text = (await button.textContent())?.trim() ?? '';
       const ariaLabel = await button.getAttribute('aria-label');
+      const ariaLabelledBy = await button.getAttribute('aria-labelledby');
       const title = await button.getAttribute('title');
 
-      // Each button should have some accessible name
-      const hasName = (text && text.trim().length > 0) || ariaLabel || title;
-      if (await button.isVisible()) {
-        expect(hasName).toBeTruthy();
-      }
+      const hasName =
+        text.length > 0 ||
+        (ariaLabel?.trim().length ?? 0) > 0 ||
+        (ariaLabelledBy?.trim().length ?? 0) > 0 ||
+        (title?.trim().length ?? 0) > 0;
+
+      if (!hasName) unnamed.push(i);
     }
+
+    // At least one visible button must have been evaluated, and none may be unnamed.
+    expect(visibleChecked).toBeGreaterThan(0);
+    expect(unnamed, `Visible buttons missing an accessible name at indices: ${unnamed.join(', ')}`).toHaveLength(0);
   });
 
   test('Images have alt text', async ({ page }) => {

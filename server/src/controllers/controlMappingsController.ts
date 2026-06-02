@@ -42,12 +42,20 @@ class ControlMappingsController {
         throw new AppError('Target control not found', 404);
       }
 
-      // Check if mapping already exists (bidirectional check)
+      // Check if mapping already exists (bidirectional check), scoped to the
+      // caller's organization so this never surfaces or conflicts with mappings
+      // owned by another organization.
       const existing = await prisma.controlMapping.findFirst({
         where: {
-          OR: [
-            { sourceControlId, targetControlId },
-            { sourceControlId: targetControlId, targetControlId: sourceControlId },
+          AND: [
+            { sourceControl: { framework: { organizationId } } },
+            { targetControl: { framework: { organizationId } } },
+            {
+              OR: [
+                { sourceControlId, targetControlId },
+                { sourceControlId: targetControlId, targetControlId: sourceControlId },
+              ],
+            },
           ],
         },
       });
@@ -325,10 +333,12 @@ class ControlMappingsController {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
 
-      // Get all mappings for organization
+      // Get all mappings for organization. Both source AND target control
+      // frameworks must belong to the caller's organization so that no
+      // cross-tenant framework/control names are exposed in the export.
       const mappings = await prisma.controlMapping.findMany({
         where: {
-          OR: [
+          AND: [
             {
               sourceControl: {
                 framework: {
@@ -386,6 +396,18 @@ class ControlMappingsController {
       const csvRows = mappings.map((m) => 
         `"${m.sourceControl.framework.name || ''}","${m.sourceControl.name || ''}","${m.targetControl.framework.name || ''}","${m.targetControl.name || ''}","${m.mappingType || ''}","${m.confidence || ''}"`
       ).join('\n');
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'control_mappings.exported',
+          userId: (req as AuthRequest).user!.id,
+          organizationId: (req as AuthRequest).user!.organizationId,
+          hash: require('uuid').v4(),
+          details: JSON.stringify({ recordCount: mappings.length, format: 'csv' }),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
 
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=control-mappings.csv');

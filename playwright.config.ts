@@ -16,8 +16,9 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
 
-  /* Opt out of parallel tests on CI */
-  workers: process.env.CI ? 1 : undefined,
+  /* CI runners have 4 vCPUs; 2 workers keeps the full browser suite within the
+     job timeout without exhausting CPU (1 worker cannot finish in time). */
+  workers: process.env.CI ? 2 : undefined,
 
   /* Reporter to use */
   reporter: process.env.CI

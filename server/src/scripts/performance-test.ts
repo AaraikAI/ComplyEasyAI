@@ -145,7 +145,7 @@ class PerformanceTester {
     fs.writeFileSync(textFilepath, textReport);
 
     logger.info(`Performance report saved to ${filepath}`);
-    console.log('\n' + textReport);
+    logger.info('\n' + textReport);
   }
 
   /**

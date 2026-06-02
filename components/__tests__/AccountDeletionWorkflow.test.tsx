@@ -38,70 +38,73 @@ describe('AccountDeletionWorkflow', () => {
 
   it('displays account deletion workflow content', () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content.length).toBeGreaterThan(0);
+    // Tab labels are static text rendered on the header regardless of data load.
+    expect(screen.getByRole('button', { name: /Overview/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Requests/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Settings/i })).toBeInTheDocument();
   });
 
   it('calls onBack when back button clicked', () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    const backBtn = screen.getByTestId('icon-ArrowLeft')?.closest('button');
-    if (backBtn) {
-      fireEvent.click(backBtn);
-      expect(mockOnBack).toHaveBeenCalled();
-    }
+    const backBtn = screen.getByTestId('icon-ArrowLeft').closest('button');
+    expect(backBtn).not.toBeNull();
+    fireEvent.click(backBtn as HTMLElement);
+    expect(mockOnBack).toHaveBeenCalledTimes(1);
   });
 
   it('shows tab navigation for overview, requests, execution, audit, settings', () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThan(0);
+    ['Overview', 'Requests', 'Execution', 'Audit', 'Settings'].forEach(label => {
+      expect(screen.getByRole('button', { name: new RegExp(label, 'i') })).toBeInTheDocument();
+    });
   });
 
   it('switches between tabs', () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    const buttons = screen.getAllByRole('button');
-    buttons.forEach(btn => {
-      const text = btn.textContent || '';
-      if (text.includes('Request') || text.includes('Execution') || text.includes('Audit') || text.includes('Settings') || text.includes('setting')) {
-        fireEvent.click(btn);
-      }
-    });
-    expect(document.body.textContent).toBeTruthy();
+    // Settings tab surfaces unique static content not present on Overview.
+    fireEvent.click(screen.getByRole('button', { name: /Settings/i }));
+    expect(screen.getByText(/Grace Period Configuration/i)).toBeInTheDocument();
+    expect(screen.getByText(/Deletion Method/i)).toBeInTheDocument();
   });
 
   it('renders overview with metrics', () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    // Overview is the default tab and renders the stat-card labels + distribution.
+    expect(screen.getByText(/Total Requests/i)).toBeInTheDocument();
+    expect(screen.getByText(/Status Distribution/i)).toBeInTheDocument();
   });
 
   it('handles empty deletion requests', () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    // With no requests loaded, the Requests tab shows the empty-state message.
+    fireEvent.click(screen.getByRole('button', { name: /Requests/i }));
+    expect(screen.getByText(/No requests match your criteria/i)).toBeInTheDocument();
   });
 
-  it('handles API errors', () => {
-    mockGet.mockRejectedValue(new Error('API Error'));
+  it('handles API errors', async () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    // The api mock in this file lacks api.privacy, so the loader surfaces an error banner.
+    await waitFor(() => expect(screen.getByText(/Retry/i)).toBeInTheDocument());
   });
 
   it('shows status flow pipeline', () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    // STATUS_FLOW contains steps like Submitted, Verified, Located, Review, etc.
-    expect(content).toBeTruthy();
+    // STATUS_FLOW labels appear in the Status Distribution rows.
+    expect(screen.getByText('Submitted')).toBeInTheDocument();
+    expect(screen.getByText('Verified')).toBeInTheDocument();
+    expect(screen.getByText('Approved')).toBeInTheDocument();
   });
 
   it('renders stat cards', () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    const content = document.body.textContent || '';
-    expect(content).toBeTruthy();
+    expect(screen.getByText(/Avg Processing Time/i)).toBeInTheDocument();
+    expect(screen.getByText(/Retention Hold Conflicts/i)).toBeInTheDocument();
   });
 
   it('shows search/filter functionality', () => {
     render(<AccountDeletionWorkflow onBack={mockOnBack} />);
-    const inputs = document.querySelectorAll('input');
-    expect(document.body.innerHTML.length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Requests/i }));
+    const searchInputs = document.querySelectorAll('input[type="text"]');
+    expect(searchInputs.length).toBeGreaterThan(0);
   });
 });

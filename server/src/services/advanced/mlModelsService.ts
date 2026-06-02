@@ -33,6 +33,10 @@ export interface DeepfakeDetectionResult {
 class MLModelsService {
   private tgnModel: tf.LayersModel | null = null;
   private deepfakeModel: tf.LayersModel | null = null;
+  // True only when real pre-trained deepfake weights were loaded. When false the
+  // detector is running on untrained weights, so detectDeepfake fails closed instead
+  // of returning a confident verdict for this security control.
+  private deepfakeModelTrained = false;
   private isInitialized = false;
 
   /**
@@ -168,11 +172,14 @@ class MLModelsService {
         metrics: ['accuracy', 'precision', 'recall'],
       });
 
-      // Try to load pre-trained weights if available
-      await this.loadModelWeights(model, 'deepfake');
+      // Try to load pre-trained weights if available. The detector only emits verdicts
+      // when real weights are present (see detectDeepfake fail-closed guard).
+      this.deepfakeModelTrained = await this.loadModelWeights(model, 'deepfake');
 
       this.deepfakeModel = model;
-      logger.info('[ML Models] Enhanced deepfake detection model initialized');
+      logger.info(
+        `[ML Models] Enhanced deepfake detection model initialized (trained weights: ${this.deepfakeModelTrained})`
+      );
     } catch (error) {
       logger.error('[ML Models] Error initializing deepfake model', error);
       throw error;
@@ -263,6 +270,8 @@ class MLModelsService {
 
       // Save model weights
       await this.saveModelWeights(this.deepfakeModel, 'deepfake');
+      // The model now holds trained weights, so verdicts are permitted.
+      this.deepfakeModelTrained = true;
 
       // Cleanup
       xTrain.dispose();
@@ -344,23 +353,39 @@ class MLModelsService {
   }
 
   /**
-   * Load model weights from storage
+   * Load model weights from storage. Returns true only when real weights were loaded
+   * so callers can fail closed for security-critical models that lack trained weights.
    */
-  private async loadModelWeights(model: tf.LayersModel, modelName: string): Promise<void> {
+  private async loadModelWeights(model: tf.LayersModel, modelName: string): Promise<boolean> {
     try {
       const fs = require('fs').promises;
       const path = require('path');
       const modelPath = path.join(process.cwd(), 'server', 'models', `${modelName}_weights.json`);
 
       const weightsData = JSON.parse(await fs.readFile(modelPath, 'utf-8'));
-      
+
+      // An empty or malformed weights file is treated as "no trained weights" so the
+      // model is not mistaken for a trained one (the shipped stub may be an empty array).
+      if (!Array.isArray(weightsData) || weightsData.length === 0) {
+        logger.warn(
+          `[ML Models] Weights file for ${modelName} at ${modelPath} is empty/invalid; ` +
+          'treating model as untrained.'
+        );
+        return false;
+      }
+
       // Convert back to tensors
       const weights = weightsData.map((w: any) => tf.tensor(w.data, w.shape));
-      
+
       model.setWeights(weights);
       logger.info(`[ML Models] Loaded ${modelName} model weights from ${modelPath}`);
+      return true;
     } catch (error) {
-      logger.info(`[ML Models] No pre-trained weights found for ${modelName}, using random initialization`);
+      logger.warn(
+        `[ML Models] No pre-trained weights found for ${modelName}; model is using untrained ` +
+        'initialization. Provision the weights file to enable trained inference.'
+      );
+      return false;
     }
   }
 
@@ -595,10 +620,18 @@ class MLModelsService {
       throw new AppError('Deepfake detection model not initialized', 500);
     }
 
-    try {
-      // Extract features from media
-      // Heuristic-based liveness detection using multi-signal analysis.
+    // Fail closed: never emit a neural verdict from untrained weights for this security
+    // control. Callers (e.g. evidenceTruthLayerService) handle this by falling back to
+    // statistical/entropy analysis instead of trusting a meaningless prediction.
+    if (!this.deepfakeModelTrained) {
+      throw new AppError(
+        'Deepfake detection unavailable: trained model weights are not provisioned',
+        503
+      );
+    }
 
+    try {
+      // Extract content-derived features from the media buffer for the trained model.
       const features = this.extractMediaFeatures(mediaBuffer, mediaType);
 
       // Predict using deepfake model
@@ -808,78 +841,99 @@ class MLModelsService {
     buffer: Buffer,
     mediaType: 'image' | 'video' | 'audio'
   ): number[] {
-    // Enhanced feature extraction with 256 dimensions
-    // Deepfake detection using frequency-domain and compression artifact analysis.
-
+    // 256-dimensional feature vector derived from the actual byte content of the
+    // media: block-wise intensity statistics, a normalized value histogram, gradient
+    // (edge) statistics and Shannon entropy. These are content-sensitive signals
+    // (compression/synthesis artifacts shift their distribution) rather than a hash.
     const features: number[] = [];
+    const len = buffer.length;
 
-    // Face features (96 dimensions) - Enhanced
-    // Includes: landmarks, texture features, frequency domain, geometric features
-    for (let i = 0; i < 96; i++) {
-      const hash = this.hashBuffer(buffer, i);
-      features.push((hash % 2000 - 1000) / 1000); // Normalize to [-1, 1]
+    // ── Block-wise intensity statistics (96 dims) ──────────────────────────────
+    // Partition the buffer into 48 contiguous blocks; emit the normalized mean and
+    // standard deviation of each block. Synthetic media tends to have smoother,
+    // lower-variance blocks than camera-captured content.
+    const numBlocks = 48;
+    const blockSize = Math.max(1, Math.floor(len / numBlocks));
+    for (let b = 0; b < numBlocks; b++) {
+      const start = b * blockSize;
+      const end = b === numBlocks - 1 ? len : Math.min(len, start + blockSize);
+      let sum = 0;
+      let count = 0;
+      for (let i = start; i < end; i++) { sum += buffer[i]; count++; }
+      const mean = count > 0 ? sum / count : 0;
+      let varSum = 0;
+      for (let i = start; i < end; i++) { const d = buffer[i] - mean; varSum += d * d; }
+      const std = count > 0 ? Math.sqrt(varSum / count) : 0;
+      features.push((mean - 128) / 128);      // normalized mean → [-1, 1]
+      features.push(std / 128);               // normalized std  → [0, 1]
     }
 
-    // Audio features (64 dimensions) - Enhanced
-    // Includes: MFCC, spectral centroid, zero-crossing rate, chroma features
-    if (mediaType === 'audio' || mediaType === 'video') {
-      for (let i = 0; i < 64; i++) {
-        const hash = this.hashBuffer(buffer, i + 96);
-        features.push((hash % 2000 - 1000) / 1000);
+    // ── Normalized byte-value histogram (64 dims) ──────────────────────────────
+    // 256 byte values folded into 64 bins, normalized by length. Captures the value
+    // distribution; AI-generated content often shows characteristic peaks/uniformity.
+    const hist = new Array(64).fill(0);
+    const sampleLimit = Math.min(len, 65536);
+    for (let i = 0; i < sampleLimit; i++) { hist[buffer[i] >> 2]++; }
+    const histNorm = sampleLimit > 0 ? sampleLimit : 1;
+    for (let i = 0; i < 64; i++) {
+      // Scale so typical bins land in a usable range; clamp to [-1, 1].
+      features.push(Math.min(1, (hist[i] / histNorm) * 64) * 2 - 1);
+    }
+
+    // ── Gradient / edge statistics (48 dims) ───────────────────────────────────
+    // Mean absolute first difference over 48 segments — an edge-density proxy.
+    // Compression and upscaling soften edges, shifting these values.
+    for (let s = 0; s < 48; s++) {
+      const start = s * blockSize;
+      const end = s === 47 ? len : Math.min(len, start + blockSize);
+      let gradSum = 0;
+      let gradCount = 0;
+      for (let i = start + 1; i < end; i++) { gradSum += Math.abs(buffer[i] - buffer[i - 1]); gradCount++; }
+      features.push(gradCount > 0 ? (gradSum / gradCount) / 128 : 0);
+    }
+
+    // ── Frequency-proxy features (32 dims) ─────────────────────────────────────
+    // Autocorrelation-style sums at increasing lags approximate periodic structure
+    // without a full FFT, surfacing block-grid artifacts common in re-encoded media.
+    for (let k = 0; k < 32; k++) {
+      const lag = (k + 1) * 2;
+      let corr = 0;
+      let corrCount = 0;
+      for (let i = lag; i < sampleLimit; i += 8) {
+        corr += (buffer[i] - 128) * (buffer[i - lag] - 128);
+        corrCount++;
       }
-    } else {
-      for (let i = 0; i < 64; i++) {
-        features.push(0);
-      }
+      features.push(corrCount > 0 ? Math.max(-1, Math.min(1, corr / (corrCount * 16384))) : 0);
     }
 
-    // Temporal features (48 dimensions) - Enhanced for video
-    // Includes: frame consistency, motion vectors, temporal gradients
-    if (mediaType === 'video') {
-      for (let i = 0; i < 48; i++) {
-        const hash = this.hashBuffer(buffer, i + 160);
-        features.push((hash % 2000 - 1000) / 1000);
-      }
-    } else {
-      for (let i = 0; i < 48; i++) {
-        features.push(0);
-      }
+    // ── Metadata + entropy features (16 dims) ──────────────────────────────────
+    features.push(Math.min(1, Math.log(len + 1) / 20));                         // normalized log size
+    features.push(mediaType === 'video' ? 1 : mediaType === 'audio' ? 0.5 : 0); // media type encoding
+
+    // Shannon entropy of the byte distribution (normalized to [0, 1]).
+    const fullHist = new Array(256).fill(0);
+    for (let i = 0; i < sampleLimit; i++) { fullHist[buffer[i]]++; }
+    let entropy = 0;
+    for (let i = 0; i < 256; i++) {
+      if (fullHist[i] > 0) { const p = fullHist[i] / histNorm; entropy -= p * Math.log2(p); }
+    }
+    features.push(entropy / 8);
+
+    // Remaining metadata slots: coarse quantile/spread descriptors of the histogram.
+    let nonEmptyBins = 0;
+    let maxBin = 0;
+    for (let i = 0; i < 64; i++) { if (hist[i] > 0) nonEmptyBins++; if (hist[i] > maxBin) maxBin = hist[i]; }
+    features.push(nonEmptyBins / 64);
+    features.push(maxBin / histNorm);
+    for (let i = 0; i < 11; i++) {
+      // Spread of mean intensity across 11 coarse regions for additional structure.
+      const region = Math.floor((i / 11) * numBlocks);
+      features.push(features[region * 2] ?? 0);
     }
 
-    // Frequency domain features (32 dimensions)
-    // Includes: FFT coefficients, DCT features, spectral analysis
-    for (let i = 0; i < 32; i++) {
-      const hash = this.hashBuffer(buffer, i + 208);
-      features.push((hash % 2000 - 1000) / 1000);
-    }
-
-    // Metadata features (16 dimensions)
-    // Includes: file size, duration, resolution, compression artifacts
-    const size = buffer.length;
-    features.push(Math.log(size + 1) / 1000); // Normalized log size
-    features.push(mediaType === 'video' ? 1 : mediaType === 'audio' ? 0.5 : 0); // Media type encoding
-    
-    // Additional metadata features
-    for (let i = 0; i < 14; i++) {
-      const hash = this.hashBuffer(buffer, i + 224);
-      features.push((hash % 2000 - 1000) / 1000);
-    }
-
-    // Ensure exactly 256 features
+    // Ensure exactly 256 features (pad defensively if a branch under-produced).
+    while (features.length < 256) features.push(0);
     return features.slice(0, 256);
-  }
-
-  /**
-   * Hash buffer to generate pseudo-random but deterministic features
-   */
-  private hashBuffer(buffer: Buffer, seed: number): number {
-    let hash = seed;
-    const sampleSize = Math.min(buffer.length, 1024);
-    for (let i = 0; i < sampleSize; i += 4) {
-      hash = ((hash << 5) - hash) + buffer[i];
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash);
   }
 
   /**
@@ -1169,7 +1223,15 @@ class MLModelsService {
   }
 
   /**
-   * Evaluate a trained model's performance
+   * Compute baseline classification metrics over a labeled test set.
+   *
+   * NOTE ON SCOPE: trained tf models are not persisted by this service (they are
+   * disposed after training), so this method cannot reload the original model and
+   * run model.predict. It instead reports a k-NN baseline computed directly over the
+   * supplied labeled test set. The returned `method` field makes this explicit, and
+   * `rocAuc` is a genuine rank-based AUC of the k-NN positive-vote scores — not an
+   * accuracy-derived approximation. To evaluate the actual trained model, persist its
+   * weights at train time and reload them here.
    */
   async evaluateModel(
     organizationId: string,
@@ -1180,6 +1242,7 @@ class MLModelsService {
     }
   ): Promise<{
     modelId: string;
+    method: 'knn_baseline';
     accuracy: number;
     precision: number;
     recall: number;
@@ -1188,7 +1251,7 @@ class MLModelsService {
     rocAuc: number;
   }> {
     try {
-      // Simple evaluation using test data
+      // Baseline evaluation over the provided labeled test set.
       const { features, labels } = testData;
 
       // Look up model metadata
@@ -1204,16 +1267,17 @@ class MLModelsService {
         throw new AppError(`Model ${modelId} not found`, 404);
       }
 
-      // Calculate metrics based on stored model predictions
-      // For batch predictions, load the saved model ID from AuditLog and rebuild.
+      // k-NN baseline over the labeled test set (leave-one-out).
       let tp = 0, fp = 0, fn = 0, tn = 0;
       const uniqueLabels = [...new Set(labels)];
       const numClasses = uniqueLabels.length;
       const confusionMatrix = Array.from({ length: numClasses }, () => new Array(numClasses).fill(0));
 
-      // For evaluation without a loaded model, use cross-validated approximation
+      // Per-sample positive-class vote fraction, used to compute a genuine rank-based AUC.
+      const positiveScores: number[] = [];
+
       for (let i = 0; i < labels.length; i++) {
-        // K-nearest neighbor approximate prediction for evaluation
+        // K-nearest neighbor prediction for the baseline
         const distances = features.map((f, j) => ({
           index: j,
           distance: Math.sqrt(f.reduce((sum, val, k) => sum + Math.pow(val - features[i][k], 2), 0)),
@@ -1233,6 +1297,9 @@ class MLModelsService {
           if (count > maxCount) { maxCount = count; predictedLabel = label; }
         }
 
+        // Probability score for the positive class (label === 1) from neighbor votes.
+        positiveScores.push(k > 0 ? (labelCounts.get(1) || 0) / k : 0);
+
         const actualIdx = uniqueLabels.indexOf(labels[i]);
         const predIdx = uniqueLabels.indexOf(predictedLabel);
         if (actualIdx >= 0 && predIdx >= 0) {
@@ -1249,12 +1316,14 @@ class MLModelsService {
       const precision = (tp + fp) > 0 ? tp / (tp + fp) : 0;
       const recall = (tp + fn) > 0 ? tp / (tp + fn) : 0;
       const f1Score = (precision + recall) > 0 ? 2 * (precision * recall) / (precision + recall) : 0;
-      const rocAuc = 0.5 + (accuracy - 0.5) * 0.8; // Approximate AUC
+      // Genuine ROC-AUC of the k-NN positive-vote scores (Mann-Whitney U statistic).
+      const rocAuc = this.computeRocAuc(positiveScores, labels);
 
-      logger.info(`[MLModels] Model evaluated: ${modelId}, accuracy=${accuracy.toFixed(4)}, F1=${f1Score.toFixed(4)}`);
+      logger.info(`[MLModels] Model evaluated (k-NN baseline): ${modelId}, accuracy=${accuracy.toFixed(4)}, F1=${f1Score.toFixed(4)}`);
 
       return {
         modelId,
+        method: 'knn_baseline',
         accuracy: Math.round(accuracy * 10000) / 10000,
         precision: Math.round(precision * 10000) / 10000,
         recall: Math.round(recall * 10000) / 10000,
@@ -1266,6 +1335,48 @@ class MLModelsService {
       logger.error('[MLModels] Error evaluating model', error);
       throw error;
     }
+  }
+
+  /**
+   * Rank-based ROC-AUC (equivalent to the normalized Mann-Whitney U statistic).
+   * `scores` are positive-class probabilities; `labels` are 0/1 ground truth.
+   * Returns 0.5 when only one class is present (AUC is undefined there).
+   */
+  private computeRocAuc(scores: number[], labels: number[]): number {
+    const n = Math.min(scores.length, labels.length);
+    const pos: number[] = [];
+    const neg: number[] = [];
+    for (let i = 0; i < n; i++) {
+      if (labels[i] === 1) pos.push(scores[i]);
+      else neg.push(scores[i]);
+    }
+    if (pos.length === 0 || neg.length === 0) return 0.5;
+
+    // Rank all scores (average ranks for ties), then AUC = (sumRanksPos - nPos*(nPos+1)/2) / (nPos*nNeg).
+    const indexed = scores
+      .slice(0, n)
+      .map((s, i) => ({ s, label: labels[i] }))
+      .sort((a, b) => a.s - b.s);
+
+    const ranks = new Array(indexed.length);
+    let i = 0;
+    while (i < indexed.length) {
+      let j = i;
+      while (j < indexed.length - 1 && indexed[j + 1].s === indexed[i].s) j++;
+      const avgRank = (i + j + 2) / 2; // ranks are 1-based
+      for (let k = i; k <= j; k++) ranks[k] = avgRank;
+      i = j + 1;
+    }
+
+    let sumRanksPos = 0;
+    for (let k = 0; k < indexed.length; k++) {
+      if (indexed[k].label === 1) sumRanksPos += ranks[k];
+    }
+
+    const nPos = pos.length;
+    const nNeg = neg.length;
+    const auc = (sumRanksPos - (nPos * (nPos + 1)) / 2) / (nPos * nNeg);
+    return Math.max(0, Math.min(1, auc));
   }
 
   /**

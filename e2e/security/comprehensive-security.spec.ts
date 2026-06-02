@@ -11,59 +11,64 @@ const API_BASE = process.env.VITE_API_URL || 'http://localhost:3001';
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 
 test.describe('Security Headers', () => {
+  // Helmet applies the security headers on every API response (see
+  // server/src/index.ts helmet() config). The /health endpoint is unauthenticated
+  // and always passes through the middleware stack, so it is the stable target.
   test('should include Content-Security-Policy header', async ({ request }) => {
-    const res = await request.get(APP_URL);
+    const res = await request.get(`${API_BASE}/health`);
     const csp =
       res.headers()['content-security-policy'] ||
       res.headers()['content-security-policy-report-only'];
 
-    // CSP should be present (either enforced or report-only)
-    if (csp) {
-      // Should restrict script sources
-      expect(csp).toMatch(/script-src/);
-      // Should not allow unsafe-inline without nonce/hash (ideal)
-      // Note: some frameworks need unsafe-inline — we just verify CSP exists
-    }
+    // CSP is configured with explicit directives (defaultSrc, scriptSrc, etc.)
+    expect(csp).toBeTruthy();
+    // scriptSrc is restricted to 'self' + a per-request nonce
+    expect(csp).toMatch(/script-src/);
+    expect(csp).toMatch(/default-src 'self'/);
   });
 
   test('should include X-Frame-Options header for clickjacking protection', async ({
     request,
   }) => {
-    const res = await request.get(APP_URL);
+    const res = await request.get(`${API_BASE}/health`);
     const xfo = res.headers()['x-frame-options'];
     const csp = res.headers()['content-security-policy'];
 
-    // Either X-Frame-Options or frame-ancestors in CSP should be set
+    // helmet frameguard is set to 'deny' → X-Frame-Options: DENY.
+    // Accept frame-ancestors in CSP as an equivalent control if present.
     const hasClickjackProtection =
-      (xfo && ['DENY', 'SAMEORIGIN'].includes(xfo.toUpperCase())) ||
-      (csp && csp.includes('frame-ancestors'));
+      (!!xfo && ['DENY', 'SAMEORIGIN'].includes(xfo.toUpperCase())) ||
+      (!!csp && csp.includes('frame-ancestors'));
 
     expect(hasClickjackProtection).toBeTruthy();
+    // The app uses X-Frame-Options: DENY specifically
+    expect(xfo?.toUpperCase()).toBe('DENY');
   });
 
   test('should include X-Content-Type-Options header', async ({ request }) => {
-    const res = await request.get(APP_URL);
+    const res = await request.get(`${API_BASE}/health`);
     const xcto = res.headers()['x-content-type-options'];
 
-    if (xcto) {
-      expect(xcto.toLowerCase()).toBe('nosniff');
-    }
+    // helmet noSniff is enabled → header is mandatory
+    expect(xcto?.toLowerCase()).toBe('nosniff');
   });
 
   test('should include Referrer-Policy header', async ({ request }) => {
-    const res = await request.get(APP_URL);
+    const res = await request.get(`${API_BASE}/health`);
     const rp = res.headers()['referrer-policy'];
 
-    if (rp) {
-      const safe = [
-        'no-referrer',
-        'no-referrer-when-downgrade',
-        'same-origin',
-        'strict-origin',
-        'strict-origin-when-cross-origin',
-      ];
-      expect(safe).toContain(rp.toLowerCase());
-    }
+    // helmet referrerPolicy is configured → header is mandatory
+    const safe = [
+      'no-referrer',
+      'no-referrer-when-downgrade',
+      'same-origin',
+      'strict-origin',
+      'strict-origin-when-cross-origin',
+    ];
+    expect(rp).toBeTruthy();
+    expect(safe).toContain(rp.toLowerCase());
+    // The app is configured for strict-origin-when-cross-origin specifically
+    expect(rp.toLowerCase()).toBe('strict-origin-when-cross-origin');
   });
 
   test('should include Strict-Transport-Security for HTTPS', async ({ request }) => {
@@ -100,32 +105,25 @@ test.describe('Cookie Security', () => {
     }
   });
 
-  test('should set HttpOnly flag on authentication cookies', async ({ request }) => {
-    const res = await request.post(`${API_BASE}/api/auth/login`, {
-      data: {
-        email: 'test@example.com',
-        password: 'TestPassword123!',
-      },
-    });
-
+  test('should set HttpOnly flag on security cookies', async ({ request }) => {
+    // The CSRF-token endpoint sets a cookie unconditionally (csrf.ts), so it is a
+    // deterministic source for verifying cookie flags without needing valid
+    // login credentials. It is configured httpOnly + sameSite:'strict'.
+    const res = await request.get(`${API_BASE}/api/csrf-token`);
     const setCookie = res.headers()['set-cookie'];
-    if (setCookie) {
-      expect(setCookie.toLowerCase()).toContain('httponly');
-    }
+
+    expect(setCookie).toBeTruthy();
+    expect(setCookie.toLowerCase()).toContain('httponly');
   });
 
-  test('should set SameSite attribute on cookies', async ({ request }) => {
-    const res = await request.post(`${API_BASE}/api/auth/login`, {
-      data: {
-        email: 'test@example.com',
-        password: 'TestPassword123!',
-      },
-    });
-
+  test('should set SameSite attribute on security cookies', async ({ request }) => {
+    const res = await request.get(`${API_BASE}/api/csrf-token`);
     const setCookie = res.headers()['set-cookie'];
-    if (setCookie) {
-      expect(setCookie.toLowerCase()).toMatch(/samesite=(strict|lax|none)/);
-    }
+
+    expect(setCookie).toBeTruthy();
+    expect(setCookie.toLowerCase()).toMatch(/samesite=(strict|lax|none)/);
+    // The CSRF cookie is set with the strictest option
+    expect(setCookie.toLowerCase()).toContain('samesite=strict');
   });
 });
 
@@ -191,22 +189,20 @@ test.describe('Clickjacking Protection', () => {
     // Wait for potential load
     await page.waitForTimeout(3000);
 
-    const iframe = page.locator('#target');
-    const frame = await iframe.contentFrame();
-
-    // If X-Frame-Options / frame-ancestors is set, the frame should be blank or error
-    // We cannot directly check if loading was blocked, but we can verify the header exists
-    const res = await page.request.get(APP_URL);
+    // Verify the server emits an anti-clickjacking header. helmet frameguard
+    // 'deny' sets X-Frame-Options: DENY on every API response (see
+    // server/src/index.ts), which is what browsers honour to refuse framing.
+    const res = await page.request.get(`${API_BASE}/health`);
     const xfo = res.headers()['x-frame-options'];
     const csp = res.headers()['content-security-policy'];
 
-    const protected_ =
-      (xfo && /^(DENY|SAMEORIGIN)$/i.test(xfo)) ||
-      (csp && csp.includes('frame-ancestors'));
+    const protectedByHeader =
+      (!!xfo && /^(DENY|SAMEORIGIN)$/i.test(xfo)) ||
+      (!!csp && csp.includes('frame-ancestors'));
 
-    // At minimum, verify the response has some protection
-    // Full iframe blocking test requires the server to set these headers
-    expect(protected_ || true).toBeTruthy();
+    expect(protectedByHeader).toBeTruthy();
+    // The configured control is X-Frame-Options: DENY
+    expect(xfo?.toUpperCase()).toBe('DENY');
   });
 });
 

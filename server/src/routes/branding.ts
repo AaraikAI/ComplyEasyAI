@@ -26,11 +26,14 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5 MB max
   },
   fileFilter: (_req, file, cb) => {
-    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/webp'];
+    // Raster-only allowlist. image/svg+xml is excluded because SVG can carry
+    // inline <script>/onload payloads and the logo is rendered in-app, so a
+    // stored SVG would be a stored-XSS vector.
+    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/webp'];
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Unsupported file type: ${file.mimetype}. Allowed: PNG, JPEG, SVG, ICO, WebP`));
+      cb(new Error(`Unsupported file type: ${file.mimetype}. Allowed: PNG, JPEG, ICO, WebP`));
     }
   },
 });
@@ -220,8 +223,8 @@ router.post(
         throw new AppError('logo file is required (field name: "logo")', 400);
       }
 
-      // Uploads to S3/CloudStorage when AWS_S3_BUCKET is configured.
-      // For now, store as a data URI or use the S3 service if available.
+      // Uploads to object storage when AWS_S3_BUCKET is configured; otherwise
+      // the image is stored inline as a data URI.
       let logoUrl: string;
 
       try {
@@ -233,8 +236,13 @@ router.post(
           folder: 'branding',
         });
         logoUrl = result.url;
-      } catch {
-        // Fallback: store as base64 data URI
+      } catch (uploadError) {
+        // Surface the object-storage failure so outages are not masked, then
+        // fall back to an inline data URI to keep the upload usable.
+        logger.warn('Logo object-storage upload failed; falling back to inline data URI', {
+          organizationId: user.organizationId,
+          error: uploadError instanceof Error ? uploadError.message : String(uploadError),
+        });
         const base64 = req.file.buffer.toString('base64');
         logoUrl = `data:${req.file.mimetype};base64,${base64}`;
       }
@@ -290,8 +298,13 @@ router.post(
           folder: 'branding',
         });
         faviconUrl = result.url;
-      } catch {
-        // Fallback: store as base64 data URI
+      } catch (uploadError) {
+        // Surface the object-storage failure so outages are not masked, then
+        // fall back to an inline data URI to keep the upload usable.
+        logger.warn('Favicon object-storage upload failed; falling back to inline data URI', {
+          organizationId: user.organizationId,
+          error: uploadError instanceof Error ? uploadError.message : String(uploadError),
+        });
         const base64 = req.file.buffer.toString('base64');
         faviconUrl = `data:${req.file.mimetype};base64,${base64}`;
       }

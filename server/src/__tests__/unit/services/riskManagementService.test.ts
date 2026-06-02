@@ -85,6 +85,11 @@ describe('RiskManagementService', () => {
         severity: 'Critical',
       });
 
+      // The parent assessment's org ownership is verified inside the transaction.
+      prismaMock.riskAssessment.findFirst.mockResolvedValue({
+        id: 'assessment-123',
+        organizationId: 'org-123',
+      } as any);
       prismaMock.riskItem.create.mockResolvedValue(mockRisk);
 
       const result = await riskManagementService.addRiskToAssessment(
@@ -179,6 +184,10 @@ describe('RiskManagementService', () => {
         mitigationPlan: 'Implemented MFA',
       });
 
+      // Org ownership of the risk is verified inside the transaction before update.
+      prismaMock.riskItem.findFirst.mockResolvedValue(
+        createMockRiskItem({ id: 'risk-123' })
+      );
       prismaMock.riskItem.update.mockResolvedValue(updatedRisk);
 
       const result = await riskManagementService.updateRiskRemediation(
@@ -248,6 +257,10 @@ describe('RiskManagementService', () => {
         status: 'Resolved',
       });
 
+      // Org ownership of the risk is verified inside the transaction before update.
+      prismaMock.riskItem.findFirst.mockResolvedValue(
+        createMockRiskItem({ id: 'risk-123' })
+      );
       prismaMock.riskItem.update.mockResolvedValue(resolvedRisk);
 
       const result = await riskManagementService.resolveRisk(

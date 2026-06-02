@@ -169,6 +169,10 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [dpias, setDpias] = useState<DPIA[]>([]);
   const [risks, setRisks] = useState<RiskEntry[]>([]);
   const [selectedDPIA, setSelectedDPIA] = useState<string | null>(null);
+  const [editingDPIA, setEditingDPIA] = useState<DPIA | null>(null);
+  const [editForm, setEditForm] = useState<{ title: string; description: string; projectName: string; assignedTo: string; status: DPIAStatus }>({
+    title: '', description: '', projectName: '', assignedTo: '', status: 'Draft',
+  });
   const [screeningAnswers, setScreeningAnswers] = useState<Record<string, boolean>>({});
   const [screeningResult, setScreeningResult] = useState<string | null>(null);
   const [dpoReviewForm, setDpoReviewForm] = useState<{
@@ -302,6 +306,41 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     } catch (err) {
       logger.error('Failed to create DPIA:', err);
       setLoadError('Failed to create DPIA. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openEditDPIA = (dpia: DPIA) => {
+    setEditForm({
+      title: dpia.title,
+      description: dpia.description || '',
+      projectName: dpia.projectName,
+      assignedTo: dpia.assignedTo || '',
+      status: dpia.status,
+    });
+    setEditingDPIA(dpia);
+  };
+
+  const handleUpdateDPIA = async () => {
+    if (!editingDPIA) return;
+    setSubmitting(true);
+    try {
+      await apiFetch(`/dpia/${editingDPIA.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: editForm.title,
+          description: editForm.description,
+          projectName: editForm.projectName,
+          assignedTo: editForm.assignedTo,
+          status: editForm.status,
+        }),
+      });
+      setEditingDPIA(null);
+      await loadData();
+    } catch (err) {
+      logger.error('Failed to update DPIA:', err);
+      setLoadError('Failed to update DPIA. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -478,6 +517,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
+                        onClick={() => openEditDPIA(dpia)}
                         className="p-1.5 text-slate-400 hover:text-white transition-colors"
                         title="Edit"
                       >
@@ -1102,6 +1142,93 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
   };
 
+  // ── Edit DPIA Modal ───────────────────────────────────────────────────────
+
+  const renderEditModal = () => {
+    if (!editingDPIA) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+            <h2 className="text-lg font-semibold text-white">Edit DPIA</h2>
+            <button onClick={() => setEditingDPIA(null)} className="p-1 text-slate-400 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="px-6 py-4 space-y-4">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Title *</label>
+              <input
+                type="text"
+                value={editForm.title}
+                onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">{t('common.description')}</label>
+              <textarea
+                value={editForm.description}
+                onChange={e => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                rows={3}
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Project Name *</label>
+                <input
+                  type="text"
+                  value={editForm.projectName}
+                  onChange={e => setEditForm(prev => ({ ...prev, projectName: e.target.value }))}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">{t('common.assignee')}</label>
+                <input
+                  type="text"
+                  value={editForm.assignedTo}
+                  onChange={e => setEditForm(prev => ({ ...prev, assignedTo: e.target.value }))}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">{t('common.status')}</label>
+              <select
+                value={editForm.status}
+                onChange={e => setEditForm(prev => ({ ...prev, status: e.target.value as DPIAStatus }))}
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="Draft">Draft</option>
+                <option value="InProgress">In Progress</option>
+                <option value="UnderReview">Under Review</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">
+            <button
+              onClick={() => setEditingDPIA(null)}
+              className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              onClick={handleUpdateDPIA}
+              disabled={!editForm.title || !editForm.projectName || submitting}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
+            >
+              <CheckCircle className="w-4 h-4" /> {submitting ? `${t('common.loading')}...` : t('common.save')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ── Error Banner ──────────────────────────────────────────────────────────
 
   const renderErrorBanner = () =>
@@ -1203,6 +1330,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       {renderCreateModal()}
+      {renderEditModal()}
     </div>
   );
 };

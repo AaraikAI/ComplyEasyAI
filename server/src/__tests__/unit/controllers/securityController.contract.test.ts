@@ -65,6 +65,12 @@ describe('SecurityController Contract Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // The shared prisma mock does not declare deleteMany on zeroTrustPolicy;
+    // the controller's org-scoped delete uses it, so provide a local jest.fn.
+    if (typeof (prismaMock.zeroTrustPolicy as any).deleteMany !== 'function') {
+      (prismaMock.zeroTrustPolicy as any).deleteMany = jest.fn();
+    }
+
     // Re-setup mock service implementations after clearAllMocks/resetMocks
     mockZeroTrustService.initialize.mockResolvedValue(undefined as never);
     mockZeroTrustService.verifyDeviceTrust.mockResolvedValue({ trusted: true, score: 90 } as never);
@@ -188,11 +194,27 @@ describe('SecurityController Contract Tests', () => {
   });
 
   describe('updateZeroTrustPolicy()', () => {
-    it('should update policy via audit log', async () => {
+    it('should update policy and write an audit log', async () => {
       mockReq.params = { policyId: 'policy-1' };
       mockReq.body = { name: 'Updated Policy' };
 
+      // Controller org-scopes the lookup before mutating, then persists the
+      // update and the audit log inside a $transaction.
+      prismaMock.zeroTrustPolicy.findFirst.mockResolvedValue({
+        id: 'policy-1',
+        name: 'Test Policy',
+        organizationId: 'org-123',
+      } as never);
+      prismaMock.zeroTrustPolicy.update.mockResolvedValue({
+        id: 'policy-1',
+        name: 'Updated Policy',
+        organizationId: 'org-123',
+        rules: JSON.stringify([]),
+      } as never);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as never);
+      (prismaMock.$transaction as jest.Mock<any>).mockImplementation(
+        async (ops: any) => (Array.isArray(ops) ? Promise.all(ops) : ops)
+      );
 
       await securityController.updateZeroTrustPolicy(mockReq as Request, mockRes as Response, mockNext);
 
@@ -204,15 +226,20 @@ describe('SecurityController Contract Tests', () => {
           }),
         })
       );
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'policy-1', name: 'Updated Policy' })
+      );
     });
 
     it('should throw 404 when policy not found for update', async () => {
       mockReq.params = { policyId: 'nonexistent' };
-      mockZeroTrustService.getPolicies.mockResolvedValueOnce([] as never);
+      // Org-scoped findFirst returns nothing (not found / cross-tenant).
+      prismaMock.zeroTrustPolicy.findFirst.mockResolvedValue(null as never);
 
       await expect(
         securityController.updateZeroTrustPolicy(mockReq as Request, mockRes as Response, mockNext)
       ).rejects.toThrow(AppError);
+      expect(prismaMock.zeroTrustPolicy.update).not.toHaveBeenCalled();
     });
   });
 
@@ -220,13 +247,31 @@ describe('SecurityController Contract Tests', () => {
     it('should delete policy and return success', async () => {
       mockReq.params = { policyId: 'policy-1' };
 
+      // Controller performs an org-scoped deleteMany and checks the count.
+      (prismaMock.zeroTrustPolicy as any).deleteMany.mockResolvedValue({ count: 1 } as never);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as never);
 
       await securityController.deleteZeroTrustPolicy(mockReq as Request, mockRes as Response, mockNext);
 
+      expect((prismaMock.zeroTrustPolicy as any).deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'policy-1', organizationId: 'org-123' },
+        })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: true })
       );
+    });
+
+    it('should throw 404 when policy belongs to another organization', async () => {
+      mockReq.params = { policyId: 'policy-other-org' };
+
+      // Cross-tenant: org-scoped deleteMany removes nothing.
+      (prismaMock.zeroTrustPolicy as any).deleteMany.mockResolvedValue({ count: 0 } as never);
+
+      await expect(
+        securityController.deleteZeroTrustPolicy(mockReq as Request, mockRes as Response, mockNext)
+      ).rejects.toThrow(AppError);
     });
   });
 
@@ -266,13 +311,33 @@ describe('SecurityController Contract Tests', () => {
   // Network Segments
   // ===========================================================================
   describe('createNetworkSegment()', () => {
-    it('should create segment via audit log', async () => {
+    it('should persist a segment to the network segment store', async () => {
       mockReq.body = { name: 'DMZ', cidr: '10.0.0.0/24' };
 
+      // Controller now persists to the dedicated networkSegment store, then
+      // writes an audit log referencing the created row's id.
+      prismaMock.networkSegment.create.mockResolvedValue({
+        id: 'seg-1',
+        organizationId: 'org-123',
+        name: 'DMZ',
+        cidr: '10.0.0.0/24',
+        trustLevel: 'medium',
+        resources: [],
+        policies: [],
+      } as never);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as never);
 
       await securityController.createNetworkSegment(mockReq as Request, mockRes as Response, mockNext);
 
+      expect(prismaMock.networkSegment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            organizationId: 'org-123',
+            name: 'DMZ',
+            cidr: '10.0.0.0/24',
+          }),
+        })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'DMZ',
@@ -292,14 +357,14 @@ describe('SecurityController Contract Tests', () => {
   });
 
   describe('getNetworkSegments()', () => {
-    it('should return segments from audit logs', async () => {
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([
-        { hash: 'seg-1', details: JSON.stringify({ id: 'seg-1', name: 'DMZ' }), timestamp: new Date() },
+    it('should return org-scoped segments from the network segment store', async () => {
+      prismaMock.networkSegment.findMany.mockResolvedValue([
+        { id: 'seg-1', organizationId: 'org-123', name: 'DMZ', cidr: '10.0.0.0/24', policies: [] },
       ] as never);
 
       await securityController.getNetworkSegments(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(prismaMock.auditLog.findMany).toHaveBeenCalledWith(
+      expect(prismaMock.networkSegment.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             organizationId: 'org-123',

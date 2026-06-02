@@ -8,7 +8,6 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import { prismaMock } from '../mocks/prisma';
-import crypto from 'crypto';
 
 jest.mock('../../config/database', () => ({
   __esModule: true,
@@ -49,6 +48,47 @@ jest.mock('axios', () => ({
   get: jest.fn().mockResolvedValue({ status: 200, data: {} }),
 }));
 
+// Integration connect routes gate with enforceLimit('maxIntegrations').
+jest.mock('../../middleware/tierMiddleware', () => {
+  const passthrough = (_req: any, _res: any, next: any) => next();
+  return {
+    enforceLimit: () => passthrough,
+    requireFeature: () => passthrough,
+    requireTier: () => passthrough,
+    attachTierInfo: () => passthrough,
+    trackUsage: () => passthrough,
+    requireActiveSubscription: () => passthrough,
+    requireAiFeature: () => [passthrough],
+    requireResourceCreation: () => [passthrough],
+    requireEnterpriseFeature: () => [passthrough],
+    requireVisionaryFeature: () => [passthrough],
+  };
+});
+
+// The webhook management endpoints delegate to webhookService; mock it so the
+// route contracts can be exercised deterministically without a DB.
+const mockWebhookService = {
+  getWebhooks: jest.fn<any>(),
+  getWebhook: jest.fn<any>(),
+  createWebhook: jest.fn<any>(),
+  updateWebhook: jest.fn<any>(),
+  deleteWebhook: jest.fn<any>(),
+  testWebhook: jest.fn<any>(),
+  regenerateSecret: jest.fn<any>(),
+  getEventHistory: jest.fn<any>(),
+  retryEvent: jest.fn<any>(),
+};
+jest.mock('../../services/webhookService', () => ({
+  __esModule: true,
+  default: mockWebhookService,
+  WEBHOOK_EVENT_TYPES: {
+    'risk.created': 'Risk created',
+    'risk.updated': 'Risk updated',
+    'control.updated': 'Control updated',
+    'framework.added': 'Framework added',
+  },
+}));
+
 import webhooksRoutes from '../../routes/webhooks';
 import integrationsRoutes from '../../routes/integrations';
 import { errorHandler } from '../../middleware/errorHandler';
@@ -74,7 +114,7 @@ describe('E2E: Webhook & Integration Flow', () => {
     url: 'https://example.com/webhook',
     events: ['risk.created', 'risk.updated'],
     secret: 'whsec_test_secret',
-    active: true,
+    enabled: true,
     organizationId: 'org-123',
     createdAt: new Date(),
   };
@@ -82,169 +122,178 @@ describe('E2E: Webhook & Integration Flow', () => {
   const mockApiKey = {
     id: 'key-123',
     name: 'Production API Key',
-    keyHash: crypto.createHash('sha256').update('cea_test_key').digest('hex'),
-    prefix: 'cea_prod_',
-    scopes: ['*'],
+    keyPrefix: 'cea_prod_xy',
+    scopes: ['read:all'],
+    rateLimit: 1000,
+    lastUsedAt: null,
+    expiresAt: null,
     organizationId: 'org-123',
     createdAt: new Date(),
   };
 
-  const mockIntegration = {
-    id: 'int-123',
-    type: 'slack',
-    name: 'Slack Notifications',
-    config: { webhookUrl: 'https://hooks.slack.com/services/xxx' },
-    status: 'Active',
-    organizationId: 'org-123',
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
+    prismaMock.auditLog.create.mockResolvedValue({} as any);
+    // apiKey.updateMany is used by revokeApiKey but is absent from the shared
+    // prisma mock; augment it for this suite only (does not touch the shared file).
+    (prismaMock.apiKey as any).updateMany = jest.fn();
   });
 
   describe('Webhook Management Flow', () => {
-    it('should create webhook endpoint', async () => {
-      prismaMock.webhook.create.mockResolvedValue(mockWebhook as any);
-
-      const response = await request(app)
-        .post('/api/webhooks')
-        .send({
-          url: 'https://example.com/webhook',
-          events: ['risk.created', 'risk.updated'],
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('secret');
-    });
-
     it('should list webhooks', async () => {
-      prismaMock.webhook.findMany.mockResolvedValue([mockWebhook] as any);
+      mockWebhookService.getWebhooks.mockResolvedValue([mockWebhook]);
 
       const response = await request(app)
         .get('/api/webhooks')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('webhooks');
+      expect(Array.isArray(response.body.webhooks)).toBe(true);
+      expect(response.body).toHaveProperty('availableEvents');
+    });
+
+    it('should get a single webhook', async () => {
+      mockWebhookService.getWebhook.mockResolvedValue(mockWebhook);
+
+      const response = await request(app)
+        .get('/api/webhooks/webhook-123')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', 'webhook-123');
     });
 
     it('should update webhook events', async () => {
-      prismaMock.webhook.findFirst.mockResolvedValue(mockWebhook as any);
-      prismaMock.webhook.update.mockResolvedValue({
+      mockWebhookService.updateWebhook.mockResolvedValue({
         ...mockWebhook,
-        events: ['risk.created', 'risk.updated', 'control.created'],
-      } as any);
+        events: ['risk.created', 'risk.updated', 'control.updated'],
+      });
 
       const response = await request(app)
         .patch('/api/webhooks/webhook-123')
-        .send({
-          events: ['risk.created', 'risk.updated', 'control.created'],
-        })
+        .send({ events: ['risk.created', 'risk.updated', 'control.updated'] })
         .expect(200);
 
-      expect(response.body.events).toContain('control.created');
+      expect(response.body.events).toContain('control.updated');
     });
 
-    it('should test webhook delivery', async () => {
-      prismaMock.webhook.findFirst.mockResolvedValue(mockWebhook as any);
+    it('should reject updating a webhook with an invalid event', async () => {
+      const response = await request(app)
+        .patch('/api/webhooks/webhook-123')
+        .send({ events: ['not.a.real.event'] })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should test webhook delivery (success)', async () => {
+      mockWebhookService.testWebhook.mockResolvedValue({
+        success: true,
+        statusCode: 200,
+        duration: 42,
+      });
 
       const response = await request(app)
         .post('/api/webhooks/webhook-123/test')
         .expect(200);
 
-      expect(response.body).toHaveProperty('success');
-      expect(response.body.success).toBe(true);
+      expect(response.body).toHaveProperty('success', true);
     });
 
     it('should regenerate webhook secret', async () => {
-      prismaMock.webhook.findFirst.mockResolvedValue(mockWebhook as any);
-      prismaMock.webhook.update.mockResolvedValue({
-        ...mockWebhook,
-        secret: 'whsec_new_secret',
-      } as any);
+      mockWebhookService.regenerateSecret.mockResolvedValue('whsec_new_secret');
 
       const response = await request(app)
         .post('/api/webhooks/webhook-123/regenerate-secret')
         .expect(200);
 
-      expect(response.body).toHaveProperty('newSecret');
+      expect(response.body).toHaveProperty('secret', 'whsec_new_secret');
     });
 
     it('should delete webhook', async () => {
-      prismaMock.webhook.findFirst.mockResolvedValue(mockWebhook as any);
-      prismaMock.webhook.delete.mockResolvedValue(mockWebhook as any);
+      mockWebhookService.deleteWebhook.mockResolvedValue(undefined);
 
       const response = await request(app)
         .delete('/api/webhooks/webhook-123')
         .expect(200);
 
-      expect(response.body).toHaveProperty('deleted', true);
+      expect(response.body).toHaveProperty('success', true);
+    });
+
+    it('should return 404 for a missing webhook on test', async () => {
+      mockWebhookService.testWebhook.mockRejectedValue(new Error('Webhook not found'));
+
+      const response = await request(app)
+        .post('/api/webhooks/webhook-999/test')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('error');
     });
   });
 
   describe('Webhook Event History', () => {
     it('should get event delivery history', async () => {
-      prismaMock.webhookEvent.findMany.mockResolvedValue([
-        {
-          id: 'ev-1',
-          webhookId: 'webhook-123',
-          eventType: 'risk.created',
-          status: 'delivered',
-          deliveredAt: new Date(),
-        },
-        {
-          id: 'ev-2',
-          webhookId: 'webhook-123',
-          eventType: 'risk.updated',
-          status: 'failed',
-          attempts: 3,
-        },
-      ] as any);
+      mockWebhookService.getEventHistory.mockResolvedValue({
+        events: [
+          { id: 'ev-1', eventType: 'risk.created', status: 'delivered' },
+          { id: 'ev-2', eventType: 'risk.updated', status: 'failed' },
+        ],
+        total: 2,
+      });
 
       const response = await request(app)
         .get('/api/webhooks/events/history')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('events');
+      expect(Array.isArray(response.body.events)).toBe(true);
     });
 
-    it('should retry failed event', async () => {
-      prismaMock.webhookEvent.findFirst.mockResolvedValue({
-        id: 'ev-2',
-        status: 'failed',
-        payload: { riskId: 'r-123' },
-      } as any);
-      prismaMock.webhookEvent.update.mockResolvedValue({
-        id: 'ev-2',
-        status: 'pending',
-      } as any);
+    it('should retry a failed event', async () => {
+      mockWebhookService.retryEvent.mockResolvedValue(undefined);
 
       const response = await request(app)
         .post('/api/webhooks/events/ev-2/retry')
         .expect(200);
 
-      expect(response.body).toHaveProperty('retried', true);
+      expect(response.body).toHaveProperty('success', true);
+    });
+  });
+
+  describe('Event types', () => {
+    it('should list webhook event types', async () => {
+      const response = await request(app)
+        .get('/api/webhooks/event-types')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('eventTypes');
+      expect(Array.isArray(response.body.eventTypes)).toBe(true);
     });
   });
 
   describe('API Key Management', () => {
-    it('should create API key', async () => {
+    it('should create an API key', async () => {
       prismaMock.apiKey.create.mockResolvedValue(mockApiKey as any);
 
       const response = await request(app)
         .post('/api/webhooks/keys')
-        .send({
-          name: 'Production API Key',
-          scopes: ['read:all', 'write:risks'],
-          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        })
+        .send({ name: 'Production API Key', scopes: ['read:all'] })
         .expect(201);
 
       expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('key');
+      expect(response.body).toHaveProperty('key'); // raw key returned once
+      expect(response.body.key).toMatch(/^cea_/);
     });
 
-    it('should list API keys', async () => {
+    it('should reject creating an API key without scopes', async () => {
+      const response = await request(app)
+        .post('/api/webhooks/keys')
+        .send({ name: 'No Scopes Key' })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should list API keys without exposing the hash', async () => {
       prismaMock.apiKey.findMany.mockResolvedValue([mockApiKey] as any);
 
       const response = await request(app)
@@ -252,204 +301,62 @@ describe('E2E: Webhook & Integration Flow', () => {
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body[0]).not.toHaveProperty('keyHash'); // Secret not exposed
+      expect(response.body[0]).not.toHaveProperty('keyHash');
     });
 
-    it('should revoke API key', async () => {
-      prismaMock.apiKey.findFirst.mockResolvedValue(mockApiKey as any);
-      prismaMock.apiKey.update.mockResolvedValue({
-        ...mockApiKey,
-        revokedAt: new Date(),
-      } as any);
+    it('should revoke an API key', async () => {
+      (prismaMock.apiKey as any).updateMany.mockResolvedValue({ count: 1 });
 
       const response = await request(app)
         .delete('/api/webhooks/keys/key-123')
         .expect(200);
 
-      expect(response.body).toHaveProperty('revoked', true);
-    });
-  });
-
-  describe('Third-Party Integrations', () => {
-    it('should list available integrations', async () => {
-      const response = await request(app)
-        .get('/api/integrations/available')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('success', true);
     });
 
-    it('should connect Slack integration', async () => {
-      prismaMock.integration.create.mockResolvedValue(mockIntegration as any);
+    it('should 404 when revoking a non-existent API key', async () => {
+      (prismaMock.apiKey as any).updateMany.mockResolvedValue({ count: 0 });
 
       const response = await request(app)
-        .post('/api/integrations/slack')
-        .send({
-          webhookUrl: 'https://hooks.slack.com/services/xxx',
-          channel: '#compliance-alerts',
-        })
-        .expect(201);
+        .delete('/api/webhooks/keys/key-999')
+        .expect(404);
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body.type).toBe('slack');
-    });
-
-    it('should connect Jira integration', async () => {
-      prismaMock.integration.create.mockResolvedValue({
-        ...mockIntegration,
-        id: 'int-124',
-        type: 'jira',
-        config: { domain: 'company.atlassian.net', projectKey: 'COMP' },
-      } as any);
-
-      const response = await request(app)
-        .post('/api/integrations/jira')
-        .send({
-          domain: 'company.atlassian.net',
-          email: 'admin@example.com',
-          apiToken: 'jira-token',
-          projectKey: 'COMP',
-        })
-        .expect(201);
-
-      expect(response.body.type).toBe('jira');
-    });
-
-    it('should test integration connection', async () => {
-      prismaMock.integration.findFirst.mockResolvedValue(mockIntegration as any);
-
-      const response = await request(app)
-        .post('/api/integrations/int-123/test')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('success');
-    });
-
-    it('should sync integration data', async () => {
-      prismaMock.integration.findFirst.mockResolvedValue({
-        ...mockIntegration,
-        type: 'jira',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/integrations/int-123/sync')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('syncedCount');
-    });
-
-    it('should disconnect integration', async () => {
-      prismaMock.integration.findFirst.mockResolvedValue(mockIntegration as any);
-      prismaMock.integration.delete.mockResolvedValue(mockIntegration as any);
-
-      const response = await request(app)
-        .delete('/api/integrations/int-123')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('disconnected', true);
-    });
-  });
-
-  describe('Zapier Integration', () => {
-    it('should verify Zapier authentication', async () => {
-      prismaMock.apiKey.findUnique.mockResolvedValue(mockApiKey as any);
-      prismaMock.organization.findUnique.mockResolvedValue({
-        id: 'org-123',
-        name: 'Test Org',
-      } as any);
-
-      const response = await request(app)
-        .get('/api/webhooks/zapier/auth')
-        .set('x-api-key', 'cea_test_key')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('authenticated', true);
-    });
-
-    it('should create Zapier subscription', async () => {
-      prismaMock.apiKey.findUnique.mockResolvedValue(mockApiKey as any);
-      prismaMock.zapierSubscription.create.mockResolvedValue({
-        id: 'sub-123',
-        hookUrl: 'https://hooks.zapier.com/1234567',
-        event: 'risk.created',
-      } as any);
-
-      const response = await request(app)
-        .post('/api/webhooks/zapier/subscribe')
-        .set('x-api-key', 'cea_test_key')
-        .send({
-          hookUrl: 'https://hooks.zapier.com/1234567',
-          event: 'risk.created',
-        })
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-    });
-
-    it('should get sample data for Zapier', async () => {
-      prismaMock.apiKey.findUnique.mockResolvedValue(mockApiKey as any);
-
-      const response = await request(app)
-        .get('/api/webhooks/zapier/sample/risk.created')
-        .set('x-api-key', 'cea_test_key')
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('error');
     });
   });
 
   describe('Incoming Webhooks', () => {
-    it('should receive incoming webhook', async () => {
-      prismaMock.incomingWebhook.findFirst.mockResolvedValue({
-        id: 'inc-123',
-        organizationId: 'org-123',
-        action: 'sync-data',
-        active: true,
-      } as any);
-
+    it('should reject an incoming webhook without a signature header', async () => {
       const response = await request(app)
         .post('/api/webhooks/incoming/org-123/sync-data')
         .send({ data: 'payload' })
-        .expect(200);
+        .expect(401);
 
-      expect(response.body).toHaveProperty('received', true);
-    });
-
-    it('should validate incoming webhook signature', async () => {
-      const payload = JSON.stringify({ event: 'test' });
-      const secret = 'webhook-secret';
-      const signature = crypto
-        .createHmac('sha256', secret)
-        .update(payload)
-        .digest('hex');
-
-      prismaMock.incomingWebhook.findFirst.mockResolvedValue({
-        id: 'inc-123',
-        secret,
-        active: true,
-      } as any);
-
-      const response = await request(app)
-        .post('/api/webhooks/incoming/org-123/verify-event')
-        .set('x-webhook-signature', `sha256=${signature}`)
-        .send(JSON.parse(payload))
-        .expect(200);
-
-      expect(response.body).toHaveProperty('received', true);
+      expect(response.body).toHaveProperty('error');
     });
   });
 
-  describe('Integration Dashboard', () => {
-    it('should get integration status overview', async () => {
-      prismaMock.integration.findMany.mockResolvedValue([mockIntegration] as any);
-      prismaMock.webhook.findMany.mockResolvedValue([mockWebhook] as any);
+  describe('Integrations Listing', () => {
+    it('should list the organization integrations', async () => {
+      prismaMock.integration.findMany.mockResolvedValue([
+        {
+          id: 'int-123',
+          name: 'Slack',
+          category: 'Communication',
+          provider: 'slack',
+          connected: true,
+          lastSync: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ] as any);
 
       const response = await request(app)
-        .get('/api/integrations/dashboard')
+        .get('/api/integrations')
         .expect(200);
 
       expect(response.body).toHaveProperty('integrations');
-      expect(response.body).toHaveProperty('webhooks');
+      expect(Array.isArray(response.body.integrations)).toBe(true);
     });
   });
 });

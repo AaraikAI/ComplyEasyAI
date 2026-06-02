@@ -72,6 +72,8 @@ export const SignupPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -186,6 +188,21 @@ export const SignupPage: React.FC = () => {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!formData.email || resendStatus === 'sending') return;
+    setResendStatus('sending');
+    setResendMessage(null);
+    try {
+      // Registration issues a magic verification link; re-request it to resend.
+      await api.auth.requestMagicLink(formData.email);
+      setResendStatus('sent');
+      setResendMessage('Verification email resent. Please check your inbox.');
+    } catch (err: any) {
+      setResendStatus('error');
+      setResendMessage(err?.message || 'Could not resend the email. Please try again shortly.');
+    }
+  };
+
   if (verificationSent) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
@@ -221,10 +238,20 @@ export const SignupPage: React.FC = () => {
           </div>
           <p className="text-sm text-gray-500">
             Didn't receive the email?{' '}
-            <button className="text-brand-600 font-medium hover:underline">
-              Resend verification email
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resendStatus === 'sending'}
+              className="text-brand-600 font-medium hover:underline disabled:opacity-50 disabled:no-underline"
+            >
+              {resendStatus === 'sending' ? 'Resending…' : 'Resend verification email'}
             </button>
           </p>
+          {resendMessage && (
+            <p className={`text-sm mt-2 ${resendStatus === 'error' ? 'text-red-600' : 'text-green-600'}`}>
+              {resendMessage}
+            </p>
+          )}
         </div>
       </div>
     );

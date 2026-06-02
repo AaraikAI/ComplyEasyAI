@@ -28,15 +28,11 @@ setup('authenticate', async ({ page }) => {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
 
-  // Inject authentication state into localStorage
-  // This simulates a logged-in user without needing to go through magic link flow
+  // Seed the cached user profile the app reads on startup. The production
+  // AuthContext keeps auth/refresh tokens in httpOnly cookies (not reachable
+  // from JS) and only restores the non-sensitive `user_data` profile from
+  // localStorage, so the setup mirrors that contract and writes only user_data.
   await page.evaluate((userData) => {
-    // Set auth tokens
-    localStorage.setItem('authToken', 'e2e-test-token-' + Date.now());
-    localStorage.setItem('session_token', 'e2e-session-' + Date.now());
-    localStorage.setItem('refreshToken', 'e2e-refresh-token-' + Date.now());
-
-    // Set user data
     localStorage.setItem('user_data', JSON.stringify(userData));
 
     // Mark signup modal as seen to prevent it from appearing

@@ -1,0 +1,25 @@
+server/src/routes/audit.ts:5:import { validateBody } from '../middleware/validate';
+server/src/routes/audit.ts:19:router.post('/archive', authorize('admin'), validateBody(archiveAuditLogsSchema), asyncHandler(auditController.archiveLogs.bind(auditController)));
+server/src/routes/audit.ts:22:router.post('/', validateBody(createAuditLogSchema), asyncHandler(auditController.log.bind(auditController)));
+server/src/routes/controlTesting.ts:10:import { validateBody } from '../middleware/validate';
+server/src/routes/controlTesting.ts:285:  validateBody(createControlTestSchema),
+server/src/routes/controlTesting.ts:326:  validateBody(updateControlTestSchema),
+server/src/routes/vendors.ts:5:import { validateBody } from '../middleware/validate';
+server/src/routes/vendors.ts:21:  validateBody(createVendorSchema),
+server/src/routes/vendors.ts:35:  validateBody(createVendorAssessmentSchema),
+server/src/routes/vendors.ts:50:  validateBody(completeVendorAssessmentSchema),
+server/src/routes/vendors.ts:121:  validateBody(updateVendorSchema),
+server/src/routes/auth.ts:5:import { validateBody } from '../middleware/validate';
+server/src/routes/auth.ts:10:router.post('/magic-link', authLimiter, validateBody(magicLinkSchema), asyncHandler(authController.requestMagicLink.bind(authController)));
+server/src/routes/auth.ts:12:router.post('/login', authLimiter, validateBody(loginSchema), asyncHandler(authController.login.bind(authController)));
+server/src/routes/auth.ts:13:router.post('/2fa/complete', authLimiter, validateBody(completeTwoFactorSchema), asyncHandler(authController.completeTwoFactorLogin.bind(authController)));
+server/src/routes/auth.ts:14:router.post('/register', authLimiter, validateBody(registerSchema), asyncHandler(authController.register.bind(authController)));
+server/src/routes/auth.ts:17:router.post('/forgot-password', authLimiter, validateBody(forgotPasswordSchema), asyncHandler(authController.forgotPassword.bind(authController)));
+server/src/routes/auth.ts:18:router.post('/reset-password', authLimiter, validateBody(resetPasswordSchema), asyncHandler(authController.resetPassword.bind(authController)));
+server/src/routes/auth.ts:31:router.patch('/profile', authenticate, validateBody(updateProfileSchema), asyncHandler(authController.updateProfile.bind(authController)));
+server/src/routes/auth.ts:33:router.patch('/password', authenticate, validateBody(changePasswordSchema), asyncHandler(authController.changePassword.bind(authController)));
+server/src/routes/dora.ts:15:import { validateBody } from '../middleware/validate';
+server/src/routes/dora.ts:92:  validateBody(createICTRiskAssessmentSchema),
+server/src/routes/dora.ts:107:  validateBody(updateICTRiskAssessmentSchema),
+server/src/routes/dora.ts:180:  validateBody(createICTIncidentSchema),
+server/src/routes/dora.ts:195:  validateBody(updateICTIncidentSchema),

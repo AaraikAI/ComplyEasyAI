@@ -66,6 +66,15 @@ function decryptRecord(record: any): any {
 // PRISMA CLIENT WITH ENCRYPTION EXTENSION
 // Uses $extends (replacing deprecated $use middleware) for transparent
 // encryption/decryption of Integration credential fields.
+//
+// This extension is a convenience for the high-traffic Integration model only.
+// It is NOT the sole protection: every other credential-bearing model encrypts
+// (or one-way hashes) at its own write site — SSO SAML certs and OAuth
+// access/refresh tokens and client secrets via encryptField (routes/sso.ts,
+// services/integrations/*), webhook signing secrets via encryptField
+// (services/webhookService.ts), and SCIM bearer tokens via SHA-256
+// (routes/scim.ts). No credential-bearing model relies on this extension to
+// avoid plaintext-at-rest.
 // ============================================================================
 
 // Set DATABASE_URL with pool params for Prisma v5
@@ -87,11 +96,30 @@ function buildPoolUrl(url: string): { connectionString: string; ssl: pg.PoolConf
   for (const param of prismaOnlyParams) {
     parsed.searchParams.delete(param);
   }
+  const isProduction = process.env.NODE_ENV === 'production';
+  const caCert = process.env.DB_CA_CERT
+    ? Buffer.from(process.env.DB_CA_CERT, 'base64').toString()
+    : undefined;
+
+  // In production with TLS required, certificate verification (rejectUnauthorized)
+  // is enabled. Managed providers that present a self-signed/private-CA
+  // certificate (e.g. Supabase) require their CA bundle to be supplied via
+  // DB_CA_CERT (base64-encoded PEM) — otherwise the TLS handshake fails with
+  // a self-signed-certificate error. Surface this clearly at startup so the
+  // misconfiguration is obvious instead of presenting as an opaque connect failure.
+  if (isProduction && needsSsl && !caCert) {
+    logger.warn(
+      '[Database] Production TLS is enabled (rejectUnauthorized=true) but DB_CA_CERT is not set. ' +
+        'If your database presents a self-signed or private-CA certificate (e.g. Supabase), ' +
+        'set DB_CA_CERT to the base64-encoded CA bundle or the connection will fail verification.',
+    );
+  }
+
   return {
     connectionString: parsed.toString(),
     ssl: needsSsl ? {
-      rejectUnauthorized: process.env.NODE_ENV === 'production',
-      ca: process.env.DB_CA_CERT ? Buffer.from(process.env.DB_CA_CERT, 'base64').toString() : undefined,
+      rejectUnauthorized: isProduction,
+      ca: caCert,
     } : undefined,
   };
 }
