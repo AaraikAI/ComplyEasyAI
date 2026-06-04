@@ -84,7 +84,7 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
 
   // Rule form state
   const [ruleForm, setRuleForm] = useState({
-    name: '', functionA: '', functionB: '', system: 'SAP ECC' as ERPSystem,
+    ruleId: '', name: '', functionA: '', functionB: '', system: 'SAP ECC' as ERPSystem,
     riskLevel: 'Medium' as RiskLevel, description: '', category: 'Procure-to-Pay',
   });
 
@@ -543,26 +543,18 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
           <button onClick={() => setShowCreateRule(false)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
         </div>
         <div className="p-5 space-y-4">
-          {[
-            { label: 'Rule ID', placeholder: 'e.g. SOD-011' },
-            { label: 'Rule Name', placeholder: 'Descriptive name for this conflict rule' },
-          ].map(f => (
-            <div key={f.label}><label className="block text-sm text-slate-400 mb-1">{f.label}</label><input type="text" placeholder={f.placeholder} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
-          ))}
+          <div><label className="block text-sm text-slate-400 mb-1">Rule ID</label><input type="text" placeholder="e.g. SOD-011" value={ruleForm.ruleId} onChange={e => setRuleForm(f => ({ ...f, ruleId: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
+          <div><label className="block text-sm text-slate-400 mb-1">Rule Name</label><input type="text" placeholder="Descriptive name for this conflict rule" value={ruleForm.name} onChange={e => setRuleForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm text-slate-400 mb-1">Conflicting Function A</label><input type="text" placeholder="e.g. Create Purchase Order" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
-            <div><label className="block text-sm text-slate-400 mb-1">Conflicting Function B</label><input type="text" placeholder="e.g. Approve Purchase Order" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
+            <div><label className="block text-sm text-slate-400 mb-1">Conflicting Function A</label><input type="text" placeholder="e.g. Create Purchase Order" value={ruleForm.functionA} onChange={e => setRuleForm(f => ({ ...f, functionA: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
+            <div><label className="block text-sm text-slate-400 mb-1">Conflicting Function B</label><input type="text" placeholder="e.g. Approve Purchase Order" value={ruleForm.functionB} onChange={e => setRuleForm(f => ({ ...f, functionB: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: 'System', options: ['SAP ECC', 'SAP S/4HANA', 'Oracle EBS', 'Workday'] },
-              { label: 'Risk Level', options: ['High', 'Medium', 'Low'] },
-            ].map(s => (
-              <div key={s.label}><label className="block text-sm text-slate-400 mb-1">{s.label}</label><select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{s.options.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
-            ))}
+            <div><label className="block text-sm text-slate-400 mb-1">System</label><select value={ruleForm.system} onChange={e => setRuleForm(f => ({ ...f, system: e.target.value as ERPSystem }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['SAP ECC', 'SAP S/4HANA', 'Oracle EBS', 'Workday'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+            <div><label className="block text-sm text-slate-400 mb-1">Risk Level</label><select value={ruleForm.riskLevel} onChange={e => setRuleForm(f => ({ ...f, riskLevel: e.target.value as RiskLevel }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['High', 'Medium', 'Low'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
           </div>
-          <div><label className="block text-sm text-slate-400 mb-1">Description</label><textarea placeholder="Describe why this separation of duties conflict is important..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" /></div>
-          <div><label className="block text-sm text-slate-400 mb-1">Category</label><select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['Procure-to-Pay', 'Order-to-Cash', 'Financial Close', 'Basis / Security', 'HR / Payroll'].map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label className="block text-sm text-slate-400 mb-1">Description</label><textarea placeholder="Describe why this separation of duties conflict is important..." value={ruleForm.description} onChange={e => setRuleForm(f => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" /></div>
+          <div><label className="block text-sm text-slate-400 mb-1">Category</label><select value={ruleForm.category} onChange={e => setRuleForm(f => ({ ...f, category: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['Procure-to-Pay', 'Order-to-Cash', 'Financial Close', 'Basis / Security', 'HR / Payroll'].map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
           <button onClick={() => setShowCreateRule(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">{t('common.cancel')}</button>

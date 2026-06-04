@@ -8,14 +8,54 @@
 
 ---
 
-## §0 Remediation Status — RESOLVED (updated 2026-06-02)
+## §0 Remediation Status — PARTIAL (scope gap corrected 2026-06-02)
 
-> **The 429 findings catalogued in §1–§6 below have all been remediated.** Those sections are
-> retained as the original scan + the audit trail; this section records the current state.
-> The authoritative 1:1 closure tracker is **`REMEDIATION_LOG.md`** (one row per finding); the
-> doc-vs-code discrepancies and known-unfixable evidence are in **`.claude/CLAUDE.md`**.
+> ⚠️ **SCOPE-GAP CORRECTION (2026-06-02).** The headline "RESOLVED / production-ready" claim is
+> **superseded and downgraded to PARTIAL.** The v21 scan that produced the 429 findings read a
+> **source-only** file list (`.claude/deep-scan/filelist.txt` = 1,180 entries, globbed from **only**
+> `.ts`/`.tsx`/`.js`). It **structurally never read 88 critical files**: `server/prisma/schema.prisma`,
+> all `.sql` migrations **including the RLS policy file**, every `Dockerfile`/`docker-compose`, every
+> GitHub Actions workflow, deploy/setup shell scripts, the `package.json` manifests, nginx/logstash/
+> monitoring/Falco configs, and files created *after* the scan (e.g. `utils/orgOwnership.ts`). So
+> "1,180 / 1,180 = 100%" (see §7) was 100% of a **truncated denominator**, not of the codebase.
+>
+> A supplementary deep-read of those 88 files (corrected list: `.claude/deep-scan/filelist_v2_full.txt`;
+> overlooked set: `.claude/deep-scan/MISSED_FILES.txt`) surfaced **~30 new findings (9 HIGH)** documented
+> in **`SUPPLEMENTARY_SCAN_REPORT.md`**. Three production-grade controls that live entirely in the
+> previously-unread files are **not actually in force**:
+> 1. **DB row-level security provides zero tenant isolation** — bypassed three ways (app role has
+>    `BYPASSRLS`; 0/324 tables `FORCE`d; the policy predicate reads a `request.jwt.claims` var the
+>    Prisma/`pg` backend never sets). Isolation is 100% application-layer, no defense-in-depth.
+> 2. **The patValidationService SSRF (a CodeQL *critical*) is NOT fixed** — 12 validators fully unguarded.
+>    The real open CodeQL backlog is **1,163 alerts (24 critical / 199 high)**, not the "~2 critical /
+>    ~66 high" parked as a footnote below.
+> 3. **The ZK trusted setup uses predictable/hardcoded toxic-waste entropy** (`"random text"` / `date +%s`),
+>    breaking soundness of every proof.
+> Plus: `deploy.sh` still ships `:latest` (undermining the CDK immutable-tag control); CI runs with a
+> write-all `GITHUB_TOKEN` and no SHA-pinned actions; prod nginx mounts a non-existent config dir (no TLS).
+>
+> **Corrected verdict: NOT production-ready as a whole.** The application tier is strong; the DB-isolation,
+> static-analysis, ZK, and deploy-pipeline gaps are genuine deployment blockers. See `SUPPLEMENTARY_SCAN_REPORT.md`.
+>
+> **Full-codebase verification re-scan (2026-06-03, completed):** a 127-agent swarm re-read **all 1,268
+> files** (entire corrected list) end-to-end against current post-remediation code → **61 further findings
+> NONE of which are in the 429** (`FULL_RESCAN_REPORT.md`; machine-readable
+> `.claude/deep-scan/results/full_rescan_findings.json`): **5 HIGH** — (1) the **Stripe webhook is fully
+> broken** (`billingController.ts:140` reads `req.rawBody` which is always undefined → every event 401'd →
+> tier/payment syncs never apply); (2) `createPersonnel` drops `organizationId`; (3) `acosService`
+> cross-tenant framework read; (4) **ServiceNow pull-sync** writes invalid FK `createdById:'system'` → no
+> incident ever persists; (5) **integration-provider singleton → cross-tenant credential bleed** under
+> concurrency — plus 12 MED (DSAR/SoD uncontrolled create-modals, demo-PII cross-tenant exposure, ticketing
+> webhook secret never persisted, workflow SSRF-via-redirect, sodService JSON-into-String, agentic privilege
+> check on a random user, mobile notifications 404) and 44 LOW/INFO. **Across both passes there are 10 HIGH
+> live blockers** (5 here + 5 in the supplementary report).
 
-**All 429 findings terminal:** FIXED **344** · WIRED **58** · MIGRATED **3** · JUSTIFIED_INTENTIONAL **24** · PENDING **0** · SKIPPED **0**.
+> **The 429 findings catalogued in §1–§6 below were all remediated** (this remains true and verified).
+> Those sections are retained as the original scan + the audit trail; the authoritative 1:1 closure
+> tracker is **`REMEDIATION_LOG.md`**; doc-vs-code discrepancies and known-unfixable evidence are in
+> **`.claude/CLAUDE.md`**.
+
+**All 429 in-scope findings terminal:** FIXED **344** · WIRED **58** · MIGRATED **3** · JUSTIFIED_INTENTIONAL **24** · PENDING **0** · SKIPPED **0**. **(Scope = source code only; see correction above for what was outside scope.)**
 
 **Verification gates (2026-06-01/06-02):**
 

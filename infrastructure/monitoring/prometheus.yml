@@ -1,5 +1,14 @@
 # Prometheus Configuration
 # ComplyEasyAI Monitoring
+#
+# SECURITY: The monitoring network MUST be restricted (private subnet / Docker
+# internal network / security group) so scrape targets are not reachable from
+# the public internet. Scrape jobs below use HTTPS and bearer-token/basic-auth
+# whose credentials are read from mounted files (never inlined here). Provision
+# the referenced files via secret mounts:
+#   /etc/prometheus/secrets/api_bearer_token        (api job)
+#   /etc/prometheus/secrets/exporter_password       (exporter jobs basic_auth)
+#   /etc/prometheus/secrets/ca.crt                  (TLS server verification)
 
 global:
   scrape_interval: 15s
@@ -26,6 +35,11 @@ scrape_configs:
   # ComplyEasy API metrics
   - job_name: 'complyeasy-api'
     metrics_path: /metrics
+    scheme: https
+    # Bearer token is read from a mounted secret file, never inlined.
+    bearer_token_file: /etc/prometheus/secrets/api_bearer_token
+    tls_config:
+      ca_file: /etc/prometheus/secrets/ca.crt
     static_configs:
       - targets: ['api:3001']
     relabel_configs:
@@ -42,27 +56,61 @@ scrape_configs:
         target_label: instance
         replacement: 'falco'
 
+  # Exporter targets below use HTTPS and basic_auth. The password is read from a
+  # mounted secret file (password_file); the username is non-secret. The TLS CA
+  # is mounted alongside it. No credentials are inlined in this file.
+
   # Node Exporter (host metrics)
   - job_name: 'node'
+    scheme: https
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/exporter_password
+    tls_config:
+      ca_file: /etc/prometheus/secrets/ca.crt
     static_configs:
       - targets: ['node-exporter:9100']
 
   # PostgreSQL metrics
   - job_name: 'postgres'
+    scheme: https
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/exporter_password
+    tls_config:
+      ca_file: /etc/prometheus/secrets/ca.crt
     static_configs:
       - targets: ['postgres-exporter:9187']
 
   # Redis metrics
   - job_name: 'redis'
+    scheme: https
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/exporter_password
+    tls_config:
+      ca_file: /etc/prometheus/secrets/ca.crt
     static_configs:
       - targets: ['redis-exporter:9121']
 
   # Nginx metrics
   - job_name: 'nginx'
+    scheme: https
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/exporter_password
+    tls_config:
+      ca_file: /etc/prometheus/secrets/ca.crt
     static_configs:
       - targets: ['nginx-exporter:9113']
 
   # Elasticsearch metrics
   - job_name: 'elasticsearch'
+    scheme: https
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/exporter_password
+    tls_config:
+      ca_file: /etc/prometheus/secrets/ca.crt
     static_configs:
       - targets: ['elasticsearch-exporter:9114']

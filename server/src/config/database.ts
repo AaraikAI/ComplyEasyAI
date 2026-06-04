@@ -8,6 +8,7 @@ import {
   encryptConfigFields,
   decryptConfigFields,
 } from '../utils/credentialEncryption';
+import { getCurrentOrg } from './orgContext';
 
 // Append connection pool parameters to DATABASE_URL if not already present.
 // Prisma uses these URL params to configure the internal connection pool.
@@ -140,7 +141,67 @@ const basePrisma = new PrismaClient({
   ],
 });
 
-const prisma = basePrisma.$extends({
+// ============================================================================
+// ORG-CONTEXT (ROW-LEVEL SECURITY) EXTENSION
+// Binds the per-request organization (carried in AsyncLocalStorage by the auth
+// middleware via config/orgContext.ts) to the PostgreSQL session so RLS
+// policies can scope every query to the caller's org.
+//
+// Mechanism: when an org id is present in the async context, the operation is
+// wrapped in an interactive transaction. The transaction first issues
+// `SELECT set_config('app.current_org', $org, true)` — the `true` makes the
+// setting transaction-local, so it cannot leak across pooled connections — and
+// then runs the actual query inside that same transaction. PostgreSQL's
+// org_isolation policies read the GUC via public.get_current_organization_id().
+//
+// When no org is bound (background jobs, startup, public/unauthenticated
+// routes), the operation runs as before with no GUC set; under FORCE RLS such
+// connections simply match no tenant rows, which is the safe default.
+//
+// This extension is applied to the base client BEFORE the encryption
+// extension so that the integration model's encrypt/decrypt query handlers run
+// inside the org-scoped transaction as well.
+// ============================================================================
+const orgScopedPrisma = basePrisma.$extends({
+  query: {
+    async $allOperations({ operation, model, args, query }: {
+      operation: string;
+      model?: string;
+      args: any;
+      query: (args: any) => Promise<any>;
+    }) {
+      const org = getCurrentOrg();
+
+      // No org context, or the operation is itself a transaction/raw control
+      // call (which must not be re-wrapped): run unchanged.
+      if (
+        !org ||
+        operation === '$transaction' ||
+        operation === '$executeRaw' ||
+        operation === '$executeRawUnsafe' ||
+        operation === '$queryRaw' ||
+        operation === '$queryRawUnsafe'
+      ) {
+        return query(args);
+      }
+
+      // Wrap the single operation in an interactive transaction that first
+      // binds the org GUC (transaction-local), then executes the query on the
+      // transactional connection so the policy sees the correct org.
+      return basePrisma.$transaction(async (tx: any) => {
+        await tx.$executeRaw`SELECT set_config('app.current_org', ${org}, true)`;
+        const delegate = model ? (tx as any)[lowerFirst(model)] : tx;
+        return delegate[operation](args);
+      });
+    },
+  },
+});
+
+function lowerFirst(value: string): string {
+  return value.charAt(0).toLowerCase() + value.slice(1);
+}
+
+const prisma = orgScopedPrisma.$extends({
   query: {
     integration: {
       async create({ args, query }: { args: any; query: any }) {

@@ -137,7 +137,8 @@ class BillingController {
         throw new AppError('Missing stripe signature', 400);
       }
 
-      const result = await stripeService.handleWebhook((req as any).rawBody, signature);
+      const rawBody = Buffer.isBuffer((req as any).body) ? (req as any).body : Buffer.from('');
+      const result = await stripeService.handleWebhook(rawBody, signature);
 
       // Trigger automation webhooks for subscription events
       if (result.processed) {

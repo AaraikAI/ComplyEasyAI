@@ -9,6 +9,7 @@ import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
+import { convertToCSV, escapeCsvCell } from '../utils/csvExport';
 
 class ControlMappingsController {
   // Create a mapping between controls
@@ -391,11 +392,22 @@ class ControlMappingsController {
         ],
       });
 
-      // Convert to CSV
-      const csvHeader = 'Source Framework,Source Control,Target Framework,Target Control,Mapping Type,Confidence\n';
-      const csvRows = mappings.map((m) => 
-        `"${m.sourceControl.framework.name || ''}","${m.sourceControl.name || ''}","${m.targetControl.framework.name || ''}","${m.targetControl.name || ''}","${m.mappingType || ''}","${m.confidence || ''}"`
-      ).join('\n');
+      // Convert to CSV. Route every cell through the shared escaper so values
+      // are RFC 4180 quoted and leading = + - @ (tab/CR) triggers neutralized.
+      const headers = ['Source Framework', 'Source Control', 'Target Framework', 'Target Control', 'Mapping Type', 'Confidence'];
+      const rows = mappings.map((m) => ({
+        'Source Framework': m.sourceControl.framework.name || '',
+        'Source Control': m.sourceControl.name || '',
+        'Target Framework': m.targetControl.framework.name || '',
+        'Target Control': m.targetControl.name || '',
+        'Mapping Type': m.mappingType || '',
+        Confidence: m.confidence ?? '',
+      }));
+      // convertToCSV returns '' for an empty dataset; emit the header row in
+      // that case so the export always carries column names.
+      const csv = rows.length > 0
+        ? convertToCSV(rows, { headers })
+        : headers.map((h) => escapeCsvCell(h)).join(',');
 
       await prisma.auditLog.create({
         data: {
@@ -411,7 +423,7 @@ class ControlMappingsController {
 
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=control-mappings.csv');
-      res.send(csvHeader + csvRows);
+      res.send(csv);
     } catch (error) {
       logger.error('Export mappings error', error);
       if (error instanceof AppError) throw error;

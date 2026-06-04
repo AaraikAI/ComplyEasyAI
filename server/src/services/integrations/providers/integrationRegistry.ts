@@ -49,6 +49,20 @@ class IntegrationRegistry {
     return this.providers.get(providerId);
   }
 
+  /**
+   * Resolve a FRESH, per-request provider instance for the given ID.
+   *
+   * The map holds one shared template instance per provider; `configure()`
+   * mutates per-tenant credentials and httpClient headers, so handing the shared
+   * instance to concurrent callers would bleed credentials across tenants.
+   * Cloning gives each request its own provider + httpClient, keeping the
+   * configured credentials isolated to that call.
+   */
+  private resolveInstance(providerId: string): BaseIntegrationProvider | undefined {
+    const template = this.providers.get(providerId);
+    return template ? template.clone() : undefined;
+  }
+
   /** Check if a provider is registered */
   has(providerId: string): boolean {
     return this.providers.has(providerId);
@@ -88,7 +102,7 @@ class IntegrationRegistry {
     credentials: IntegrationCredentials,
   ): Promise<ConnectionTestResult> {
     await this.initialise();
-    const provider = this.get(providerId);
+    const provider = this.resolveInstance(providerId);
     if (!provider) {
       return {
         success: false,
@@ -108,7 +122,7 @@ class IntegrationRegistry {
     credentials: IntegrationCredentials,
   ): Promise<SyncResult> {
     await this.initialise();
-    const provider = this.get(providerId);
+    const provider = this.resolveInstance(providerId);
     if (!provider) {
       return {
         success: false,
@@ -130,7 +144,7 @@ class IntegrationRegistry {
     credentials: IntegrationCredentials,
   ): Promise<EvidenceItem[]> {
     await this.initialise();
-    const provider = this.get(providerId);
+    const provider = this.resolveInstance(providerId);
     if (!provider) return [];
     provider.configure(credentials);
     return provider.collectEvidence();

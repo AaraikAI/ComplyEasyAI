@@ -560,8 +560,8 @@ class ACOSService {
         });
 
         // Recalculate confidence based on current control implementation status
-        const updatedControl = await prisma.frameworkControl.findUnique({
-          where: { id: control.id },
+        const updatedControl = await prisma.frameworkControl.findFirst({
+          where: { id: control.id, framework: { organizationId } },
         });
         if (updatedControl) {
           const calculatedConfidence = this.calculateConfidenceFromControlStatus(updatedControl.status);
@@ -619,8 +619,8 @@ class ACOSService {
     forecastedStatus: string;
     riskLevel: 'low' | 'medium' | 'high';
   }> {
-    const control = await prisma.frameworkControl.findUnique({
-      where: { id: controlId },
+    const control = await prisma.frameworkControl.findFirst({
+      where: { id: controlId, framework: { organizationId } },
       include: { framework: true },
     });
 
@@ -684,8 +684,8 @@ class ACOSService {
     controlId: string,
     organizationId: string
   ): Promise<boolean> {
-    const control = await prisma.frameworkControl.findUnique({
-      where: { id: controlId },
+    const control = await prisma.frameworkControl.findFirst({
+      where: { id: controlId, framework: { organizationId } },
     });
 
     return control?.status === 'In_Progress' || control?.status === 'Implemented';
@@ -770,8 +770,8 @@ class ACOSService {
     userId: string
   ): Promise<ComplianceDebt[]> {
     try {
-      const framework = await prisma.complianceFramework.findUnique({
-        where: { id: frameworkId },
+      const framework = await prisma.complianceFramework.findFirst({
+        where: { id: frameworkId, organizationId },
         include: { controls: true },
       });
 
@@ -2140,8 +2140,8 @@ class ACOSService {
     organizationId: string
   ): Promise<number> {
     try {
-      const framework = await prisma.complianceFramework.findUnique({
-        where: { id: frameworkId },
+      const framework = await prisma.complianceFramework.findFirst({
+        where: { id: frameworkId, organizationId },
         include: { controls: true },
       });
 
@@ -2308,8 +2308,8 @@ class ACOSService {
    */
   async updateControlLoopConfidence(controlId: string, organizationId: string): Promise<void> {
     try {
-      const control = await prisma.frameworkControl.findUnique({
-        where: { id: controlId },
+      const control = await prisma.frameworkControl.findFirst({
+        where: { id: controlId, framework: { organizationId } },
       });
 
       if (!control) {

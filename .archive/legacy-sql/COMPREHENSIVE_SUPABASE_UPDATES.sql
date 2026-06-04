@@ -82,11 +82,16 @@ CREATE INDEX IF NOT EXISTS "ControlMapping_targetControlId_idx" ON "ControlMappi
 -- 4. CREATE AI SUGGESTION TABLE (if not exists)
 -- ============================================================================
 
-CREATE TYPE IF NOT EXISTS "AISuggestionStatus" AS ENUM (
-  'pending',
-  'accepted',
-  'rejected'
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AISuggestionStatus') THEN
+    CREATE TYPE "AISuggestionStatus" AS ENUM (
+      'pending',
+      'accepted',
+      'rejected'
+    );
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "AISuggestion" (
   "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -116,17 +121,27 @@ CREATE INDEX IF NOT EXISTS "AISuggestion_status_idx" ON "AISuggestion"("status")
 -- 5. CREATE PHISHING TRAINING GENERATOR TABLE
 -- ============================================================================
 
-CREATE TYPE IF NOT EXISTS "PhishingType" AS ENUM (
-  'Email',
-  'Spear',
-  'Smishing'
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PhishingType') THEN
+    CREATE TYPE "PhishingType" AS ENUM (
+      'Email',
+      'Spear',
+      'Smishing'
+    );
+  END IF;
+END $$;
 
-CREATE TYPE IF NOT EXISTS "PhishingDifficulty" AS ENUM (
-  'Easy',
-  'Medium',
-  'Hard'
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PhishingDifficulty') THEN
+    CREATE TYPE "PhishingDifficulty" AS ENUM (
+      'Easy',
+      'Medium',
+      'Hard'
+    );
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "PhishingTraining" (
   "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,

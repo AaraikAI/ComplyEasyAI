@@ -16,6 +16,7 @@ export const AIReportGenerator: React.FC = () => {
   const [report, setReport] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingFrameworks, setLoadingFrameworks] = useState(true);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadFrameworks = async () => {
@@ -46,9 +47,16 @@ export const AIReportGenerator: React.FC = () => {
     if (!context) return;
     setLoading(true);
     setReport(null);
-    const result = await generateComplianceReport(framework, companyName, context);
-    setReport(result);
-    setLoading(false);
+    setGenerateError(null);
+    try {
+      const result = await generateComplianceReport(framework, companyName, context);
+      setReport(result);
+    } catch (error) {
+      logger.error('Failed to generate compliance report:', error);
+      setGenerateError('Failed to generate the report. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDownload = () => {
@@ -175,6 +183,11 @@ export const AIReportGenerator: React.FC = () => {
         </div>
         
         <div className="flex-1 p-8 overflow-y-auto bg-white">
+          {generateError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {generateError}
+            </div>
+          )}
           {report ? (
              <div className="prose prose-sm prose-slate max-w-none">
                 {/* We can use ReactMarkdown here for safety rendering if installed, but for simplicity in this prompt structure we might just dump text or simulate markdown rendering */}

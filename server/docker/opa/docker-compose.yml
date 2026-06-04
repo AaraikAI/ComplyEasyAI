@@ -1,25 +1,24 @@
-version: '3.8'
-
 services:
   opa:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: complyeasy-opa
+    # Bound to loopback: consumers reach OPA over the internal network; the
+    # host publish is for local debugging only.
     ports:
-      - "8181:8181"
+      - "127.0.0.1:8181:8181"
     volumes:
       - ./policies:/policies
       - opa-data:/data
     environment:
       - OPA_LOG_LEVEL=info
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    security_opt:
+      - "no-new-privileges:true"
+    # The OPA image is distroless (no curl/wget/shell), so an in-container HTTP
+    # healthcheck cannot run; readiness against GET /health is validated from the
+    # host. No service gates on opa being `service_healthy`.
     networks:
       - complyeasy-network
 
@@ -28,20 +27,19 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: complyeasy-opa-replica
+    # Bound to loopback: consumers reach OPA over the internal network; the
+    # host publish is for local debugging only.
     ports:
-      - "8182:8181"
+      - "127.0.0.1:8182:8181"
     volumes:
       - ./policies:/policies
       - opa-data:/data
     environment:
       - OPA_LOG_LEVEL=info
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    security_opt:
+      - "no-new-privileges:true"
+    # See the opa service above: distroless image, no in-container HTTP tooling.
     networks:
       - complyeasy-network
     depends_on:

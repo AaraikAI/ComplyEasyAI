@@ -33,6 +33,7 @@ import aiRmfRoutes from '../aiRmf';
 import onboardingRoutes from '../onboarding';
 import euRegulationsRoutes from '../euRegulations';
 import exportRoutes from '../export';
+import notificationRoutes from '../notifications';
 
 const v1Router = Router();
 
@@ -76,5 +77,8 @@ v1Router.use('/onboarding', apiLimiter, onboardingRoutes);
 
 // Export routes
 v1Router.use('/export', apiLimiter, exportRoutes);
+
+// Notification routes
+v1Router.use('/notifications', apiLimiter, notificationRoutes);
 
 export default v1Router;

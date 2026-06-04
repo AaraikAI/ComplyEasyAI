@@ -4,7 +4,7 @@
 # Generates proving keys (.zkey) and verification keys (.vkey) for circuits
 # Uses snarkjs for Groth16 trusted setup
 
-set -e
+set -euo pipefail
 
 CIRCUITS_DIR="src/zkp/circuits"
 COMPILED_DIR="src/zkp/compiled"
@@ -36,51 +36,59 @@ mkdir -p "$VERIFICATION_KEYS_DIR"
 # Circuits to process
 circuits=("compliance_check" "credential_verification" "data_ownership")
 
+# Powers-of-tau (phase 1) is circuit-independent, so it is generated once and
+# reused across all circuits. Regenerating it per circuit wastes work and risks
+# reusing randomness. Each contribution draws fresh entropy from the OS CSPRNG.
+# For production, a real multi-party ceremony is strongly preferred over this
+# single-party setup.
+POT_FINAL="$KEYS_DIR/pot14_final.ptau"
+
+echo -e "${YELLOW}Phase 1: Generating powers of tau (once for all circuits)...${NC}"
+snarkjs powersoftau new bn128 14 "$KEYS_DIR/pot14_0000.ptau" -v
+
+# Draw cryptographically-strong entropy from the OS CSPRNG for this contribution.
+POT_ENTROPY="$(head -c 64 /dev/urandom | base64 | tr -d '\n')"
+snarkjs powersoftau contribute "$KEYS_DIR/pot14_0000.ptau" "$KEYS_DIR/pot14_0001.ptau" \
+    --name="First contribution" -v -e="$POT_ENTROPY"
+unset POT_ENTROPY
+
+snarkjs powersoftau prepare phase2 "$KEYS_DIR/pot14_0001.ptau" "$POT_FINAL" -v
+
 for circuit in "${circuits[@]}"; do
     echo -e "${YELLOW}Generating keys for $circuit...${NC}"
-    
+
     R1CS_FILE="$R1CS_DIR/${circuit}.r1cs"
     WASM_FILE="$WASM_DIR/${circuit}.wasm"
     ZKEY_FILE="$PROVING_KEYS_DIR/${circuit}.zkey"
     VKEY_FILE="$VERIFICATION_KEYS_DIR/${circuit}.vkey"
-    
+
     # Check if R1CS file exists
     if [ ! -f "$R1CS_FILE" ]; then
         echo -e "${RED}Error: R1CS file not found: $R1CS_FILE${NC}"
         echo "Run compile-circuits.sh first"
         exit 1
     fi
-    
-    # Phase 1: Generate initial zkey (powers of tau)
-    echo "  Phase 1: Starting powers of tau ceremony..."
-    snarkjs powersoftau new bn128 14 "$KEYS_DIR/pot14_0000.ptau" -v
-    
-    # Contribute to ceremony (in production, use multi-party ceremony)
-    snarkjs powersoftau contribute "$KEYS_DIR/pot14_0000.ptau" "$KEYS_DIR/pot14_0001.ptau" \
-        --name="First contribution" -v -e="random text"
-    
-    # Phase 2: Prepare phase 2
-    snarkjs powersoftau prepare phase2 "$KEYS_DIR/pot14_0001.ptau" "$KEYS_DIR/pot14_final.ptau" -v
-    
-    # Phase 3: Generate proving key
+
+    # Phase 2: Generate proving key from the shared powers-of-tau file
     echo "  Phase 2: Generating proving key..."
-    snarkjs groth16 setup "$R1CS_FILE" "$KEYS_DIR/pot14_final.ptau" "$ZKEY_FILE"
-    
-    # Contribute to zkey (in production, use multi-party ceremony)
-    snarkjs zkey contribute "$ZKEY_FILE" "$ZKEY_FILE" --name="1st Contributor" -v -e="another random text"
-    
+    snarkjs groth16 setup "$R1CS_FILE" "$POT_FINAL" "$ZKEY_FILE"
+
+    # Contribute to the zkey with fresh CSPRNG entropy per circuit.
+    # For production, a real multi-party ceremony is strongly preferred.
+    ZKEY_ENTROPY="$(head -c 64 /dev/urandom | base64 | tr -d '\n')"
+    snarkjs zkey contribute "$ZKEY_FILE" "$ZKEY_FILE" --name="1st Contributor" -v -e="$ZKEY_ENTROPY"
+    unset ZKEY_ENTROPY
+
     # Export verification key
     echo "  Phase 3: Exporting verification key..."
-    snarkjs zkey export verificationkey "$ZKEY_FILE" "$VKEY_FILE"
-    
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ Generated keys for $circuit successfully${NC}"
-        echo "    Proving key: $ZKEY_FILE"
-        echo "    Verification key: $VKEY_FILE"
-    else
+    if ! snarkjs zkey export verificationkey "$ZKEY_FILE" "$VKEY_FILE"; then
         echo -e "${RED}✗ Failed to generate keys for $circuit${NC}"
         exit 1
     fi
+
+    echo -e "${GREEN}✓ Generated keys for $circuit successfully${NC}"
+    echo "    Proving key: $ZKEY_FILE"
+    echo "    Verification key: $VKEY_FILE"
 done
 
 echo -e "${GREEN}Trusted setup completed successfully!${NC}"

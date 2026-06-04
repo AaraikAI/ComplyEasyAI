@@ -15,6 +15,7 @@ import { asyncHandler } from '../types/express';
 import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { escapeCsvCell } from '../utils/csvExport';
 
 const router = Router();
 router.use(authenticate);
@@ -64,17 +65,11 @@ function recordsToCSV(records: any[]): string {
     'nextReviewDate',
   ];
 
-  const escapeCSV = (val: any): string => {
-    if (val === null || val === undefined) return '';
-    const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
-    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-  };
-
-  const rows = records.map((r) => headers.map((h) => escapeCSV(r[h])).join(','));
-  return [headers.join(','), ...rows].join('\n');
+  // Route every cell through the shared escaper so values are RFC 4180 quoted
+  // and leading = + - @ (tab/CR) formula triggers are neutralized.
+  const headerRow = headers.map((h) => escapeCsvCell(h)).join(',');
+  const rows = records.map((r) => headers.map((h) => escapeCsvCell(r[h])).join(','));
+  return [headerRow, ...rows].join('\n');
 }
 
 // ============================================================================

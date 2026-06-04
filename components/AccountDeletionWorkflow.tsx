@@ -241,6 +241,93 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
     return auditEntries.filter(a => a.category === auditCategoryFilter);
   }, [auditEntries, auditCategoryFilter]);
 
+  // Derive verification certificates from completed/denied deletion requests.
+  // A certificate is "Issued" once the request is fully Completed, otherwise it
+  // reflects the in-progress state. This replaces any static placeholder list.
+  const verificationCertificates = useMemo(() => {
+    return requests
+      .filter(r => r.status === 'Completed' || r.status === 'Denied')
+      .map(r => ({
+        id: `CERT-${r.id}-${r.status === 'Completed' ? 'FULL' : 'DENIED'}`,
+        request: r.id,
+        date: r.estimatedCompletion || r.submittedDate,
+        status: r.status === 'Completed' ? 'Issued' : 'Denied',
+      }));
+  }, [requests]);
+
+  // Derive compliance-evidence counts from the loaded deletion requests' reasons
+  // and the audit log, rather than presenting fixed numbers as live data.
+  const complianceEvidence = useMemo(() => {
+    const reasonMatches = (needle: string) =>
+      requests.filter(r => (r.reason || '').toLowerCase().includes(needle)).length;
+    const completedCount = requests.filter(r => r.status === 'Completed').length;
+    const dataMappingCount = auditEntries.filter(a => a.category === 'system' || a.category === 'verification').length;
+    return [
+      { label: 'GDPR Art. 17 Compliance', count: reasonMatches('gdpr') || reasonMatches('erasure'), color: 'text-blue-400' },
+      { label: 'CCPA Deletion Records', count: reasonMatches('ccpa'), color: 'text-purple-400' },
+      { label: 'Data Mapping Reports', count: dataMappingCount, color: 'text-cyan-400' },
+      { label: 'Erasure Confirmation Letters', count: completedCount, color: 'text-green-400' },
+    ];
+  }, [requests, auditEntries]);
+
+  // Export the audit log as a CSV the operator can download. Cells are escaped
+  // and formula-prefixed cells neutralized to avoid CSV-injection on open.
+  const handleExportAudit = useCallback(() => {
+    const escapeCell = (value: string) => {
+      const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+      return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+    };
+    const header = ['ID', 'Timestamp', 'Category', 'Action', 'User', 'Request', 'Details'];
+    const rows = filteredAudit.map(a => [a.id, a.timestamp, a.category, a.action, a.user, a.requestId, a.details]);
+    const csv = [header, ...rows].map(r => r.map(c => escapeCell(String(c ?? ''))).join(',')).join('\n');
+    try {
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `deletion-audit-log-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      logger.error('Failed to export deletion audit log:', err);
+    }
+  }, [filteredAudit]);
+
+  // Download a single verification certificate as a self-contained HTML document
+  // built from the originating request's loaded data.
+  const handleDownloadCertificate = useCallback((cert: { id: string; request: string; date: string; status: string }) => {
+    const req = requests.find(r => r.id === cert.request);
+    const esc = (s: string) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+    const lines: [string, string][] = [
+      ['Certificate ID', cert.id],
+      ['Request ID', cert.request],
+      ['Account', req?.accountName || cert.request],
+      ['Email', req?.email || '—'],
+      ['Reason', req?.reason || '—'],
+      ['Status', cert.status],
+      ['Date', cert.date],
+    ];
+    const body = lines.map(([k, v]) => `<tr><th style="text-align:left;padding:6px 12px;border-bottom:1px solid #e5e7eb">${esc(k)}</th><td style="padding:6px 12px;border-bottom:1px solid #e5e7eb">${esc(v)}</td></tr>`).join('');
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(cert.id)}</title>` +
+      `<style>body{font-family:system-ui,Arial,sans-serif;padding:32px;max-width:720px;margin:auto}h1{font-size:18px}table{border-collapse:collapse;width:100%;margin-top:16px}</style></head>` +
+      `<body><h1>Data Deletion Verification Certificate</h1><table>${body}</table></body></html>`;
+    try {
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${cert.id}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      logger.error('Failed to download verification certificate:', err);
+    }
+  }, [requests]);
+
   const systemStatusColor = (status: string) => {
     switch (status) {
       case 'Completed': return 'text-green-400';
@@ -827,7 +914,11 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             <option value="system">System</option>
           </select>
         </div>
-        <button className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 border border-slate-700 rounded-lg transition-colors">
+        <button
+          onClick={handleExportAudit}
+          disabled={filteredAudit.length === 0}
+          className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 border border-slate-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <Download className="w-4 h-4" /> {t('common.export')}
         </button>
       </div>
@@ -869,28 +960,34 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
           <Shield className="w-4 h-4 text-green-400" /> Verification Certificates
         </h3>
-        <div className="space-y-2">
-          {[
-            { id: 'CERT-DEL001-FULL', request: 'DEL-001', date: '2026-02-18', status: 'Issued' },
-            { id: 'CERT-DB-20260218-001', request: 'DEL-002', date: '2026-02-18', status: 'Partial' },
-            { id: 'CERT-AN-20260218-001', request: 'DEL-002', date: '2026-02-18', status: 'Partial' },
-          ].map(cert => (
-            <div key={cert.id} className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0">
-              <div>
-                <div className="text-sm text-cyan-400 font-mono">{cert.id}</div>
-                <div className="text-xs text-slate-500">Request: {cert.request} | Issued: {cert.date}</div>
+        {verificationCertificates.length === 0 ? (
+          <div className="text-xs text-slate-500 italic py-2">
+            No verification certificates yet. Certificates are issued once a deletion request reaches a terminal state.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {verificationCertificates.map(cert => (
+              <div key={cert.id} className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0">
+                <div>
+                  <div className="text-sm text-cyan-400 font-mono">{cert.id}</div>
+                  <div className="text-xs text-slate-500">Request: {cert.request} | Issued: {cert.date}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded ${cert.status === 'Issued' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {cert.status}
+                  </span>
+                  <button
+                    onClick={() => handleDownloadCertificate(cert)}
+                    className="text-slate-400 hover:text-white"
+                    title="Download certificate"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs px-2 py-0.5 rounded ${cert.status === 'Issued' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                  {cert.status}
-                </span>
-                <button className="text-slate-400 hover:text-white">
-                  <Download className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
@@ -898,12 +995,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
           <FileText className="w-4 h-4 text-blue-400" /> Compliance Evidence
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            { label: 'GDPR Art. 17 Compliance', count: 6, color: 'text-blue-400' },
-            { label: 'CCPA Deletion Records', count: 2, color: 'text-purple-400' },
-            { label: 'Data Mapping Reports', count: 4, color: 'text-cyan-400' },
-            { label: 'Erasure Confirmation Letters', count: 1, color: 'text-green-400' },
-          ].map(item => (
+          {complianceEvidence.map(item => (
             <div key={item.label} className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
               <span className={`text-sm ${item.color}`}>{item.label}</span>
               <span className="text-sm text-white font-medium">{item.count}</span>

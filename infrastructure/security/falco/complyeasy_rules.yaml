@@ -292,10 +292,10 @@
     outbound and
     container.id != host and
     complyeasy_container and
-    evt.buffer contains "ssn" or
-    evt.buffer contains "social security" or
-    evt.buffer contains "credit card" or
-    evt.buffer icontains "password"
+    (evt.buffer contains "ssn" or
+     evt.buffer contains "social security" or
+     evt.buffer contains "credit card" or
+     evt.buffer icontains "password")
   output: >
     Potential PII data exfiltration
     (container=%container.name proc=%proc.name dest=%fd.rip:%fd.rport)

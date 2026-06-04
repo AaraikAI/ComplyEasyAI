@@ -888,7 +888,7 @@ export const swaggerPaths = {
               schema: {
                 type: 'object',
                 properties: {
-                  tier: { type: 'string', enum: ['free', 'essentials', 'growth', 'enterprise'] },
+                  tier: { type: 'string', enum: ['Foundation', 'Essentials', 'Growth', 'Visionary'] },
                   status: { type: 'string' },
                   currentPeriodEnd: { type: 'string', format: 'date-time' },
                   features: { type: 'array', items: { type: 'string' } },
@@ -1346,7 +1346,7 @@ export const swaggerPaths = {
                     id: { type: 'string' },
                     name: { type: 'string' },
                     enabled: { type: 'boolean' },
-                    tier: { type: 'string', enum: ['free', 'professional', 'enterprise'] },
+                    tier: { type: 'string', enum: ['Foundation', 'Essentials', 'Growth', 'Visionary'] },
                   },
                 },
               },

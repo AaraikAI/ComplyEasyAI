@@ -5,6 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
 import blockchainService from '../services/advanced/blockchainService';
+import { convertToCSV, escapeCsvCell } from '../utils/csvExport';
 
 class AuditController {
   list: RequestHandler = async (req: Request, res: Response): Promise<void> => {
@@ -190,14 +191,28 @@ class AuditController {
       });
 
       if (format === 'csv') {
-        const csvHeader = 'ID,Timestamp,Action,User ID,User Name,User Email,IP Address,Details\n';
-        const csvRows = logs.map((log) =>
-          `"${log.id}","${log.timestamp.toISOString()}","${(log.action || '').replace(/"/g, '""')}","${log.userId || ''}","${log.user?.name || ''}","${log.user?.email || ''}","${log.ipAddress || ''}","${(log.details || '').replace(/"/g, '""')}"`
-        ).join('\n');
+        // Route every cell through the shared escaper so values are RFC 4180
+        // quoted and leading = + - @ (tab/CR) formula triggers are neutralized.
+        const rows = logs.map((log) => ({
+          ID: log.id,
+          Timestamp: log.timestamp.toISOString(),
+          Action: log.action || '',
+          'User ID': log.userId || '',
+          'User Name': log.user?.name || '',
+          'User Email': log.user?.email || '',
+          'IP Address': log.ipAddress || '',
+          Details: log.details || '',
+        }));
+        const headers = ['ID', 'Timestamp', 'Action', 'User ID', 'User Name', 'User Email', 'IP Address', 'Details'];
+        // convertToCSV returns '' for an empty dataset; emit the header row in
+        // that case so the export always carries column names.
+        const csv = rows.length > 0
+          ? convertToCSV(rows, { headers })
+          : headers.map((h) => escapeCsvCell(h)).join(',');
 
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename=audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
-        res.send(csvHeader + csvRows);
+        res.send(csv);
       } else {
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', `attachment; filename=audit-logs-${new Date().toISOString().split('T')[0]}.json`);

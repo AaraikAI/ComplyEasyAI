@@ -8,6 +8,7 @@ import tokenBlacklist from '../services/tokenBlacklistService';
 import { User, Organization } from '../generated/prisma/client';
 import crypto from 'crypto';
 import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
+import { runWithOrg } from '../config/orgContext';
 
 export interface AuthUser {
   id: string;
@@ -140,8 +141,12 @@ const authenticateMiddleware = async (
         // Session management not available, continue without it
         logger.debug('[Auth] Session management not available');
       }
-      
-      next();
+
+      // Bind the resolved organization to the async context for the rest of
+      // this request so every downstream Prisma call can inject it into the
+      // database session GUC for row-level security (see config/orgContext.ts
+      // and config/database.ts).
+      runWithOrg(user.organizationId, () => next());
     } catch (error) {
       logger.error('Token verification failed', error);
       logSecurityEvent({

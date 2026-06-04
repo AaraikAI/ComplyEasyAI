@@ -13,11 +13,97 @@ import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import axios from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { lookup as dnsLookup } from 'dns/promises';
+import net from 'net';
+import { URL } from 'url';
 import * as crypto from 'crypto';
 import notificationService from '../notificationService';
 import config from '../../config';
 import { encryptConfigSecrets, decryptConfigSecrets } from '../../utils/credentialEncryption';
+import { isUrlSafe, isPrivateIp } from '../../utils/urlValidator';
+
+/**
+ * SSRF-hardened outbound GET for user-controllable feed/regulation URLs.
+ *
+ * Validates the URL with isUrlSafe, resolves the hostname and confirms every
+ * resolved address is public (DNS-rebinding guard), disables automatic redirect
+ * following, and re-validates each redirect hop before following it. Returns the
+ * same AxiosResponse shape as axios.get so callers read response.data unchanged.
+ */
+async function safeOutboundGet(
+  url: string,
+  context: string,
+  options?: AxiosRequestConfig
+): Promise<AxiosResponse> {
+  const MAX_REDIRECTS = 5;
+  let currentUrl = url;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!isUrlSafe(currentUrl)) {
+      throw new AppError(`URL is not allowed for security reasons (SSRF protection: ${context})`, 403);
+    }
+
+    // DNS-rebinding guard: confirm the resolved host is public.
+    let hostname: string;
+    try {
+      hostname = new URL(currentUrl).hostname.toLowerCase();
+    } catch {
+      throw new AppError(`URL is not allowed for security reasons (SSRF protection: ${context})`, 403);
+    }
+    const stripped =
+      hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
+    if (net.isIP(stripped) === 0) {
+      try {
+        const addresses = await dnsLookup(stripped, { all: true });
+        for (const { address } of addresses) {
+          if (isPrivateIp(address)) {
+            logger.error(`[RIF] Host resolves to a private address (SSRF protection: ${context})`, {
+              host: stripped,
+              resolved: address,
+            });
+            throw new AppError('Host resolves to a private address (SSRF protection)', 403);
+          }
+        }
+      } catch (error) {
+        if (error instanceof AppError) throw error;
+        // Resolution failure: do not connect; surface as an unreachable host upstream.
+      }
+    }
+
+    const response = await axios.request({
+      ...options,
+      method: 'get',
+      url: currentUrl,
+      maxRedirects: 0,
+      validateStatus: (status: number) =>
+        (status >= 200 && status < 300) || (status >= 300 && status < 400),
+    });
+
+    if (response.status < 300 || response.status >= 400) {
+      return response;
+    }
+
+    const location = response.headers?.location as string | undefined;
+    if (!location) {
+      return response;
+    }
+
+    const resolvedUrl = new URL(location, currentUrl).href;
+    if (!isUrlSafe(resolvedUrl)) {
+      logger.error(`[RIF] Blocked redirect to unsafe URL (SSRF protection: ${context})`, { resolvedUrl });
+      throw new AppError('Redirect to internal URL blocked (SSRF protection)', 403);
+    }
+
+    if (hop === MAX_REDIRECTS) {
+      return response;
+    }
+
+    currentUrl = resolvedUrl;
+  }
+
+  throw new AppError(`Redirect handling failed (SSRF protection: ${context})`, 403);
+}
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -109,13 +195,8 @@ class RegulatoryIntelligenceFabricService {
       // 1. Ingest from URL
       if (input.url) {
         try {
-          // SECURITY: SSRF Protection - Validate URL before fetching
-          const { isUrlSafe } = await import('../../utils/urlValidator');
-          if (!isUrlSafe(input.url)) {
-            throw new AppError('URL is not allowed for security reasons (SSRF protection)', 403);
-          }
-
-          const response = await axios.get(input.url, {
+          // SECURITY: SSRF protection — validate URL, resolved host, and redirects.
+          const response = await safeOutboundGet(input.url, 'ingestRegulation', {
             timeout: 30000,
             headers: {
               'User-Agent': 'ComplyEasyAI-RIF/1.0',
@@ -2368,13 +2449,8 @@ Return only the resolution text, no JSON or formatting.`;
     organizationId: string
   ): Promise<Array<{ title: string; url: string; description: string; published: Date }>> {
     try {
-      // SECURITY: SSRF Protection - Validate URL before fetching
-      const { isUrlSafe } = await import('../../utils/urlValidator');
-      if (!isUrlSafe(feed.url)) {
-        throw new AppError('Feed URL is not allowed for security reasons (SSRF protection)', 403);
-      }
-
-      const response = await axios.get(feed.url, {
+      // SECURITY: SSRF protection — validate URL, resolved host, and redirects.
+      const response = await safeOutboundGet(feed.url, 'parseRSSFeed', {
         timeout: 30000,
         headers: {
           'User-Agent': 'ComplyEasyAI-RIF/1.0',
@@ -2521,12 +2597,6 @@ Return only the resolution text, no JSON or formatting.`;
     organizationId: string
   ): Promise<Array<{ title: string; url: string; description: string; published: Date }>> {
     try {
-      // SECURITY: SSRF Protection - Validate URL before fetching
-      const { isUrlSafe } = await import('../../utils/urlValidator');
-      if (!isUrlSafe(feed.url)) {
-        throw new AppError('Feed URL is not allowed for security reasons (SSRF protection)', 403);
-      }
-
       const headers: any = {
         'User-Agent': 'ComplyEasyAI-RIF/1.0',
       };
@@ -2543,7 +2613,8 @@ Return only the resolution text, no JSON or formatting.`;
         }
       }
 
-      const response = await axios.get(feed.url, {
+      // SECURITY: SSRF protection — validate URL, resolved host, and redirects.
+      const response = await safeOutboundGet(feed.url, 'monitorAPIEndpoint', {
         timeout: 30000,
         headers,
       });
@@ -2571,13 +2642,8 @@ Return only the resolution text, no JSON or formatting.`;
     organizationId: string
   ): Promise<Array<{ title: string; url: string; description: string; published: Date }>> {
     try {
-      // SECURITY: SSRF Protection - Validate URL before fetching
-      const { isUrlSafe } = await import('../../utils/urlValidator');
-      if (!isUrlSafe(feed.url)) {
-        throw new AppError('Feed URL is not allowed for security reasons (SSRF protection)', 403);
-      }
-
-      const response = await axios.get(feed.url, {
+      // SECURITY: SSRF protection — validate URL, resolved host, and redirects.
+      const response = await safeOutboundGet(feed.url, 'monitorWebsiteChanges', {
         timeout: 30000,
         headers: {
           'User-Agent': 'ComplyEasyAI-RIF/1.0',
@@ -2636,18 +2702,20 @@ Return only the resolution text, no JSON or formatting.`;
       let fullText = item.description;
       if (item.url) {
         try {
-          // SECURITY: SSRF Protection - Validate URL before fetching
-          const { isUrlSafe } = await import('../../utils/urlValidator');
+          // SECURITY: SSRF protection — validate URL, resolved host, and redirects.
           if (!isUrlSafe(item.url)) {
             logger.warn(`[RIF] Blocked SSRF attempt: ${item.url}`);
             // Use description if URL is not safe
             return null;
           }
 
-          const response = await axios.get(item.url, { timeout: 30000 });
+          const response = await safeOutboundGet(item.url, 'processFeedItem', { timeout: 30000 });
           fullText = response.data;
         } catch (e) {
-          // Use description if URL fetch fails
+          // Fall back to the item description when the full-content fetch fails.
+          logger.warn('[RIF] Feed item content fetch failed; using description', {
+            error: (e as Error).message,
+          });
         }
       }
 

@@ -1068,6 +1068,9 @@ export const saveTicketingConfigSchema = Joi.object({
   syncDirection: Joi.string().valid(...syncDirections).optional(),
   syncIntervalMinutes: Joi.number().min(1).max(1440).optional(),
   mappingRules: Joi.object().allow(null).optional(),
+  // Inbound-webhook HMAC secret. Optional: when omitted on a new connection the
+  // route generates one server-side. Encrypted at rest before any DB write.
+  webhookSecret: Joi.string().max(500).allow('', null).optional(),
 }).unknown(false);
 
 export const testTicketingConnectionSchema = Joi.object({

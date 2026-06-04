@@ -9,7 +9,18 @@ services:
   falco:
     image: falcosecurity/falco:0.38.0
     container_name: falco
-    privileged: true
+    # Replaces `privileged: true` with the minimal capability set Falco needs to
+    # load its eBPF probe and read kernel/syscall state. The docker.sock mount is
+    # retained because complyeasy_rules.yaml enriches alerts with container.*
+    # metadata, which requires querying the container runtime.
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - BPF
+      - PERFMON
+    security_opt:
+      - "no-new-privileges:true"
     volumes:
       # Falco configuration
       - ./infrastructure/security/falco/falco.yaml:/etc/falco/falco.yaml:ro
@@ -64,14 +75,18 @@ services:
       - ALERTMANAGER_HOSTPORT=http://alertmanager:9093
       # General
       - CUSTOMFIELDS="environment:${ENVIRONMENT:-production},application:complyeasy"
+    # Bound to loopback: Falco pushes events to sidekick over the internal
+    # network; the host publish is for local debugging only.
     ports:
-      - "2801:2801"
+      - "127.0.0.1:2801:2801"
     depends_on:
       - falco
     networks:
       - security
       - elk
     restart: unless-stopped
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:2801/ping"]
       interval: 30s
@@ -93,12 +108,15 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
+    # Bound to loopback: scrape targets are reached over the internal network;
+    # the host publish is for local debugging only.
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     networks:
       - security
     restart: unless-stopped
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
@@ -117,11 +135,15 @@ services:
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
+    # Bound to loopback: Prometheus reaches Alertmanager over the internal
+    # network; the host publish is for local debugging only.
     ports:
-      - "9093:9093"
+      - "127.0.0.1:9093:9093"
     networks:
       - security
     restart: unless-stopped
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9093/-/healthy"]
       interval: 30s
@@ -142,13 +164,17 @@ services:
     volumes:
       - ./infrastructure/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
+    # Bound to loopback: expose the Grafana UI through the reverse proxy rather
+    # than publishing it on all host interfaces.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - prometheus
     networks:
       - security
     restart: unless-stopped
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
       interval: 30s

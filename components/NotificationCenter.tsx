@@ -4,6 +4,7 @@ import { Bell, Check, CheckCheck, X, AlertTriangle, Shield, FileText, Users, Clo
 import { api } from '../services/api';
 import { ROUTES } from '../routes/routeConfig';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 interface Notification {
   id: string;
@@ -77,7 +78,7 @@ const NotificationCenter: React.FC = () => {
       }
     } catch (err) {
       // Notification count fetch is non-critical; log and continue
-      console.warn('Failed to fetch unread count', err);
+      logger.warn('Failed to fetch unread count', err);
     }
   };
 
@@ -99,7 +100,7 @@ const NotificationCenter: React.FC = () => {
         setPage(pageNum);
       }
     } catch (err) {
-      console.warn('Failed to fetch notifications', err);
+      logger.warn('Failed to fetch notifications', err);
       if (pageNum === 0) setNotifications([]);
     } finally {
       setIsLoading(false);
@@ -112,7 +113,7 @@ const NotificationCenter: React.FC = () => {
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
-      console.warn('Failed to mark notification as read', err);
+      logger.warn('Failed to mark notification as read', err);
     }
   };
 
@@ -122,7 +123,7 @@ const NotificationCenter: React.FC = () => {
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
-      console.warn('Failed to mark all notifications as read', err);
+      logger.warn('Failed to mark all notifications as read', err);
     }
   };
 
@@ -131,7 +132,7 @@ const NotificationCenter: React.FC = () => {
       await api.delete(`/notifications/${id}`);
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) {
-      console.warn('Failed to delete notification', err);
+      logger.warn('Failed to delete notification', err);
     }
   };
 

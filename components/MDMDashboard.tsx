@@ -813,10 +813,10 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
             <button onClick={() => setShowCreatePolicy(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">{t('common.cancel')}</button>
             <button onClick={async () => {
-              try { await api.mdm.createPolicy({ ...policyForm, status: 'Draft' }); setShowCreatePolicy(false); loadData(); } catch { setShowCreatePolicy(false); }
+              try { await api.mdm.createPolicy({ ...policyForm, status: 'Draft' }); setShowCreatePolicy(false); loadData(); } catch (err) { logger.warn('MDMDashboard create draft policy failed:', err); setLoadError('Failed to save policy draft. Please try again.'); setShowCreatePolicy(false); }
             }} className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm hover:bg-slate-500">Save as Draft</button>
             <button onClick={async () => {
-              try { await api.mdm.createPolicy({ ...policyForm, status: 'Active' }); setShowCreatePolicy(false); loadData(); } catch { setShowCreatePolicy(false); }
+              try { await api.mdm.createPolicy({ ...policyForm, status: 'Active' }); setShowCreatePolicy(false); loadData(); } catch (err) { logger.warn('MDMDashboard create active policy failed:', err); setLoadError('Failed to create policy. Please try again.'); setShowCreatePolicy(false); }
             }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create & Activate</button>
           </div>
         </div>
@@ -866,7 +866,9 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   await api.mdm.executeAction(device.id, { action: type.toLowerCase(), notes: '' });
                   setShowActionConfirm(null);
                   loadData();
-                } catch {
+                } catch (err) {
+                  logger.warn(`MDMDashboard ${type} action failed:`, err);
+                  setLoadError(`Failed to ${type.toLowerCase()} the device. Please try again.`);
                   setShowActionConfirm(null);
                 } finally {
                   setActionLoading(false);

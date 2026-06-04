@@ -4,7 +4,7 @@
 # This script automates the complete setup of zk-SNARK circuits
 # Run time: ~5-10 minutes (mostly downloads)
 
-set -e  # Exit on error
+set -euo pipefail  # Exit on error, unset vars, and pipeline failures
 
 echo "=========================================="
 echo "zk-SNARK Circuit Setup for ComplyEasyAI"
@@ -172,13 +172,17 @@ setup_circuit() {
     echo -e "  ${GREEN}✓ Initial proving key generated${NC}"
 
     # Phase 2 contribution (adds randomness)
+    # Draw cryptographically-strong entropy from the OS CSPRNG per circuit.
+    # A real multi-party ceremony is strongly preferred for production.
     echo "  [3/5] Adding phase 2 contribution..."
+    CONTRIB_ENTROPY="$(head -c 64 /dev/urandom | base64 | tr -d '\n')"
     $SNARKJS_CMD zkey contribute \
         "keys/proving/${CIRCUIT_NAME}_0000.zkey" \
         "keys/proving/${CIRCUIT_NAME}.zkey" \
         --name="ComplyEasyAI Contribution" \
-        -e="$(date +%s)" \
+        -e="$CONTRIB_ENTROPY" \
         > /dev/null 2>&1
+    unset CONTRIB_ENTROPY
     rm "keys/proving/${CIRCUIT_NAME}_0000.zkey"
     echo -e "  ${GREEN}✓ Phase 2 contribution added${NC}"
 

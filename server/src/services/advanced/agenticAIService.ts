@@ -123,8 +123,8 @@ class AgenticAIService {
         canRollback = false; // Evidence deletion may not be fully rollbackable
         rollbackComplexity = 'complex';
       } else if (action.actionType === 'risk_mitigation') {
-        const risk = await prisma.riskItem.findUnique({
-          where: { id: action.targetId },
+        const risk = await prisma.riskItem.findFirst({
+          where: { id: action.targetId, organizationId },
         });
 
         if (!risk) {
@@ -423,7 +423,8 @@ class AgenticAIService {
         const preconditionsMet = await this.validatePreconditions(
           action.preconditions,
           organizationId,
-          action.targetId
+          action.targetId,
+          userId
         );
         if (!preconditionsMet.valid) {
           throw new AppError(`Preconditions not met: ${preconditionsMet.reason}`, 400);
@@ -1327,7 +1328,8 @@ class AgenticAIService {
   private async validatePreconditions(
     preconditions: Record<string, any>,
     organizationId: string,
-    targetId: string
+    targetId: string,
+    userId: string
   ): Promise<{ valid: boolean; reason?: string }> {
     try {
       // Validate entity exists
@@ -1354,18 +1356,19 @@ class AgenticAIService {
           ? preconditions.requiredPermissions
           : [preconditions.requiredPermissions];
 
-        // Retrieve the user's role from the organization's users
-        const orgUser = await prisma.user.findFirst({
+        // Retrieve the role of the acting user, scoped to the organization
+        const actingUser = await prisma.user.findFirst({
           where: {
+            id: userId,
             organizationId,
           },
         });
 
-        if (!orgUser) {
-          return { valid: false, reason: 'No user found in organization for permission validation' };
+        if (!actingUser) {
+          return { valid: false, reason: 'Acting user not found in organization for permission validation' };
         }
 
-        const userRole = orgUser.role?.toLowerCase() || '';
+        const userRole = actingUser.role?.toLowerCase() || '';
         // Map roles to permission sets
         const rolePermissions: Record<string, string[]> = {
           admin: ['read', 'write', 'delete', 'approve', 'manage', 'control_update', 'policy_create', 'evidence_delete', 'risk_mitigation'],
@@ -1404,12 +1407,12 @@ class AgenticAIService {
    * Check if entity exists
    */
   private async checkEntityExists(targetId: string, organizationId: string): Promise<boolean> {
-    // Check multiple entity types
+    // Check multiple entity types, scoped to the organization for tenant isolation
     const checks = [
-      prisma.frameworkControl.findUnique({ where: { id: targetId } }),
-      prisma.complianceFramework.findUnique({ where: { id: targetId } }),
-      prisma.riskItem.findUnique({ where: { id: targetId } }),
-      prisma.evidenceAnalysis.findUnique({ where: { id: targetId } }),
+      prisma.frameworkControl.findFirst({ where: { id: targetId, framework: { organizationId } } }),
+      prisma.complianceFramework.findFirst({ where: { id: targetId, organizationId } }),
+      prisma.riskItem.findFirst({ where: { id: targetId, organizationId } }),
+      prisma.evidenceAnalysis.findFirst({ where: { id: targetId, organizationId } }),
     ];
 
     const results = await Promise.all(checks);
@@ -1420,10 +1423,10 @@ class AgenticAIService {
    * Get entity status
    */
   private async getEntityStatus(targetId: string, organizationId: string): Promise<string | null> {
-    const control = await prisma.frameworkControl.findUnique({ where: { id: targetId } });
+    const control = await prisma.frameworkControl.findFirst({ where: { id: targetId, framework: { organizationId } } });
     if (control) return control.status || null;
 
-    const risk = await prisma.riskItem.findUnique({ where: { id: targetId } });
+    const risk = await prisma.riskItem.findFirst({ where: { id: targetId, organizationId } });
     if (risk) return risk.status || null;
 
     return null;
@@ -1433,10 +1436,10 @@ class AgenticAIService {
    * Get entity data
    */
   private async getEntityData(targetId: string, organizationId: string): Promise<Record<string, unknown>> {
-    const control = await prisma.frameworkControl.findUnique({ where: { id: targetId } });
+    const control = await prisma.frameworkControl.findFirst({ where: { id: targetId, framework: { organizationId } } });
     if (control) return control as unknown as Record<string, unknown>;
 
-    const risk = await prisma.riskItem.findUnique({ where: { id: targetId } });
+    const risk = await prisma.riskItem.findFirst({ where: { id: targetId, organizationId } });
     if (risk) return risk as unknown as Record<string, unknown>;
 
     return {};

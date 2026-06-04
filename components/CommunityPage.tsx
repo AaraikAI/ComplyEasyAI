@@ -308,7 +308,7 @@ export const CommunityPage: React.FC = () => {
                 className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all"
               >
                 <MessagesSquare className="w-5 h-5" />
-                Join MessagesSquare
+                Join Slack
                 <ExternalLink className="w-4 h-4" />
               </a>
               <button className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all">
@@ -723,7 +723,7 @@ export const CommunityPage: React.FC = () => {
               className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all"
             >
               <MessagesSquare className="w-5 h-5" />
-              Join MessagesSquare Community
+              Join Slack Community
             </a>
             <a 
               href="/signup"

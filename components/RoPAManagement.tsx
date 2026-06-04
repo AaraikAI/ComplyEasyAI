@@ -379,26 +379,38 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         'Created',
         'Updated',
       ];
+      // Neutralize spreadsheet formula injection and CSV-escape each cell.
+      // Values beginning with =, +, -, @ or a leading tab/CR are prefixed with a
+      // single quote so spreadsheet apps treat them as text, then the cell is
+      // wrapped in double quotes with embedded quotes doubled.
+      const escapeCsvCell = (value: string): string => {
+        let cell = value == null ? '' : String(value);
+        if (/^[=+\-@\t\r]/.test(cell)) {
+          cell = `'${cell}`;
+        }
+        return `"${cell.replace(/"/g, '""')}"`;
+      };
+
       const rows = activities.map(a => [
         a.id,
-        `"${a.activityName}"`,
-        `"${a.description}"`,
-        `"${a.purposes.join('; ')}"`,
+        a.activityName,
+        a.description,
+        a.purposes.join('; '),
         legalBasisShortLabels[a.legalBasis],
-        `"${a.dataCategories.join('; ')}"`,
-        `"${a.specialCategories.join('; ')}"`,
-        `"${a.dataSubjects.join('; ')}"`,
-        `"${a.recipients.join('; ')}"`,
-        `"${a.internationalTransfers.map(item => `${item.country} (${item.safeguard})`).join('; ')}"`,
+        a.dataCategories.join('; '),
+        a.specialCategories.join('; '),
+        a.dataSubjects.join('; '),
+        a.recipients.join('; '),
+        a.internationalTransfers.map(item => `${item.country} (${item.safeguard})`).join('; '),
         a.retentionPeriod,
-        `"${a.technicalMeasures.join('; ')}"`,
-        `"${a.organizationalMeasures.join('; ')}"`,
-        `"${a.controllerName}"`,
-        `"${a.processorName}"`,
+        a.technicalMeasures.join('; '),
+        a.organizationalMeasures.join('; '),
+        a.controllerName,
+        a.processorName,
         a.status,
         a.createdAt,
         a.updatedAt,
-      ]);
+      ].map(escapeCsvCell));
 
       const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });

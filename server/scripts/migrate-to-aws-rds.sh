@@ -3,7 +3,7 @@
 # Complete Supabase to AWS RDS Migration Script
 # This script automates the entire migration process
 
-set -e
+set -euo pipefail
 
 # Colors
 RED='\033[0;31m'
@@ -94,12 +94,22 @@ SUPABASE_USER=${SUPABASE_USER:-postgres}
 read -sp "Supabase Password: " SUPABASE_PASSWORD
 echo ""
 
-SUPABASE_URL="postgresql://${SUPABASE_USER}:${SUPABASE_PASSWORD}@${SUPABASE_HOST}:5432/${SUPABASE_DB}"
+SUPABASE_PORT=5432
+
+# Connection arguments exclude the password; the password is supplied to the
+# postgres client tools via the PGPASSWORD environment variable so it never
+# appears in the process argument list (visible to other users via ps/proc).
+SUPABASE_CONN_ARGS=(
+    -h "$SUPABASE_HOST"
+    -p "$SUPABASE_PORT"
+    -U "$SUPABASE_USER"
+    -d "$SUPABASE_DB"
+)
 
 # Test Supabase connection
 echo ""
 echo -e "${YELLOW}Testing Supabase connection...${NC}"
-if psql "$SUPABASE_URL" -c "SELECT 1;" &> /dev/null; then
+if PGPASSWORD="$SUPABASE_PASSWORD" psql "${SUPABASE_CONN_ARGS[@]}" -c "SELECT 1;" &> /dev/null; then
     echo -e "${GREEN}✓ Supabase connection successful${NC}"
 else
     echo -e "${RED}✗ Supabase connection failed${NC}"
@@ -108,8 +118,8 @@ else
 fi
 
 # Get table count
-SUPABASE_TABLE_COUNT=$(psql "$SUPABASE_URL" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';" 2>/dev/null | xargs)
-SUPABASE_USER_COUNT=$(psql "$SUPABASE_URL" -t -c "SELECT COUNT(*) FROM \"User\";" 2>/dev/null | xargs || echo "0")
+SUPABASE_TABLE_COUNT=$(PGPASSWORD="$SUPABASE_PASSWORD" psql "${SUPABASE_CONN_ARGS[@]}" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';" 2>/dev/null | xargs)
+SUPABASE_USER_COUNT=$(PGPASSWORD="$SUPABASE_PASSWORD" psql "${SUPABASE_CONN_ARGS[@]}" -t -c "SELECT COUNT(*) FROM \"User\";" 2>/dev/null | xargs || echo "0")
 
 echo -e "${CYAN}Supabase Database Stats:${NC}"
 echo "  Tables: $SUPABASE_TABLE_COUNT"
@@ -130,18 +140,23 @@ echo ""
 echo -e "${YELLOW}Exporting Supabase database...${NC}"
 echo "This may take a few minutes depending on database size..."
 
-pg_dump "$SUPABASE_URL" \
+# Restrict the dump file's permissions before any data is written, since the
+# export may contain sensitive rows.
+( umask 077
+PGPASSWORD="$SUPABASE_PASSWORD" pg_dump "${SUPABASE_CONN_ARGS[@]}" \
     --schema=public \
     --no-owner \
     --no-privileges \
     --file="$BACKUP_FILE" 2>&1 | while IFS= read -r line; do
         echo "  $line"
     done
+)
 
 if [ ! -f "$BACKUP_FILE" ]; then
     echo -e "${RED}✗ Export failed${NC}"
     exit 1
 fi
+chmod 600 "$BACKUP_FILE"
 
 BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
 echo -e "${GREEN}✓ Export complete${NC}"
@@ -170,12 +185,20 @@ echo ""
 read -p "Port [5432]: " RDS_PORT
 RDS_PORT=${RDS_PORT:-5432}
 
-RDS_URL="postgresql://${RDS_USER}:${RDS_PASSWORD}@${RDS_ENDPOINT}:${RDS_PORT}/${RDS_DB}"
+# Connection arguments exclude the password; the password is supplied to the
+# postgres client tools via the PGPASSWORD environment variable so it never
+# appears in the process argument list.
+RDS_CONN_ARGS=(
+    -h "$RDS_ENDPOINT"
+    -p "$RDS_PORT"
+    -U "$RDS_USER"
+    -d "$RDS_DB"
+)
 
 # Test RDS connection
 echo ""
 echo -e "${YELLOW}Testing AWS RDS connection...${NC}"
-if psql "$RDS_URL" -c "SELECT 1;" &> /dev/null; then
+if PGPASSWORD="$RDS_PASSWORD" psql "${RDS_CONN_ARGS[@]}" -c "SELECT 1;" &> /dev/null; then
     echo -e "${GREEN}✓ AWS RDS connection successful${NC}"
 else
     echo -e "${RED}✗ AWS RDS connection failed${NC}"
@@ -209,7 +232,7 @@ echo -e "${YELLOW}Importing to AWS RDS...${NC}"
 echo "This may take several minutes..."
 echo ""
 
-psql "$RDS_URL" -f "$BACKUP_FILE" 2>&1 | while IFS= read -r line; do
+PGPASSWORD="$RDS_PASSWORD" psql "${RDS_CONN_ARGS[@]}" -f "$BACKUP_FILE" 2>&1 | while IFS= read -r line; do
     # Filter out noise, show only important messages
     if [[ "$line" != *"NOTICE"* ]]; then
         echo "  $line"
@@ -223,8 +246,8 @@ echo -e "${GREEN}✓ Import complete${NC}"
 echo ""
 echo -e "${YELLOW}Verifying import...${NC}"
 
-RDS_TABLE_COUNT=$(psql "$RDS_URL" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';" 2>/dev/null | xargs)
-RDS_USER_COUNT=$(psql "$RDS_URL" -t -c "SELECT COUNT(*) FROM \"User\";" 2>/dev/null | xargs || echo "0")
+RDS_TABLE_COUNT=$(PGPASSWORD="$RDS_PASSWORD" psql "${RDS_CONN_ARGS[@]}" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';" 2>/dev/null | xargs)
+RDS_USER_COUNT=$(PGPASSWORD="$RDS_PASSWORD" psql "${RDS_CONN_ARGS[@]}" -t -c "SELECT COUNT(*) FROM \"User\";" 2>/dev/null | xargs || echo "0")
 
 echo -e "${CYAN}AWS RDS Database Stats:${NC}"
 echo "  Tables: $RDS_TABLE_COUNT"
@@ -264,9 +287,11 @@ if [ ! -f "$ENV_FILE" ]; then
     fi
 fi
 
-# Backup .env
+# Backup .env. The .env contains plaintext secrets, so restrict the backup's
+# permissions to the owner immediately.
 ENV_BACKUP="$ENV_FILE.backup-${TIMESTAMP}"
 cp "$ENV_FILE" "$ENV_BACKUP"
+chmod 600 "$ENV_BACKUP"
 echo -e "${GREEN}✓ Backed up .env to: $ENV_BACKUP${NC}"
 
 # Update DATABASE_URL

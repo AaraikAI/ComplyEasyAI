@@ -165,6 +165,14 @@ export abstract class BaseIntegrationProvider {
     this.configureHttpClient();
   }
 
+  /**
+   * Produce a fresh, independent instance of this provider with its own
+   * credential state and its own httpClient. The registry calls this per request
+   * so that per-tenant credentials/headers set via {@link configure} can never
+   * leak across concurrent callers that share the registry's singleton.
+   */
+  abstract clone(): BaseIntegrationProvider;
+
   /** Provider-specific HTTP client configuration (auth headers, base URLs) */
   protected abstract configureHttpClient(): void;
 
