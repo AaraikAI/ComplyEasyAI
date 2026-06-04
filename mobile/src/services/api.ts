@@ -443,7 +443,7 @@ export const api = {
   notifications: {
     list: () => fetchApi<any[]>('/notifications'),
     markRead: (id: string) =>
-      fetchApi<void>(`/notifications/${id}/read`, { method: 'POST' }),
+      fetchApi<void>(`/notifications/${id}/read`, { method: 'PATCH' }),
   },
 
   // Dashboard

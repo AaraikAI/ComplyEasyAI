@@ -51,6 +51,7 @@ interface WorkflowNode {
 
 interface WorkflowRun {
   id: string;
+  fullId: string;
   workflowName: string;
   triggeredBy: string;
   startedAt: string;
@@ -58,6 +59,17 @@ interface WorkflowRun {
   status: RunStatus;
   stepsCompleted: number;
   stepsTotal: number;
+}
+
+// A single step rendered in the run-detail modal, derived from the run's own
+// workflow definition and the run's recorded completedNodes / nodeResults.
+interface RunStepDetail {
+  id: string;
+  step: number;
+  type: NodeType;
+  title: string;
+  configSummary: string;
+  state: 'done' | 'failed' | 'running' | 'pending';
 }
 
 interface AutomationRule {
@@ -98,6 +110,7 @@ function mapApiRun(r: any): WorkflowRun {
   const durationStr = durationMs > 0 ? `${Math.floor(durationMs / 60000)}m ${Math.floor((durationMs % 60000) / 1000)}s` : '—';
   return {
     id: r.id.substring(0, 8).toUpperCase(),
+    fullId: r.id,
     workflowName: r.workflow?.name || 'Unknown',
     triggeredBy: r.triggerType === 'manual' ? 'Manual' : r.triggerType || 'System',
     startedAt: r.startedAt ? new Date(r.startedAt).toLocaleString() : '—',
@@ -106,6 +119,63 @@ function mapApiRun(r: any): WorkflowRun {
     stepsCompleted: completed,
     stepsTotal: total || completed,
   };
+}
+
+// Normalize a stored node-type string (e.g. 'trigger', 'Action') to a NodeType.
+function normalizeNodeType(raw: any): NodeType {
+  const map: Record<string, NodeType> = {
+    trigger: 'Trigger', action: 'Action', condition: 'Condition',
+    notification: 'Notification', approval: 'Approval', wait: 'Wait',
+  };
+  const key = String(raw ?? '').toLowerCase();
+  return map[key] || 'Action';
+}
+
+// Build the run-detail step list from the run's own workflow node definition plus
+// the run record's completedNodes / nodeResults / status. Falls back to the run's
+// step counts when the workflow definition has no usable nodes.
+function buildRunSteps(run: any): RunStepDetail[] {
+  const wfNodes = Array.isArray(run?.workflow?.nodes) ? run.workflow.nodes : [];
+  const completedIds: string[] = Array.isArray(run?.completedNodes)
+    ? run.completedNodes.map((n: any) => (typeof n === 'string' ? n : n?.id)).filter(Boolean)
+    : [];
+  const nodeResults: Record<string, any> = run?.nodeResults && typeof run.nodeResults === 'object' ? run.nodeResults : {};
+  const status: RunStatus = (run?.status as RunStatus) || 'Running';
+
+  if (wfNodes.length > 0) {
+    return wfNodes.map((n: any, idx: number): RunStepDetail => {
+      const nodeId = n.id || `node-${idx}`;
+      const result = nodeResults[nodeId];
+      const isDone = completedIds.includes(nodeId) || result?.status === 'success' || result?.status === 'completed';
+      const isFailed = result?.status === 'failed' || result?.status === 'error';
+      const isCurrent = !isDone && !isFailed && status === 'Running' && idx === completedIds.length;
+      let state: RunStepDetail['state'] = 'pending';
+      if (isFailed) state = 'failed';
+      else if (isDone) state = 'done';
+      else if (isCurrent) state = 'running';
+      return {
+        id: nodeId,
+        step: idx + 1,
+        type: normalizeNodeType(n.type),
+        title: n.title || n.label || `Step ${idx + 1}`,
+        configSummary: n.config?.summary || n.configSummary || n.description || '—',
+        state,
+      };
+    });
+  }
+
+  // No node definition available: synthesize steps from the run's progress counts.
+  const total = Math.max(completedIds.length, run?.stepsTotal || 0);
+  return Array.from({ length: total }, (_, idx): RunStepDetail => {
+    const isDone = idx < completedIds.length;
+    const isFailed = status === 'Failed' && idx === completedIds.length;
+    const isCurrent = status === 'Running' && idx === completedIds.length;
+    let state: RunStepDetail['state'] = 'pending';
+    if (isFailed) state = 'failed';
+    else if (isDone) state = 'done';
+    else if (isCurrent) state = 'running';
+    return { id: `step-${idx}`, step: idx + 1, type: 'Action', title: `Step ${idx + 1}`, configSummary: '—', state };
+  });
 }
 
 function mapApiRule(r: any): AutomationRule {
@@ -226,6 +296,10 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRun, setSelectedRun] = useState<WorkflowRun | null>(null);
+  // The selected run's own executed steps, fetched from the backend run record.
+  const [runSteps, setRunSteps] = useState<RunStepDetail[]>([]);
+  const [runDetailLoading, setRunDetailLoading] = useState(false);
+  const [runDetailError, setRunDetailError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Create workflow form state
@@ -288,6 +362,26 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     load();
     return () => { cancelled = true; };
   }, [loadWorkflows, loadTemplates, loadRuns, loadRules]);
+
+  // When a run is selected, fetch its own execution record so the detail modal
+  // renders the run's actual executed steps (not the in-memory builder canvas).
+  useEffect(() => {
+    if (!selectedRun) { setRunSteps([]); setRunDetailError(null); return; }
+    let cancelled = false;
+    setRunDetailLoading(true);
+    setRunDetailError(null);
+    (async () => {
+      try {
+        const run = await api.workflows.getRun(selectedRun.fullId);
+        if (!cancelled) setRunSteps(buildRunSteps(run));
+      } catch (e: any) {
+        if (!cancelled) setRunDetailError(e?.message || 'Failed to load run details');
+      } finally {
+        if (!cancelled) setRunDetailLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedRun]);
 
   const handleCreateWorkflow = async () => {
     if (!newName.trim()) return;
@@ -1156,7 +1250,6 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
   const renderRunDetailModal = () => {
     if (!selectedRun) return null;
-    const steps = builderNodes.slice(0, selectedRun.stepsTotal);
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedRun(null)}>
         <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -1191,30 +1284,41 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
             <div>
               <h4 className="text-sm font-medium text-white mb-3">Step-by-Step Execution</h4>
-              <div className="space-y-2">
-                {steps.map((step, idx) => {
-                  const isCompleted = idx < selectedRun.stepsCompleted;
-                  const isCurrent = idx === selectedRun.stepsCompleted && selectedRun.status === 'Running';
-                  const isFailed = idx === selectedRun.stepsCompleted - 1 && selectedRun.status === 'Failed';
-                  return (
-                    <div key={step.id} className={`flex items-center gap-3 p-3 rounded-lg border ${isCompleted && !isFailed ? 'bg-emerald-500/5 border-emerald-500/20' : isCurrent ? 'bg-blue-500/5 border-blue-500/20' : isFailed ? 'bg-red-500/5 border-red-500/20' : 'bg-slate-900 border-slate-700'}`}>
-                      <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${isCompleted && !isFailed ? 'bg-emerald-500/20 text-emerald-400' : isCurrent ? 'bg-blue-500/20 text-blue-400' : isFailed ? 'bg-red-500/20 text-red-400' : 'bg-slate-700 text-slate-500'}`}>
-                        {isCompleted && !isFailed ? <CheckCircle size={14} /> : isFailed ? <XCircle size={14} /> : isCurrent ? <RefreshCw size={14} className="animate-spin" /> : step.step}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-white">{step.title}</span>
-                          <span className={`px-1.5 py-0.5 text-xs rounded ${nodeTypeColor(step.type)}`}>{step.type}</span>
+              {runDetailError && (
+                <div className="mb-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">{runDetailError}</div>
+              )}
+              {runDetailLoading ? (
+                <div className="flex items-center justify-center py-8 text-slate-400">
+                  <Loader2 size={20} className="animate-spin mr-2" /> Loading run steps...
+                </div>
+              ) : runSteps.length === 0 ? (
+                <p className="text-sm text-slate-500 py-4">No recorded steps for this run.</p>
+              ) : (
+                <div className="space-y-2">
+                  {runSteps.map(step => {
+                    const isCompleted = step.state === 'done';
+                    const isCurrent = step.state === 'running';
+                    const isFailed = step.state === 'failed';
+                    return (
+                      <div key={step.id} className={`flex items-center gap-3 p-3 rounded-lg border ${isCompleted ? 'bg-emerald-500/5 border-emerald-500/20' : isCurrent ? 'bg-blue-500/5 border-blue-500/20' : isFailed ? 'bg-red-500/5 border-red-500/20' : 'bg-slate-900 border-slate-700'}`}>
+                        <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${isCompleted ? 'bg-emerald-500/20 text-emerald-400' : isCurrent ? 'bg-blue-500/20 text-blue-400' : isFailed ? 'bg-red-500/20 text-red-400' : 'bg-slate-700 text-slate-500'}`}>
+                          {isCompleted ? <CheckCircle size={14} /> : isFailed ? <XCircle size={14} /> : isCurrent ? <RefreshCw size={14} className="animate-spin" /> : step.step}
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5 truncate">{step.configSummary}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-white">{step.title}</span>
+                            <span className={`px-1.5 py-0.5 text-xs rounded ${nodeTypeColor(step.type)}`}>{step.type}</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate">{step.configSummary}</p>
+                        </div>
+                        <span className={`text-xs ${isCompleted ? 'text-emerald-400' : isFailed ? 'text-red-400' : isCurrent ? 'text-blue-400' : 'text-slate-600'}`}>
+                          {isCompleted ? 'Done' : isFailed ? 'Failed' : isCurrent ? 'Running' : 'Pending'}
+                        </span>
                       </div>
-                      <span className={`text-xs ${isCompleted && !isFailed ? 'text-emerald-400' : isFailed ? 'text-red-400' : isCurrent ? 'text-blue-400' : 'text-slate-600'}`}>
-                        {isCompleted && !isFailed ? 'Done' : isFailed ? 'Failed' : isCurrent ? 'Running' : 'Pending'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

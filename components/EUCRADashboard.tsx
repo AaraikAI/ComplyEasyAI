@@ -479,6 +479,34 @@ export const EUCRADashboard: React.FC = () => {
     return Math.ceil((target.getTime() - now.getTime()) / 86400000);
   }, []);
 
+  // Derive the CRA readiness checklist from persisted product / assessment state
+  // so each item reflects real data rather than fixed flags. A requirement is
+  // "done" when every (or, where noted, any) tracked product satisfies it.
+  const readinessChecklist = useMemo(() => {
+    const hasProducts = products.length > 0;
+    const everyProduct = (pred: (p: CRAProduct) => boolean) => hasProducts && products.every(pred);
+    const reqMet = (p: CRAProduct, match: string) =>
+      p.securityRequirements.some(r => r.requirement.toLowerCase().includes(match) && r.met);
+
+    const items = [
+      { label: 'Product inventory completed with CRA classification', done: hasProducts },
+      { label: 'Security requirements identified per product category', done: hasProducts && products.every(p => p.securityRequirements.length > 0) },
+      { label: 'Vulnerability handling process established', done: everyProduct(p => reqMet(p, 'vulnerabilities without delay') || reqMet(p, 'disclosure policy')) },
+      { label: 'SBOM generation automated for all products', done: everyProduct(p => p.sbomAvailable) },
+      { label: 'Coordinated vulnerability disclosure policy published', done: everyProduct(p => reqMet(p, 'disclosure policy')) },
+      { label: 'ENISA notification process tested (24hr SLA)', done: vulnerabilities.some(v => v.enisaNotifiedDate !== null) },
+      { label: 'Conformity assessment procedures selected per category', done: everyProduct(p => reqMet(p, 'conformity assessment')) },
+      { label: 'Technical documentation prepared', done: everyProduct(p => reqMet(p, 'technical documentation')) },
+      { label: 'EU Declaration of Conformity drafted', done: everyProduct(p => p.ceMarking) },
+      { label: 'CE marking process ready for all products', done: everyProduct(p => p.ceMarking) },
+      { label: 'Support period commitments documented', done: everyProduct(p => reqMet(p, 'expected product lifetime') || reqMet(p, 'product lifetime')) },
+      { label: 'Import/distribution chain obligations verified', done: everyProduct(p => p.complianceStatus === 'compliant') },
+    ];
+    const completed = items.filter(i => i.done).length;
+    const pct = items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
+    return { items, completed, pct };
+  }, [products, vulnerabilities]);
+
   // ── Handlers ──
 
   const handleAddProduct = useCallback((e: React.FormEvent) => {
@@ -1139,21 +1167,9 @@ export const EUCRADashboard: React.FC = () => {
       {/* Readiness Checklist */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">CRA Readiness Checklist</h3>
+        <p className="text-xs text-gray-500 mb-3">Derived from your tracked products, security requirements, and vulnerability records.</p>
         <div className="space-y-3">
-          {[
-            { label: 'Product inventory completed with CRA classification', done: true },
-            { label: 'Security requirements identified per product category', done: true },
-            { label: 'Vulnerability handling process established', done: true },
-            { label: 'SBOM generation automated for all products', done: false },
-            { label: 'Coordinated vulnerability disclosure policy published', done: true },
-            { label: 'ENISA notification process tested (24hr SLA)', done: true },
-            { label: 'Conformity assessment procedures selected per category', done: false },
-            { label: 'Technical documentation prepared', done: false },
-            { label: 'EU Declaration of Conformity drafted', done: false },
-            { label: 'CE marking process ready for all products', done: false },
-            { label: 'Support period commitments documented', done: true },
-            { label: 'Import/distribution chain obligations verified', done: false },
-          ].map((item, idx) => (
+          {readinessChecklist.items.map((item, idx) => (
             <label key={idx} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
               <input type="checkbox" checked={item.done} readOnly className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
               <span className={`text-sm ${item.done ? 'text-gray-900 line-through' : 'text-gray-700'}`}>{item.label}</span>
@@ -1163,9 +1179,9 @@ export const EUCRADashboard: React.FC = () => {
         <div className="mt-4 pt-4 border-t border-gray-100">
           <div className="flex justify-between text-sm mb-1">
             <span className="font-medium text-gray-700">Overall Readiness</span>
-            <span className="font-bold text-gray-900">50%</span>
+            <span className="font-bold text-gray-900">{readinessChecklist.pct}%</span>
           </div>
-          {renderScoreBar(50)}
+          {renderScoreBar(readinessChecklist.pct)}
         </div>
       </div>
     </div>

@@ -43,6 +43,15 @@ Measured 2026-05-31 (excludes `node_modules/`, `server/src/generated/`,
 The canonical deep-scan file list lives at **`.claude/deep-scan/filelist.txt`**
 (regenerate with the `find` command in that directory's workflow).
 
+> ⚠️ **The original `filelist.txt` was defective (corrected 2026-06-02):** its `find` globbed **only**
+> `.ts`/`.tsx`/`.js`, so it silently EXCLUDED `schema.prisma`, all `.sql` migrations (incl. the RLS
+> policy file), every `Dockerfile`/`docker-compose`, all GitHub Actions workflows, deploy/setup `.sh`
+> scripts, `package.json` manifests, and nginx/logstash/monitoring/Falco configs — 88 critical files.
+> A deep scan **MUST** include these extensions or it cannot check the DB schema, DB-layer RLS,
+> deployment config, or CI/CD supply chain (all explicitly required below). Use the corrected list
+> **`.claude/deep-scan/filelist_v2_full.txt`** (1,268 entries: adds `.prisma .sql Dockerfile
+> docker-compose* .tf .sh .yml/.yaml package.json .conf`). The overlooked set is `MISSED_FILES.txt`.
+
 ### How to run a deep scan now
 
 A full deep-read of 1,180 files is **one comprehensive parallel pass**, not
@@ -257,6 +266,40 @@ The full server jest suite was never kept green (68 suites / ~427 tests failing)
 - **`routes/vendors.ts` (LOW):** `GET /api/vendors` passed `req.query` only as `filters`, never as the pagination arg → returned a bare array instead of the `{data, pagination}` envelope. Fixed.
 - **Test-infra trap (root cause of most timeouts):** `server/jest.config.js` sets `resetMocks:true` + `restoreMocks:true`, which **wipes mock implementations defined at module-load** (inside `jest.mock` factories / `.mockResolvedValue()` next to the declaration). Contract/route tests must re-establish controller/service mock implementations in a `beforeEach`, else handlers return `undefined` → 30s timeouts.
 - **Timer leak (LOW):** `jitAccessService` (module-load `setInterval`), `livenessDetectionService`, `vrCollaborativeReviewService` didn't `.unref()` their intervals → "worker failed to exit gracefully". Added `.unref?.()`.
+
+### Scope-gap correction — files the v21 scan never read (2026-06-02)
+
+The v21 "RESOLVED / production-ready" claim was downgraded to **PARTIAL**. Root cause: `filelist.txt`
+globbed only `.ts/.tsx/.js`, excluding 88 critical files. A supplementary deep-read of those files
+(`SUPPLEMENTARY_SCAN_REPORT.md`) found ~30 new findings (9 HIGH) the original scan **could not** have
+caught. Key genuine gaps, logged for the audit trail (NONE are in the original 429):
+
+- **DB-layer RLS is non-functional (HIGH).** `rls_policies_all_tables.sql` is defeated 3 ways: the app's
+  `pg` role (`postgres`) has `BYPASSRLS=true`; **0/324** tables are `FORCE`d; and the policy predicate
+  `get_current_organization_id()` reads `current_setting('request.jwt.claims')` — a Supabase-PostgREST
+  var the Express/Prisma backend never sets (no `set_config`/`SET LOCAL` anywhere in `server/src`).
+  Tenant isolation is therefore **100% application-layer with no DB defense-in-depth.** The RLS file also
+  has **0 `ENABLE ROW LEVEL SECURITY`** statements and references a function defined in no repo SQL —
+  inert/non-reproducible from source.
+- **patValidationService SSRF is NOT fixed (HIGH)** despite REMEDIATION_LOG row 399 = FIXED. 12 validators
+  (Sentry/Auth0/Datadog/Qualys/Tenable/CrowdStrike/PaloAlto/Rapid7/ADP/Salesforce) interpolate a
+  user-controlled `baseUrl` with no `assertSafeOutbound`; guarded ones still bypass `safeFetch` (no
+  redirect/DNS-rebind guard). These are **open CodeQL criticals**.
+- **CodeQL backlog is 1,163 open alerts (24 critical / 199 high)** per live `gh api`, not the "~2 critical
+  / ~66 high" the report footnoted. CodeQL is defined twice and gates no merge.
+- **ZK trusted setup uses predictable entropy (HIGH):** `server/scripts/trusted-setup.sh` toxic waste =
+  literal `"random text"`; `server/src/zkp/setup-circuits.sh` = `date +%s`. Proofs are forgeable.
+- **`infrastructure/scripts/deploy.sh` still pushes/deploys `:latest`** (undermines the CDK immutable-tag
+  control, row 194; `cmd_full` is broken because `cmd_infra` passes no `--context imageTag`).
+- **CI (HIGH):** `ci.yml`/`mobile.yml` have no top-level `permissions:` → write-all `GITHUB_TOKEN`; **no
+  third-party action pinned to a SHA**; `dependency-scan.yml` runs `npm audit fix --force` unattended.
+- **Containers:** prod nginx mounts non-existent `./nginx/conf.d` → starts with **no TLS/server block**;
+  ES transport `9300` + datastore/admin ports host-exposed; Falco `privileged:true` + docker.sock.
+- **Confirmed sound (no change needed):** `utils/orgOwnership.ts` is correct (id AND org, null→404,
+  unknown-model→500); all 7 infra CDK fixes are genuinely present in `infrastructure/lib/*.ts`; compose
+  files have **no fail-open `:-` secret defaults / no hardcoded creds** (fail-closed `${VAR:?}`); the
+  secrets-rotation Lambda is a real 4-step impl; `preferences.ts`/`qrCode.ts` are clean. npm audit
+  unchanged (root 0, server 29 / 0 critical-high).
 
 ---
 

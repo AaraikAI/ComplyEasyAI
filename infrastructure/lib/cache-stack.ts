@@ -80,7 +80,12 @@ export class CacheStack extends cdk.Stack {
       automaticFailoverEnabled: false,
       transitEncryptionEnabled: true,
       atRestEncryptionEnabled: true,
-      authToken: this.authTokenSecret.secretValue.unsafeUnwrap(),
+      // Resolve the AUTH token at deploy time via a CloudFormation dynamic
+      // reference ({{resolve:secretsmanager:...}}). The generated plaintext is
+      // never materialized in the synthesized template — the literal resolve
+      // string is what lands in the CFN output, and CloudFormation substitutes
+      // the real value during the stack deployment.
+      authToken: cdk.SecretValue.secretsManager(this.authTokenSecret.secretArn).unsafeUnwrap(),
     });
 
     redis.addDependency(redisSubnetGroup);

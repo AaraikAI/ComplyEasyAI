@@ -19,8 +19,7 @@ import crypto from 'crypto';
 import { SignedXml } from 'xml-crypto';
 import { XMLParser } from 'fast-xml-parser';
 import { encryptField, decryptField } from '../utils/credentialEncryption';
-import { isWebhookUrlSafe } from '../utils/urlValidator';
-import axios from 'axios';
+import { isWebhookUrlSafe, safeFetch } from '../utils/urlValidator';
 
 const router = Router();
 
@@ -180,18 +179,34 @@ router.post(
     }
 
     let xml: string;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
     try {
-      const resp = await axios.get(metadataUrl, {
-        timeout: 8000,
-        maxContentLength: 2 * 1024 * 1024,
-        maxRedirects: 0,
-        responseType: 'text',
+      // safeFetch re-validates the URL, resolves the host to confirm it is public
+      // (DNS-rebinding guard), and re-validates every redirect hop before following.
+      const resp = await safeFetch(metadataUrl, {
+        signal: controller.signal,
         headers: { Accept: 'application/samlmetadata+xml, application/xml, text/xml' },
       });
-      xml = typeof resp.data === 'string' ? resp.data : String(resp.data);
+      // Bound the response body to 2 MB to avoid unbounded memory use.
+      const MAX_BYTES = 2 * 1024 * 1024;
+      const lengthHeader = Number(resp.headers.get('content-length') || '0');
+      if (lengthHeader > MAX_BYTES) {
+        throw new AppError('Metadata document exceeds the maximum allowed size', 413);
+      }
+      const body = await resp.text();
+      if (Buffer.byteLength(body, 'utf-8') > MAX_BYTES) {
+        throw new AppError('Metadata document exceeds the maximum allowed size', 413);
+      }
+      xml = body;
     } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
       logger.warn('SSO metadata fetch failed', { error: (error as Error).message });
       throw new AppError('Failed to fetch metadata from the provided URL', 502);
+    } finally {
+      clearTimeout(timeout);
     }
 
     const parser = new XMLParser({

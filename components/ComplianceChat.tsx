@@ -880,7 +880,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
                   {msg.sender === 'ai' && !msg.text.includes('❌') && !msg.text.includes('✅') && (
                     <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
                       <Lock size={12} />
-                      <span>Processed locally • No external data transmission</span>
+                      <span>Processed securely by ComplyEasy AI services</span>
                     </div>
                   )}
                 </div>

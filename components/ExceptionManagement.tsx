@@ -12,6 +12,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 import {
   AlertTriangle,
   Plus,
@@ -182,7 +183,7 @@ const ExceptionManagement: React.FC = () => {
       })
       .catch((err) => {
         if (cancelled) return;
-        console.warn('Failed to fetch exceptions:', err);
+        logger.warn('Failed to fetch exceptions:', err);
         setError(err.message || 'Failed to load exceptions');
       })
       .finally(() => {
@@ -260,7 +261,7 @@ const ExceptionManagement: React.FC = () => {
       setShowCreateForm(false);
       setForm(defaultForm);
     } catch (err: any) {
-      console.warn('Failed to create exception:', err);
+      logger.warn('Failed to create exception:', err);
       setError(err.message || 'Failed to create exception');
     }
   }, [form]);
@@ -291,7 +292,7 @@ const ExceptionManagement: React.FC = () => {
         reviewedDate: newStatus === 'Approved' || newStatus === 'Denied' ? new Date().toISOString().split('T')[0] : e.reviewedDate,
       } : e));
     } catch (err: any) {
-      console.warn('Failed to update exception status:', err);
+      logger.warn('Failed to update exception status:', err);
       setError(err.message || 'Failed to update status');
     }
   }, []);

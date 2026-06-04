@@ -516,9 +516,9 @@ export class MonitoringService {
   /**
    * Get monitor execution results
    */
-  async getMonitorResults(monitorId: string, limit = 30) {
+  async getMonitorResults(monitorId: string, organizationId: string, limit = 30) {
     return prisma.monitorResult.findMany({
-      where: { monitorId },
+      where: { monitorId, monitor: { organizationId } },
       orderBy: { runDate: 'desc' },
       take: limit,
     });

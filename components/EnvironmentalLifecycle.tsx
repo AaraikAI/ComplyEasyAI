@@ -309,6 +309,8 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
   const [improvementStageFilter, setImprovementStageFilter] = useState<string>('All');
   const [improvementStatusFilter, setImprovementStatusFilter] = useState<string>('All');
   const [expandedImprovement, setExpandedImprovement] = useState<string | null>(null);
+  const [editingImprovement, setEditingImprovement] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{ title: string; description: string }>({ title: '', description: '' });
   const [showComparison, setShowComparison] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -421,6 +423,16 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
       ],
     };
   }, [products, compareA, compareB]);
+  // Carbon footprint vs. industry benchmark, derived from the loaded
+  // climate_change impact category (totalValue vs benchmarkValue). Returns null
+  // when the benchmark data isn't available so the badge can be hidden.
+  const carbonBenchmark = useMemo(() => {
+    const climate = impactCategories.find(c => c.category === 'climate_change');
+    if (!climate || !climate.benchmarkValue) return null;
+    const deltaPct = Math.round(((climate.totalValue - climate.benchmarkValue) / climate.benchmarkValue) * 100);
+    return { deltaPct, isBetter: deltaPct < 0 };
+  }, [impactCategories]);
+
   const totalEnergy = useMemo(() => stages.reduce((sum, s) => sum + s.energyMJ, 0), [stages]);
   const totalWater = useMemo(() => stages.reduce((sum, s) => sum + s.waterL, 0), [stages]);
   const totalWaste = useMemo(() => stages.reduce((sum, s) => sum + s.wasteKg, 0), [stages]);
@@ -575,9 +587,12 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
           </div>
           <div className="text-2xl font-bold text-gray-900">{totalCO2e.toFixed(1)}</div>
           <div className="text-xs text-gray-500">kg CO2-eq / unit</div>
-          <div className="flex items-center gap-1 mt-1 text-xs text-green-600">
-            <TrendingDown className="w-3 h-3" />17% vs benchmark
-          </div>
+          {carbonBenchmark && (
+            <div className={`flex items-center gap-1 mt-1 text-xs ${carbonBenchmark.isBetter ? 'text-green-600' : 'text-red-600'}`}>
+              {carbonBenchmark.isBetter ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+              {Math.abs(carbonBenchmark.deltaPct)}% {carbonBenchmark.isBetter ? 'below' : 'above'} benchmark
+            </div>
+          )}
         </div>
         <div className="bg-white border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -656,28 +671,45 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
 
       {/* Regulatory Compliance */}
       <div className="bg-white border border-gray-200 rounded-lg p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Regulatory Compliance Mapping</h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="font-semibold text-gray-900">Regulatory Compliance Mapping</h3>
+          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs font-medium inline-flex items-center gap-1">
+            <Info className="w-3 h-3" />Illustrative guidance
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">
+          Framework guidance for this assessment. Figures shown are derived from the loaded LCA data; statements are reference guidance, not a formal compliance determination.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 border border-green-200 rounded-lg bg-green-50">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               <span className="font-medium text-green-800">EU Ecodesign Regulation</span>
             </div>
-            <p className="text-sm text-green-700">Product meets energy efficiency (Class A) and durability requirements. SBOM and environmental footprint declaration in place.</p>
+            <p className="text-sm text-green-700">
+              Assessed energy efficiency class {selectedProduct.energyEfficiency} with a {selectedProduct.durabilityYears}-year design lifetime.
+              Maintain an environmental footprint declaration to support conformity.
+            </p>
           </div>
           <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="w-5 h-5 text-yellow-600" />
               <span className="font-medium text-yellow-800">CSRD Reporting</span>
             </div>
-            <p className="text-sm text-yellow-700">Scope 1 and 2 emissions reported. Scope 3 product-level data needs improvement. LCA methodology alignment pending verification.</p>
+            <p className="text-sm text-yellow-700">
+              Product-level footprint of {totalCO2e.toFixed(1)} kg CO2-eq across {stages.length} lifecycle stages is available for Scope 3 reporting.
+              Confirm LCA methodology alignment before disclosure.
+            </p>
           </div>
           <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
             <div className="flex items-center gap-2 mb-2">
               <Info className="w-5 h-5 text-blue-600" />
               <span className="font-medium text-blue-800">EU Green Claims Directive</span>
             </div>
-            <p className="text-sm text-blue-700">Environmental claims must be substantiated with PEF-compliant LCA data. Current assessment covers 4 of 6 required impact categories.</p>
+            <p className="text-sm text-blue-700">
+              Environmental claims must be substantiated with PEF-compliant LCA data.
+              Current assessment covers {impactCategories.length} of 6 standard impact categories.
+            </p>
           </div>
         </div>
       </div>
@@ -944,7 +976,48 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
 
             {expandedImprovement === imp.id && (
               <div className="border-t border-gray-200 p-4 bg-gray-50">
-                <p className="text-sm text-gray-700 mb-4">{imp.description}</p>
+                {editingImprovement === imp.id ? (
+                  <div className="mb-4 space-y-2">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={editDraft.title}
+                        onChange={e => setEditDraft(d => ({ ...d, title: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Description</label>
+                      <textarea
+                        value={editDraft.description}
+                        onChange={e => setEditDraft(d => ({ ...d, description: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm h-24 resize-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled={isSaving || !editDraft.title.trim()}
+                        onClick={async () => {
+                          await handleUpdateImprovement(imp.id, { title: editDraft.title.trim(), description: editDraft.description.trim() });
+                          setEditingImprovement(null);
+                        }}
+                        className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {isSaving ? <Loader2 className="w-3 h-3 inline animate-spin mr-1" /> : null}Save
+                      </button>
+                      <button
+                        disabled={isSaving}
+                        onClick={() => setEditingImprovement(null)}
+                        className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-700 mb-4">{imp.description}</p>
+                )}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
                   <div>
                     <div className="text-xs text-gray-500">Effort</div>
@@ -990,7 +1063,14 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
                       {isSaving ? <Loader2 className="w-3 h-3 inline animate-spin mr-1" /> : null}Mark Implemented
                     </button>
                   )}
-                  <button disabled={isSaving} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 disabled:opacity-50">
+                  <button
+                    disabled={isSaving}
+                    onClick={() => {
+                      setEditDraft({ title: imp.title, description: imp.description });
+                      setEditingImprovement(editingImprovement === imp.id ? null : imp.id);
+                    }}
+                    className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 disabled:opacity-50"
+                  >
                     <Edit3 className="w-3 h-3 inline mr-1" />Edit
                   </button>
                   <button disabled={isSaving} onClick={() => handleDeleteAssessment(imp.id)}

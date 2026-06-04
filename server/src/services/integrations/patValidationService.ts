@@ -3,9 +3,12 @@
  * Validates tokens for various integrations before allowing connection
  */
 
-import axios from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { lookup as dnsLookup } from 'dns/promises';
+import net from 'net';
+import { URL } from 'url';
 import logger from '../../config/logger';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, isPrivateIp } from '../../utils/urlValidator';
 import { AppError } from '../../middleware/errorHandler';
 
 interface ValidationResult {
@@ -42,6 +45,120 @@ class PATValidationService {
       logger.error(`PAT validation outbound URL rejected by isUrlSafe (${context})`, { url });
       throw new AppError(`Unsafe outbound URL in ${context}`, 400);
     }
+  }
+
+  /**
+   * Resolve a URL's hostname and confirm every resolved address is public. Guards
+   * against DNS rebinding / hostnames that resolve to internal IPs. IP literals are
+   * already covered by isUrlSafe, so only DNS names are resolved here.
+   */
+  private async assertResolvedHostIsPublic(url: string, context: string): Promise<void> {
+    let hostname: string;
+    try {
+      hostname = new URL(url).hostname.toLowerCase();
+    } catch {
+      throw new AppError(`Unsafe outbound URL in ${context}`, 400);
+    }
+    const stripped =
+      hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
+
+    // IP literals are already validated by isUrlSafe; only resolve DNS names.
+    if (net.isIP(stripped) !== 0) return;
+
+    let addresses: { address: string }[];
+    try {
+      addresses = await dnsLookup(stripped, { all: true });
+    } catch {
+      // Resolution failure: do not connect; surface as an unreachable host upstream.
+      return;
+    }
+
+    for (const { address } of addresses) {
+      if (isPrivateIp(address)) {
+        logger.error(`PAT validation host resolves to a private address (${context})`, {
+          host: stripped,
+          resolved: address,
+        });
+        throw new AppError(`Host resolves to a private address in ${context} (SSRF protection)`, 400);
+      }
+    }
+  }
+
+  /**
+   * SSRF-hardened axios GET. Validates the final interpolated URL with isUrlSafe,
+   * confirms the resolved host is public (DNS-rebinding guard), disables automatic
+   * redirect following, and re-validates any redirect target before following it.
+   * Returns the same AxiosResponse shape as axios.get for valid inputs.
+   */
+  private async safeGet(url: string, context: string, options?: AxiosRequestConfig): Promise<AxiosResponse> {
+    return this.safeRequest('get', url, context, options);
+  }
+
+  /**
+   * SSRF-hardened axios POST. Same protections as safeGet.
+   */
+  private async safePost(
+    url: string,
+    context: string,
+    data?: unknown,
+    options?: AxiosRequestConfig
+  ): Promise<AxiosResponse> {
+    return this.safeRequest('post', url, context, { ...options, data });
+  }
+
+  /**
+   * Shared SSRF-hardened axios driver. Re-validates each redirect hop's resolved host.
+   */
+  private async safeRequest(
+    method: 'get' | 'post',
+    url: string,
+    context: string,
+    options?: AxiosRequestConfig
+  ): Promise<AxiosResponse> {
+    const MAX_REDIRECTS = 5;
+    let currentUrl = url;
+    const callerValidateStatus = options?.validateStatus;
+
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      this.assertSafeOutbound(currentUrl, context);
+      await this.assertResolvedHostIsPublic(currentUrl, context);
+
+      const response = await axios.request({
+        ...options,
+        method,
+        url: currentUrl,
+        maxRedirects: 0,
+        // Inspect redirect responses ourselves; preserve any caller status policy
+        // for non-redirect statuses.
+        validateStatus: (status: number) => {
+          if (status >= 300 && status < 400) return true;
+          return callerValidateStatus ? callerValidateStatus(status) : status >= 200 && status < 300;
+        },
+      });
+
+      if (response.status < 300 || response.status >= 400) {
+        return response;
+      }
+
+      const location = response.headers?.location as string | undefined;
+      if (!location) {
+        return response;
+      }
+
+      const resolvedUrl = new URL(location, currentUrl).href;
+      if (!isUrlSafe(resolvedUrl)) {
+        logger.error(`PAT validation blocked redirect to unsafe URL (${context})`, { resolvedUrl });
+        throw new AppError(`Unsafe redirect target in ${context} (SSRF protection)`, 400);
+      }
+
+      if (hop === MAX_REDIRECTS) {
+        return response;
+      }
+
+      currentUrl = resolvedUrl;
+    }
+
+    throw new AppError(`Redirect handling failed in ${context} (SSRF protection)`, 400);
   }
 
   /**
@@ -180,8 +297,7 @@ class PATValidationService {
    */
   private async validateGitHubToken(token: string): Promise<ValidationResult> {
     try {
-      this.assertSafeOutbound('https://api.github.com/user', 'GitHub');
-      const response = await axios.get('https://api.github.com/user', {
+      const response = await this.safeGet('https://api.github.com/user', 'GitHub', {
         headers: {
           Authorization: `token ${token}`,
           Accept: 'application/vnd.github.v3+json',
@@ -218,10 +334,9 @@ class PATValidationService {
   private async validateGitLabToken(token: string, baseUrl?: string): Promise<ValidationResult> {
     this.validateBaseUrl(baseUrl);
     const apiUrl = baseUrl ? `${baseUrl}/api/v4/user` : 'https://gitlab.com/api/v4/user';
-    this.assertSafeOutbound(apiUrl, 'GitLab');
 
     try {
-      const response = await axios.get(apiUrl, {
+      const response = await this.safeGet(apiUrl, 'GitLab', {
         headers: {
           'PRIVATE-TOKEN': token,
         },
@@ -254,8 +369,7 @@ class PATValidationService {
   private async validateBitbucketToken(token: string): Promise<ValidationResult> {
     try {
       // Bitbucket uses App Passwords, validate by checking user info
-      this.assertSafeOutbound('https://api.bitbucket.org/2.0/user', 'Bitbucket');
-      const response = await axios.get('https://api.bitbucket.org/2.0/user', {
+      const response = await this.safeGet('https://api.bitbucket.org/2.0/user', 'Bitbucket', {
         auth: {
           username: token.split(':')[0] || '',
           password: token.split(':')[1] || token,
@@ -288,8 +402,7 @@ class PATValidationService {
   private async validateTravisToken(token: string): Promise<ValidationResult> {
     try {
       // Travis CI API v3 uses Authorization header
-      this.assertSafeOutbound('https://api.travis-ci.com/user', 'Travis');
-      const response = await axios.get('https://api.travis-ci.com/user', {
+      const response = await this.safeGet('https://api.travis-ci.com/user', 'Travis', {
         headers: {
           Authorization: `token ${token}`,
           'Travis-API-Version': '3',
@@ -326,8 +439,7 @@ class PATValidationService {
    */
   private async validateCircleCIToken(token: string): Promise<ValidationResult> {
     try {
-      this.assertSafeOutbound('https://circleci.com/api/v2/me', 'CircleCI');
-      const response = await axios.get('https://circleci.com/api/v2/me', {
+      const response = await this.safeGet('https://circleci.com/api/v2/me', 'CircleCI', {
         headers: {
           'Circle-Token': token,
         },
@@ -366,7 +478,7 @@ class PATValidationService {
       // Jenkins uses Basic Auth with username:token
       // For validation, we'll try to access the whoAmI endpoint
       const apiUrl = `${baseUrl.replace(/\/$/, '')}/whoAmI/api/json`;
-      const response = await axios.get(apiUrl, {
+      const response = await this.safeGet(apiUrl, 'Jenkins', {
         auth: {
           username: token.split(':')[0] || 'user',
           password: token.split(':')[1] || token,
@@ -405,8 +517,7 @@ class PATValidationService {
       }
 
       // Validate by making a test API call to Stripe
-      this.assertSafeOutbound('https://api.stripe.com/v1/account', 'Stripe');
-      const response = await axios.get('https://api.stripe.com/v1/account', {
+      const response = await this.safeGet('https://api.stripe.com/v1/account', 'Stripe', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -447,8 +558,7 @@ class PATValidationService {
       }
 
       // Validate by making a test API call to SendGrid
-      this.assertSafeOutbound('https://api.sendgrid.com/v3/user/profile', 'SendGrid');
-      const response = await axios.get('https://api.sendgrid.com/v3/user/profile', {
+      const response = await this.safeGet('https://api.sendgrid.com/v3/user/profile', 'SendGrid', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -500,8 +610,7 @@ class PATValidationService {
 
       // Validate by making a test API call to Twilio (URL fully gated by isUrlSafe + strict sid format)
       const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}.json`;
-      this.assertSafeOutbound(twilioUrl, 'Twilio');
-      const response = await axios.get(twilioUrl, {
+      const response = await this.safeGet(twilioUrl, 'Twilio', {
         auth: {
           username: sid,
           password: authToken,
@@ -537,8 +646,7 @@ class PATValidationService {
    */
   private async validateDigitalOceanToken(token: string): Promise<ValidationResult> {
     try {
-      this.assertSafeOutbound('https://api.digitalocean.com/v2/account', 'DigitalOcean');
-      const response = await axios.get('https://api.digitalocean.com/v2/account', {
+      const response = await this.safeGet('https://api.digitalocean.com/v2/account', 'DigitalOcean', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -573,8 +681,7 @@ class PATValidationService {
    */
   private async validateDockerHubToken(token: string): Promise<ValidationResult> {
     try {
-      this.assertSafeOutbound('https://hub.docker.com/v2/users/me', 'DockerHub');
-      const response = await axios.get('https://hub.docker.com/v2/users/me', {
+      const response = await this.safeGet('https://hub.docker.com/v2/users/me', 'DockerHub', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -611,8 +718,7 @@ class PATValidationService {
 
     try {
       const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/v1/namespaces`;
-      this.assertSafeOutbound(apiUrl, 'Kubernetes');
-      const response = await axios.get(apiUrl, {
+      const response = await this.safeGet(apiUrl, 'Kubernetes', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -651,8 +757,7 @@ class PATValidationService {
 
     try {
       const apiUrl = `${baseUrl.replace(/\/$/, '')}/rest/api/user/current`;
-      this.assertSafeOutbound(apiUrl, 'Confluence');
-      const response = await axios.get(apiUrl, {
+      const response = await this.safeGet(apiUrl, 'Confluence', {
         auth: {
           username: token.split(':')[0] || '',
           password: token.split(':')[1] || token,
@@ -689,7 +794,7 @@ class PATValidationService {
     }
 
     try {
-      const response = await axios.get(`https://api.trello.com/1/members/me`, {
+      const response = await this.safeGet(`https://api.trello.com/1/members/me`, 'Trello', {
         params: {
           key: apiKey,
           token: token,
@@ -723,7 +828,7 @@ class PATValidationService {
    */
   private async validateAsanaToken(token: string): Promise<ValidationResult> {
     try {
-      const response = await axios.get('https://app.asana.com/api/1.0/users/me', {
+      const response = await this.safeGet('https://app.asana.com/api/1.0/users/me', 'Asana', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -755,7 +860,7 @@ class PATValidationService {
    */
   private async validateMondayToken(token: string): Promise<ValidationResult> {
     try {
-      const response = await axios.post('https://api.monday.com/v2', {
+      const response = await this.safePost('https://api.monday.com/v2', 'Monday', {
         query: '{ me { id name email } }',
       }, {
         headers: {
@@ -791,7 +896,7 @@ class PATValidationService {
   private async validateMicrosoftTeamsToken(token: string): Promise<ValidationResult> {
     try {
       // Microsoft Teams uses OAuth2, validate by checking token info
-      const response = await axios.get('https://graph.microsoft.com/v1.0/me', {
+      const response = await this.safeGet('https://graph.microsoft.com/v1.0/me', 'MicrosoftTeams', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -823,7 +928,7 @@ class PATValidationService {
    */
   private async validateDiscordToken(token: string): Promise<ValidationResult> {
     try {
-      const response = await axios.get('https://discord.com/api/v10/users/@me', {
+      const response = await this.safeGet('https://discord.com/api/v10/users/@me', 'Discord', {
         headers: {
           Authorization: `Bot ${token}`,
         },
@@ -861,8 +966,7 @@ class PATValidationService {
 
     try {
       const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/v1/users/me`;
-      this.assertSafeOutbound(apiUrl, 'Okta');
-      const response = await axios.get(apiUrl, {
+      const response = await this.safeGet(apiUrl, 'Okta', {
         headers: {
           Authorization: `SSWS ${token}`,
         },
@@ -923,7 +1027,7 @@ class PATValidationService {
    */
   private async validateNewRelicToken(token: string): Promise<ValidationResult> {
     try {
-      const response = await axios.get('https://api.newrelic.com/v2/users.json', {
+      const response = await this.safeGet('https://api.newrelic.com/v2/users.json', 'NewRelic', {
         headers: {
           'X-Api-Key': token,
         },
@@ -954,9 +1058,9 @@ class PATValidationService {
   private async validateSentryToken(token: string, baseUrl?: string): Promise<ValidationResult> {
     this.validateBaseUrl(baseUrl);
     const apiUrl = baseUrl ? `${baseUrl}/api/0/` : 'https://sentry.io/api/0/';
-    
+
     try {
-      const response = await axios.get(`${apiUrl}organizations/`, {
+      const response = await this.safeGet(`${apiUrl}organizations/`, 'Sentry', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -987,7 +1091,7 @@ class PATValidationService {
    */
   private async validatePagerDutyToken(token: string): Promise<ValidationResult> {
     try {
-      const response = await axios.get('https://api.pagerduty.com/users/me', {
+      const response = await this.safeGet('https://api.pagerduty.com/users/me', 'PagerDuty', {
         headers: {
           Authorization: `Token token=${token}`,
           Accept: 'application/vnd.pagerduty+json;version=2',
@@ -1025,15 +1129,19 @@ class PATValidationService {
     this.validateBaseUrl(baseUrl);
 
     try {
-      const response = await axios.get(`https://${baseUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}/api/v2/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        params: {
-          per_page: 1,
-        },
-        timeout: 10000,
-      });
+      const response = await this.safeGet(
+        `https://${baseUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}/api/v2/users`,
+        'Auth0',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            per_page: 1,
+          },
+          timeout: 10000,
+        }
+      );
 
       if (response.status === 200) {
         return {
@@ -1059,9 +1167,9 @@ class PATValidationService {
   private async validateDatadogToken(token: string, baseUrl?: string): Promise<ValidationResult> {
     this.validateBaseUrl(baseUrl);
     const apiUrl = baseUrl || 'https://api.datadoghq.com';
-    
+
     try {
-      const response = await axios.get(`${apiUrl}/api/v1/validate`, {
+      const response = await this.safeGet(`${apiUrl}/api/v1/validate`, 'Datadog', {
         headers: {
           'DD-API-KEY': token,
         },
@@ -1102,7 +1210,7 @@ class PATValidationService {
       // Qualys uses Basic Auth with username:password format
       const [username, password] = token.includes(':') ? token.split(':') : ['', token];
       
-      const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/2.0/fo/asset/host/`, {
+      const response = await this.safeGet(`${baseUrl.replace(/\/$/, '')}/api/2.0/fo/asset/host/`, 'Qualys', {
         auth: {
           username: username || 'api',
           password: password || token,
@@ -1149,7 +1257,7 @@ class PATValidationService {
         return { valid: false, error: 'Tenable API token must be in format accessKey:secretKey' };
       }
 
-      const response = await axios.get(`${apiUrl}/scanners`, {
+      const response = await this.safeGet(`${apiUrl}/scanners`, 'Tenable', {
         headers: {
           'X-ApiKeys': `accessKey=${accessKey};secretKey=${secretKey}`,
         },
@@ -1192,7 +1300,9 @@ class PATValidationService {
       }
 
       // First, get OAuth token
-      const oauthResponse = await axios.post(`${apiUrl}/oauth2/token`, 
+      const oauthResponse = await this.safePost(
+        `${apiUrl}/oauth2/token`,
+        'CrowdStrike',
         new URLSearchParams({
           client_id: clientId,
           client_secret: clientSecret,
@@ -1207,7 +1317,7 @@ class PATValidationService {
 
       if (oauthResponse.status === 200 && oauthResponse.data?.access_token) {
         // Validate by making an API call
-        const validateResponse = await axios.get(`${apiUrl}/sensors/queries/sensors/v1`, {
+        const validateResponse = await this.safeGet(`${apiUrl}/sensors/queries/sensors/v1`, 'CrowdStrike', {
           headers: {
             Authorization: `Bearer ${oauthResponse.data.access_token}`,
           },
@@ -1245,7 +1355,7 @@ class PATValidationService {
 
     try {
       // Palo Alto uses API key in header
-      const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/`, {
+      const response = await this.safeGet(`${baseUrl.replace(/\/$/, '')}/api/`, 'PaloAlto', {
         params: {
           type: 'op',
           cmd: '<show><system><info></info></system></show>',
@@ -1285,7 +1395,7 @@ class PATValidationService {
       // Rapid7 uses Basic Auth with username:password
       const [username, password] = token.includes(':') ? token.split(':') : ['', token];
       
-      const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/3/account`, {
+      const response = await this.safeGet(`${baseUrl.replace(/\/$/, '')}/api/3/account`, 'Rapid7', {
         auth: {
           username: username || 'api',
           password: password || token,
@@ -1326,8 +1436,7 @@ class PATValidationService {
     try {
       // Splunk uses Bearer token or Basic Auth
       const apiUrl = `${baseUrl.replace(/\/$/, '')}/services/auth/current-context`;
-      this.assertSafeOutbound(apiUrl, 'Splunk');
-      const response = await axios.get(apiUrl, {
+      const response = await this.safeGet(apiUrl, 'Splunk', {
         headers: {
           Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}`,
         },
@@ -1364,12 +1473,10 @@ class PATValidationService {
     try {
       const apiUrl = baseUrl.includes('.') ? baseUrl : `https://api.bamboohr.com/api/gateway.php/${encodeURIComponent(baseUrl)}/v1`;
       const directoryUrl = `${apiUrl}/employees/directory`;
-      this.assertSafeOutbound(directoryUrl, 'BambooHR');
-
-      const response = await axios.get(directoryUrl, {
+      const response = await this.safeGet(directoryUrl, 'BambooHR', {
         auth: {
           username: token,
-          password: 'x', // BambooHR uses API key as username with dummy password
+          password: 'x', // BambooHR uses the API key as the username with a fixed dummy password
         },
         timeout: 10000,
       });
@@ -1410,7 +1517,9 @@ class PATValidationService {
       }
 
       // Get OAuth token
-      const oauthResponse = await axios.post(`${baseUrl}/auth/oauth/v2/token`, 
+      const oauthResponse = await this.safePost(
+        `${baseUrl}/auth/oauth/v2/token`,
+        'ADP',
         new URLSearchParams({
           grant_type: 'client_credentials',
           client_id: clientId,
@@ -1457,7 +1566,7 @@ class PATValidationService {
         return { valid: false, error: 'MongoDB Atlas API token must be in format publicKey:privateKey' };
       }
 
-      const response = await axios.get('https://cloud.mongodb.com/api/atlas/v1.0/groups', {
+      const response = await this.safeGet('https://cloud.mongodb.com/api/atlas/v1.0/groups', 'MongoDB', {
         auth: {
           username: publicKey,
           password: privateKey,
@@ -1606,8 +1715,7 @@ class PATValidationService {
 
     try {
       const apiUrl = `${baseUrl.replace(/\/$/, '')}/`;
-      this.assertSafeOutbound(apiUrl, 'Elasticsearch');
-      const response = await axios.get(apiUrl, {
+      const response = await this.safeGet(apiUrl, 'Elasticsearch', {
         headers: {
           Authorization: `ApiKey ${token}`,
         },
@@ -1640,7 +1748,7 @@ class PATValidationService {
    */
   private async validateHerokuToken(token: string): Promise<ValidationResult> {
     try {
-      const response = await axios.get('https://api.heroku.com/account', {
+      const response = await this.safeGet('https://api.heroku.com/account', 'Heroku', {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/vnd.heroku+json; version=3',
@@ -1681,7 +1789,9 @@ class PATValidationService {
       if (token.includes(':')) {
         // It's client_id:client_secret, need to get access token first
         const [clientId, clientSecret] = token.split(':');
-        const oauthResponse = await axios.post(`${baseUrl}/services/oauth2/token`, 
+        const oauthResponse = await this.safePost(
+          `${baseUrl}/services/oauth2/token`,
+          'Salesforce',
           new URLSearchParams({
             grant_type: 'client_credentials',
             client_id: clientId,
@@ -1705,7 +1815,7 @@ class PATValidationService {
         }
       } else {
         // It's an access token, validate it
-        const response = await axios.get(`${baseUrl}/services/data/v57.0/`, {
+        const response = await this.safeGet(`${baseUrl}/services/data/v57.0/`, 'Salesforce', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -1736,8 +1846,7 @@ class PATValidationService {
    */
   private async validateHubSpotToken(token: string): Promise<ValidationResult> {
     try {
-      this.assertSafeOutbound('https://api.hubapi.com/contacts/v1/lists/all/contacts/all', 'HubSpot');
-      const response = await axios.get('https://api.hubapi.com/contacts/v1/lists/all/contacts/all', {
+      const response = await this.safeGet('https://api.hubapi.com/contacts/v1/lists/all/contacts/all', 'HubSpot', {
         params: {
           count: 1,
         },
@@ -1780,9 +1889,7 @@ class PATValidationService {
       
       const zendeskUrl = baseUrl.includes('.') ? baseUrl : `https://${encodeURIComponent(baseUrl)}.zendesk.com`;
       const userUrl = `${zendeskUrl}/api/v2/users/me.json`;
-      this.assertSafeOutbound(userUrl, 'Zendesk');
-
-      const response = await axios.get(userUrl, {
+      const response = await this.safeGet(userUrl, 'Zendesk', {
         auth: {
           username: email || `${token}@zendesk.com`,
           password: apiToken || token,
@@ -1828,9 +1935,8 @@ class PATValidationService {
         ? 'https://api.sandbox.paypal.com/v1/oauth2/token'
         : 'https://api.paypal.com/v1/oauth2/token';
 
-      this.assertSafeOutbound(apiUrl, 'PayPal');
       // Get OAuth token
-      const oauthResponse = await axios.post(apiUrl,
+      const oauthResponse = await this.safePost(apiUrl, 'PayPal',
         new URLSearchParams({
           grant_type: 'client_credentials',
         }),

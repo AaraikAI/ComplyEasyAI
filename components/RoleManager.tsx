@@ -86,11 +86,32 @@ interface RoleManagerProps {
 
 const API_BASE = '/api/roles';
 
+// Cache the CSRF double-submit token for the session to avoid refetching on every mutation.
+let cachedCsrfToken: string | null = null;
+
+async function getCsrfToken(): Promise<string | null> {
+  if (cachedCsrfToken) return cachedCsrfToken;
+  try {
+    const csrfRes = await fetch('/api/csrf-token', { credentials: 'include' });
+    if (csrfRes.ok) cachedCsrfToken = (await csrfRes.json())?.csrfToken ?? null;
+  } catch {
+    // CSRF fetch is best-effort; the request may still proceed and fail server-side if required.
+  }
+  return cachedCsrfToken;
+}
+
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
+  const isMutating = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+  const csrf = isMutating ? await getCsrfToken() : null;
   const res = await fetch(endpoint, {
-    headers: { 'Content-Type': 'application/json', ...options.headers as Record<string, string> },
     credentials: 'include',
     ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
+      ...options.headers as Record<string, string>,
+    },
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();

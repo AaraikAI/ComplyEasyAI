@@ -82,6 +82,12 @@ class ConfiguredProvider extends BaseIntegrationProvider {
     };
   }
 
+  clone(): BaseIntegrationProvider {
+    // A new instance owns a fresh httpClient (created in the base constructor) and
+    // its own credential state, so per-request configure() calls stay isolated.
+    return new ConfiguredProvider(this.descriptor);
+  }
+
   protected configureHttpClient(): void {
     const baseURL = this.resolveUrl(this.descriptor.apiBaseUrl);
     // SSRF guard: the base URL may embed user-controllable credential segments

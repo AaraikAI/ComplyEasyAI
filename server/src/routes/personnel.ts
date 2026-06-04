@@ -24,6 +24,7 @@ router.post(
     const personnel = await personnelService.createPersonnel({
       ...req.body,
       userId: req.user.id,
+      organizationId: req.user.organizationId,
     });
     res.status(201).json(personnel);
   })

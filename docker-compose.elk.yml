@@ -7,13 +7,17 @@ services:
       - xpack.security.enabled=true
       - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:?Set ELASTICSEARCH_PASSWORD}
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    # Peers (Logstash, Kibana, Falco sidekick) reach Elasticsearch over the
+    # internal `elk` network. The HTTP API is bound to loopback only for local
+    # debugging; the transport port (9300) is never published.
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "127.0.0.1:9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks:
       - elk
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
       interval: 30s
@@ -26,9 +30,11 @@ services:
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+    # Beats input (5044) and the monitoring API (9600) are bound to loopback;
+    # in-stack producers ship to Logstash over the internal `elk` network.
     ports:
-      - "5044:5044"
-      - "9600:9600"
+      - "127.0.0.1:5044:5044"
+      - "127.0.0.1:9600:9600"
     environment:
       - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
     depends_on:
@@ -36,6 +42,8 @@ services:
         condition: service_healthy
     networks:
       - elk
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]
       interval: 30s
@@ -45,8 +53,10 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
     container_name: kibana
+    # Bind the Kibana UI to loopback; front it with the reverse proxy for
+    # external access rather than publishing it on all interfaces.
     ports:
-      - "5601:5601"
+      - "127.0.0.1:5601:5601"
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=elastic
@@ -56,6 +66,8 @@ services:
         condition: service_healthy
     networks:
       - elk
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
       interval: 30s

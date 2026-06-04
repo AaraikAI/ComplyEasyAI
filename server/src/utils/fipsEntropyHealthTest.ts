@@ -98,7 +98,7 @@ export function startPeriodicHealthMonitoring(
 ): ReturnType<typeof setInterval> {
   logger.info(`FIPS 140-3 entropy health monitoring started (interval: ${intervalMs}ms)`);
 
-  return setInterval(() => {
+  const timer = setInterval(() => {
     const result = runEntropyHealthTest();
     if (result.passed) {
       logger.debug('FIPS 140-3 periodic entropy health test PASSED', {
@@ -109,6 +109,11 @@ export function startPeriodicHealthMonitoring(
       logger.error('FIPS 140-3 periodic entropy health test FAILED — entropy source may be degraded');
     }
   }, intervalMs);
+
+  // Do not keep the event loop alive solely for this monitor; allow graceful exit.
+  timer.unref?.();
+
+  return timer;
 }
 
 // ============================================================================

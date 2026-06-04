@@ -28,12 +28,20 @@ UPDATE "DashboardWidget" w
   WHERE w."dashboardId" = d.id
     AND w."organizationId" IS NULL;
 
--- Foreign key to Organization with CASCADE delete
-ALTER TABLE "DashboardWidget"
-  ADD CONSTRAINT "DashboardWidget_organizationId_fkey"
-  FOREIGN KEY ("organizationId") REFERENCES "Organization"(id)
-  ON DELETE CASCADE
-  ON UPDATE CASCADE;
+-- Foreign key to Organization with CASCADE delete (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'DashboardWidget_organizationId_fkey'
+  ) THEN
+    ALTER TABLE "DashboardWidget"
+      ADD CONSTRAINT "DashboardWidget_organizationId_fkey"
+      FOREIGN KEY ("organizationId") REFERENCES "Organization"(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS "DashboardWidget_organizationId_idx"
   ON "DashboardWidget"("organizationId");
@@ -59,12 +67,20 @@ UPDATE "CICDGateResult" r
   WHERE r."policyId" = p.id
     AND r."organizationId" IS NULL;
 
--- Foreign key to Organization with CASCADE delete
-ALTER TABLE "CICDGateResult"
-  ADD CONSTRAINT "CICDGateResult_organizationId_fkey"
-  FOREIGN KEY ("organizationId") REFERENCES "Organization"(id)
-  ON DELETE CASCADE
-  ON UPDATE CASCADE;
+-- Foreign key to Organization with CASCADE delete (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'CICDGateResult_organizationId_fkey'
+  ) THEN
+    ALTER TABLE "CICDGateResult"
+      ADD CONSTRAINT "CICDGateResult_organizationId_fkey"
+      FOREIGN KEY ("organizationId") REFERENCES "Organization"(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS "CICDGateResult_organizationId_idx"
   ON "CICDGateResult"("organizationId");

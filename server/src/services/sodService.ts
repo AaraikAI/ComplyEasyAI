@@ -1,4 +1,5 @@
 import prisma from '../config/database';
+import { Prisma } from '../generated/prisma/client';
 import logger from '../config/logger';
 import { AuditLogger } from '../utils/auditLogger';
 import { AppError } from '../middleware/errorHandler';
@@ -47,6 +48,20 @@ interface SoDViolationInput {
   detectedByUserId: string;   // userId who triggers the detection (for audit)
 }
 
+interface CompensatingControl {
+  id: string;
+  name: string;
+  description?: string;
+  controlType: string;
+  implementedBy?: string;
+  reviewFrequency?: string;
+  effectiveness?: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
 interface SoDRuleRecord {
   id: string;
   organizationId: string;
@@ -75,6 +90,7 @@ interface SoDViolationRecord {
   status: string;
   riskLevel: string;
   mitigationAction: string | null;
+  compensatingControls: unknown;
   mitigatedBy: string | null;
   mitigatedAt: Date | null;
   acceptedBy: string | null;
@@ -97,6 +113,14 @@ export class SoDService {
 
   private generateId(prefix: string): string {
     return `sod_${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  /**
+   * Normalize the persisted compensatingControls JSON column into a typed array.
+   * Returns an empty array when the column is null or not an array.
+   */
+  private readCompensatingControls(value: unknown): CompensatingControl[] {
+    return Array.isArray(value) ? (value as CompensatingControl[]) : [];
   }
 
   // =========================================================================
@@ -1013,9 +1037,7 @@ export class SoDService {
       throw new AppError('Violation not found', 404);
     }
 
-    // Compensating controls are stored in the mitigationAction JSON field
-    const controls = (violation.mitigationAction as any)?.compensatingControls || [];
-    return controls;
+    return this.readCompensatingControls(violation.compensatingControls);
   }
 
   /**
@@ -1042,10 +1064,9 @@ export class SoDService {
       throw new AppError('Violation not found', 404);
     }
 
-    const currentMitigation = (violation.mitigationAction as any) || {};
-    const compensatingControls = currentMitigation.compensatingControls || [];
+    const compensatingControls = this.readCompensatingControls(violation.compensatingControls);
 
-    const newControl = {
+    const newControl: CompensatingControl = {
       id: `cc-${Date.now()}`,
       ...data,
       createdAt: new Date().toISOString(),
@@ -1057,10 +1078,7 @@ export class SoDService {
     await prisma.soDViolation.update({
       where: { id: violationId },
       data: {
-        mitigationAction: {
-          ...currentMitigation,
-          compensatingControls,
-        },
+        compensatingControls: compensatingControls as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -1101,10 +1119,9 @@ export class SoDService {
       throw new AppError('Violation not found', 404);
     }
 
-    const currentMitigation = (violation.mitigationAction as any) || {};
-    const compensatingControls = currentMitigation.compensatingControls || [];
+    const compensatingControls = this.readCompensatingControls(violation.compensatingControls);
 
-    const controlIndex = compensatingControls.findIndex((c: any) => c.id === controlId);
+    const controlIndex = compensatingControls.findIndex((c) => c.id === controlId);
     if (controlIndex === -1) {
       throw new AppError('Compensating control not found', 404);
     }
@@ -1119,10 +1136,7 @@ export class SoDService {
     await prisma.soDViolation.update({
       where: { id: violationId },
       data: {
-        mitigationAction: {
-          ...currentMitigation,
-          compensatingControls,
-        },
+        compensatingControls: compensatingControls as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -1155,10 +1169,9 @@ export class SoDService {
       throw new AppError('Violation not found', 404);
     }
 
-    const currentMitigation = (violation.mitigationAction as any) || {};
-    const compensatingControls = currentMitigation.compensatingControls || [];
+    const compensatingControls = this.readCompensatingControls(violation.compensatingControls);
 
-    const controlIndex = compensatingControls.findIndex((c: any) => c.id === controlId);
+    const controlIndex = compensatingControls.findIndex((c) => c.id === controlId);
     if (controlIndex === -1) {
       throw new AppError('Compensating control not found', 404);
     }
@@ -1168,10 +1181,7 @@ export class SoDService {
     await prisma.soDViolation.update({
       where: { id: violationId },
       data: {
-        mitigationAction: {
-          ...currentMitigation,
-          compensatingControls,
-        },
+        compensatingControls: compensatingControls as unknown as Prisma.InputJsonValue,
       },
     });
 

@@ -19,9 +19,8 @@ import prisma from '../config/database';
 import { Prisma } from '../generated/prisma/client';
 import logger from '../config/logger';
 import RE2 from 're2';
-import axios from 'axios';
 import { createHash } from 'crypto';
-import { isWebhookUrlSafe } from '../utils/urlValidator';
+import { isWebhookUrlSafe, safeFetch } from '../utils/urlValidator';
 import { AppError } from '../middleware/errorHandler';
 import cacheService from './cache/redisCacheService';
 
@@ -560,17 +559,26 @@ export class WorkflowEngineService {
             };
           }
 
-          const response = await axios({
-            method: method as 'GET' | 'POST' | 'PUT' | 'PATCH',
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Workflow-Source': 'ComplyEasyAI',
-              ...headers,
-            },
-            data: method !== 'GET' ? payload : undefined,
-            timeout: 15_000,
-          });
+          // Route through safeFetch so every redirect hop and the resolved IP
+          // are re-validated against the SSRF allowlist (axios redirect-following
+          // is not re-validated). A 15s timeout is enforced via AbortController.
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15_000);
+          let response: Response;
+          try {
+            response = await safeFetch(url, {
+              method,
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Workflow-Source': 'ComplyEasyAI',
+                ...headers,
+              },
+              body: method !== 'GET' ? JSON.stringify(payload) : undefined,
+              signal: controller.signal,
+            });
+          } finally {
+            clearTimeout(timeoutId);
+          }
 
           return {
             actionType: action.type,

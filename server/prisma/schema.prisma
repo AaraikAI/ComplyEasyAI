@@ -5185,6 +5185,7 @@ model SoDViolation {
   status           String       @default("Open") // Open, Mitigated, Accepted, Remediated
   riskLevel        String
   mitigationAction String?
+  compensatingControls Json? // Structured list of compensating controls attached to this violation
   mitigatedBy      String?
   mitigatedAt      DateTime?
   acceptedBy       String?

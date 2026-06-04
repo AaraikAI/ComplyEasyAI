@@ -24,8 +24,12 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Bound to loopback: in-stack services reach Postgres over the internal
+    # network; the host publish is for local tooling only.
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-complyeasy} -d ${POSTGRES_DB:-complyeasy}"]
       interval: 10s
@@ -50,8 +54,12 @@ services:
       --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
     volumes:
       - redis_data:/data
+    # Bound to loopback: in-stack services reach Redis over the internal
+    # network; the host publish is for local tooling only.
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
@@ -88,16 +96,17 @@ services:
       dockerfile: Dockerfile
     container_name: complyeasy-opa
     restart: unless-stopped
+    # In-stack services reach OPA over the internal network; the host publish
+    # is bound to loopback for local debugging only.
     ports:
-      - "8181:8181"
+      - "127.0.0.1:8181:8181"
     volumes:
       - ./server/docker/opa/policies:/policies
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8181/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    security_opt:
+      - "no-new-privileges:true"
+    # The OPA image is distroless (no wget/curl/shell), so an in-container HTTP
+    # healthcheck cannot run. Readiness against GET /health is validated from the
+    # host/reverse proxy; no service here gates on opa being `service_healthy`.
     networks:
       - complyeasy-network
 

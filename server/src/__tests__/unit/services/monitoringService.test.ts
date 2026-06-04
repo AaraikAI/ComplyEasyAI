@@ -193,7 +193,7 @@ describe('MonitoringService', () => {
 
       prismaMock.monitorResult.findMany.mockResolvedValue(mockResults as any);
 
-      const result = await monitoringService.getMonitorResults(monitorId);
+      const result = await monitoringService.getMonitorResults(monitorId, 'org-123');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(2);
@@ -202,7 +202,7 @@ describe('MonitoringService', () => {
     it('should limit results when limit provided', async () => {
       prismaMock.monitorResult.findMany.mockResolvedValue([] as any);
 
-      await monitoringService.getMonitorResults('monitor-123', 10);
+      await monitoringService.getMonitorResults('monitor-123', 'org-123', 10);
 
       expect(prismaMock.monitorResult.findMany).toHaveBeenCalledWith(
         expect.objectContaining({

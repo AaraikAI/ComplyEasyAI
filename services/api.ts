@@ -2346,6 +2346,7 @@ export const api = {
       listReports: async () => fetchAPI<any[]>('/modules/esg/reports'),
       generateReport: async (data: { type: 'annual' | 'interim' | 'thematic'; periodStart?: string; periodEnd?: string }) =>
         fetchAPI<any>('/modules/esg/reports', { method: 'POST', body: JSON.stringify(data) }),
+      listDataCollectionWorkflows: async () => fetchAPI<any[]>('/modules/esg/data-collection-workflows'),
     },
 
     // --- SBOM Manager ---

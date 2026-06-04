@@ -3,7 +3,7 @@
 # Script to update DATABASE_URL in .env file for AWS RDS migration
 # Usage: ./update-database-url.sh
 
-set -e
+set -euo pipefail
 
 # Colors
 RED='\033[0;31m'
@@ -35,9 +35,11 @@ if [ ! -f "$ENV_FILE" ]; then
     fi
 fi
 
-# Backup existing .env
+# Backup existing .env. The .env contains plaintext secrets, so restrict the
+# backup's permissions to the owner immediately.
 BACKUP_FILE="$ENV_FILE.backup-$(date +%Y%m%d-%H%M%S)"
 cp "$ENV_FILE" "$BACKUP_FILE"
+chmod 600 "$BACKUP_FILE"
 echo -e "${GREEN}✓ Backed up .env to: $BACKUP_FILE${NC}"
 echo ""
 
@@ -80,11 +82,20 @@ echo -e "${YELLOW}New DATABASE_URL:${NC}"
 echo -e "${BLUE}${NEW_DATABASE_URL}${NC}"
 echo ""
 
-# Test connection before updating
+# Test connection before updating.
+# Connection arguments exclude the password; the password is supplied to psql
+# via the PGPASSWORD environment variable so it never appears in the process
+# argument list (visible to other users via ps/proc).
+DB_CONN_ARGS=(
+    -h "$RDS_ENDPOINT"
+    -p "$DB_PORT"
+    -U "$DB_USERNAME"
+    -d "$DB_NAME"
+)
 echo -e "${YELLOW}Testing connection to AWS RDS...${NC}"
 
 if command -v psql &> /dev/null; then
-    if psql "$NEW_DATABASE_URL" -c "SELECT 1;" &> /dev/null; then
+    if PGPASSWORD="$DB_PASSWORD" psql "${DB_CONN_ARGS[@]}" -c "SELECT 1;" &> /dev/null; then
         echo -e "${GREEN}✓ Connection successful!${NC}"
     else
         echo -e "${RED}✗ Connection failed!${NC}"

@@ -1292,7 +1292,7 @@ class PhysicalAIService {
         return;
       }
 
-      const historicalData = await this.getHistoricalSensorData(deviceId, 100); // Last 100 readings
+      const historicalData = await this.getHistoricalSensorData(deviceId, organizationId, 100); // Last 100 readings
 
       // 1. Statistical Outlier Detection (Z-score method)
       if (payload.temperature !== undefined && historicalData.length > 10) {
@@ -1427,7 +1427,7 @@ class PhysicalAIService {
   /**
    * Get historical sensor data for anomaly detection
    */
-  private async getHistoricalSensorData(deviceId: string, limit: number): Promise<Array<{
+  private async getHistoricalSensorData(deviceId: string, organizationId: string, limit: number): Promise<Array<{
     temperature?: number;
     humidity?: number;
     errorRate?: number;
@@ -1436,6 +1436,7 @@ class PhysicalAIService {
     try {
       const auditLogs = await prisma.auditLog.findMany({
         where: {
+          organizationId,
           action: 'physical_ai.sensor_attestation',
           details: {
             contains: deviceId,
@@ -2092,7 +2093,7 @@ class PhysicalAIService {
       }> = [];
 
       // Get historical data for trend analysis
-      const historicalData = await this.getHistoricalSensorData(deviceId, 1000);
+      const historicalData = await this.getHistoricalSensorData(deviceId, organizationId, 1000);
       const healthHistory = await this.getHealthHistory(deviceId, organizationId, 90);
 
       // 1. Battery degradation prediction (ML-based)
@@ -2438,6 +2439,37 @@ class PhysicalAIService {
   /**
    * Measure network latency using ping or device API
    */
+  /**
+   * Determines whether a real latency measurement path exists for a device:
+   * either a connected MQTT topic, or a registered device record with a valid IP.
+   * When this returns false, callers must report latency as null rather than
+   * synthesizing a value.
+   */
+  private async canMeasureLatency(deviceId: string, organizationId: string, mqttTopic?: string): Promise<boolean> {
+    if (mqttTopic && mqttService.getConnectionStatus()) {
+      return true;
+    }
+
+    const device = await prisma.ioTDevice.findFirst({
+      where: { deviceId, organizationId },
+    });
+    if (!device) {
+      return false;
+    }
+
+    const sensorData = device.sensorData as any;
+    const ipAddress = sensorData?.ipAddress || sensorData?.network?.ipAddress;
+    if (ipAddress) {
+      const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+      const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+      if (ipv4Regex.test(ipAddress) || ipv6Regex.test(ipAddress)) {
+        return true;
+      }
+    }
+
+    return Boolean(mqttService && mqttService.getConnectionStatus());
+  }
+
   private async measureNetworkLatency(deviceId: string, organizationId: string, mqttTopic?: string): Promise<number> {
     try {
       // Real latency measurement using ping or MQTT round-trip
@@ -3122,8 +3154,8 @@ class PhysicalAIService {
     devices: Array<{
       deviceId: string;
       status: 'healthy' | 'warning' | 'critical' | 'offline';
-      latency: number;
-      packetLoss: number;
+      latency: number | null;
+      packetLoss: number | null;
       lastSeen: Date;
       anomalies: Array<{ type: string; description: string; severity: string }>;
     }>;
@@ -3169,7 +3201,7 @@ class PhysicalAIService {
 
       const devices: Array<{
         deviceId: string; status: 'healthy' | 'warning' | 'critical' | 'offline';
-        latency: number; packetLoss: number; lastSeen: Date;
+        latency: number | null; packetLoss: number | null; lastSeen: Date;
         anomalies: Array<{ type: string; description: string; severity: string }>;
       }> = [];
 
@@ -3179,6 +3211,7 @@ class PhysicalAIService {
       }> = [];
 
       let totalLatency = 0;
+      let measuredLatencyCount = 0;
       let anomalyCount = 0;
       let offlineCount = 0;
 
@@ -3190,18 +3223,27 @@ class PhysicalAIService {
         const timeSinceLastSeen = Date.now() - new Date(lastSeen).getTime();
         const isOffline = timeSinceLastSeen > 5 * 60 * 1000; // 5 minutes
 
-        // Simulate latency check (pings the device when DEVICE_PING_ENABLED is configured)
-        const baseLatency = deviceInfo.latency || 50;
-        const latency = isOffline ? 0 : baseLatency + Math.random() * 20 - 10;
-        const packetLoss = isOffline ? 100 : Math.random() * 2;
+        // Latency is measured live (ping / MQTT round-trip) only when the device
+        // exposes a real measurement path; otherwise it is reported as null so that
+        // downstream consumers and anomaly detection do not act on synthesized data.
+        // Packet loss has no real measurement source here and is always null.
+        let latency: number | null = null;
+        const packetLoss: number | null = null;
 
-        // Check for anomalies
+        if (!isOffline) {
+          const measurable = await this.canMeasureLatency(deviceId, organizationId, deviceInfo.mqttTopic);
+          if (measurable) {
+            latency = await this.measureNetworkLatency(deviceId, organizationId, deviceInfo.mqttTopic);
+          }
+        }
+
+        // Derive anomalies only from real measurements; never from fabricated values.
         if (checkTypes.includes('anomaly')) {
-          if (latency > 200) {
+          if (latency !== null && latency > 200) {
             anomalies.push({ type: 'high_latency', description: `Latency ${Math.round(latency)}ms exceeds threshold`, severity: 'warning' });
           }
-          if (packetLoss > 5) {
-            anomalies.push({ type: 'packet_loss', description: `Packet loss ${packetLoss.toFixed(1)}% above threshold`, severity: 'warning' });
+          if (packetLoss !== null && packetLoss > 5) {
+            anomalies.push({ type: 'packet_loss', description: `Packet loss ${(packetLoss as number).toFixed(1)}% above threshold`, severity: 'warning' });
           }
         }
 
@@ -3226,7 +3268,10 @@ class PhysicalAIService {
 
         anomalyCount += anomalies.length;
         if (isOffline) offlineCount++;
-        if (!isOffline) totalLatency += latency;
+        if (!isOffline && latency !== null) {
+          totalLatency += latency;
+          measuredLatencyCount++;
+        }
 
         const status = isOffline ? 'offline' :
           anomalies.some(a => a.severity === 'critical') ? 'critical' :
@@ -3235,15 +3280,15 @@ class PhysicalAIService {
         devices.push({
           deviceId,
           status,
-          latency: Math.round(latency * 10) / 10,
-          packetLoss: Math.round(packetLoss * 10) / 10,
+          latency: latency !== null ? Math.round(latency * 10) / 10 : null,
+          packetLoss: packetLoss !== null ? Math.round(packetLoss * 10) / 10 : null,
           lastSeen,
           anomalies,
         });
       }
 
       const activeDevices = devices.length - offlineCount;
-      const avgLatency = activeDevices > 0 ? totalLatency / activeDevices : 0;
+      const avgLatency = measuredLatencyCount > 0 ? totalLatency / measuredLatencyCount : 0;
 
       const overallStatus = offlineCount > devices.length * 0.5 || devices.some(d => d.status === 'critical') ? 'critical' :
         anomalyCount > 0 || offlineCount > 0 ? 'degraded' : 'healthy';

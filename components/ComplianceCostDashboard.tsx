@@ -27,6 +27,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
+import { logger } from '../utils/logger';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -179,7 +180,7 @@ const ComplianceCostDashboard: React.FC = () => {
       })
       .catch((err) => {
         if (cancelled) return;
-        console.warn('Failed to fetch cost data:', err);
+        logger.warn('Failed to fetch cost data:', err);
         setError(err.message || 'Failed to load cost data');
       })
       .finally(() => {
@@ -250,7 +251,7 @@ const ComplianceCostDashboard: React.FC = () => {
       setShowCreateForm(false);
       setFormDesc(''); setFormAmount(''); setFormVendor(''); setFormDate('');
     } catch (err: any) {
-      console.warn('Failed to create cost entry:', err);
+      logger.warn('Failed to create cost entry:', err);
       setError(err.message || 'Failed to create cost entry');
     }
   }, [formDesc, formAmount, formCat, formFw, formVendor, formDate, formRecurring, formFreq]);
@@ -260,7 +261,7 @@ const ComplianceCostDashboard: React.FC = () => {
       await apiFetch(`${API_BASE}/${id}`, { method: 'DELETE' });
       setEntries(prev => prev.filter(e => e.id !== id));
     } catch (err: any) {
-      console.warn('Failed to delete cost entry:', err);
+      logger.warn('Failed to delete cost entry:', err);
       setError(err.message || 'Failed to delete cost entry');
     }
   }, []);

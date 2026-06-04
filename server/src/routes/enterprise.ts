@@ -754,6 +754,7 @@ monitorRouter.get(
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const results = await monitoringService.getMonitorResults(
       req.params.id,
+      req.user.organizationId,
       Number(req.query.limit) || 30
     );
     res.json(results);

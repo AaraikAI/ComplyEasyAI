@@ -102,7 +102,7 @@ export async function loadLocale(locale: SupportedLocale): Promise<TranslationDi
 
   const loader = localeImportMap[locale];
   if (!loader) {
-    console.warn(`[i18n] Unknown locale "${locale}", falling back to "${DEFAULT_LOCALE}"`);
+    logger.warn(`[i18n] Unknown locale "${locale}", falling back to "${DEFAULT_LOCALE}"`);
     return loadedLocales[DEFAULT_LOCALE];
   }
 
@@ -135,7 +135,7 @@ export function getLocale(): SupportedLocale {
  */
 export async function setLocale(locale: SupportedLocale): Promise<void> {
   if (!AVAILABLE_LOCALES.find((l) => l.code === locale)) {
-    console.warn(`[i18n] Unsupported locale "${locale}"`);
+    logger.warn(`[i18n] Unsupported locale "${locale}"`);
     return;
   }
 

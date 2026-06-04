@@ -198,6 +198,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
   const [viewDSAR, setViewDSAR] = useState<DSARRequest | null>(null);
   const [showAddTransfer, setShowAddTransfer] = useState(false);
   const [newTransfer, setNewTransfer] = useState({ transferName: '', sourceCountry: '', destinationCountry: '', legalMechanism: 'SCC' });
+  const [newDSAR, setNewDSAR] = useState<{ type: DSARType; subjectName: string; subjectEmail: string; priority: DSARPriority; description: string }>({ type: 'Access', subjectName: '', subjectEmail: '', priority: 'Medium', description: '' });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -327,6 +328,21 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
     setNewTransfer({ transferName: '', sourceCountry: '', destinationCountry: '', legalMechanism: 'SCC' });
     runAction('new-transfer', 'add transfer', () => api.privacy.createSCCTIA(payload));
   }, [newTransfer, runAction]);
+
+  const submitCreateDSAR = useCallback(() => {
+    if (!newDSAR.subjectName.trim() || !newDSAR.subjectEmail.trim()) return;
+    const payload = {
+      type: newDSAR.type,
+      status: 'Received',
+      subjectName: newDSAR.subjectName.trim(),
+      subjectEmail: newDSAR.subjectEmail.trim(),
+      priority: newDSAR.priority,
+      description: newDSAR.description.trim(),
+    };
+    setShowCreateDSAR(false);
+    setNewDSAR({ type: 'Access', subjectName: '', subjectEmail: '', priority: 'Medium', description: '' });
+    runAction('new-dsar', 'create request', () => api.privacy.createDSAR(payload));
+  }, [newDSAR, runAction]);
 
   // ── Computed Stats ──────────────────────────────────────────────────────
 
@@ -676,7 +692,11 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-slate-400 mb-1">Request Type</label>
-              <select className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+              <select
+                value={newDSAR.type}
+                onChange={e => setNewDSAR(v => ({ ...v, type: e.target.value as DSARType }))}
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
                 {(['Access', 'Deletion', 'Rectification', 'Portability', 'Restriction', 'Objection'] as DSARType[]).map(item => (
                   <option key={item} value={item}>{item}</option>
                 ))}
@@ -685,16 +705,20 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Subject Name</label>
-                <input type="text" placeholder="Full name" className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                <input type="text" value={newDSAR.subjectName} onChange={e => setNewDSAR(v => ({ ...v, subjectName: e.target.value }))} placeholder="Full name" className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Subject Email</label>
-                <input type="email" placeholder="Email address" className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                <input type="email" value={newDSAR.subjectEmail} onChange={e => setNewDSAR(v => ({ ...v, subjectEmail: e.target.value }))} placeholder="Email address" className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
               </div>
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">{t('common.priority')}</label>
-              <select className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+              <select
+                value={newDSAR.priority}
+                onChange={e => setNewDSAR(v => ({ ...v, priority: e.target.value as DSARPriority }))}
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
                 <option value="High">High</option>
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
@@ -702,7 +726,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">{t('common.description')}</label>
-              <textarea rows={3} placeholder="Details of the request..." className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none" />
+              <textarea rows={3} value={newDSAR.description} onChange={e => setNewDSAR(v => ({ ...v, description: e.target.value }))} placeholder="Details of the request..." className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none" />
             </div>
             <div className="flex gap-3 justify-end pt-2">
               <button
@@ -712,10 +736,9 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
                 {t('common.cancel')}
               </button>
               <button
-                onClick={async () => {
-                  try { await api.privacy.createDSAR({ type: 'Access', status: 'Received' }); setShowCreateDSAR(false); loadData(); } catch { setShowCreateDSAR(false); }
-                }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                onClick={submitCreateDSAR}
+                disabled={!newDSAR.subjectName.trim() || !newDSAR.subjectEmail.trim()}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm rounded-lg transition-colors"
               >
                 {t('common.create')}
               </button>

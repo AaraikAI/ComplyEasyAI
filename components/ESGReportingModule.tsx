@@ -118,6 +118,15 @@ interface ESGReport {
   pages?: number;
 }
 
+interface DataCollectionWorkflow {
+  id: string;
+  name: string;
+  owner: string;
+  deadline: string;
+  progress: number;
+  status: string;
+}
+
 // ---------------------------------------------------------------------------
 // Demo Data
 // ---------------------------------------------------------------------------
@@ -326,6 +335,9 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   const [materialityTopics, setMaterialityTopics] = useState<MaterialityTopic[]>(DEMO_MATERIALITY);
   const [sdgAlignments, setSdgAlignments] = useState<SDGAlignment[]>(DEMO_SDG);
   const [reports, setReports] = useState<ESGReport[]>(DEMO_REPORTS);
+  // Data-collection workflows are sourced from the server; until the backend
+  // exposes them the Reports tab shows an empty state rather than fabricated rows.
+  const [dataCollectionWorkflows, setDataCollectionWorkflows] = useState<DataCollectionWorkflow[]>([]);
   const [showReportModal, setShowReportModal] = useState(false);
   const [expandedESRS, setExpandedESRS] = useState<string | null>(null);
 
@@ -344,6 +356,7 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
         api.modules.esg.listMetrics(),
         api.modules.esg.listMateriality(),
         api.modules.esg.listReports(),
+        api.modules.esg.listDataCollectionWorkflows(),
       ]);
       // If every endpoint failed the server is unreachable and DEMO fixtures remain visible
       const allFailed = results.every(r => r.status === 'rejected');
@@ -351,6 +364,7 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
       const apiMetrics = results[0].status === 'fulfilled' ? results[0].value : null;
       const apiMateriality = results[1].status === 'fulfilled' ? results[1].value : null;
       const apiReports = results[2].status === 'fulfilled' ? results[2].value : [];
+      const apiDataWorkflows = results[3].status === 'fulfilled' ? results[3].value : [];
 
       // --- Metrics ---
       if (apiMetrics && apiMetrics.length > 0) {
@@ -425,6 +439,18 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           pages: r.pages,
         })));
       }
+
+      // --- Data collection workflows (live; empty state when none/unavailable) ---
+      if (Array.isArray(apiDataWorkflows) && apiDataWorkflows.length > 0) {
+        setDataCollectionWorkflows(apiDataWorkflows.map((w: any) => ({
+          id: w.id || w.name || '',
+          name: w.name || '',
+          owner: w.owner || w.assignedTo || '',
+          deadline: w.deadline ? String(w.deadline).slice(0, 10) : '',
+          progress: typeof w.progress === 'number' ? w.progress : 0,
+          status: w.status || 'in_progress',
+        })));
+      }
     } catch (err: any) {
       setLoadError('Unable to connect to server. Showing local data.');
     } finally {
@@ -467,6 +493,36 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
     return { score: Math.round(current * 100), delta };
   }, []);
 
+  // ----- Metric lookup helpers (derive highlight/chart values from loaded state) -----
+  // Locate a metric by name (with optional subcategory) so cards/charts read live
+  // values rather than literals. Returns undefined when the metric is absent.
+  const findMetric = useCallback((name: string, subcategory?: string): ESGMetric | undefined =>
+    metrics.find(m => m.name === name && (subcategory === undefined || m.subcategory === subcategory)),
+  [metrics]);
+
+  // Format a metric value for display, appending its unit. Falls back to an
+  // em dash when the metric (or its value) is unavailable.
+  const formatMetric = useCallback((name: string, opts?: { subcategory?: string; suffix?: string; withUnit?: boolean }): string => {
+    const m = findMetric(name, opts?.subcategory);
+    if (!m || typeof m.value !== 'number') return '—';
+    const num = m.value.toLocaleString();
+    if (opts?.suffix !== undefined) return `${num}${opts.suffix}`;
+    return opts?.withUnit === false ? num : `${num} ${m.unit}`.trim();
+  }, [findMetric]);
+
+  // Build a trend descriptor for a StatCard from a metric's value vs previousYear.
+  // Returns undefined when there is no comparable prior-year figure.
+  const metricTrend = useCallback((name: string, subcategory?: string): { direction: 'up' | 'down' | 'stable'; isPositive: boolean; value: string } | undefined => {
+    const m = findMetric(name, subcategory);
+    if (!m || typeof m.previousYear !== 'number' || m.previousYear === 0) return undefined;
+    const isPercentLike = m.unit === '%';
+    const delta = isPercentLike ? m.value - m.previousYear : ((m.value - m.previousYear) / m.previousYear) * 100;
+    const value = isPercentLike
+      ? `${delta > 0 ? '+' : ''}${Math.round(delta)}pts`
+      : `${delta > 0 ? '+' : ''}${delta.toFixed(1)}%`;
+    return { direction: m.trend, isPositive: m.trendIsPositive, value };
+  }, [findMetric]);
+
   const esgScore = useMemo(() => {
     const env = scoreMetricGroup(envMetrics);
     const soc = scoreMetricGroup(socMetrics);
@@ -477,6 +533,12 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
       envDelta: env.delta, socDelta: soc.delta, govDelta: gov.delta,
     };
   }, [envMetrics, socMetrics, govMetrics, scoreMetricGroup]);
+
+  // Sum of all GHG Emissions metrics (Scope 1/2/3) for the live total.
+  const totalGHGEmissions = useMemo(
+    () => envMetrics.filter(m => m.subcategory === 'GHG Emissions').reduce((s, m) => s + m.value, 0),
+    [envMetrics],
+  );
 
   const esrsProgress = useMemo(() => {
     const totalDisclosures = esrsStandards.reduce((s, e) => s + e.disclosureRequirements, 0);
@@ -554,19 +616,19 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Total GHG Emissions</span>
-              <span className="text-sm font-semibold text-gray-900">66,350 tCO2e</span>
+              <span className="text-sm font-semibold text-gray-900">{totalGHGEmissions > 0 ? `${totalGHGEmissions.toLocaleString()} tCO2e` : '—'}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Renewable Energy</span>
-              <span className="text-sm font-semibold text-green-600">62%</span>
+              <span className="text-sm font-semibold text-green-600">{formatMetric('Renewable Energy Share', { suffix: '%' })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Waste Diversion Rate</span>
-              <span className="text-sm font-semibold text-blue-600">72%</span>
+              <span className="text-sm font-semibold text-blue-600">{formatMetric('Waste Diverted from Disposal', { suffix: '%' })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Water Recycled</span>
-              <span className="text-sm font-semibold text-teal-600">38%</span>
+              <span className="text-sm font-semibold text-teal-600">{formatMetric('Water Recycled/Reused', { suffix: '%' })}</span>
             </div>
           </div>
         </div>
@@ -580,19 +642,19 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Employee Satisfaction</span>
-              <span className="text-sm font-semibold text-gray-900">78%</span>
+              <span className="text-sm font-semibold text-gray-900">{formatMetric('Employee Satisfaction Score', { suffix: '%' })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Gender Pay Gap</span>
-              <span className="text-sm font-semibold text-yellow-600">5.2%</span>
+              <span className="text-sm font-semibold text-yellow-600">{formatMetric('Gender Pay Gap', { suffix: '%' })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Women in Management</span>
-              <span className="text-sm font-semibold text-blue-600">38%</span>
+              <span className="text-sm font-semibold text-blue-600">{formatMetric('Women in Management', { suffix: '%' })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">HRDD Coverage</span>
-              <span className="text-sm font-semibold text-green-600">85%</span>
+              <span className="text-sm font-semibold text-green-600">{formatMetric('Human Rights Due Diligence Coverage', { suffix: '%' })}</span>
             </div>
           </div>
         </div>
@@ -606,19 +668,19 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Board Gender Diversity</span>
-              <span className="text-sm font-semibold text-gray-900">42%</span>
+              <span className="text-sm font-semibold text-gray-900">{formatMetric('Board Gender Diversity', { suffix: '%' })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Independent Board Members</span>
-              <span className="text-sm font-semibold text-green-600">67%</span>
+              <span className="text-sm font-semibold text-green-600">{formatMetric('Independent Board Members', { suffix: '%' })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Anti-Corruption Training</span>
-              <span className="text-sm font-semibold text-blue-600">94%</span>
+              <span className="text-sm font-semibold text-blue-600">{formatMetric('Anti-Corruption Training Completion', { suffix: '%' })}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">CEO-to-Worker Pay Ratio</span>
-              <span className="text-sm font-semibold text-gray-900">28:1</span>
+              <span className="text-sm font-semibold text-gray-900">{formatMetric('CEO-to-Worker Pay Ratio', { withUnit: true })}</span>
             </div>
           </div>
         </div>
@@ -657,39 +719,56 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   // ---------------------------------------------------------------------------
   const renderEnvironmental = () => {
     const subcategories = [...new Set(envMetrics.map(m => m.subcategory))];
-    const totalGHG = envMetrics.filter(m => m.subcategory === 'GHG Emissions').reduce((s, m) => s + m.value, 0);
+    const totalGHG = totalGHGEmissions;
+    const scope1 = findMetric('Scope 1 - Direct Emissions', 'GHG Emissions');
+    const scope2 = findMetric('Scope 2 - Indirect Energy', 'GHG Emissions');
+    const scope3 = findMetric('Scope 3 - Value Chain', 'GHG Emissions');
+    // Aggregate YoY change across all GHG scopes from their previousYear values.
+    const totalGHGPrev = envMetrics
+      .filter(m => m.subcategory === 'GHG Emissions' && typeof m.previousYear === 'number')
+      .reduce((s, m) => s + (m.previousYear as number), 0);
+    const totalGHGYoY = totalGHGPrev > 0 ? ((totalGHG - totalGHGPrev) / totalGHGPrev) * 100 : null;
+    const sharePct = (m?: ESGMetric) => (m && totalGHG > 0 ? (m.value / totalGHG) * 100 : 0);
 
     return (
       <div className="space-y-6">
         {/* GHG Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard icon={<Flame size={20} className="text-orange-600" />} label="Scope 1 Emissions" value="12,450 tCO2e" color="bg-orange-50" trend={{ direction: 'down', isPositive: true, value: '-5.7%' }} />
-          <StatCard icon={<Zap size={20} className="text-yellow-600" />} label="Scope 2 Emissions" value="8,300 tCO2e" color="bg-yellow-50" trend={{ direction: 'down', isPositive: true, value: '-8.8%' }} />
-          <StatCard icon={<Globe size={20} className="text-blue-600" />} label="Scope 3 Emissions" value="45,600 tCO2e" color="bg-blue-50" trend={{ direction: 'down', isPositive: true, value: '-5.4%' }} />
+          <StatCard icon={<Flame size={20} className="text-orange-600" />} label="Scope 1 Emissions" value={scope1 ? `${scope1.value.toLocaleString()} ${scope1.unit}` : '—'} color="bg-orange-50" trend={metricTrend('Scope 1 - Direct Emissions', 'GHG Emissions')} />
+          <StatCard icon={<Zap size={20} className="text-yellow-600" />} label="Scope 2 Emissions" value={scope2 ? `${scope2.value.toLocaleString()} ${scope2.unit}` : '—'} color="bg-yellow-50" trend={metricTrend('Scope 2 - Indirect Energy', 'GHG Emissions')} />
+          <StatCard icon={<Globe size={20} className="text-blue-600" />} label="Scope 3 Emissions" value={scope3 ? `${scope3.value.toLocaleString()} ${scope3.unit}` : '—'} color="bg-blue-50" trend={metricTrend('Scope 3 - Value Chain', 'GHG Emissions')} />
           <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-xl p-5 text-white">
             <p className="text-sm opacity-80">Total GHG Emissions</p>
-            <p className="text-3xl font-bold mt-1">{totalGHG.toLocaleString()}</p>
+            <p className="text-3xl font-bold mt-1">{totalGHG > 0 ? totalGHG.toLocaleString() : '—'}</p>
             <p className="text-xs opacity-70 mt-1">tCO2e</p>
-            <div className="mt-2 flex items-center gap-1 text-xs">
-              <TrendingDown size={14} />
-              <span>-6.2% YoY</span>
-            </div>
+            {totalGHGYoY !== null && (
+              <div className="mt-2 flex items-center gap-1 text-xs">
+                {totalGHGYoY <= 0 ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                <span>{totalGHGYoY > 0 ? '+' : ''}{totalGHGYoY.toFixed(1)}% YoY</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Emissions Breakdown Visual */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">GHG Emissions Breakdown</h3>
-          <div className="flex items-center gap-2 h-8 rounded-lg overflow-hidden mb-3">
-            <div className="bg-orange-500 h-full transition-all" style={{ width: `${(12450 / totalGHG) * 100}%` }} title="Scope 1" />
-            <div className="bg-yellow-500 h-full transition-all" style={{ width: `${(8300 / totalGHG) * 100}%` }} title="Scope 2" />
-            <div className="bg-blue-500 h-full transition-all" style={{ width: `${(45600 / totalGHG) * 100}%` }} title="Scope 3" />
-          </div>
-          <div className="flex gap-6 text-sm">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-orange-500" />Scope 1: {((12450 / totalGHG) * 100).toFixed(1)}%</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-yellow-500" />Scope 2: {((8300 / totalGHG) * 100).toFixed(1)}%</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500" />Scope 3: {((45600 / totalGHG) * 100).toFixed(1)}%</span>
-          </div>
+          {totalGHG > 0 ? (
+            <>
+              <div className="flex items-center gap-2 h-8 rounded-lg overflow-hidden mb-3">
+                <div className="bg-orange-500 h-full transition-all" style={{ width: `${sharePct(scope1)}%` }} title="Scope 1" />
+                <div className="bg-yellow-500 h-full transition-all" style={{ width: `${sharePct(scope2)}%` }} title="Scope 2" />
+                <div className="bg-blue-500 h-full transition-all" style={{ width: `${sharePct(scope3)}%` }} title="Scope 3" />
+              </div>
+              <div className="flex gap-6 text-sm">
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-orange-500" />Scope 1: {sharePct(scope1).toFixed(1)}%</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-yellow-500" />Scope 2: {sharePct(scope2).toFixed(1)}%</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500" />Scope 3: {sharePct(scope3).toFixed(1)}%</span>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-gray-400">—</p>
+          )}
         </div>
 
         {/* All Environmental Metrics */}
@@ -715,10 +794,10 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
       <div className="space-y-6">
         {/* Social Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard icon={<Heart size={20} className="text-pink-600" />} label="Employee Satisfaction" value="78%" color="bg-pink-50" trend={{ direction: 'up', isPositive: true, value: '+4pts' }} />
-          <StatCard icon={<Users size={20} className="text-blue-600" />} label="Women in Management" value="38%" color="bg-blue-50" trend={{ direction: 'up', isPositive: true, value: '+4pts' }} />
-          <StatCard icon={<Shield size={20} className="text-indigo-600" />} label="HRDD Coverage" value="85%" color="bg-indigo-50" trend={{ direction: 'up', isPositive: true, value: '+13pts' }} />
-          <StatCard icon={<Lock size={20} className="text-red-600" />} label="Data Breaches" value="1" subLabel="Target: 0" color="bg-red-50" trend={{ direction: 'down', isPositive: true, value: '-67%' }} />
+          <StatCard icon={<Heart size={20} className="text-pink-600" />} label="Employee Satisfaction" value={formatMetric('Employee Satisfaction Score', { suffix: '%' })} color="bg-pink-50" trend={metricTrend('Employee Satisfaction Score')} />
+          <StatCard icon={<Users size={20} className="text-blue-600" />} label="Women in Management" value={formatMetric('Women in Management', { suffix: '%' })} color="bg-blue-50" trend={metricTrend('Women in Management')} />
+          <StatCard icon={<Shield size={20} className="text-indigo-600" />} label="HRDD Coverage" value={formatMetric('Human Rights Due Diligence Coverage', { suffix: '%' })} color="bg-indigo-50" trend={metricTrend('Human Rights Due Diligence Coverage')} />
+          <StatCard icon={<Lock size={20} className="text-red-600" />} label="Data Breaches" value={formatMetric('Data Breach Incidents', { withUnit: false })} subLabel={findMetric('Data Breach Incidents')?.target !== undefined ? `Target: ${findMetric('Data Breach Incidents')?.target}` : undefined} color="bg-red-50" trend={metricTrend('Data Breach Incidents')} />
         </div>
 
         {/* Social Metrics by Subcategory */}
@@ -732,41 +811,68 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
         ))}
 
         {/* D&I Progress Summary */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Diversity & Inclusion Progress</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Gender Pay Gap Reduction</p>
-              <div className="flex items-end gap-3">
-                {[{ year: '2023', value: 9.8 }, { year: '2024', value: 7.1 }, { year: '2025', value: 5.2 }].map(item => (
-                  <div key={item.year} className="flex-1 text-center">
-                    <div className="bg-gray-100 rounded-t-lg relative h-32 flex items-end justify-center overflow-hidden">
-                      <div className="bg-blue-500 w-full rounded-t-lg transition-all" style={{ height: `${(item.value / 12) * 100}%` }} />
+        {(() => {
+          const payGap = findMetric('Gender Pay Gap');
+          const womenLeadership = findMetric('Women in Management');
+          // Build a prior-year vs current-year series for a metric. Scale bar
+          // heights against the larger of the metric's values/target so bars stay
+          // in-frame. Returns null when the metric is unavailable.
+          const yoySeries = (m?: ESGMetric) => {
+            if (!m) return null;
+            const points: { label: string; value: number }[] = [];
+            if (typeof m.previousYear === 'number') points.push({ label: 'Previous Year', value: m.previousYear });
+            points.push({ label: 'Current Year', value: m.value });
+            const scale = Math.max(...points.map(p => p.value), m.target ?? 0, 1);
+            return { points, scale };
+          };
+          const payGapSeries = yoySeries(payGap);
+          const womenSeries = yoySeries(womenLeadership);
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Diversity &amp; Inclusion Progress</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Gender Pay Gap Reduction</p>
+                  {payGapSeries ? (
+                    <div className="flex items-end gap-3">
+                      {payGapSeries.points.map(item => (
+                        <div key={item.label} className="flex-1 text-center">
+                          <div className="bg-gray-100 rounded-t-lg relative h-32 flex items-end justify-center overflow-hidden">
+                            <div className="bg-blue-500 w-full rounded-t-lg transition-all" style={{ height: `${(item.value / payGapSeries.scale) * 100}%` }} />
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1">{item.label}</p>
+                          <p className="text-xs font-semibold text-gray-900">{item.value}{payGap?.unit}</p>
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">{item.year}</p>
-                    <p className="text-xs font-semibold text-gray-900">{item.value}%</p>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-2">Target: 3.0% by 2027</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Women in Leadership Positions</p>
-              <div className="flex items-end gap-3">
-                {[{ year: '2023', value: 30 }, { year: '2024', value: 34 }, { year: '2025', value: 38 }].map(item => (
-                  <div key={item.year} className="flex-1 text-center">
-                    <div className="bg-gray-100 rounded-t-lg relative h-32 flex items-end justify-center overflow-hidden">
-                      <div className="bg-purple-500 w-full rounded-t-lg transition-all" style={{ height: `${(item.value / 50) * 100}%` }} />
+                  ) : (
+                    <p className="text-sm text-gray-400">—</p>
+                  )}
+                  {payGap?.target !== undefined && <p className="text-xs text-gray-500 mt-2">Target: {payGap.target}{payGap.unit}</p>}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Women in Leadership Positions</p>
+                  {womenSeries ? (
+                    <div className="flex items-end gap-3">
+                      {womenSeries.points.map(item => (
+                        <div key={item.label} className="flex-1 text-center">
+                          <div className="bg-gray-100 rounded-t-lg relative h-32 flex items-end justify-center overflow-hidden">
+                            <div className="bg-purple-500 w-full rounded-t-lg transition-all" style={{ height: `${(item.value / womenSeries.scale) * 100}%` }} />
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1">{item.label}</p>
+                          <p className="text-xs font-semibold text-gray-900">{item.value}{womenLeadership?.unit}</p>
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">{item.year}</p>
-                    <p className="text-xs font-semibold text-gray-900">{item.value}%</p>
-                  </div>
-                ))}
+                  ) : (
+                    <p className="text-sm text-gray-400">—</p>
+                  )}
+                  {womenLeadership?.target !== undefined && <p className="text-xs text-gray-500 mt-2">Target: {womenLeadership.target}{womenLeadership.unit}</p>}
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Target: 45% by 2027</p>
             </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
     );
   };
@@ -781,10 +887,10 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
       <div className="space-y-6">
         {/* Governance Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard icon={<Building2 size={20} className="text-purple-600" />} label="Board Gender Diversity" value="42%" color="bg-purple-50" trend={{ direction: 'up', isPositive: true, value: '+4pts' }} />
-          <StatCard icon={<Scale size={20} className="text-indigo-600" />} label="Independent Directors" value="67%" color="bg-indigo-50" trend={{ direction: 'up', isPositive: true, value: '+7pts' }} />
-          <StatCard icon={<Shield size={20} className="text-green-600" />} label="Anti-Corruption Training" value="94%" color="bg-green-50" trend={{ direction: 'up', isPositive: true, value: '+6pts' }} />
-          <StatCard icon={<Briefcase size={20} className="text-blue-600" />} label="CEO Pay Ratio" value="28:1" color="bg-blue-50" trend={{ direction: 'down', isPositive: true, value: '-12.5%' }} />
+          <StatCard icon={<Building2 size={20} className="text-purple-600" />} label="Board Gender Diversity" value={formatMetric('Board Gender Diversity', { suffix: '%' })} color="bg-purple-50" trend={metricTrend('Board Gender Diversity')} />
+          <StatCard icon={<Scale size={20} className="text-indigo-600" />} label="Independent Directors" value={formatMetric('Independent Board Members', { suffix: '%' })} color="bg-indigo-50" trend={metricTrend('Independent Board Members')} />
+          <StatCard icon={<Shield size={20} className="text-green-600" />} label="Anti-Corruption Training" value={formatMetric('Anti-Corruption Training Completion', { suffix: '%' })} color="bg-green-50" trend={metricTrend('Anti-Corruption Training Completion')} />
+          <StatCard icon={<Briefcase size={20} className="text-blue-600" />} label="CEO Pay Ratio" value={formatMetric('CEO-to-Worker Pay Ratio', { withUnit: true })} color="bg-blue-50" trend={metricTrend('CEO-to-Worker Pay Ratio')} />
         </div>
 
         {/* Governance Metrics */}
@@ -798,46 +904,57 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
         ))}
 
         {/* Board Composition */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Board Composition Overview</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-3">Gender Split</p>
-              <div className="flex items-center justify-center gap-2 h-6 rounded-lg overflow-hidden">
-                <div className="bg-purple-500 h-full rounded-l-lg" style={{ width: '42%' }} />
-                <div className="bg-gray-300 h-full rounded-r-lg" style={{ width: '58%' }} />
-              </div>
-              <div className="flex justify-between text-xs mt-2">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-purple-500" />Women 42%</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-300" />Men 58%</span>
+        {(() => {
+          const womenBoard = findMetric('Board Gender Diversity');
+          const independence = findMetric('Independent Board Members');
+          // Clamp a percentage value into the 0–100 range for split-bar widths.
+          const clampPct = (v: number) => Math.max(0, Math.min(100, v));
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Board Composition Overview</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-3">Gender Split</p>
+                  {womenBoard ? (
+                    <>
+                      <div className="flex items-center justify-center gap-2 h-6 rounded-lg overflow-hidden">
+                        <div className="bg-purple-500 h-full rounded-l-lg" style={{ width: `${clampPct(womenBoard.value)}%` }} />
+                        <div className="bg-gray-300 h-full rounded-r-lg" style={{ width: `${clampPct(100 - womenBoard.value)}%` }} />
+                      </div>
+                      <div className="flex justify-between text-xs mt-2">
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-purple-500" />Women {womenBoard.value}%</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-300" />Men {(100 - womenBoard.value)}%</span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-400">—</p>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-3">Independence</p>
+                  {independence ? (
+                    <>
+                      <div className="flex items-center justify-center gap-2 h-6 rounded-lg overflow-hidden">
+                        <div className="bg-green-500 h-full rounded-l-lg" style={{ width: `${clampPct(independence.value)}%` }} />
+                        <div className="bg-gray-300 h-full rounded-r-lg" style={{ width: `${clampPct(100 - independence.value)}%` }} />
+                      </div>
+                      <div className="flex justify-between text-xs mt-2">
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" />Independent {independence.value}%</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-300" />Executive {(100 - independence.value)}%</span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-400">—</p>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-3">Tenure Distribution</p>
+                  <p className="text-sm text-gray-400">—</p>
+                </div>
               </div>
             </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-3">Independence</p>
-              <div className="flex items-center justify-center gap-2 h-6 rounded-lg overflow-hidden">
-                <div className="bg-green-500 h-full rounded-l-lg" style={{ width: '67%' }} />
-                <div className="bg-gray-300 h-full rounded-r-lg" style={{ width: '33%' }} />
-              </div>
-              <div className="flex justify-between text-xs mt-2">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" />Independent 67%</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-300" />Executive 33%</span>
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-3">Tenure Distribution</p>
-              <div className="flex items-center justify-center gap-1 h-6 rounded-lg overflow-hidden">
-                <div className="bg-blue-400 h-full rounded-l-lg" style={{ width: '33%' }} />
-                <div className="bg-blue-600 h-full" style={{ width: '42%' }} />
-                <div className="bg-blue-800 h-full rounded-r-lg" style={{ width: '25%' }} />
-              </div>
-              <div className="flex justify-between text-xs mt-2">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-400" />&lt;3y</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-600" />3-6y</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-800" />&gt;6y</span>
-              </div>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
     );
   };
@@ -1003,29 +1120,30 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
       {/* Data Collection Workflows */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Collection Workflows</h3>
-        <div className="space-y-3">
-          {[
-            { name: 'GHG Emissions Data (Scope 1/2/3)', owner: 'Sustainability Team', deadline: '2026-03-31', progress: 85, status: 'in_progress' },
-            { name: 'Energy Consumption & Renewable Mix', owner: 'Facilities Management', deadline: '2026-03-15', progress: 92, status: 'in_progress' },
-            { name: 'Water Withdrawal & Recycling Data', owner: 'Operations', deadline: '2026-03-20', progress: 70, status: 'in_progress' },
-            { name: 'Employee Wellbeing Survey Results', owner: 'HR Department', deadline: '2026-02-28', progress: 100, status: 'complete' },
-            { name: 'Supply Chain HRDD Assessment', owner: 'Procurement', deadline: '2026-04-15', progress: 55, status: 'in_progress' },
-            { name: 'Board Composition & Governance Data', owner: 'Company Secretary', deadline: '2026-02-15', progress: 100, status: 'complete' },
-          ].map((workflow, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">{workflow.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Owner: {workflow.owner} | Deadline: {workflow.deadline}</p>
-              </div>
-              <div className="flex items-center gap-3 w-48">
-                <div className="flex-1">
-                  <ProgressBar value={workflow.progress} color={workflow.progress === 100 ? 'bg-green-500' : 'bg-blue-500'} />
+        {dataCollectionWorkflows.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Layers size={32} className="mx-auto mb-3 text-gray-300" />
+            <p className="text-sm">No data collection workflows yet.</p>
+            <p className="text-xs text-gray-400 mt-1">Workflows for collecting ESG evidence will appear here once configured.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {dataCollectionWorkflows.map(workflow => (
+              <div key={workflow.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{workflow.name}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Owner: {workflow.owner || '—'}{workflow.deadline ? ` | Deadline: ${workflow.deadline}` : ''}</p>
                 </div>
-                <span className="text-xs font-medium text-gray-600 w-8 text-right">{workflow.progress}%</span>
+                <div className="flex items-center gap-3 w-48">
+                  <div className="flex-1">
+                    <ProgressBar value={workflow.progress} color={workflow.progress === 100 ? 'bg-green-500' : 'bg-blue-500'} />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600 w-8 text-right">{workflow.progress}%</span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

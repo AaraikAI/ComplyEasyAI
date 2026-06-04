@@ -56,6 +56,7 @@ interface TicketingConfig {
   syncEnabled?: boolean;
   syncDirection?: 'push' | 'pull' | 'bidirectional';
   syncIntervalMinutes?: number;
+  webhookSecret?: string;
   mappingRules?: {
     risk?: { issueType: string; labels?: string[] };
     incident?: { issueType: string; labels?: string[] };
@@ -81,6 +82,12 @@ function sanitizeConfigForResponse(config: any): any {
   delete sanitized.clientSecret;
   delete sanitized.accessToken;
   delete sanitized.refreshToken;
+  delete sanitized.apiToken;
+  // Surface the webhook secret as a presence flag only — never return the encrypted value.
+  if ('webhookSecret' in sanitized) {
+    sanitized.webhookSecret = sanitized.webhookSecret ? '********' : null;
+    sanitized.webhookSecretConfigured = !!config.webhookSecret;
+  }
   // Mask username partially
   if (sanitized.username) {
     sanitized.username = sanitized.username.length > 4
@@ -88,6 +95,51 @@ function sanitizeConfigForResponse(config: any): any {
       : '****';
   }
   return sanitized;
+}
+
+// Resolve the inbound-webhook HMAC secret for a save flow: use the client-supplied
+// value when present, otherwise reuse an already-persisted secret, otherwise
+// generate a fresh one. Returns the plaintext secret (returned once to the caller)
+// and its encrypted form for storage.
+async function resolveWebhookSecret(
+  organizationId: string,
+  provider: TicketingProvider,
+  supplied?: string | null,
+): Promise<{ plaintext: string; encrypted: string; generated: boolean }> {
+  if (supplied) {
+    return { plaintext: supplied, encrypted: encryptField(supplied), generated: false };
+  }
+
+  const existing = await prisma.integration.findUnique({
+    where: { organizationId_provider: { organizationId, provider } },
+    select: { config: true },
+  });
+  const existingEncrypted = (existing?.config as any)?.webhookSecret as string | undefined;
+  if (existingEncrypted) {
+    return { plaintext: decryptField(existingEncrypted), encrypted: existingEncrypted, generated: false };
+  }
+
+  const generated = crypto.randomBytes(32).toString('hex');
+  return { plaintext: generated, encrypted: encryptField(generated), generated: true };
+}
+
+// Merge the encrypted webhook secret into an already-saved integration's config.
+// Used after provider services persist their own config (servicenow / azure_devops).
+async function persistWebhookSecret(
+  organizationId: string,
+  provider: TicketingProvider,
+  encryptedSecret: string,
+): Promise<void> {
+  const integration = await prisma.integration.findUnique({
+    where: { organizationId_provider: { organizationId, provider } },
+    select: { id: true, config: true },
+  });
+  if (!integration) return;
+  const mergedConfig = { ...((integration.config as any) || {}), webhookSecret: encryptedSecret };
+  await prisma.integration.update({
+    where: { id: integration.id },
+    data: { config: mergedConfig as any },
+  });
 }
 
 // ============================================================================
@@ -163,6 +215,9 @@ router.post(
     }
 
     try {
+      // Resolve (or generate) the inbound-webhook HMAC secret used by POST /webhook/:provider.
+      const webhookSecret = await resolveWebhookSecret(organizationId, config.provider, config.webhookSecret);
+
       switch (config.provider) {
         case 'jira': {
           if (config.authType === 'oauth' && config.accessToken) {
@@ -179,6 +234,7 @@ router.post(
               config.siteName || '',
               config.siteUrl || ''
             );
+            await persistWebhookSecret(organizationId, 'jira', webhookSecret.encrypted);
           } else {
             // API token auth -- store as basic auth config
             await prisma.integration.upsert({
@@ -202,6 +258,8 @@ router.post(
                   syncEnabled: config.syncEnabled ?? false,
                   syncDirection: config.syncDirection || 'bidirectional',
                   mappingRules: config.mappingRules,
+                  // Encrypt the inbound-webhook HMAC secret at rest.
+                  webhookSecret: webhookSecret.encrypted,
                 } as any,
                 lastSync: new Date(),
               },
@@ -218,6 +276,8 @@ router.post(
                   syncEnabled: config.syncEnabled ?? false,
                   syncDirection: config.syncDirection || 'bidirectional',
                   mappingRules: config.mappingRules,
+                  // Encrypt the inbound-webhook HMAC secret at rest.
+                  webhookSecret: webhookSecret.encrypted,
                 } as any,
                 lastSync: new Date(),
               },
@@ -237,6 +297,7 @@ router.post(
             accessToken: config.accessToken,
             refreshToken: config.refreshToken,
           });
+          await persistWebhookSecret(organizationId, 'servicenow', webhookSecret.encrypted);
           break;
         }
 
@@ -252,6 +313,7 @@ router.post(
             refreshToken: config.refreshToken,
             tenantId: config.tenantId,
           });
+          await persistWebhookSecret(organizationId, 'azure_devops', webhookSecret.encrypted);
           break;
         }
       }
@@ -262,6 +324,9 @@ router.post(
         success: true,
         message: `${config.provider} integration configured successfully`,
         provider: config.provider,
+        // Return the plaintext secret only when it was generated server-side, so the
+        // client can register it with the provider's webhook configuration.
+        ...(webhookSecret.generated ? { webhookSecret: webhookSecret.plaintext } : {}),
       });
     } catch (error: any) {
       if (error instanceof AppError) throw error;
@@ -771,6 +836,9 @@ router.post(
     }
 
     try {
+      // Resolve (or generate) the inbound-webhook HMAC secret used by POST /webhook/:provider.
+      const webhookSecret = await resolveWebhookSecret(organizationId, config.provider, config.webhookSecret);
+
       switch (config.provider) {
         case 'jira': {
           if (config.authType === 'oauth' && config.accessToken) {
@@ -787,6 +855,7 @@ router.post(
               config.siteName || '',
               config.siteUrl || ''
             );
+            await persistWebhookSecret(organizationId, 'jira', webhookSecret.encrypted);
           } else {
             await prisma.integration.upsert({
               where: {
@@ -809,6 +878,8 @@ router.post(
                   syncEnabled: config.syncEnabled ?? false,
                   syncDirection: config.syncDirection || 'bidirectional',
                   mappingRules: config.mappingRules,
+                  // Encrypt the inbound-webhook HMAC secret at rest.
+                  webhookSecret: webhookSecret.encrypted,
                 } as any,
                 lastSync: new Date(),
               },
@@ -825,6 +896,8 @@ router.post(
                   syncEnabled: config.syncEnabled ?? false,
                   syncDirection: config.syncDirection || 'bidirectional',
                   mappingRules: config.mappingRules,
+                  // Encrypt the inbound-webhook HMAC secret at rest.
+                  webhookSecret: webhookSecret.encrypted,
                 } as any,
                 lastSync: new Date(),
               },
@@ -844,6 +917,7 @@ router.post(
             accessToken: config.accessToken,
             refreshToken: config.refreshToken,
           });
+          await persistWebhookSecret(organizationId, 'servicenow', webhookSecret.encrypted);
           break;
         }
 
@@ -859,6 +933,7 @@ router.post(
             refreshToken: config.refreshToken,
             tenantId: config.tenantId,
           });
+          await persistWebhookSecret(organizationId, 'azure_devops', webhookSecret.encrypted);
           break;
         }
       }
@@ -874,6 +949,9 @@ router.post(
 
       res.json({
         success: true,
+        // Return the plaintext secret only when it was generated server-side, so the
+        // client can register it with the provider's webhook configuration.
+        ...(webhookSecret.generated ? { webhookSecret: webhookSecret.plaintext } : {}),
         connection: saved
           ? {
               id: saved.id,

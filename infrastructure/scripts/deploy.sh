@@ -81,6 +81,11 @@ cmd_infra() {
   log "NOTE: Database is on Supabase — no RDS will be provisioned."
   cd "$INFRA_DIR"
 
+  # Resolve the immutable image tag (current commit). backend-stack.ts requires
+  # this context value and rejects an unset value or 'latest'.
+  IMAGE_TAG="${IMAGE_TAG:-$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)}"
+  log "Deploying with immutable image tag: $IMAGE_TAG"
+
   # Install CDK dependencies if needed
   [ -d node_modules ] || npm install
 
@@ -88,12 +93,13 @@ cmd_infra() {
     --require-approval broadening \
     --context envName="$ENV_NAME" \
     --context region="$AWS_REGION" \
+    --context imageTag="$IMAGE_TAG" \
     ${DOMAIN_NAME:+--context domainName="$DOMAIN_NAME"} \
     ${API_CERT_ARN:+--context apiCertificateArn="$API_CERT_ARN"} \
     ${CF_CERT_ARN:+--context cloudfrontCertificateArn="$CF_CERT_ARN"} \
     --outputs-file cdk-outputs.json
 
-  ok "Infrastructure deployed. Outputs saved to infrastructure/cdk-outputs.json"
+  ok "Infrastructure deployed (image tag $IMAGE_TAG). Outputs saved to infrastructure/cdk-outputs.json"
 }
 
 # ---------------------------------------------------------------------------
@@ -102,34 +108,29 @@ cmd_infra() {
 cmd_build() {
   log "Building and pushing Docker image..."
 
+  # Compute the immutable image tag (current commit) before any use.
+  TAG="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
+  export IMAGE_TAG="$TAG"
+  log "Image tag: $TAG"
+
   # Login to ECR
   aws ecr get-login-password --region "$AWS_REGION" | \
     docker login --username AWS --password-stdin "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
-  # Build backend image
+  # Build backend image with the immutable tag only.
   cd "$PROJECT_ROOT"
   docker build \
     --target backend-production \
     --platform linux/amd64 \
-    -t "${ECR_REPO}:latest" \
-    -t "${ECR_REPO}:$(git rev-parse --short HEAD)" \
+    -t "${ECR_REPO}:$TAG" \
     .
 
-  # Push to ECR
-  docker push "${ECR_REPO}:latest"
-  docker push "${ECR_REPO}:$(git rev-parse --short HEAD)"
+  # Push the immutable tag to ECR.
+  docker push "${ECR_REPO}:$TAG"
 
-  ok "Docker image pushed to ECR: ${ECR_REPO}:latest"
+  ok "Docker image pushed to ECR: ${ECR_REPO}:$TAG"
 
-  # Force new ECS deployment
-  log "Triggering ECS deployment..."
-  aws ecs update-service \
-    --cluster "$PREFIX" \
-    --service "${PREFIX}-api" \
-    --force-new-deployment \
-    --region "$AWS_REGION" > /dev/null
-
-  ok "ECS deployment triggered"
+  log "ECS rollout is handled by 'infra' deploying the new immutable tag (--context imageTag=$TAG)."
 }
 
 # ---------------------------------------------------------------------------
@@ -307,8 +308,10 @@ cmd_status() {
 # Full deployment
 # ---------------------------------------------------------------------------
 cmd_full() {
-  cmd_infra
+  # Build and push the immutable-tagged image first; cmd_build exports IMAGE_TAG
+  # so cmd_infra deploys that exact tag (CDK rolls the ECS service).
   cmd_build
+  cmd_infra
   cmd_migrate
   cmd_frontend
   echo ""

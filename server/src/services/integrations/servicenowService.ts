@@ -888,6 +888,7 @@ class ServiceNowService {
     // PULL: ServiceNow compliance incidents -> local
     if (direction === 'pull' || direction === 'bidirectional') {
       try {
+        const syncCreatorId = await this.resolveSyncCreatorId(organizationId);
         const sinceStr = since.toISOString().replace('T', ' ').slice(0, 19);
         const { records } = await this.queryTable(organizationId, 'incident', {
           sysparm_query: `category=Compliance^sys_updated_on>=${sinceStr}^ORDERBYDESCsys_updated_on`,
@@ -928,7 +929,7 @@ class ServiceNowService {
                   issueType: 'compliance',
                   priority: this.mapSnowPriorityToSeverity(record.priority) as any,
                   status: this.mapSnowStateToLocal(record.state),
-                  createdById: 'system',
+                  createdById: syncCreatorId,
                   tags: JSON.stringify({
                     source: 'servicenow',
                     snowSysId: record.sys_id,
@@ -1152,6 +1153,26 @@ class ServiceNowService {
       Cancelled: 'Closed',
     };
     return stateMap[state] || 'Open';
+  }
+
+  /**
+   * Resolve a real user id in the organization to own externally-synced incidents.
+   * `Issue.createdById` is a required FK to User, so a literal 'system' string
+   * would violate referential integrity. Prefer an admin/compliance owner.
+   */
+  private async resolveSyncCreatorId(organizationId: string): Promise<string> {
+    const creator = await prisma.user.findFirst({
+      where: { organizationId },
+      orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+    if (!creator) {
+      throw new AppError(
+        `Cannot sync ServiceNow incidents: organization ${organizationId} has no user to own synced issues`,
+        400
+      );
+    }
+    return creator.id;
   }
 
   private mapSnowPriorityToSeverity(priority?: string): 'Critical' | 'High' | 'Medium' | 'Low' {

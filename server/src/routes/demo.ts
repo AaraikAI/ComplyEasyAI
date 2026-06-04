@@ -7,7 +7,8 @@
 
 import { Router } from 'express';
 import { demoController } from '../controllers/demoController';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
+import { requirePlatformAdmin } from '../middleware/requirePlatformAdmin';
 import { asyncHandler, authAsyncHandler } from '../types/express';
 import { validateBody } from '../middleware/validate';
 import {
@@ -31,66 +32,66 @@ const router = Router();
 router.post('/request', validateBody(submitDemoRequestSchema), asyncHandler(demoController.submitDemoRequest.bind(demoController)));
 
 // ============================================================================
-// ADMIN ROUTES (Authentication required)
+// PLATFORM OPERATOR ROUTES (cross-tenant lead data — not org-scoped)
 // ============================================================================
 
 /**
  * @route   GET /api/demo/requests
  * @desc    Get all demo requests with filtering and pagination
- * @access  Admin only
+ * @access  Platform operators only
  */
 router.get(
   '/requests',
   authenticate,
-  authorize('admin'),
+  requirePlatformAdmin,
   authAsyncHandler(demoController.getAllDemoRequests.bind(demoController) as any)
 );
 
 /**
  * @route   GET /api/demo/requests/stats
  * @desc    Get demo request statistics
- * @access  Admin only
+ * @access  Platform operators only
  */
 router.get(
   '/requests/stats',
   authenticate,
-  authorize('admin'),
+  requirePlatformAdmin,
   authAsyncHandler(demoController.getDemoStats.bind(demoController) as any)
 );
 
 /**
  * @route   GET /api/demo/stats
  * @desc    Alias for /requests/stats — frontend uses this shorter path
- * @access  Admin only
+ * @access  Platform operators only
  */
 router.get(
   '/stats',
   authenticate,
-  authorize('admin'),
+  requirePlatformAdmin,
   authAsyncHandler(demoController.getDemoStats.bind(demoController) as any)
 );
 
 /**
  * @route   GET /api/demo/requests/:id
  * @desc    Get a single demo request
- * @access  Admin only
+ * @access  Platform operators only
  */
 router.get(
   '/requests/:id',
   authenticate,
-  authorize('admin'),
+  requirePlatformAdmin,
   authAsyncHandler(demoController.getDemoRequest.bind(demoController) as any)
 );
 
 /**
  * @route   PATCH /api/demo/requests/:id
  * @desc    Update a demo request (partial update)
- * @access  Admin only
+ * @access  Platform operators only
  */
 router.patch(
   '/requests/:id',
   authenticate,
-  authorize('admin'),
+  requirePlatformAdmin,
   validateBody(updateDemoRequestSchema),
   authAsyncHandler(demoController.updateDemoRequest.bind(demoController) as any)
 );
@@ -98,12 +99,12 @@ router.patch(
 /**
  * @route   PUT /api/demo/requests/:id
  * @desc    Update a demo request (backwards-compatible full replacement)
- * @access  Admin only
+ * @access  Platform operators only
  */
 router.put(
   '/requests/:id',
   authenticate,
-  authorize('admin'),
+  requirePlatformAdmin,
   validateBody(updateDemoRequestSchema),
   authAsyncHandler(demoController.updateDemoRequest.bind(demoController) as any)
 );
@@ -111,12 +112,12 @@ router.put(
 /**
  * @route   POST /api/demo/requests/:id/schedule
  * @desc    Schedule a demo
- * @access  Admin only
+ * @access  Platform operators only
  */
 router.post(
   '/requests/:id/schedule',
   authenticate,
-  authorize('admin'),
+  requirePlatformAdmin,
   validateBody(scheduleDemoSchema),
   authAsyncHandler(demoController.scheduleDemo.bind(demoController) as any)
 );
@@ -124,12 +125,12 @@ router.post(
 /**
  * @route   POST /api/demo/requests/:id/convert
  * @desc    Mark demo as converted
- * @access  Admin only
+ * @access  Platform operators only
  */
 router.post(
   '/requests/:id/convert',
   authenticate,
-  authorize('admin'),
+  requirePlatformAdmin,
   validateBody(convertDemoSchema),
   authAsyncHandler(demoController.markAsConverted.bind(demoController) as any)
 );
@@ -137,12 +138,12 @@ router.post(
 /**
  * @route   DELETE /api/demo/requests/:id
  * @desc    Delete a demo request
- * @access  Admin only
+ * @access  Platform operators only
  */
 router.delete(
   '/requests/:id',
   authenticate,
-  authorize('admin'),
+  requirePlatformAdmin,
   authAsyncHandler(demoController.deleteDemoRequest.bind(demoController) as any)
 );
 
