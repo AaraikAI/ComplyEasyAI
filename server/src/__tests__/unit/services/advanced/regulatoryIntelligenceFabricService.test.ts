@@ -52,12 +52,28 @@ jest.mock('axios', () => ({
   default: {
     get: jest.fn<any>().mockResolvedValue({
       data: '<html><body>Regulation text content</body></html>',
+      status: 200,
+      headers: {},
+    }),
+    request: jest.fn<any>().mockResolvedValue({
+      data: '<html><body>Regulation text content</body></html>',
+      status: 200,
+      headers: {},
     }),
   },
 }));
 
+// dns/promises is used by the SSRF-hardened outbound driver to resolve the host
+// and reject private addresses. Mock it to resolve a public address so the
+// guard passes for legitimate public hosts without a real network lookup.
+jest.mock('dns/promises', () => ({
+  __esModule: true,
+  lookup: jest.fn<any>().mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
+}));
+
 jest.mock('../../../../utils/urlValidator', () => ({
   isUrlSafe: jest.fn<any>().mockReturnValue(true),
+  isPrivateIp: jest.fn<any>().mockReturnValue(false),
 }));
 
 import regulatoryIntelligenceFabricService from '../../../../services/advanced/regulatoryIntelligenceFabricService';
@@ -113,10 +129,21 @@ describe('RegulatoryIntelligenceFabricService', () => {
     const axios = require('axios').default;
     axios.get.mockResolvedValue({
       data: '<html><body>Regulation text content</body></html>',
+      status: 200,
+      headers: {},
+    });
+    axios.request.mockResolvedValue({
+      data: '<html><body>Regulation text content</body></html>',
+      status: 200,
+      headers: {},
     });
 
-    const { isUrlSafe } = require('../../../../utils/urlValidator');
+    const dnsPromises = require('dns/promises');
+    dnsPromises.lookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
+
+    const { isUrlSafe, isPrivateIp } = require('../../../../utils/urlValidator');
     isUrlSafe.mockReturnValue(true);
+    isPrivateIp.mockReturnValue(false);
 
     const notificationService = require('../../../../services/notificationService').default;
     notificationService.sendNotification.mockResolvedValue(undefined);
@@ -199,7 +226,7 @@ describe('RegulatoryIntelligenceFabricService', () => {
 
     it('should handle URL fetch failure', async () => {
       const axios = require('axios').default;
-      axios.get.mockRejectedValueOnce(new Error('Network error'));
+      axios.request.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(
         regulatoryIntelligenceFabricService.ingestRegulation(

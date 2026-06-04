@@ -5,14 +5,19 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 // ---------- Mocks ----------
+// The service routes every outbound call through a private safeRequest() that
+// invokes axios.request({ method, url, ... }) — not axios.get/axios.post. These
+// per-test mocks hold the desired response/rejection per HTTP verb; the
+// axios.request mock (re-established in beforeEach because jest.config sets
+// resetMocks+restoreMocks) dispatches to the matching verb based on config.method.
 const mockAxiosGet = jest.fn() as jest.Mock<any>;
 const mockAxiosPost = jest.fn() as jest.Mock<any>;
+const mockAxiosRequest = jest.fn() as jest.Mock<any>;
 
 jest.mock('axios', () => ({
   __esModule: true,
   default: {
-    get: mockAxiosGet,
-    post: mockAxiosPost,
+    request: mockAxiosRequest,
   },
 }));
 
@@ -31,6 +36,19 @@ import patValidationService from '../../../../services/integrations/patValidatio
 describe('PATValidationService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // (Re)establish the dispatch implementation each test: jest.config.js sets
+    // resetMocks+restoreMocks, which wipes any implementation defined at module
+    // load. axios.request resolves/rejects via the verb-specific mock so the
+    // existing per-test mockAxiosGet/mockAxiosPost setup and call-argument
+    // assertions keep working. The verb mock is called as (url, config), mirroring
+    // the old axios.get(url, config) / axios.post(url, data, config) signatures.
+    mockAxiosRequest.mockImplementation((config: any) => {
+      if (config?.method === 'post') {
+        return mockAxiosPost(config?.url, config);
+      }
+      return mockAxiosGet(config?.url, config);
+    });
   });
 
   // -------------------------------------------------------------------
