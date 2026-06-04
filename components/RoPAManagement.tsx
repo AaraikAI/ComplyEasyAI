@@ -384,7 +384,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       // single quote so spreadsheet apps treat them as text, then the cell is
       // wrapped in double quotes with embedded quotes doubled.
       const escapeCsvCell = (value: string): string => {
-        let cell = value == null ? '' : String(value);
+        let cell = value === null || value === undefined ? '' : String(value);
         if (/^[=+\-@\t\r]/.test(cell)) {
           cell = `'${cell}`;
         }
