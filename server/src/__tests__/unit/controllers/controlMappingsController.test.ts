@@ -529,14 +529,23 @@ describe('ControlMappingsController', () => {
         'Content-Disposition',
         'attachment; filename=control-mappings.csv'
       );
+      // The shared convertToCSV escaper only quotes a cell when it contains the
+      // delimiter, a quote, or a newline. None of these values do, so the header
+      // and data rows are emitted unquoted, joined by '\n', with no BOM/CRLF.
       expect(mockRes.send).toHaveBeenCalledWith(
         expect.stringContaining('Source Framework,Source Control,Target Framework,Target Control,Mapping Type,Confidence')
       );
       expect(mockRes.send).toHaveBeenCalledWith(
-        expect.stringContaining('"NIST","AC-1","ISO 27001","A.9.1","equivalent","0.95"')
+        expect.stringContaining('NIST,AC-1,ISO 27001,A.9.1,equivalent,0.95')
       );
       expect(mockRes.send).toHaveBeenCalledWith(
-        expect.stringContaining('"NIST","AC-2","ISO 27001","A.9.2","partial","0.7"')
+        expect.stringContaining('NIST,AC-2,ISO 27001,A.9.2,partial,0.7')
+      );
+      // Exact full payload: header + two data rows, '\n'-joined, no trailing newline.
+      expect(mockRes.send).toHaveBeenCalledWith(
+        'Source Framework,Source Control,Target Framework,Target Control,Mapping Type,Confidence\n' +
+          'NIST,AC-1,ISO 27001,A.9.1,equivalent,0.95\n' +
+          'NIST,AC-2,ISO 27001,A.9.2,partial,0.7'
       );
     });
 
@@ -546,8 +555,10 @@ describe('ControlMappingsController', () => {
       await controlMappingsController.exportMappings(mockReq, mockRes, mockNext);
 
       expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'text/csv');
+      // Empty dataset: header-only via headers.map(escapeCsvCell).join(','),
+      // unquoted and with no trailing newline.
       expect(mockRes.send).toHaveBeenCalledWith(
-        'Source Framework,Source Control,Target Framework,Target Control,Mapping Type,Confidence\n'
+        'Source Framework,Source Control,Target Framework,Target Control,Mapping Type,Confidence'
       );
     });
 
@@ -565,8 +576,13 @@ describe('ControlMappingsController', () => {
 
       await controlMappingsController.exportMappings(mockReq, mockRes, mockNext);
 
+      // null confidence -> empty trailing cell; no cell needs quoting.
       expect(mockRes.send).toHaveBeenCalledWith(
-        expect.stringContaining('"NIST","AC-1","ISO 27001","A.9.1","equivalent",""')
+        expect.stringContaining('NIST,AC-1,ISO 27001,A.9.1,equivalent,')
+      );
+      expect(mockRes.send).toHaveBeenCalledWith(
+        'Source Framework,Source Control,Target Framework,Target Control,Mapping Type,Confidence\n' +
+          'NIST,AC-1,ISO 27001,A.9.1,equivalent,'
       );
     });
 

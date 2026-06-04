@@ -70,6 +70,7 @@ const createMockSoDViolation = (overrides: Record<string, unknown> = {}) => ({
   status: 'Open',
   riskLevel: 'High',
   mitigationAction: null,
+  compensatingControls: null,
   mitigatedBy: null,
   mitigatedAt: null,
   acceptedBy: null,
@@ -964,11 +965,9 @@ describe('SoDService', () => {
     describe('getCompensatingControls()', () => {
       it('should return compensating controls from violation', async () => {
         const violation = createMockSoDViolation({
-          mitigationAction: {
-            compensatingControls: [
-              { id: 'cc-1', name: 'Manager Review', controlType: 'Detective' },
-            ],
-          },
+          compensatingControls: [
+            { id: 'cc-1', name: 'Manager Review', controlType: 'Detective' },
+          ],
         });
         prismaMock.soDViolation.findFirst.mockResolvedValue(violation);
 
@@ -989,7 +988,7 @@ describe('SoDService', () => {
 
     describe('addCompensatingControl()', () => {
       it('should add compensating control to violation', async () => {
-        const violation = createMockSoDViolation({ mitigationAction: null });
+        const violation = createMockSoDViolation({ compensatingControls: null });
         prismaMock.soDViolation.findFirst.mockResolvedValue(violation);
         prismaMock.soDViolation.update.mockResolvedValue(violation);
 
@@ -1017,11 +1016,9 @@ describe('SoDService', () => {
     describe('updateCompensatingControl()', () => {
       it('should update existing compensating control', async () => {
         const violation = createMockSoDViolation({
-          mitigationAction: {
-            compensatingControls: [
-              { id: 'cc-1', name: 'Old Name', controlType: 'Detective' },
-            ],
-          },
+          compensatingControls: [
+            { id: 'cc-1', name: 'Old Name', controlType: 'Detective' },
+          ],
         });
         prismaMock.soDViolation.findFirst.mockResolvedValue(violation);
         prismaMock.soDViolation.update.mockResolvedValue(violation);
@@ -1039,7 +1036,7 @@ describe('SoDService', () => {
 
       it('should throw error when control not found', async () => {
         const violation = createMockSoDViolation({
-          mitigationAction: { compensatingControls: [] },
+          compensatingControls: [],
         });
         prismaMock.soDViolation.findFirst.mockResolvedValue(violation);
 
@@ -1058,12 +1055,10 @@ describe('SoDService', () => {
     describe('deleteCompensatingControl()', () => {
       it('should delete compensating control', async () => {
         const violation = createMockSoDViolation({
-          mitigationAction: {
-            compensatingControls: [
-              { id: 'cc-1', name: 'Control 1' },
-              { id: 'cc-2', name: 'Control 2' },
-            ],
-          },
+          compensatingControls: [
+            { id: 'cc-1', name: 'Control 1' },
+            { id: 'cc-2', name: 'Control 2' },
+          ],
         });
         prismaMock.soDViolation.findFirst.mockResolvedValue(violation);
         prismaMock.soDViolation.update.mockResolvedValue(violation);

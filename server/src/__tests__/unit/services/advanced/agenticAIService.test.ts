@@ -39,6 +39,8 @@ describe('AgenticAIService', () => {
     (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.complianceFramework.count as jest.Mock<any>).mockResolvedValue(0);
     (prismaMock.riskItem.findUnique as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.riskItem.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.user.findFirst as jest.Mock<any>).mockResolvedValue(null);
     (prismaMock.agenticAction.create as jest.Mock<any>).mockResolvedValue({
       id: 'action-1',
       status: 'approved',
@@ -110,7 +112,7 @@ describe('AgenticAIService', () => {
         organizationId: orgId,
       };
 
-      (prismaMock.riskItem.findUnique as jest.Mock<any>).mockResolvedValue(mockRisk);
+      (prismaMock.riskItem.findFirst as jest.Mock<any>).mockResolvedValue(mockRisk);
       (prismaMock.user.count as jest.Mock<any>).mockResolvedValue(5);
 
       const result = await agenticAIService.estimateBlastRadius(orgId, {
@@ -123,10 +125,14 @@ describe('AgenticAIService', () => {
       expect(result.affectedRisks).toBe(1);
       expect(result.riskLevel).toBe('high');
       expect(result.rollbackComplexity).toBe('moderate');
+      // Source now scopes the risk lookup to the organization (org-scoped findFirst)
+      expect(prismaMock.riskItem.findFirst).toHaveBeenCalledWith({
+        where: { id: 'risk-1', organizationId: orgId },
+      });
     });
 
     it('should throw error when risk not found for risk_mitigation', async () => {
-      (prismaMock.riskItem.findUnique as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.riskItem.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         agenticAIService.estimateBlastRadius(orgId, {
