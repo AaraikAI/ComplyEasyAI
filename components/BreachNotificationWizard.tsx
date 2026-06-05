@@ -486,11 +486,13 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
   }, [classification.discoveryDate, detectedJurisdictions]);
 
   const generateLetters = useCallback(() => {
+    // Template-based letter generation: synchronous string substitution against
+    // the jurisdiction templates. No external model/API call is involved.
     setIsGenerating(true);
-    setTimeout(() => {
+    try {
       const letters = detectedJurisdictions.map(req => {
         const matchingTemplate = templates.find(t => t.regulation === req.regulation.split(' ')[0] || t.jurisdiction === req.jurisdiction);
-        let content = matchingTemplate?.content || `[AI-Generated Notification for ${req.regulation}]\n\nDear ${req.authority},\n\nWe are writing to notify you of a ${classification.type.replace('_', ' ')} discovered on ${classification.discoveryDate}.\n\nAffected records: ${impact.recordsAffected.toLocaleString()}\nData types: ${impact.dataTypesAffected.join(', ')}\nGeographic scope: ${impact.geographicScope.join(', ')}\n\nThis notification is submitted in accordance with ${req.regulation}.`;
+        let content = matchingTemplate?.content || `[Notification for ${req.regulation}]\n\nDear ${req.authority},\n\nWe are writing to notify you of a ${classification.type.replace('_', ' ')} discovered on ${classification.discoveryDate}.\n\nAffected records: ${impact.recordsAffected.toLocaleString()}\nData types: ${impact.dataTypesAffected.join(', ')}\nGeographic scope: ${impact.geographicScope.join(', ')}\n\nThis notification is submitted in accordance with ${req.regulation}.`;
         content = content
           .replace('[BREACH_TYPE]', classification.type.replace('_', ' '))
           .replace('[DISCOVERY_DATE]', classification.discoveryDate)
@@ -510,8 +512,9 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
         return { jurisdiction: `${req.jurisdiction} - ${req.regulation}`, content };
       });
       setDraftedLetters(letters);
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   }, [detectedJurisdictions, classification, impact, templates]);
 
   // Persists a notification submission against the active breach incident. If no
@@ -1139,7 +1142,7 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Notification Letter Drafter</h3>
-        <p className="text-sm text-gray-600 mb-4">AI-generated notification templates for each applicable jurisdiction.</p>
+        <p className="text-sm text-gray-600 mb-4">Template-based notification letters for each applicable jurisdiction.</p>
       </div>
 
       {draftedLetters.length === 0 ? (

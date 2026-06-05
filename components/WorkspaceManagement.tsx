@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
-import ReactMarkdown from 'react-markdown';
 import {
   ArrowLeft, Plus, Loader2, Search, X, Building2, Users, Shield,
   Brain, TrendingUp, BarChart3, GitBranch, Copy, UserPlus, ChevronRight,

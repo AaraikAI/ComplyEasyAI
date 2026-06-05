@@ -164,8 +164,17 @@ export class QuestionnaireService {
     const responses: QuestionnaireResponse[] = [];
     let totalConfidence = 0;
 
+    // Bound the number of external AI calls issued in a single request so a very
+    // large questionnaire cannot tie up the request thread or exceed Gemini quota.
+    // Remaining questions can be processed in a subsequent invocation.
+    const MAX_AI_QUESTIONS_PER_CALL = 50;
+    const questionsToProcess = questionnaire.questions.slice(
+      0,
+      MAX_AI_QUESTIONS_PER_CALL
+    );
+
     // Generate AI responses for each question
-    for (const question of questionnaire.questions) {
+    for (const question of questionsToProcess) {
       const aiResponse = await this.generateSingleAIResponse(
         question.questionText,
         question.category || 'General',
@@ -188,8 +197,8 @@ export class QuestionnaireService {
     }
 
     // Update questionnaire with AI assistance flag
-    const averageConfidence = questionnaire.questions.length > 0
-      ? totalConfidence / questionnaire.questions.length
+    const averageConfidence = questionsToProcess.length > 0
+      ? totalConfidence / questionsToProcess.length
       : 0;
 
     await prisma.questionnaire.update({
@@ -208,7 +217,8 @@ export class QuestionnaireService {
       resourceType: 'Questionnaire',
       resourceId: questionnaireId,
       metadata: {
-        questionsCount: questionnaire.questions.length,
+        questionsCount: questionsToProcess.length,
+        totalQuestions: questionnaire.questions.length,
         averageConfidence,
       },
     });

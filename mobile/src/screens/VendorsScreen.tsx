@@ -101,8 +101,21 @@ export default function VendorsScreen({ navigation }: any) {
     loadingMore,
   } = usePaginatedApi<Vendor>(
     (page, pageSize) =>
-      api.vendors.list({ page, pageSize, sortBy: 'name', sortOrder: 'asc' }),
-    20
+      api.vendors.list({
+        page,
+        pageSize,
+        sortBy: 'name',
+        sortOrder: 'asc',
+        // Apply the risk filter server-side so results cover the whole dataset,
+        // not just the currently-loaded pages. The backend expects the
+        // VendorRiskLevel enum in upper case.
+        ...(riskFilter !== 'all'
+          ? { riskLevel: riskFilter.toUpperCase() }
+          : {}),
+      }),
+    20,
+    // Reload from page 1 whenever the server-side risk filter changes.
+    { deps: [riskFilter] }
   );
 
   const { mutate: deleteVendor, loading: deleting } = useMutation(
@@ -150,7 +163,10 @@ export default function VendorsScreen({ navigation }: any) {
     );
   }, [createVendor, refetch]);
 
-  // Client-side filtering on loaded data
+  // Risk filtering is applied server-side via the paginated query above so it
+  // spans the whole dataset. The free-text search has no backend parameter, so
+  // it is applied client-side and therefore only narrows the pages already
+  // loaded into the infinite-scroll list.
   const filteredVendors = useMemo(() => {
     let result = vendors || [];
 
@@ -164,14 +180,8 @@ export default function VendorsScreen({ navigation }: any) {
       );
     }
 
-    if (riskFilter !== 'all') {
-      result = result.filter(
-        (v) => v.riskLevel?.toLowerCase() === riskFilter
-      );
-    }
-
     return result;
-  }, [vendors, search, riskFilter]);
+  }, [vendors, search]);
 
   const handleDelete = useCallback(
     (vendor: Vendor) => {

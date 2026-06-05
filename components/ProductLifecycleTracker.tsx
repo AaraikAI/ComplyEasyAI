@@ -626,7 +626,10 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
   }, [selectedProduct, usingApiData]);
 
   const selectedProductReqs = useMemo(() => {
-    if (usingApiData) return REGULATORY_REQUIREMENTS.filter(r => r.productTypes.includes(selectedProduct?.type ?? ''));
+    // For real (API-backed) products, never substitute the demo regulatory catalog:
+    // its statuses are illustrative and would be shown as that product's real Compliance
+    // Matrix. Until the backend returns per-product requirements, show an empty state.
+    if (usingApiData) return [] as RegulatoryRequirement[];
     if (!selectedProduct) return REGULATORY_REQUIREMENTS;
     return REGULATORY_REQUIREMENTS.filter(r => r.productTypes.includes(selectedProduct.type));
   }, [selectedProduct, usingApiData]);
@@ -1247,7 +1250,10 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
   // ---------------------------------------------------------------------------
   const renderComplianceMatrix = () => {
     const product = selectedProduct;
-    const reqs = product ? REGULATORY_REQUIREMENTS.filter(r => r.productTypes.includes(product.type)) : REGULATORY_REQUIREMENTS;
+    // Use the shared selector so real (API-backed) products never render the illustrative
+    // demo catalog as their compliance status; it returns [] until the backend supplies
+    // per-product requirements.
+    const reqs = selectedProductReqs;
     const regulations = [...new Set(reqs.map(r => r.regulation))];
 
     const statusCounts = {
@@ -1363,6 +1369,15 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
             </div>
           );
         })}
+
+        {reqs.length === 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 text-center">
+            <Shield className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No regulatory requirements are recorded for this product yet.
+            </p>
+          </div>
+        )}
       </div>
     );
   };

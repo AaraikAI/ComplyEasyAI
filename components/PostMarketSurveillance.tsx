@@ -377,6 +377,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [selectedReport, setSelectedReport] = useState<SurveillanceReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -1052,9 +1053,13 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
         </div>
       )}
 
-      {/* Recall Readiness Checklist */}
+      {/* Recall Readiness Checklist (illustrative template) */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recall Readiness Checklist</h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-lg font-semibold text-gray-900">Recall Readiness Checklist</h3>
+          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full font-medium">Template</span>
+        </div>
+        <p className="text-xs text-gray-400 mb-4">Reference checklist of recommended recall-preparedness items. Statuses shown are illustrative and not derived from your organization&apos;s live data.</p>
         <div className="space-y-2">
           {[
             { item: 'Recall procedure documented and approved', status: true },
@@ -1080,6 +1085,21 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
   // ---------------------------------------------------------------------------
   // Render: Reports Tab
   // ---------------------------------------------------------------------------
+  // Export the report metadata as a downloadable JSON file (client-side; no
+  // dedicated report-retrieval endpoint exists, so the loaded report record is
+  // serialized directly).
+  const handleDownloadReport = useCallback((report: SurveillanceReport) => {
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${report.title.replace(/\s+/g, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
   const renderReports = () => (
     <div className="space-y-6">
       {/* Stats */}
@@ -1140,8 +1160,22 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
                   )}
                   <StatusBadge status={report.status} />
                   <div className="flex gap-1">
-                    <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><Eye size={14} className="text-gray-500" /></button>
-                    <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><Download size={14} className="text-gray-500" /></button>
+                    <button
+                      type="button"
+                      title="View report"
+                      onClick={() => setSelectedReport(report)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <Eye size={14} className="text-gray-500" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Download report"
+                      onClick={() => handleDownloadReport(report)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <Download size={14} className="text-gray-500" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1501,6 +1535,33 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       {/* Modals */}
       {renderIncidentModal()}
       {renderReportModal()}
+
+      {/* Report Detail Modal */}
+      {selectedReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setSelectedReport(null)}>
+          <div className="bg-white rounded-xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">{selectedReport.title}</h3>
+              <button type="button" onClick={() => setSelectedReport(null)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+            </div>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between"><dt className="text-gray-500">Type</dt><dd className="text-gray-900 font-medium capitalize">{selectedReport.reportType.replace('_', ' ')}</dd></div>
+              <div className="flex justify-between"><dt className="text-gray-500">Period</dt><dd className="text-gray-900 font-medium">{selectedReport.period}</dd></div>
+              <div className="flex justify-between items-center"><dt className="text-gray-500">Status</dt><dd><StatusBadge status={selectedReport.status} /></dd></div>
+              <div className="flex justify-between"><dt className="text-gray-500">Author</dt><dd className="text-gray-900 font-medium">{selectedReport.author}</dd></div>
+              <div className="flex justify-between"><dt className="text-gray-500">Created</dt><dd className="text-gray-900 font-medium">{selectedReport.createdDate}</dd></div>
+              {selectedReport.pages != null && <div className="flex justify-between"><dt className="text-gray-500">Pages</dt><dd className="text-gray-900 font-medium">{selectedReport.pages}</dd></div>}
+              {selectedReport.submittedTo && <div className="flex justify-between"><dt className="text-gray-500">Submitted To</dt><dd className="text-gray-900 font-medium">{selectedReport.submittedTo}</dd></div>}
+            </dl>
+            <div className="flex justify-end gap-2 mt-6">
+              <button type="button" onClick={() => handleDownloadReport(selectedReport)} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700">
+                <Download size={14} /> Download
+              </button>
+              <button type="button" onClick={() => setSelectedReport(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

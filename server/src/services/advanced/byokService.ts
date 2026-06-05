@@ -172,17 +172,22 @@ class BYOKService {
    * SECURITY: Uses axios with SSRF protection instead of node-vault/postman-request
    */
   private getVaultClient(vaultUrl: string, token?: string): AxiosInstance {
-    if (!this.vaultClients.has(vaultUrl)) {
-      // SECURITY: Validate Vault URL to prevent SSRF
-      if (!isUrlSafe(vaultUrl)) {
-        throw new AppError('Invalid Vault URL for security reasons (SSRF protection)', 403);
-      }
+    // SECURITY: Validate Vault URL to prevent SSRF
+    if (!isUrlSafe(vaultUrl)) {
+      throw new AppError('Invalid Vault URL for security reasons (SSRF protection)', 403);
+    }
 
-      const vaultToken = token || process.env.VAULT_TOKEN;
-      if (!vaultToken) {
-        throw new AppError('HashiCorp Vault token is required', 400);
-      }
+    const vaultToken = token || process.env.VAULT_TOKEN;
+    if (!vaultToken) {
+      throw new AppError('HashiCorp Vault token is required', 400);
+    }
 
+    // Key the cache on URL + token hash so two organizations sharing a Vault URL
+    // with different tokens never reuse each other's authenticated client.
+    const tokenHash = crypto.createHash('sha256').update(vaultToken).digest('hex');
+    const cacheKey = `${vaultUrl}:${tokenHash}`;
+
+    if (!this.vaultClients.has(cacheKey)) {
       const client = axios.create({
         baseURL: vaultUrl,
         headers: {
@@ -192,10 +197,10 @@ class BYOKService {
         timeout: 30000,
       });
 
-      this.vaultClients.set(vaultUrl, client);
+      this.vaultClients.set(cacheKey, client);
     }
 
-    return this.vaultClients.get(vaultUrl)!;
+    return this.vaultClients.get(cacheKey)!;
   }
 
   /**

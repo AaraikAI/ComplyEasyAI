@@ -2,6 +2,10 @@
 
 # Open Policy Agent (OPA) Server Setup Script
 # Sets up OPA for Compliance-as-Code service
+#
+# Note: this is an interactive local developer convenience script, not a CI/CD
+# or production deployment artifact. The openpolicyagent/opa:latest image tag is
+# acceptable here; pin to a specific OPA version if reproducibility is required.
 
 set -e
 

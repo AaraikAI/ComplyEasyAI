@@ -958,6 +958,44 @@ const BYOKTab: React.FC = () => {
     }
   };
 
+  const handleRotateKey = (key: any) => {
+    // Rotation re-encrypts data from an old key to a freshly provisioned key,
+    // so it begins by generating the replacement key for the same provider.
+    setKeyForm({
+      provider: (key.provider as typeof keyForm.provider) || 'aws_kms',
+      region: key.region && key.region !== 'N/A' ? key.region : '',
+      vaultUrl: key.vaultUrl || '',
+      keyName: '',
+      description: `Rotation of ${key.keyId || key.id}`,
+      projectId: key.projectId || '',
+      location: key.location || '',
+      keyRing: key.keyRing || '',
+      keyId: '',
+    });
+    setShowKeyModal(true);
+    toast('Generate the replacement key to complete rotation.');
+  };
+
+  const handleDeleteKey = async (key: any) => {
+    if (!window.confirm('Schedule deletion for this encryption key? This cannot be undone once the pending window elapses.')) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.security.deleteBYOKKey(key.keyId || key.id, {
+        provider: key.provider,
+        region: key.region && key.region !== 'N/A' ? key.region : undefined,
+        vaultUrl: key.vaultUrl || undefined,
+      });
+      await loadKeys();
+      toast.success('Key deletion scheduled.');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete key');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -994,10 +1032,22 @@ const BYOKTab: React.FC = () => {
                   <p className="text-sm text-slate-600">{key.provider} • {key.region || 'N/A'}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="p-2 hover:bg-slate-100 rounded">
+                  <button
+                    type="button"
+                    onClick={() => handleRotateKey(key)}
+                    title="Rotate key"
+                    aria-label="Rotate key"
+                    className="p-2 hover:bg-slate-100 rounded"
+                  >
                     <RotateCw className="w-4 h-4" />
                   </button>
-                  <button className="p-2 hover:bg-slate-100 rounded">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteKey(key)}
+                    title="Delete key"
+                    aria-label="Delete key"
+                    className="p-2 hover:bg-slate-100 rounded"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>

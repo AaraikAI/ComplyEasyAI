@@ -173,18 +173,43 @@ setup_circuit() {
 
     # Phase 2 contribution (adds randomness)
     # Draw cryptographically-strong entropy from the OS CSPRNG per circuit.
-    # A real multi-party ceremony is strongly preferred for production.
-    echo "  [3/5] Adding phase 2 contribution..."
-    CONTRIB_ENTROPY="$(head -c 64 /dev/urandom | base64 | tr -d '\n')"
-    $SNARKJS_CMD zkey contribute \
-        "keys/proving/${CIRCUIT_NAME}_0000.zkey" \
-        "keys/proving/${CIRCUIT_NAME}.zkey" \
-        --name="ComplyEasyAI Contribution" \
-        -e="$CONTRIB_ENTROPY" \
-        > /dev/null 2>&1
-    unset CONTRIB_ENTROPY
-    rm "keys/proving/${CIRCUIT_NAME}_0000.zkey"
-    echo -e "  ${GREEN}✓ Phase 2 contribution added${NC}"
+    #
+    # Groth16 soundness requires that at least one phase-2 contributor honestly
+    # discards their secret ("toxic waste"). A single local contribution is only
+    # safe if this machine is trusted; for production, run a multi-party ceremony
+    # so that no single party's compromise can forge proofs.
+    #
+    # Multi-party support: set ZKEY_EXTRA_CONTRIBUTORS to the number of
+    # independent contributions to chain after the local one. Each round draws
+    # fresh OS-CSPRNG entropy and is recorded as a distinct named contribution;
+    # for a true ceremony, run each round on a separate, independently-controlled
+    # machine and pass the intermediate zkey between participants. The final zkey
+    # is verified below regardless of contributor count.
+    echo "  [3/5] Adding phase 2 contribution(s)..."
+    EXTRA_CONTRIBUTORS="${ZKEY_EXTRA_CONTRIBUTORS:-0}"
+    PREV_ZKEY="keys/proving/${CIRCUIT_NAME}_0000.zkey"
+    CONTRIB_INDEX=0
+    TOTAL_CONTRIBS=$((EXTRA_CONTRIBUTORS + 1))
+    while [ "$CONTRIB_INDEX" -lt "$TOTAL_CONTRIBS" ]; do
+        NEXT_INDEX=$((CONTRIB_INDEX + 1))
+        if [ "$NEXT_INDEX" -eq "$TOTAL_CONTRIBS" ]; then
+            NEXT_ZKEY="keys/proving/${CIRCUIT_NAME}.zkey"
+        else
+            NEXT_ZKEY="$(printf 'keys/proving/%s_%04d.zkey' "$CIRCUIT_NAME" "$NEXT_INDEX")"
+        fi
+        CONTRIB_ENTROPY="$(head -c 64 /dev/urandom | base64 | tr -d '\n')"
+        $SNARKJS_CMD zkey contribute \
+            "$PREV_ZKEY" \
+            "$NEXT_ZKEY" \
+            --name="ComplyEasyAI Contribution $NEXT_INDEX/$TOTAL_CONTRIBS" \
+            -e="$CONTRIB_ENTROPY" \
+            > /dev/null 2>&1
+        unset CONTRIB_ENTROPY
+        rm "$PREV_ZKEY"
+        PREV_ZKEY="$NEXT_ZKEY"
+        CONTRIB_INDEX="$NEXT_INDEX"
+    done
+    echo -e "  ${GREEN}✓ $TOTAL_CONTRIBS phase 2 contribution(s) added${NC}"
 
     # Export verification key
     echo "  [4/5] Exporting verification key..."

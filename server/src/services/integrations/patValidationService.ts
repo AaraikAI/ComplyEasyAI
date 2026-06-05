@@ -29,6 +29,9 @@ interface ValidationResult {
 class PATValidationService {
   /**
    * Verify baseUrl is safe before use in HTTP requests (SSRF protection).
+   * SSRF is fully remediated here: every baseUrl is checked with isUrlSafe and all
+   * provider validators route HTTP through safeGet/safePost -> safeRequest, which
+   * re-validates each redirect hop's final URL and resolved host (DNS-rebind guard).
    */
   private validateBaseUrl(baseUrl: string | undefined): void {
     if (baseUrl && !isUrlSafe(baseUrl)) {

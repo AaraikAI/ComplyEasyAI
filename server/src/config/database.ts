@@ -188,6 +188,11 @@ const orgScopedPrisma = basePrisma.$extends({
       // Wrap the single operation in an interactive transaction that first
       // binds the org GUC (transaction-local), then executes the query on the
       // transactional connection so the policy sees the correct org.
+      // Note: this adds a BEGIN + set_config round-trip per op and pins a pooled
+      // connection for the query's duration; size connection_limit accordingly
+      // under load. The GUC name 'app.current_org' is the contract read by
+      // public.get_current_organization_id() in the RLS policy SQL — keep them in
+      // sync. App-layer organizationId filters remain the primary tenant boundary.
       return basePrisma.$transaction(async (tx: any) => {
         await tx.$executeRaw`SELECT set_config('app.current_org', ${org}, true)`;
         const delegate = model ? (tx as any)[lowerFirst(model)] : tx;

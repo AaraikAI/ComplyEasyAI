@@ -134,9 +134,10 @@ inhibit_rules:
       severity: 'warning'
     equal: ['alertname']
 
-  # Inhibit all alerts if the service is down
+  # Inhibit downstream API alerts when the backing database is down,
+  # since those API failures are a cascade of the PostgresDown condition.
   - source_match:
-      alertname: 'APIDown'
+      alertname: 'PostgresDown'
     target_match_re:
       alertname: 'API.*'
     equal: ['instance']

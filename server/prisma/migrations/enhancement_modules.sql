@@ -5,9 +5,9 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ── Incident Management ───────────────────────────────────────────
-CREATE TYPE "IncidentSeverity" AS ENUM ('SEV1', 'SEV2', 'SEV3', 'SEV4');
-CREATE TYPE "IncidentStatus" AS ENUM ('DETECTED', 'TRIAGED', 'CONTAINED', 'ERADICATED', 'RECOVERED', 'CLOSED', 'POST_MORTEM');
-CREATE TYPE "IncidentCategory" AS ENUM ('DATA_BREACH', 'MALWARE', 'PHISHING', 'UNAUTHORIZED_ACCESS', 'DDOS', 'INSIDER_THREAT', 'SYSTEM_FAILURE', 'POLICY_VIOLATION', 'PHYSICAL_SECURITY', 'OTHER');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'IncidentSeverity') THEN CREATE TYPE "IncidentSeverity" AS ENUM ('SEV1', 'SEV2', 'SEV3', 'SEV4'); END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'IncidentStatus') THEN CREATE TYPE "IncidentStatus" AS ENUM ('DETECTED', 'TRIAGED', 'CONTAINED', 'ERADICATED', 'RECOVERED', 'CLOSED', 'POST_MORTEM'); END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'IncidentCategory') THEN CREATE TYPE "IncidentCategory" AS ENUM ('DATA_BREACH', 'MALWARE', 'PHISHING', 'UNAUTHORIZED_ACCESS', 'DDOS', 'INSIDER_THREAT', 'SYSTEM_FAILURE', 'POLICY_VIOLATION', 'PHYSICAL_SECURITY', 'OTHER'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "Incident" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -63,9 +63,9 @@ CREATE TABLE IF NOT EXISTS "IncidentTask" (
 CREATE INDEX IF NOT EXISTS "IncidentTask_incidentId_idx" ON "IncidentTask"("incidentId");
 
 -- ── IT Asset Management ───────────────────────────────────────────
-CREATE TYPE "AssetType" AS ENUM ('HARDWARE', 'SOFTWARE', 'DATA', 'NETWORK', 'CLOUD_SERVICE', 'PEOPLE', 'FACILITY');
-CREATE TYPE "DataClassification" AS ENUM ('PUBLIC', 'INTERNAL', 'CONFIDENTIAL', 'RESTRICTED');
-CREATE TYPE "AssetStatus" AS ENUM ('ACTIVE', 'DECOMMISSIONED', 'IN_MAINTENANCE', 'PLANNED');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AssetType') THEN CREATE TYPE "AssetType" AS ENUM ('HARDWARE', 'SOFTWARE', 'DATA', 'NETWORK', 'CLOUD_SERVICE', 'PEOPLE', 'FACILITY'); END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'DataClassification') THEN CREATE TYPE "DataClassification" AS ENUM ('PUBLIC', 'INTERNAL', 'CONFIDENTIAL', 'RESTRICTED'); END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AssetStatus') THEN CREATE TYPE "AssetStatus" AS ENUM ('ACTIVE', 'DECOMMISSIONED', 'IN_MAINTENANCE', 'PLANNED'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "Asset" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -95,8 +95,8 @@ CREATE INDEX IF NOT EXISTS "Asset_type_idx" ON "Asset"("type");
 CREATE INDEX IF NOT EXISTS "Asset_classification_idx" ON "Asset"("classification");
 
 -- ── Compliance Calendar ───────────────────────────────────────────
-CREATE TYPE "DeadlineType" AS ENUM ('AUDIT_DATE', 'CERTIFICATION_RENEWAL', 'POLICY_REVIEW', 'RISK_REASSESSMENT', 'REGULATORY_FILING', 'TRAINING_DUE', 'EVIDENCE_REFRESH', 'VENDOR_REVIEW', 'BOARD_REPORT', 'INCIDENT_REPORT_DEADLINE', 'DSAR_RESPONSE', 'BREACH_NOTIFICATION', 'CUSTOM');
-CREATE TYPE "DeadlineStatus" AS ENUM ('UPCOMING', 'DUE_SOON', 'OVERDUE', 'COMPLETED', 'CANCELLED');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'DeadlineType') THEN CREATE TYPE "DeadlineType" AS ENUM ('AUDIT_DATE', 'CERTIFICATION_RENEWAL', 'POLICY_REVIEW', 'RISK_REASSESSMENT', 'REGULATORY_FILING', 'TRAINING_DUE', 'EVIDENCE_REFRESH', 'VENDOR_REVIEW', 'BOARD_REPORT', 'INCIDENT_REPORT_DEADLINE', 'DSAR_RESPONSE', 'BREACH_NOTIFICATION', 'CUSTOM'); END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'DeadlineStatus') THEN CREATE TYPE "DeadlineStatus" AS ENUM ('UPCOMING', 'DUE_SOON', 'OVERDUE', 'COMPLETED', 'CANCELLED'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "ComplianceDeadline" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -148,8 +148,8 @@ CREATE TABLE IF NOT EXISTS "MaturityDomain" (
 CREATE INDEX IF NOT EXISTS "MaturityDomain_assessmentId_idx" ON "MaturityDomain"("assessmentId");
 
 -- ── Business Impact Analysis ──────────────────────────────────────
-CREATE TYPE "Criticality" AS ENUM ('MISSION_CRITICAL', 'BUSINESS_CRITICAL', 'IMPORTANT', 'STANDARD', 'LOW_PRIORITY');
-CREATE TYPE "DependencyType" AS ENUM ('INTERNAL_PROCESS', 'VENDOR_SERVICE', 'TECHNOLOGY', 'PERSONNEL', 'FACILITY');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'Criticality') THEN CREATE TYPE "Criticality" AS ENUM ('MISSION_CRITICAL', 'BUSINESS_CRITICAL', 'IMPORTANT', 'STANDARD', 'LOW_PRIORITY'); END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'DependencyType') THEN CREATE TYPE "DependencyType" AS ENUM ('INTERNAL_PROCESS', 'VENDOR_SERVICE', 'TECHNOLOGY', 'PERSONNEL', 'FACILITY'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "BusinessProcess" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS "ProcessDependency" (
 CREATE INDEX IF NOT EXISTS "ProcessDependency_processId_idx" ON "ProcessDependency"("processId");
 
 -- ── Control Effectiveness ─────────────────────────────────────────
-CREATE TYPE "EffectivenessRating" AS ENUM ('EFFECTIVE', 'PARTIALLY_EFFECTIVE', 'INEFFECTIVE', 'NOT_TESTED');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'EffectivenessRating') THEN CREATE TYPE "EffectivenessRating" AS ENUM ('EFFECTIVE', 'PARTIALLY_EFFECTIVE', 'INEFFECTIVE', 'NOT_TESTED'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "ControlEffectivenessRecord" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -203,7 +203,7 @@ CREATE INDEX IF NOT EXISTS "ControlEffectivenessRecord_organizationId_idx" ON "C
 CREATE INDEX IF NOT EXISTS "ControlEffectivenessRecord_controlId_idx" ON "ControlEffectivenessRecord"("controlId");
 
 -- ── Compliance Cost ───────────────────────────────────────────────
-CREATE TYPE "CostCategory" AS ENUM ('TOOL_LICENSE', 'CONSULTANT', 'AUDIT_FEE', 'TRAINING', 'PERSONNEL', 'REMEDIATION', 'INSURANCE', 'CERTIFICATION', 'LEGAL', 'OTHER');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'CostCategory') THEN CREATE TYPE "CostCategory" AS ENUM ('TOOL_LICENSE', 'CONSULTANT', 'AUDIT_FEE', 'TRAINING', 'PERSONNEL', 'REMEDIATION', 'INSURANCE', 'CERTIFICATION', 'LEGAL', 'OTHER'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "ComplianceCost" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -227,7 +227,7 @@ CREATE INDEX IF NOT EXISTS "ComplianceCost_organizationId_idx" ON "ComplianceCos
 CREATE INDEX IF NOT EXISTS "ComplianceCost_category_idx" ON "ComplianceCost"("category");
 
 -- ── Exception Management ──────────────────────────────────────────
-CREATE TYPE "ExceptionStatus" AS ENUM ('REQUESTED', 'APPROVED', 'REJECTED', 'EXPIRED', 'RENEWED');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ExceptionStatus') THEN CREATE TYPE "ExceptionStatus" AS ENUM ('REQUESTED', 'APPROVED', 'REJECTED', 'EXPIRED', 'RENEWED'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "ComplianceException" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -252,8 +252,8 @@ CREATE INDEX IF NOT EXISTS "ComplianceException_status_idx" ON "ComplianceExcept
 CREATE INDEX IF NOT EXISTS "ComplianceException_expiryDate_idx" ON "ComplianceException"("expiryDate");
 
 -- ── Certification Lifecycle ───────────────────────────────────────
-CREATE TYPE "CertStatus" AS ENUM ('CERT_ACTIVE', 'EXPIRING_SOON', 'CERT_EXPIRED', 'SUSPENDED', 'REVOKED', 'PENDING');
-CREATE TYPE "CertAuditType" AS ENUM ('INITIAL', 'SURVEILLANCE_1', 'SURVEILLANCE_2', 'RECERTIFICATION');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'CertStatus') THEN CREATE TYPE "CertStatus" AS ENUM ('CERT_ACTIVE', 'EXPIRING_SOON', 'CERT_EXPIRED', 'SUSPENDED', 'REVOKED', 'PENDING'); END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'CertAuditType') THEN CREATE TYPE "CertAuditType" AS ENUM ('INITIAL', 'SURVEILLANCE_1', 'SURVEILLANCE_2', 'RECERTIFICATION'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "Certification" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -290,8 +290,8 @@ CREATE TABLE IF NOT EXISTS "CertAudit" (
 CREATE INDEX IF NOT EXISTS "CertAudit_certificationId_idx" ON "CertAudit"("certificationId");
 
 -- ── Regulatory Change Detection ───────────────────────────────────
-CREATE TYPE "RegChangeType" AS ENUM ('NEW_REGULATION', 'AMENDMENT', 'GUIDANCE', 'ENFORCEMENT', 'REPEAL');
-CREATE TYPE "RegChangeStatus" AS ENUM ('NEW', 'REVIEWING', 'IN_PROGRESS', 'REG_RESOLVED', 'DISMISSED');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'RegChangeType') THEN CREATE TYPE "RegChangeType" AS ENUM ('NEW_REGULATION', 'AMENDMENT', 'GUIDANCE', 'ENFORCEMENT', 'REPEAL'); END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'RegChangeStatus') THEN CREATE TYPE "RegChangeStatus" AS ENUM ('NEW', 'REVIEWING', 'IN_PROGRESS', 'REG_RESOLVED', 'DISMISSED'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "RegulatoryChangeDetection" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -325,7 +325,7 @@ CREATE TABLE IF NOT EXISTS "RegulatoryChangeImpact" (
 CREATE INDEX IF NOT EXISTS "RegulatoryChangeImpact_regulatoryChangeId_idx" ON "RegulatoryChangeImpact"("regulatoryChangeId");
 
 -- ── Evidence Collection Rules ─────────────────────────────────────
-CREATE TYPE "EvidenceSourceType" AS ENUM ('AWS_CONFIG', 'AZURE_POLICY', 'GITHUB_ACTIONS', 'JIRA_TICKETS', 'SLACK_MESSAGES', 'GOOGLE_DRIVE', 'CLOUDTRAIL_LOGS', 'VULNERABILITY_SCAN', 'PENETRATION_TEST', 'ACCESS_REVIEW', 'TRAINING_RECORDS', 'MANUAL_UPLOAD');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'EvidenceSourceType') THEN CREATE TYPE "EvidenceSourceType" AS ENUM ('AWS_CONFIG', 'AZURE_POLICY', 'GITHUB_ACTIONS', 'JIRA_TICKETS', 'SLACK_MESSAGES', 'GOOGLE_DRIVE', 'CLOUDTRAIL_LOGS', 'VULNERABILITY_SCAN', 'PENETRATION_TEST', 'ACCESS_REVIEW', 'TRAINING_RECORDS', 'MANUAL_UPLOAD'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "EvidenceCollectionRule" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -345,8 +345,8 @@ CREATE TABLE IF NOT EXISTS "EvidenceCollectionRule" (
 CREATE INDEX IF NOT EXISTS "EvidenceCollectionRule_organizationId_idx" ON "EvidenceCollectionRule"("organizationId");
 
 -- ── Control Testing ───────────────────────────────────────────────
-CREATE TYPE "ControlTestType" AS ENUM ('ACCESS_REVIEW_TEST', 'CONFIGURATION_CHECK', 'VULNERABILITY_SCAN_TEST', 'POLICY_REVIEW_TEST', 'LOG_REVIEW', 'ENCRYPTION_CHECK', 'BACKUP_VERIFICATION', 'INCIDENT_RESPONSE_TEST', 'CHANGE_MANAGEMENT_REVIEW', 'NETWORK_SEGMENTATION_CHECK');
-CREATE TYPE "TestResultStatus" AS ENUM ('PASS', 'FAIL', 'PARTIAL', 'ERROR', 'SKIPPED');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ControlTestType') THEN CREATE TYPE "ControlTestType" AS ENUM ('ACCESS_REVIEW_TEST', 'CONFIGURATION_CHECK', 'VULNERABILITY_SCAN_TEST', 'POLICY_REVIEW_TEST', 'LOG_REVIEW', 'ENCRYPTION_CHECK', 'BACKUP_VERIFICATION', 'INCIDENT_RESPONSE_TEST', 'CHANGE_MANAGEMENT_REVIEW', 'NETWORK_SEGMENTATION_CHECK'); END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'TestResultStatus') THEN CREATE TYPE "TestResultStatus" AS ENUM ('PASS', 'FAIL', 'PARTIAL', 'ERROR', 'SKIPPED'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "ControlTest" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -377,7 +377,7 @@ CREATE TABLE IF NOT EXISTS "ControlTestResult" (
 CREATE INDEX IF NOT EXISTS "ControlTestResult_testId_idx" ON "ControlTestResult"("testId");
 
 -- ── SSO Configuration ─────────────────────────────────────────────
-CREATE TYPE "SSOProvider" AS ENUM ('SAML', 'OIDC', 'AZURE_AD', 'OKTA', 'GOOGLE_WORKSPACE', 'ONELOGIN', 'PING_IDENTITY');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'SSOProvider') THEN CREATE TYPE "SSOProvider" AS ENUM ('SAML', 'OIDC', 'AZURE_AD', 'OKTA', 'GOOGLE_WORKSPACE', 'ONELOGIN', 'PING_IDENTITY'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "SSOConfiguration" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
@@ -386,6 +386,7 @@ CREATE TABLE IF NOT EXISTS "SSOConfiguration" (
   "enabled" BOOLEAN NOT NULL DEFAULT false,
   "entityId" TEXT,
   "ssoUrl" TEXT,
+  -- encrypted-at-rest: persisted via encryptField() in the SSO service layer before insert
   "certificate" TEXT,
   "metadataUrl" TEXT,
   "attributeMapping" JSONB,
@@ -404,6 +405,7 @@ CREATE TABLE IF NOT EXISTS "SCIMConfiguration" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
   "organizationId" TEXT NOT NULL,
   "enabled" BOOLEAN NOT NULL DEFAULT false,
+  -- encrypted-at-rest: persisted via encryptField() in the SCIM service layer before insert
   "bearerToken" TEXT,
   "lastSyncAt" TIMESTAMP(3),
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -414,7 +416,7 @@ CREATE TABLE IF NOT EXISTS "SCIMConfiguration" (
 );
 
 -- ── Advanced RBAC ─────────────────────────────────────────────────
-CREATE TYPE "PermissionScope" AS ENUM ('OWN', 'TEAM', 'DEPARTMENT', 'ORG');
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PermissionScope') THEN CREATE TYPE "PermissionScope" AS ENUM ('OWN', 'TEAM', 'DEPARTMENT', 'ORG'); END IF; END $$;
 
 CREATE TABLE IF NOT EXISTS "CustomRole" (
   "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,

@@ -47,6 +47,11 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 
+// Reference fixtures are only surfaced outside production so live builds never
+// display sample workflow data when the API is unreachable.
+const SHOW_REFERENCE_FIXTURES =
+  !(import.meta as ImportMeta & { env: Record<string, string | boolean> }).env.PROD;
+
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -283,10 +288,15 @@ const WorkflowAutomationRules: React.FC = () => {
       setServerReachable(true);
       setLoadError(null);
     } catch (err: any) {
-      // Server unreachable: surface fixtures so the screen isn't empty.
+      // Server unreachable: surface labeled reference fixtures only outside
+      // production so live builds never display sample workflow data.
       setServerReachable(false);
-      setLoadError('Unable to connect to server. Showing reference fixtures.');
-      setWorkflows(DEMO_WORKFLOWS);
+      setLoadError(
+        SHOW_REFERENCE_FIXTURES
+          ? 'Unable to connect to server. Showing reference fixtures.'
+          : 'Unable to connect to server. Please try again later.'
+      );
+      setWorkflows(SHOW_REFERENCE_FIXTURES ? DEMO_WORKFLOWS : []);
     } finally {
       setLoading(false);
     }
@@ -297,7 +307,7 @@ const WorkflowAutomationRules: React.FC = () => {
       const data = await api.workflows.listRuns();
       setExecutions(Array.isArray(data) ? data : data?.runs || data?.data || []);
     } catch {
-      setExecutions(DEMO_EXECUTIONS);
+      setExecutions(SHOW_REFERENCE_FIXTURES ? DEMO_EXECUTIONS : []);
     }
   }, []);
 

@@ -662,33 +662,43 @@ class MLModelsService {
   }
 
   /**
-   * Detect human liveness in media using real ML models
+   * Estimate human liveness from media using heuristic signal analysis.
+   *
+   * NOTE: This is a heuristic-only signal (texture / edge-density / color-variation
+   * statistics over the media buffer), NOT a trained anti-spoof model. The returned
+   * `heuristicOnly: true` flag makes this explicit so callers never treat the verdict
+   * as a trained-model anti-spoof decision. For a high-assurance liveness / anti-spoof
+   * security control, route through livenessDetectionService (which exposes
+   * antiSpoofModelTrained via getModelHealth) and fail closed when no trained model
+   * is provisioned.
    */
   async detectLiveness(
     mediaBuffer: Buffer,
     mediaType: 'image' | 'video'
-  ): Promise<{ detected: boolean; confidence: number }> {
+  ): Promise<{ detected: boolean; confidence: number; heuristicOnly: boolean }> {
     await this.initialize();
 
     try {
-      // Real liveness detection using feature extraction and ML model
-      // Extract liveness features from media
+      // Heuristic liveness estimation via feature extraction (no trained model).
       const livenessFeatures = this.extractLivenessFeatures(mediaBuffer, mediaType);
-      
-      // Use TensorFlow.js model for liveness detection
-      // Liveness scoring via texture + motion + consistency heuristics. Integrate a pre-trained CNN for higher accuracy.
+
+      // Heuristic scoring via texture + motion + consistency statistics. This is not a
+      // neural anti-spoof verdict; integrate a trained CNN for a high-assurance signal.
       const detected = this.analyzeLivenessFeatures(livenessFeatures);
       const confidence = this.calculateLivenessConfidence(livenessFeatures);
 
       return {
         detected,
         confidence: Math.max(0.0, Math.min(1.0, confidence)),
+        heuristicOnly: true,
       };
     } catch (error) {
       logger.error('[ML Models] Error detecting liveness', error);
+      // Fail closed: a liveness/anti-spoof signal must never default to "live" on error.
       return {
         detected: false,
         confidence: 0.0,
+        heuristicOnly: true,
       };
     }
   }
@@ -785,8 +795,8 @@ class MLModelsService {
     colorVariation: number;
     temporalConsistency?: number;
   }): boolean {
-    // Real liveness analysis based on features
-    // A real human should have:
+    // Heuristic liveness scoring based on extracted features (not a trained model).
+    // A live human capture is expected to have:
     // - Depth information (3D structure)
     // - Natural texture complexity
     // - Natural motion (for video)

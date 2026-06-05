@@ -188,14 +188,16 @@ export function extractRequestMeta(req: {
   path?: string;
   user?: { id?: string; email?: string; organizationId?: string };
   correlationId?: string;
-}): Pick<SecurityEvent, 'ip' | 'method' | 'path' | 'userId' | 'userEmail' | 'organizationId' | 'correlationId'> {
+}): Pick<SecurityEvent, 'ip' | 'method' | 'path' | 'userId' | 'organizationId' | 'correlationId'> {
   const user = req.user;
+  // userEmail is intentionally omitted here to keep security logs PII-free by
+  // default; callers that genuinely need it must opt in by setting it explicitly
+  // on the SecurityEvent payload.
   return {
     ip: req.ip,
     method: req.method,
     path: req.originalUrl || req.path,
     userId: user?.id,
-    userEmail: user?.email,
     organizationId: user?.organizationId,
     correlationId: req.correlationId,
   };

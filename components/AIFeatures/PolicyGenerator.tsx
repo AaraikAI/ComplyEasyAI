@@ -14,6 +14,7 @@ export const PolicyGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   const [tone, setTone] = useState('Strict');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Clear preselected type after using it
   useEffect(() => {
@@ -24,9 +25,15 @@ export const PolicyGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
   const handleGenerate = async () => {
     setLoading(true);
-    const text = await generatePolicy(type, company, tone);
-    setResult(text);
-    setLoading(false);
+    setError('');
+    try {
+      const text = await generatePolicy(type, company, tone);
+      setResult(text);
+    } catch {
+      setError('Failed to generate policy. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,6 +77,9 @@ export const PolicyGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             >
               {loading ? <Loader2 className="animate-spin" /> : 'Generate Policy'}
             </button>
+            {error && (
+              <p className="text-sm text-red-600" role="alert">{error}</p>
+            )}
           </div>
         </div>
 

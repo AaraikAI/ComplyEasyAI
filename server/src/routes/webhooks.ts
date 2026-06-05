@@ -13,6 +13,7 @@ import express, { Router, Request, Response, NextFunction } from 'express';
 import webhookController from '../controllers/webhookController';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { decryptField } from '../utils/credentialEncryption';
 import { validateBody } from '../middleware/validate';
 import {
   createWebhookSchema,
@@ -165,8 +166,12 @@ async function verifyWebhookSignature(req: Request, res: Response, next: NextFun
     rawBody = Buffer.from(typeof req.body === 'string' ? req.body : JSON.stringify(req.body ?? {}));
   }
 
+  // The secret is stored encrypted-at-rest (encryptField on create/regenerate).
+  // Decrypt to the plaintext the sender signs with before computing the HMAC.
+  const plaintextSecret = decryptField(webhookConfig.secret);
+
   const expectedSignature = crypto
-    .createHmac('sha256', webhookConfig.secret)
+    .createHmac('sha256', plaintextSecret)
     .update(rawBody)
     .digest('hex');
 

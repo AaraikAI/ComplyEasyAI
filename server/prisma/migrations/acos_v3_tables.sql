@@ -3,7 +3,7 @@
 
 -- 1. Compliance Goals Table
 CREATE TABLE IF NOT EXISTS "ComplianceGoal" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "goalType" TEXT NOT NULL CHECK ("goalType" IN ('maintain', 'achieve', 'improve')),
     "frameworks" TEXT[] NOT NULL,
@@ -23,7 +23,7 @@ CREATE INDEX IF NOT EXISTS "ComplianceGoal_status_idx" ON "ComplianceGoal"("stat
 
 -- 2. Control Loops Table
 CREATE TABLE IF NOT EXISTS "ControlLoop" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "controlId" TEXT NOT NULL,
     "observeAgent" TEXT NOT NULL,
@@ -47,7 +47,7 @@ CREATE INDEX IF NOT EXISTS "ControlLoop_status_idx" ON "ControlLoop"("status");
 
 -- 3. Compliance Debt Table
 CREATE TABLE IF NOT EXISTS "ComplianceDebt" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "frameworkId" TEXT NOT NULL,
     "debtType" TEXT NOT NULL CHECK ("debtType" IN ('technical', 'process', 'documentation', 'evidence')),
@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS "ComplianceDebt_resolvedAt_idx" ON "ComplianceDebt"("
 
 -- 4. Change Impact Forecasts Table
 CREATE TABLE IF NOT EXISTS "ChangeImpact" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "changeType" TEXT NOT NULL CHECK ("changeType" IN ('control', 'policy', 'framework', 'integration')),
     "changeId" TEXT NOT NULL,
@@ -88,7 +88,7 @@ CREATE INDEX IF NOT EXISTS "ChangeImpact_changeType_idx" ON "ChangeImpact"("chan
 
 -- 5. Agentic Actions Table
 CREATE TABLE IF NOT EXISTS "AgenticAction" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "actionType" TEXT NOT NULL CHECK ("actionType" IN ('control_update', 'policy_create', 'risk_mitigation', 'evidence_upload')),
     "targetId" TEXT NOT NULL,
@@ -112,7 +112,7 @@ CREATE INDEX IF NOT EXISTS "AgenticAction_createdAt_idx" ON "AgenticAction"("cre
 
 -- 6. Evidence Analysis Table
 CREATE TABLE IF NOT EXISTS "EvidenceAnalysis" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "evidenceId" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "deepfakeScore" DOUBLE PRECISION NOT NULL,
@@ -132,7 +132,7 @@ CREATE INDEX IF NOT EXISTS "EvidenceAnalysis_verificationStatus_idx" ON "Evidenc
 
 -- 7. Regulatory Changes Table
 CREATE TABLE IF NOT EXISTS "RegulatoryChange" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "regulationName" TEXT NOT NULL,
     "jurisdiction" TEXT NOT NULL,
@@ -157,7 +157,7 @@ CREATE INDEX IF NOT EXISTS "RegulatoryChange_effectiveDate_idx" ON "RegulatoryCh
 
 -- 8. Risk Predictions Table (TGN)
 CREATE TABLE IF NOT EXISTS "RiskPrediction" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "riskId" TEXT,
     "riskType" TEXT NOT NULL,
@@ -178,7 +178,7 @@ CREATE INDEX IF NOT EXISTS "RiskPrediction_predictedSeverity_idx" ON "RiskPredic
 
 -- 9. Compliance Trajectories Table
 CREATE TABLE IF NOT EXISTS "ComplianceTrajectory" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "frameworkId" TEXT NOT NULL,
     "currentScore" INTEGER NOT NULL,
@@ -197,7 +197,7 @@ CREATE INDEX IF NOT EXISTS "ComplianceTrajectory_createdAt_idx" ON "ComplianceTr
 
 -- 10. Simulation Scenarios Table
 CREATE TABLE IF NOT EXISTS "SimulationScenario" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -213,7 +213,7 @@ CREATE INDEX IF NOT EXISTS "SimulationScenario_scenarioType_idx" ON "SimulationS
 
 -- 11. Simulation Results Table
 CREATE TABLE IF NOT EXISTS "SimulationResult" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "scenarioId" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "baselineScore" INTEGER NOT NULL,
@@ -235,7 +235,7 @@ CREATE INDEX IF NOT EXISTS "SimulationResult_createdAt_idx" ON "SimulationResult
 
 -- 12. Red Team Results Table
 CREATE TABLE IF NOT EXISTS "RedTeamResult" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "scenarioId" TEXT NOT NULL,
     "success" BOOLEAN NOT NULL,
@@ -253,7 +253,7 @@ CREATE INDEX IF NOT EXISTS "RedTeamResult_createdAt_idx" ON "RedTeamResult"("cre
 
 -- 13. Swarm Insights Table
 CREATE TABLE IF NOT EXISTS "SwarmInsight" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "insightType" TEXT NOT NULL CHECK ("insightType" IN ('best_practice', 'risk_pattern', 'control_effectiveness', 'framework_trend')),
     "description" TEXT NOT NULL,
@@ -270,7 +270,7 @@ CREATE INDEX IF NOT EXISTS "SwarmInsight_insightType_idx" ON "SwarmInsight"("ins
 
 -- 14. IoT Devices Table
 CREATE TABLE IF NOT EXISTS "IoTDevice" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "deviceId" TEXT NOT NULL,
     "deviceType" TEXT NOT NULL,
@@ -290,7 +290,7 @@ CREATE INDEX IF NOT EXISTS "IoTDevice_complianceStatus_idx" ON "IoTDevice"("comp
 
 -- 15. Edge Compliance Checks Table
 CREATE TABLE IF NOT EXISTS "EdgeComplianceCheck" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "deviceId" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "checkType" TEXT NOT NULL CHECK ("checkType" IN ('encryption', 'access_control', 'data_retention', 'audit_logging')),
@@ -307,7 +307,7 @@ CREATE INDEX IF NOT EXISTS "EdgeComplianceCheck_timestamp_idx" ON "EdgeComplianc
 
 -- 16. Transcription Results Table
 CREATE TABLE IF NOT EXISTS "TranscriptionResult" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text PRIMARY KEY,
     "organizationId" TEXT NOT NULL,
     "evidenceId" TEXT,
     "text" TEXT NOT NULL,
@@ -333,12 +333,19 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Add triggers for updatedAt columns
+-- Add triggers for updatedAt columns (drop-then-create for idempotent re-runs)
+DROP TRIGGER IF EXISTS update_compliance_goal_updated_at ON "ComplianceGoal";
 CREATE TRIGGER update_compliance_goal_updated_at BEFORE UPDATE ON "ComplianceGoal" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_control_loop_updated_at ON "ControlLoop";
 CREATE TRIGGER update_control_loop_updated_at BEFORE UPDATE ON "ControlLoop" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_compliance_debt_updated_at ON "ComplianceDebt";
 CREATE TRIGGER update_compliance_debt_updated_at BEFORE UPDATE ON "ComplianceDebt" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_agentic_action_updated_at ON "AgenticAction";
 CREATE TRIGGER update_agentic_action_updated_at BEFORE UPDATE ON "AgenticAction" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_regulatory_change_updated_at ON "RegulatoryChange";
 CREATE TRIGGER update_regulatory_change_updated_at BEFORE UPDATE ON "RegulatoryChange" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_compliance_trajectory_updated_at ON "ComplianceTrajectory";
 CREATE TRIGGER update_compliance_trajectory_updated_at BEFORE UPDATE ON "ComplianceTrajectory" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_iot_device_updated_at ON "IoTDevice";
 CREATE TRIGGER update_iot_device_updated_at BEFORE UPDATE ON "IoTDevice" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

@@ -165,6 +165,9 @@ class JiraService {
     try {
       const expiresAt = new Date(Date.now() + tokenResponse.expires_in * 1000);
 
+      // Preserve any previously stored refresh token if the provider omits one on this exchange.
+      const existing = await this.getIntegration(organizationId);
+
       await prisma.integration.upsert({
         where: {
           organizationId_provider: {
@@ -192,7 +195,7 @@ class JiraService {
         update: {
           connected: true,
           accessToken: tokenResponse.access_token ? encryptField(tokenResponse.access_token) : null,
-          refreshToken: tokenResponse.refresh_token ? encryptField(tokenResponse.refresh_token) : null,
+          refreshToken: tokenResponse.refresh_token ? encryptField(tokenResponse.refresh_token) : (existing?.refreshToken ?? null),
           expiresAt,
           config: {
             cloudId,
@@ -262,7 +265,9 @@ class JiraService {
           where: { id: integration.id },
           data: {
             accessToken: newTokens.access_token ? encryptField(newTokens.access_token) : null,
-            refreshToken: newTokens.refresh_token ? encryptField(newTokens.refresh_token) : null,
+            // Preserve the existing refresh token when the provider does not rotate/return a new one,
+            // otherwise nulling it would permanently break future refreshes for this org.
+            refreshToken: newTokens.refresh_token ? encryptField(newTokens.refresh_token) : integration.refreshToken,
             expiresAt: new Date(Date.now() + newTokens.expires_in * 1000),
           },
         });

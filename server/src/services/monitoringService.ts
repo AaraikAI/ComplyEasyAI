@@ -779,8 +779,10 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
     // Resolve integration credentials if an integrationId is linked
     let integrationConfig: Record<string, any> = {};
     if (monitor.integrationId) {
-      const integration = await prisma.integration.findUnique({
-        where: { id: monitor.integrationId },
+      // Scope the integration lookup to the monitor's org so a monitor cannot
+      // reference (and read credentials from) another tenant's integration.
+      const integration = await prisma.integration.findFirst({
+        where: { id: monitor.integrationId, organizationId: monitor.organizationId },
         select: { config: true, provider: true, connected: true },
       });
       if (integration && integration.connected && integration.config) {

@@ -167,13 +167,17 @@ const ALERT_THRESHOLDS: AlertThreshold[] = [
   { id: 'at-5', name: 'Any Framework Drop > 3pts', framework: 'All Frameworks', thresholdType: 'drop', value: 3, isActive: false, lastTriggered: null },
 ];
 
+// Industry-average reference figures (industry-wide benchmarks, not tenant
+// data). The `ourScore` field is sourced at render time from the live
+// `projections` (see `industryBenchmarks` memo); the 0 here is a placeholder
+// overridden per-tenant.
 const INDUSTRY_BENCHMARKS: IndustryBenchmark[] = [
-  { framework: 'SOC 2 Type II', industryAvg: 76, industryTop25: 85, industryTop10: 92, ourScore: 82 },
-  { framework: 'ISO 27001', industryAvg: 72, industryTop25: 82, industryTop10: 90, ourScore: 78 },
-  { framework: 'GDPR', industryAvg: 80, industryTop25: 89, industryTop10: 95, ourScore: 91 },
-  { framework: 'HIPAA', industryAvg: 70, industryTop25: 80, industryTop10: 88, ourScore: 75 },
-  { framework: 'PCI DSS', industryAvg: 78, industryTop25: 87, industryTop10: 94, ourScore: 88 },
-  { framework: 'NIST 800-53', industryAvg: 65, industryTop25: 76, industryTop10: 85, ourScore: 71 },
+  { framework: 'SOC 2 Type II', industryAvg: 76, industryTop25: 85, industryTop10: 92, ourScore: 0 },
+  { framework: 'ISO 27001', industryAvg: 72, industryTop25: 82, industryTop10: 90, ourScore: 0 },
+  { framework: 'GDPR', industryAvg: 80, industryTop25: 89, industryTop10: 95, ourScore: 0 },
+  { framework: 'HIPAA', industryAvg: 70, industryTop25: 80, industryTop10: 88, ourScore: 0 },
+  { framework: 'PCI DSS', industryAvg: 78, industryTop25: 87, industryTop10: 94, ourScore: 0 },
+  { framework: 'NIST 800-53', industryAvg: 65, industryTop25: 76, industryTop10: 85, ourScore: 0 },
 ];
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
@@ -386,6 +390,43 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
   const criticalRiskCount = useMemo(() => riskFactors.filter(rf => rf.severity === 'critical').length, [riskFactors]);
   const activeRiskCount = useMemo(() => riskFactors.filter(rf => rf.status === 'active').length, [riskFactors]);
 
+  // Month-over-month overall delta derived from the live historical series
+  // (latest minus prior month). Null when there is no prior-month datapoint.
+  const monthOverMonthDelta = useMemo<number | null>(() => {
+    if (historicalData.length < 2) return null;
+    const latest = historicalData[historicalData.length - 1];
+    const prior = historicalData[historicalData.length - 2];
+    if (typeof latest?.overall !== 'number' || typeof prior?.overall !== 'number') return null;
+    return Math.round((latest.overall - prior.overall) * 10) / 10;
+  }, [historicalData]);
+
+  // Per-category current/projected scores derived from live data. Current
+  // values come from the latest historical entry; the projected value applies
+  // the overall 90-day projected gain to each category trajectory.
+  const categoryBreakdown = useMemo(() => {
+    if (historicalData.length === 0) {
+      return [] as { name: string; score: number; projected: number; icon: React.ReactNode }[];
+    }
+    const latest = historicalData[historicalData.length - 1];
+    const projectedGain = Math.max(0, overallProjected90 - overallCurrentScore);
+    const project = (current: number) => Math.min(100, Math.round(current + projectedGain));
+    return [
+      { name: 'Technical Controls', score: latest.technical, projected: project(latest.technical), icon: <Lock className="w-5 h-5 text-blue-500" /> },
+      { name: 'Administrative Controls', score: latest.administrative, projected: project(latest.administrative), icon: <FileText className="w-5 h-5 text-purple-500" /> },
+      { name: 'Physical Controls', score: latest.physical, projected: project(latest.physical), icon: <Building2 className="w-5 h-5 text-green-500" /> },
+    ];
+  }, [historicalData, overallCurrentScore, overallProjected90]);
+
+  // Industry benchmark rows with the tenant's own score sourced from live
+  // projections (matched by framework name). Industry-average reference
+  // columns remain from the configured benchmark reference set.
+  const industryBenchmarks = useMemo<IndustryBenchmark[]>(() => {
+    return INDUSTRY_BENCHMARKS.map(bm => {
+      const match = projections.find(fw => fw.name === bm.framework);
+      return { ...bm, ourScore: match ? match.currentScore : 0 };
+    });
+  }, [projections]);
+
   const toggleRiskExpanded = useCallback((id: string) => {
     setExpandedRiskFactors(prev => {
       const next = new Set(prev);
@@ -555,11 +596,25 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
               </div>
             </div>
             <div>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5 text-green-500" />
-                <span className="text-sm text-green-600 font-medium">+2.4</span>
-              </div>
-              <span className="text-xs text-gray-400">vs last month</span>
+              {monthOverMonthDelta !== null ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    {monthOverMonthDelta > 0 ? (
+                      <TrendingUp className="w-3.5 h-3.5 text-green-500" />
+                    ) : monthOverMonthDelta < 0 ? (
+                      <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+                    ) : (
+                      <Minus className="w-3.5 h-3.5 text-gray-400" />
+                    )}
+                    <span className={`text-sm font-medium ${monthOverMonthDelta > 0 ? 'text-green-600' : monthOverMonthDelta < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                      {monthOverMonthDelta > 0 ? '+' : ''}{monthOverMonthDelta}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-400">vs last month</span>
+                </>
+              ) : (
+                <span className="text-xs text-gray-400">no prior-month data</span>
+              )}
             </div>
           </div>
         </div>
@@ -624,12 +679,13 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
       </div>
 
       {/* Score Breakdown by Category */}
+      {categoryBreakdown.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm text-center text-sm text-gray-500 dark:text-gray-400">
+          {loadingHistory ? 'Loading category breakdown...' : 'No category breakdown available yet.'}
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {[
-          { name: 'Technical Controls', score: 83, projected: 89, icon: <Lock className="w-5 h-5 text-blue-500" />, color: 'blue' },
-          { name: 'Administrative Controls', score: 77, projected: 83, icon: <FileText className="w-5 h-5 text-purple-500" />, color: 'purple' },
-          { name: 'Physical Controls', score: 80, projected: 85, icon: <Building2 className="w-5 h-5 text-green-500" />, color: 'green' },
-        ].map(cat => (
+        {categoryBreakdown.map(cat => (
           <div key={cat.name} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               {cat.icon}
@@ -652,6 +708,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
           </div>
         ))}
       </div>
+      )}
 
       {/* Framework Quick Overview */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -681,7 +738,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {projections.map(fw => {
-                const benchmark = INDUSTRY_BENCHMARKS.find(b => b.framework === fw.name);
+                const benchmark = industryBenchmarks.find(b => b.framework === fw.name);
                 return (
                   <tr key={fw.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                     onClick={() => setSelectedFramework(selectedFramework === fw.id ? null : fw.id)}>
@@ -944,7 +1001,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
         </div>
         <div className="p-5">
           <div className="space-y-4">
-            {INDUSTRY_BENCHMARKS.map(bm => {
+            {industryBenchmarks.map(bm => {
               const aboveAvg = bm.ourScore >= bm.industryAvg;
               const percentile = bm.ourScore >= bm.industryTop10 ? 'Top 10%' :
                 bm.ourScore >= bm.industryTop25 ? 'Top 25%' : aboveAvg ? 'Above Average' : 'Below Average';
