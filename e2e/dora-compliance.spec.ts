@@ -3,10 +3,64 @@
  * Tests ICT risk CRUD, incidents, providers, resilience tests
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+// Re-seed client-side auth and suppress the env blockers (auth wipe on boot-401,
+// cookie-consent banner, onboarding "Welcome" modal) before every navigation.
+async function primeEnv(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem(
+        'user_data',
+        JSON.stringify({
+          id: 'e2e-test-user-001',
+          name: 'E2E Test User',
+          email: 'e2e-test@complyeasyai.com',
+          role: 'admin',
+          organizationId: 'e2e-test-org-001',
+          organization: { id: 'e2e-test-org-001', name: 'E2E Test Organization', plan: 'Visionary' },
+        }),
+      );
+      localStorage.setItem(
+        'complyeasy_cookie_consent',
+        JSON.stringify({
+          essential: true,
+          functional: true,
+          analytics: true,
+          targeting: true,
+          consentDate: new Date().toISOString(),
+          consentVersion: '1.0',
+        }),
+      );
+    } catch {
+      /* storage unavailable — ignore */
+    }
+  });
+
+  const onboardingBody = {
+    status: 'success',
+    data: {
+      progress: {
+        welcomeCompleted: true,
+        tierTourCompleted: true,
+        completedAt: new Date().toISOString(),
+        skippedFlows: ['welcome'],
+      },
+      organizationPlan: 'Visionary',
+      checklist: [],
+    },
+  };
+  await page.route('**/onboarding/progress', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(onboardingBody) }),
+  );
+  await page.route('**/onboarding/checklist', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(onboardingBody) }),
+  );
+}
 
 test.describe('DORA Compliance', () => {
   test.beforeEach(async ({ page }) => {
+    await primeEnv(page);
     await page.goto('/enterprise/dora');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
