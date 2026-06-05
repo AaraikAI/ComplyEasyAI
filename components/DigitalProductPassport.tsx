@@ -1167,7 +1167,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           const industryAverageEmissions =
             (selectedProduct as { industryAverageEmissionsKgCO2e?: number } | undefined)
               ?.industryAverageEmissionsKgCO2e;
-          if (industryAverageEmissions == null || industryAverageEmissions <= 0) {
+          if (industryAverageEmissions === null || industryAverageEmissions === undefined || industryAverageEmissions <= 0) {
             return (
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h3 className="text-base font-semibold text-gray-900 mb-4">Industry Benchmark Comparison</h3>

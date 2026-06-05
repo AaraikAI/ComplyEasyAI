@@ -1550,7 +1550,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
               <div className="flex justify-between items-center"><dt className="text-gray-500">Status</dt><dd><StatusBadge status={selectedReport.status} /></dd></div>
               <div className="flex justify-between"><dt className="text-gray-500">Author</dt><dd className="text-gray-900 font-medium">{selectedReport.author}</dd></div>
               <div className="flex justify-between"><dt className="text-gray-500">Created</dt><dd className="text-gray-900 font-medium">{selectedReport.createdDate}</dd></div>
-              {selectedReport.pages != null && <div className="flex justify-between"><dt className="text-gray-500">Pages</dt><dd className="text-gray-900 font-medium">{selectedReport.pages}</dd></div>}
+              {selectedReport.pages !== null && selectedReport.pages !== undefined && <div className="flex justify-between"><dt className="text-gray-500">Pages</dt><dd className="text-gray-900 font-medium">{selectedReport.pages}</dd></div>}
               {selectedReport.submittedTo && <div className="flex justify-between"><dt className="text-gray-500">Submitted To</dt><dd className="text-gray-900 font-medium">{selectedReport.submittedTo}</dd></div>}
             </dl>
             <div className="flex justify-end gap-2 mt-6">
