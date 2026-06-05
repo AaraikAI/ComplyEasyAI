@@ -3,13 +3,101 @@
  * Tests incident lifecycle: create, assign, investigate, resolve, close
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+/**
+ * Rebound to the CURRENT app shell. Incident management lives in the Incident
+ * Hub at /issues — a TabbedContainer with an "Issues" tab (default), an
+ * "Incidents" tab (IncidentManagement → fetches /api/incidents, has a "Report
+ * Incident" control + create modal, severity/status filter <select>s), and a
+ * "Breach Notification" tab. These incident tests target the Incidents tab, so
+ * navigation uses /issues?tab=incidents.
+ *
+ * Auth in this app is client-side: AuthContext restores localStorage `user_data`
+ * on boot and `isAuthenticated = !!user`. A boot-time API 401 wipes it and
+ * redirects to '/'. So authenticated specs must (1) re-seed `user_data` via an
+ * addInitScript before every navigation, (2) pre-accept cookie consent so the
+ * fixed-bottom GDPR banner never intercepts clicks, and (3) stub the
+ * /onboarding/progress + /onboarding/checklist endpoints so the API-driven
+ * "Welcome" modal (a fixed inset-0 dialog that auto-opens on 401 and intercepts
+ * all clicks) never renders.
+ */
+
+// Cached auth profile re-seeded before every navigation (auth tokens live in
+// httpOnly cookies; only this non-sensitive profile is restored from localStorage).
+const E2E_USER = {
+  id: 'e2e-test-user-001',
+  name: 'E2E Test User',
+  email: 'e2e-test@complyeasyai.com',
+  role: 'admin',
+  avatar: 'E2',
+  organizationId: 'e2e-test-org-001',
+  organization: { id: 'e2e-test-org-001', name: 'E2E Test Organization', plan: 'Visionary' },
+};
+
+async function stubOnboarding(page: Page): Promise<void> {
+  await page.route('**/onboarding/progress', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          progress: {
+            welcomeCompleted: true,
+            tierTourCompleted: true,
+            completedAt: new Date().toISOString(),
+            skippedFlows: ['welcome'],
+            tooltipsShown: [],
+            showHints: false,
+          },
+          organizationPlan: 'Visionary',
+          organizationName: 'E2E Test Organization',
+          onboardingCompleted: true,
+        },
+      }),
+    }),
+  );
+  await page.route('**/onboarding/checklist', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'success', data: { checklist: { completedAt: new Date().toISOString() } } }),
+    }),
+  );
+}
+
+async function seedAuth(page: Page): Promise<void> {
+  await page.addInitScript(
+    ({ u }) => {
+      localStorage.setItem('user_data', JSON.stringify(u));
+      localStorage.setItem('onboarding_completed', 'true');
+      localStorage.setItem('onboarding_skipped', 'true');
+      localStorage.setItem('hasSeenOnboarding', 'true');
+      localStorage.setItem(
+        'complyeasy_cookie_consent',
+        JSON.stringify({
+          essential: true, functional: true, analytics: true, targeting: true,
+          consentDate: new Date().toISOString(), consentVersion: '1.0',
+        }),
+      );
+    },
+    { u: E2E_USER },
+  );
+}
+
+// Navigate to the Incident Hub's "Incidents" tab (IncidentManagement).
+async function gotoIncidents(page: Page, path = '/issues?tab=incidents'): Promise<void> {
+  await seedAuth(page);
+  await stubOnboarding(page);
+  await page.goto(path);
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(1500);
+}
 
 test.describe('Incident Management', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/issues');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
+    await gotoIncidents(page);
   });
 
   test.describe('Page Load', () => {
@@ -52,9 +140,11 @@ test.describe('Incident Management', () => {
         await createBtn.click();
         await page.waitForTimeout(500);
 
+        // Scope to the create modal so the page search box isn't matched.
+        const modal = page.locator('div.fixed.inset-0.z-50').last();
         // Should have title, description, severity at minimum
-        const titleField = page.locator('[name="title"], [name="name"], input[type="text"]').first();
-        const descField = page.locator('[name="description"], textarea').first();
+        const titleField = modal.locator('input[placeholder="Incident title"]');
+        const descField = modal.locator('textarea').first();
 
         const hasTitle = await titleField.isVisible({ timeout: 3000 }).catch(() => false);
         const hasDesc = await descField.isVisible({ timeout: 3000 }).catch(() => false);
@@ -100,23 +190,31 @@ test.describe('Incident Management', () => {
       await createBtn.click();
       await page.waitForTimeout(500);
 
-      // The create form must open with a title field.
-      const titleField = page.locator('[name="title"], [name="name"], input[type="text"]').first();
+      // The create modal is a fixed inset-0 overlay; scope form locators to it so
+      // the page-level search box (also input[type="text"]) is never matched.
+      const modal = page.locator('div.fixed.inset-0.z-50').last();
+      await expect(modal).toBeVisible({ timeout: 5000 });
+
+      // The create form must open with a title field (placeholder "Incident title").
+      const titleField = modal.locator('input[placeholder="Incident title"]');
       await expect(titleField).toBeVisible({ timeout: 5000 });
       await titleField.fill('E2E Incident - Security Breach Detected');
 
-      const descField = page.locator('[name="description"], textarea').first();
+      const descField = modal.locator('textarea').first();
       if (await descField.isVisible()) {
         await descField.fill('Unauthorized access detected in production environment');
       }
 
-      const severitySelect = page.locator('select[name="severity"]');
+      // Severity is the first <select> in the modal (no name attribute).
+      const severitySelect = modal.locator('select').first();
       if (await severitySelect.isVisible().catch(() => false)) {
         const options = await severitySelect.locator('option').all();
         if (options.length > 1) await severitySelect.selectOption({ index: 1 });
       }
 
-      const submitBtn = page.getByRole('button', { name: /create|save|submit/i }).last();
+      // The modal's submit button is "Report Incident" (the page also has a
+      // toolbar "Report Incident"; scope the submit to the modal).
+      const submitBtn = modal.getByRole('button', { name: /report incident/i });
       await expect(submitBtn).toBeVisible();
       await submitBtn.click();
       await page.waitForTimeout(2000);
@@ -216,7 +314,7 @@ test.describe('Incident Management', () => {
         route.fulfill({ status: 500, body: JSON.stringify({ error: 'Internal Server Error' }) });
       });
 
-      await page.goto('/issues');
+      await gotoIncidents(page);
       await page.waitForTimeout(3000);
 
       // Page should handle error gracefully (no crash)
@@ -240,7 +338,7 @@ test.describe('Incident Management', () => {
         }
       });
 
-      await page.goto('/issues');
+      await gotoIncidents(page);
       await page.waitForTimeout(3000);
 
       // Page should be visible even after initial failure
@@ -270,7 +368,7 @@ test.describe('Incident Management', () => {
         }
       });
 
-      await page.goto('/issues');
+      await gotoIncidents(page);
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.waitForTimeout(2000);
 

@@ -111,6 +111,18 @@ setup('authenticate', async ({ page }) => {
     }
   }
 
+  // Re-seed the cached user profile immediately before snapshotting. During boot
+  // the app may issue an API call that returns 401 (the E2E user has no real
+  // backend session); the api layer then clears `user_data` and redirects to '/'.
+  // Re-writing it here guarantees the saved storageState contains a valid
+  // `user_data`, so every spec that loads this state boots authenticated.
+  await page.evaluate((userData) => {
+    localStorage.setItem('user_data', JSON.stringify(userData));
+    localStorage.setItem('onboarding_completed', 'true');
+    localStorage.setItem('onboarding_skipped', 'true');
+    localStorage.setItem('hasSeenOnboarding', 'true');
+  }, TEST_USER);
+
   // Save authentication state
   await page.context().storageState({ path: authFile });
 

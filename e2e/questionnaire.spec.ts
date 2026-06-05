@@ -3,7 +3,62 @@
  * Tests questionnaire create, assign, fill, submit, review lifecycle
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+// Re-seed client-side auth and suppress the env blockers (auth wipe on boot-401,
+// cookie-consent banner, onboarding "Welcome" modal) before every navigation.
+// These modals/banners are fixed-overlay elements that intercept pointer events
+// and Cmd+K; without this priming, every click in the create flow is blocked.
+async function primeEnv(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem(
+        'user_data',
+        JSON.stringify({
+          id: 'e2e-test-user-001',
+          name: 'E2E Test User',
+          email: 'e2e-test@complyeasyai.com',
+          role: 'admin',
+          organizationId: 'e2e-test-org-001',
+          organization: { id: 'e2e-test-org-001', name: 'E2E Test Organization', plan: 'Visionary' },
+        }),
+      );
+      localStorage.setItem(
+        'complyeasy_cookie_consent',
+        JSON.stringify({
+          essential: true,
+          functional: true,
+          analytics: true,
+          targeting: true,
+          consentDate: new Date().toISOString(),
+          consentVersion: '1.0',
+        }),
+      );
+    } catch {
+      /* storage unavailable — ignore */
+    }
+  });
+
+  const onboardingBody = {
+    status: 'success',
+    data: {
+      progress: {
+        welcomeCompleted: true,
+        tierTourCompleted: true,
+        completedAt: new Date().toISOString(),
+        skippedFlows: ['welcome'],
+      },
+      organizationPlan: 'Visionary',
+      checklist: [],
+    },
+  };
+  await page.route('**/onboarding/progress', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(onboardingBody) }),
+  );
+  await page.route('**/onboarding/checklist', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(onboardingBody) }),
+  );
+}
 
 // Paths the server intentionally exempts from CSRF validation (pre-login auth
 // endpoints and HMAC-verified webhook receivers — see server/src/middleware/csrf.ts).
@@ -17,6 +72,7 @@ function isCsrfExempt(url: string): boolean {
 
 test.describe('Questionnaire Management', () => {
   test.beforeEach(async ({ page }) => {
+    await primeEnv(page);
     await page.goto('/enterprise/questionnaires');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
@@ -99,6 +155,20 @@ test.describe('Questionnaire Management', () => {
     test('questionnaire creation sends POST with CSRF', async ({ page }) => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
+
+      // The frontend lazily fetches a token from GET /api/csrf-token and only then
+      // attaches X-CSRF-Token to mutations (services/api.ts getCsrfToken/fetchAPI).
+      // In this shared env that endpoint is intermittently 429-rate-limited from
+      // prior runs, which would make getCsrfToken() return null and the header be
+      // omitted — an env artifact, not a frontend regression. Stub it to a stable
+      // token so the real CSRF-attachment path is the thing under test.
+      await page.route('**/csrf-token', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ csrfToken: 'e2e-test-csrf-token' }),
+        }),
+      );
 
       // Any mutating /api/ request the create flow fires must carry an
       // x-csrf-token (the frontend attaches it for all mutations — services/api.ts).

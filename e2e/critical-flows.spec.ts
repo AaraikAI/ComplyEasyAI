@@ -6,6 +6,77 @@
 
 import { test, expect } from '@playwright/test';
 
+// ---------------------------------------------------------------------------
+// Environment-blocker handling (shared by every authenticated spec).
+// 1. Re-seed the cached auth profile before every navigation. The shared
+//    storageState seeds `user_data`, but a boot-time API 401 can wipe it and
+//    redirect to '/'. addInitScript runs before each page load, so the app
+//    always boots authenticated.
+// 2. Stub the onboarding endpoints so the welcome modal (a fixed inset-0 dialog
+//    that intercepts clicks) never renders.
+// 3. Pre-accept cookie consent so the GDPR banner never intercepts clicks.
+// ---------------------------------------------------------------------------
+const E2E_USER = {
+  id: 'e2e-test-user-001',
+  name: 'E2E Test User',
+  email: 'e2e-test@complyeasyai.com',
+  role: 'admin',
+  avatar: 'E2',
+  organizationId: 'e2e-test-org-001',
+  organization: { id: 'e2e-test-org-001', name: 'E2E Test Organization', plan: 'Visionary' },
+};
+
+async function stubOnboarding(page: import('@playwright/test').Page) {
+  await page.route('**/onboarding/progress', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          progress: {
+            welcomeCompleted: true,
+            tierTourCompleted: true,
+            completedAt: new Date().toISOString(),
+            skippedFlows: ['welcome'],
+            tooltipsShown: [],
+            showHints: false,
+          },
+          organizationPlan: 'Visionary',
+          organizationName: 'E2E Test Organization',
+          onboardingCompleted: true,
+        },
+      }),
+    }),
+  );
+  await page.route('**/onboarding/checklist', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'success', data: { checklist: { completedAt: new Date().toISOString() } } }),
+    }),
+  );
+}
+
+async function seedEnvironment(page: import('@playwright/test').Page) {
+  await stubOnboarding(page);
+  await page.addInitScript((u) => {
+    localStorage.setItem('user_data', JSON.stringify(u));
+    localStorage.setItem('onboarding_completed', 'true');
+    localStorage.setItem('onboarding_skipped', 'true');
+    localStorage.setItem('hasSeenOnboarding', 'true');
+    localStorage.setItem('complyeasy_cookie_consent', JSON.stringify({
+      essential: true, functional: true, analytics: true, targeting: true,
+      consentDate: new Date().toISOString(), consentVersion: '1.0',
+    }));
+  }, E2E_USER);
+}
+
+// Seed before every test across all describes.
+test.beforeEach(async ({ page }) => {
+  await seedEnvironment(page);
+});
+
 test.describe('Smoke', () => {
   test('App loads successfully', async ({ page }) => {
     await page.goto('/');
@@ -31,53 +102,46 @@ test.describe('Critical User Flows', () => {
   });
 
   test('User can navigate to Frameworks page', async ({ page }) => {
-    // Navigate using sidebar
-    const frameworksLink = page.locator('nav a[href="/frameworks"], a:has-text("Frameworks")').first();
+    // SlimSidebar pillars are icon-only links located by data-onboarding (no
+    // accessible text), so getByRole/has-text won't match — locate by attribute.
+    const frameworksLink = page.locator('a[data-onboarding="comply-nav"][href="/frameworks"]').first();
 
-    if (await frameworksLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await frameworksLink.click();
-      await page.waitForLoadState('networkidle').catch(() => {});
-      await expect(page).toHaveURL(/frameworks/);
-    } else {
-      // Skip if not authenticated
-      test.skip();
-    }
+    await expect(frameworksLink).toBeVisible({ timeout: 10000 });
+    await frameworksLink.click();
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page).toHaveURL(/frameworks/);
   });
 
   test('User can navigate to Vendors page', async ({ page }) => {
-    const vendorsLink = page.locator('nav a[href="/vendors"], a:has-text("Vendors")').first();
+    const vendorsLink = page.locator('a[data-onboarding="vendors-nav"][href="/vendors"]').first();
 
-    if (await vendorsLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await vendorsLink.click();
-      await page.waitForLoadState('networkidle').catch(() => {});
-      await expect(page).toHaveURL(/vendors/);
-    } else {
-      test.skip();
-    }
+    await expect(vendorsLink).toBeVisible({ timeout: 10000 });
+    await vendorsLink.click();
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page).toHaveURL(/vendors/);
   });
 
   test('User can navigate to Policies page', async ({ page }) => {
-    const policiesLink = page.locator('nav a[href="/policies"], a:has-text("Policies")').first();
+    // Policies is NOT a sidebar pillar; it must NOT live in the rail. Reach it
+    // via a direct navigation and assert the destination actually loaded.
+    const nav = page.locator('nav[data-onboarding="sidebar-nav"]');
+    await expect(nav.locator('a[href="/policies"]')).toHaveCount(0);
 
-    if (await policiesLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await policiesLink.click();
-      await page.waitForLoadState('networkidle').catch(() => {});
-      await expect(page).toHaveURL(/policies/);
-    } else {
-      test.skip();
-    }
+    await page.goto('/policies');
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page).toHaveURL(/policies/);
+    // A real element of the destination, not just the URL.
+    await expect(page.locator('h1:has-text("Polic"), [data-testid="policies-page"]').first())
+      .toBeVisible({ timeout: 10000 });
   });
 
   test('User can navigate to Risks page', async ({ page }) => {
-    const risksLink = page.locator('nav a[href="/risks"], a:has-text("Risks")').first();
+    const risksLink = page.locator('a[data-onboarding="risk-nav"][href="/risks"]').first();
 
-    if (await risksLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await risksLink.click();
-      await page.waitForLoadState('networkidle').catch(() => {});
-      await expect(page).toHaveURL(/risks/);
-    } else {
-      test.skip();
-    }
+    await expect(risksLink).toBeVisible({ timeout: 10000 });
+    await risksLink.click();
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page).toHaveURL(/risks/);
   });
 
   test('Dashboard shows compliance metrics', async ({ page }) => {
@@ -225,12 +289,21 @@ test.describe('Navigation and UI', () => {
 test.describe('Error Handling', () => {
   test('404 page for invalid routes', async ({ page }) => {
     await page.goto('/this-route-does-not-exist-12345');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle').catch(() => {});
 
-    // Should show 404 or redirect to landing/dashboard
-    const has404 = await page.locator('text=/404|not found/i').isVisible({ timeout: 5000 }).catch(() => false);
-    const hasApp = await page.locator('nav, button:has-text("Sign In")').first().isVisible().catch(() => false);
+    // Unknown routes resolve to one of three valid end-states: a 404/NotFound
+    // view, the app shell (App.tsx catch-all `path="*"` -> Navigate to
+    // /dashboard, which mounts the SlimSidebar rail — pillar links are
+    // icon-only, so locate the rail by its data-onboarding hook), or the
+    // unauthenticated landing page. Use a web-first assertion that polls until
+    // any one of those settles (covers the lazy-Suspense load race under
+    // parallel suite load). The rail is the expected state given seeded auth.
+    const settled = page.locator('text=/404|not found/i')
+      .or(page.locator('nav[data-onboarding="sidebar-nav"]'))
+      .or(page.locator('a[data-onboarding="home-nav"]'))
+      .or(page.locator('button:has-text("Sign In")'))
+      .first();
 
-    expect(has404 || hasApp).toBeTruthy();
+    await expect(settled).toBeVisible({ timeout: 20000 });
   });
 });

@@ -52,20 +52,23 @@ export class DashboardPage extends BasePage {
       .or(this.page.locator('button:has-text("Security"), a:has-text("Security")'));
   }
 
-  // Compliance Score with SVG Ring (UPDATED)
+  // Compliance gauge — HomeOS renders [data-onboarding="compliance-gauge"].
   get complianceScoreCard(): Locator {
-    return this.page.locator('[data-onboarding="compliance-score"]')
-      .or(this.page.locator('div:has-text("Compliance Score")').first());
+    return this.page.locator('[data-onboarding="compliance-gauge"]')
+      .or(this.page.locator('[data-onboarding="compliance-score"]'))
+      .first();
   }
 
   get complianceScoreRing(): Locator {
-    return this.page.locator('[data-onboarding="compliance-score"] svg')
-      .or(this.page.locator('svg circle'));
+    return this.page.locator('[data-onboarding="compliance-gauge"] svg')
+      .or(this.page.locator('svg circle'))
+      .first();
   }
 
   get complianceScoreValue(): Locator {
-    return this.page.locator('[data-onboarding="compliance-score"] text, [data-testid="compliance-score-value"]')
-      .or(this.page.locator('div:has-text("%")').first());
+    return this.page.locator('[data-onboarding="compliance-gauge"]')
+      .or(this.page.locator('[data-testid="compliance-score-value"]'))
+      .first();
   }
 
   // KPI Cards (UPDATED)
@@ -136,28 +139,30 @@ export class DashboardPage extends BasePage {
     await this.waitForPageLoad();
   }
 
+  // The SlimSidebar pillar links are icon-only; locate by data-onboarding.
   async navigateToFrameworks(): Promise<void> {
-    await this.page.getByRole('link', { name: /frameworks/i }).first().click();
+    await this.page.locator('a[data-onboarding="comply-nav"]').first().click();
     await this.expectURL(/frameworks/);
   }
 
   async navigateToVendors(): Promise<void> {
-    await this.page.getByRole('link', { name: /vendor/i }).first().click();
+    await this.page.locator('a[data-onboarding="vendors-nav"]').first().click();
     await this.expectURL(/vendor/);
   }
 
   async navigateToRisks(): Promise<void> {
-    await this.page.getByRole('link', { name: /risk/i }).first().click();
+    await this.page.locator('a[data-onboarding="risk-nav"]').first().click();
     await this.expectURL(/risk/);
   }
 
+  // Policies is not a pillar; navigate directly.
   async navigateToPolicies(): Promise<void> {
-    await this.page.getByRole('link', { name: /polic/i }).first().click();
+    await this.page.goto('/policies');
     await this.expectURL(/polic/);
   }
 
   async navigateToSettings(): Promise<void> {
-    await this.page.getByRole('link', { name: /settings/i }).first().click();
+    await this.page.locator('a[data-onboarding="settings-nav"]').first().click();
     await this.expectURL(/settings/);
   }
 
@@ -175,9 +180,9 @@ export class DashboardPage extends BasePage {
     // Wait for any of the new dashboard elements
     await expect(
       this.greeting
+        .or(this.page.locator('[data-onboarding="compliance-gauge"]'))
         .or(this.complianceScoreCard)
         .or(this.page.locator('[data-testid="dashboard"]'))
-        .or(this.page.locator('h1:has-text("Dashboard")'))
     ).toBeVisible({ timeout: 15000 });
   }
 
