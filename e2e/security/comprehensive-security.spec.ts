@@ -7,8 +7,14 @@
 
 import { test, expect } from '@playwright/test';
 
-const API_BASE = process.env.VITE_API_URL || 'http://localhost:3001';
-const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+// The CI harness exposes the running services via API_URL / E2E_BASE_URL.
+// Fall back to the legacy var names (and dev defaults) so the spec is runnable
+// standalone, but prefer the harness-provided URLs which point at the actually
+// running backend (3001) and frontend preview (4173).
+const API_BASE =
+  process.env.API_URL || process.env.VITE_API_URL || 'http://localhost:3001';
+const APP_URL =
+  process.env.E2E_BASE_URL || process.env.APP_URL || 'http://localhost:5173';
 
 test.describe('Security Headers', () => {
   // Helmet applies the security headers on every API response (see

@@ -5,21 +5,90 @@
 
 import { test, expect } from '@playwright/test';
 
+// Re-seed the cached profile before EVERY navigation so a boot-time API 401
+// can't wipe `user_data` and bounce the app back to '/' (AuthContext restores
+// auth from localStorage; isAuthenticated = !!user).
+const E2E_USER = {
+  id: 'e2e-test-user-001',
+  name: 'E2E Test User',
+  email: 'e2e-test@complyeasyai.com',
+  role: 'admin',
+  avatar: 'E2',
+  organizationId: 'e2e-test-org-001',
+  organization: { id: 'e2e-test-org-001', name: 'E2E Test Organization', plan: 'Visionary' },
+};
+
+// Stub the API-driven onboarding "Welcome" modal so it never opens over the app
+// (a fixed inset-0 dialog that otherwise intercepts every click).
+async function stubOnboarding(page: import('@playwright/test').Page) {
+  await page.route('**/onboarding/progress', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          progress: {
+            welcomeCompleted: true,
+            tierTourCompleted: true,
+            completedAt: new Date().toISOString(),
+            skippedFlows: ['welcome'],
+            tooltipsShown: [],
+            showHints: false,
+          },
+          organizationPlan: 'Visionary',
+          organizationName: 'E2E Test Organization',
+          onboardingCompleted: true,
+        },
+      }),
+    }),
+  );
+  await page.route('**/onboarding/checklist', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'success', data: { checklist: { completedAt: new Date().toISOString() } } }),
+    }),
+  );
+}
+
+async function seedAuth(page: import('@playwright/test').Page) {
+  await stubOnboarding(page);
+  await page.addInitScript((u) => {
+    localStorage.setItem('user_data', JSON.stringify(u));
+    localStorage.setItem('onboarding_completed', 'true');
+    localStorage.setItem('onboarding_skipped', 'true');
+    localStorage.setItem('hasSeenOnboarding', 'true');
+    localStorage.setItem('complyeasy_cookie_consent', JSON.stringify({
+      essential: true, functional: true, analytics: true, targeting: true,
+      consentDate: new Date().toISOString(), consentVersion: '1.0',
+    }));
+  }, E2E_USER);
+}
+
+// Navigate to /settings and open the Billing tab (a sidebar <button>, not a
+// role="tab"). Returns false if the app fell back to the landing page.
+async function openBilling(page: import('@playwright/test').Page) {
+  await page.goto('/settings');
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(1500);
+
+  const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+  if (isLanding) return false;
+
+  const billingTab = page.locator('button:has-text("Billing")').first();
+  if (await billingTab.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await billingTab.click();
+    await page.waitForTimeout(500);
+  }
+  return true;
+}
+
 test.describe('Billing', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/settings');
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1500);
-
-    const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
-    if (isLanding) test.skip();
-
-    const billingTab = page.getByRole('tab', { name: /billing/i })
-      .or(page.locator('button:has-text("Billing")'));
-    if (await billingTab.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await billingTab.click();
-      await page.waitForTimeout(500);
-    }
+    await seedAuth(page);
+    const ok = await openBilling(page);
+    if (!ok) test.skip();
   });
 
   test.describe('Plan Display', () => {

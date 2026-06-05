@@ -3,7 +3,70 @@
  * Tests all 13 hub pages: verify tabs load, interact with features
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+/**
+ * The three shared-environment blockers (auth wipe / cookie banner / onboarding
+ * "Welcome" modal) are neutralised in beforeEach exactly as the page-object
+ * pass established. Without this, the boot-time onboarding modal (a fixed
+ * inset-0 role=dialog) intercepts pointer events and the sidebar click in the
+ * "Cross-Hub Navigation" test never lands.
+ */
+const E2E_USER = {
+  id: 'e2e-test-user-001',
+  name: 'E2E Test User',
+  email: 'e2e-test@complyeasyai.com',
+  role: 'admin',
+  avatar: 'E2',
+  organizationId: 'e2e-test-org-001',
+  organization: { id: 'e2e-test-org-001', name: 'E2E Test Organization', plan: 'Visionary' },
+};
+
+async function stubOnboarding(page: Page) {
+  await page.route('**/onboarding/progress', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          progress: {
+            welcomeCompleted: true,
+            tierTourCompleted: true,
+            completedAt: new Date().toISOString(),
+            skippedFlows: ['welcome'],
+            tooltipsShown: [],
+            showHints: false,
+          },
+          organizationPlan: 'Visionary',
+          organizationName: 'E2E Test Organization',
+          onboardingCompleted: true,
+        },
+      }),
+    }),
+  );
+  await page.route('**/onboarding/checklist', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'success', data: { checklist: { completedAt: new Date().toISOString() } } }),
+    }),
+  );
+}
+
+async function neutraliseEnvBlockers(page: Page) {
+  await stubOnboarding(page);
+  await page.addInitScript((u) => {
+    localStorage.setItem('user_data', JSON.stringify(u));
+    localStorage.setItem('onboarding_completed', 'true');
+    localStorage.setItem('onboarding_skipped', 'true');
+    localStorage.setItem('hasSeenOnboarding', 'true');
+    localStorage.setItem('complyeasy_cookie_consent', JSON.stringify({
+      essential: true, functional: true, analytics: true, targeting: true,
+      consentDate: new Date().toISOString(), consentVersion: '1.0',
+    }));
+  }, E2E_USER);
+}
 
 const HUBS = [
   { name: 'Reporting Center', route: '/reports', expectedContent: /report|template|export/i },
@@ -22,6 +85,10 @@ const HUBS = [
 ];
 
 test.describe('Hub Navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    await neutraliseEnvBlockers(page);
+  });
+
   for (const hub of HUBS) {
     test.describe(hub.name, () => {
       test(`${hub.name} page loads successfully`, async ({ page }) => {

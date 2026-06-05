@@ -7,8 +7,67 @@ import { test, expect } from '@playwright/test';
 
 const API_BASE = process.env.VITE_API_URL || 'http://localhost:3001';
 
+// Re-seed the cached profile before EVERY navigation so a boot-time API 401
+// can't wipe `user_data` and bounce the app back to '/' (AuthContext restores
+// auth from localStorage; isAuthenticated = !!user).
+const E2E_USER = {
+  id: 'e2e-test-user-001',
+  name: 'E2E Test User',
+  email: 'e2e-test@complyeasyai.com',
+  role: 'admin',
+  avatar: 'E2',
+  organizationId: 'e2e-test-org-001',
+  organization: { id: 'e2e-test-org-001', name: 'E2E Test Organization', plan: 'Visionary' },
+};
+
+// Stub the API-driven onboarding "Welcome" modal so it never opens over the app
+// (a fixed inset-0 dialog that otherwise intercepts every click).
+async function stubOnboarding(page: import('@playwright/test').Page) {
+  await page.route('**/onboarding/progress', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'success',
+        data: {
+          progress: {
+            welcomeCompleted: true,
+            tierTourCompleted: true,
+            completedAt: new Date().toISOString(),
+            skippedFlows: ['welcome'],
+            tooltipsShown: [],
+            showHints: false,
+          },
+          organizationPlan: 'Visionary',
+          organizationName: 'E2E Test Organization',
+          onboardingCompleted: true,
+        },
+      }),
+    }),
+  );
+  await page.route('**/onboarding/checklist', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'success', data: { checklist: { completedAt: new Date().toISOString() } } }),
+    }),
+  );
+}
+
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
+    await stubOnboarding(page);
+    await page.addInitScript((u) => {
+      localStorage.setItem('user_data', JSON.stringify(u));
+      localStorage.setItem('onboarding_completed', 'true');
+      localStorage.setItem('onboarding_skipped', 'true');
+      localStorage.setItem('hasSeenOnboarding', 'true');
+      localStorage.setItem('complyeasy_cookie_consent', JSON.stringify({
+        essential: true, functional: true, analytics: true, targeting: true,
+        consentDate: new Date().toISOString(), consentVersion: '1.0',
+      }));
+    }, E2E_USER);
+
     await page.goto('/dashboard');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
@@ -119,7 +178,9 @@ test.describe('Dashboard', () => {
     });
 
     test('sidebar risk link navigates to risk management', async ({ page }) => {
-      const riskLink = page.locator('nav a[href="/risks"], a:has-text("Risk")').first();
+      // SlimSidebar pillar links are icon-only; locate the risk pillar by its
+      // data-onboarding hook / href (getByRole name won't match — no a11y text).
+      const riskLink = page.locator('nav[data-onboarding="sidebar-nav"] a[href="/risks"], a[data-onboarding="risk-nav"]').first();
       if (await riskLink.isVisible({ timeout: 5000 }).catch(() => false)) {
         await riskLink.click();
         await page.waitForLoadState('networkidle').catch(() => {});
