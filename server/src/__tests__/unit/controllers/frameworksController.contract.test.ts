@@ -248,7 +248,10 @@ describe('FrameworksController Contract Tests', () => {
       const existingFw = createMockFramework();
       const existingCtrl = createMockControl();
       (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(existingFw as never);
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(existingCtrl as never);
+      // Source loads the control via findFirst scoped to { id: controlId, frameworkId }
+      // (org-verified parent) before updating — re-arm here because jest.config
+      // resetMocks wipes module-load implementations.
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(existingCtrl as never);
       (prismaMock.frameworkControl.update as jest.Mock<any>).mockResolvedValue(
         createMockControl({ status: 'Passed' }) as never
       );
@@ -258,6 +261,12 @@ describe('FrameworksController Contract Tests', () => {
 
       await frameworksController.updateControl(mockReq as Request, mockRes as Response, mockNext);
 
+      // Control lookup must be org-scoped to the parent framework, not by id alone
+      expect(prismaMock.frameworkControl.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ctrl-123', frameworkId: 'fw-123' },
+        })
+      );
       expect(prismaMock.frameworkControl.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'ctrl-123' },

@@ -294,7 +294,8 @@ describe('Frameworks API', () => {
       };
 
       prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework);
-      prismaMock.frameworkControl.findUnique.mockResolvedValue(mockControl);
+      // Source loads the control via findFirst({ where: { id, frameworkId } }), not findUnique
+      prismaMock.frameworkControl.findFirst.mockResolvedValue(mockControl);
       prismaMock.frameworkControl.update.mockResolvedValue({
         ...mockControl,
         status: 'Implemented',
@@ -315,21 +316,30 @@ describe('Frameworks API', () => {
         organizationId: 'org-123',
       };
 
-      prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework);
-      prismaMock.frameworkControl.update.mockResolvedValue({
-        id: 'ctrl-1',
+      const controlIds = ['ctrl-1', 'ctrl-2', 'ctrl-3'];
+      const updatedControls = controlIds.map((id) => ({
+        id,
+        frameworkId: 'fw-1',
         status: 'Implemented',
-      } as any);
+      }));
+
+      prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework);
+      // Source uses updateMany scoped to { id: { in }, frameworkId }; count must equal
+      // controlIds.length or the controller returns 404. The response is built from findMany.
+      prismaMock.frameworkControl.updateMany.mockResolvedValue({ count: controlIds.length } as any);
+      prismaMock.frameworkControl.findMany.mockResolvedValue(updatedControls as any);
 
       const response = await request(app)
         .post('/api/frameworks/fw-1/controls/bulk-update')
         .send({
-          controlIds: ['ctrl-1', 'ctrl-2', 'ctrl-3'],
+          controlIds,
           status: 'Implemented',
         })
         .expect(200);
 
       expect(response.body).toHaveProperty('message');
+      expect(Array.isArray(response.body.controls)).toBe(true);
+      expect(response.body.controls).toHaveLength(controlIds.length);
     });
 
     it('should delete control', async () => {
