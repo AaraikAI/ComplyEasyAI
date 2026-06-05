@@ -20,12 +20,26 @@ jest.mock('../../../../config/database', () => ({
   default: prismaMock,
 }));
 
+// Mocked on-chain contract exposing the deployed selectors the hardened source
+// actually calls: ComplianceAuditLog.createAuditLog/verifyAuditLog/getAuditLog
+// and ComplianceRegistry.recordFrameworkScore/issueCertificate/verifyCertificate/
+// getCertificate. A single mock instance backs every `new ethers.Contract(...)`
+// (audit + registry), which is sufficient because the methods are disjoint.
+const verifyCertificateMock = Object.assign(
+  jest.fn() as jest.Mock<any>,
+  { staticCall: jest.fn() as jest.Mock<any> }
+);
+
 const mockContractInstance = {
-  recordAuditLog: jest.fn() as jest.Mock<any>,
-  recordCompliance: jest.fn() as jest.Mock<any>,
-  issueComplianceCertificate: jest.fn() as jest.Mock<any>,
-  verifyComplianceCertificate: jest.fn() as jest.Mock<any>,
+  // ComplianceAuditLog selectors
+  createAuditLog: jest.fn() as jest.Mock<any>,
   verifyAuditLog: jest.fn() as jest.Mock<any>,
+  getAuditLog: jest.fn() as jest.Mock<any>,
+  // ComplianceRegistry selectors
+  recordFrameworkScore: jest.fn() as jest.Mock<any>,
+  issueCertificate: jest.fn() as jest.Mock<any>,
+  verifyCertificate: verifyCertificateMock,
+  getCertificate: jest.fn() as jest.Mock<any>,
   interface: {
     parseLog: jest.fn() as jest.Mock<any>,
   },
@@ -85,32 +99,54 @@ function setupMocks() {
   mockEthers.keccak256.mockReturnValue('0x' + 'a'.repeat(64));
   mockEthers.toUtf8Bytes.mockReturnValue(new Uint8Array(32));
 
-  // Re-establish contract mock implementations
-  mockContractInstance.recordAuditLog.mockResolvedValue({
+  // Re-establish contract mock implementations.
+  // A confirmed write transaction: a tx object whose wait() resolves a receipt
+  // carrying hash + blockNumber + gasUsed (gasUsed is read by executeRegistryTx).
+  const txWithReceipt = () => ({
     hash: '0xabc123',
     wait: jest.fn<any>().mockResolvedValue({
       blockNumber: 12345,
       hash: '0xtx123',
-    }),
-  });
-  mockContractInstance.recordCompliance.mockResolvedValue({
-    wait: jest.fn<any>().mockResolvedValue({
-      blockNumber: 12345,
-      hash: '0xtx123',
+      gasUsed: { toString: () => '21000' },
       logs: [],
     }),
   });
-  mockContractInstance.issueComplianceCertificate.mockResolvedValue({
-    wait: jest.fn<any>().mockResolvedValue({
-      blockNumber: 12345,
-      hash: '0xtx123',
-      logs: [],
-    }),
-  });
-  mockContractInstance.verifyComplianceCertificate.mockResolvedValue(
-    [true, 'SOC2', Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60]
+
+  // ComplianceAuditLog.createAuditLog(logId, organizationId, userId, action, dataHash)
+  mockContractInstance.createAuditLog.mockResolvedValue(txWithReceipt());
+  // ComplianceAuditLog.verifyAuditLog(logId, dataHash) -> bool ; getAuditLog -> tuple
+  mockContractInstance.verifyAuditLog.mockResolvedValue(true);
+  mockContractInstance.getAuditLog.mockResolvedValue([
+    '0x' + 'a'.repeat(64), // logId
+    'org-123',
+    'user-1',
+    'user_login',
+    Math.floor(Date.now() / 1000), // timestamp (index 4)
+  ]);
+
+  // ComplianceRegistry.recordFrameworkScore(orgId, framework, score, evidenceHash)
+  mockContractInstance.recordFrameworkScore.mockResolvedValue(txWithReceipt());
+  // ComplianceRegistry.issueCertificate(certId, orgId, framework, score, expiresAt, dataHash, metadataHash)
+  mockContractInstance.issueCertificate.mockResolvedValue(txWithReceipt());
+  // ComplianceRegistry.verifyCertificate.staticCall(certId) -> [valid, status, score, expiresAt]
+  verifyCertificateMock.staticCall.mockResolvedValue(
+    [true, 2, 9500, Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60]
   );
-  mockContractInstance.verifyAuditLog.mockResolvedValue([true, 12345, '0x123']);
+  verifyCertificateMock.mockResolvedValue(txWithReceipt());
+  // ComplianceRegistry.getCertificate(certId) -> tuple (framework at index 1)
+  mockContractInstance.getCertificate.mockResolvedValue([
+    'org-123',
+    'SOC2',
+    '0xissuer',
+    2,
+    9500,
+    Math.floor(Date.now() / 1000),
+    Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60,
+    '0x' + '0'.repeat(64),
+    '0x' + '0'.repeat(64),
+    '0x' + '0'.repeat(64),
+  ]);
+
   mockContractInstance.interface.parseLog.mockReturnValue({
     name: 'CertificateIssued',
     args: {
@@ -138,6 +174,10 @@ describe('BlockchainService', () => {
     process.env.POLYGON_RPC_URL = 'https://test-polygon-rpc.com';
     process.env.BLOCKCHAIN_PRIVATE_KEY = '0x' + '1'.repeat(64);
     process.env.COMPLIANCE_CONTRACT_ADDRESS = '0x' + '2'.repeat(40);
+    // Required so initialize() wires up the ComplianceRegistry contract; the
+    // hardened source routes compliance scoring + certificate lifecycle through
+    // the registry and returns 501 when it is unconfigured.
+    process.env.COMPLIANCE_REGISTRY_ADDRESS = '0x' + '3'.repeat(40);
     (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
     setupMocks();

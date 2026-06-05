@@ -154,10 +154,10 @@ class ComplianceAsCodeService {
       }
 
       // Also save policy file locally for OPA (backup).
-      const policyFile = path.join(this.policiesPath, `${persisted.id}.rego`);
+      const policyFile = path.join(this.policiesPath, `${this.assertSafeFileId(persisted.id)}.rego`);
       fs.writeFileSync(policyFile, normalizedRego, 'utf-8');
 
-      logger.info(`Created compliance policy: ${policy.name} (${persisted.id})`);
+      logger.info(`Created compliance policy: ${this.sanitizeForLog(policy.name)} (${persisted.id})`);
 
       return {
         id: persisted.id,
@@ -205,21 +205,25 @@ class ComplianceAsCodeService {
     let normalized = rego;
     if (policyId) {
       normalized = this.enforcePackageHeader(rego, policyId);
-    } else if (!/^\s*package\s+/m.test(rego)) {
+    } else if (!this.hasPackageDeclaration(rego)) {
       throw new AppError('Rego policy must start with a package declaration', 400);
     }
 
     // Contract checks required by the evaluator (allow / violations consumers).
-    if (!/default\s+allow\s*[:=]?=\s*false/.test(normalized)) {
+    // Parsing is line-based (split/trim/startsWith) rather than regex-based so
+    // that user-supplied Rego cannot trigger catastrophic regex backtracking.
+    const lines = normalized.split('\n').map((line) => line.trim());
+
+    if (!lines.some((line) => this.isDenyByDefaultLine(line))) {
       throw new AppError(
         'Rego policy must declare a deny-by-default rule: default allow = false',
         400
       );
     }
-    if (!/(^|\n)\s*allow\b/.test(normalized)) {
+    if (!lines.some((line) => this.startsWithWord(line, 'allow'))) {
       throw new AppError('Rego policy must define an "allow" rule', 400);
     }
-    if (!/\bviolation\b/.test(normalized)) {
+    if (!lines.some((line) => line.includes('violation'))) {
       throw new AppError('Rego policy must define a "violation" rule', 400);
     }
 
@@ -234,17 +238,78 @@ class ComplianceAsCodeService {
   }
 
   /**
+   * Whether a trimmed line begins with the bare word `word` followed by a
+   * boundary (whitespace, `(`, `[`, `{`, `:`, `=`, or end-of-line) rather than
+   * being a longer identifier such as `allowList`. Implemented with string ops
+   * so it is linear in the line length and cannot backtrack.
+   */
+  private startsWithWord(line: string, word: string): boolean {
+    if (!line.startsWith(word)) {
+      return false;
+    }
+    if (line.length === word.length) {
+      return true;
+    }
+    const next = line.charAt(word.length);
+    // A subsequent identifier character means this is a longer word.
+    return !/[A-Za-z0-9_]/.test(next);
+  }
+
+  /**
+   * Guard a policy id before it is used as a filesystem path component.
+   * Ids are server-generated, but this validates the charset as defense-in-depth
+   * against path traversal and neutralizes the tainted-path data flow.
+   */
+  private assertSafeFileId(id: string): string {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) {
+      throw new AppError('Invalid policy identifier', 400);
+    }
+    return id;
+  }
+
+  /** Strip CR/LF/tabs from a value before interpolating it into a log line. */
+  private sanitizeForLog(value: string): string {
+    return String(value).replace(/[\r\n\t]+/g, ' ').slice(0, 200);
+  }
+
+  /**
+   * Whether a trimmed line is a deny-by-default declaration, i.e.
+   * `default allow = false` / `default allow := false` (tolerant of spacing).
+   * Token-based parsing avoids the unbounded-quantifier regex CodeQL flags.
+   */
+  private isDenyByDefaultLine(line: string): boolean {
+    if (!this.startsWithWord(line, 'default')) {
+      return false;
+    }
+    // Collapse runs of whitespace to single spaces, then compare tokens.
+    const compact = line.replace(/\s+/g, ' ').replace(':=', '=').replace(/\s*=\s*/, ' = ');
+    return compact === 'default allow = false';
+  }
+
+  /**
+   * Whether the source declares a package, scanning line by line.
+   */
+  private hasPackageDeclaration(rego: string): boolean {
+    return rego.split('\n').some((line) => this.startsWithWord(line.trim(), 'package'));
+  }
+
+  /**
    * Ensure the policy declares `package compliance.<policyId>`.
    * The id is emitted as a bracket-quoted segment because policy ids are not
    * guaranteed to be bare Rego identifiers (they may start with a digit or
    * contain hyphens). `compliance["<id>"]` resolves to the same REST data path
    * `/v1/data/compliance/<id>` used by evaluatePolicy().
+   *
+   * Parsing is line-based (split/trim/startsWith) to avoid running an
+   * unbounded-quantifier regex over user-supplied policy text.
    */
   private enforcePackageHeader(rego: string, policyId: string): string {
     const expectedPackage = `package compliance[${JSON.stringify(policyId)}]`;
-    const packageLine = /^\s*package\s+.*$/m;
-    if (packageLine.test(rego)) {
-      return rego.replace(packageLine, expectedPackage);
+    const lines = rego.split('\n');
+    const packageIndex = lines.findIndex((line) => this.startsWithWord(line.trim(), 'package'));
+    if (packageIndex >= 0) {
+      lines[packageIndex] = expectedPackage;
+      return lines.join('\n');
     }
     return `${expectedPackage}\n\n${rego}`;
   }
@@ -257,10 +322,14 @@ class ComplianceAsCodeService {
   private async compileRego(rego: string): Promise<{ ok: boolean; error?: string }> {
     // Path 1: local opa binary (`opa check`).
     if (this.opaBinary && fs.existsSync(this.opaBinary)) {
-      let tmpFile: string | undefined;
+      // Write the candidate policy into a freshly created, randomly named
+      // private directory (0700 by default) and the file itself with mode 0600.
+      // This avoids predictable temp paths and symlink/pre-creation races.
+      let tmpDir: string | undefined;
       try {
-        tmpFile = path.join(os.tmpdir(), `cac-policy-${crypto.randomBytes(8).toString('hex')}.rego`);
-        fs.writeFileSync(tmpFile, rego, 'utf-8');
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rego-'));
+        const tmpFile = path.join(tmpDir, 'policy.rego');
+        fs.writeFileSync(tmpFile, rego, { encoding: 'utf-8', mode: 0o600 });
         await execFileAsync(this.opaBinary, ['check', tmpFile], { timeout: 10000 });
         return { ok: true };
       } catch (error: any) {
@@ -269,11 +338,11 @@ class ComplianceAsCodeService {
           .trim();
         return { ok: false, error: message };
       } finally {
-        if (tmpFile) {
+        if (tmpDir) {
           try {
-            fs.unlinkSync(tmpFile);
+            fs.rmSync(tmpDir, { recursive: true, force: true });
           } catch {
-            // Ignore cleanup failures for the temporary policy file.
+            // Ignore cleanup failures for the temporary policy directory.
           }
         }
       }
@@ -1301,7 +1370,7 @@ allow {
       await this.uploadPolicyToOPA(persisted.id, normalizedRego);
 
       // Update file
-      const policyFile = path.join(this.policiesPath, `${persisted.id}.rego`);
+      const policyFile = path.join(this.policiesPath, `${this.assertSafeFileId(persisted.id)}.rego`);
       fs.writeFileSync(policyFile, normalizedRego, 'utf-8');
 
       logger.info(`Updated compliance policy: ${policyId} -> version ${newVersion}`);
@@ -1388,7 +1457,7 @@ allow {
         throw new AppError('Compliance policy not found', 404);
       }
 
-      const policyFile = path.join(this.policiesPath, `${policyId}.rego`);
+      const policyFile = path.join(this.policiesPath, `${this.assertSafeFileId(policyId)}.rego`);
       if (fs.existsSync(policyFile)) {
         fs.unlinkSync(policyFile);
       }
