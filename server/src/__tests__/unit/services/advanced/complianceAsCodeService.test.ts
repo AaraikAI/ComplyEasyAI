@@ -15,12 +15,21 @@ jest.mock('axios', () => ({
   },
 }));
 
+// existsSync returns true for the policies directory but false for the bundled
+// `opa` binary path, so compileRego() takes the OPA HTTP API path (mocked axios)
+// instead of spawning a real `opa check` process.
 jest.mock('fs', () => ({
-  existsSync: jest.fn<any>().mockReturnValue(true),
+  existsSync: jest.fn<any>((p: string) =>
+    typeof p === 'string' && p.includes(`${require('path').sep}bin${require('path').sep}opa`)
+      ? false
+      : true
+  ),
   mkdirSync: jest.fn(),
   writeFileSync: jest.fn(),
   readFileSync: jest.fn<any>().mockReturnValue('package main'),
   unlinkSync: jest.fn(),
+  mkdtempSync: jest.fn<any>().mockReturnValue('/tmp/rego-test'),
+  rmSync: jest.fn(),
 }));
 
 // In production OPA_ENDPOINT is a trusted internal host that passes the SSRF allowlist;
@@ -96,8 +105,15 @@ describe('ComplianceAsCodeService', () => {
     axios.delete.mockResolvedValue({ data: {} });
 
     const fs = require('fs');
-    fs.existsSync.mockReturnValue(true);
+    const pathSep = require('path').sep;
+    // Policies dir exists; the bundled opa binary does not (forces the OPA HTTP
+    // validation path, which is exercised through the mocked axios above).
+    fs.existsSync.mockImplementation((p: string) =>
+      typeof p === 'string' && p.includes(`${pathSep}bin${pathSep}opa`) ? false : true
+    );
     fs.unlinkSync.mockReturnValue(undefined);
+    fs.mkdtempSync.mockReturnValue('/tmp/rego-test');
+    fs.rmSync.mockReturnValue(undefined);
 
     (prismaMock.compliancePolicy.create as jest.Mock<any>).mockResolvedValue(mockPolicy);
     (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValue(mockPolicy);
@@ -128,13 +144,24 @@ describe('ComplianceAsCodeService', () => {
       const result = await complianceAsCodeService.createPolicy(orgId, {
         name: 'data_protection',
         framework: 'SOC2',
-        rego: 'package complyeasy.data_protection\ndefault allow = false\nallow { input.encrypted == true }',
+        rego:
+          'package complyeasy.data_protection\n' +
+          'default allow = false\n' +
+          'allow { input.encrypted == true }\n' +
+          'violation[msg] { not input.encrypted; msg := "data must be encrypted" }',
         severity: 'high',
         tags: ['data-protection'],
       });
 
       expect(result).toBeDefined();
       expect(prismaMock.compliancePolicy.create).toHaveBeenCalled();
+
+      // The submitted package header is rewritten to the policy's canonical
+      // namespace (data.compliance.<id>) and the normalized Rego is persisted.
+      const updateArg = (prismaMock.compliancePolicy.update as jest.Mock<any>).mock.calls[0][0] as any;
+      expect(updateArg.where.id).toBe('policy-1');
+      expect(updateArg.data.rego).toContain('package compliance["policy-1"]');
+      expect(updateArg.data.rego).not.toContain('package complyeasy.data_protection');
     });
 
     it('should throw on duplicate policy name', async () => {
@@ -155,12 +182,33 @@ describe('ComplianceAsCodeService', () => {
       const result = await complianceAsCodeService.createPolicy(orgId, {
         name: 'valid_policy',
         framework: 'SOC2',
-        rego: 'package complyeasy.valid\ndefault allow = false',
+        rego:
+          'package complyeasy.valid\n' +
+          'default allow = false\n' +
+          'allow { input.ok }\n' +
+          'violation[msg] { not input.ok; msg := "not ok" }',
         severity: 'medium',
         tags: ['valid'],
       });
 
       expect(result).toBeDefined();
+    });
+
+    it('should reject rego that violates the policy contract', async () => {
+      // Missing the required deny-by-default rule, the allow rule, and the
+      // violation rule -> validation must reject with a 400.
+      await expect(
+        complianceAsCodeService.createPolicy(orgId, {
+          name: 'invalid_policy',
+          framework: 'SOC2',
+          rego: 'package complyeasy.invalid\n# no rules here',
+          severity: 'low',
+          tags: ['invalid'],
+        })
+      ).rejects.toThrow();
+
+      // The provisional record created before validation must be removed.
+      expect(prismaMock.compliancePolicy.delete).toHaveBeenCalled();
     });
   });
 
@@ -331,7 +379,11 @@ describe('ComplianceAsCodeService', () => {
     it('should update a policy', async () => {
       const result = await complianceAsCodeService.updatePolicy('policy-1', orgId, {
         name: 'updated_policy',
-        rego: 'package complyeasy.updated\ndefault allow = true',
+        rego:
+          'package complyeasy.updated\n' +
+          'default allow = false\n' +
+          'allow { input.ok }\n' +
+          'violation[msg] { not input.ok; msg := "not ok" }',
       });
 
       expect(result).toBeDefined();
