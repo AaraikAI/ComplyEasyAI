@@ -85,6 +85,11 @@ template ComplianceCheck() {
 
     meetsThreshold <== thresholdMet.out;
 
+    // A valid proof MUST assert the org actually meets the threshold. Without
+    // this constraint the circuit proves nothing about compliance — a witness
+    // with meetsThreshold == 0 would still produce a verifying proof.
+    thresholdMet.out === 1;
+
     // 4. Bind the witness to the public evidence commitment via Poseidon.
     component hasher = Poseidon(4);
     hasher.inputs[0] <== controlsImplemented;

@@ -6,12 +6,17 @@
 
 import axios from 'axios';
 import crypto from 'crypto';
+import { execFile } from 'child_process';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
+import { promisify } from 'util';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { isUrlSafe } from '../../utils/urlValidator';
+
+const execFileAsync = promisify(execFile);
 
 interface Policy {
   id: string;
@@ -71,10 +76,14 @@ interface ComplianceReport {
 class ComplianceAsCodeService {
   private opaEndpoint: string;
   private policiesPath: string;
+  private opaBinary: string;
 
   constructor() {
     this.opaEndpoint = process.env.OPA_ENDPOINT || 'http://localhost:8181';
     this.policiesPath = path.join(__dirname, '../../policies');
+    // Local `opa` binary used to compile/check submitted Rego before persistence.
+    // Falls back to the OPA HTTP API when the binary is unavailable.
+    this.opaBinary = process.env.OPA_BINARY || path.join(this.policiesPath, 'bin', 'opa');
     this.ensurePoliciesDirectory();
   }
 
@@ -95,34 +104,11 @@ class ComplianceAsCodeService {
     policy: Omit<Policy, 'id'>
   ): Promise<Policy> {
     try {
-      const policyId = crypto.randomBytes(16).toString('hex');
-
-      const fullPolicy: Policy = {
-        id: policyId, // Will be replaced with DB ID
-        ...policy,
-      };
-
-      // Validate Rego syntax - Required in production
-      try {
-        await this.validateRegoSyntax(policy.rego);
-      } catch (error) {
-        if (process.env.NODE_ENV === 'production') {
-          throw error;
-        }
-        logger.warn('Rego syntax validation failed (development mode)', error);
-      }
-
-      // Save policy to OPA - Required in production (but don't fail if OPA unavailable in dev)
-      try {
-        await this.uploadPolicyToOPA(policyId, policy.rego);
-      } catch (error) {
-        if (process.env.NODE_ENV === 'production') {
-          throw error;
-        }
-        logger.warn('OPA upload failed (development mode), policy saved to database only', error);
-      }
-
-      // Store policy in database (primary storage)
+      // Create the database record first so the policy's canonical id is known.
+      // The id determines the OPA package namespace (data.compliance.<id>) that
+      // the evaluator queries, so validation and the persisted Rego must be
+      // bound to it. The submitted Rego is stored provisionally and replaced
+      // below with the validated, package-normalized source.
       const dbPolicy = await prisma.compliancePolicy.create({
         data: {
           organizationId,
@@ -136,59 +122,204 @@ class ComplianceAsCodeService {
         },
       });
 
-      // Also save policy file locally for OPA (backup)
-      const policyFile = path.join(this.policiesPath, `${dbPolicy.id}.rego`);
-      fs.writeFileSync(policyFile, policy.rego, 'utf-8');
+      // Validate the SUBMITTED Rego and bind it to this policy's namespace.
+      // A non-compiling policy is rejected (AppError 400) and the provisional
+      // record is removed so invalid stubs are never persisted.
+      let normalizedRego: string;
+      try {
+        normalizedRego = await this.validateRegoSyntax(policy.rego, dbPolicy.id);
+      } catch (error) {
+        await prisma.compliancePolicy
+          .delete({ where: { id: dbPolicy.id } })
+          .catch(() => {
+            // Ignore cleanup failure of the provisional record.
+          });
+        throw error;
+      }
 
-      logger.info(`Created compliance policy: ${policy.name} (${dbPolicy.id})`);
+      // Persist the validated, package-normalized Rego (DB is primary storage).
+      const persisted = await prisma.compliancePolicy.update({
+        where: { id: dbPolicy.id },
+        data: { rego: normalizedRego },
+      });
+
+      // Upload to OPA under the canonical id - Required in production.
+      try {
+        await this.uploadPolicyToOPA(persisted.id, normalizedRego);
+      } catch (error) {
+        if (process.env.NODE_ENV === 'production') {
+          throw error;
+        }
+        logger.warn('OPA upload failed (development mode), policy saved to database only', error);
+      }
+
+      // Also save policy file locally for OPA (backup).
+      const policyFile = path.join(this.policiesPath, `${persisted.id}.rego`);
+      fs.writeFileSync(policyFile, normalizedRego, 'utf-8');
+
+      logger.info(`Created compliance policy: ${policy.name} (${persisted.id})`);
 
       return {
-        id: dbPolicy.id,
-        name: dbPolicy.name,
-        framework: dbPolicy.framework,
-        rego: dbPolicy.rego,
-        severity: dbPolicy.severity as 'critical' | 'high' | 'medium' | 'low',
-        tags: dbPolicy.tags,
+        id: persisted.id,
+        name: persisted.name,
+        framework: persisted.framework,
+        rego: persisted.rego,
+        severity: persisted.severity as 'critical' | 'high' | 'medium' | 'low',
+        tags: persisted.tags,
       };
     } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
       logger.error('Error creating policy', error);
       throw new AppError('Failed to create compliance policy', 500);
     }
   }
 
   /**
-   * Validate Rego policy syntax
+   * Validate a SUBMITTED Rego policy and return its normalized source.
+   *
+   * This actually compiles the policy the caller supplied (not a hardcoded
+   * query) and enforces the contract the evaluator depends on:
+   *   - the policy must declare the package `compliance.<policyId>`, i.e. it
+   *     must resolve to the data path `data.compliance.<policyId>` that
+   *     evaluatePolicy() queries. When a policyId is provided, a missing or
+   *     incorrect package header is rewritten to the correct one.
+   *   - it must contain `default allow = false` (deny-by-default), and
+   *   - it must define an `allow` rule and a `violation` rule.
+   *
+   * Compilation is performed with the local `opa` binary when present,
+   * otherwise by PUTting to the OPA policy API (OPA parses and compiles on
+   * upload). A policy that does not compile is rejected with AppError 400 so
+   * that non-compiling stubs can never be persisted.
+   *
+   * Returns the (possibly package-corrected) Rego source to persist.
    */
-  private async validateRegoSyntax(rego: string): Promise<boolean> {
-    try {
-      // Use OPA compile API to validate syntax
-      const compileUrl = `${this.opaEndpoint}/v1/compile`;
-      if (!isUrlSafe(compileUrl)) {
-        throw new AppError('OPA endpoint URL is unsafe', 400);
-      }
-      const response = await axios.post(
-        compileUrl,
-        {
-          query: 'data.compliance.allow',
-          input: {},
-          unknowns: ['input'],
-        },
-        {
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 5000,
-        }
-      ).catch(() => {
-        // If OPA not running, perform basic validation
-        if (!rego.includes('package ')) {
-          throw new AppError('Rego policy must start with package declaration', 400);
-        }
-        return { data: { result: true } };
-      });
+  private async validateRegoSyntax(rego: string, policyId?: string): Promise<string> {
+    if (typeof rego !== 'string' || rego.trim().length === 0) {
+      throw new AppError('Rego policy must be a non-empty string', 400);
+    }
 
-      return true;
-    } catch (error) {
-      logger.error('Rego syntax validation failed', error);
-      throw new AppError('Invalid Rego policy syntax', 400);
+    // Enforce / auto-correct the package so the persisted file matches the
+    // exact namespace the evaluator queries (data.compliance.<policyId>).
+    let normalized = rego;
+    if (policyId) {
+      normalized = this.enforcePackageHeader(rego, policyId);
+    } else if (!/^\s*package\s+/m.test(rego)) {
+      throw new AppError('Rego policy must start with a package declaration', 400);
+    }
+
+    // Contract checks required by the evaluator (allow / violations consumers).
+    if (!/default\s+allow\s*[:=]?=\s*false/.test(normalized)) {
+      throw new AppError(
+        'Rego policy must declare a deny-by-default rule: default allow = false',
+        400
+      );
+    }
+    if (!/(^|\n)\s*allow\b/.test(normalized)) {
+      throw new AppError('Rego policy must define an "allow" rule', 400);
+    }
+    if (!/\bviolation\b/.test(normalized)) {
+      throw new AppError('Rego policy must define a "violation" rule', 400);
+    }
+
+    // Compile the submitted policy. Prefer the local binary; fall back to OPA.
+    const compiled = await this.compileRego(normalized);
+    if (!compiled.ok) {
+      logger.warn('Submitted Rego policy failed to compile', { error: compiled.error });
+      throw new AppError(`Invalid Rego policy: ${compiled.error}`, 400);
+    }
+
+    return normalized;
+  }
+
+  /**
+   * Ensure the policy declares `package compliance.<policyId>`.
+   * The id is emitted as a bracket-quoted segment because policy ids are not
+   * guaranteed to be bare Rego identifiers (they may start with a digit or
+   * contain hyphens). `compliance["<id>"]` resolves to the same REST data path
+   * `/v1/data/compliance/<id>` used by evaluatePolicy().
+   */
+  private enforcePackageHeader(rego: string, policyId: string): string {
+    const expectedPackage = `package compliance[${JSON.stringify(policyId)}]`;
+    const packageLine = /^\s*package\s+.*$/m;
+    if (packageLine.test(rego)) {
+      return rego.replace(packageLine, expectedPackage);
+    }
+    return `${expectedPackage}\n\n${rego}`;
+  }
+
+  /**
+   * Compile Rego, returning a structured result. Uses the local `opa check`
+   * binary when available, otherwise PUTs to the OPA policy API which parses
+   * and compiles on upload (a non-2xx response means the policy is invalid).
+   */
+  private async compileRego(rego: string): Promise<{ ok: boolean; error?: string }> {
+    // Path 1: local opa binary (`opa check`).
+    if (this.opaBinary && fs.existsSync(this.opaBinary)) {
+      let tmpFile: string | undefined;
+      try {
+        tmpFile = path.join(os.tmpdir(), `cac-policy-${crypto.randomBytes(8).toString('hex')}.rego`);
+        fs.writeFileSync(tmpFile, rego, 'utf-8');
+        await execFileAsync(this.opaBinary, ['check', tmpFile], { timeout: 10000 });
+        return { ok: true };
+      } catch (error: any) {
+        const message = (error?.stderr || error?.stdout || error?.message || 'compilation failed')
+          .toString()
+          .trim();
+        return { ok: false, error: message };
+      } finally {
+        if (tmpFile) {
+          try {
+            fs.unlinkSync(tmpFile);
+          } catch {
+            // Ignore cleanup failures for the temporary policy file.
+          }
+        }
+      }
+    }
+
+    // Path 2: OPA policy API. OPA parses and compiles on PUT; a failed upload
+    // (4xx) indicates the submitted policy is invalid.
+    const validationId = `validation/${crypto.randomBytes(8).toString('hex')}`;
+    const policyUrl = `${this.opaEndpoint}/v1/policies/${encodeURIComponent(validationId)}`;
+    if (!isUrlSafe(policyUrl)) {
+      throw new AppError('OPA policy URL is unsafe', 400);
+    }
+    try {
+      await axios.put(policyUrl, rego, {
+        headers: {
+          'Content-Type': 'text/plain',
+          ...(process.env.OPA_AUTH_TOKEN ? { Authorization: `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {}),
+        },
+        timeout: 5000,
+      });
+      // Remove the throwaway validation policy (best-effort).
+      await axios
+        .delete(policyUrl, {
+          headers: process.env.OPA_AUTH_TOKEN ? { Authorization: `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {},
+          timeout: 5000,
+        })
+        .catch(() => {
+          // Ignore cleanup failures for the temporary validation policy.
+        });
+      return { ok: true };
+    } catch (error: any) {
+      const status = error?.response?.status;
+      // A 4xx means OPA rejected the policy (invalid). Network/availability
+      // errors (no status) cannot confirm validity: in production this is a
+      // hard failure; otherwise allow the contract checks above to stand.
+      if (status && status >= 400 && status < 500) {
+        const detail = error?.response?.data?.message
+          || JSON.stringify(error?.response?.data?.errors || error?.response?.data || {});
+        return { ok: false, error: detail };
+      }
+      if (process.env.NODE_ENV === 'production') {
+        logger.error('OPA unavailable for Rego compilation in production', error);
+        throw new AppError('OPA server is required to validate policies in production', 500);
+      }
+      logger.warn('OPA unavailable for Rego compilation; relying on structural checks (development mode)');
+      return { ok: true };
     }
   }
 
@@ -1126,12 +1257,9 @@ allow {
         throw new AppError('Policy not found', 404);
       }
 
-      // Validate Rego if provided
-      if (updates.rego) {
-        await this.validateRegoSyntax(updates.rego);
-      }
-
-      // Create new version
+      // Create the new version first so its canonical id (and therefore its OPA
+      // package namespace) is known. The Rego is validated and re-namespaced to
+      // this new id below before it is persisted/uploaded.
       const newVersion = existing.version + 1;
       const updatedPolicy = await prisma.compliancePolicy.create({
         data: {
@@ -1147,24 +1275,49 @@ allow {
         },
       });
 
+      // Validate the SUBMITTED (or carried-over) Rego and bind it to the new
+      // version's namespace. Reject + remove the provisional record on failure.
+      let normalizedRego: string;
+      try {
+        normalizedRego = await this.validateRegoSyntax(
+          updates.rego || existing.rego,
+          updatedPolicy.id
+        );
+      } catch (error) {
+        await prisma.compliancePolicy
+          .delete({ where: { id: updatedPolicy.id } })
+          .catch(() => {
+            // Ignore cleanup failure of the provisional record.
+          });
+        throw error;
+      }
+
+      const persisted = await prisma.compliancePolicy.update({
+        where: { id: updatedPolicy.id },
+        data: { rego: normalizedRego },
+      });
+
       // Upload to OPA
-      await this.uploadPolicyToOPA(updatedPolicy.id, updatedPolicy.rego);
+      await this.uploadPolicyToOPA(persisted.id, normalizedRego);
 
       // Update file
-      const policyFile = path.join(this.policiesPath, `${updatedPolicy.id}.rego`);
-      fs.writeFileSync(policyFile, updatedPolicy.rego, 'utf-8');
+      const policyFile = path.join(this.policiesPath, `${persisted.id}.rego`);
+      fs.writeFileSync(policyFile, normalizedRego, 'utf-8');
 
       logger.info(`Updated compliance policy: ${policyId} -> version ${newVersion}`);
 
       return {
-        id: updatedPolicy.id,
-        name: updatedPolicy.name,
-        framework: updatedPolicy.framework,
-        rego: updatedPolicy.rego,
-        severity: updatedPolicy.severity as 'critical' | 'high' | 'medium' | 'low',
-        tags: updatedPolicy.tags,
+        id: persisted.id,
+        name: persisted.name,
+        framework: persisted.framework,
+        rego: persisted.rego,
+        severity: persisted.severity as 'critical' | 'high' | 'medium' | 'low',
+        tags: persisted.tags,
       };
     } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
       logger.error('Error updating policy', error);
       throw new AppError('Failed to update compliance policy', 500);
     }

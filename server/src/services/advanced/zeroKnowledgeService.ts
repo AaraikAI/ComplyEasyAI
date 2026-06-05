@@ -5,12 +5,19 @@
  */
 
 import * as snarkjs from 'snarkjs';
+import { buildPoseidon, type Poseidon } from 'circomlibjs';
 import crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
+
+// BN254 / alt_bn128 scalar field order. Every field element fed to a circuit
+// (or compared against a public signal) must be reduced modulo this prime.
+const BN128_FIELD_ORDER = BigInt(
+  '21888242871839275222246405745257275088548364400416034343698204186575808495617'
+);
 
 interface ZKProof {
   proof: any;
@@ -43,6 +50,7 @@ class ZeroKnowledgeService {
   private compiledPath: string;
   private keysPath: string;
   private circuitPaths: Map<string, CircuitPaths> = new Map();
+  private poseidonPromise: Promise<Poseidon> | null = null;
 
   constructor() {
     this.circuitsPath = path.join(__dirname, '../../zkp/circuits');
@@ -100,6 +108,43 @@ class ZeroKnowledgeService {
   }
 
   /**
+   * Whether development-only simulated proofs are permitted. Defaults to OFF.
+   * Must be explicitly opted into via ZK_ALLOW_SIMULATED='true' AND must never
+   * be honored in production. This intentionally does NOT key off NODE_ENV so
+   * that staging/test environments fail closed unless the operator opts in.
+   */
+  private simulatedProofsAllowed(): boolean {
+    return (
+      process.env.NODE_ENV !== 'production' &&
+      process.env.ZK_ALLOW_SIMULATED === 'true'
+    );
+  }
+
+  /**
+   * Lazily build and cache the Poseidon hasher (same hash the circuits use).
+   */
+  private async getPoseidon(): Promise<Poseidon> {
+    if (!this.poseidonPromise) {
+      this.poseidonPromise = buildPoseidon();
+    }
+    return this.poseidonPromise;
+  }
+
+  /**
+   * Compute Poseidon(inputs) and return the result as a decimal field-element
+   * string, matching the value snarkjs emits in publicSignals.
+   */
+  private async poseidonHash(inputs: Array<bigint | number | string>): Promise<string> {
+    const poseidon = await this.getPoseidon();
+    const normalized = inputs.map((v) => {
+      const big = typeof v === 'bigint' ? v : BigInt(v);
+      return ((big % BN128_FIELD_ORDER) + BN128_FIELD_ORDER) % BN128_FIELD_ORDER;
+    });
+    const out = poseidon(normalized);
+    return poseidon.F.toObject(out).toString();
+  }
+
+  /**
    * Generate a zero-knowledge proof for compliance status
    * Proves that data meets compliance requirements without revealing the data
    */
@@ -113,12 +158,27 @@ class ZeroKnowledgeService {
     }
   ): Promise<ZKProof> {
     try {
-      // Create input for the circuit
+      // Derive the salt and organization commitment as field elements, then
+      // compute the evidence commitment with the SAME Poseidon the circuit
+      // enforces: Poseidon([controlsImplemented, totalControls, evidenceSalt,
+      // organizationCommit]) === evidenceCommitment.
+      const evidenceSalt = this.hashToFieldElement(privateData.evidenceHash);
+      const organizationCommit = this.hashToFieldElement(organizationId);
+      const evidenceCommitment = await this.poseidonHash([
+        privateData.controlsImplemented,
+        privateData.totalControls,
+        evidenceSalt,
+        organizationCommit,
+      ]);
+
+      // Witness input keyed to the circuit's declared signal names.
       const input = {
         controlsImplemented: privateData.controlsImplemented,
         totalControls: privateData.totalControls,
-        evidenceHash: this.hashToFieldElement(privateData.evidenceHash),
+        evidenceSalt: evidenceSalt.toString(),
         threshold: 80, // 80% compliance threshold
+        organizationCommit: organizationCommit.toString(),
+        evidenceCommitment,
       };
 
       // Generate real zk-SNARK proof
@@ -149,22 +209,37 @@ class ZeroKnowledgeService {
    */
   async verifyComplianceProof(proof: ZKProof): Promise<ZKVerificationResult> {
     try {
-      const isValid = await this.verifyProofInternal('compliance_check', proof);
-
-      if (isValid) {
-        // Extract public signals (compliance score without private data)
-        const complianceScore = parseInt(proof.publicSignals[0]);
-
-        logger.info(`Verified compliance proof: score=${complianceScore}`);
-
-        return {
-          isValid: true,
-          proofId: this.generateProofId(proof),
-          timestamp: new Date(),
-        };
+      if (this.carriesDevMarker(proof)) {
+        logger.warn('Rejected compliance proof carrying a development marker');
+        return { isValid: false };
       }
 
-      return { isValid: false };
+      const isValid = await this.verifyProofInternal('compliance_check', proof);
+
+      if (!isValid) {
+        return { isValid: false };
+      }
+
+      // publicSignals ordering for compliance_check:
+      //   [0] meetsThreshold (circuit OUTPUT)
+      //   [1] threshold, [2] organizationCommit, [3] evidenceCommitment
+      // The cryptographic verify only proves the public signals are consistent
+      // with SOME witness; it does not assert the claim. The decision must
+      // require the boolean output to be 1.
+      const meetsThreshold = proof.publicSignals[0];
+      if (meetsThreshold !== '1') {
+        logger.info('Compliance proof verified but threshold not met (meetsThreshold=0)');
+        return { isValid: false };
+      }
+
+      const threshold = proof.publicSignals[1];
+      logger.info(`Verified compliance proof: meetsThreshold=1, threshold=${threshold}`);
+
+      return {
+        isValid: true,
+        proofId: this.generateProofId(proof),
+        timestamp: new Date(),
+      };
     } catch (error) {
       logger.error('Error verifying compliance proof', error);
       return { isValid: false };
@@ -181,10 +256,32 @@ class ZeroKnowledgeService {
     privateKey: string
   ): Promise<ZKProof> {
     try {
+      // Map service inputs to the circuit's declared signals.
+      //   sk        (private) <- privateKey
+      //   userIdSalt(public)  <- field-element of userId (anchors identity commit)
+      //   dataHash  (public)  <- field-element of the data hash
+      //   dataSalt  (public)  <- per-claim randomness
+      //   claimContext(public)<- context tag (here: the user identity anchor)
+      const sk = this.hashToFieldElement(privateKey);
+      const userIdSalt = this.hashToFieldElement(userId);
+      const dataHashField = this.hashToFieldElement(dataHash);
+      const dataSalt = BigInt('0x' + crypto.randomBytes(31).toString('hex')) % BN128_FIELD_ORDER;
+      const claimContext = userIdSalt;
+
+      // Compute the three Poseidon commitments exactly as the circuit enforces.
+      const ownerCommitment = await this.poseidonHash([sk, userIdSalt]);
+      const dataCommitment = await this.poseidonHash([sk, dataHashField, dataSalt]);
+      const nullifier = await this.poseidonHash([sk, claimContext]);
+
       const input = {
-        dataHash: this.hashToFieldElement(dataHash),
-        privateKey: this.hashToFieldElement(privateKey),
-        userId: this.hashToFieldElement(userId),
+        sk: sk.toString(),
+        userIdSalt: userIdSalt.toString(),
+        dataHash: dataHashField.toString(),
+        dataSalt: dataSalt.toString(),
+        ownerCommitment,
+        dataCommitment,
+        claimContext: claimContext.toString(),
+        nullifier,
       };
 
       const { proof, publicSignals } = await this.generateProofInternal(
@@ -206,17 +303,31 @@ class ZeroKnowledgeService {
    */
   async verifyOwnershipProof(proof: ZKProof, expectedUserId: string): Promise<boolean> {
     try {
-      const isValid = await this.verifyProofInternal('data_ownership', proof);
-
-      if (isValid) {
-        // Verify the public signal matches expected user
-        const proofUserId = proof.publicSignals[0];
-        const expectedUserIdHash = this.hashToFieldElement(expectedUserId);
-
-        return proofUserId === expectedUserIdHash.toString();
+      if (this.carriesDevMarker(proof)) {
+        logger.warn('Rejected ownership proof carrying a development marker');
+        return false;
       }
 
-      return false;
+      const isValid = await this.verifyProofInternal('data_ownership', proof);
+      if (!isValid) {
+        return false;
+      }
+
+      // publicSignals ordering for data_ownership:
+      //   [0] ownershipVerified (circuit OUTPUT)
+      //   [1] userIdSalt, [2] dataHash, [3] dataSalt, [4] ownerCommitment,
+      //   [5] dataCommitment, [6] claimContext, [7] nullifier
+      const ownershipVerified = proof.publicSignals[0];
+      if (ownershipVerified !== '1') {
+        return false;
+      }
+
+      // Bind the proof to the expected user via the userIdSalt public input,
+      // which is derived from the user identity at generation time.
+      const proofUserIdSalt = proof.publicSignals[1];
+      const expectedUserIdHash = this.hashToFieldElement(expectedUserId);
+
+      return proofUserIdSalt === expectedUserIdHash.toString();
     } catch (error) {
       logger.error('Error verifying ownership proof', error);
       return false;
@@ -233,19 +344,51 @@ class ZeroKnowledgeService {
       permissions: string[];
       expiryDate: Date;
     },
-    secret: string
+    secret: string,
+    requiredRoleLevel?: number
   ): Promise<ZKProof> {
     try {
       const permissionsHash = this.hashToFieldElement(
         credentialData.permissions.join(',')
       );
+      const roleLevel = this.roleToLevel(credentialData.role);
+      // When the caller does not assert a specific minimum, the proof attests
+      // the holder's actual role level (roleLevel >= roleLevel always holds),
+      // so verifiers can confirm the credential is at least that tier.
+      const assertedRoleLevel =
+        requiredRoleLevel !== undefined ? requiredRoleLevel : roleLevel;
+      const expiryTimestamp = Math.floor(credentialData.expiryDate.getTime() / 1000);
+      // Treat the credential as issued now; the circuit asserts
+      // issuedTimestamp <= currentTimestamp <= expiryTimestamp.
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+      const issuedTimestamp = currentTimestamp;
+      const subjectSecret = this.hashToFieldElement(secret);
 
-      const input = {
-        roleLevel: this.roleToLevel(credentialData.role),
+      // Compute the credential commitment and nullifier with the SAME Poseidon
+      // the circuit enforces:
+      //   credentialCommitment = Poseidon([roleLevel, permissionsHash,
+      //       issuedTimestamp, expiryTimestamp, subjectSecret])
+      //   nullifier = Poseidon([subjectSecret, currentTimestamp])
+      const credentialCommitment = await this.poseidonHash([
+        roleLevel,
         permissionsHash,
-        expiryTimestamp: Math.floor(credentialData.expiryDate.getTime() / 1000),
-        currentTimestamp: Math.floor(Date.now() / 1000),
-        secret: this.hashToFieldElement(secret),
+        issuedTimestamp,
+        expiryTimestamp,
+        subjectSecret,
+      ]);
+      const nullifier = await this.poseidonHash([subjectSecret, currentTimestamp]);
+
+      // Witness input keyed to the circuit's declared signal names.
+      const input = {
+        roleLevel,
+        permissionsHash: permissionsHash.toString(),
+        issuedTimestamp,
+        expiryTimestamp,
+        subjectSecret: subjectSecret.toString(),
+        currentTimestamp,
+        requiredRoleLevel: assertedRoleLevel,
+        credentialCommitment,
+        nullifier,
       };
 
       const { proof, publicSignals } = await this.generateProofInternal(
@@ -267,14 +410,32 @@ class ZeroKnowledgeService {
    */
   async verifyCredentialProof(proof: ZKProof, requiredLevel: number): Promise<boolean> {
     try {
-      const isValid = await this.verifyProofInternal('credential_verification', proof);
-
-      if (isValid) {
-        const roleLevel = parseInt(proof.publicSignals[0]);
-        return roleLevel >= requiredLevel;
+      if (this.carriesDevMarker(proof)) {
+        logger.warn('Rejected credential proof carrying a development marker');
+        return false;
       }
 
-      return false;
+      const isValid = await this.verifyProofInternal('credential_verification', proof);
+      if (!isValid) {
+        return false;
+      }
+
+      // publicSignals ordering for credential_verification:
+      //   [0] isValid (circuit OUTPUT)
+      //   [1] currentTimestamp, [2] requiredRoleLevel,
+      //   [3] credentialCommitment, [4] nullifier
+      // The circuit's isValid output is 1 only when roleLevel >=
+      // requiredRoleLevel AND the credential is unexpired/issued. The decision
+      // must require that boolean to be 1.
+      const isValidSignal = proof.publicSignals[0];
+      if (isValidSignal !== '1') {
+        return false;
+      }
+
+      // The role threshold the proof actually attests to is the public
+      // requiredRoleLevel signal; it must be at least the caller's requirement.
+      const provedRequiredLevel = parseInt(proof.publicSignals[2], 10);
+      return Number.isFinite(provedRequiredLevel) && provedRequiredLevel >= requiredLevel;
     } catch (error) {
       logger.error('Error verifying credential proof', error);
       return false;
@@ -301,18 +462,18 @@ class ZeroKnowledgeService {
       const zkeyExists = fs.existsSync(circuitPaths.zkey);
 
       if (!wasmExists || !zkeyExists) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new AppError(
-            `Circuit files not found for ${circuitName}. Run compilation and trusted setup.`,
-            404
-          );
-        } else {
-          // In development, use simulated proof if files don't exist
+        if (this.simulatedProofsAllowed()) {
+          // Simulated proofs are an explicit, opt-in development aid only.
           logger.warn(
-            `Circuit files not found for ${circuitName}, using simulated proof (development mode)`
+            `Circuit files not found for ${circuitName}; ZK_ALLOW_SIMULATED is set, ` +
+            `using a development-only simulated proof.`
           );
           return this.createSimulatedProof(circuitName, input);
         }
+        throw new AppError(
+          `Circuit files not found for ${circuitName}. Run compilation and trusted setup.`,
+          404
+        );
       }
 
       // Generate zk-SNARK proof using Groth16.
@@ -330,13 +491,14 @@ class ZeroKnowledgeService {
       return { proof, publicSignals: publicSignals.map((s: any) => s.toString()) };
     } catch (error) {
       logger.error(`Error in generateProofInternal for ${circuitName}`, error);
-      
-      // In development, fallback to simulated proof
-      if (process.env.NODE_ENV !== 'production') {
-        logger.warn(`Falling back to simulated proof for ${circuitName}`);
+
+      // Fall back to a simulated proof only when explicitly opted in; never by
+      // default, so non-production environments fail closed.
+      if (this.simulatedProofsAllowed()) {
+        logger.warn(`Falling back to development-only simulated proof for ${circuitName}`);
         return this.createSimulatedProof(circuitName, input);
       }
-      
+
       throw error;
     }
   }
@@ -352,22 +514,23 @@ class ZeroKnowledgeService {
         throw new AppError(`Circuit paths not found for ${circuitName}`, 404);
       }
 
-      // Check if verification key exists
+      // Reject any proof carrying a development/simulated marker. These are
+      // never cryptographically sound and must not pass verification.
+      if (this.carriesDevMarker(proof)) {
+        logger.warn(`Rejected ${circuitName} proof carrying a development marker`);
+        return false;
+      }
+
+      // Check if verification key exists. A missing key means verification
+      // cannot be performed cryptographically; fail closed (reject) rather than
+      // accepting based on proof shape.
       const vkeyExists = fs.existsSync(circuitPaths.vkey);
 
       if (!vkeyExists) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new AppError(
-            `Verification key not found for ${circuitName}. Run trusted setup.`,
-            404
-          );
-        } else {
-          // In development, validate proof structure
-          logger.warn(
-            `Verification key not found for ${circuitName}, validating structure (development mode)`
-          );
-          return this.validateProofStructure(proof);
-        }
+        logger.error(
+          `Verification key not found for ${circuitName}. Run trusted setup. Rejecting proof.`
+        );
+        return false;
       }
 
       // Load verification key
@@ -384,16 +547,23 @@ class ZeroKnowledgeService {
 
       return isValid;
     } catch (error) {
+      // A verification error means the proof could not be cryptographically
+      // confirmed; fail closed.
       logger.error(`Error in verifyProofInternal for ${circuitName}`, error);
-      
-      // In development, validate proof structure
-      if (process.env.NODE_ENV !== 'production') {
-        logger.warn(`Falling back to structure validation for ${circuitName}`);
-        return this.validateProofStructure(proof);
-      }
-      
       return false;
     }
+  }
+
+  /**
+   * Whether a proof object carries a development/simulated marker. Such proofs
+   * are forged placeholders and must always be rejected by verification.
+   */
+  private carriesDevMarker(proof: ZKProof): boolean {
+    const p = proof?.proof;
+    if (!p || typeof p !== 'object') {
+      return false;
+    }
+    return p._devMode === true || p._simulated === true;
   }
 
   /**
@@ -405,19 +575,14 @@ class ZeroKnowledgeService {
    * trusted setup are required.
    */
   private createSimulatedProof(circuitName: string, input: any): ZKProof {
-    if (process.env.NODE_ENV === 'production') {
+    if (!this.simulatedProofsAllowed()) {
       throw new AppError(
-        'Development-mode proofs are not allowed in production. ' +
-        'Compile circuits and run trusted setup to generate real proving/verification keys.',
+        'Development-mode proofs are disabled. They require ZK_ALLOW_SIMULATED=true ' +
+        'and a non-production NODE_ENV. Compile circuits and run trusted setup to ' +
+        'generate real proving/verification keys.',
         403
       );
     }
-
-    // bn128 curve order (also known as alt_bn128 / BN254)
-    // All field elements must be reduced modulo this prime
-    const BN128_FIELD_ORDER = BigInt(
-      '21888242871839275222246405745257275088548364400416034343698204186575808495617'
-    );
 
     // Derive a deterministic field element from a seed using HMAC-SHA256.
     // Each element is unique to the (circuitName, input, index) tuple.
@@ -460,6 +625,7 @@ class ZeroKnowledgeService {
       protocol: 'groth16',
       curve: 'bn128',
       _devMode: true,
+      _simulated: true,
       _warning: 'DEVELOPMENT ONLY - This proof was generated without real circuits and is not cryptographically valid',
     };
 
@@ -476,25 +642,57 @@ class ZeroKnowledgeService {
   }
 
   /**
-   * Extract public signals from input based on circuit type
+   * Extract public signals from input based on circuit type.
+   * Mirrors snarkjs ordering: [circuit output, ...declared public inputs].
    */
   private extractPublicSignals(circuitName: string, input: any): string[] {
     switch (circuitName) {
       case 'compliance_check': {
-        // Public output: compliance score (0-100)
-        const score = Math.floor(
-          (input.controlsImplemented / input.totalControls) * 100
-        );
-        return [score.toString()];
+        // [meetsThreshold, threshold, organizationCommit, evidenceCommitment]
+        const meetsThreshold =
+          input.controlsImplemented * 100 >= input.threshold * input.totalControls
+            ? '1'
+            : '0';
+        return [
+          meetsThreshold,
+          input.threshold.toString(),
+          input.organizationCommit.toString(),
+          input.evidenceCommitment.toString(),
+        ];
       }
 
       case 'data_ownership':
-        // Public output: user ID hash
-        return [input.userId.toString()];
+        // [ownershipVerified, userIdSalt, dataHash, dataSalt,
+        //  ownerCommitment, dataCommitment, claimContext, nullifier]
+        return [
+          '1',
+          input.userIdSalt.toString(),
+          input.dataHash.toString(),
+          input.dataSalt.toString(),
+          input.ownerCommitment.toString(),
+          input.dataCommitment.toString(),
+          input.claimContext.toString(),
+          input.nullifier.toString(),
+        ];
 
-      case 'credential_verification':
-        // Public output: role level
-        return [input.roleLevel.toString()];
+      case 'credential_verification': {
+        // [isValid, currentTimestamp, requiredRoleLevel,
+        //  credentialCommitment, nullifier]
+        const isValid =
+          input.roleLevel >= input.requiredRoleLevel &&
+          input.expiryTimestamp >= input.currentTimestamp &&
+          input.issuedTimestamp <= input.currentTimestamp &&
+          input.issuedTimestamp <= input.expiryTimestamp
+            ? '1'
+            : '0';
+        return [
+          isValid,
+          input.currentTimestamp.toString(),
+          input.requiredRoleLevel.toString(),
+          input.credentialCommitment.toString(),
+          input.nullifier.toString(),
+        ];
+      }
 
       default:
         return [];
@@ -502,40 +700,12 @@ class ZeroKnowledgeService {
   }
 
   /**
-   * Validate proof structure
-   */
-  private validateProofStructure(proof: ZKProof): boolean {
-    if (!proof.proof || !proof.publicSignals) {
-      return false;
-    }
-
-    const p = proof.proof;
-    if (!p.pi_a || !p.pi_b || !p.pi_c) {
-      return false;
-    }
-
-    // Validate Groth16 structure
-    if (p.pi_a.length !== 3 || p.pi_c.length !== 3) {
-      return false;
-    }
-
-    if (p.pi_b.length !== 3 || p.pi_b[0].length !== 2) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
    * Convert hash string to field element
    */
   private hashToFieldElement(data: string): bigint {
     const hash = crypto.createHash('sha256').update(data).digest();
-    // Convert to bigint and mod by bn128 field size
-    const fieldSize = BigInt(
-      '21888242871839275222246405745257275088548364400416034343698204186575808495617'
-    );
-    return BigInt('0x' + hash.toString('hex')) % fieldSize;
+    // Convert to bigint and reduce modulo the bn128 field order
+    return BigInt('0x' + hash.toString('hex')) % BN128_FIELD_ORDER;
   }
 
   /**

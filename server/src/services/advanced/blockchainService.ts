@@ -48,8 +48,11 @@ import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Import ComplianceRegistry artifact for the new contract integration
+// Import compiled contract artifacts for on-chain integration. ABIs are loaded
+// from the build output so the runtime selectors always match the deployed
+// contracts (server/src/blockchain/contracts/*.sol).
 import ComplianceRegistryArtifact from '../../blockchain/artifacts/ComplianceRegistry.json';
+import ComplianceAuditLogArtifact from '../../blockchain/artifacts/contracts/ComplianceAuditLog.sol/ComplianceAuditLog.json';
 
 type BlockchainNetwork = 'ethereum' | 'polygon' | 'hyperledger';
 
@@ -192,18 +195,10 @@ class BlockchainService {
   // Track active event listener unsubscribe functions for cleanup
   private registryEventListeners: Array<() => void> = [];
 
-  // Smart contract ABI for compliance verification
-  private readonly COMPLIANCE_CONTRACT_ABI = [
-    'function recordAuditLog(bytes32 hash, string metadata) external returns (uint256)',
-    'function verifyAuditLog(bytes32 hash) external view returns (bool, uint256, address)',
-    'function recordCompliance(bytes32 orgId, string framework, uint256 score, bytes32 evidenceHash) external returns (uint256)',
-    'function getComplianceRecord(bytes32 recordId) external view returns (string, uint256, bytes32, uint256, bool)',
-    'function issueComplianceCertificate(bytes32 orgId, string framework, uint256 validUntil) external returns (bytes32)',
-    'function verifyComplianceCertificate(bytes32 certId) external view returns (bool, string, uint256)',
-    'event AuditLogRecorded(bytes32 indexed hash, uint256 indexed recordId, address indexed recorder)',
-    'event ComplianceRecorded(bytes32 indexed orgId, string framework, uint256 score, uint256 timestamp)',
-    'event CertificateIssued(bytes32 indexed certId, bytes32 indexed orgId, string framework)',
-  ];
+  // ABI for the deployed ComplianceAuditLog contract, loaded from its compiled
+  // artifact so the selectors (createAuditLog / storeEvidence / verifyAuditLog /
+  // getAuditLog / getOrganizationLogs) always match the on-chain bytecode.
+  private readonly COMPLIANCE_CONTRACT_ABI = ComplianceAuditLogArtifact.abi;
 
   /**
    * Initialize blockchain providers
@@ -333,15 +328,23 @@ class BlockchainService {
     dataHash: string,
     metadata: string,
     network: BlockchainNetwork
-  ): Promise<{ transactionHash: string; blockNumber: number }> {
+  ): Promise<{ transactionHash: string; blockNumber: number; logId: string }> {
     try {
       if (!this.auditContract) {
         // Fallback: Use direct transaction if contract not available
-        return await this.recordViaTransaction(dataHash, metadata, network);
+        const fallback = await this.recordViaTransaction(dataHash, metadata, network);
+        return { ...fallback, logId: '' };
       }
 
-      // Call smart contract
-      const tx = await this.auditContract.recordAuditLog(dataHash, metadata);
+      // Derive a unique on-chain log identifier. The deployed ComplianceAuditLog
+      // contract rejects duplicate logIds, so it must be unique per anchor.
+      const logId = ethers.keccak256(
+        ethers.toUtf8Bytes(`${dataHash}|${metadata}|${Date.now()}|${crypto.randomBytes(8).toString('hex')}`)
+      );
+
+      // Call the deployed contract: createAuditLog(logId, organizationId, userId, action, dataHash).
+      // The cryptographic anchor is dataHash; metadata is recorded as the action label.
+      const tx = await this.auditContract.createAuditLog(logId, '', '', metadata, dataHash);
       const receipt = await tx.wait();
 
       logger.info(`Ethereum transaction confirmed: ${receipt.hash} (block ${receipt.blockNumber})`);
@@ -349,6 +352,7 @@ class BlockchainService {
       return {
         transactionHash: receipt.hash,
         blockNumber: receipt.blockNumber,
+        logId,
       };
     } catch (error) {
       logger.error('Error recording on Ethereum', error);
@@ -567,26 +571,34 @@ class BlockchainService {
    * Verify on Ethereum
    */
   private async verifyOnEthereum(
-    dataHash: string
+    dataHash: string,
+    logId?: string
   ): Promise<{ exists: boolean; blockNumber?: number; timestamp?: Date; recorder?: string }> {
     try {
       if (!this.auditContract) {
         return { exists: false };
       }
 
-      const [exists, blockNumber, recorder] = await this.auditContract.verifyAuditLog(dataHash);
+      // The deployed ComplianceAuditLog contract verifies by (logId, dataHash);
+      // it has no lookup-by-dataHash-alone selector. Without a logId we cannot
+      // resolve the on-chain entry, so report not-verified rather than calling a
+      // selector that does not exist on the contract.
+      if (!logId) {
+        logger.warn('[Blockchain] verifyOnEthereum requires a logId; on-chain verification skipped');
+        return { exists: false };
+      }
 
-      if (exists) {
-        // Get block timestamp
-        const block = await this.ethereumProvider!.getBlock(Number(blockNumber));
-        const timestamp = block ? new Date(block.timestamp * 1000) : undefined;
+      const matches: boolean = await this.auditContract.verifyAuditLog(logId, dataHash);
 
-        return {
-          exists: true,
-          blockNumber: Number(blockNumber),
-          timestamp,
-          recorder,
-        };
+      if (matches) {
+        // Read the stored entry to recover its timestamp.
+        try {
+          const entry = await this.auditContract.getAuditLog(logId);
+          const timestamp = new Date(Number(entry[4]) * 1000);
+          return { exists: true, timestamp };
+        } catch {
+          return { exists: true };
+        }
       }
 
       return { exists: false };
@@ -646,20 +658,24 @@ class BlockchainService {
       let blockNumber: number;
 
       if (network === 'ethereum' || network === 'polygon') {
-        if (!this.auditContract) {
-          throw new AppError('Smart contract not initialized', 500);
+        // Framework compliance scores are stored on the ComplianceRegistry
+        // contract (recordFrameworkScore), not on ComplianceAuditLog.
+        if (!this.registryContract) {
+          throw new AppError(
+            'Compliance scoring requires the ComplianceRegistry contract. Set COMPLIANCE_REGISTRY_ADDRESS and BLOCKCHAIN_PRIVATE_KEY.',
+            501
+          );
         }
 
-        const tx = await this.auditContract.recordCompliance(
+        const frameworkHash = ethers.keccak256(ethers.toUtf8Bytes(proof.framework));
+        const result = await this.executeRegistryTx('recordFrameworkScore', [
           orgIdHash,
-          proof.framework,
+          frameworkHash,
           proof.score,
-          evidenceHash
-        );
-
-        const receipt = await tx.wait();
-        txHash = receipt.hash;
-        blockNumber = receipt.blockNumber;
+          evidenceHash,
+        ]);
+        txHash = result.transactionHash;
+        blockNumber = result.blockNumber;
       } else {
         const result = await this.recordComplianceOnHyperledger(proof);
         txHash = result.transactionId;
@@ -743,47 +759,48 @@ class BlockchainService {
     transactionHash: string;
     blockNumber: number;
   }> {
+    // Certificate lifecycle lives on the ComplianceRegistry contract, not on
+    // ComplianceAuditLog. The `network` argument is retained for API
+    // compatibility; certificates are issued on whichever EVM network the
+    // registry is deployed to.
+    void network;
     try {
-      const orgIdHash = ethers.keccak256(ethers.toUtf8Bytes(organizationId));
       const validUntilTimestamp = Math.floor(validUntil.getTime() / 1000);
 
-      if (!this.auditContract) {
-        throw new AppError('Smart contract not initialized', 500);
+      if (!this.registryContract) {
+        throw new AppError(
+          'Compliance certificates require the ComplianceRegistry contract. Set COMPLIANCE_REGISTRY_ADDRESS and BLOCKCHAIN_PRIVATE_KEY.',
+          501
+        );
       }
 
-      const tx = await this.auditContract.issueComplianceCertificate(
+      // The registry keys certificates by a caller-supplied bytes32 id.
+      const certId = ethers.keccak256(
+        ethers.toUtf8Bytes(`${organizationId}|${framework}|${validUntilTimestamp}|${crypto.randomBytes(8).toString('hex')}`)
+      );
+      const orgIdHash = ethers.keccak256(ethers.toUtf8Bytes(organizationId));
+      const zeroHash = '0x' + '0'.repeat(64);
+
+      const result = await this.executeRegistryTx('issueCertificate', [
+        certId,
         orgIdHash,
         framework,
-        validUntilTimestamp
-      );
+        0, // score (not provided by this entrypoint)
+        validUntilTimestamp,
+        zeroHash, // dataHash
+        zeroHash, // metadataHash
+      ]);
 
-      const receipt = await tx.wait();
-
-      // Extract certificate ID from event logs
-      const event = receipt.logs.find((log: any) => {
-        try {
-          const parsed = this.auditContract!.interface.parseLog(log);
-          return parsed?.name === 'CertificateIssued';
-        } catch {
-          return false;
-        }
-      });
-
-      let certificateId = crypto.randomBytes(32).toString('hex');
-      if (event) {
-        const parsed = this.auditContract.interface.parseLog(event);
-        certificateId = parsed?.args.certId;
-      }
-
-      logger.info(`Compliance certificate issued: ${certificateId} (${framework})`);
+      logger.info(`Compliance certificate issued: ${certId} (${framework})`);
 
       return {
-        certificateId,
-        transactionHash: receipt.hash,
-        blockNumber: receipt.blockNumber,
+        certificateId: certId,
+        transactionHash: result.transactionHash,
+        blockNumber: result.blockNumber,
       };
     } catch (error) {
       logger.error('Error issuing compliance certificate', error);
+      if (error instanceof AppError) throw error;
       throw new AppError('Certificate issuance failed', 500);
     }
   }
@@ -799,18 +816,27 @@ class BlockchainService {
     validUntil?: Date;
   }> {
     try {
-      if (!this.auditContract) {
+      // Certificates are verified against the ComplianceRegistry contract.
+      if (!this.registryContract) {
         return { valid: false };
       }
 
-      const [valid, framework, validUntilTimestamp] =
-        await this.auditContract.verifyComplianceCertificate(certificateId);
+      // Read-only verification (no lazy-expiry state mutation) via staticCall.
+      const [valid, , , expiresAt] =
+        await this.registryContract.verifyCertificate.staticCall(certificateId);
 
       if (valid) {
+        let framework: string | undefined;
+        try {
+          const cert = await this.registryContract.getCertificate(certificateId);
+          framework = cert[1];
+        } catch {
+          // Framework lookup is best-effort; validity is already established.
+        }
         return {
           valid: true,
           framework,
-          validUntil: new Date(Number(validUntilTimestamp) * 1000),
+          validUntil: new Date(Number(expiresAt) * 1000),
         };
       }
 
@@ -984,10 +1010,15 @@ class BlockchainService {
         throw new AppError(`Provider not initialized for ${network}`, 500);
       }
 
-      // Smart contract bytecode — uses COMPLIANCE_CONTRACT_BYTECODE env var if set,
-      // otherwise falls back to pre-compiled ComplianceRecordStorage contract bytecode.
-      const contractBytecode = process.env.COMPLIANCE_CONTRACT_BYTECODE || this.getDefaultContractBytecode();
-      
+      // Deploy the compiled ComplianceAuditLog bytecode (the contract whose ABI
+      // backs COMPLIANCE_CONTRACT_ABI). An override may be supplied via
+      // COMPLIANCE_CONTRACT_BYTECODE, but it must remain ABI-compatible.
+      const contractBytecode =
+        process.env.COMPLIANCE_CONTRACT_BYTECODE || ComplianceAuditLogArtifact.bytecode;
+      if (!contractBytecode || contractBytecode === '0x') {
+        throw new AppError('ComplianceAuditLog bytecode not available for deployment', 500);
+      }
+
       // Contract factory for deployment
       const factory = new ethers.ContractFactory(
         this.COMPLIANCE_CONTRACT_ABI,
@@ -1039,108 +1070,6 @@ class BlockchainService {
       logger.error('[Blockchain] Error deploying compliance contract]', error);
       throw new AppError(`Contract deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
-  }
-
-  /**
-   * Get contract bytecode. Uses COMPLIANCE_CONTRACT_BYTECODE env var if available,
-   * otherwise returns pre-compiled ComplianceRecordStorage contract (solc 0.8.19).
-   */
-  private getDefaultContractBytecode(): string {
-    // Prefers bytecode from COMPLIANCE_CONTRACT_BYTECODE env var for custom contracts
-    if (process.env.NODE_ENV === 'production') {
-      if (!process.env.COMPLIANCE_CONTRACT_BYTECODE) {
-        throw new AppError('COMPLIANCE_CONTRACT_BYTECODE environment variable required in production', 500);
-      }
-      return process.env.COMPLIANCE_CONTRACT_BYTECODE;
-    }
-
-    // Return env var if set in any environment
-    if (process.env.COMPLIANCE_CONTRACT_BYTECODE) {
-      return process.env.COMPLIANCE_CONTRACT_BYTECODE;
-    }
-
-    /**
-     * Pre-compiled bytecode for a minimal but functional ComplianceRecordStorage contract.
-     *
-     * Solidity source (for reference):
-     * ---------------------------------
-     * // SPDX-License-Identifier: MIT
-     * pragma solidity ^0.8.19;
-     *
-     * contract ComplianceRecordStorage {
-     *     struct Record {
-     *         bytes32 hash;
-     *         string orgId;
-     *         uint256 timestamp;
-     *         bool exists;
-     *     }
-     *
-     *     mapping(bytes32 => Record) private records;
-     *
-     *     event ComplianceRecordStored(bytes32 indexed hash, string orgId, uint256 timestamp);
-     *
-     *     function storeRecord(bytes32 hash, string memory orgId) external {
-     *         require(!records[hash].exists, "Record already exists");
-     *         records[hash] = Record({
-     *             hash: hash,
-     *             orgId: orgId,
-     *             timestamp: block.timestamp,
-     *             exists: true
-     *         });
-     *         emit ComplianceRecordStored(hash, orgId, block.timestamp);
-     *     }
-     *
-     *     function getRecord(bytes32 hash) external view returns (
-     *         bytes32 recordHash,
-     *         string memory orgId,
-     *         uint256 timestamp,
-     *         bool exists
-     *     ) {
-     *         Record storage r = records[hash];
-     *         return (r.hash, r.orgId, r.timestamp, r.exists);
-     *     }
-     * }
-     * ---------------------------------
-     *
-     * Compiled with solc 0.8.19, optimizer enabled (200 runs), targeting EVM Paris.
-     * ABI-compatible with storeRecord(bytes32,string) and getRecord(bytes32).
-     */
-    return (
-      '0x608060405234801561001057600080fd5b506106a3806100206000396000f3fe' +
-      '608060405234801561001057600080fd5b50600436106100365760003560e01c80' +
-      '6361b240be1461003b578063a191fe28146100515780630443c7b214610082575b' +
-      '600080fd5b61004f61004936600461042a565b6100b8565b005b61006c61005f36' +
-      '600461046c565b6000908152602081905260409020805460018201805460028401' +
-      '5460039094015492939192909160ff1690565b6040516100799493929190610485' +
-      '565b60405180910390f35b61004f61009036600461042a565b600091825260208290' +
-      '526040909120600381015490919060ff161591909117600390910155565b60008281' +
-      '5260208190526040902060030154600160ff909116141561011f5760405162461bcd' +
-      '60e51b815260206004820152601560248201527f5265636f726420616c7265616479' +
-      '20657869737473000000000000000000000060448201526064015b60405180910390' +
-      'fd5b604080516080810182528481526020808201848152428385019081526001606085' +
-      '01908152600088815290849052948520935184555190926101639290910190610394565b' +
-      '5060028101429055600301805460ff1916600117905560405142815282907f2b65bd5e' +
-      '4f4242f971233690be285d449dd5f1c3e35800c50a6a981fd819f04f1c9060200160' +
-      '405180910390a28060016101ad9190610394565b505050565b634e487b7160e01b6000' +
-      '52604160045260246000fd5b600082601f8301126101d957600080fd5b813567ffffff' +
-      'ffffffffff808211156101f3576101f36101b2565b604051601f8301601f1916810160' +
-      '2001828111828210171561021557610215610 1b2565b60405281815283820160200186' +
-      '1015610 22e57600080fd5b81602085016020830137600091810160200191909152509392' +
-      '505050565b60008060408385031215610 26057600080fd5b82359150602083013567ffff' +
-      'ffffffffffff81111561027e57600080fd5b61028a858286016101c8565b915050925092' +
-      '9050565b6000602082840312156102a557600080fd5b5035919050565b6000815180845260' +
-      '005b818110156102d2576020818501810151868301820152016102b6565b50600060208284' +
-      '0101526020601f19601f83011685010191505092915050565b8481526080602082015260006103' +
-      '1460808301866102ac565b604083019490945250901515606090910152919050565b600181811c' +
-      '9082168061034057607f821691505b60208210810361036057634e487b7160e01b600052602260' +
-      '045260246000fd5b50919050565b601f8211156103 8f57806000526020600020601f840160051c' +
-      '810160208510156103895750805b601f840160051c820191505b818110156103a957600081556001' +
-      '01610395565b5050505050565b815167ffffffffffffffff8111156103ca576103ca6101b2565b6103' +
-      'de816103d8845461032c565b84610366565b602080601f83116001811461041357600084156103fb5750' +
-      '858301515b600019600386901b1c1916600185901b1785556104495650505b600085815260208120601f' +
-      '198616915b8281101561044257888601518255948401946001909101908401610423565b508582101561046' +
-      '05788850151600019600388901b60f8161c191681555b5050505050600190811b01905550565b'
-    );
   }
 
   /**

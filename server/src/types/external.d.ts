@@ -163,3 +163,15 @@ declare module 'rate-limit-redis' {
     resetKey(key: string): Promise<void>;
   }
 }
+
+declare module 'circomlibjs' {
+  export interface PoseidonField {
+    toObject(value: unknown): bigint;
+    e(value: unknown): unknown;
+  }
+  export interface Poseidon {
+    (inputs: Array<bigint | number | string>): unknown;
+    F: PoseidonField;
+  }
+  export function buildPoseidon(): Promise<Poseidon>;
+}
