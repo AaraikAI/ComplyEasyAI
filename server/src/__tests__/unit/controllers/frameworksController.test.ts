@@ -324,9 +324,25 @@ describe('FrameworksController', () => {
       (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(existingFramework as any);
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({ id: 'user-456', name: 'Other User' });
 
-      await expect(
-        frameworksController.update(mockRequest as Request, mockResponse as Response, mockNext)
-      ).rejects.toThrow(AppError);
+      await frameworksController.update(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Source returns a structured 409 conflict response (no update is performed)
+      expect(mockResponse.status).toHaveBeenCalledWith(409);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: 'conflict',
+          conflict: expect.objectContaining({
+            currentVersion: 2,
+            submittedVersion: 1,
+            lastModifiedBy: 'Other User',
+          }),
+        })
+      );
+      expect(prismaMock.complianceFramework.update).not.toHaveBeenCalled();
     });
 
     it('should allow conflict resolution with overwrite strategy', async () => {
@@ -455,7 +471,7 @@ describe('FrameworksController', () => {
       const updatedControl = { ...mockControl, status: 'Implemented' };
 
       (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(mockFramework as any);
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(mockControl as any);
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(mockControl as any);
       (prismaMock.frameworkControl.update as jest.Mock<any>).mockResolvedValue(updatedControl as any);
       (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([updatedControl]);
       (prismaMock.complianceFramework.update as jest.Mock<any>).mockResolvedValue(mockFramework as any);
@@ -468,6 +484,12 @@ describe('FrameworksController', () => {
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(updatedControl);
+      // Control is loaded scoped to the org-owned framework (id AND frameworkId)
+      expect(prismaMock.frameworkControl.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'control-123', frameworkId: 'framework-123' },
+        })
+      );
     });
 
     it('should throw error if control not found', async () => {
@@ -477,7 +499,7 @@ describe('FrameworksController', () => {
       const mockFramework = createMockFramework();
 
       (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(mockFramework as any);
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         frameworksController.updateControl(mockRequest as Request, mockResponse as Response, mockNext)
@@ -502,10 +524,9 @@ describe('FrameworksController', () => {
       ];
 
       (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(mockFramework as any);
-      (prismaMock.frameworkControl.update as jest.Mock<any>)
-        .mockResolvedValueOnce(updatedControls[0] as any)
-        .mockResolvedValueOnce(updatedControls[1] as any)
-        .mockResolvedValueOnce(updatedControls[2] as any);
+      // Source now uses updateMany scoped to {id in controlIds, frameworkId} and
+      // verifies count === controlIds.length, then re-reads via findMany.
+      (prismaMock.frameworkControl.updateMany as jest.Mock<any>).mockResolvedValue({ count: 3 } as any);
       (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue(updatedControls);
       (prismaMock.complianceFramework.update as jest.Mock<any>).mockResolvedValue(mockFramework as any);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as any);
@@ -520,6 +541,15 @@ describe('FrameworksController', () => {
         expect.objectContaining({
           message: 'Successfully updated 3 controls',
           controls: updatedControls,
+        })
+      );
+      // updateMany is scoped to this org-owned framework (frameworkId in the where)
+      expect(prismaMock.frameworkControl.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: { in: ['control-1', 'control-2', 'control-3'] },
+            frameworkId: 'framework-123',
+          }),
         })
       );
     });
