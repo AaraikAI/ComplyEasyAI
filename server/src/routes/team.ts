@@ -72,7 +72,10 @@ router.post(
       throw new AppError('Invalid role. Must be admin, editor, or viewer', 400);
     }
 
-    // Check if user already exists
+    // Check if user already exists. The lookup is intentionally not scoped to
+    // organizationId because User.email is a platform-wide unique constraint; a
+    // distinct 409 only reveals existence (no tenant data), and the created user
+    // is still bound to the correct organizationId below.
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -219,6 +222,9 @@ router.post(
     const requestedEmails = Array.from(
       new Set(invites.map((inv: { email: string }) => inv.email))
     );
+    // Existence lookup is intentionally not scoped to organizationId because
+    // User.email is a platform-wide unique constraint; this only reveals
+    // existence (no tenant data) and is required to compute the net-new count.
     const alreadyPresent = await prisma.user.findMany({
       where: { email: { in: requestedEmails } },
       select: { email: true },
@@ -255,7 +261,9 @@ router.post(
     // Process invites
     for (const [i, invite] of invites.entries()) {
       try {
-        // Check if user already exists
+        // Existence check intentionally not scoped to organizationId: User.email
+        // is platform-wide unique, so this only reflects existence (no tenant
+        // data) and the created user is still bound to the correct organizationId.
         const existingUser = await prisma.user.findUnique({
           where: { email: invite.email },
         });

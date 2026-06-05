@@ -244,10 +244,15 @@ const AuditPrepAssistant: React.FC = () => {
         framework: selectedFramework,
         evidenceIds: selectedIds,
       });
-      const url = window.URL.createObjectURL(new Blob([JSON.stringify(res)]));
+      // The endpoint returns a JSON evidence manifest (not a binary archive),
+      // so serialize the data payload and save it as a .json file.
+      const payload = (res && (res as any).data) ?? res;
+      const url = window.URL.createObjectURL(
+        new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
+      );
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `audit-evidence-${selectedFramework}-${new Date().toISOString().split('T')[0]}.zip`);
+      link.setAttribute('download', `audit-evidence-${selectedFramework}-${new Date().toISOString().split('T')[0]}.json`);
       document.body.appendChild(link);
       link.click();
       link.remove();

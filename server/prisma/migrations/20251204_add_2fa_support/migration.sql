@@ -12,6 +12,7 @@ CREATE TABLE "TwoFactorBackupCode" (
 
 -- AlterTable for User - Add 2FA fields
 ALTER TABLE "User" ADD COLUMN "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false;
+-- twoFactorSecret holds AES-256-GCM ciphertext; encrypted-at-rest in twoFactorService (encryptSecret/decryptSecret).
 ALTER TABLE "User" ADD COLUMN "twoFactorSecret" TEXT;
 ALTER TABLE "User" ADD COLUMN "twoFactorVerified" BOOLEAN NOT NULL DEFAULT false;
 

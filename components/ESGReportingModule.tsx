@@ -383,6 +383,10 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           dataQuality: m.dataQuality || 'reported',
           lastUpdated: m.updatedAt || m.lastUpdated || '',
         })));
+      } else if (results[0].status === 'fulfilled') {
+        // Successful-but-empty response: clear to an empty state rather than
+        // leaving DEMO_* fixtures on screen as if they were the org's real data.
+        setMetrics([]);
       }
 
       // --- Materiality ---
@@ -397,6 +401,8 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           stakeholderRelevance: item.stakeholderRelevance || 0,
           status: item.status || 'pending',
         })));
+      } else if (results[1].status === 'fulfilled') {
+        setMaterialityTopics([]);
       }
 
       // --- ESRS Standards (derived from metrics response when available) ---
@@ -412,6 +418,8 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           status: s.status || 'not_started',
           materialityResult: s.materialityResult,
         })));
+      } else if (results[0].status === 'fulfilled') {
+        setEsrsStandards([]);
       }
 
       // --- SDG alignments (derived from metrics response when available) ---
@@ -423,6 +431,8 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           contributingMetrics: a.contributingMetrics || [],
           status: a.status || 'not_aligned',
         })));
+      } else if (results[0].status === 'fulfilled') {
+        setSdgAlignments([]);
       }
 
       // --- Reports (live from /modules/esg/reports) ---
@@ -438,6 +448,8 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           author: r.author || '',
           pages: r.pages,
         })));
+      } else if (results[2].status === 'fulfilled') {
+        setReports([]);
       }
 
       // --- Data collection workflows (live; empty state when none/unavailable) ---
@@ -567,7 +579,6 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           <p className="text-sm opacity-80">Overall ESG Score</p>
           <p className="text-5xl font-bold mt-2">{esgScore.overall}</p>
           <p className="text-sm opacity-70 mt-1">out of 100</p>
-          <p className="text-xs opacity-60 mt-3">Industry benchmark: 62</p>
         </div>
         <StatCard icon={<Leaf size={20} className="text-green-600" />} label="Environmental Score" value={esgScore.envScore} subLabel="Weight: 40%" color="bg-green-50" trend={esgScore.envDelta !== 0 ? { direction: esgScore.envDelta > 0 ? 'up' : 'down', isPositive: esgScore.envDelta > 0, value: `${esgScore.envDelta > 0 ? '+' : ''}${esgScore.envDelta}pts` } : undefined} />
         <StatCard icon={<Users size={20} className="text-blue-600" />} label="Social Score" value={esgScore.socScore} subLabel="Weight: 30%" color="bg-blue-50" trend={esgScore.socDelta !== 0 ? { direction: esgScore.socDelta > 0 ? 'up' : 'down', isPositive: esgScore.socDelta > 0, value: `${esgScore.socDelta > 0 ? '+' : ''}${esgScore.socDelta}pts` } : undefined} />

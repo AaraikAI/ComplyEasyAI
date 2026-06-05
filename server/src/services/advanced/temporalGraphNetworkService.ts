@@ -8,6 +8,7 @@
  * - Early warning system
  */
 
+import crypto from 'crypto';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
@@ -1032,12 +1033,23 @@ class TemporalGraphNetworkService {
         return a.leadTimeDays - b.leadTimeDays; // Shorter lead time = more urgent
       });
 
-      // Check for unacknowledged warnings and apply escalation logic
-      // Generate unique warning IDs first
-      const warningsWithIds = filteredWarnings.map((warning) => ({
-        ...warning,
-        id: `warn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      }));
+      // Check for unacknowledged warnings and apply escalation logic.
+      // Derive a stable, content-based warning ID so acknowledgments recorded on a
+      // prior request correlate on subsequent requests. The ID is a hash of the
+      // distinguishing warning content (type + severity + description + predicted
+      // day) rather than an ephemeral timestamp/random value, which previously
+      // regenerated on every call and caused acknowledged warnings to re-appear.
+      const warningsWithIds = filteredWarnings.map((warning) => {
+        const predictedDay = warning.predictedDate
+          ? new Date(warning.predictedDate).toISOString().slice(0, 10)
+          : 'unknown';
+        const fingerprint = `${warning.type}|${warning.severity}|${warning.description}|${predictedDay}`;
+        const digest = crypto.createHash('sha256').update(fingerprint).digest('hex').slice(0, 16);
+        return {
+          ...warning,
+          id: `warn_${digest}`,
+        };
+      });
 
       // Batch query all acknowledgment logs at once instead of per-warning
       const warningIds = warningsWithIds.map(w => w.id);
@@ -1057,13 +1069,13 @@ class TemporalGraphNetworkService {
       for (const log of allAcknowledgmentLogs) {
         try {
           const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
-          const logWarningId = details?.warningId || (log.details as string)?.match(/warn_\d+_\w+/)?.[0];
+          const logWarningId = details?.warningId || (log.details as string)?.match(/warn_[A-Za-z0-9_]+/)?.[0];
           if (logWarningId && !acknowledgmentMap.has(logWarningId)) {
             acknowledgmentMap.set(logWarningId, log);
           }
         } catch (e) {
           // Try to extract warning ID from details string
-          const match = (log.details as string)?.match(/warn_\d+_\w+/);
+          const match = (log.details as string)?.match(/warn_[A-Za-z0-9_]+/);
           if (match && !acknowledgmentMap.has(match[0])) {
             acknowledgmentMap.set(match[0], log);
           }

@@ -193,6 +193,7 @@ router.get(
 
 router.post(
   '/',
+  authorize('admin', 'editor'),
   validateBody(createCertificationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -243,6 +244,7 @@ router.post(
 
 router.patch(
   '/:id',
+  authorize('admin', 'editor'),
   validateBody(updateCertificationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -285,6 +287,7 @@ router.patch(
 
 router.delete(
   '/:id',
+  authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -317,6 +320,7 @@ router.delete(
 
 router.post(
   '/:id/audits',
+  authorize('admin', 'editor'),
   validateBody(createCertAuditSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
@@ -365,6 +369,7 @@ router.post(
 
 router.patch(
   '/:id/audits/:auditId',
+  authorize('admin', 'editor'),
   validateBody(updateCertAuditSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;

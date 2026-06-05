@@ -7,6 +7,12 @@
 
 import Joi from 'joi';
 
+// Bounded free-form JSON blob: caps key count to limit oversized-payload storage.
+const boundedJsonObject = Joi.object().max(100).pattern(
+  Joi.string().max(200),
+  Joi.any(),
+);
+
 // ============================================================================
 // EU AI ACT SCHEMAS
 // ============================================================================
@@ -80,7 +86,7 @@ export const updateGatekeeperSchema = Joi.object({
 
 export const updateObligationComplianceSchema = Joi.object({
   status: Joi.string().valid('pending', 'compliant', 'non_compliant', 'in_progress').required(),
-  evidence: Joi.any().optional(),
+  evidence: boundedJsonObject.optional(),
   lastVerified: Joi.date().iso().allow(null).optional(),
   nextReviewDate: Joi.date().iso().allow(null).optional(),
 }).unknown(false);
@@ -158,7 +164,7 @@ export const addAdToRepositorySchema = Joi.object({
     video: Joi.string().uri().max(2000).allow('', null).optional(),
     targetAudience: Joi.array().items(Joi.string().max(200)).optional(),
   }).required(),
-  targetingCriteria: Joi.object().optional(),
+  targetingCriteria: boundedJsonObject.optional(),
   startDate: Joi.date().iso().optional(),
   endDate: Joi.date().iso().optional(),
   paidBy: Joi.string().max(300).trim().allow('', null).optional(),
@@ -216,7 +222,7 @@ export const configureNonPersonalizedFeedSchema = Joi.object({
   feedAlgorithmType: Joi.string().valid('chronological', 'popularity', 'random').required(),
   description: Joi.string().max(2000).trim().allow('', null).optional(),
   userDocumentationUrl: Joi.string().uri().max(2000).allow('', null).optional(),
-  technicalSpecs: Joi.any().optional(),
+  technicalSpecs: boundedJsonObject.optional(),
   implementationDate: Joi.date().iso().allow(null).optional(),
 }).unknown(false);
 

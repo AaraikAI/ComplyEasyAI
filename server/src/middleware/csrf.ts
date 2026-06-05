@@ -195,6 +195,37 @@ function generateToken(): string {
   return crypto.randomBytes(CSRF_TOKEN_LENGTH).toString('hex');
 }
 
+/**
+ * Constant-time comparison of two token strings. Returns false for unequal
+ * lengths (which crypto.timingSafeEqual would otherwise throw on) so the
+ * double-submit check never leaks timing information about token contents.
+ */
+function tokensMatch(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+/**
+ * Path-exemption helper using exact or path-segment-boundary prefix matching.
+ * Prevents a substring like `/webhook` from exempting `/foo/webhook-config`:
+ * the candidate must equal the exempt path or be followed by a `/`.
+ */
+function pathMatchesExempt(reqPath: string, exempt: string): boolean {
+  if (reqPath === exempt) {
+    return true;
+  }
+  const idx = reqPath.indexOf(exempt);
+  if (idx === -1) {
+    return false;
+  }
+  const after = reqPath.charAt(idx + exempt.length);
+  return after === '' || after === '/';
+}
+
 // ============================================================================
 // CSRF MIDDLEWARE
 // ============================================================================
@@ -242,8 +273,10 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
     return next();
   }
 
-  // Skip CSRF for webhook endpoints (use signature verification instead)
-  if (req.path.includes('/webhook')) {
+  // Skip CSRF for webhook endpoints (use signature verification instead).
+  // Match on a path-segment boundary so unrelated paths that merely contain
+  // the substring (e.g. /foo/webhook-config) are not exempted.
+  if (pathMatchesExempt(req.path, '/webhook')) {
     return next();
   }
 
@@ -257,7 +290,7 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
     '/auth/refresh',
     '/auth/2fa/complete',
   ];
-  if (authExemptPaths.some(path => req.path.includes(path))) {
+  if (authExemptPaths.some(path => pathMatchesExempt(req.path, path))) {
     return next();
   }
 
@@ -285,8 +318,9 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
     return;
   }
 
-  // Validate tokens match (double-submit cookie pattern)
-  if (headerToken !== cookieToken) {
+  // Validate tokens match (double-submit cookie pattern) using a
+  // constant-time comparison for defense-in-depth against timing oracles.
+  if (!tokensMatch(headerToken, cookieToken)) {
     logSecurityEvent({
       type: SecurityEventType.CSRF_VALIDATION_FAILURE,
       severity: 'high',

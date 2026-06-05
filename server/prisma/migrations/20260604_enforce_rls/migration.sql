@@ -23,7 +23,12 @@
 -- Follow RLS_DEPLOY_RUNBOOK.md for the correct ordering.
 --
 -- Prerequisite: rls_policies_all_tables.sql must already be applied so the
--- accessor function and per-table policies exist.
+-- accessor function and per-table policies exist. FORCE has no effect unless
+-- each table already has RLS ENABLEd plus an org_isolation policy; that
+-- prerequisite file is the one that issues `ENABLE ROW LEVEL SECURITY` and
+-- `CREATE POLICY` for every table FORCE'd below (one ENABLE + one policy per
+-- table). If you change the table set here, keep it a subset of the tables
+-- ENABLEd there, or the extra FORCE statements will be inert.
 -- =====================================================================
 
 ALTER TABLE "AISuggestion" FORCE ROW LEVEL SECURITY;

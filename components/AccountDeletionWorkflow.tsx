@@ -222,7 +222,22 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
     const completed = requests.filter(r => r.status === 'Completed').length;
     const denied = requests.filter(r => r.status === 'Denied').length;
     const withConflicts = requests.filter(r => r.conflicts.length > 0).length;
-    return { total, pending, inProgress, completed, denied, avgProcessingDays: 3.2, withConflicts };
+    // Derive average processing time (days) from completed requests' submission
+    // and completion dates rather than presenting a fixed value as a live metric.
+    const completedRequests = requests.filter(r => r.status === 'Completed' && r.submittedDate && r.estimatedCompletion);
+    const durations = completedRequests
+      .map(r => {
+        const start = new Date(r.submittedDate).getTime();
+        const end = new Date(r.estimatedCompletion).getTime();
+        return Number.isFinite(start) && Number.isFinite(end) && end >= start
+          ? (end - start) / (1000 * 60 * 60 * 24)
+          : null;
+      })
+      .filter((d): d is number => d !== null);
+    const avgProcessingDays = durations.length > 0
+      ? Math.round((durations.reduce((sum, d) => sum + d, 0) / durations.length) * 10) / 10
+      : null;
+    return { total, pending, inProgress, completed, denied, avgProcessingDays, withConflicts };
   }, [requests]);
 
   const filteredRequests = useMemo(() => {
@@ -432,7 +447,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
           <div className="flex items-center gap-2 text-cyan-400 text-sm mb-1">
             <Clock className="w-4 h-4" /> Avg Processing Time
           </div>
-          <div className="text-2xl font-bold text-cyan-400">{stats.avgProcessingDays} days</div>
+          <div className="text-2xl font-bold text-cyan-400">{stats.avgProcessingDays !== null ? `${stats.avgProcessingDays} days` : '—'}</div>
           <div className="text-xs text-slate-500 mt-1">From submission to completion</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
@@ -869,11 +884,15 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
 
               {sys.status === 'In Progress' && (
                 <div className="mt-2 pt-2 border-t border-slate-700">
+                  {/* No per-system numeric progress is reported by the backend, so an
+                      indeterminate indicator is shown instead of a fixed percentage. */}
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                      <div className="h-full bg-yellow-500 rounded-full animate-pulse" style={{ width: '65%' }} />
+                      <div className="h-full bg-yellow-500 rounded-full animate-pulse w-1/3" />
                     </div>
-                    <span className="text-xs text-yellow-400">65%</span>
+                    <span className="text-xs text-yellow-400 flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Deleting
+                    </span>
                   </div>
                 </div>
               )}

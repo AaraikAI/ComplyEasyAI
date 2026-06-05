@@ -330,7 +330,23 @@ export const NIS2Dashboard: React.FC = () => {
 
   // ── Handlers ──
 
-  const handleReportIncident = useCallback((e: React.FormEvent) => {
+  // NIS2 Article 23 records are legally mandated, so persist incident changes
+  // immediately (awaited) rather than relying only on the debounced auto-save.
+  const persistIncidents = useCallback(async (next: SecurityIncident[]): Promise<boolean> => {
+    if (!serverReachable) {
+      setLoadError('Server unreachable: the incident record could not be saved. Please reconnect and retry.');
+      return false;
+    }
+    try {
+      await api.regulationData.save('nis2', 'incidents', next);
+      return true;
+    } catch {
+      setLoadError('Failed to save the incident record. The change is not persisted — please retry.');
+      return false;
+    }
+  }, [serverReachable]);
+
+  const handleReportIncident = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     const now = new Date();
     const newIncident: SecurityIncident = {
@@ -343,18 +359,25 @@ export const NIS2Dashboard: React.FC = () => {
       affectedUsers: incidentForm.affectedUsers, crossBorderImpact: incidentForm.crossBorderImpact,
       rootCause: '', containmentActions: [], remediationActions: [],
     };
-    setIncidents(prev => [newIncident, ...prev]);
+    const next = [newIncident, ...incidents];
+    setIncidents(next);
+    const ok = await persistIncidents(next);
+    if (!ok) return;
     setShowIncidentModal(false);
     setIncidentForm({ title: '', description: '', severity: 'significant', affectedServices: '', affectedUsers: 0, crossBorderImpact: false });
-  }, [incidentForm]);
+  }, [incidentForm, incidents, persistIncidents]);
 
-  const handleSendEarlyWarning = useCallback((incId: string) => {
-    setIncidents(prev => prev.map(i => i.id === incId ? { ...i, status: 'early_warning_sent' as IncidentStatus, earlyWarningSentDate: new Date().toISOString() } : i));
-  }, []);
+  const handleSendEarlyWarning = useCallback(async (incId: string) => {
+    const next = incidents.map(i => i.id === incId ? { ...i, status: 'early_warning_sent' as IncidentStatus, earlyWarningSentDate: new Date().toISOString() } : i);
+    setIncidents(next);
+    await persistIncidents(next);
+  }, [incidents, persistIncidents]);
 
-  const handleSendNotification = useCallback((incId: string) => {
-    setIncidents(prev => prev.map(i => i.id === incId ? { ...i, status: 'notification_sent' as IncidentStatus, notificationSentDate: new Date().toISOString() } : i));
-  }, []);
+  const handleSendNotification = useCallback(async (incId: string) => {
+    const next = incidents.map(i => i.id === incId ? { ...i, status: 'notification_sent' as IncidentStatus, notificationSentDate: new Date().toISOString() } : i);
+    setIncidents(next);
+    await persistIncidents(next);
+  }, [incidents, persistIncidents]);
 
   const handleDownloadReport = useCallback(() => {
     const data = {

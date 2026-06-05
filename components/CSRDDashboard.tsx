@@ -236,6 +236,9 @@ export const CSRDDashboard: React.FC = () => {
   const [govMetrics, setGovMetrics] = useState<GovernanceMetrics>(DEFAULT_GOVERNANCE);
   const [reports, setReports] = useState<SustainabilityReport[]>([]);
   const [serverReachable, setServerReachable] = useState<boolean>(true);
+  // True while the dashboard is showing template defaults that the user has not yet adopted/edited.
+  // Auto-save is suppressed in this state so demo figures are never persisted as the organisation's real CSRD data.
+  const [isTemplateData, setIsTemplateData] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'environmental' | 'social' | 'governance'>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -254,6 +257,8 @@ export const CSRDDashboard: React.FC = () => {
       try {
         const saved = await api.regulationData.getAll('csrd');
         setServerReachable(true);
+        const hasRealData = !!(saved && typeof saved === 'object' &&
+          (saved.topics || saved.environmental || saved.social || saved.governance || saved.reports));
         if (saved && typeof saved === 'object') {
           setTopics(Array.isArray(saved.topics) ? saved.topics : DEFAULT_MATERIALITY_TOPICS);
           if (saved.environmental) setEnvMetrics(saved.environmental);
@@ -261,15 +266,18 @@ export const CSRDDashboard: React.FC = () => {
           if (saved.governance) setGovMetrics(saved.governance);
           setReports(Array.isArray(saved.reports) ? saved.reports : DEFAULT_REPORTS);
           // First-time setup: server has no data yet — seed with template defaults so the user sees a populated dashboard.
+          // These are display-only until the user adopts/edits them; isTemplateData suppresses auto-persist below.
           if (!saved.topics) setTopics(DEFAULT_MATERIALITY_TOPICS);
           if (!saved.reports) setReports(DEFAULT_REPORTS);
         } else {
           setTopics(DEFAULT_MATERIALITY_TOPICS);
           setReports(DEFAULT_REPORTS);
         }
+        setIsTemplateData(!hasRealData);
       } catch (err: any) {
-        // Server unreachable — fall back to local template data.
+        // Server unreachable — fall back to local template data (display-only, not persisted).
         setServerReachable(false);
+        setIsTemplateData(true);
         setTopics(DEFAULT_MATERIALITY_TOPICS);
         setEnvMetrics(DEFAULT_ENVIRONMENTAL);
         setSocialMetrics(DEFAULT_SOCIAL);
@@ -287,6 +295,8 @@ export const CSRDDashboard: React.FC = () => {
   useEffect(() => {
     if (isLoading) return;
     if (!serverReachable) return;
+    // Do not auto-persist unadopted template defaults as the organisation's real CSRD data.
+    if (isTemplateData) return;
     const timer = setTimeout(() => {
       Promise.allSettled([
         api.regulationData.save('csrd', 'topics', topics),
@@ -304,7 +314,7 @@ export const CSRDDashboard: React.FC = () => {
       });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [topics, envMetrics, socialMetrics, govMetrics, reports, isLoading, serverReachable, loadError]);
+  }, [topics, envMetrics, socialMetrics, govMetrics, reports, isLoading, serverReachable, isTemplateData, loadError]);
 
   // ── Computed ──
 
@@ -339,6 +349,8 @@ export const CSRDDashboard: React.FC = () => {
       assuranceLevel: reportForm.assuranceLevel, esrsTopicsCovered: [], completionPercentage: 0,
     };
     setReports(prev => [newReport, ...prev]);
+    // Explicit user action — the dashboard is now real data and may be persisted.
+    setIsTemplateData(false);
     setShowReportModal(false);
     setReportForm({ title: '', reportingYear: 2025, assuranceProvider: '', assuranceLevel: 'limited' });
   }, [reportForm]);
@@ -877,6 +889,14 @@ export const CSRDDashboard: React.FC = () => {
           <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"><Download className="w-4 h-4" /> {t('common.export')}</button>
         </div>
       </div>
+
+      {isTemplateData && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {loadError
+            ? loadError
+            : 'Showing example template data. These figures are not saved as your organisation’s CSRD data — edit a topic or add a report to begin entering your own values.'}
+        </div>
+      )}
 
       <div className="border-b border-gray-200">
         <nav className="flex gap-4 -mb-px overflow-x-auto">

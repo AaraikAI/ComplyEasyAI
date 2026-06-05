@@ -28,10 +28,18 @@ CREATE TABLE IF NOT EXISTS "VRCollaborativeSession" (
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Add foreign key constraint
-ALTER TABLE "VRCollaborativeSession" 
-ADD CONSTRAINT "VRCollaborativeSession_organizationId_fkey" 
-FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- Add foreign key constraint (idempotent guard so re-running the migration is safe)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'VRCollaborativeSession_organizationId_fkey'
+    ) THEN
+        ALTER TABLE "VRCollaborativeSession"
+        ADD CONSTRAINT "VRCollaborativeSession_organizationId_fkey"
+        FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS "VRCollaborativeSession_organizationId_idx" ON "VRCollaborativeSession"("organizationId");

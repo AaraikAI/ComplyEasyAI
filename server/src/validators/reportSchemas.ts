@@ -12,7 +12,7 @@ const sectionSchema = Joi.object({
   type: Joi.string().max(100).required(),
   dataSources: Joi.array().items(Joi.string()).allow(null).optional(),
   filters: Joi.object().allow(null).optional(),
-}).unknown(true);
+}).unknown(false);
 
 export const createReportTemplateSchema = Joi.object({
   name: Joi.string().required().min(1).max(300).trim(),

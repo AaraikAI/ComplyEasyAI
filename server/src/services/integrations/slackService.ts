@@ -140,6 +140,23 @@ class SlackService {
   }
 
   /**
+   * Build a config-safe representation of the authed_user object.
+   * The user-level OAuth access_token is encrypted at rest so it is never
+   * persisted in plaintext in the integration config JSON column.
+   */
+  private buildAuthedUserConfig(authedUser: SlackTokenResponse['authed_user']) {
+    if (!authedUser) {
+      return authedUser;
+    }
+    return {
+      ...authedUser,
+      access_token: authedUser.access_token
+        ? encryptField(authedUser.access_token)
+        : undefined,
+    };
+  }
+
+  /**
    * Save integration to database
    */
   async saveIntegration(
@@ -147,6 +164,7 @@ class SlackService {
     tokenResponse: SlackTokenResponse
   ): Promise<void> {
     try {
+      const authedUserConfig = this.buildAuthedUserConfig(tokenResponse.authed_user);
       await prisma.integration.upsert({
         where: {
           organizationId_provider: {
@@ -167,7 +185,7 @@ class SlackService {
             botUserId: tokenResponse.bot_user_id,
             appId: tokenResponse.app_id,
             scope: tokenResponse.scope,
-            authedUser: tokenResponse.authed_user,
+            authedUser: authedUserConfig,
           },
           lastSync: new Date(),
         },
@@ -180,7 +198,7 @@ class SlackService {
             botUserId: tokenResponse.bot_user_id,
             appId: tokenResponse.app_id,
             scope: tokenResponse.scope,
-            authedUser: tokenResponse.authed_user,
+            authedUser: authedUserConfig,
           },
           lastSync: new Date(),
         },

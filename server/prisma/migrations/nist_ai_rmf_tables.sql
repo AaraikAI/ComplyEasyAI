@@ -5,7 +5,7 @@
 
 -- Table: AISystem
 -- Main entity for AI systems managed under NIST AI RMF
-CREATE TABLE "AISystem" (
+CREATE TABLE IF NOT EXISTS "AISystem" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "organizationId" TEXT NOT NULL,
   "name" TEXT NOT NULL,
@@ -27,14 +27,14 @@ CREATE TABLE "AISystem" (
     ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX "AISystem_organizationId_idx" ON "AISystem"("organizationId");
-CREATE INDEX "AISystem_status_idx" ON "AISystem"("status");
-CREATE INDEX "AISystem_lifecycleStage_idx" ON "AISystem"("lifecycleStage");
-CREATE INDEX "AISystem_riskLevel_idx" ON "AISystem"("riskLevel");
+CREATE INDEX IF NOT EXISTS "AISystem_organizationId_idx" ON "AISystem"("organizationId");
+CREATE INDEX IF NOT EXISTS "AISystem_status_idx" ON "AISystem"("status");
+CREATE INDEX IF NOT EXISTS "AISystem_lifecycleStage_idx" ON "AISystem"("lifecycleStage");
+CREATE INDEX IF NOT EXISTS "AISystem_riskLevel_idx" ON "AISystem"("riskLevel");
 
 -- Table: AIRMFCoreFunction
 -- The 4 core functions: GOVERN, MAP, MEASURE, MANAGE
-CREATE TABLE "AIRMFCoreFunction" (
+CREATE TABLE IF NOT EXISTS "AIRMFCoreFunction" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "aiSystemId" TEXT NOT NULL,
   "functionName" TEXT NOT NULL,
@@ -51,13 +51,13 @@ CREATE TABLE "AIRMFCoreFunction" (
   CONSTRAINT "AIRMFCoreFunction_aiSystemId_functionName_key" UNIQUE ("aiSystemId", "functionName")
 );
 
-CREATE INDEX "AIRMFCoreFunction_aiSystemId_idx" ON "AIRMFCoreFunction"("aiSystemId");
-CREATE INDEX "AIRMFCoreFunction_functionName_idx" ON "AIRMFCoreFunction"("functionName");
-CREATE INDEX "AIRMFCoreFunction_status_idx" ON "AIRMFCoreFunction"("status");
+CREATE INDEX IF NOT EXISTS "AIRMFCoreFunction_aiSystemId_idx" ON "AIRMFCoreFunction"("aiSystemId");
+CREATE INDEX IF NOT EXISTS "AIRMFCoreFunction_functionName_idx" ON "AIRMFCoreFunction"("functionName");
+CREATE INDEX IF NOT EXISTS "AIRMFCoreFunction_status_idx" ON "AIRMFCoreFunction"("status");
 
 -- Table: AIRMFCategory
 -- Categories within each core function
-CREATE TABLE "AIRMFCategory" (
+CREATE TABLE IF NOT EXISTS "AIRMFCategory" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "coreFunctionId" TEXT NOT NULL,
   "categoryId" TEXT NOT NULL,
@@ -74,13 +74,13 @@ CREATE TABLE "AIRMFCategory" (
   CONSTRAINT "AIRMFCategory_coreFunctionId_categoryId_key" UNIQUE ("coreFunctionId", "categoryId")
 );
 
-CREATE INDEX "AIRMFCategory_coreFunctionId_idx" ON "AIRMFCategory"("coreFunctionId");
-CREATE INDEX "AIRMFCategory_categoryId_idx" ON "AIRMFCategory"("categoryId");
-CREATE INDEX "AIRMFCategory_status_idx" ON "AIRMFCategory"("status");
+CREATE INDEX IF NOT EXISTS "AIRMFCategory_coreFunctionId_idx" ON "AIRMFCategory"("coreFunctionId");
+CREATE INDEX IF NOT EXISTS "AIRMFCategory_categoryId_idx" ON "AIRMFCategory"("categoryId");
+CREATE INDEX IF NOT EXISTS "AIRMFCategory_status_idx" ON "AIRMFCategory"("status");
 
 -- Table: AIRMFSubcategory
 -- Subcategories within each category
-CREATE TABLE "AIRMFSubcategory" (
+CREATE TABLE IF NOT EXISTS "AIRMFSubcategory" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "categoryId" TEXT NOT NULL,
   "subcategoryId" TEXT NOT NULL,
@@ -105,14 +105,14 @@ CREATE TABLE "AIRMFSubcategory" (
   CONSTRAINT "AIRMFSubcategory_categoryId_subcategoryId_key" UNIQUE ("categoryId", "subcategoryId")
 );
 
-CREATE INDEX "AIRMFSubcategory_categoryId_idx" ON "AIRMFSubcategory"("categoryId");
-CREATE INDEX "AIRMFSubcategory_subcategoryId_idx" ON "AIRMFSubcategory"("subcategoryId");
-CREATE INDEX "AIRMFSubcategory_status_idx" ON "AIRMFSubcategory"("status");
-CREATE INDEX "AIRMFSubcategory_ownerId_idx" ON "AIRMFSubcategory"("ownerId");
+CREATE INDEX IF NOT EXISTS "AIRMFSubcategory_categoryId_idx" ON "AIRMFSubcategory"("categoryId");
+CREATE INDEX IF NOT EXISTS "AIRMFSubcategory_subcategoryId_idx" ON "AIRMFSubcategory"("subcategoryId");
+CREATE INDEX IF NOT EXISTS "AIRMFSubcategory_status_idx" ON "AIRMFSubcategory"("status");
+CREATE INDEX IF NOT EXISTS "AIRMFSubcategory_ownerId_idx" ON "AIRMFSubcategory"("ownerId");
 
 -- Table: AIRMFTrustworthinessCharacteristic
 -- The 7 trustworthiness characteristics
-CREATE TABLE "AIRMFTrustworthinessCharacteristic" (
+CREATE TABLE IF NOT EXISTS "AIRMFTrustworthinessCharacteristic" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "aiSystemId" TEXT NOT NULL,
   "characteristic" TEXT NOT NULL,
@@ -131,13 +131,13 @@ CREATE TABLE "AIRMFTrustworthinessCharacteristic" (
   CONSTRAINT "AIRMFTrustworthinessCharacteristic_aiSystemId_characteristic_key" UNIQUE ("aiSystemId", "characteristic")
 );
 
-CREATE INDEX "AIRMFTrustworthinessCharacteristic_aiSystemId_idx" ON "AIRMFTrustworthinessCharacteristic"("aiSystemId");
-CREATE INDEX "AIRMFTrustworthinessCharacteristic_characteristic_idx" ON "AIRMFTrustworthinessCharacteristic"("characteristic");
-CREATE INDEX "AIRMFTrustworthinessCharacteristic_status_idx" ON "AIRMFTrustworthinessCharacteristic"("status");
+CREATE INDEX IF NOT EXISTS "AIRMFTrustworthinessCharacteristic_aiSystemId_idx" ON "AIRMFTrustworthinessCharacteristic"("aiSystemId");
+CREATE INDEX IF NOT EXISTS "AIRMFTrustworthinessCharacteristic_characteristic_idx" ON "AIRMFTrustworthinessCharacteristic"("characteristic");
+CREATE INDEX IF NOT EXISTS "AIRMFTrustworthinessCharacteristic_status_idx" ON "AIRMFTrustworthinessCharacteristic"("status");
 
 -- Table: AIRMFLifecycleStage
 -- AI lifecycle stages
-CREATE TABLE "AIRMFLifecycleStage" (
+CREATE TABLE IF NOT EXISTS "AIRMFLifecycleStage" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "aiSystemId" TEXT NOT NULL,
   "stage" TEXT NOT NULL,
@@ -156,13 +156,13 @@ CREATE TABLE "AIRMFLifecycleStage" (
   CONSTRAINT "AIRMFLifecycleStage_aiSystemId_stage_key" UNIQUE ("aiSystemId", "stage")
 );
 
-CREATE INDEX "AIRMFLifecycleStage_aiSystemId_idx" ON "AIRMFLifecycleStage"("aiSystemId");
-CREATE INDEX "AIRMFLifecycleStage_stage_idx" ON "AIRMFLifecycleStage"("stage");
-CREATE INDEX "AIRMFLifecycleStage_status_idx" ON "AIRMFLifecycleStage"("status");
+CREATE INDEX IF NOT EXISTS "AIRMFLifecycleStage_aiSystemId_idx" ON "AIRMFLifecycleStage"("aiSystemId");
+CREATE INDEX IF NOT EXISTS "AIRMFLifecycleStage_stage_idx" ON "AIRMFLifecycleStage"("stage");
+CREATE INDEX IF NOT EXISTS "AIRMFLifecycleStage_status_idx" ON "AIRMFLifecycleStage"("status");
 
 -- Table: AIRMFActor
 -- AI actors across the lifecycle
-CREATE TABLE "AIRMFActor" (
+CREATE TABLE IF NOT EXISTS "AIRMFActor" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "aiSystemId" TEXT NOT NULL,
   "actorType" TEXT NOT NULL,
@@ -183,13 +183,13 @@ CREATE TABLE "AIRMFActor" (
     ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE INDEX "AIRMFActor_aiSystemId_idx" ON "AIRMFActor"("aiSystemId");
-CREATE INDEX "AIRMFActor_actorType_idx" ON "AIRMFActor"("actorType");
-CREATE INDEX "AIRMFActor_userId_idx" ON "AIRMFActor"("userId");
+CREATE INDEX IF NOT EXISTS "AIRMFActor_aiSystemId_idx" ON "AIRMFActor"("aiSystemId");
+CREATE INDEX IF NOT EXISTS "AIRMFActor_actorType_idx" ON "AIRMFActor"("actorType");
+CREATE INDEX IF NOT EXISTS "AIRMFActor_userId_idx" ON "AIRMFActor"("userId");
 
 -- Table: AIRMFAssessment
 -- Assessments for AI systems
-CREATE TABLE "AIRMFAssessment" (
+CREATE TABLE IF NOT EXISTS "AIRMFAssessment" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "aiSystemId" TEXT NOT NULL,
   "assessmentType" TEXT NOT NULL,
@@ -211,14 +211,14 @@ CREATE TABLE "AIRMFAssessment" (
     ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX "AIRMFAssessment_aiSystemId_idx" ON "AIRMFAssessment"("aiSystemId");
-CREATE INDEX "AIRMFAssessment_assessmentType_idx" ON "AIRMFAssessment"("assessmentType");
-CREATE INDEX "AIRMFAssessment_assessmentDate_idx" ON "AIRMFAssessment"("assessmentDate");
-CREATE INDEX "AIRMFAssessment_status_idx" ON "AIRMFAssessment"("status");
+CREATE INDEX IF NOT EXISTS "AIRMFAssessment_aiSystemId_idx" ON "AIRMFAssessment"("aiSystemId");
+CREATE INDEX IF NOT EXISTS "AIRMFAssessment_assessmentType_idx" ON "AIRMFAssessment"("assessmentType");
+CREATE INDEX IF NOT EXISTS "AIRMFAssessment_assessmentDate_idx" ON "AIRMFAssessment"("assessmentDate");
+CREATE INDEX IF NOT EXISTS "AIRMFAssessment_status_idx" ON "AIRMFAssessment"("status");
 
 -- Table: AIRMFProfile
 -- Profiles for different contexts
-CREATE TABLE "AIRMFProfile" (
+CREATE TABLE IF NOT EXISTS "AIRMFProfile" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "aiSystemId" TEXT NOT NULL,
   "profileName" TEXT NOT NULL,
@@ -236,13 +236,13 @@ CREATE TABLE "AIRMFProfile" (
     ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX "AIRMFProfile_aiSystemId_idx" ON "AIRMFProfile"("aiSystemId");
-CREATE INDEX "AIRMFProfile_profileType_idx" ON "AIRMFProfile"("profileType");
-CREATE INDEX "AIRMFProfile_status_idx" ON "AIRMFProfile"("status");
+CREATE INDEX IF NOT EXISTS "AIRMFProfile_aiSystemId_idx" ON "AIRMFProfile"("aiSystemId");
+CREATE INDEX IF NOT EXISTS "AIRMFProfile_profileType_idx" ON "AIRMFProfile"("profileType");
+CREATE INDEX IF NOT EXISTS "AIRMFProfile_status_idx" ON "AIRMFProfile"("status");
 
 -- Table: AIRMFRiskActivity
 -- Risk management activities
-CREATE TABLE "AIRMFRiskActivity" (
+CREATE TABLE IF NOT EXISTS "AIRMFRiskActivity" (
   "id" TEXT PRIMARY KEY DEFAULT (uuid_generate_v4())::text,
   "aiSystemId" TEXT NOT NULL,
   "activityType" TEXT NOT NULL,
@@ -269,10 +269,10 @@ CREATE TABLE "AIRMFRiskActivity" (
     ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE INDEX "AIRMFRiskActivity_aiSystemId_idx" ON "AIRMFRiskActivity"("aiSystemId");
-CREATE INDEX "AIRMFRiskActivity_activityType_idx" ON "AIRMFRiskActivity"("activityType");
-CREATE INDEX "AIRMFRiskActivity_relatedFunction_idx" ON "AIRMFRiskActivity"("relatedFunction");
-CREATE INDEX "AIRMFRiskActivity_riskLevel_idx" ON "AIRMFRiskActivity"("riskLevel");
-CREATE INDEX "AIRMFRiskActivity_status_idx" ON "AIRMFRiskActivity"("status");
-CREATE INDEX "AIRMFRiskActivity_ownerId_idx" ON "AIRMFRiskActivity"("ownerId");
+CREATE INDEX IF NOT EXISTS "AIRMFRiskActivity_aiSystemId_idx" ON "AIRMFRiskActivity"("aiSystemId");
+CREATE INDEX IF NOT EXISTS "AIRMFRiskActivity_activityType_idx" ON "AIRMFRiskActivity"("activityType");
+CREATE INDEX IF NOT EXISTS "AIRMFRiskActivity_relatedFunction_idx" ON "AIRMFRiskActivity"("relatedFunction");
+CREATE INDEX IF NOT EXISTS "AIRMFRiskActivity_riskLevel_idx" ON "AIRMFRiskActivity"("riskLevel");
+CREATE INDEX IF NOT EXISTS "AIRMFRiskActivity_status_idx" ON "AIRMFRiskActivity"("status");
+CREATE INDEX IF NOT EXISTS "AIRMFRiskActivity_ownerId_idx" ON "AIRMFRiskActivity"("ownerId");
 

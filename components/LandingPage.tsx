@@ -824,7 +824,32 @@ export const LandingPage: React.FC = () => {
                           </button>
                         </div>
                         <p className="mt-4 text-xs text-surface-400">
-                          <button type="button" className="text-brand-600 hover:underline">
+                          {/* Recovery path: send a passwordless magic link the user can sign in with. */}
+                          <button
+                            type="button"
+                            disabled={loading}
+                            onClick={async () => {
+                              if (!email) {
+                                toast.info('Enter your email above, then tap "Forgot password" to receive a sign-in link.');
+                                return;
+                              }
+                              setLoading(true);
+                              try {
+                                const response = await loginWithMagicLink(email);
+                                setMagicLinkEmail(email);
+                                if (response?.devToken) {
+                                  setDevToken(response.devToken);
+                                }
+                                setAuthStep('magic-link-sent');
+                              } catch (error: any) {
+                                logger.error('Forgot-password magic link error:', error);
+                                toast.error(error?.message || 'Failed to send a sign-in link. Please try again.');
+                              } finally {
+                                setLoading(false);
+                              }
+                            }}
+                            className="text-brand-600 hover:underline disabled:opacity-50"
+                          >
                             {t('auth.forgotPassword')}
                           </button>
                         </p>

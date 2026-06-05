@@ -554,6 +554,7 @@ class NotificationService {
           status: 'sent',
           metadata: {
             twilioSid: message.sid,
+            // Only a masked copy of the phone number is persisted; the raw value is sent to Twilio but never logged.
             phoneNumber: phoneNumber.replace(/\d(?=\d{4})/g, '*'), // Partially mask for privacy
           },
         },
@@ -764,6 +765,7 @@ class NotificationService {
       offset?: number;
     } = {}
   ): Promise<Notification[]> {
+    // Notifications are inherently per-user, so the userId filter is the correct tenant boundary here.
     const notifications = await prisma.notification.findMany({
       where: {
         userId,

@@ -127,11 +127,19 @@ export class BackendStack extends cdk.Stack {
       );
     }
 
-    // IAM — SES email sending
+    // IAM — SES email sending. Scope to SES identities owned by this
+    // account/region rather than an unconditional resources:['*'] so the task
+    // role cannot send through identities outside this deployment.
     taskDef.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
         actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-        resources: ['*'],
+        resources: [
+          cdk.Stack.of(this).formatArn({
+            service: 'ses',
+            resource: 'identity',
+            resourceName: '*',
+          }),
+        ],
       })
     );
 
@@ -288,7 +296,10 @@ export class BackendStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       assignPublicIp: false,
       circuitBreaker: { rollback: true },
-      enableExecuteCommand: true,
+      // ECS Exec is a break-glass debugging capability; keep it out of
+      // production so interactive container shell access is not a standing
+      // privilege. Enable per-incident via a temporary deploy if ever needed.
+      enableExecuteCommand: props.envName !== 'production',
     });
 
     this.service.attachToApplicationTargetGroup(targetGroup);

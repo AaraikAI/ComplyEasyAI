@@ -4,7 +4,6 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { ShieldCheck, Search, Filter, Download, Loader2, ArrowUpDown, AlertTriangle, X, ExternalLink } from 'lucide-react';
-import crypto from 'crypto';
 import { getBlockchainExplorerUrl } from '../utils/blockchain';
 import { logger } from '../utils/logger';
 
@@ -14,7 +13,9 @@ type HashVerification = 'verified' | 'format' | 'invalid';
 interface TransformedAuditLog extends Omit<AuditLog, 'timestamp'> {
   timestamp: Date;
   userId?: string;
-  // 'verified' = cryptographic recompute matched; 'format' = structure/format valid only; 'invalid' = bad/missing hash.
+  // Verification status is authoritative from the server (which holds the signing
+  // key and canonical payload). 'verified' = server confirmed integrity; 'format' =
+  // hash is well-formed but server did not confirm; 'invalid' = bad/missing hash.
   verification: HashVerification;
   transactionHash?: string | null;
   network?: string | null;
@@ -61,8 +62,8 @@ export const AuditTrail: React.FC = () => {
           user: log.user?.name || log.user?.email || (typeof log.user === 'string' ? log.user : 'System'),
           timestamp: new Date(log.timestamp || log.createdAt || Date.now()),
           hash: log.hash || '',
-          verification: log.hash ? verifyHash(log.hash, log) : 'invalid',
-          verified: log.hash ? verifyHash(log.hash, log) === 'verified' : false,
+          verification: classifyVerification(log),
+          verified: log.verified === true,
           userId: log.userId,
           organizationId: log.organizationId,
           transactionHash: log.transactionHash || log.blockchainRecord?.transactionHash || (log.metadata as any)?.blockchain?.transactionHash || null,
@@ -88,34 +89,23 @@ export const AuditTrail: React.FC = () => {
     loadAuditLogs();
   }, []);
 
-  // Classify a hash: 'verified' only when a SHA-256 recompute of the log's immutable
-  // fields matches; 'format' when the value is well-formed but cannot be cryptographically
-  // recomputed (e.g. UUID/server-side scheme); 'invalid' when missing or malformed.
-  const verifyHash = (hash: string, log: any): HashVerification => {
+  // Integrity verification is performed server-side, where the canonical payload and
+  // signing key live; the browser cannot reproduce a server-issued hash and must not
+  // present a "Verified" state it did not actually compute. This helper renders the
+  // server's authoritative status and falls back to a structural format check only.
+  const classifyVerification = (log: any): HashVerification => {
+    const hash: string = log.hash || '';
     if (!hash || hash.length === 0) return 'invalid';
 
-    try {
-      const isValidUuid = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(hash);
-      const isValidHex = /^[a-f0-9]{16,}$/i.test(hash);
-      if (!isValidUuid && !isValidHex) return 'invalid';
+    // Trust the server's integrity determination when present.
+    if (log.verified === true || log.verification === 'verified') return 'verified';
+    if (log.verification === 'invalid') return 'invalid';
 
-      // Recompute a deterministic hash of the log's immutable fields. A match proves the
-      // entry has not been tampered with since creation.
-      const payload = [log.action, log.userId || log.user, log.timestamp || log.createdAt]
-        .filter(Boolean)
-        .join('|');
-
-      if (payload && isValidHex && hash.length >= 64) {
-        const recomputedHash = crypto.createHash('sha256').update(payload).digest('hex');
-        return hash === recomputedHash ? 'verified' : 'invalid';
-      }
-
-      // Well-formed but not cryptographically recomputable here (UUID or server-only scheme):
-      // report as a format check rather than implying integrity verification.
-      return 'format';
-    } catch {
-      return 'invalid';
-    }
+    // Otherwise, only assert the hash is well-formed (a format check, not integrity).
+    const isValidUuid = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(hash);
+    const isValidHex = /^[a-f0-9]{16,}$/i.test(hash);
+    if (!isValidUuid && !isValidHex) return 'invalid';
+    return 'format';
   };
 
   // Filter logs
@@ -373,11 +363,11 @@ export const AuditTrail: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     {log.verification === 'verified' ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" title="Hash recomputed and matched (integrity verified)">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" title="Integrity confirmed by the server">
                         <ShieldCheck size={12} className="mr-1" /> Verified
                       </span>
                     ) : log.verification === 'format' ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800" title="Hash is well-formed but not cryptographically recomputed in the browser">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800" title="Hash is well-formed; integrity not confirmed by the server">
                         <ShieldCheck size={12} className="mr-1" /> Format check
                       </span>
                     ) : (

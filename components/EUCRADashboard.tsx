@@ -560,7 +560,9 @@ export const EUCRADashboard: React.FC = () => {
     setVulnForm({ productId: '', cveId: '', title: '', description: '', severity: 'high', reporter: '', isActivelyExploited: false });
   }, [vulnForm, products]);
 
-  const handleNotifyENISA = useCallback((vulnId: string) => {
+  // Records that the user has performed the out-of-band CRA Art. 14 ENISA notification.
+  // This tracks the notification in the compliance checklist; it does not transmit to ENISA.
+  const handleMarkENISANotified = useCallback((vulnId: string) => {
     setVulnerabilities(prev => prev.map(v =>
       v.id === vulnId ? { ...v, status: 'enisa_notified' as VulnerabilityStatus, enisaNotifiedDate: new Date().toISOString() } : v
     ));
@@ -690,10 +692,10 @@ export const EUCRADashboard: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={() => handleNotifyENISA(v.id)}
+                onClick={() => handleMarkENISANotified(v.id)}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm flex items-center gap-1"
               >
-                <ArrowUpRight className="w-4 h-4" /> Notify ENISA
+                <ArrowUpRight className="w-4 h-4" /> Mark ENISA Notified
               </button>
             </div>
           ))}
@@ -932,9 +934,9 @@ export const EUCRADashboard: React.FC = () => {
                         <span className={`text-sm font-medium ${overdue ? 'text-red-700' : hrs < 6 ? 'text-orange-700' : 'text-gray-700'}`}>
                           {overdue ? 'OVERDUE' : `${hrs.toFixed(1)}h remaining`}
                         </span>
-                        <button onClick={() => handleNotifyENISA(v.id)}
+                        <button onClick={() => handleMarkENISANotified(v.id)}
                           className="px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-xs flex items-center gap-1">
-                          <ArrowUpRight className="w-3 h-3" /> Notify ENISA
+                          <ArrowUpRight className="w-3 h-3" /> Mark ENISA Notified
                         </button>
                       </>
                     ) : (

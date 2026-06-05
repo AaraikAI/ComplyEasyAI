@@ -238,7 +238,8 @@ class FrameworksController {
               })
             : null;
 
-          // Return conflict details for UI
+          // Return conflict details for UI as a structured response body
+          // (rather than serializing JSON into an error message string).
           const conflictDetails = {
             message: 'Framework was modified by another user',
             currentVersion: existingFramework.version,
@@ -248,7 +249,8 @@ class FrameworksController {
             conflictingFields: this.detectConflictingFields(existingFramework, updateData),
           };
 
-          throw new AppError(JSON.stringify(conflictDetails), 409); // Conflict status code
+          res.status(409).json({ error: 'conflict', conflict: conflictDetails });
+          return;
         }
       }
 
@@ -586,9 +588,9 @@ class FrameworksController {
         throw new AppError('Framework not found', 404);
       }
 
-      // Check if owner is being updated
-      const existingControl = await prisma.frameworkControl.findUnique({
-        where: { id: controlId },
+      // Verify the control belongs to the org-scoped framework before mutating
+      const existingControl = await prisma.frameworkControl.findFirst({
+        where: { id: controlId, frameworkId },
         select: { ownerId: true, evidenceRequired: true, status: true },
       });
 
@@ -714,20 +716,25 @@ class FrameworksController {
         throw new AppError('Framework not found', 404);
       }
 
-      // Update all selected controls
+      // Update only controls that belong to this org-scoped framework
       const updateData: any = { status };
       if (evidenceRequired !== undefined) {
         updateData.evidenceRequired = evidenceRequired;
       }
 
-      const updatedControls = await Promise.all(
-        controlIds.map(async (controlId: string) => {
-          return await prisma.frameworkControl.update({
-            where: { id: controlId },
-            data: updateData,
-          });
-        })
-      );
+      const { count } = await prisma.frameworkControl.updateMany({
+        where: { id: { in: controlIds }, frameworkId },
+        data: updateData,
+      });
+
+      // Reject if any supplied id does not belong to this framework (cross-tenant attempt)
+      if (count !== controlIds.length) {
+        throw new AppError('One or more controls do not belong to this framework', 404);
+      }
+
+      const updatedControls = await prisma.frameworkControl.findMany({
+        where: { id: { in: controlIds }, frameworkId },
+      });
 
       // Recalculate framework progress
       await this.recalculateFrameworkProgress(frameworkId, organizationId);

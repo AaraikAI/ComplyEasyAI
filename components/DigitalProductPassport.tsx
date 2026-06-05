@@ -1160,42 +1160,59 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
         </div>
 
         {/* Industry Benchmark */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">Industry Benchmark Comparison</h3>
-          <div className="flex items-center gap-6">
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">This Product</span>
-                <span className="text-sm font-medium text-green-600">{totalEmissions.toFixed(1)} kg CO2e</span>
+        {(() => {
+          // Only render a benchmark comparison when a verified industry-average value is
+          // available from the backend. Fabricated multipliers / fixed percentages and
+          // hardcoded performance claims must never be presented as factual data.
+          const industryAverageEmissions =
+            (selectedProduct as { industryAverageEmissionsKgCO2e?: number } | undefined)
+              ?.industryAverageEmissionsKgCO2e;
+          if (industryAverageEmissions == null || industryAverageEmissions <= 0) {
+            return (
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Industry Benchmark Comparison</h3>
+                <p className="text-sm text-gray-500">
+                  No verified industry-average benchmark is available for this product category yet.
+                </p>
               </div>
-              <div className="bg-gray-100 rounded-full h-4 relative">
-                <div className="bg-green-500 h-4 rounded-full" style={{ width: '45%' }} />
+            );
+          }
+          const productPct = Math.min(100, (totalEmissions / industryAverageEmissions) * 100);
+          const deltaPct = ((industryAverageEmissions - totalEmissions) / industryAverageEmissions) * 100;
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">Industry Benchmark Comparison</h3>
+              <div className="flex items-center gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600">This Product</span>
+                    <span className="text-sm font-medium text-green-600">{totalEmissions.toFixed(1)} kg CO2e</span>
+                  </div>
+                  <div className="bg-gray-100 rounded-full h-4 relative">
+                    <div className="bg-green-500 h-4 rounded-full" style={{ width: `${productPct.toFixed(0)}%` }} />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600">Industry Average</span>
+                    <span className="text-sm font-medium text-yellow-600">{industryAverageEmissions.toFixed(1)} kg CO2e</span>
+                  </div>
+                  <div className="bg-gray-100 rounded-full h-4 relative">
+                    <div className="bg-yellow-500 h-4 rounded-full" style={{ width: '100%' }} />
+                  </div>
+                </div>
               </div>
+              {deltaPct > 0 && (
+                <div className="mt-4 p-3 bg-green-50 rounded-lg flex items-center gap-2">
+                  <TrendingDown size={16} className="text-green-600" />
+                  <p className="text-sm text-green-700">
+                    This product performs <strong>{deltaPct.toFixed(1)}% better</strong> than the verified industry average for carbon footprint.
+                  </p>
+                </div>
+              )}
             </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Industry Average</span>
-                <span className="text-sm font-medium text-yellow-600">{(totalEmissions * 1.6).toFixed(1)} kg CO2e</span>
-              </div>
-              <div className="bg-gray-100 rounded-full h-4 relative">
-                <div className="bg-yellow-500 h-4 rounded-full" style={{ width: '72%' }} />
-              </div>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Industry Worst</span>
-                <span className="text-sm font-medium text-red-600">{(totalEmissions * 2.2).toFixed(1)} kg CO2e</span>
-              </div>
-              <div className="bg-gray-100 rounded-full h-4 relative">
-                <div className="bg-red-500 h-4 rounded-full" style={{ width: '100%' }} />
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 p-3 bg-green-50 rounded-lg flex items-center gap-2">
-            <TrendingDown size={16} className="text-green-600" />
-            <p className="text-sm text-green-700">This product performs <strong>37.5% better</strong> than the industry average for carbon footprint.</p>
-          </div>
-        </div>
+          );
+        })()}
       </div>
     );
   };

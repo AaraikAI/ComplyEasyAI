@@ -6,7 +6,9 @@
  * - Pre-built templates for GDPR, CCPA, Children's Privacy, Employee Privacy
  * - Analytics: view/acceptance statistics, consent rates, version history
  * - Multi-type support: Website, App, Email, Cookie notices
- * - Full CRUD with local state and demo data
+ * - Full CRUD backed by the privacy API. Live consent/notice data comes from the
+ *   server; bundled fixtures are only used as an explicitly-labeled sample
+ *   fallback when the server returns no records, never as live KPIs.
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
@@ -144,7 +146,8 @@ const LANGUAGES = [
   'Dutch', 'Japanese', 'Korean', 'Chinese (Simplified)',
 ];
 
-// ── Default Data (used as fallback when API returns empty) ──────────────────
+// ── Sample Data (rendered ONLY behind an explicit "sample data" banner when the
+//    server returns no records — never presented as live consent-rate KPIs) ────
 
 const initialNotices: PrivacyNotice[] = [
   {
@@ -423,12 +426,17 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   // State
   const [activeTab, setActiveTab] = useState<TabId>('notices');
-  const [notices, setNotices] = useState<PrivacyNotice[]>(initialNotices);
+  // Live data starts empty so fabricated fixtures are never shown as real KPIs.
+  const [notices, setNotices] = useState<PrivacyNotice[]>([]);
+  // Templates are a static catalog of starting points (not live metrics), so they
+  // are seeded immediately; they are clearly labeled as reusable templates.
   const [templates, setTemplates] = useState<NoticeTemplate[]>(initialTemplates);
-  const [versionHistory, setVersionHistory] = useState<VersionHistoryEntry[]>(initialVersionHistory);
-  const [consentAnalytics, setConsentAnalytics] = useState<ConsentAnalytics[]>(initialConsentAnalytics);
+  const [versionHistory, setVersionHistory] = useState<VersionHistoryEntry[]>([]);
+  const [consentAnalytics, setConsentAnalytics] = useState<ConsentAnalytics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // True when bundled sample records are being shown because the server has none.
+  const [usingSampleData, setUsingSampleData] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<NoticeType | 'All'>('All');
@@ -454,10 +462,12 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           api.privacy.listNoticeVersionHistory().catch(() => null),
         ]);
         if (cancelled) return;
-        if (noticesRes?.notices && noticesRes.notices.length > 0) {
+        const hasServerNotices = !!(noticesRes?.notices && noticesRes.notices.length > 0);
+        const hasServerConsent = !!(consentStats && Array.isArray(consentStats) && consentStats.length > 0);
+        if (hasServerNotices) {
           setNotices(noticesRes.notices);
         }
-        if (consentStats && Array.isArray(consentStats) && consentStats.length > 0) {
+        if (hasServerConsent) {
           setConsentAnalytics(consentStats);
         }
         if (templatesRes && Array.isArray(templatesRes) && templatesRes.length > 0) {
@@ -466,10 +476,23 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         if (versionsRes && Array.isArray(versionsRes) && versionsRes.length > 0) {
           setVersionHistory(versionsRes);
         }
+        // When the org has no real records yet, fall back to bundled sample data
+        // ONLY behind an explicit banner — never as silent "live" metrics.
+        if (!hasServerNotices && !hasServerConsent) {
+          setNotices(initialNotices);
+          setConsentAnalytics(initialConsentAnalytics);
+          setVersionHistory(initialVersionHistory);
+          setUsingSampleData(true);
+        }
         setLoadError(null);
       } catch (err: unknown) {
         if (!cancelled) {
-          setLoadError('Unable to connect to server. Displaying local data.');
+          // Server unreachable: show sample data, clearly flagged as such.
+          setNotices(initialNotices);
+          setConsentAnalytics(initialConsentAnalytics);
+          setVersionHistory(initialVersionHistory);
+          setUsingSampleData(true);
+          setLoadError('Unable to connect to server. Showing sample data only.');
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -548,7 +571,11 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         language: formData.language,
         version: '1.0',
       });
-      if (created?.id) newNotice.id = created.id;
+      if (created?.id) {
+        newNotice.id = created.id;
+        // A real record now exists; we are no longer showing only sample data.
+        setUsingSampleData(false);
+      }
     } catch (err: unknown) {
       setLoadError('Failed to save notice to server. Changes saved locally.');
     }
@@ -1231,6 +1258,18 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // ── Render: Analytics Tab ───────────────────────────────────────────────────
 
   const renderAnalyticsTab = () => {
+    if (consentAnalytics.length === 0) {
+      return (
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-12 text-center">
+          <BarChart3 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-slate-400 mb-1">No consent analytics yet</h3>
+          <p className="text-slate-500 text-sm">
+            Consent and acceptance metrics will appear here once your published notices start
+            collecting views.
+          </p>
+        </div>
+      );
+    }
     const totalViews = consentAnalytics.reduce((sum, a) => sum + a.totalViews, 0);
     const totalAcceptances = consentAnalytics.reduce((sum, a) => sum + a.totalAcceptances, 0);
     const overallConsentRate = totalViews > 0 ? ((totalAcceptances / totalViews) * 100).toFixed(1) : '0';
@@ -1448,6 +1487,17 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="flex items-center gap-2 mb-4 text-slate-400 text-sm">
           <RefreshCw className="w-4 h-4 animate-spin" />
           <span>Loading privacy notices...</span>
+        </div>
+      )}
+
+      {/* Sample Data Banner — shown whenever bundled fixtures stand in for real records */}
+      {usingSampleData && !isLoading && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-blue-900/30 border border-blue-700/50 rounded-lg">
+          <AlertTriangle className="w-4 h-4 text-blue-400 flex-shrink-0" />
+          <span className="text-sm text-blue-300">
+            Sample data shown for demonstration. These notices and consent metrics are illustrative
+            examples, not your organization&apos;s live data. Create a notice to get started.
+          </span>
         </div>
       )}
 

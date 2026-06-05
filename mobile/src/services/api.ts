@@ -1,4 +1,4 @@
-import { logger } from '../../../utils/logger';
+import { logger } from '../utils/logger';
 /**
  * Mobile API Service
  *
@@ -138,6 +138,9 @@ interface PaginationParams {
   pageSize?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  // Optional resource-specific filters (e.g. riskLevel, status) forwarded to
+  // the backend list route as query-string params.
+  [key: string]: string | number | boolean | undefined;
 }
 
 // ============================================================================
@@ -252,6 +255,15 @@ async function fetchApi<T = any>(
       if (refreshed) {
         headers['Authorization'] = `Bearer ${accessToken}`;
         const retryResponse = await fetch(url, { ...options, headers });
+        if (!retryResponse.ok) {
+          const retryErrorBody = await retryResponse.json().catch(() => ({}));
+          throw {
+            status: retryResponse.status,
+            code: retryErrorBody.error?.code || 'API_ERROR',
+            message: retryErrorBody.error?.message || `API error: ${retryResponse.status}`,
+            details: retryErrorBody.error?.details,
+          };
+        }
         return retryResponse.json();
       }
     }

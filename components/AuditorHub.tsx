@@ -344,6 +344,75 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
     return { activeEngagements, openFindings, pendingRequests, overdueRequests, criticalFindings, remediatedFindings };
   }, [engagements, findings, evidenceRequests]);
 
+  // Derive the "Recent Activity" feed from already-fetched live data so the panel
+  // reflects real records rather than fabricated events. Items are sorted by their
+  // most recent date and capped to the latest few.
+  const recentActivity = useMemo(() => {
+    const items: { action: string; detail: string; date: string; icon: React.ReactNode }[] = [];
+    findings.forEach((f) => {
+      const remediated = f.status === 'remediated' || f.status === 'closed';
+      items.push({
+        action: remediated ? 'Finding remediated' : 'Finding created',
+        detail: `${f.title} (${f.id})`,
+        date: f.createdDate || f.dueDate || '',
+        icon: remediated
+          ? <CheckCircle size={14} className="text-green-400" />
+          : <AlertCircle size={14} className="text-orange-400" />,
+      });
+    });
+    workpapers.forEach((w) => {
+      items.push({
+        action: w.status === 'approved' || w.status === 'final' ? 'Workpaper approved' : 'Workpaper updated',
+        detail: `${w.name} (${w.engagement})`,
+        date: w.lastModified || '',
+        icon: <Check size={14} className="text-green-400" />,
+      });
+    });
+    evidenceRequests.forEach((e) => {
+      items.push({
+        action: e.status === 'submitted' ? 'Evidence submitted' : 'Evidence request',
+        detail: `${e.title} (${e.engagement})`,
+        date: e.dueDate || '',
+        icon: e.status === 'submitted'
+          ? <Upload size={14} className="text-blue-400" />
+          : <FileText size={14} className="text-yellow-400" />,
+      });
+    });
+    return items
+      .filter((i) => i.date)
+      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+      .slice(0, 6);
+  }, [findings, workpapers, evidenceRequests]);
+
+  // Derive the workpaper "Version History & Review Workflow" feed from live
+  // workpaper records instead of invented entries.
+  const workpaperHistory = useMemo(() => {
+    return workpapers
+      .filter((w) => w.lastModified)
+      .slice()
+      .sort((a, b) => (a.lastModified < b.lastModified ? 1 : a.lastModified > b.lastModified ? -1 : 0))
+      .slice(0, 6)
+      .map((w) => {
+        const approved = w.status === 'approved' || w.status === 'final';
+        const inReview = w.status === 'in-review';
+        return {
+          action: approved
+            ? `Version ${w.version} ${w.status === 'final' ? 'finalized' : 'approved'}`
+            : inReview
+            ? 'Submitted for review'
+            : `Version ${w.version} updated`,
+          paper: w.name,
+          user: w.author,
+          time: w.lastModified,
+          status: approved
+            ? `Version ${w.version} ${w.status}`
+            : inReview
+            ? 'Awaiting reviewer'
+            : `Reviewer: ${w.reviewer}`,
+        };
+      });
+  }, [workpapers]);
+
   const toggleFirmCompare = (firmId: string) => {
     setSelectedFirms((prev) =>
       prev.includes(firmId) ? prev.filter((id) => id !== firmId) : prev.length < 3 ? [...prev, firmId] : prev
@@ -452,23 +521,20 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
           Recent Activity
         </h3>
         <div className="space-y-3">
-          {[
-            { action: 'Evidence submitted', detail: 'Encryption configuration evidence for SOC 2 Type II', time: '2 hours ago', icon: <Upload size={14} className="text-blue-400" /> },
-            { action: 'Finding remediated', detail: 'Incomplete change management documentation (FND-003)', time: '5 hours ago', icon: <CheckCircle size={14} className="text-green-400" /> },
-            { action: 'New evidence request', detail: 'Network architecture diagram for PCI DSS v4.0', time: '1 day ago', icon: <FileText size={14} className="text-yellow-400" /> },
-            { action: 'Engagement phase updated', detail: 'SOX ITGC moved to Report Drafting phase', time: '2 days ago', icon: <RefreshCw size={14} className="text-purple-400" /> },
-            { action: 'Workpaper approved', detail: 'Change Management Walkthrough (SOC 2 Type II)', time: '3 days ago', icon: <Check size={14} className="text-green-400" /> },
-            { action: 'Finding created', detail: 'Vendor risk assessments overdue (FND-004)', time: '4 days ago', icon: <AlertCircle size={14} className="text-orange-400" /> },
-          ].map((activity, idx) => (
-            <div key={idx} className="flex items-start gap-3 bg-slate-700/30 rounded-lg p-3">
-              <div className="mt-0.5">{activity.icon}</div>
-              <div className="flex-1">
-                <span className="text-white text-sm font-medium">{activity.action}</span>
-                <div className="text-xs text-slate-400">{activity.detail}</div>
+          {recentActivity.length === 0 ? (
+            <div className="text-sm text-slate-500">No recent activity yet.</div>
+          ) : (
+            recentActivity.map((activity, idx) => (
+              <div key={idx} className="flex items-start gap-3 bg-slate-700/30 rounded-lg p-3">
+                <div className="mt-0.5">{activity.icon}</div>
+                <div className="flex-1">
+                  <span className="text-white text-sm font-medium">{activity.action}</span>
+                  <div className="text-xs text-slate-400">{activity.detail}</div>
+                </div>
+                <span className="text-xs text-slate-500 whitespace-nowrap">{activity.date}</span>
               </div>
-              <span className="text-xs text-slate-500 whitespace-nowrap">{activity.time}</span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
@@ -1148,30 +1214,29 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
           Version History & Review Workflow
         </h4>
         <div className="space-y-3">
-          {[
-            { action: 'Version 2.1 uploaded', paper: 'Access Control Testing Workpaper', user: 'Sarah Chen', time: '2026-02-18 14:30', status: 'Submitted for review' },
-            { action: 'Review comments added', paper: 'SOD Conflict Analysis', user: 'Robert Kim', time: '2026-02-16 10:15', status: '3 comments pending' },
-            { action: 'Approved', paper: 'Change Management Walkthrough', user: 'James Liu', time: '2026-02-15 16:45', status: 'Version 1.3 approved' },
-            { action: 'Version 3.0 finalized', paper: 'Risk Assessment Summary', user: 'Patricia Moore', time: '2026-02-10 09:00', status: 'Marked as final' },
-          ].map((entry, idx) => (
-            <div key={idx} className="flex items-start gap-3 bg-slate-700/30 rounded-lg p-3">
-              <div className="mt-0.5">
-                {entry.action.includes('Approved') || entry.action.includes('finalized') ? (
-                  <CheckCircle size={14} className="text-green-400" />
-                ) : entry.action.includes('comments') ? (
-                  <MessageSquare size={14} className="text-yellow-400" />
-                ) : (
-                  <Upload size={14} className="text-blue-400" />
-                )}
+          {workpaperHistory.length === 0 ? (
+            <div className="text-sm text-slate-500">No workpaper history yet.</div>
+          ) : (
+            workpaperHistory.map((entry, idx) => (
+              <div key={idx} className="flex items-start gap-3 bg-slate-700/30 rounded-lg p-3">
+                <div className="mt-0.5">
+                  {entry.action.includes('approved') || entry.action.includes('finalized') ? (
+                    <CheckCircle size={14} className="text-green-400" />
+                  ) : entry.action.includes('review') ? (
+                    <MessageSquare size={14} className="text-yellow-400" />
+                  ) : (
+                    <Upload size={14} className="text-blue-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <span className="text-white text-sm font-medium">{entry.action}</span>
+                  <div className="text-xs text-slate-400">{entry.paper} by {entry.user}</div>
+                  <div className="text-xs text-slate-500">{entry.status}</div>
+                </div>
+                <span className="text-xs text-slate-500 whitespace-nowrap">{entry.time}</span>
               </div>
-              <div className="flex-1">
-                <span className="text-white text-sm font-medium">{entry.action}</span>
-                <div className="text-xs text-slate-400">{entry.paper} by {entry.user}</div>
-                <div className="text-xs text-slate-500">{entry.status}</div>
-              </div>
-              <span className="text-xs text-slate-500 whitespace-nowrap">{entry.time}</span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

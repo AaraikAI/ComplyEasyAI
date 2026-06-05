@@ -174,7 +174,9 @@ export const createCICDIntegrationSchema = Joi.object({
   name: Joi.string().required().min(1).max(300).trim(),
   provider: Joi.string().required().min(1).max(100).trim(),
   config: Joi.object().allow(null).optional(),
-  webhookUrl: Joi.string().uri().max(2000).allow('', null).optional(),
+  // Constrain webhook URL to https scheme only; controller must still pass the
+  // final (post-redirect) URL through isWebhookUrlSafe()/safeFetch() before any outbound call.
+  webhookUrl: Joi.string().uri({ scheme: ['https'] }).max(2000).allow('', null).optional(),
 }).unknown(false);
 
 export const detectDriftSchema = Joi.object({

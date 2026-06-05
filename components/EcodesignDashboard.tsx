@@ -319,17 +319,14 @@ export const EcodesignDashboard: React.FC = () => {
       try {
         const saved = await api.regulationData.getAll('ecodesign');
         setServerReachable(true);
-        if (saved && typeof saved === 'object') {
-          setProducts(Array.isArray(saved.products) ? saved.products : DEFAULT_PRODUCTS);
-          setPassports(Array.isArray(saved.passports) ? saved.passports : DEFAULT_PASSPORTS);
-          setLcas(Array.isArray(saved.lcas) ? saved.lcas : DEFAULT_LCAS);
-          setRequirements(Array.isArray(saved.requirements) ? saved.requirements : DEFAULT_REQUIREMENTS);
-        } else {
-          setProducts(DEFAULT_PRODUCTS);
-          setPassports(DEFAULT_PASSPORTS);
-          setLcas(DEFAULT_LCAS);
-          setRequirements(DEFAULT_REQUIREMENTS);
-        }
+        // Reachable server: use the org's actual stored slices, defaulting any
+        // missing slice to an empty array. Never substitute template fixtures
+        // here, or they would be auto-saved back as the org's real inventory.
+        const savedObj = (saved && typeof saved === 'object') ? saved : {};
+        setProducts(Array.isArray(savedObj.products) ? savedObj.products : []);
+        setPassports(Array.isArray(savedObj.passports) ? savedObj.passports : []);
+        setLcas(Array.isArray(savedObj.lcas) ? savedObj.lcas : []);
+        setRequirements(Array.isArray(savedObj.requirements) ? savedObj.requirements : []);
       } catch (err: any) {
         // Server unreachable — fall back to template data so the UI is usable.
         setServerReachable(false);

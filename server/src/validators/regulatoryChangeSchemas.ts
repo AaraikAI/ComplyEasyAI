@@ -13,7 +13,8 @@ export const createRegulatoryChangeSchema = Joi.object({
   changeType: Joi.string().valid(...validChangeTypes).required(),
   title: Joi.string().required().min(1).max(500).trim(),
   summary: Joi.string().required().min(1).max(10000),
-  sourceUrl: Joi.string().uri().max(2000).allow('', null).optional(),
+  // Restrict to http/https schemes; if this URL is ever fetched server-side it must also pass isUrlSafe().
+  sourceUrl: Joi.string().uri({ scheme: ['http', 'https'] }).max(2000).allow('', null).optional(),
   effectiveDate: Joi.date().iso().allow(null).optional(),
   impactAnalysis: Joi.string().max(10000).allow('', null).optional(),
   controlId: Joi.string().max(200).allow('', null).optional(),
@@ -26,7 +27,8 @@ export const updateRegulatoryChangeSchema = Joi.object({
   summary: Joi.string().min(1).max(10000).optional(),
   status: Joi.string().valid(...validStatuses).optional(),
   impactAnalysis: Joi.string().max(10000).allow('', null).optional(),
-  sourceUrl: Joi.string().uri().max(2000).allow('', null).optional(),
+  // Restrict to http/https schemes; if this URL is ever fetched server-side it must also pass isUrlSafe().
+  sourceUrl: Joi.string().uri({ scheme: ['http', 'https'] }).max(2000).allow('', null).optional(),
   effectiveDate: Joi.date().iso().allow(null).optional(),
 }).min(1).unknown(false);
 

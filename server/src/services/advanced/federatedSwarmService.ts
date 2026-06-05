@@ -596,6 +596,16 @@ class FederatedSwarmService {
         });
       }
 
+      // Derive a real contributing-peer count from the federated contribution log
+      // (distinct organizations that have submitted a contribution), so generated
+      // insights report a measured source count instead of a fixed literal.
+      const contributingOrgs = await prisma.auditLog.findMany({
+        where: { action: 'federated_swarm.contribution_made' },
+        distinct: ['organizationId'],
+        select: { organizationId: true },
+      });
+      const peerSourceCount = contributingOrgs.filter((c) => c.organizationId).length;
+
       // Generate additional insights based on patterns
       for (const framework of orgFrameworks) {
         // Best practice insight
@@ -612,7 +622,7 @@ class FederatedSwarmService {
             insightType: 'best_practice',
             description: `Organizations with similar ${framework.name} implementations typically achieve 80%+ control implementation`,
             confidence: 0.75,
-            sourceCount: 50, // Anonymized count
+            sourceCount: peerSourceCount, // Distinct contributing organizations (anonymized)
             applicableFrameworks: [framework.id],
             recommendations: [
               `Focus on implementing remaining ${totalControls - implementedControls} controls`,
@@ -635,7 +645,7 @@ class FederatedSwarmService {
             insightType: 'risk_pattern',
             description: `Organizations with similar risk profiles often see ${mostCommonCategory} risks increase during compliance implementation`,
             confidence: 0.7,
-            sourceCount: 30,
+            sourceCount: peerSourceCount,
             applicableFrameworks: [framework.id],
             recommendations: [
               `Implement preventive controls for ${mostCommonCategory} risks`,
