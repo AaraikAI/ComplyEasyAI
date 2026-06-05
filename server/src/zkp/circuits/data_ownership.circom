@@ -2,6 +2,7 @@ pragma circom 2.1.6;
 
 include "../../../node_modules/circomlib/circuits/poseidon.circom";
 include "../../../node_modules/circomlib/circuits/bitify.circom";
+include "../../../node_modules/circomlib/circuits/comparators.circom";
 
 /*
  * Data Ownership Circuit (production-grade).
@@ -61,23 +62,44 @@ template DataOwnership() {
     component ownerHash = Poseidon(2);
     ownerHash.inputs[0] <== sk;
     ownerHash.inputs[1] <== userIdSalt;
-    ownerHash.out === ownerCommitment;
 
     // 3. Data commitment: Poseidon(sk, dataHash, dataSalt)
     component dataHasher = Poseidon(3);
     dataHasher.inputs[0] <== sk;
     dataHasher.inputs[1] <== dataHash;
     dataHasher.inputs[2] <== dataSalt;
-    dataHasher.out === dataCommitment;
 
     // 4. Nullifier: Poseidon(sk, claimContext)
     component nullHash = Poseidon(2);
     nullHash.inputs[0] <== sk;
     nullHash.inputs[1] <== claimContext;
-    nullHash.out === nullifier;
 
-    // All three Poseidon constraints simultaneously satisfied => ownership proven
-    ownershipVerified <== 1;
+    // 5. Derive each binding check as a genuine boolean (1 iff the recomputed
+    //    Poseidon output equals the corresponding public commitment). These
+    //    are computed from the witness, NOT assumed — IsEqual makes the result
+    //    a real signal rather than a constant.
+    component ownerMatch = IsEqual();
+    ownerMatch.in[0] <== ownerHash.out;
+    ownerMatch.in[1] <== ownerCommitment;
+
+    component dataMatch = IsEqual();
+    dataMatch.in[0] <== dataHasher.out;
+    dataMatch.in[1] <== dataCommitment;
+
+    component nullMatch = IsEqual();
+    nullMatch.in[0] <== nullHash.out;
+    nullMatch.in[1] <== nullifier;
+
+    // 6. ownershipVerified = ownerMatch AND dataMatch AND nullMatch.
+    //    (boolean AND via multiplication; each IsEqual.out ∈ {0,1})
+    signal ownerAndData;
+    ownerAndData <== ownerMatch.out * dataMatch.out;
+    ownershipVerified <== ownerAndData * nullMatch.out;
+
+    // 7. A satisfying witness MUST actually own the data: require all three
+    //    binding checks to hold. Without this, ownershipVerified could be 0
+    //    and the proof would still verify, asserting nothing.
+    ownershipVerified === 1;
 }
 
 component main {public [userIdSalt, dataHash, dataSalt, ownerCommitment, dataCommitment, claimContext, nullifier]} = DataOwnership();

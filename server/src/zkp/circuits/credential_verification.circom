@@ -96,6 +96,11 @@ template CredentialVerification() {
     v3 <== v2 * issuedBeforeExpiry.out;
     isValid <== v3;
 
+    // A valid proof MUST assert the credential is genuinely valid: role ok AND
+    // not expired AND already issued AND issued-before-expiry. Without this the
+    // proof asserts nothing — a witness with isValid == 0 would still verify.
+    isValid === 1;
+
     // 6. Bind to credential commitment via Poseidon
     component credHash = Poseidon(5);
     credHash.inputs[0] <== roleLevel;
