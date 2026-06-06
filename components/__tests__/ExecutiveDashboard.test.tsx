@@ -19,6 +19,7 @@ const MOCK_DASHBOARD = {
     { name: 'HIPAA', progress: 71, rag: 'AMBER', totalControls: 50, implementedControls: 36 },
   ],
   riskPosture: {
+    totalOpen: 23,
     topRisks: [
       { id: 'r1', title: 'Third-party Data Breach Risk', category: 'Vendor', severity: 'High', likelihood: 3, impact: 5, riskScore: 15, owner: 'CISO', status: 'OPEN', trend: 'stable' },
       { id: 'r2', title: 'Ransomware Attack', category: 'Cyber', severity: 'Critical', likelihood: 4, impact: 4, riskScore: 16, owner: 'Security', status: 'MITIGATING', trend: 'improving' },
@@ -26,6 +27,7 @@ const MOCK_DASHBOARD = {
     ],
   },
   incidents: {
+    totalOpen: 4,
     bySeverity: { SEV1: 1, SEV2: 3, SEV3: 7, SEV4: 12 },
   },
   periodComparison: {
@@ -37,8 +39,28 @@ const MOCK_DASHBOARD = {
   openFindings: 23,
 };
 
-function createFetchMock() {
+// /api/executive/trends supplies GENUINE prior-period baselines. Only the
+// metrics the backend actually tracks over time (incidents, risks/findings)
+// carry a real `previous`; everything else has no historical baseline. Finding
+// 73 hardened the Period Comparison panel so deltas/arrows render ONLY for
+// metrics with a real prior period — never against a fabricated sentinel-zero.
+const MOCK_TRENDS = {
+  comparison: {
+    newRisks: { current: 23, previous: 30, change: -23 },
+    newIncidents: { current: 4, previous: 9, change: -56 },
+  },
+};
+
+function createFetchMock(opts: { trends?: unknown } = { trends: MOCK_TRENDS }) {
   return vi.fn().mockImplementation((url: string) => {
+    if (typeof url === 'string' && url.includes('/api/executive/trends')) {
+      // When opts.trends is null, the trends endpoint yields no usable prior
+      // data (simulating a backend that does not yet track history).
+      return Promise.resolve({
+        ok: opts.trends != null,
+        json: () => Promise.resolve(opts.trends != null ? { data: opts.trends } : {}),
+      });
+    }
     if (typeof url === 'string' && url.includes('/api/executive/dashboard')) {
       return Promise.resolve({
         ok: true,
@@ -105,11 +127,38 @@ describe('ExecutiveDashboard', () => {
     expect(indicators.length).toBeGreaterThan(0);
   });
 
-  it('shows trend arrows for risks', async () => {
+  it('shows period-comparison trend arrows ONLY for metrics with a genuine prior period', async () => {
+    // /api/executive/trends supplies a real prior baseline for incidents &
+    // risks/findings, so those Period Comparison metrics render a directional
+    // arrow + "vs prior" delta. (lucide icons are mocked as
+    // <span data-testid="icon-ArrowUp" /> etc. in setupTests.ts)
     await renderAndWait(<ExecutiveDashboard />);
-    // Component uses ArrowUp/ArrowDown icons for trend indicators
-    const trendIcons = document.querySelectorAll('[data-testid*="Arrow"]');
+
+    const trendIcons = document.querySelectorAll('[data-testid*="icon-Arrow"]');
     expect(trendIcons.length).toBeGreaterThan(0);
+
+    // The real delta must be surfaced as a "vs prior" comparison, proving the
+    // arrow is computed against the genuine baseline (not a sentinel zero).
+    expect(screen.getAllByText(/vs prior/i).length).toBeGreaterThan(0);
+  });
+
+  it('renders the neutral "No prior period data" message for metrics with no historical baseline (finding 73)', async () => {
+    // complianceScore / controlCoverage / vendorCompliance are not tracked over
+    // time, so the panel must NOT fabricate a delta vs a sentinel-zero baseline.
+    await renderAndWait(<ExecutiveDashboard />);
+    expect(screen.getAllByText(/No prior period data/i).length).toBeGreaterThan(0);
+  });
+
+  it('shows NO period-comparison deltas when the trends endpoint has no prior data (finding 73)', async () => {
+    // With no usable prior period anywhere, every metric falls back to the
+    // neutral message and no fabricated arrows/deltas are rendered.
+    global.fetch = createFetchMock({ trends: null });
+    await renderAndWait(<ExecutiveDashboard />);
+
+    expect(document.querySelectorAll('[data-testid*="icon-Arrow"]').length).toBe(0);
+    expect(screen.queryByText(/vs prior/i)).not.toBeInTheDocument();
+    // All six Period Comparison metrics show the neutral baseline message.
+    expect(screen.getAllByText(/No prior period data/i).length).toBeGreaterThanOrEqual(6);
   });
 
   it('displays open findings counts', async () => {

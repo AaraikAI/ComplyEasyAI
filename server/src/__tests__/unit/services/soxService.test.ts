@@ -449,6 +449,22 @@ describe('SOXService', () => {
         expect(prismaMock.sOXTestResult.create).not.toHaveBeenCalled();
       });
 
+      it('should reject with 400 when organizationId is missing (tenant scoping required)', async () => {
+        await expect(
+          soxService.createSOXTestResult({
+            // organizationId intentionally omitted
+            controlId: 'sox-ctrl-123',
+            testProcedure: 'Test procedure',
+            testType: 'OperatingEffectiveness',
+            conclusion: 'Effective',
+          } as Parameters<typeof soxService.createSOXTestResult>[0])
+        ).rejects.toThrow('organizationId is required');
+
+        // Guard must trip before any DB access.
+        expect(prismaMock.sOXControl.findFirst).not.toHaveBeenCalled();
+        expect(prismaMock.sOXTestResult.create).not.toHaveBeenCalled();
+      });
+
       it('should update parent control status on test completion', async () => {
         const mockResult = createMockSOXTestResult({ conclusion: 'Effective' });
         const mockControl = createMockSOXControl();
@@ -489,6 +505,7 @@ describe('SOXService', () => {
         prismaMock.sOXControl.update.mockResolvedValue(createMockSOXControl());
 
         await soxService.createSOXTestResult({
+          organizationId: 'org-123',
           controlId: 'sox-ctrl-123',
           testProcedure: 'Test',
           testType: 'SampleTest',
@@ -513,6 +530,7 @@ describe('SOXService', () => {
         prismaMock.sOXControl.update.mockResolvedValue(createMockSOXControl());
 
         await soxService.createSOXTestResult({
+          organizationId: 'org-123',
           controlId: 'sox-ctrl-123',
           testProcedure: 'Test',
           testType: 'OperatingEffectiveness',

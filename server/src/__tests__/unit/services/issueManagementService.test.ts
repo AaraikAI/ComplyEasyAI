@@ -47,6 +47,8 @@ describe('IssueManagementService', () => {
   describe('createIssue()', () => {
     it('should create a new issue', async () => {
       const mockIssue = createMockIssue();
+      // createIssue now verifies the creator belongs to the organization first.
+      prismaMock.user.findFirst.mockResolvedValue({ id: 'user-123' });
       prismaMock.issue.create.mockResolvedValue(mockIssue);
 
       const result = await issueManagementService.createIssue({
@@ -69,6 +71,7 @@ describe('IssueManagementService', () => {
     });
 
     it('should set SLA target based on priority', async () => {
+      prismaMock.user.findFirst.mockResolvedValue({ id: 'user-123' });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       prismaMock.issue.create.mockImplementation(async ({ data }: { data: any }) => ({
         ...createMockIssue(),
@@ -92,6 +95,45 @@ describe('IssueManagementService', () => {
           }),
         })
       );
+    });
+
+    it('should reject a creator who is not a member of the organization', async () => {
+      // org-ownership guard: creator not found in the org -> 400, no issue written.
+      prismaMock.user.findFirst.mockResolvedValue(null);
+
+      await expect(
+        issueManagementService.createIssue({
+          organizationId: 'org-123',
+          title: 'Cross-org issue',
+          description: 'createdById belongs to a different org',
+          priority: 'High',
+          issueType: 'Bug',
+          createdById: 'attacker-from-other-org',
+        })
+      ).rejects.toThrow('User not found in organization');
+
+      expect(prismaMock.issue.create).not.toHaveBeenCalled();
+    });
+
+    it('should reject an assignee who is not a member of the organization', async () => {
+      // Creator is valid, but the assignee belongs to a different org -> 400.
+      prismaMock.user.findFirst
+        .mockResolvedValueOnce({ id: 'user-123' }) // creator lookup succeeds
+        .mockResolvedValueOnce(null); // assignee lookup fails
+
+      await expect(
+        issueManagementService.createIssue({
+          organizationId: 'org-123',
+          title: 'Issue with cross-org assignee',
+          description: 'assignedToId belongs to a different org',
+          priority: 'High',
+          issueType: 'Bug',
+          createdById: 'user-123',
+          assignedToId: 'user-from-other-org',
+        })
+      ).rejects.toThrow('Assignee not found in organization');
+
+      expect(prismaMock.issue.create).not.toHaveBeenCalled();
     });
   });
 
@@ -122,6 +164,8 @@ describe('IssueManagementService', () => {
     it('should assign issue to a user', async () => {
       const existingIssue = createMockIssue({ status: 'Open' });
       prismaMock.issue.findFirst.mockResolvedValue(existingIssue);
+      // assignIssue now verifies the assignee belongs to the caller's org.
+      prismaMock.user.findFirst.mockResolvedValue({ id: 'user-456' });
       const assignedIssue = createMockIssue({ assignedToId: 'user-456' });
       prismaMock.issue.update.mockResolvedValue(assignedIssue);
 
@@ -138,6 +182,24 @@ describe('IssueManagementService', () => {
           action: 'issue.assigned',
         })
       );
+    });
+
+    it('should reject assigning to a user outside the organization', async () => {
+      const existingIssue = createMockIssue({ status: 'Open' });
+      prismaMock.issue.findFirst.mockResolvedValue(existingIssue);
+      // Assignee not found in the caller's org -> 400, issue is not updated.
+      prismaMock.user.findFirst.mockResolvedValue(null);
+
+      await expect(
+        issueManagementService.assignIssue(
+          'issue-123',
+          'user-from-other-org',
+          'user-123',
+          'org-123'
+        )
+      ).rejects.toThrow('Assignee not found in organization');
+
+      expect(prismaMock.issue.update).not.toHaveBeenCalled();
     });
   });
 

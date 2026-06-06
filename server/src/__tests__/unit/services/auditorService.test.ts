@@ -699,6 +699,7 @@ describe('AuditorService', () => {
       };
 
       prismaMock.auditEngagement.findFirst.mockResolvedValue(mockEngagement);
+      prismaMock.auditorProfile.findFirst.mockResolvedValue(createMockAuditorProfile());
       prismaMock.auditFinding.create.mockResolvedValue(mockFinding);
 
       const result = await auditorService.createFinding('org-123', {
@@ -723,6 +724,7 @@ describe('AuditorService', () => {
 
     it('should use default severity of Medium', async () => {
       prismaMock.auditEngagement.findFirst.mockResolvedValue(createMockAuditEngagement());
+      prismaMock.auditorProfile.findFirst.mockResolvedValue(createMockAuditorProfile());
       prismaMock.auditFinding.create.mockResolvedValue(createMockAuditFinding());
 
       await auditorService.createFinding('org-123', {
@@ -741,6 +743,33 @@ describe('AuditorService', () => {
           }),
         })
       );
+    });
+
+    it('should reject a finding whose auditor does not belong to the org', async () => {
+      // Engagement is valid for this org, but the auditor profile is not
+      // owned by the org (cross-org / missing) -> guard must reject.
+      prismaMock.auditEngagement.findFirst.mockResolvedValue(createMockAuditEngagement());
+      prismaMock.auditorProfile.findFirst.mockResolvedValue(null);
+
+      await expect(
+        auditorService.createFinding('org-123', {
+          engagementId: 'engagement-123',
+          auditorId: 'auditor-from-other-org',
+          title: 'Cross-org finding',
+          description: 'Should not be created',
+          findingType: 'Control Deficiency',
+        })
+      ).rejects.toThrow('Auditor profile not found');
+
+      expect(prismaMock.auditorProfile.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            id: 'auditor-from-other-org',
+            organizationId: 'org-123',
+          }),
+        })
+      );
+      expect(prismaMock.auditFinding.create).not.toHaveBeenCalled();
     });
   });
 

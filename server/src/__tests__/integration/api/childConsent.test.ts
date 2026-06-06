@@ -676,15 +676,13 @@ describe('Child Consent Integration Tests (GDPR Art. 8)', () => {
   // Suite 6: Security tests
   // -------------------------------------------------------------------------
   describe('Security', () => {
-    it('should handle large age values gracefully', async () => {
+    it('should reject out-of-range large age values at validation (no longer silently accepted)', async () => {
       const record = createMockConsentRecord({ id: 'consent-large-age' });
       prismaMock.consentRecord.findFirst.mockResolvedValue(record);
-      prismaMock.consentRecord.update.mockResolvedValue({
-        ...record,
-        dataSubjectAge: 999,
-        isMinor: false,
-      });
+      const updateSpy = jest.spyOn(prismaMock.consentRecord, 'update');
 
+      // verifyAgeSchema now bounds dataSubjectAge to [0,150]; 999 is rejected
+      // at the boundary (400) instead of being passed through to business logic.
       const res = await request(app)
         .post('/api/privacy/child-consent/verify-age')
         .send({
@@ -692,25 +690,68 @@ describe('Child Consent Integration Tests (GDPR Art. 8)', () => {
           dataSubjectAge: 999,
           jurisdiction: 'EU',
         })
+        .expect(400);
+
+      expect(res.body.error || res.body.message).toBeDefined();
+      // Invalid input must never reach the DB write.
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should accept the in-range maximum age as a non-minor adult', async () => {
+      const record = createMockConsentRecord({ id: 'consent-max-age' });
+      prismaMock.consentRecord.findFirst.mockResolvedValue(record);
+      prismaMock.consentRecord.update.mockResolvedValue({
+        ...record,
+        dataSubjectAge: 150,
+        isMinor: false,
+      });
+
+      const res = await request(app)
+        .post('/api/privacy/child-consent/verify-age')
+        .send({
+          consentRecordId: 'consent-max-age',
+          dataSubjectAge: 150,
+          jurisdiction: 'EU',
+        })
         .expect(200);
 
       expect(res.body.requiresParentalConsent).toBe(false);
     });
 
-    it('should treat negative age as minor', async () => {
+    it('should reject negative age at validation (no longer silently treated as minor)', async () => {
       const record = createMockConsentRecord({ id: 'consent-neg-age' });
+      prismaMock.consentRecord.findFirst.mockResolvedValue(record);
+      const updateSpy = jest.spyOn(prismaMock.consentRecord, 'update');
+
+      // verifyAgeSchema now requires dataSubjectAge >= 0; -1 is rejected at the
+      // boundary (400) rather than being coerced through the minor calculation.
+      const res = await request(app)
+        .post('/api/privacy/child-consent/verify-age')
+        .send({
+          consentRecordId: 'consent-neg-age',
+          dataSubjectAge: -1,
+          jurisdiction: 'EU',
+        })
+        .expect(400);
+
+      expect(res.body.error || res.body.message).toBeDefined();
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should treat the minimum valid age (0) as a minor requiring parental consent', async () => {
+      const record = createMockConsentRecord({ id: 'consent-zero-age' });
       prismaMock.consentRecord.findFirst.mockResolvedValue(record);
       prismaMock.consentRecord.update.mockResolvedValue({
         ...record,
-        dataSubjectAge: -1,
+        dataSubjectAge: 0,
         isMinor: true,
       });
 
       const res = await request(app)
         .post('/api/privacy/child-consent/verify-age')
         .send({
-          consentRecordId: 'consent-neg-age',
-          dataSubjectAge: -1,
+          consentRecordId: 'consent-zero-age',
+          dataSubjectAge: 0,
           jurisdiction: 'EU',
         })
         .expect(200);

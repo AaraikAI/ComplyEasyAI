@@ -85,29 +85,73 @@ vi.mock('@/contexts/OnboardingContext', () => ({
 
 import { StatusPage } from '@/components/StatusPage';
 
+// The page now renders ONLY real, live service telemetry from the /api/health
+// liveness probe. When that feed reports a `services` array, those entries are
+// shown; when it does not, the page shows a neutral "live status unavailable"
+// state with a "—%" overall-uptime placeholder instead of fabricated figures.
+const LIVE_SERVICES = [
+  { name: 'Web Application', description: 'Customer-facing web app', status: 'operational', uptime: 99.98, responseTime: 120, lastChecked: '2026-06-06T00:00:00Z' },
+  { name: 'API Services', description: 'REST API layer', status: 'operational', uptime: 99.95, responseTime: 80, lastChecked: '2026-06-06T00:00:00Z' },
+  { name: 'Database Cluster', description: 'Primary datastore', status: 'operational', uptime: 99.99, responseTime: 15, lastChecked: '2026-06-06T00:00:00Z' },
+  { name: 'AI Processing Engine', description: 'Model inference pipeline', status: 'operational', uptime: 99.9, responseTime: 300, lastChecked: '2026-06-06T00:00:00Z' },
+];
+
+const mockFetch = (services: any[] | null) => {
+  return vi.fn((url: string) => {
+    if (typeof url === 'string' && url.startsWith('/api/health')) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(services ? { services } : { status: 'ok' }),
+      });
+    }
+    // incidents / maintenance / uptime feeds — return empty data sets
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+  });
+};
+
 describe('StatusPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders without crashing', () => {
+    vi.stubGlobal('fetch', mockFetch(null));
     render(<StatusPage />);
     expect(screen.getAllByText(/Status|System Status/i).length).toBeGreaterThan(0);
   });
 
-  it('displays service status entries', () => {
+  it('displays service status entries from the live /api/health feed', async () => {
+    vi.stubGlobal('fetch', mockFetch(LIVE_SERVICES));
     render(<StatusPage />);
-    expect(screen.getAllByText('Web Application').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('API Services').length).toBeGreaterThan(0);
+    expect(await screen.findByText('Web Application')).toBeTruthy();
+    expect(screen.getByText('API Services')).toBeTruthy();
   });
 
-  it('shows operational status indicators', () => {
+  it('shows operational status indicators from the live feed', async () => {
+    vi.stubGlobal('fetch', mockFetch(LIVE_SERVICES));
     render(<StatusPage />);
-    expect(screen.getAllByText('Database Cluster').length).toBeGreaterThan(0);
+    expect(await screen.findByText('Database Cluster')).toBeTruthy();
+    // All entries operational -> overall banner reflects it
+    expect(screen.getByText('All Systems Operational')).toBeTruthy();
   });
 
-  it('displays AI Processing Engine status', () => {
+  it('displays AI Processing Engine status from the live feed', async () => {
+    vi.stubGlobal('fetch', mockFetch(LIVE_SERVICES));
     render(<StatusPage />);
-    expect(screen.getAllByText('AI Processing Engine').length).toBeGreaterThan(0);
+    expect(await screen.findByText('AI Processing Engine')).toBeTruthy();
+  });
+
+  it('shows a neutral "live status unavailable" state when the feed reports no services', async () => {
+    vi.stubGlobal('fetch', mockFetch(null));
+    render(<StatusPage />);
+    // No fabricated services are rendered...
+    await waitFor(() => {
+      expect(screen.getByText(/Live service status is currently unavailable/i)).toBeTruthy();
+    });
+    expect(screen.queryByText('Web Application')).toBeNull();
+    expect(screen.queryByText('AI Processing Engine')).toBeNull();
+    // ...and the overall-uptime headline shows the neutral placeholder, not a hardcoded 99.9%.
+    expect(screen.getByText('—%')).toBeTruthy();
+    expect(screen.getByText('Live Status Unavailable')).toBeTruthy();
   });
 });

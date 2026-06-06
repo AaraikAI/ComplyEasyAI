@@ -606,7 +606,7 @@ describe('RisksController', () => {
       const prioritized = [{ id: 'risk-1', score: 95, rationale: 'Critical' }];
 
       (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue(risks as any);
-      (prismaMock.riskItem.update as jest.Mock<any>).mockResolvedValue({} as any);
+      (prismaMock.riskItem.updateMany as jest.Mock<any>).mockResolvedValue({ count: 1 } as any);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as any);
 
       const geminiService = require('../../../services/geminiService').default;
@@ -614,14 +614,46 @@ describe('RisksController', () => {
 
       await risksController.prioritize(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(prismaMock.riskItem.update).toHaveBeenCalledWith(
+      // Writes are now org-scoped via updateMany({ where: { id, organizationId } })
+      // so an AI-returned id cannot be written outside the caller's organization.
+      expect(prismaMock.riskItem.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'risk-1' },
+          where: { id: 'risk-1', organizationId: 'org-123' },
           data: {
             aiPriorityScore: 95,
             aiRationale: 'Critical',
           },
         })
+      );
+    });
+
+    it('should not write AI scores for ids outside the caller organization', async () => {
+      // Only risk-1 belongs to org-123; the AI also returns a foreign id.
+      const risks = [createMockRisk({ id: 'risk-1' })];
+      const prioritized = [
+        { id: 'risk-1', score: 95, rationale: 'Critical' },
+        { id: 'cross-org-risk', score: 99, rationale: 'Injected' },
+      ];
+
+      (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue(risks as any);
+      (prismaMock.riskItem.updateMany as jest.Mock<any>).mockResolvedValue({ count: 1 } as any);
+      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as any);
+
+      const geminiService = require('../../../services/geminiService').default;
+      (geminiService.prioritizeRisks as jest.Mock<any>).mockResolvedValue(prioritized as any);
+
+      await risksController.prioritize(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // The owned risk is written, org-scoped.
+      expect(prismaMock.riskItem.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'risk-1', organizationId: 'org-123' },
+        })
+      );
+      // The foreign id is never written at all (guarded before the DB call).
+      expect(prismaMock.riskItem.updateMany).toHaveBeenCalledTimes(1);
+      expect(prismaMock.riskItem.updateMany).not.toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'cross-org-risk', organizationId: 'org-123' } })
       );
     });
   });

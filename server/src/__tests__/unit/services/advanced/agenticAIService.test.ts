@@ -34,6 +34,7 @@ describe('AgenticAIService', () => {
     (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
     (prismaMock.user.count as jest.Mock<any>).mockResolvedValue(0);
     (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(null);
     (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.frameworkControl.update as jest.Mock<any>).mockResolvedValue({});
     (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
@@ -64,7 +65,8 @@ describe('AgenticAIService', () => {
         framework: { id: 'fw-1', name: 'SOC2', organizationId: orgId },
       };
 
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(mockControl);
+      // Source now scopes the control lookup to the org via findFirst (framework.organizationId)
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(mockControl);
       (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([mockControl]);
       (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([
         { id: 'fw-1', name: 'SOC2', controls: [mockControl] },
@@ -82,6 +84,31 @@ describe('AgenticAIService', () => {
       expect(result.canRollback).toBeDefined();
       expect(result.riskScore).toBeDefined();
       expect(typeof result.riskScore).toBe('number');
+      // The control lookup must be org-scoped (org-ownership guard via parent framework)
+      expect(prismaMock.frameworkControl.findFirst).toHaveBeenCalledWith({
+        where: { id: 'ctrl-1', framework: { organizationId: orgId } },
+        include: { framework: true },
+      });
+    });
+
+    it('should reject control_update for a control owned by another organization', async () => {
+      // The org-scoped findFirst returns null when the control belongs to a different org,
+      // so the org-ownership guard rejects with a 404 ("Control not found").
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.user.count as jest.Mock<any>).mockResolvedValue(10);
+
+      await expect(
+        agenticAIService.estimateBlastRadius(orgId, {
+          actionType: 'control_update',
+          targetId: 'ctrl-other-org',
+          parameters: { status: 'Pending' },
+        })
+      ).rejects.toThrow('Entity not found: ctrl-other-org');
+
+      expect(prismaMock.frameworkControl.findFirst).toHaveBeenCalledWith({
+        where: { id: 'ctrl-other-org', framework: { organizationId: orgId } },
+        include: { framework: true },
+      });
     });
 
     it('should throw error when targetId is missing', async () => {
@@ -180,7 +207,8 @@ describe('AgenticAIService', () => {
         framework: { id: 'fw-1', name: 'SOC2', organizationId: orgId },
       };
 
-      // Mock for blast radius estimation
+      // Mock for blast radius estimation (org-scoped findFirst)
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(mockControl);
       (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(mockControl);
       (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([mockControl]);
       (prismaMock.frameworkControl.update as jest.Mock<any>).mockResolvedValue({
@@ -217,7 +245,7 @@ describe('AgenticAIService', () => {
     });
 
     it('should handle action execution errors gracefully', async () => {
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockRejectedValue(
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
       (prismaMock.agenticAction.create as jest.Mock<any>).mockResolvedValue({
