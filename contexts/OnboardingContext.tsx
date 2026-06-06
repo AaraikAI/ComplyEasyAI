@@ -108,6 +108,15 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
         // Onboarding progress load failed - using defaults
         if (isMounted) {
           setIsLoaded(true);
+          // A returning user who already completed or skipped onboarding must NOT be
+          // re-prompted with the full-screen welcome wizard just because the progress
+          // fetch failed (transient backend/DB unavailability). Respect the persisted
+          // local markers so an API hiccup never blocks the app for an existing user.
+          const onboardingDone =
+            typeof window !== 'undefined' &&
+            (localStorage.getItem('onboarding_completed') === 'true' ||
+              localStorage.getItem('onboarding_skipped') === 'true' ||
+              localStorage.getItem('hasSeenOnboarding') === 'true');
           // Use default progress so onboarding flow still loads (e.g. when backend/DB not ready)
           const defaultProgress: OnboardingProgress = {
             id: '',
@@ -115,7 +124,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
             organizationId: user!.organizationId!,
             currentFlow: 'welcome',
             currentStep: 0,
-            welcomeCompleted: false,
+            welcomeCompleted: onboardingDone,
             tierTourCompleted: false,
             firstFrameworkCompleted: false,
             firstEvidenceCompleted: false,
@@ -126,7 +135,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
             acosDigitalTwinTourCompleted: false,
             advancedFeaturesTourCompleted: false,
             tooltipsShown: [],
-            skippedFlows: [],
+            skippedFlows: onboardingDone ? ['welcome'] : [],
             completedAt: null,
             lastActiveFlow: null,
             lastActiveStep: null,
@@ -160,10 +169,12 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
           setChecklist(defaultChecklist);
           setOrganizationPlan('Foundation');
           setOrganizationName('');
-          const welcomeConfig = getFlowConfig('welcome', 'Foundation', getViewVariant());
-          if (welcomeConfig) {
-            setCurrentFlow(welcomeConfig);
-            setCurrentStep(0);
+          if (!onboardingDone) {
+            const welcomeConfig = getFlowConfig('welcome', 'Foundation', getViewVariant());
+            if (welcomeConfig) {
+              setCurrentFlow(welcomeConfig);
+              setCurrentStep(0);
+            }
           }
         }
       }
