@@ -312,6 +312,76 @@ tree and requires live GitHub auth. Treat 155 open / 24 crit / 103 high as the c
 
 ---
 
+## Operational lessons learned — tooling & environment (2026-06-06 remediation run)
+
+Hard-won lessons from the 162-fix remediation + CI + E2E run. **Read these before re-running** to avoid
+repeating the mistakes.
+
+### Environment / local tooling
+- **Docker availability — do NOT conclude "no docker" from a single `docker info` failure.** `docker info`
+  fails when the *daemon* isn't running even though Docker is fully installed. Correct probe order:
+  (1) `command -v docker` + check `/usr/local/bin/docker` and `/Applications/Docker.app/Contents/Resources/bin/docker`;
+  (2) `docker context ls` (Desktop uses `unix:///Users/<u>/.docker/run/docker.sock`);
+  (3) if the socket is missing, **start it**: `open -a Docker` then poll `docker info` for ~30–60s until the
+  daemon answers. Docker Desktop 29.x + Compose v5 are present on this machine. The user WILL call this out
+  if you wrongly claim docker is unavailable.
+- **`timeout` is NOT installed on this macOS.** `timeout 60 <cmd>` returns **exit 127** (command not found),
+  which masquerades as a real failure (e.g. `gh run watch` "rc=127"). Use a bash poll loop with `sleep`, or
+  `gtimeout` from coreutils if present. Never wrap a command in `timeout` and trust the exit code.
+- **`PIPESTATUS`/`$?` after a subshell or `... | tail`** often comes back empty/misleading — capture the rc
+  explicitly (`cmd; rc=$?`) rather than reading it through a pipe.
+
+### Local E2E stack (reproduces CI exactly — use this instead of blind static fixes)
+Bring the full stack up locally to verify E2E before pushing (CI E2E round-trips are ~22 min each):
+1. `docker run -d --name ce_pg -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=test_db -p 5432:5432 postgres:16-alpine`
+   and `docker run -d --name ce_redis -p 6379:6379 redis:7-alpine`.
+2. `docker exec ce_pg psql -U test -d test_db -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'`
+3. `cd server && DATABASE_URL=postgresql://test:test@localhost:5432/test_db npx prisma db push --accept-data-loss`
+4. Build: root `npm run build`; `cd server && npm run build`.
+5. Backend: `NODE_ENV=test PORT=3001 DATABASE_URL=… REDIS_URL=redis://localhost:6379/0 JWT_SECRET=<32+ch> JWT_REFRESH_SECRET=<32+ch> node dist/index.js` → wait for `/health` 200. (The APM `ENOTFOUND your-apm-server` line is harmless.)
+6. Frontend: `npx vite preview --port 4173`.
+7. Playwright: `CI=true E2E_BASE_URL=http://localhost:4173 API_URL=http://localhost:3001 npx playwright test --project=chromium <spec…>` (the `chromium` project pulls in the `auth.setup.ts` login dependency automatically).
+
+### CI / git pitfalls (all hit and fixed this run)
+- **The `main` CI pipeline was already red before any of this work** — check history before assuming a red
+  run is your regression: `Deploy to Production` fails at *Configure AWS credentials* on **every** commit
+  (no AWS deploy secrets in CI; environmental, NOT a code fix), and the `E2E` job had **always been
+  cancelled** (never completed). Use `gh run list --branch main --workflow ci.yml` + per-job conclusions to
+  establish the pre-existing baseline.
+- **git push 403 as the wrong user:** the cached git credential may be a different GitHub account
+  (e.g. `superthinks001`) lacking write access even though `gh auth status` shows the right org. Fix with
+  **`gh auth setup-git`** so git uses the gh-authenticated account, then push.
+- **`git filter-repo` removes the `origin` remote** ("NOTICE: Removing 'origin' remote"). Re-add it
+  afterward (`git remote add origin https://github.com/AaraikAI/ComplyEasyAI.git`) before pushing. Use
+  `python3 -m git_filter_repo --replace-text <file> --force` (CLI not on PATH; pip-installed module is).
+  Verify with `git log --all -S"<secret>"` → 0 hits. Large committed binaries (`bin/opa` 73 MB) remain in
+  history and only trigger GitHub size *warnings*, not push failures.
+- **`prisma.config.ts` is loaded by the Prisma CLI for EVERY command (incl. `generate`), but NOT by the app
+  runtime.** A fail-closed `throw 'DATABASE_URL is required'` there breaks `prisma generate` in the `npm ci`
+  postinstall on CI (no DATABASE_URL). Allow schema-only commands (`generate`/`format`/`validate`) to use a
+  non-routable sentinel; require the real URL only for connecting commands (`migrate`/`db`/`studio`).
+- **Flat ESLint config ignores `--ext` and lints `.js` too.** A new browser script like `public/offline.js`
+  needs `/* global window, document */` (flat config does **not** support `/* eslint-env */`). Lint fails on
+  **errors** only; the ~1,200 warnings do not gate CI. `!=`→`!==` (eqeqeq) is an error.
+- **Test-rot from legitimate source fixes is expected.** After hardening source (org-scoping guards, removed
+  demo data, added validation), align the tests to assert the NEW correct behavior (supply valid same-org
+  fixtures, expect the new 400/403 guards, expect neutral/empty UI) — never revert the source or weaken the
+  assertion to make a test pass.
+
+### Workflow-tool (multi-agent) gotchas
+- **Any `Math.` token** (even `Math.min` / inside a string like `"never Math.random()"`) trips the
+  determinism validator → use plain arithmetic and reword prose. `Date.now()`/`new Date()` likewise banned.
+- **`args` reaches the script as a STRING** — guard with `const x = typeof args === 'string' ? JSON.parse(args) : args`.
+- **Double-thunk bug:** `parallel(items.map(e => () => { … return () => agent() }))` never invokes `agent()`
+  (0 agents, ~40 ms). Write `items.map(e => () => agent(…))` or `items.map(e => { …; return () => agent(…) })`.
+- **`agent({schema})` can fail "completed without calling StructuredOutput."** Prefer disk-artifact returns:
+  have each agent **Write its JSON to disk** and return plain text; the orchestrator reads the files. Track
+  completion by which files exist, and re-run only the missing batches (resume-friendly).
+- **Session limits can truncate a long swarm mid-run.** Make every phase resumable: write per-unit artifacts,
+  then detect-missing-and-rerun rather than restarting the whole workflow.
+
+---
+
 ## Architecture Quick Reference
 
 - **Server:** Express 5 + Prisma 7 + PostgreSQL

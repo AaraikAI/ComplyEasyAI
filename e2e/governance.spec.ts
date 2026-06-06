@@ -4,6 +4,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { dismissOnboarding } from './_onboarding';
 
 // Re-seed client-side auth and suppress the env blockers (auth wipe on boot-401,
 // cookie-consent banner, onboarding "Welcome" modal) before every navigation.
@@ -68,6 +69,7 @@ test.describe('Governance', () => {
       await page.goto('/governance');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
+      await dismissOnboarding(page);
     });
 
     test('governance hub page loads', async ({ page }) => {
@@ -94,13 +96,31 @@ test.describe('Governance', () => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
-      const tabs = page.locator('button[role="tab"], .tab-button, nav button');
-      if (await tabs.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      // The Governance Hub renders its tabs inside <nav aria-label="Tabs"> via
+      // TabbedContainer. A bare `nav button` selector also matched the app
+      // sidebar / off-canvas drawer / mobile bottom nav, whose buttons are
+      // hidden or off-screen — clicking those timed out. Scope to the hub's
+      // own tab strip, which contains the visible tab buttons.
+      const tabNav = page.locator('nav[aria-label="Tabs"]');
+      const tabs = tabNav.locator('button');
+
+      if (await tabs.first().isVisible({ timeout: 10000 }).catch(() => false)) {
         const count = await tabs.count();
+        let switched = 0;
         for (let i = 0; i < Math.min(count, 4); i++) {
-          await tabs.nth(i).click();
+          // The onboarding Welcome modal can re-mount after a lazy panel swap and
+          // intercept pointer events; clear it before each tab click.
+          await dismissOnboarding(page);
+          const tab = tabs.nth(i);
+          if (!(await tab.isVisible().catch(() => false))) continue;
+          await tab.scrollIntoViewIfNeeded().catch(() => {});
+          await tab.click({ timeout: 10000 }).catch(() => {});
+          switched++;
+          // Tab switch swaps the lazy-loaded panel; let it settle.
           await page.waitForTimeout(300);
         }
+        // The hub tab strip is present and at least one tab was activated.
+        expect(switched).toBeGreaterThan(0);
       }
     });
   });
@@ -110,6 +130,7 @@ test.describe('Governance', () => {
       await page.goto('/governance');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
+      await dismissOnboarding(page);
 
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
@@ -126,6 +147,7 @@ test.describe('Governance', () => {
       await page.goto('/governance');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
+      await dismissOnboarding(page);
 
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
@@ -148,6 +170,7 @@ test.describe('Governance', () => {
       await page.goto('/governance');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
+      await dismissOnboarding(page);
 
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
@@ -164,6 +187,7 @@ test.describe('Governance', () => {
       await page.goto('/governance');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
+      await dismissOnboarding(page);
 
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();

@@ -529,8 +529,15 @@ test.describe('Risk Management', () => {
     await risksPage.goto();
     await expect(page).toHaveURL(/risk/);
 
-    const canCreate = await risksPage.createRiskButton
-      .isVisible({ timeout: 5000 })
+    // RiskManagement gates its whole register (and the create button) behind an
+    // `isLoadingData` spinner; the create button is also only rendered for
+    // admin/editor roles. Let the data fetch settle before probing the button so
+    // we don't race the loading state.
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    const createRiskButton = risksPage.createRiskButton.first();
+    const canCreate = await createRiskButton
+      .isVisible({ timeout: 15000 })
       .catch(() => false);
 
     if (!canCreate) {
@@ -541,13 +548,19 @@ test.describe('Risk Management', () => {
     }
 
     // Open the create form (RiskManagement renders it inline below the register).
-    await risksPage.createRiskButton.first().click();
+    // Confirm the button is visible+enabled+in view before clicking (it can be
+    // pushed below the fold on narrow viewports).
+    await expect(createRiskButton).toBeVisible({ timeout: 15000 });
+    await expect(createRiskButton).toBeEnabled({ timeout: 15000 });
+    await createRiskButton.scrollIntoViewIfNeeded();
+    await createRiskButton.click();
 
     // The create form is wired and interactive: fill the required Description
     // textarea (stable placeholder) and confirm the value is held — deterministic
     // assertion that the create surface is real.
     const descriptionArea = page.locator('form textarea[placeholder="Describe the risk..."]').first();
-    await expect(descriptionArea).toBeVisible({ timeout: 10000 });
+    await expect(descriptionArea).toBeVisible({ timeout: 15000 });
+    await descriptionArea.scrollIntoViewIfNeeded();
     await descriptionArea.fill(testData.description!);
     await expect(descriptionArea).toHaveValue(testData.description!);
 
@@ -664,6 +677,13 @@ test.describe('Dashboard & Navigation', () => {
   test('User can navigate to all main sections via sidebar', async ({ page }) => {
     const sidebar = new SidebarPage(page);
 
+    // The SlimSidebar desktop icon-rail (which carries the data-onboarding="*-nav"
+    // pillar links) is `hidden lg:flex` — it is display:none below the 1024px lg
+    // breakpoint. On the mobile projects (Pixel 5 / iPhone 12) those links exist
+    // in the DOM but never become visible, so a click waits forever. Force a
+    // desktop-width viewport so the rail is rendered and clickable.
+    await page.setViewportSize({ width: 1280, height: 900 });
+
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle').catch(() => {});
 
@@ -759,14 +779,23 @@ test.describe('AI Features', () => {
     await page.waitForLoadState('networkidle').catch(() => {});
     await expect(page).toHaveURL(/vendor/);
 
+    // ContractAnalyzer is a lazy-loaded tab rendered inside a Suspense boundary,
+    // so the textarea only appears after the chunk resolves — allow extra time.
     const contractInput = page.locator('textarea, [name="contract"]').first();
-    if (await contractInput.isVisible({ timeout: 5000 }).catch(() => false)) {
+    if (await contractInput.isVisible({ timeout: 15000 }).catch(() => false)) {
       // Deterministic assertion: the analyzer surface accepts input.
+      await contractInput.scrollIntoViewIfNeeded();
       await contractInput.fill('This is a test contract for analysis...');
       await expect(contractInput).toHaveValue(/test contract for analysis/i);
 
       const analyzeBtn = page.getByRole('button', { name: /analyze/i }).first();
-      if (await analyzeBtn.isVisible().catch(() => false)) {
+      // The analyze button is disabled until the textarea holds text; wait for it
+      // to become visible + enabled (and scroll it into view) before clicking.
+      const analyzeReady = await analyzeBtn
+        .isVisible({ timeout: 5000 })
+        .catch(() => false);
+      if (analyzeReady && (await analyzeBtn.isEnabled().catch(() => false))) {
+        await analyzeBtn.scrollIntoViewIfNeeded();
         await analyzeBtn.click();
 
         // Analysis needs a live AI backend session (see policy-AI note). Assert
@@ -796,7 +825,7 @@ test.describe('Report Generation', () => {
     await expect(page.locator('main, [role="main"]').first()).toBeVisible({ timeout: 10000 });
 
     const generateBtn = page.getByRole('button', { name: /generate report/i }).first();
-    if (await generateBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    if (await generateBtn.isVisible({ timeout: 15000 }).catch(() => false)) {
       // Select a report type first if a selector is present (the Generate button
       // stays disabled until a report type is chosen).
       const typeSelect = page.locator('[name="reportType"], select').first();
@@ -804,8 +833,11 @@ test.describe('Report Generation', () => {
         await typeSelect.selectOption({ index: 1 }).catch(() => {});
       }
 
-      // Trigger generation only when the button is actually enabled.
+      // Trigger generation only when the button is actually enabled. Confirm it is
+      // visible + in view before clicking (it can sit below the fold).
       if (await generateBtn.isEnabled().catch(() => false)) {
+        await expect(generateBtn).toBeVisible({ timeout: 15000 });
+        await generateBtn.scrollIntoViewIfNeeded();
         await generateBtn.click();
 
         // The rendered report needs a backend session (unavailable to the

@@ -4,6 +4,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { dismissOnboarding } from './_onboarding';
 
 /**
  * The three shared-environment blockers (auth wipe / cookie banner / onboarding
@@ -178,20 +179,47 @@ test.describe('Hub Navigation', () => {
       await page.goto('/dashboard');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
+      await dismissOnboarding(page);
 
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
-      // Navigate to Risks
-      const risksLink = page.locator('nav a[href="/risks"], a:has-text("Risk")').first();
+      /**
+       * Both the slim (default) and classic sidebars stamp each nav link with a
+       * stable `data-onboarding="<id>-nav"` hook (SlimSidebar.tsx / Layout.tsx).
+       * Targeting that hook — instead of `a[href]`/`a:has-text(...)` — avoids two
+       * flake sources: (1) the slim sidebar renders the SAME href twice (a
+       * `hidden lg:flex` desktop aside + an `lg:hidden` mobile bar), so a bare
+       * href selector with `.first()` can resolve to the off-viewport copy that
+       * never becomes visible; (2) `a:has-text("Risk")` also matched dashboard
+       * body cards / the desktop tooltip span (`pointer-events-none invisible`).
+       * `:visible` pins us to the on-screen control for the current viewport.
+       *
+       * Note: the slim mobile bar only renders the first 5 pillars, so `vendors`
+       * has no visible link < lg width — the per-link guard below skips it there
+       * rather than timing out on a hidden element.
+       */
+
+      // Navigate to Risks via the visible sidebar link. The slim sidebar tags it
+      // `risk-nav` (SlimSidebar pillar id `risk`); the classic sidebar tags it
+      // `risks-nav` (Layout nav id `risks`) — match either, then `:visible`.
+      const risksLink = page
+        .locator('a[data-onboarding="risk-nav"]:visible, a[data-onboarding="risks-nav"]:visible')
+        .first();
       if (await risksLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await expect(risksLink).toBeVisible({ timeout: 15000 });
+        await risksLink.scrollIntoViewIfNeeded();
         await risksLink.click();
         await page.waitForLoadState('networkidle').catch(() => {});
         await expect(page).toHaveURL(/risk/);
+        // Wait for the new hub heading to render before the next interaction.
+        await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 15000 });
 
-        // Navigate to Vendors
-        const vendorsLink = page.locator('nav a[href="/vendors"], a:has-text("Vendor")').first();
+        // Navigate to Vendors via the visible sidebar link.
+        const vendorsLink = page.locator('a[data-onboarding="vendors-nav"]:visible').first();
         if (await vendorsLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+          await expect(vendorsLink).toBeVisible({ timeout: 15000 });
+          await vendorsLink.scrollIntoViewIfNeeded();
           await vendorsLink.click();
           await page.waitForLoadState('networkidle').catch(() => {});
           await expect(page).toHaveURL(/vendor/);

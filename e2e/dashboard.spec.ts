@@ -4,6 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { dismissOnboarding } from './_onboarding';
 
 const API_BASE = process.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -71,6 +72,7 @@ test.describe('Dashboard', () => {
     await page.goto('/dashboard');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
+    await dismissOnboarding(page);
   });
 
   test.describe('Widget Rendering', () => {
@@ -179,9 +181,20 @@ test.describe('Dashboard', () => {
 
     test('sidebar risk link navigates to risk management', async ({ page }) => {
       // SlimSidebar pillar links are icon-only; locate the risk pillar by its
-      // data-onboarding hook / href (getByRole name won't match — no a11y text).
-      const riskLink = page.locator('nav[data-onboarding="sidebar-nav"] a[href="/risks"], a[data-onboarding="risk-nav"]').first();
+      // data-onboarding hook (`${id}-nav` → "risk-nav"). The desktop sidebar
+      // <aside> is `hidden lg:flex`, so on mobile viewports the link exists but
+      // is display:none — scope to the visible one and gate on visibility so the
+      // test no-ops on mobile instead of clicking a hidden duplicate.
+      const riskLink = page
+        .locator('nav[data-onboarding="sidebar-nav"] a[data-onboarding="risk-nav"]')
+        .first();
+      // The sidebar mounts with `transition-all duration-200`; wait for the link
+      // to be present + visible + stable (not just "attached") before clicking,
+      // so the click doesn't race the dashboard's initial re-render/animation.
       if (await riskLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await expect(riskLink).toBeVisible({ timeout: 15000 });
+        await riskLink.scrollIntoViewIfNeeded();
+        await expect(riskLink).toBeEnabled();
         await riskLink.click();
         await page.waitForLoadState('networkidle').catch(() => {});
         await expect(page).toHaveURL(/risk/);

@@ -4,6 +4,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { dismissOnboarding } from './_onboarding';
 
 // Re-seed client-side auth and suppress the env blockers (auth wipe on boot-401,
 // cookie-consent banner, onboarding "Welcome" modal) before every navigation.
@@ -64,6 +65,7 @@ test.describe('DORA Compliance', () => {
     await page.goto('/enterprise/dora');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
+    await dismissOnboarding(page);
   });
 
   test.describe('Page Load & Structure', () => {
@@ -156,17 +158,30 @@ test.describe('DORA Compliance', () => {
       const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
       if (isLanding) test.skip();
 
-      // Navigate to incident section
-      const incidentBtn = page.locator('button:has-text("Incident"), [data-testid="incidents-tab"]').first();
-      if (await incidentBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await incidentBtn.click();
-        await page.waitForTimeout(500);
+      // Let the dashboard finish its initial data load before interacting.
+      await page.waitForLoadState('networkidle').catch(() => {});
+
+      // Navigate to the Incident Reporting tab. Scope to the tab-nav button by its
+      // exact label so we don't match the "Report Incident" action button below.
+      const incidentTab = page.getByRole('button', { name: 'Incident Reporting' }).first();
+      if (await incidentTab.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await incidentTab.scrollIntoViewIfNeeded();
+        await expect(incidentTab).toBeVisible({ timeout: 15000 });
+        await incidentTab.click();
       }
 
-      const reportBtn = page.getByRole('button', { name: /report|create|add|new/i }).first();
-      if (await reportBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+      // Open the "Report Incident" modal. Target the action button explicitly by its
+      // exact accessible name so the regex never resolves to the "Incident Reporting"
+      // tab (which also contains the word "Report") inside the scrollable tab nav.
+      const reportBtn = page.getByRole('button', { name: 'Report Incident', exact: true }).first();
+      if (await reportBtn.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await reportBtn.scrollIntoViewIfNeeded();
+        await expect(reportBtn).toBeVisible({ timeout: 15000 });
         await reportBtn.click();
-        await page.waitForTimeout(500);
+
+        // The Report ICT Incident modal should appear with its title input.
+        const modalTitle = page.getByRole('heading', { name: 'Report ICT Incident' });
+        await expect(modalTitle).toBeVisible({ timeout: 15000 });
       }
     });
   });

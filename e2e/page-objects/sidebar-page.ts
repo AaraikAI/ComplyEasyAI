@@ -192,43 +192,52 @@ export class SidebarPage extends BasePage {
   }
 
   // Pillar navigations: click the real rail link (it is a router <Link>).
+  // The rail link only becomes visible at the lg breakpoint (the desktop <aside>
+  // is `hidden lg:flex`), so wait for visibility + scroll into view before the
+  // click rather than letting it block on an off-screen / display:none element.
+  private async clickPillar(link: Locator): Promise<void> {
+    await expect(link).toBeVisible({ timeout: 15000 });
+    await link.scrollIntoViewIfNeeded();
+    await link.click();
+  }
+
   async navigateToDashboard(): Promise<void> {
-    await this.dashboardLink.click();
+    await this.clickPillar(this.dashboardLink);
     await this.expectURL(/\/dashboard/);
   }
 
   async navigateToFrameworks(): Promise<void> {
-    await this.frameworksLink.click();
+    await this.clickPillar(this.frameworksLink);
     await this.expectURL(/\/frameworks/);
   }
 
   async navigateToVendors(): Promise<void> {
-    await this.vendorsLink.click();
+    await this.clickPillar(this.vendorsLink);
     await this.expectURL(/\/vendors/);
   }
 
   async navigateToRisks(): Promise<void> {
-    await this.risksLink.click();
+    await this.clickPillar(this.risksLink);
     await this.expectURL(/\/risks/);
   }
 
   async navigateToGovernance(): Promise<void> {
-    await this.governanceLink.click();
+    await this.clickPillar(this.governanceLink);
     await this.expectURL(/\/governance/);
   }
 
   async navigateToAudit(): Promise<void> {
-    await this.auditLink.click();
+    await this.clickPillar(this.auditLink);
     await this.expectURL(/\/audit/);
   }
 
   async navigateToLibrary(): Promise<void> {
-    await this.libraryLink.click();
+    await this.clickPillar(this.libraryLink);
     await this.expectURL(/\/feature-library/);
   }
 
   async navigateToSettings(): Promise<void> {
-    await this.settingsLink.click();
+    await this.clickPillar(this.settingsLink);
     await this.expectURL(/\/settings/);
   }
 
