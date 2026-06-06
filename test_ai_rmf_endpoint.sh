@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Test script for NIST AI RMF POST /api/ai-rmf/systems endpoint
 # This script demonstrates how to create an AI system

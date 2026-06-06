@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # ComplyEasyAI - Comprehensive Test Cases Document
 
 ## Document Information
@@ -1451,8 +1450,11 @@
 **Total Test Cases**: 850+
 **Last Updated**: December 23, 2025
 **Author**: AI Test Architect
-=======
-# ComplyEasy AI - Comprehensive Test Case Documentation
+
+---
+---
+
+# ComplyEasy AI - Comprehensive Test Case Documentation (Extended Coverage Plan)
 
 **Version:** 2.0.0  
 **Last Updated:** December 2024  
@@ -4257,5 +4259,4 @@
 **Document Version:** 1.0  
 **Last Updated:** December 2024  
 **Maintained By:** QA Team
->>>>>>> 1fbd6b5 (Production-ready fixes: Organization settings, team role protection, email confirmation, audit trail, BCP date, and comprehensive feature implementations)
 

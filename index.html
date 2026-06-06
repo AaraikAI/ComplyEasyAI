@@ -3,6 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Content-Security-Policy for the statically-served SPA. The S3/CloudFront
+      origin does not attach a CSP response header, so this meta tag is the
+      baseline enforcement. The API origin is build-time configured (VITE_API_URL)
+      and may differ per environment, so connect-src permits same-origin plus
+      https: (which covers the configured HTTPS API endpoint) while still blocking
+      plugins, framing, and base-tag hijacking.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'" />
     <title>ComplyEasy AI - Compliance Automation</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>

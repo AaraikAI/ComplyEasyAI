@@ -174,6 +174,17 @@ const orgScopedPrisma = basePrisma.$extends({
 
       // No org context, or the operation is itself a transaction/raw control
       // call (which must not be re-wrapped): run unchanged.
+      //
+      // RLS implication for the raw escape hatches ($queryRaw/$queryRawUnsafe/
+      // $executeRaw/$executeRawUnsafe): these run WITHOUT the org GUC, so they
+      // get NO RLS org backstop. Every raw statement that touches a tenant table
+      // MUST therefore either include an explicit `WHERE "organizationId" = ...`
+      // filter, or be issued inside a $transaction that first runs
+      // `set_config('app.current_org', org, true)` itself. Once the
+      // least-privilege role + FORCE ROW LEVEL SECURITY are live, an unscoped raw
+      // query against a tenant table returns zero rows (policy denies) rather
+      // than leaking — but relying on that is not a substitute for explicit
+      // org filtering. Audit new raw call sites against this rule.
       if (
         !org ||
         operation === '$transaction' ||
@@ -188,9 +199,16 @@ const orgScopedPrisma = basePrisma.$extends({
       // Wrap the single operation in an interactive transaction that first
       // binds the org GUC (transaction-local), then executes the query on the
       // transactional connection so the policy sees the correct org.
-      // Note: this adds a BEGIN + set_config round-trip per op and pins a pooled
-      // connection for the query's duration; size connection_limit accordingly
-      // under load. The GUC name 'app.current_org' is the contract read by
+      //
+      // Performance note (tracked LOW): this adds a BEGIN + set_config
+      // round-trip per op and pins a pooled connection for the query's duration,
+      // so size DB_POOL_SIZE / connection_limit accordingly under load. A future
+      // optimization is to bind the GUC ONCE per request via a request-scoped
+      // transaction (AsyncLocalStorage-driven single set_config) so multiple
+      // Prisma calls in the same request share one BEGIN; this is deferred until
+      // the RLS role cutover and a Phase D4 load test confirm the per-op cost.
+      //
+      // The GUC name 'app.current_org' is the contract read by
       // public.get_current_organization_id() in the RLS policy SQL — keep them in
       // sync. App-layer organizationId filters remain the primary tenant boundary.
       return basePrisma.$transaction(async (tx: any) => {
@@ -266,6 +284,70 @@ export async function testConnection(retries = 3, delay = 2000): Promise<boolean
     }
   }
   return false;
+}
+
+// ============================================================================
+// RLS posture assertion (defense-in-depth gate)
+// ----------------------------------------------------------------------------
+// Verifies that the database-layer tenant isolation is actually enforced, not
+// merely enabled. Two conditions must hold for RLS to be effective:
+//   1. The connecting role must NOT have BYPASSRLS (an owner/superuser silently
+//      ignores every policy).
+//   2. Tenant tables must be FORCE ROW LEVEL SECURITY (plain ENABLE is skipped
+//      for the table owner; FORCE applies the policy to the owner too).
+// When RLS_ENFORCE is set (CI / production boot), a failure throws so the
+// deploy halts; otherwise it logs a warning so local/dev work is not blocked.
+// The operational cutover (apply 20260604_enforce_rls, point DATABASE_URL at a
+// non-owner / non-BYPASSRLS role) is documented in RLS_DEPLOY_RUNBOOK.md.
+// ============================================================================
+export async function assertRlsPosture(): Promise<boolean> {
+  const enforce = process.env.RLS_ENFORCE === 'true';
+  try {
+    const roleRows = await basePrisma.$queryRaw<Array<{ rolbypassrls: boolean }>>`
+      SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user
+    `;
+    const bypassRls = roleRows[0]?.rolbypassrls === true;
+
+    const forcedRows = await basePrisma.$queryRaw<Array<{ unforced: number }>>`
+      SELECT COUNT(*)::int AS unforced
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public'
+        AND c.relkind = 'r'
+        AND c.relrowsecurity = true
+        AND c.relforcerowsecurity = false
+    `;
+    const enabledNotForced = forcedRows[0]?.unforced ?? 0;
+
+    const problems: string[] = [];
+    if (bypassRls) {
+      problems.push(`connecting role "${process.env.PGUSER || 'current_user'}" has BYPASSRLS`);
+    }
+    if (enabledNotForced > 0) {
+      problems.push(`${enabledNotForced} table(s) have RLS ENABLEd but not FORCEd`);
+    }
+
+    if (problems.length > 0) {
+      const message = `RLS posture check failed: ${problems.join('; ')}. ` +
+        'See RLS_DEPLOY_RUNBOOK.md (apply 20260604_enforce_rls and use a non-owner role).';
+      if (enforce) {
+        logger.error(message);
+        throw new Error(message);
+      }
+      logger.warn(message);
+      return false;
+    }
+
+    logger.info('✅ RLS posture verified (role lacks BYPASSRLS; tenant tables FORCEd)');
+    return true;
+  } catch (error: any) {
+    if (enforce) {
+      logger.error('RLS posture assertion errored under RLS_ENFORCE:', error.message);
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+    logger.warn('RLS posture assertion could not complete:', error.message);
+    return false;
+  }
 }
 
 // Log queries in development

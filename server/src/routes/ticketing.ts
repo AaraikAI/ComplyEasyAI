@@ -593,7 +593,22 @@ router.post(
           action: 'ticketing.ticket_created',
           userId: req.user?.id,
           organizationId,
-          hash: `${provider}:${sourceType || 'manual'}:${sourceId || 'none'}`,
+          hash: crypto
+            .createHash('sha256')
+            .update(
+              JSON.stringify({
+                action: 'ticketing.ticket_created',
+                organizationId,
+                userId: req.user?.id,
+                provider,
+                sourceType: sourceType || 'manual',
+                sourceId: sourceId || 'none',
+                ticket,
+                ts: new Date().toISOString(),
+                nonce: crypto.randomUUID(),
+              })
+            )
+            .digest('hex'),
           details: JSON.stringify({
             provider,
             ticket,

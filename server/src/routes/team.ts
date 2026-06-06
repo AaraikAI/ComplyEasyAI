@@ -63,7 +63,7 @@ router.post(
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (typeof email !== 'string' || email.length > 254 || !emailRegex.test(email)) {
       throw new AppError('Invalid email format', 400);
     }
 

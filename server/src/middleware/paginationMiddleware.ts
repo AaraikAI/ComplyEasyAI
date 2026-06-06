@@ -112,13 +112,23 @@ function validateSortField(
     return undefined;
   }
 
-  if (allowedFields && allowedFields.length > 0) {
-    if (!allowedFields.includes(sortBy)) {
+  // Deny-all by default: without an explicit allowlist no sortBy value is
+  // permitted to reach Prisma's orderBy. Routes that support sorting must
+  // opt in by passing allowedSortFields.
+  if (!allowedFields || allowedFields.length === 0) {
+    if (sortBy) {
       logger.debug(
-        `[PaginationMiddleware] sortBy "${sortBy}" not in allowed fields: [${allowedFields.join(', ')}]`
+        `[PaginationMiddleware] Ignoring sortBy "${sortBy}": no allowedSortFields configured for this route`
       );
-      return undefined;
     }
+    return undefined;
+  }
+
+  if (!allowedFields.includes(sortBy)) {
+    logger.debug(
+      `[PaginationMiddleware] sortBy "${sortBy}" not in allowed fields: [${allowedFields.join(', ')}]`
+    );
+    return undefined;
   }
 
   return sortBy;

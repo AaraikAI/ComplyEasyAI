@@ -128,10 +128,38 @@ router.get('/scores/history', asyncHandler(async (req: Request, res: Response) =
   }
   const currentScore = totalControls > 0 ? Math.round((compliantControls / totalControls) * 100) : 0;
 
-  // 3. Generate projected trend — earlier months linearly ramp toward current score
+  // 3. Build the trend, preferring any real snapshots that already exist for a
+  //    given month and only synthesizing months with no persisted snapshot.
+  //    Synthesized points are individually flagged so callers can distinguish
+  //    real history from a back-projection.
+  const snapshotByMonth = new Map<string, number>();
+  for (const log of historicalLogs) {
+    let details: any = {};
+    try {
+      details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+    } catch (err) { logger.warn('Failed to parse framework log details', err); }
+    const d = new Date(log.timestamp);
+    if (typeof details.score === 'number') {
+      snapshotByMonth.set(`${d.getFullYear()}_${d.getMonth()}`, details.score);
+    }
+  }
+
   const scores = [];
   for (let i = months - 1; i >= 0; i--) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthKey = `${date.getFullYear()}_${date.getMonth()}`;
+    const realScore = snapshotByMonth.get(monthKey);
+    if (typeof realScore === 'number') {
+      scores.push({
+        name: monthNames[date.getMonth()],
+        score: Math.max(0, Math.min(100, realScore)),
+        date,
+        projected: false,
+      });
+      continue;
+    }
+    // No persisted snapshot for this month — back-project a smooth ramp toward
+    // the current score so the chart renders, and tag the point as projected.
     const progressFactor = 1 - (i / months);
     const baseScore = Math.max(0, currentScore - 30);
     const score = Math.round(baseScore + (currentScore - baseScore) * progressFactor);
@@ -139,6 +167,7 @@ router.get('/scores/history', asyncHandler(async (req: Request, res: Response) =
       name: monthNames[date.getMonth()],
       score: Math.max(0, Math.min(100, score)),
       date,
+      projected: true,
     });
   }
 

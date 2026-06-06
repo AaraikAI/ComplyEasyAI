@@ -7,6 +7,6 @@ export default defineConfig({
     path: 'prisma/migrations',
   },
   datasource: {
-    url: process.env.DATABASE_URL || 'postgresql://localhost:5432/complyeasy',
+    url: process.env.DATABASE_URL ?? (() => { throw new Error('DATABASE_URL is required'); })(),
   },
 });

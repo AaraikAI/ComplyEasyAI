@@ -157,8 +157,10 @@ class IntegrationRegistry {
     await this.initialise();
     const results = new Map<string, ConnectionTestResult>();
 
-    const promises = Array.from(credentialsMap.entries()).map(
-      async ([providerId, creds]) => {
+    // Build thunks (deferred async functions) so a test only starts when its
+    // batch slice is invoked — this bounds real concurrency to batchSize.
+    const thunks = Array.from(credentialsMap.entries()).map(
+      ([providerId, creds]) => async () => {
         try {
           const result = await this.testConnection(providerId, creds);
           results.set(providerId, result);
@@ -174,10 +176,11 @@ class IntegrationRegistry {
       },
     );
 
-    // Run in batches of 20 to avoid overwhelming APIs
+    // Run in batches of 20 to avoid overwhelming APIs.
     const batchSize = 20;
-    for (let i = 0; i < promises.length; i += batchSize) {
-      await Promise.allSettled(promises.slice(i, i + batchSize));
+    for (let i = 0; i < thunks.length; i += batchSize) {
+      const slice = thunks.slice(i, i + batchSize);
+      await Promise.allSettled(slice.map((fn) => fn()));
     }
 
     return results;

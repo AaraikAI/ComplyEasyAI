@@ -111,6 +111,44 @@ export class FrontendStack extends cdk.Stack {
       ? acm.Certificate.fromCertificateArn(this, 'Cert', props.certificateArn)
       : undefined;
 
+    // ---------------------------------------------------------------
+    // Security response headers (CSP + standard hardening) for the SPA
+    // ---------------------------------------------------------------
+    // CloudFront-served HTML must carry a Content-Security-Policy; the static
+    // origin cannot set headers itself. connect-src permits same-origin plus
+    // https: so the build-time configured API endpoint is reachable while
+    // plugins, framing, and base-tag hijacking remain blocked.
+    const securityHeaders = new cloudfront.ResponseHeadersPolicy(
+      this,
+      'FrontendSecurityHeaders',
+      {
+        responseHeadersPolicyName: `${prefix}-security-headers`,
+        securityHeadersBehavior: {
+          contentSecurityPolicy: {
+            override: true,
+            contentSecurityPolicy:
+              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+          },
+          contentTypeOptions: { override: true },
+          frameOptions: {
+            override: true,
+            frameOption: cloudfront.HeadersFrameOption.DENY,
+          },
+          referrerPolicy: {
+            override: true,
+            referrerPolicy:
+              cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+          },
+          strictTransportSecurity: {
+            override: true,
+            accessControlMaxAge: cdk.Duration.days(365),
+            includeSubdomains: true,
+            preload: true,
+          },
+        },
+      }
+    );
+
     this.distribution = new cloudfront.Distribution(this, 'CDN', {
       comment: `${prefix} frontend`,
       defaultBehavior: {
@@ -119,6 +157,7 @@ export class FrontendStack extends cdk.Stack {
           cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+        responseHeadersPolicy: securityHeaders,
       },
       additionalBehaviors: {
         '/api/*': {

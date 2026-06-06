@@ -28,9 +28,14 @@ COMMIT;
 
 ```sql
 BEGIN;
-ALTER TABLE "FrameworkControl" DROP COLUMN IF EXISTS "checklistItems";
-ALTER TABLE "FrameworkControl" DROP COLUMN IF EXISTS "grcNotes";
-ALTER TABLE "FrameworkControl" DROP COLUMN IF EXISTS "grcStatus";
+ALTER TABLE "OnboardingChecklist" DROP COLUMN IF EXISTS "riskHeatmapViewed";
+ALTER TABLE "OnboardingChecklist" DROP COLUMN IF EXISTS "regulatoryTrackerViewed";
+ALTER TABLE "OnboardingChecklist" DROP COLUMN IF EXISTS "vendorMonitoringConfigured";
+ALTER TABLE "OnboardingChecklist" DROP COLUMN IF EXISTS "privacyPlatformViewed";
+ALTER TABLE "OnboardingChecklist" DROP COLUMN IF EXISTS "incidentManagementViewed";
+ALTER TABLE "OnboardingChecklist" DROP COLUMN IF EXISTS "controlTestingConfigured";
+ALTER TABLE "OnboardingChecklist" DROP COLUMN IF EXISTS "auditPrepStarted";
+ALTER TABLE "OnboardingChecklist" DROP COLUMN IF EXISTS "workflowAutomationConfigured";
 DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20260315_add_checklist_grc_columns';
 COMMIT;
 ```
@@ -39,7 +44,8 @@ COMMIT;
 
 ```sql
 BEGIN;
-DROP TABLE IF EXISTS "OnboardingStep" CASCADE;
+DROP TABLE IF EXISTS "OnboardingChecklist" CASCADE;
+DROP TABLE IF EXISTS "OnboardingEvent" CASCADE;
 DROP TABLE IF EXISTS "OnboardingProgress" CASCADE;
 DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20260129_add_onboarding_tables';
 COMMIT;

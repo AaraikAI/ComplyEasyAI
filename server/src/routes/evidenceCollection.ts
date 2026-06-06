@@ -727,23 +727,24 @@ router.post(
         throw new AppError('Cannot trigger an inactive collection rule', 400);
       }
 
-      // Update lastCollectedAt to mark the trigger
-      const updated = await prisma.evidenceCollectionRule.update({
-        where: { id: req.params.id },
-        data: { lastCollectedAt: new Date() },
-      });
+      // A manual trigger only requests collection; it does not itself complete
+      // any collection work. lastCollectedAt must NOT advance here, otherwise the
+      // /status dashboard would report the rule as healthy/non-overdue even though
+      // no evidence was actually collected. lastCollectedAt is updated only by the
+      // collection worker once evidence is persisted.
+      const triggeredAt = new Date().toISOString();
 
       logger.info(
-        `Manual evidence collection triggered for rule ${rule.id} (source: ${rule.sourceType}, control: ${rule.controlId}) by user ${userId}`
+        `Manual evidence collection requested for rule ${rule.id} (source: ${rule.sourceType}, control: ${rule.controlId}) by user ${userId}`
       );
 
-      res.json({
-        status: 'success',
+      res.status(202).json({
+        status: 'accepted',
         data: {
-          message: 'Evidence collection triggered',
-          rule: updated,
+          message: 'Evidence collection requested',
+          rule,
           triggeredBy: userId,
-          triggeredAt: new Date().toISOString(),
+          triggeredAt,
         },
       });
     } catch (error) {

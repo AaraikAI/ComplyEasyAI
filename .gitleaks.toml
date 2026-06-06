@@ -25,12 +25,14 @@ regexes = [
 
 # Paths whose entire contents are CI/test fixtures and should not be scanned
 # for secrets (workflow envs, .env.example files, etc).
+#
+# NOTE: Markdown docs (DEPLOYMENT_SECRETS.md / SECURITY.md / SIG.md / CAIQ.md)
+# are intentionally NOT whole-file excluded — a real credential pasted into them
+# must still be caught. Known non-secret placeholders inside those docs should be
+# allowlisted per-line via the `regexes` above or an inline `gitleaks:allow`
+# comment, not by excluding the whole file.
 paths = [
     '''^\.github/workflows/.*\.ya?ml$''',
     '''.*\.env\.example$''',
     '''.*\.env\.test$''',
-    '''^DEPLOYMENT_SECRETS\.md$''',
-    '''^SECURITY\.md$''',
-    '''^SIG\.md$''',
-    '''^CAIQ\.md$''',
 ]

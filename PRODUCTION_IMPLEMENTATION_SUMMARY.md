@@ -1,6 +1,17 @@
 # Production Implementation Summary
-**Date:** $(date)  
-**Status:** ✅ **100% Complete - All Features Implemented**
+**Date:** 2026-06-06  
+**Status:** Historical — see superseded notice below
+
+> **⚠️ SUPERSEDED / HISTORICAL.** This document records the original feature
+> build-out and is no longer the authoritative readiness verdict. The current
+> assessment is **PARTIAL / not fully production-ready** — see
+> `PRODUCTION_READINESS_REPORT.md` §0. The "100% Production Ready" language below
+> is retained for the historical record but has live caveats, notably:
+> - **Zero-Knowledge Proofs:** the trusted setup is a **single-party** ceremony
+>   (with CSPRNG entropy from `/dev/urandom`); a genuine multi-party ceremony is
+>   still required before production use.
+> - **Database RLS** and other defense-in-depth controls have open items tracked
+>   in the readiness report.
 
 ---
 
@@ -28,10 +39,14 @@ All production-level features and fixes have been successfully implemented for t
 - Compiles circuits to WebAssembly (.wasm) and R1CS formats
 - Output directory: `server/src/zkp/compiled/`
 
-#### ✅ Trusted Setup Implementation
+#### Trusted Setup Implementation
 - `server/scripts/trusted-setup.sh` - Trusted setup ceremony script
 - Generates proving keys (.zkey) and verification keys (.vkey)
-- Supports multi-party ceremony (production-ready)
+- Entropy hardening done: toxic-waste contributions draw from `/dev/urandom`
+  (CSPRNG), not literal/predictable strings
+- Performs a **single-party** setup suitable for development and testing only.
+  A genuine **multi-party** ceremony is still required for production; the
+  script is not itself production-ready.
 
 #### ✅ Real Proof Generation
 - Updated `zeroKnowledgeService.ts` to use `snarkjs.groth16.fullProve()`
@@ -280,13 +295,13 @@ npm test -- complianceAsCodeService
 ### Pre-Deployment
 
 - [x] All circuit files compiled
-- [x] Trusted setup completed
+- [ ] Trusted setup completed via a multi-party ceremony (current script is single-party / dev-only)
 - [x] Proving/verification keys generated
 - [x] OPA server deployed and configured
 - [x] Database migrations applied
 - [x] Environment variables configured
 - [x] Webhook secrets configured
-- [x] All development fallbacks removed
+- [ ] Development fallbacks gated by environment (e.g. simulated-proof fallback active outside production; verify before go-live)
 
 ### Post-Deployment
 
@@ -330,7 +345,9 @@ npm test -- complianceAsCodeService
 - ✅ 5 Compliance-as-Code tasks
 - ✅ 1 Database schema update
 
-**Status: 100% Production Ready**
+**Status: feature build-out complete; overall readiness PARTIAL** — see the
+superseded notice at the top of this document and `PRODUCTION_READINESS_REPORT.md`
+§0 for the authoritative verdict and remaining caveats (ZK single-party setup, RLS).
 
 All features are now implemented at production level with:
 - Real cryptographic proofs (not simulated)

@@ -3,11 +3,11 @@
 # Open Policy Agent (OPA) Server Setup Script
 # Sets up OPA for Compliance-as-Code service
 #
-# Note: this is an interactive local developer convenience script, not a CI/CD
-# or production deployment artifact. The openpolicyagent/opa:latest image tag is
-# acceptable here; pin to a specific OPA version if reproducibility is required.
+# Interactive local developer setup for OPA. Binary acquisition is pinned to a
+# specific OPA release and its published SHA-256 is verified before install
+# (fail closed). Override the version via the OPA_VERSION env var if needed.
 
-set -e
+set -euo pipefail
 
 echo "=========================================="
 echo "OPA Server Setup - ComplyEasyAI"
@@ -181,26 +181,48 @@ EOF
         echo ""
         echo "Installing OPA binary..."
 
-        # Determine download URL
+        # Pin a specific OPA release (never the mutable 'latest' tag) and verify
+        # its published SHA-256 before making the binary executable.
+        OPA_VERSION="${OPA_VERSION:-v0.70.0}"
         case "$MACHINE" in
             Linux)
-                OPA_URL="https://openpolicyagent.org/downloads/latest/opa_linux_amd64"
+                OPA_ASSET="opa_linux_amd64"
                 ;;
             Mac)
-                OPA_URL="https://openpolicyagent.org/downloads/latest/opa_darwin_amd64"
+                OPA_ASSET="opa_darwin_amd64"
                 ;;
             *)
                 echo -e "${RED}Unsupported OS${NC}"
                 exit 1
                 ;;
         esac
+        OPA_URL="https://github.com/open-policy-agent/opa/releases/download/${OPA_VERSION}/${OPA_ASSET}"
+        OPA_SHA_URL="${OPA_URL}.sha256"
 
-        # Download OPA
-        echo "Downloading OPA..."
-        curl -L -o /tmp/opa "$OPA_URL"
+        # Download OPA and its authoritative companion checksum, then verify.
+        echo "Downloading OPA ${OPA_VERSION} (${OPA_ASSET})..."
+        curl -fsSL -o /tmp/opa "$OPA_URL"
+        curl -fsSL -o /tmp/opa.sha256 "$OPA_SHA_URL"
+
+        # The .sha256 companion is "<digest>  <name>"; extract the digest only.
+        EXPECTED_OPA_SHA="$(awk '{print $1}' /tmp/opa.sha256)"
+        if command_exists sha256sum; then
+            ACTUAL_OPA_SHA="$(sha256sum /tmp/opa | awk '{print $1}')"
+        else
+            ACTUAL_OPA_SHA="$(shasum -a 256 /tmp/opa | awk '{print $1}')"
+        fi
+
+        if [ -z "$EXPECTED_OPA_SHA" ] || [ "$EXPECTED_OPA_SHA" != "$ACTUAL_OPA_SHA" ]; then
+            echo -e "${RED}OPA integrity check FAILED.${NC}"
+            echo -e "${RED}  expected: ${EXPECTED_OPA_SHA:-<none>}${NC}"
+            echo -e "${RED}  actual:   $ACTUAL_OPA_SHA${NC}"
+            rm -f /tmp/opa /tmp/opa.sha256
+            exit 1
+        fi
+        rm -f /tmp/opa.sha256
+        echo -e "${GREEN}✓ OPA SHA-256 verified${NC}"
         chmod +x /tmp/opa
 
-        # Move to bin
         # Install to local bin directory (no sudo required)
         mkdir -p bin
         mv /tmp/opa bin/opa

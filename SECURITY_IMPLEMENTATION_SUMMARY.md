@@ -31,12 +31,12 @@
 - **Verification:** ✅ Passed
 
 ### 4. SSRF Protection ✅
-- **Status:** FIXED
+- **Status:** FIXED (for the outbound sites enumerated below)
 - **Files:**
-  - `server/src/utils/urlValidator.ts` (Created)
-  - `server/src/services/webhookService.ts` (Applied)
-- **Implementation:** URL validation + safeFetch wrapper
-- **Verification:** ✅ Passed
+  - `server/src/utils/urlValidator.ts` (Created) — `isUrlSafe` / `isWebhookUrlSafe`, `safeFetch` with a DNS-rebinding guard (`assertResolvesToPublicIp`) and bounded multi-hop redirect re-validation (each redirect target re-checked, capped redirect depth)
+  - Applied at the outbound-request sites: `server/src/services/webhookService.ts`, `server/src/services/patValidationService.ts`, `server/src/controllers/integrationsController.ts`, `server/src/services/workflowEngine.ts`, `server/src/routes/sso.ts`, `server/src/services/s3Service.ts`, `server/src/services/monitoringService.ts`, and the `services/advanced/*` fetchers (`regulatoryIntelligenceFabricService`, `byokService`, `multimodalIntakeService`, `physicalAIService`, `whisperService`)
+- **Implementation:** URL validation + `safeFetch` wrapper on user-controllable / parameter-overridable outbound URLs
+- **Verification:** ✅ Passed for the listed sites. Any newly added outbound `fetch`/`axios`/`got` call must route through `safeFetch` / `isUrlSafe`; this entry is not a blanket guarantee that every future call site is covered.
 
 ### 5. Security Headers ✅
 - **Status:** IMPLEMENTED
@@ -145,18 +145,18 @@ Expected output:
 
 ---
 
-## ✅ SIGN-OFF
+## SIGN-OFF
 
-**Security Status:** ✅ **PRODUCTION READY**
+**Security Status:** Application-layer SSRF controls are in place (`isUrlSafe`/`isWebhookUrlSafe`/`assertOutboundBaseUrl` applied per outbound call site). DB-layer RLS is authored and reproducible but is **enforced operationally only after** the `app_runtime` non-BYPASSRLS role cutover (see `RLS_DEPLOY_RUNBOOK.md`). This document does **not** constitute an unconditional production sign-off.
 
-All critical and medium severity vulnerabilities have been:
-- ✅ Identified
-- ✅ Fixed
-- ✅ Tested
-- ✅ Documented
-- ✅ Verified
+Vulnerability handling status:
+- Identified
+- Fixed (application-layer)
+- Tested
+- Documented
+- Verified per outbound call site
 
-**Approved for Production Deployment:** ✅ **YES**
+**Approved for Production Deployment:** Conditional — pending the operational RLS role cutover (H6/H7) and the dynamic phases (D4 load / D6 e2e / D7 live-RLS) noted in `PRODUCTION_READINESS_REPORT.md`.
 
 ---
 

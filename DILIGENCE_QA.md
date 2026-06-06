@@ -57,10 +57,10 @@ React 18 + Vite (frontend), React Native (mobile), Express 5 + Prisma 7 + Postgr
 AWS-first: ECS Fargate runtime, RDS PostgreSQL (encrypted, automated backups, PITR enabled), S3 for evidence (KMS encryption, versioned), CloudFront + WAF on the edge, Secrets Manager for runtime secrets. Multi-AZ on production.
 
 **15. How do you handle multi-tenancy?**
-Logical (single-DB, org-scoped) multi-tenant. Every user-scoped query filters by `organizationId` at the **service** layer (verified across 89 service files in v11 audit). Isolated runtime envs available for enterprise tier.
+Logical (single-DB, org-scoped) multi-tenant. Tenant isolation is enforced at the **service** layer — every user-scoped query filters by `organizationId`, with parent-org checks on child entities. Database-layer Row-Level Security is staged as defense-in-depth and is being completed (see `PRODUCTION_READINESS_REPORT.md`); current isolation is application-layer. Isolated runtime envs available for enterprise tier.
 
 **16. What's the production-readiness score?**
-**97.51%** per the canonical v16 report (`PRODUCTION_READINESS_REPORT.md`). Build, lint, type-check all green. 67/70 → 70/70 rate-limit coverage after the v16 patch. 0 frontend npm-audit vulns; server has 5 documented unfixable upstream chains (`SECURITY.md`).
+Status is **PARTIAL / in active remediation**, tracked by the findings-driven `PRODUCTION_READINESS_REPORT.md` rather than a single percentage. The prior fixed-score figure from the retired v16 report has been superseded by the current findings-driven methodology. Build, type-check (`tsc --noEmit`) green across server/frontend/mobile; 0 frontend npm-audit vulns; server has documented unfixable upstream chains (`SECURITY.md`). Open findings are being remediated and re-verified; we can share the live report and a fresh scan on request.
 
 **17. Is the audit independently verifiable?**
 The audit uses a deterministic scan-runner that emits machine-readable evidence files (`/tmp/audit_*.txt`). The methodology is in-repo at `.claude/`. We can run a fresh scan in front of you.

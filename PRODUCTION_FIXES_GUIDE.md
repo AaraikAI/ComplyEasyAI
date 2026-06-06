@@ -335,14 +335,15 @@ logger.debug(`Running simulated checks for ${monitor.monitorType} (demo mode)`);
 // Generate CSRF token endpoint
 app.get('/api/csrf-token', generateCsrfToken);
 
-// Apply CSRF protection to routes
-router.post('/api/vendors',
-  authenticate,
-  csrfProtection,  // NEW: CSRF middleware
-  enforceLimit('maxVendors'),
-  async (req, res) => { ... }
-);
+// CSRF protection is enforced application-wide across all /api routes
+// (see server/src/index.ts:384). Individual routers do NOT opt in per-route.
+app.use('/api', csrfProtection);
 ```
+
+> Note: CSRF protection is applied globally to every `/api` route via
+> `app.use('/api', csrfProtection)` (server/src/index.ts:384). Safe methods
+> (GET/HEAD/OPTIONS) and HMAC-verified webhook receivers are skipped by the
+> middleware itself; mutating routes do not register `csrfProtection` per-route.
 
 **Implementation Details:**
 - ✅ Double-submit cookie pattern (stateless)
@@ -506,20 +507,22 @@ ENABLE_REAL_MONITORING=false  # Set to true when real integrations are ready
 NODE_ENV=production
 ```
 
-### Step 3: Enable CSRF Protection (Optional)
+### Step 3: CSRF Protection (Enforced Application-Wide)
 
+CSRF protection is already enabled globally — no per-route opt-in is required.
 In `server/src/index.ts`:
 ```typescript
-import { generateCsrfToken, csrfProtection } from './middleware/csrf';
+import { csrfProtection, generateCsrfToken } from './middleware/csrf';
 
-// Add CSRF token endpoint
+// Applies to every mutating /api request (server/src/index.ts:384).
+// Skips GET/HEAD/OPTIONS and HMAC-verified webhook paths automatically.
+app.use('/api', csrfProtection);
+
+// CSRF token endpoint (GET is skipped by csrfProtection)
 app.get('/api/csrf-token', generateCsrfToken);
-
-// Apply to routes (example)
-app.use('/api/vendors', authenticate, csrfProtection, vendorRoutes);
-app.use('/api/policies', authenticate, csrfProtection, policyRoutes);
-// Add to other state-changing routes as needed
 ```
+Because the guard is mounted on `/api`, individual routers (vendors, policies,
+etc.) inherit CSRF enforcement and must not register the middleware again.
 
 ### Step 4: Implement Pagination (Gradual Rollout)
 

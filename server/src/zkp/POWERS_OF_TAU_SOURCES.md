@@ -1,11 +1,25 @@
 # Powers of Tau Download Sources
 
-If the automated download fails, you can manually download the Powers of Tau file from any of these verified sources:
+If the automated download fails, you can manually download the Powers of Tau file from any of these verified sources.
+
+> **MANDATORY:** every download below MUST be followed immediately by the SHA256
+> verification step. The setup MUST abort and the downloaded file MUST be deleted
+> on any checksum mismatch — never proceed to circuit setup with an unverified
+> `.ptau`. Run after each `curl`/`wget`:
+>
+> ```bash
+> echo "dcf4ea473bf14b971ce5f7b7c1d6ce1c41a8ed042cdb75b65ca9178e3a3c7c17  powersOfTau28_hez_final_12.ptau" | sha256sum -c - \
+>   || { echo "CHECKSUM MISMATCH — aborting"; rm -f powersOfTau28_hez_final_12.ptau; exit 1; }
+> ```
 
 ## File Details
 - **Filename:** `powersOfTau28_hez_final_12.ptau`
 - **Size:** ~6.5 MB
-- **Hash (SHA256):** `55c77461c4c1f9e5bd3c4a0f6d5ae1a6c9e4f0e9d3b5c2a0e1f3d5c7b9a1e3f5`
+- **Authoritative hash (blake2b, published by snarkjs):**
+  `ded2694169b7b08e898f736d5de95af87c3f1a64594013351b1a796dbee393bd825f88f9468c84505ddd11eb0b1465ac9b43b9064aa8ec97f2b73e04758b8a4a`
+  (verify with `snarkjs powersoftau verify`)
+- **Pinned SHA256 (enforced by `setup-circuits.sh` via `checksums.sha256`):**
+  `dcf4ea473bf14b971ce5f7b7c1d6ce1c41a8ed042cdb75b65ca9178e3a3c7c17`
 
 ## Primary Sources (Most Reliable)
 
@@ -13,24 +27,32 @@ If the automated download fails, you can manually download the Powers of Tau fil
 ```bash
 curl -L -o powersOfTau28_hez_final_12.ptau \
   "https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_12.ptau"
+echo "dcf4ea473bf14b971ce5f7b7c1d6ce1c41a8ed042cdb75b65ca9178e3a3c7c17  powersOfTau28_hez_final_12.ptau" | sha256sum -c - \
+  || { echo "CHECKSUM MISMATCH — aborting"; rm -f powersOfTau28_hez_final_12.ptau; exit 1; }
 ```
 
 ### 2. GitHub - SnarkJS Repository
 ```bash
 curl -L -o powersOfTau28_hez_final_12.ptau \
   "https://github.com/iden3/snarkjs/raw/master/build/powersOfTau28_hez_final_12.ptau"
+echo "dcf4ea473bf14b971ce5f7b7c1d6ce1c41a8ed042cdb75b65ca9178e3a3c7c17  powersOfTau28_hez_final_12.ptau" | sha256sum -c - \
+  || { echo "CHECKSUM MISMATCH — aborting"; rm -f powersOfTau28_hez_final_12.ptau; exit 1; }
 ```
 
 ### 3. IPFS Gateway (Decentralized)
 ```bash
 curl -L -o powersOfTau28_hez_final_12.ptau \
   "https://ipfs.io/ipfs/QmTiT4eiYz5KF7gQrDsgfBDVZmCc8CPPFmzGhdXVmq8dXR?filename=powersOfTau28_hez_final_12.ptau"
+echo "dcf4ea473bf14b971ce5f7b7c1d6ce1c41a8ed042cdb75b65ca9178e3a3c7c17  powersOfTau28_hez_final_12.ptau" | sha256sum -c - \
+  || { echo "CHECKSUM MISMATCH — aborting"; rm -f powersOfTau28_hez_final_12.ptau; exit 1; }
 ```
 
 ### 4. Cloudflare IPFS Gateway
 ```bash
 curl -L -o powersOfTau28_hez_final_12.ptau \
   "https://cloudflare-ipfs.com/ipfs/QmTiT4eiYz5KF7gQrDsgfBDVZmCc8CPPFmzGhdXVmq8dXR?filename=powersOfTau28_hez_final_12.ptau"
+echo "dcf4ea473bf14b971ce5f7b7c1d6ce1c41a8ed042cdb75b65ca9178e3a3c7c17  powersOfTau28_hez_final_12.ptau" | sha256sum -c - \
+  || { echo "CHECKSUM MISMATCH — aborting"; rm -f powersOfTau28_hez_final_12.ptau; exit 1; }
 ```
 
 ## Alternative IPFS CIDs
@@ -61,6 +83,8 @@ If you prefer wget:
 ```bash
 wget -O powersOfTau28_hez_final_12.ptau \
   "https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_12.ptau"
+echo "dcf4ea473bf14b971ce5f7b7c1d6ce1c41a8ed042cdb75b65ca9178e3a3c7c17  powersOfTau28_hez_final_12.ptau" | sha256sum -c - \
+  || { echo "CHECKSUM MISMATCH — aborting"; rm -f powersOfTau28_hez_final_12.ptau; exit 1; }
 ```
 
 ## Installation Location

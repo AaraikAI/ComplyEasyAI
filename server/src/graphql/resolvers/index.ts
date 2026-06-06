@@ -9,6 +9,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { validatePaginationParams, buildPaginatedResponse } from '../../utils/pagination';
+import monitoringService from '../../services/monitoringService';
 
 // ============================================================================
 // HELPERS
@@ -488,20 +489,10 @@ export const resolvers = {
       const monitor = await prisma.continuousMonitor.findFirst({ where: { id: args.id, organizationId: user.organizationId } });
       if (!monitor) throw new Error('Monitor not found');
 
-      const result = await prisma.monitorResult.create({
-        data: {
-          monitorId: args.id,
-          status: 'Passing',
-          findings: {},
-        },
-      });
-
-      await prisma.continuousMonitor.update({
-        where: { id: args.id },
-        data: { lastRun: new Date() },
-      });
-
-      return result;
+      // Delegate to the real continuous-monitoring execution service (the same
+      // path the REST endpoint and scheduler use). It runs the monitor's checks,
+      // persists the actual evaluation result, and updates status/lastRun.
+      return monitoringService.executeMonitor(args.id, user.id, user.organizationId);
     },
   },
 

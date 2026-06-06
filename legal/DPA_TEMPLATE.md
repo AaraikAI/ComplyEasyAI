@@ -159,7 +159,7 @@ These TOMs are summary-level. Detailed implementation evidence is available in t
 
 - **Logical separation:** Single-database, organization-scoped. Every user-scoped query filters by `organizationId` at the service layer (verified across 89 service files in v11 audit). Parent-child entity scope enforced on writes.
 - **Optional physical separation:** Isolated runtime environments available on Enterprise tier.
-- **RLS:** PostgreSQL Row-Level Security enabled on compliance-workflow tables for defense-in-depth against direct REST-API exposure.
+- **RLS:** Primary tenant isolation is the application-layer `organizationId` filtering described above. As defense-in-depth, PostgreSQL Row-Level Security policies are defined and enabled in the database schema (per-table organization-isolation policies); deploy-gated `FORCE ROW LEVEL SECURITY` enforcement and least-privilege (non-`BYPASSRLS`) runtime role cutover are rolled out per the RLS deployment runbook.
 
 ### B.4 Network security
 

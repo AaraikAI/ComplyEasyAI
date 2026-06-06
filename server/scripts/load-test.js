@@ -79,7 +79,6 @@ scenarios.forEach((scenario, index) => {
 
     const autocannon = spawn('npx', ['autocannon', ...args], {
       stdio: 'inherit',
-      shell: true,
     });
 
     autocannon.on('close', (code) => {

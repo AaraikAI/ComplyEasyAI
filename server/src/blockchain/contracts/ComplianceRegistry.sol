@@ -308,8 +308,11 @@ contract ComplianceRegistry {
     );
 
     /// @notice Emitted when a batch operation completes.
+    /// @dev `operationType` is non-indexed so the literal string value is
+    ///      recoverable from the log data off-chain (an indexed dynamic string
+    ///      is stored only as a keccak256 topic and cannot be decoded back).
     event BatchOperationCompleted(
-        string indexed operationType,
+        string operationType,
         uint256 count,
         address indexed executor
     );

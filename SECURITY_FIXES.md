@@ -318,6 +318,10 @@ const BLOCKED_IP_RANGES = [
   /^127\./, // 127.0.0.0/8
 ];
 
+import { lookup } from 'dns/promises';
+
+const MAX_REDIRECTS = 5;
+
 export function isUrlSafe(urlString: string): boolean {
   try {
     const url = new URL(urlString);
@@ -332,7 +336,7 @@ export function isUrlSafe(urlString: string): boolean {
       return false;
     }
 
-    // Check private IP ranges
+    // Check private IP ranges (literal hostnames)
     for (const range of BLOCKED_IP_RANGES) {
       if (range.test(url.hostname)) {
         return false;
@@ -345,25 +349,53 @@ export function isUrlSafe(urlString: string): boolean {
   }
 }
 
-export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
-  if (!isUrlSafe(url)) {
-    throw new Error('URL is not allowed for security reasons');
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    redirect: 'manual', // Don't follow redirects automatically
-  });
-
-  // Check for redirects to internal IPs
-  if (response.status >= 300 && response.status < 400) {
-    const redirectUrl = response.headers.get('location');
-    if (redirectUrl && !isUrlSafe(redirectUrl)) {
-      throw new Error('Redirect to internal URL blocked');
+// DNS-rebinding guard: resolve the hostname and reject if ANY resolved
+// address is a private/loopback/link-local IP. A string check on the
+// hostname alone is insufficient because DNS can point a public-looking
+// name at an internal address.
+async function assertHostnameResolvesPublic(hostname: string): Promise<void> {
+  const records = await lookup(hostname, { all: true });
+  for (const { address } of records) {
+    for (const range of BLOCKED_IP_RANGES) {
+      if (range.test(address)) {
+        throw new Error('Hostname resolves to a blocked/internal address');
+      }
     }
   }
+}
 
-  return response;
+export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
+  let currentUrl = url;
+
+  // Re-validate every hop of the redirect chain, including a DNS
+  // re-resolution at each step, so a redirect cannot escape to an
+  // internal target after the first check.
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!isUrlSafe(currentUrl)) {
+      throw new Error('URL is not allowed for security reasons');
+    }
+    await assertHostnameResolvesPublic(new URL(currentUrl).hostname);
+
+    const response = await fetch(currentUrl, {
+      ...options,
+      redirect: 'manual', // Inspect each redirect ourselves
+    });
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location');
+      if (!location) {
+        return response;
+      }
+      // Resolve relative redirects against the current URL, then loop
+      // to re-validate (URL + DNS) the next hop.
+      currentUrl = new URL(location, currentUrl).toString();
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error('Too many redirects');
 }
 ```
 
@@ -544,9 +576,12 @@ app.use((req, res, next) => {
 
 ### 4. Dependency Scanning
 ```bash
-# Add to CI/CD
-npm audit
-npm audit fix
+# Add to CI/CD — report-only. Fail the build on high+ advisories.
+# Do NOT run `npm audit fix` (and never `--force`) unattended: this repo has
+# documented known-unfixable advisories rooted in breaking-major toolchain
+# chains (see the known-unfixable table in .claude/CLAUDE.md), and an
+# auto-applied fix can pull a breaking major. Remediate via a reviewed PR.
+npm audit --audit-level=high
 ```
 
 ### 5. Security Testing

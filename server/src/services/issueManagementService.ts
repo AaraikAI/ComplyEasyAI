@@ -30,6 +30,25 @@ export class IssueManagementService {
     // Calculate SLA status
     const slaStatus = this.calculateSLAStatus(data.slaTarget ?? null);
 
+    // Verify creator and assignee belong to the same organization
+    const creator = await prisma.user.findFirst({
+      where: { id: data.createdById, organizationId: data.organizationId },
+      select: { id: true },
+    });
+    if (!creator) {
+      throw new AppError('User not found in organization', 400);
+    }
+
+    if (data.assignedToId) {
+      const assignee = await prisma.user.findFirst({
+        where: { id: data.assignedToId, organizationId: data.organizationId },
+        select: { id: true },
+      });
+      if (!assignee) {
+        throw new AppError('Assignee not found in organization', 400);
+      }
+    }
+
     const issue = await prisma.issue.create({
       data: {
         organizationId: data.organizationId,
@@ -152,6 +171,15 @@ export class IssueManagementService {
     });
     if (!existing) {
       throw new AppError('Issue not found', 404);
+    }
+
+    // Verify the assignee belongs to the caller's organization
+    const assignee = await prisma.user.findFirst({
+      where: { id: assignedToId, organizationId },
+      select: { id: true },
+    });
+    if (!assignee) {
+      throw new AppError('Assignee not found in organization', 400);
     }
 
     const issue = await prisma.issue.update({

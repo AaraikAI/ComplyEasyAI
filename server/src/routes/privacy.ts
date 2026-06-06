@@ -12,6 +12,8 @@ import {
   createConsentRecordSchema, updateConsentRecordSchema,
   upsertConsentPreferenceSchema,
   createRetentionPolicySchema, updateRetentionPolicySchema,
+  verifyAgeSchema, parentalConsentSchema,
+  createPrivacyNoticeSchema, updatePrivacyNoticeSchema,
 } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import { Prisma } from '../generated/prisma/client';
@@ -2272,7 +2274,7 @@ router.get('/notices', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Create privacy notice
-router.post('/notices', idempotencyKey(), asyncHandler(async (req: Request, res: Response) => {
+router.post('/notices', authorize('admin', 'editor'), idempotencyKey(), validateBody(createPrivacyNoticeSchema), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const orgId = user.organizationId;
   // Explicit field allowlist: counters are forced to 0 and organizationId is
@@ -2317,7 +2319,7 @@ router.get('/notices/:id', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Update privacy notice
-router.patch('/notices/:id', asyncHandler(async (req: Request, res: Response) => {
+router.patch('/notices/:id', authorize('admin', 'editor'), validateBody(updatePrivacyNoticeSchema), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const existing = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
@@ -2438,7 +2440,7 @@ router.get('/child-consent/config', asyncHandler(async (req: Request, res: Respo
 }));
 
 // Submit age verification for a consent record
-router.post('/child-consent/verify-age', asyncHandler(async (req: Request, res: Response) => {
+router.post('/child-consent/verify-age', authorize('admin', 'editor'), validateBody(verifyAgeSchema), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const orgId = user.organizationId;
   const {
@@ -2492,7 +2494,7 @@ router.post('/child-consent/verify-age', asyncHandler(async (req: Request, res: 
 }));
 
 // Record parental consent
-router.post('/child-consent/parental-consent', idempotencyKey(), asyncHandler(async (req: Request, res: Response) => {
+router.post('/child-consent/parental-consent', authorize('admin', 'editor'), idempotencyKey(), validateBody(parentalConsentSchema), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const orgId = user.organizationId;
   const { consentRecordId, parentalConsentEmail, parentalConsentMethod } = req.body;

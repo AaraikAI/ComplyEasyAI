@@ -7,10 +7,14 @@ pragma solidity ^0.8.20;
  * @notice This contract stores compliance audit events in an immutable ledger
  */
 contract ComplianceAuditLog {
-    // Event emitted when an audit entry is created
+    // Event emitted when an audit entry is created.
+    // `organizationId` is non-indexed so its literal value is decodable
+    // off-chain. `orgIdHash` (keccak256 of the organizationId) is the indexed
+    // topic used to filter logs by organization without losing the value.
     event AuditLogCreated(
         bytes32 indexed logId,
-        string indexed organizationId,
+        bytes32 indexed orgIdHash,
+        string organizationId,
         string action,
         bytes32 dataHash,
         uint256 timestamp
@@ -124,6 +128,7 @@ contract ComplianceAuditLog {
 
         emit AuditLogCreated(
             logId,
+            keccak256(bytes(organizationId)),
             organizationId,
             action,
             dataHash,

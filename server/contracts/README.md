@@ -69,15 +69,26 @@ npx hardhat verify --network polygon <CONTRACT_ADDRESS>
 
 ## Enable in the platform
 
-Set in `server/.env`:
+Set the **non-secret** values in `server/.env`:
 
 ```env
 BLOCKCHAIN_AUDIT_ENABLED=true
 COMPLIANCE_CONTRACT_ADDRESS=0x...
 COMPLIANCE_CONTRACT_BYTECODE=0x...
 WEB3_PROVIDER_URL=https://polygon-rpc.com
-WEB3_SUBMIT_WALLET_PRIVATE_KEY=<submit-only-wallet>   # rotate quarterly
 ```
+
+The submit-wallet private key is a **secret** and must NOT be written to a plaintext
+`.env`. Store it in AWS Secrets Manager (or KMS) — consistent with the owner key in the
+Security considerations section — and resolve it at boot:
+
+```env
+# Reference to the secret, not the secret itself:
+WEB3_SUBMIT_WALLET_SECRET_ARN=arn:aws:secretsmanager:<region>:<acct>:secret:web3-submit-wallet
+```
+
+The runtime fetches the key from Secrets Manager at startup and keeps it only in memory.
+Rotate the underlying secret quarterly via the standard wallet-rotation runbook.
 
 `server/src/services/blockchainService.ts` reads these on boot, refuses to submit if any are missing, and gates every submit through a per-org rate limiter to keep gas costs bounded.
 

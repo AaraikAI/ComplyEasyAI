@@ -180,10 +180,13 @@ export function sendCsvResponse(
     logger.info(`CSV export generated: ${fullFilename} (${data.length} rows)`);
   } catch (error) {
     logger.error('CSV export error:', error);
-    res.status(500).json({
-      error: 'CSV export failed',
-      message: 'Failed to generate CSV export',
-    });
+    // If the response stream is already open (BOM/headers flushed), terminate it
+    // cleanly; otherwise defer to the global error handler/Sentry.
+    if (res.headersSent) {
+      res.end();
+      return;
+    }
+    throw new AppError('CSV export failed', 500);
   }
 }
 
@@ -273,10 +276,12 @@ export function exportToCsv(
     sendCsvResponse(res, cleanedData, options);
   } catch (error) {
     logger.error('Export to CSV error:', error);
-    res.status(500).json({
-      error: 'Export failed',
-      message: 'Failed to export data to CSV',
-    });
+    // Re-raise AppError as-is so the originating status is preserved; otherwise
+    // surface a 500 through the global error handler/Sentry.
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('CSV export failed', 500);
   }
 }
 

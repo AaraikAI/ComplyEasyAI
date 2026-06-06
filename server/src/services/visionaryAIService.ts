@@ -796,17 +796,20 @@ Make it professional, legally sound, and actionable.`;
   }
 
   /**
-   * Get real industry benchmarks from aggregated database data
-   * Production-ready: Uses actual aggregated compliance scores from database
+   * Get platform-wide compliance benchmarks from aggregated database data.
+   * The returned figures are an anonymous platform-wide aggregate
+   * (industryAverage / percentile only — no organization identifiers are
+   * exposed). The Organization model does not persist an `industry` field, so
+   * the benchmark is NOT industry-scoped; the `industry` argument is retained
+   * only as a label for the caller. Add a real `where: { industry }` filter
+   * here once Organization.industry is persisted.
    */
   private async getIndustryBenchmarks(industry: string, yourScore: number): Promise<any> {
     try {
-      // Calculate compliance scores from framework controls
-      // Get organizations and calculate their compliance scores from framework controls
+      // Sample organizations platform-wide and derive each one's compliance
+      // score from its framework controls. This is intentionally unfiltered:
+      // there is no persisted industry attribute to scope by yet.
       const organizations = await prisma.organization.findMany({
-        where: {
-          // Filter by industry if available in metadata or use all
-        },
         select: {
           id: true,
         },

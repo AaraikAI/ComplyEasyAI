@@ -4,6 +4,14 @@
 **Last Updated:** December 8, 2025
 **Status:** VERIFIED via Direct File System Scan
 
+> **Historical snapshot (Dec 8, 2025).** The codebase statistics and the
+> "Gaps Identified" table below reflect the repository as of that date and are
+> retained for the audit trail. The repo has since grown substantially (roughly
+> 1,180 hand-written files) and the items previously listed as missing —
+> CI/CD pipelines (`.github/workflows`), Docker/compose, Jest config, and unit /
+> integration / e2e test suites — have all shipped. Treat the metrics below as
+> a point-in-time record, not the current state.
+
 ---
 
 ## Executive Summary
@@ -649,14 +657,14 @@ AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_S3_BUCKET
 
 | Category | Status | Recommendation |
 |----------|--------|----------------|
-| Unit Tests | ❌ Missing | Add Jest tests for services |
-| Integration Tests | ❌ Missing | Add API integration tests |
-| E2E Tests | ❌ Missing | Add Playwright/Cypress tests |
-| Jest Configuration | ❌ Missing | Add jest.config.js to server |
-| CI/CD Pipeline | ❌ Missing | Add GitHub Actions workflow |
-| Docker Configuration | ❌ Missing | Add Dockerfile and docker-compose |
-| API Documentation | ⚠️ Partial | Add OpenAPI/Swagger specs |
-| Frontend Types | ⚠️ Partial | Strengthen TypeScript coverage |
+| Unit Tests | ✅ Shipped | Jest suites present under `server/` and frontend |
+| Integration Tests | ✅ Shipped | API integration tests present |
+| E2E Tests | ✅ Shipped | Playwright e2e suites present |
+| Jest Configuration | ✅ Shipped | `server/jest.config.js` present |
+| CI/CD Pipeline | ✅ Shipped | GitHub Actions workflows under `.github/workflows` |
+| Docker Configuration | ✅ Shipped | Dockerfiles + `docker-compose*` present |
+| API Documentation | ⚠️ Partial | Expand OpenAPI/Swagger coverage |
+| Frontend Types | ⚠️ Partial | Continue strengthening TypeScript coverage |
 
 ---
 

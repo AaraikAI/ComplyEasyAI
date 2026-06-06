@@ -34,7 +34,7 @@ export function __clearCsrfCacheForTest(): void {
   csrfTokenCache = null;
 }
 
-async function getCsrfToken(): Promise<string | null> {
+export async function getCsrfToken(): Promise<string | null> {
   if (csrfTokenCache) return csrfTokenCache;
   try {
     const res = await fetch(`${API_BASE_URL}/csrf-token`, { credentials: 'include' });

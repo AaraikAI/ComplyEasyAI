@@ -54,9 +54,9 @@ Design partners are non-paying for the first 6 months in exchange for: weekly pr
 | Evidence model | Doc upload + manual mapping | Continuous evidence ingestion from 30+ integrations (AWS, Azure, GCP, Okta, GitHub, Snyk, Datadog, Jira, etc.) auto-mapped to controls |
 | Audit prep | Final-quarter scramble | Audit prep workspace runs continuously; the "package" is the same artifacts auditors pull from production |
 | AI surface | Bolt-on chat | Embedded throughout: control mapping, gap analysis, policy drafting, vendor questionnaires, regulatory change detection |
-| Multi-tenancy | Per-tenant deployment | True org-scoped multi-tenant from day one (verified across all 89 service files) |
+| Multi-tenancy | Per-tenant deployment | Strong org-scoped multi-tenant isolation enforced at the application/service layer across all 89 service files; database-layer RLS (FORCE + non-BYPASSRLS role) is staged for deployment as added defense-in-depth |
 | Mobile | None / web wrapper | Real React Native app for evidence capture + approval flows |
-| Trust posture | Marketing claim | 97.51% production-readiness score with the audit transcript public-on-request |
+| Trust posture | Marketing claim | Production-readiness score tracked in the live `PRODUCTION_READINESS_REPORT.md`, with the audit transcript public-on-request |
 
 ---
 

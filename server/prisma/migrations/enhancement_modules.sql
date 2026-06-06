@@ -290,6 +290,16 @@ CREATE TABLE IF NOT EXISTS "CertAudit" (
 CREATE INDEX IF NOT EXISTS "CertAudit_certificationId_idx" ON "CertAudit"("certificationId");
 
 -- ── Regulatory Change Detection ───────────────────────────────────
+-- RegulatoryChangeDetection is an intentionally GLOBAL, cross-tenant shared
+-- regulatory feed: it has no organizationId, no Organization FK, and no
+-- org_isolation RLS policy by design. The regulationName / title / summary /
+-- sourceUrl / impactAnalysis columns describe published regulations and must
+-- never contain tenant-private data — they are visible to all tenants. The
+-- per-tenant interpretation lives in the org-scoped child table
+-- RegulatoryChangeImpact (organizationId + Organization FK + RLS). If a future
+-- requirement makes any RegulatoryChangeDetection row tenant-private, add an
+-- organizationId column, an Organization FK, and an org_isolation RLS policy
+-- instead of leaving it global.
 DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'RegChangeType') THEN CREATE TYPE "RegChangeType" AS ENUM ('NEW_REGULATION', 'AMENDMENT', 'GUIDANCE', 'ENFORCEMENT', 'REPEAL'); END IF; END $$;
 DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'RegChangeStatus') THEN CREATE TYPE "RegChangeStatus" AS ENUM ('NEW', 'REVIEWING', 'IN_PROGRESS', 'REG_RESOLVED', 'DISMISSED'); END IF; END $$;
 

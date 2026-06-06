@@ -166,17 +166,82 @@ cmd_migrate() {
   BACKUP_BUCKET="${PREFIX}-uploads-${AWS_ACCOUNT}"
 
   if command -v pg_dump >/dev/null 2>&1; then
-    pg_dump "$DATABASE_URL" --no-owner --no-acl 2>/dev/null | gzip > "/tmp/${BACKUP_TIMESTAMP}.sql.gz"
-    if [ -s "/tmp/${BACKUP_TIMESTAMP}.sql.gz" ]; then
-      aws s3 cp "/tmp/${BACKUP_TIMESTAMP}.sql.gz" "s3://${BACKUP_BUCKET}/${BACKUP_KEY}" --region "$AWS_REGION" 2>/dev/null && \
-        ok "Database backup saved to s3://${BACKUP_BUCKET}/${BACKUP_KEY}" || \
-        warn "Failed to upload backup to S3; backup saved locally at /tmp/${BACKUP_TIMESTAMP}.sql.gz"
-      rm -f "/tmp/${BACKUP_TIMESTAMP}.sql.gz"
+    # Parse DATABASE_URL into discrete PG* connection parameters so the
+    # credential-bearing URI is never placed on pg_dump's argv (visible via ps/proc).
+    DUMP_DIR="$(mktemp -d)"
+    DUMP_SQL="${DUMP_DIR}/${BACKUP_TIMESTAMP}.sql"
+    DUMP_GZ="/tmp/${BACKUP_TIMESTAMP}.sql.gz"
+    DUMP_ERR="${DUMP_DIR}/pg_dump.err"
+
+    # Extract components from the libpq URI via node's URL parser.
+    PG_PARTS=$(node -e "const u=new URL(process.env.DATABASE_URL);process.stdout.write([u.hostname,u.port||'5432',decodeURIComponent(u.username),decodeURIComponent(u.password),(u.pathname||'/').slice(1)||'postgres'].join('\n'));")
+    PGHOST=$(echo "$PG_PARTS" | sed -n '1p')
+    PGPORT=$(echo "$PG_PARTS" | sed -n '2p')
+    PGUSER=$(echo "$PG_PARTS" | sed -n '3p')
+    PGPASSWORD=$(echo "$PG_PARTS" | sed -n '4p')
+    PGDATABASE=$(echo "$PG_PARTS" | sed -n '5p')
+    export PGHOST PGPORT PGUSER PGPASSWORD PGDATABASE PGSSLMODE="require"
+
+    # Dump to an uncompressed file first so pg_dump's own exit status is observable
+    # (a status lost through a pipe could let a partial dump pass a size-only check).
+    backup_ok=0
+    if pg_dump --no-owner --no-acl -f "$DUMP_SQL" 2>"$DUMP_ERR"; then
+      if [ -s "$DUMP_SQL" ]; then
+        gzip -c "$DUMP_SQL" > "$DUMP_GZ"
+        backup_ok=1
+      else
+        warn "pg_dump produced empty output — aborting before migration to avoid an unsafe migrate with no recovery point."
+      fi
     else
-      warn "pg_dump produced empty output — skipping backup upload"
+      warn "pg_dump failed (exit status non-zero). Stderr follows:"
+      [ -s "$DUMP_ERR" ] && cat "$DUMP_ERR" >&2 || true
     fi
+
+    # Scrub the password from the environment before any further commands.
+    unset PGPASSWORD
+
+    if [ "$backup_ok" -eq 1 ]; then
+      if aws s3 cp "$DUMP_GZ" "s3://${BACKUP_BUCKET}/${BACKUP_KEY}" --region "$AWS_REGION" 2>"${DUMP_DIR}/s3.err"; then
+        ok "Database backup saved to s3://${BACKUP_BUCKET}/${BACKUP_KEY}"
+      else
+        warn "Failed to upload backup to S3; backup retained locally at ${DUMP_GZ}. Stderr follows:"
+        [ -s "${DUMP_DIR}/s3.err" ] && cat "${DUMP_DIR}/s3.err" >&2 || true
+      fi
+      rm -f "$DUMP_GZ"
+    else
+      err "Pre-migration backup failed — refusing to run 'prisma migrate deploy' without a recovery point."
+      rm -rf "$DUMP_DIR"
+      exit 1
+    fi
+
+    rm -rf "$DUMP_DIR"
   else
     warn "pg_dump not found — skipping pre-migration backup. Install postgresql-client for automatic backups."
+  fi
+
+  # ---- RLS runtime-role preflight ----
+  # Defense-in-depth: the runtime app role must NOT have BYPASSRLS, otherwise the
+  # org-isolation policies are inert at runtime. Migrations themselves run as the
+  # owner/BYPASSRLS role; this check informs the operator about the runtime role.
+  # See server/prisma/migrations/RLS_DEPLOY_RUNBOOK.md (least-privilege role cutover).
+  if command -v psql >/dev/null 2>&1; then
+    RLS_DIR="$(mktemp -d)"
+    RLS_PARTS=$(node -e "const u=new URL(process.env.DATABASE_URL);process.stdout.write([u.hostname,u.port||'5432',decodeURIComponent(u.username),decodeURIComponent(u.password),(u.pathname||'/').slice(1)||'postgres'].join('\n'));")
+    export PGHOST=$(echo "$RLS_PARTS" | sed -n '1p')
+    export PGPORT=$(echo "$RLS_PARTS" | sed -n '2p')
+    export PGUSER=$(echo "$RLS_PARTS" | sed -n '3p')
+    export PGPASSWORD=$(echo "$RLS_PARTS" | sed -n '4p')
+    export PGDATABASE=$(echo "$RLS_PARTS" | sed -n '5p')
+    export PGSSLMODE="require"
+    RLS_BYPASS=$(psql -tAc "SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user;" 2>"${RLS_DIR}/psql.err" | tr -d '[:space:]')
+    unset PGPASSWORD
+    if [ "$RLS_BYPASS" = "t" ]; then
+      warn "Runtime DB role '${PGUSER}' has BYPASSRLS — Row-Level Security policies will NOT be enforced at runtime."
+      warn "Complete the least-privilege role cutover per server/prisma/migrations/RLS_DEPLOY_RUNBOOK.md before relying on DB-layer RLS."
+    elif [ "$RLS_BYPASS" = "f" ]; then
+      ok "Runtime DB role '${PGUSER}' is NOBYPASSRLS — RLS policies are enforced."
+    fi
+    rm -rf "$RLS_DIR"
   fi
 
   cd "$PROJECT_ROOT/server"

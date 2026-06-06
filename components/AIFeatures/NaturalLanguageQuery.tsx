@@ -319,6 +319,14 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
         followUpQuestions: aiResult.followUpQuestions || aiResult.relatedQuestions || [],
         relatedQueries: aiResult.relatedQuestions || [],
         actionItems: aiResult.actionItems || [],
+        dataCards: Array.isArray(aiResult.dataCards)
+          ? aiResult.dataCards.map((card: any, idx: number) => ({
+              id: card.id || `dc-${Date.now()}-${idx}`,
+              title: card.title || '',
+              type: card.type || 'metric',
+              data: card.data,
+            }))
+          : undefined,
         category: 'AI Response',
       };
 

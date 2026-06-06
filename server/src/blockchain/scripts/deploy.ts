@@ -79,7 +79,8 @@ function getNetworkConfigs(): Record<DeployNetwork, NetworkConfig> {
   return {
     ethereum: {
       chainId: 1,
-      rpcUrl: process.env.ETHEREUM_RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/demo',
+      // Mainnet RPC must be supplied explicitly; no shared public/demo fallback.
+      rpcUrl: process.env.ETHEREUM_RPC_URL || '',
       name: 'Ethereum Mainnet',
       blockExplorerUrl: 'https://etherscan.io',
       verificationApiUrl: 'https://api.etherscan.io/api',
@@ -97,7 +98,8 @@ function getNetworkConfigs(): Record<DeployNetwork, NetworkConfig> {
     },
     polygon: {
       chainId: 137,
-      rpcUrl: process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com',
+      // Mainnet RPC must be supplied explicitly; no shared public/demo fallback.
+      rpcUrl: process.env.POLYGON_RPC_URL || '',
       name: 'Polygon Mainnet',
       blockExplorerUrl: 'https://polygonscan.com',
       verificationApiUrl: 'https://api.polygonscan.com/api',
@@ -271,9 +273,17 @@ function prepareVerification(
     licenseType: '3', // MIT
   };
 
+  // The printed curl command must not embed the secret API key; reference the
+  // env var name instead so deploy/CI logs never leak it. The operator exports
+  // the matching variable before running the command.
+  const apiKeyEnvVar =
+    network === 'ethereum' || network === 'goerli'
+      ? 'ETHERSCAN_API_KEY'
+      : 'POLYGONSCAN_API_KEY';
+
   const curlCommand = [
     `curl -X POST "${networkConfig.verificationApiUrl}"`,
-    `  -d "apikey=${apiKey}"`,
+    `  -d "apikey=$${apiKeyEnvVar}"`,
     `  -d "module=contract"`,
     `  -d "action=verifysourcecode"`,
     `  -d "contractaddress=${contractAddress}"`,
@@ -362,6 +372,16 @@ async function deploy(): Promise<void> {
   const networkConfig = configs[targetNetwork];
   if (!networkConfig) {
     throw new Error(`Unknown network: ${targetNetwork}. Supported: ${Object.keys(configs).join(', ')}`);
+  }
+
+  // Mainnet networks must use a dedicated RPC endpoint. Fail closed if the
+  // operator did not supply one rather than silently using a public/demo URL.
+  if (!networkConfig.isTestnet && !networkConfig.rpcUrl) {
+    const envVar = targetNetwork === 'ethereum' ? 'ETHEREUM_RPC_URL' : 'POLYGON_RPC_URL';
+    throw new Error(
+      `${envVar} is required to deploy to ${networkConfig.name} (mainnet). ` +
+        'Set it to a dedicated RPC endpoint; public/demo endpoints are not permitted for mainnet.',
+    );
   }
 
   log(`Target network: ${networkConfig.name} (chainId ${networkConfig.chainId})`);

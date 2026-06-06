@@ -241,6 +241,13 @@ export function graphqlMiddleware() {
         return;
       }
 
+      if (typeof query !== 'string') {
+        res.status(400).json({
+          errors: [{ message: 'GraphQL query must be a string' }],
+        });
+        return;
+      }
+
       // Enforce query size limit
       if (query.length > MAX_QUERY_LENGTH) {
         res.status(400).json({

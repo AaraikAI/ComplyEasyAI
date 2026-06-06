@@ -184,11 +184,29 @@ const adminTabs: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
 
 // ── Helper ──────────────────────────────────────────────────────────────────
 
+// Cache the CSRF double-submit token for the session to avoid refetching on every mutation.
+let cachedCsrfToken: string | null = null;
+
+async function getCsrfToken(): Promise<string | null> {
+  if (cachedCsrfToken) return cachedCsrfToken;
+  try {
+    const csrfRes = await fetch(`${apiUrl}/csrf-token`, { credentials: 'include' });
+    if (csrfRes.ok) cachedCsrfToken = (await csrfRes.json())?.csrfToken ?? null;
+  } catch {
+    // CSRF fetch is best-effort; the request may still proceed and fail server-side if required.
+  }
+  return cachedCsrfToken;
+}
+
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
+  const isMutating = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+  const csrf = isMutating ? await getCsrfToken() : null;
   const res = await fetch(`${apiUrl}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
       ...(options.headers || {}),
     },
     credentials: 'include',
@@ -390,6 +408,22 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
     } catch (err) {
       logger.error('Failed to assign training:', err);
       setLoadError('Failed to assign training. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleStartTraining = async (assignment: TrainingAssignment) => {
+    setSubmitting(true);
+    try {
+      await apiFetch(`/security-training/records/${assignment.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'start' }),
+      });
+      await loadData();
+    } catch (err) {
+      logger.error('Failed to start training:', err);
+      setLoadError('Failed to start training. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -961,7 +995,11 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
                   {assignmentStatusLabels[assignment.status]}
                 </span>
                 {assignment.status !== 'Completed' && (
-                  <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs transition-colors">
+                  <button
+                    onClick={() => handleStartTraining(assignment)}
+                    disabled={submitting}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Play className="w-3 h-3" />
                     {assignment.status === 'NotStarted' ? 'Start' : 'Continue'}
                   </button>

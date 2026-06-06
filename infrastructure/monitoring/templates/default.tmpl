@@ -1,0 +1,12 @@
+{{/* Alertmanager Slack notification templates for ComplyEasyAI */}}
+{{/* Referenced by the 'default' receiver in alertmanager.yml */}}
+
+{{ define "slack.default.title" }}{{ if eq .Status "firing" }}:fire:{{ else }}:white_check_mark:{{ end }} [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.alertname }}{{ end }}
+
+{{ define "slack.default.text" }}{{ range .Alerts }}*Alert:* {{ .Labels.alertname }}
+*Severity:* {{ .Labels.severity }}
+{{ if .Labels.team }}*Team:* {{ .Labels.team }}
+{{ end }}*Summary:* {{ .Annotations.summary }}
+{{ if .Annotations.description }}*Description:* {{ .Annotations.description }}
+{{ end }}*Started:* {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+{{ end }}{{ end }}

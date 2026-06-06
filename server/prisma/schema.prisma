@@ -98,6 +98,8 @@ model Organization {
   zeroTrustPolicies             ZeroTrustPolicy[]
   onboardingProgress            OnboardingProgress[]
   onboardingChecklist           OnboardingChecklist?
+  onboardingEvents              OnboardingEvent[]
+  regulatoryChangeImpacts       RegulatoryChangeImpact[]
   bcpPlans                      BCPPlan[]
   dataMaps                      DataMap[]
   gapAnalyses                   GapAnalysis[]
@@ -3410,14 +3412,15 @@ model OnboardingProgress {
 }
 
 model OnboardingEvent {
-  id             String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
   userId         String
   organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   eventType      String
   flowName       String?
   stepIndex      Int?
   metadata       Json?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime     @default(now())
 
   @@index([userId])
   @@index([organizationId])
@@ -6331,6 +6334,12 @@ enum CertAuditType {
 }
 
 // ── 3.1 Regulatory Change Detection ──────────────────────────────────
+// Intentionally GLOBAL, cross-tenant shared regulatory feed: no organizationId,
+// no Organization relation, and no org_isolation RLS policy by design. These
+// rows describe published regulations and carry no tenant-private data; they are
+// visible to every tenant. Per-tenant interpretation lives in the org-scoped
+// child RegulatoryChangeImpact. If any row ever needs to be tenant-private, add
+// organizationId + an Organization relation + an org_isolation RLS policy.
 model RegulatoryChangeDetection {
   id             String                   @id @default(dbgenerated("(uuid_generate_v4())::text"))
   regulationName String
@@ -6356,6 +6365,7 @@ model RegulatoryChangeImpact {
   regulatoryChangeId String
   controlId          String
   organizationId     String
+  organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   impactLevel        String // Low, Medium, High, Critical
   requiredAction     String
   status             RegChangeStatus           @default(NEW)
@@ -6598,15 +6608,15 @@ model CustomDashboard {
 model DashboardWidget {
   id             String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
   dashboardId    String
-  // Nullable initially — production backfill required from parent CustomDashboard
-  // before changing to NOT NULL. See migration TODO.
-  organizationId String?
+  // Backfilled from parent CustomDashboard and enforced NOT NULL via
+  // migration 20260605_org_not_null_dashboard_cicd.
+  organizationId String
   type           String // METRIC_CARD, LINE_CHART, BAR_CHART, etc.
   title          String
   config         Json?
   position       Json? // x, y, width, height
   dashboard      CustomDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-  organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([dashboardId])
   @@index([organizationId])
@@ -6652,9 +6662,9 @@ model CICDGatePolicy {
 model CICDGateResult {
   id             String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
   policyId       String
-  // Nullable initially — production backfill required from parent CICDGatePolicy
-  // before changing to NOT NULL. See migration TODO.
-  organizationId String?
+  // Backfilled from parent CICDGatePolicy and enforced NOT NULL via
+  // migration 20260605_org_not_null_dashboard_cicd.
+  organizationId String
   repository     String
   branch         String
   commitHash     String
@@ -6662,7 +6672,7 @@ model CICDGateResult {
   details        Json?
   triggeredAt    DateTime       @default(now())
   policy         CICDGatePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
-  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([policyId])
   @@index([repository])

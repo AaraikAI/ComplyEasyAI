@@ -60,7 +60,8 @@ contracts/             Solidity audit-log immutability contracts (optional)
 **Multi-tenant**
 - Organization-scoped queries at the service layer (verified across 89 files in v11 audit)
 - Parent-child entity scope enforced on writes
-- PostgreSQL RLS enabled on 25 compliance-workflow tables (defense-in-depth against the Supabase auto-exposed REST API; app uses direct Prisma connection)
+- Tenant isolation is enforced **100% at the application/service layer** via `organizationId` filtering (and parent-org ownership checks on child entities). The app connects directly via Prisma.
+- ⚠️ **DB-layer PostgreSQL RLS is currently non-functional and must NOT be relied on as a defense-in-depth tier.** The `rls_policies_*.sql` file contains 0 `ENABLE ROW LEVEL SECURITY` / 0 `FORCE` statements, the application Postgres role has `BYPASSRLS=true`, and the policy predicate reads `current_setting('request.jwt.claims')` — a Supabase/PostgREST session variable the Express/Prisma backend never sets. Until RLS is enabled+forced, the app role drops `BYPASSRLS`, and the backend sets the org claim per request, do not assume DB-enforced isolation exists.
 
 **Compliance workflow services (14 frameworks)**
 - `hipaaService` — PHI inventory, BAA tracking, 45 CFR §164.402(2) four-factor breach analysis

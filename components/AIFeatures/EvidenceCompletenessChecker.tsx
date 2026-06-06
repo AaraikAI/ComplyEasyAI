@@ -282,33 +282,147 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
   const [createdTasks, setCreatedTasks] = useState<Set<string>>(new Set());
   const [createdRemediations, setCreatedRemediations] = useState<Set<string>>(new Set());
   const [scheduledRecs, setScheduledRecs] = useState<Set<string>>(new Set());
+  // In-flight markers so a button cannot be double-submitted while its request resolves
+  const [pendingActions, setPendingActions] = useState<Set<string>>(new Set());
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const markPending = useCallback((key: string, on: boolean) => {
+    setPendingActions(prev => {
+      const next = new Set(prev);
+      if (on) next.add(key); else next.delete(key);
+      return next;
+    });
+  }, []);
+
+  // Resolve a framework's persisted id from its display name (gaps carry the
+  // framework name; the upload endpoint needs the framework id).
+  const resolveFrameworkId = useCallback((frameworkName: string): string | null => {
+    const fw = frameworkReadiness.find(f => f.name === frameworkName);
+    return fw ? fw.id : null;
+  }, [frameworkReadiness]);
 
   const handleEvidenceUploadClick = useCallback((gapId: string, evidenceIdx: number) => {
     setUploadTarget({ gapId, evidenceIdx });
     fileInputRef.current?.click();
   }, []);
 
-  const handleFileSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0 && uploadTarget) {
-      const key = `${uploadTarget.gapId}-${uploadTarget.evidenceIdx}`;
-      setUploadedEvidence(prev => new Set(prev).add(key));
-      setUploadTarget(null);
-    }
+  const handleFileSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files.length > 0 ? e.target.files[0] : null;
+    const target = uploadTarget;
     // Reset the input so the same file can be re-selected if needed
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [uploadTarget]);
+    setUploadTarget(null);
+    if (!file || !target) return;
 
-  const handleCreateTask = useCallback((gapId: string) => {
-    setCreatedTasks(prev => new Set(prev).add(gapId));
-  }, []);
+    const key = `${target.gapId}-${target.evidenceIdx}`;
+    const gap = evidenceGaps.find(g => g.id === target.gapId);
+    if (!gap) return;
+    const frameworkId = resolveFrameworkId(gap.framework);
+    if (!frameworkId) {
+      setActionError('Unable to resolve the framework for this evidence upload.');
+      return;
+    }
 
-  const handleCreateRemediation = useCallback((recId: string) => {
-    setCreatedRemediations(prev => new Set(prev).add(recId));
-  }, []);
+    setActionError(null);
+    markPending(key, true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('controlId', gap.controlId);
+      // Persist the evidence file against the control via the frameworks endpoint.
+      await api.frameworks.uploadEvidence(frameworkId, gap.controlId, formData);
+      setUploadedEvidence(prev => new Set(prev).add(key));
+    } catch (err: any) {
+      logger.error('Evidence upload failed:', err);
+      setActionError(err?.message || 'Failed to upload evidence.');
+    } finally {
+      markPending(key, false);
+    }
+  }, [uploadTarget, evidenceGaps, resolveFrameworkId, markPending]);
 
-  const handleScheduleRec = useCallback((recId: string) => {
-    setScheduledRecs(prev => new Set(prev).add(recId));
-  }, []);
+  const handleCreateTask = useCallback(async (gapId: string) => {
+    const gap = evidenceGaps.find(g => g.id === gapId);
+    if (!gap) return;
+    setActionError(null);
+    markPending(gapId, true);
+    try {
+      // Persist a remediation task for this gap via the AI auto-remediation backend.
+      await api.ai.autoRemediation(
+        gap.framework,
+        [{
+          controlId: gap.controlId,
+          controlName: gap.controlName,
+          gapType: gap.gapType,
+          severity: gap.severity,
+          description: gap.description,
+          suggestedEvidence: gap.suggestedEvidence,
+        }],
+        `Evidence completeness remediation for ${gap.framework} control ${gap.controlId}`
+      );
+      setCreatedTasks(prev => new Set(prev).add(gapId));
+    } catch (err: any) {
+      logger.error('Failed to create remediation task:', err);
+      setActionError(err?.message || 'Failed to create remediation task.');
+    } finally {
+      markPending(gapId, false);
+    }
+  }, [evidenceGaps, markPending]);
+
+  const handleCreateRemediation = useCallback(async (recId: string) => {
+    const rec = recommendations.find(r => r.id === recId);
+    if (!rec) return;
+    setActionError(null);
+    markPending(recId, true);
+    try {
+      // Persist remediation tasks for this recommendation via the backend.
+      await api.ai.autoRemediation(
+        rec.category || 'Multi-Framework',
+        [{
+          recommendationId: rec.id,
+          title: rec.title,
+          description: rec.description,
+          impact: rec.impact,
+          effort: rec.effort,
+          steps: rec.steps,
+        }],
+        `Remediation tasks for recommendation: ${rec.title}`
+      );
+      setCreatedRemediations(prev => new Set(prev).add(recId));
+    } catch (err: any) {
+      logger.error('Failed to create remediation tasks:', err);
+      setActionError(err?.message || 'Failed to create remediation tasks.');
+    } finally {
+      markPending(recId, false);
+    }
+  }, [recommendations, markPending]);
+
+  const handleScheduleRec = useCallback(async (recId: string) => {
+    const rec = recommendations.find(r => r.id === recId);
+    if (!rec) return;
+    const scheduleKey = `schedule-${recId}`;
+    setActionError(null);
+    markPending(scheduleKey, true);
+    try {
+      // Persist a scheduled remediation run for this recommendation.
+      await api.ai.autoRemediation(
+        rec.category || 'Multi-Framework',
+        [{
+          recommendationId: rec.id,
+          title: rec.title,
+          description: rec.description,
+          steps: rec.steps,
+          scheduledFor: new Date().toISOString(),
+        }],
+        `Scheduled remediation for recommendation: ${rec.title}`
+      );
+      setScheduledRecs(prev => new Set(prev).add(recId));
+    } catch (err: any) {
+      logger.error('Failed to schedule recommendation:', err);
+      setActionError(err?.message || 'Failed to schedule recommendation.');
+    } finally {
+      markPending(scheduleKey, false);
+    }
+  }, [recommendations, markPending]);
 
   const handleScan = useCallback(async () => {
     setIsScanning(true);
@@ -383,7 +497,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
       <input
         type="file"
         ref={fileInputRef}
-        onChange={handleFileSelected}
+        onChange={e => void handleFileSelected(e)}
         className="hidden"
         accept=".pdf,.doc,.docx,.xlsx,.csv,.png,.jpg,.txt"
       />
@@ -445,6 +559,13 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
         <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
           <Info size={16} />
           No frameworks are configured for your organization yet. Add a compliance framework to see evidence completeness.
+        </div>
+      )}
+      {actionError && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          <AlertCircle size={16} />
+          {actionError}
+          <button onClick={() => setActionError(null)} className="ml-auto text-xs underline">Dismiss</button>
         </div>
       )}
 
@@ -869,7 +990,8 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                               <span className="text-sm text-gray-700">{ev}</span>
                               <button
                                 onClick={() => handleEvidenceUploadClick(gap.id, idx)}
-                                className={`ml-auto text-xs font-medium flex items-center gap-1 ${
+                                disabled={pendingActions.has(`${gap.id}-${idx}`) || uploadedEvidence.has(`${gap.id}-${idx}`)}
+                                className={`ml-auto text-xs font-medium flex items-center gap-1 disabled:opacity-60 ${
                                   uploadedEvidence.has(`${gap.id}-${idx}`)
                                     ? 'text-green-600 hover:text-green-700'
                                     : 'text-brand-600 hover:text-brand-700'
@@ -879,6 +1001,11 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                                   <>
                                     <CheckCircle2 size={10} />
                                     Uploaded
+                                  </>
+                                ) : pendingActions.has(`${gap.id}-${idx}`) ? (
+                                  <>
+                                    <Loader2 size={10} className="animate-spin" />
+                                    Uploading...
                                   </>
                                 ) : (
                                   <>
@@ -898,9 +1025,9 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                           <span className="flex items-center gap-1"><Target size={10} />Owner: {gap.controlOwner}</span>
                         </div>
                         <button
-                          onClick={() => handleCreateTask(gap.id)}
-                          disabled={createdTasks.has(gap.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          onClick={() => void handleCreateTask(gap.id)}
+                          disabled={createdTasks.has(gap.id) || pendingActions.has(gap.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-60 ${
                             createdTasks.has(gap.id)
                               ? 'bg-green-100 text-green-700 cursor-default'
                               : 'bg-brand-600 text-white hover:bg-brand-700'
@@ -910,6 +1037,11 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                             <>
                               <CheckCircle2 size={12} />
                               Task Created
+                            </>
+                          ) : pendingActions.has(gap.id) ? (
+                            <>
+                              <Loader2 size={12} className="animate-spin" />
+                              Creating...
                             </>
                           ) : (
                             <>
@@ -984,9 +1116,9 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                     </div>
                     <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
                       <button
-                        onClick={() => handleCreateRemediation(rec.id)}
-                        disabled={createdRemediations.has(rec.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        onClick={() => void handleCreateRemediation(rec.id)}
+                        disabled={createdRemediations.has(rec.id) || pendingActions.has(rec.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-60 ${
                           createdRemediations.has(rec.id)
                             ? 'bg-green-100 text-green-700 cursor-default'
                             : 'bg-brand-600 text-white hover:bg-brand-700'
@@ -997,6 +1129,11 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                             <CheckCircle2 size={12} />
                             Remediation Tasks Created
                           </>
+                        ) : pendingActions.has(rec.id) ? (
+                          <>
+                            <Loader2 size={12} className="animate-spin" />
+                            Creating...
+                          </>
                         ) : (
                           <>
                             <Zap size={12} />
@@ -1005,9 +1142,9 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                         )}
                       </button>
                       <button
-                        onClick={() => handleScheduleRec(rec.id)}
-                        disabled={scheduledRecs.has(rec.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        onClick={() => void handleScheduleRec(rec.id)}
+                        disabled={scheduledRecs.has(rec.id) || pendingActions.has(`schedule-${rec.id}`)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-60 ${
                           scheduledRecs.has(rec.id)
                             ? 'bg-blue-100 text-blue-700 border border-blue-200 cursor-default'
                             : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -1017,6 +1154,11 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                           <>
                             <CheckCircle2 size={12} />
                             Scheduled
+                          </>
+                        ) : pendingActions.has(`schedule-${rec.id}`) ? (
+                          <>
+                            <Loader2 size={12} className="animate-spin" />
+                            Scheduling...
                           </>
                         ) : (
                           <>

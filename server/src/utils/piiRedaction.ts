@@ -4,7 +4,9 @@
  */
 
 const PATTERNS = {
-  EMAIL: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+  // Domain part written as labels separated by dots so the trailing `\.[a-zA-Z]{2,}`
+  // does not overlap a preceding `[...]+` that also matches a dot (avoids polynomial backtracking).
+  EMAIL: /[a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/g,
   PHONE: /(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g,
   SSN: /\d{3}-\d{2}-\d{4}/g,
   CREDIT_CARD: /\b(?:\d{4}[ -]?){3}\d{4}\b/g,
@@ -17,10 +19,32 @@ interface RedactionContext {
   map: Map<string, string>;
 }
 
+// Upper bound on the text size passed through the regex-based redaction pass.
+// Inputs larger than this are processed in fixed-size chunks so no single regex
+// run sees an unbounded string (defense-in-depth against pathological backtracking).
+const MAX_REDACTION_CHUNK = 100_000;
+
 export function redactPII(text: string): RedactionContext {
   const map = new Map<string, string>();
-  let redactedText = text;
   let counter = 0;
+
+  if (typeof text === 'string' && text.length > MAX_REDACTION_CHUNK) {
+    const parts: string[] = [];
+    for (let i = 0; i < text.length; i += MAX_REDACTION_CHUNK) {
+      parts.push(redactChunk(text.slice(i, i + MAX_REDACTION_CHUNK), map, () => ++counter));
+    }
+    return { redactedText: parts.join(''), map };
+  }
+
+  return { redactedText: redactChunk(text, map, () => ++counter), map };
+}
+
+function redactChunk(
+  text: string,
+  map: Map<string, string>,
+  nextCounter: () => number
+): string {
+  let redactedText = text;
 
   const replaceToken = (match: string, type: string): string => {
     // Check if we already have a token for this exact PII
@@ -28,7 +52,7 @@ export function redactPII(text: string): RedactionContext {
       if (value === match) return token;
     }
 
-    const token = `[${type}_${++counter}]`;
+    const token = `[${type}_${nextCounter()}]`;
     map.set(token, match);
     return token;
   };
@@ -46,7 +70,7 @@ export function redactPII(text: string): RedactionContext {
     return replaceToken(m, 'IP');
   });
 
-  return { redactedText, map };
+  return redactedText;
 }
 
 export function rehydratePII(text: string, map: Map<string, string>): string {

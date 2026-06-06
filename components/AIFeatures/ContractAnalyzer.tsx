@@ -50,6 +50,7 @@ export const ContractAnalyzer: React.FC<{ onBack: () => void }> = ({ onBack }) =
           const content = e.target?.result as string;
           if (!content || content.trim().length === 0) {
             reject(new Error('File appears to be empty or corrupted'));
+            return;
           }
           resolve(content);
         } catch (err) {

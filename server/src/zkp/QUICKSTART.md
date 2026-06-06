@@ -84,6 +84,11 @@ npm install -g snarkjs
 ```bash
 cd /home/user/ComplyEasyAI/server/src/zkp
 curl -L -o powersOfTau28_hez_final_12.ptau https://hermez.s3-eu-west-1.amazonaws.com/powersOfTau28_hez_final_12.ptau
+
+# MANDATORY: verify integrity before consuming the file. The pinned hash is
+# published in POWERS_OF_TAU_SOURCES.md and enforced by setup-circuits.sh.
+echo "dcf4ea473bf14b971ce5f7b7c1d6ce1c41a8ed042cdb75b65ca9178e3a3c7c17  powersOfTau28_hez_final_12.ptau" | sha256sum -c -
+# Abort the setup if the checksum does not match (sha256sum -c exits non-zero).
 ```
 
 ### Compile Each Circuit
@@ -106,26 +111,38 @@ cp compiled/data_ownership_js/data_ownership.wasm compiled/wasm/
 rm -rf compiled/data_ownership_js
 ```
 
-### Generate Keys for Each Circuit
+### Generate Keys for Each Circuit (development / local only)
+
+> ⚠️ **Single-party setup — NOT for production.** The contribute steps below run
+> `snarkjs zkey contribute` interactively, which prompts for keyboard entropy. Do
+> **not** seed entropy from a recomputable source such as a clock value — anyone
+> who knows the contribution time can recover the toxic waste and forge proofs.
+> The `-e` flag is omitted so snarkjs collects interactive entropy; supply
+> hardware/CSPRNG entropy when you script it (e.g. `-e="$(head -c 64 /dev/urandom | base64)"`).
+>
+> For any deployment that verifies real user data, you **must** run the
+> multi-party trusted-setup ceremony described in
+> [`ZK_OPERATIONAL_RUNBOOK.md`](./ZK_OPERATIONAL_RUNBOOK.md) instead of this
+> single-party flow.
 
 ```bash
 mkdir -p keys/proving keys/verification
 
 # For compliance_check
 snarkjs groth16 setup compiled/compliance_check.r1cs powersOfTau28_hez_final_12.ptau keys/proving/compliance_check_0000.zkey
-snarkjs zkey contribute keys/proving/compliance_check_0000.zkey keys/proving/compliance_check.zkey --name="ComplyEasyAI" -e="$(date +%s)"
+snarkjs zkey contribute keys/proving/compliance_check_0000.zkey keys/proving/compliance_check.zkey --name="ComplyEasyAI"
 snarkjs zkey export verificationkey keys/proving/compliance_check.zkey keys/verification/compliance_check.vkey
 rm keys/proving/compliance_check_0000.zkey
 
 # For credential_verification
 snarkjs groth16 setup compiled/credential_verification.r1cs powersOfTau28_hez_final_12.ptau keys/proving/credential_verification_0000.zkey
-snarkjs zkey contribute keys/proving/credential_verification_0000.zkey keys/proving/credential_verification.zkey --name="ComplyEasyAI" -e="$(date +%s)"
+snarkjs zkey contribute keys/proving/credential_verification_0000.zkey keys/proving/credential_verification.zkey --name="ComplyEasyAI"
 snarkjs zkey export verificationkey keys/proving/credential_verification.zkey keys/verification/credential_verification.vkey
 rm keys/proving/credential_verification_0000.zkey
 
 # For data_ownership
 snarkjs groth16 setup compiled/data_ownership.r1cs powersOfTau28_hez_final_12.ptau keys/proving/data_ownership_0000.zkey
-snarkjs zkey contribute keys/proving/data_ownership_0000.zkey keys/proving/data_ownership.zkey --name="ComplyEasyAI" -e="$(date +%s)"
+snarkjs zkey contribute keys/proving/data_ownership_0000.zkey keys/proving/data_ownership.zkey --name="ComplyEasyAI"
 snarkjs zkey export verificationkey keys/proving/data_ownership.zkey keys/verification/data_ownership.vkey
 rm keys/proving/data_ownership_0000.zkey
 ```
@@ -308,4 +325,10 @@ const proof = await zeroKnowledgeService.generateComplianceProof(
 console.log('Proof generated:', proof);
 ```
 
-🎉 **Congratulations! Your zk-SNARK circuits are ready for production!**
+🎉 **Your zk-SNARK circuits are compiled and working for local development.**
+
+> **Before production:** the single-party setup above is for development only.
+> Replace the proving/verification keys with the output of the multi-party
+> trusted-setup ceremony in [`ZK_OPERATIONAL_RUNBOOK.md`](./ZK_OPERATIONAL_RUNBOOK.md)
+> before deploying. Proofs generated from a single-party, locally-seeded setup
+> are not production-safe.

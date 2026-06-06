@@ -1,0 +1,15 @@
+# Grafana dashboard provider for ComplyEasyAI
+# Auto-loaded by Grafana from /etc/grafana/provisioning/dashboards
+apiVersion: 1
+
+providers:
+  - name: 'ComplyEasyAI'
+    orgId: 1
+    folder: 'ComplyEasyAI'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

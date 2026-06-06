@@ -366,13 +366,19 @@ npm run test:sendgrid
 
 1. **Build Docker Image:**
    ```bash
-   docker build -t complyeasy-ai:latest .
+   # Use an immutable, content-addressed tag for anything you deploy.
+   # The :latest tag is mutable and is acceptable only for local development.
+   IMAGE_TAG=$(git rev-parse --short HEAD)
+   docker build -t complyeasy-ai:"$IMAGE_TAG" .
    ```
 
 2. **Test Locally:**
    ```bash
-   docker run -p 5000:5000 --env-file server/.env complyeasy-ai:latest
+   docker run -p 5000:5000 --env-file server/.env complyeasy-ai:"$IMAGE_TAG"
    ```
+
+   > Production deploys must reference the immutable `$IMAGE_TAG` (or a semver
+   > release tag), never `:latest`. This matches the CDK immutable-tag control.
 
 3. **Deploy to Platform:**
    - **AWS ECS/Fargate:** Use `docker-compose.prod.yml`

@@ -6,6 +6,7 @@ import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
 import { ComplianceStatus } from '../generated/prisma/client';
 import controlTemplatesService from '../services/euRegulations/controlTemplatesService';
+import DOMPurify from 'isomorphic-dompurify';
 
 // FrameworkType enum values - matching frontend types.ts
 enum FrameworkType {
@@ -22,18 +23,12 @@ enum FrameworkType {
 }
 
 class FrameworksController {
-  // Sanitize input to prevent XSS
+  // Sanitize input to prevent XSS. These fields (name, region, notes,
+  // description, category) are plain-text, so strip all markup via the
+  // project's DOMPurify path rather than single-pass regex stripping.
   private sanitizeInput(input: string): string {
     if (!input || typeof input !== 'string') return input || '';
-    // Remove script tags and event handlers while preserving Unicode
-    return input
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-      .replace(/javascript:/gi, '')
-      .replace(/<iframe/gi, '&lt;iframe')
-      .replace(/<object/gi, '&lt;object')
-      .replace(/<embed/gi, '&lt;embed')
-      .trim();
+    return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
   }
 
   list: RequestHandler = async (req: Request, res: Response): Promise<void> => {

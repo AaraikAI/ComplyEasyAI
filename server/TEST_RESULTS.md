@@ -3,6 +3,14 @@
 **Generated:** 2026-02-26
 **Project:** ComplyEasyAI Server
 
+> **Status note (added 2026-06-06):** This is a **point-in-time snapshot from 2026-02-26**, not a current
+> production-readiness gate. The failures recorded below are dominated by test-code rot — mocks and
+> assertions lagging legitimate source hardening, plus Supabase connection-pool exhaustion under
+> parallel jest workers — rather than production defects (see `.claude/CLAUDE.md`, "Real production bugs
+> surfaced by the full server test suite"). The handful of genuine production bugs this run masked were
+> subsequently identified and fixed. Do **not** treat the metrics in this snapshot as the live suite
+> health; regenerate this report once the suite is brought green so it cannot mask a real regression.
+
 ---
 
 ## Executive Summary

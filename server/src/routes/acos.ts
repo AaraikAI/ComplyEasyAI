@@ -152,16 +152,16 @@ router.get('/evidence/:evidenceId/provenance', ...requireAcosFeature('acosEviden
 
 // Regulatory Intelligence Fabric (Growth+)
 router.post('/rif/ingest-regulation', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), upload.single('file'), asyncHandler(acosController.ingestRegulation));
-router.post('/rif/detect-changes', authorize('admin'), asyncHandler(acosController.detectRegulatoryChanges));
-router.post('/rif/:regulatoryChangeId/auto-update', authorize('admin'), asyncHandler(acosController.autoUpdateControls));
-router.post('/rif/auto-update/rollback', authorize('admin'), asyncHandler(acosController.rollbackAutoUpdate));
-router.post('/rif/auto-update/batch', authorize('admin'), asyncHandler(acosController.batchAutoUpdate));
-router.post('/rif/conflicts/bulk-analysis', authorize('admin'), asyncHandler(acosController.bulkConflictAnalysis));
-router.get('/rif/conflicts/history', asyncHandler(acosController.getConflictHistory));
-router.post('/rif/conflicts/:conflictId/resolve', authorize('admin'), validateBody(resolveConflictSchema), asyncHandler(acosController.resolveConflict));
-router.post('/rif/feeds', authorize('admin'), validateBody(addFeedSchema), asyncHandler(acosController.addFeed));
-router.delete('/rif/feeds/:feedId', authorize('admin'), asyncHandler(acosController.removeFeed));
-router.get('/rif/feeds/dashboard', asyncHandler(acosController.getFeedStatusDashboard));
+router.post('/rif/detect-changes', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), asyncHandler(acosController.detectRegulatoryChanges));
+router.post('/rif/:regulatoryChangeId/auto-update', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), asyncHandler(acosController.autoUpdateControls));
+router.post('/rif/auto-update/rollback', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), asyncHandler(acosController.rollbackAutoUpdate));
+router.post('/rif/auto-update/batch', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), asyncHandler(acosController.batchAutoUpdate));
+router.post('/rif/conflicts/bulk-analysis', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), asyncHandler(acosController.bulkConflictAnalysis));
+router.get('/rif/conflicts/history', ...requireAcosFeature('acosRegulatoryIntelligence'), asyncHandler(acosController.getConflictHistory));
+router.post('/rif/conflicts/:conflictId/resolve', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), validateBody(resolveConflictSchema), asyncHandler(acosController.resolveConflict));
+router.post('/rif/feeds', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), validateBody(addFeedSchema), asyncHandler(acosController.addFeed));
+router.delete('/rif/feeds/:feedId', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), asyncHandler(acosController.removeFeed));
+router.get('/rif/feeds/dashboard', ...requireAcosFeature('acosRegulatoryIntelligence'), asyncHandler(acosController.getFeedStatusDashboard));
 
 // Temporal Graph Networks — trajectory + early-warnings (Growth+, gated by acosTemporalGraphs)
 router.get('/tgn/frameworks/:frameworkId/trajectory', ...requireAcosFeature('acosTemporalGraphs'), asyncHandler(acosController.predictComplianceTrajectory));
@@ -173,40 +173,40 @@ router.post('/tgn/refresh-risk-predictions', ...requireAcosFeature('acosRiskPred
 
 // Compliance Digital Twin (Growth+)
 router.post('/digital-twin/simulate', ...requireAcosFeature('acosDigitalTwin'), authorize('admin', 'editor'), validateBody(runSimulationSchema), asyncHandler(acosController.runSimulation));
-router.post('/digital-twin/simulate/with-constraints', authorize('admin', 'editor'), validateBody(runSimulationSchema), asyncHandler(acosController.runSimulationWithConstraints));
-router.post('/digital-twin/compare-scenarios', authorize('admin', 'editor'), validateBody(compareScenariosSchema), asyncHandler(acosController.compareScenarios));
-router.post('/digital-twin/simulations/:scenarioId/save-state', authorize('admin', 'editor'), asyncHandler(acosController.saveSimulationState));
-router.get('/digital-twin/simulations/:scenarioId/load-state', asyncHandler(acosController.loadSimulationState));
-router.post('/digital-twin/simulations/:scenarioId/rollback', authorize('admin', 'editor'), asyncHandler(acosController.rollbackSimulation));
-router.post('/digital-twin/monte-carlo', authorize('admin', 'editor'), validateBody(runMonteCarloSchema), asyncHandler(acosController.runMonteCarlo));
+router.post('/digital-twin/simulate/with-constraints', ...requireAcosFeature('acosDigitalTwin'), authorize('admin', 'editor'), validateBody(runSimulationSchema), asyncHandler(acosController.runSimulationWithConstraints));
+router.post('/digital-twin/compare-scenarios', ...requireAcosFeature('acosDigitalTwin'), authorize('admin', 'editor'), validateBody(compareScenariosSchema), asyncHandler(acosController.compareScenarios));
+router.post('/digital-twin/simulations/:scenarioId/save-state', ...requireAcosFeature('acosDigitalTwin'), authorize('admin', 'editor'), asyncHandler(acosController.saveSimulationState));
+router.get('/digital-twin/simulations/:scenarioId/load-state', ...requireAcosFeature('acosDigitalTwin'), asyncHandler(acosController.loadSimulationState));
+router.post('/digital-twin/simulations/:scenarioId/rollback', ...requireAcosFeature('acosDigitalTwin'), authorize('admin', 'editor'), asyncHandler(acosController.rollbackSimulation));
+router.post('/digital-twin/monte-carlo', ...requireAcosFeature('acosDigitalTwin'), authorize('admin', 'editor'), validateBody(runMonteCarloSchema), asyncHandler(acosController.runMonteCarlo));
 
 // Red Teaming (Growth+)
 router.post('/red-team/simulate', ...requireAcosFeature('acosRedTeam'), authorize('admin'), validateBody(runRedTeamSimulationSchema), asyncHandler(acosController.runRedTeamSimulation));
-router.post('/red-team/automated-scan', authorize('admin'), validateBody(runAutomatedScanSchema), asyncHandler(acosController.runAutomatedScan));
-router.get('/red-team/compliance-gaps', authorize('admin'), asyncHandler(acosController.scanForComplianceGaps));
-router.get('/red-team/misconfigurations', authorize('admin'), asyncHandler(acosController.scanForMisconfigurations));
-router.get('/red-team/policy-violations', authorize('admin'), asyncHandler(acosController.scanForPolicyViolations));
-router.post('/red-team/schedule', authorize('admin'), validateBody(scheduleScanSchema), asyncHandler(acosController.scheduleScan));
-router.post('/red-team/export-results', authorize('admin'), asyncHandler(acosController.exportScanResults));
-router.post('/red-team/compare-results', authorize('admin'), validateBody(compareScanResultsSchema), asyncHandler(acosController.compareScanResults));
-router.post('/red-team/mark-false-positive', authorize('admin'), validateBody(markFalsePositiveSchema), asyncHandler(acosController.markFalsePositive));
+router.post('/red-team/automated-scan', ...requireAcosFeature('acosRedTeam'), authorize('admin'), validateBody(runAutomatedScanSchema), asyncHandler(acosController.runAutomatedScan));
+router.get('/red-team/compliance-gaps', ...requireAcosFeature('acosRedTeam'), authorize('admin'), asyncHandler(acosController.scanForComplianceGaps));
+router.get('/red-team/misconfigurations', ...requireAcosFeature('acosRedTeam'), authorize('admin'), asyncHandler(acosController.scanForMisconfigurations));
+router.get('/red-team/policy-violations', ...requireAcosFeature('acosRedTeam'), authorize('admin'), asyncHandler(acosController.scanForPolicyViolations));
+router.post('/red-team/schedule', ...requireAcosFeature('acosRedTeam'), authorize('admin'), validateBody(scheduleScanSchema), asyncHandler(acosController.scheduleScan));
+router.post('/red-team/export-results', ...requireAcosFeature('acosRedTeam'), authorize('admin'), asyncHandler(acosController.exportScanResults));
+router.post('/red-team/compare-results', ...requireAcosFeature('acosRedTeam'), authorize('admin'), validateBody(compareScanResultsSchema), asyncHandler(acosController.compareScanResults));
+router.post('/red-team/mark-false-positive', ...requireAcosFeature('acosRedTeam'), authorize('admin'), validateBody(markFalsePositiveSchema), asyncHandler(acosController.markFalsePositive));
 
 // Federated Swarm (Growth+)
 router.post('/swarm/join', ...requireAcosFeature('acosFederatedLearning'), authorize('admin'), validateBody(joinFederationSchema), asyncHandler(acosController.joinFederation));
-router.post('/swarm/leave', authorize('admin'), asyncHandler(acosController.leaveFederation));
-router.post('/swarm/contribute', authorize('admin'), validateBody(contributeToFederationSchema), asyncHandler(acosController.contributeToFederation));
-router.get('/swarm/receive-model', asyncHandler(acosController.receiveFederatedModel));
-router.post('/swarm/recover', authorize('admin'), asyncHandler(acosController.recoverFederation));
-router.get('/swarm/insights', asyncHandler(acosController.getSwarmInsights));
-router.get('/swarm/insights/industry', asyncHandler(acosController.getIndustryInsights));
-router.get('/swarm/insights/sector', asyncHandler(acosController.getSectorInsights));
-router.get('/swarm/insights/frameworks/:frameworkId', asyncHandler(acosController.getFrameworkInsights));
-router.get('/swarm/benchmark', asyncHandler(acosController.benchmarkAgainstPeers));
-router.get('/swarm/trends', asyncHandler(acosController.identifyTrends));
-router.post('/swarm/insights/export', asyncHandler(acosController.exportInsights));
-router.post('/swarm/model/rollback', authorize('admin'), asyncHandler(acosController.rollbackModel));
-router.post('/swarm/model/distribute', authorize('admin'), asyncHandler(acosController.distributeModel));
-router.get('/swarm/model/audit-trail', asyncHandler(acosController.getModelAuditTrail));
+router.post('/swarm/leave', ...requireAcosFeature('acosFederatedLearning'), authorize('admin'), asyncHandler(acosController.leaveFederation));
+router.post('/swarm/contribute', ...requireAcosFeature('acosFederatedLearning'), authorize('admin'), validateBody(contributeToFederationSchema), asyncHandler(acosController.contributeToFederation));
+router.get('/swarm/receive-model', ...requireAcosFeature('acosFederatedLearning'), asyncHandler(acosController.receiveFederatedModel));
+router.post('/swarm/recover', ...requireAcosFeature('acosFederatedLearning'), authorize('admin'), asyncHandler(acosController.recoverFederation));
+router.get('/swarm/insights', ...requireAcosFeature('acosFederatedLearning'), asyncHandler(acosController.getSwarmInsights));
+router.get('/swarm/insights/industry', ...requireAcosFeature('acosFederatedLearning'), asyncHandler(acosController.getIndustryInsights));
+router.get('/swarm/insights/sector', ...requireAcosFeature('acosFederatedLearning'), asyncHandler(acosController.getSectorInsights));
+router.get('/swarm/insights/frameworks/:frameworkId', ...requireAcosFeature('acosFederatedLearning'), asyncHandler(acosController.getFrameworkInsights));
+router.get('/swarm/benchmark', ...requireAcosFeature('acosFederatedLearning'), asyncHandler(acosController.benchmarkAgainstPeers));
+router.get('/swarm/trends', ...requireAcosFeature('acosFederatedLearning'), asyncHandler(acosController.identifyTrends));
+router.post('/swarm/insights/export', ...requireAcosFeature('acosFederatedLearning'), asyncHandler(acosController.exportInsights));
+router.post('/swarm/model/rollback', ...requireAcosFeature('acosFederatedLearning'), authorize('admin'), asyncHandler(acosController.rollbackModel));
+router.post('/swarm/model/distribute', ...requireAcosFeature('acosFederatedLearning'), authorize('admin'), asyncHandler(acosController.distributeModel));
+router.get('/swarm/model/audit-trail', ...requireAcosFeature('acosFederatedLearning'), asyncHandler(acosController.getModelAuditTrail));
 
 // Multi-modal Intake (Growth+)
 router.post('/multimodal/transcribe-audio', ...requireAcosFeature('acosMultiModal'), upload.single('audio'), asyncHandler(acosController.transcribeAudio));

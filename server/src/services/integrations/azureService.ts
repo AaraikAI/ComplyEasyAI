@@ -145,13 +145,21 @@ class AzureService {
     resourceType?: string,
     limit: number = 100
   ): Promise<AzureResource[]> {
+    // ARM resource-type names are limited to alphanumerics and . _ / - characters.
+    // Validate before building the OData filter to reject injection attempts.
+    let filter: string | undefined;
+    if (resourceType) {
+      if (!/^[A-Za-z0-9._/-]+$/.test(resourceType)) {
+        throw new AppError('Invalid resourceType', 400);
+      }
+      filter = `resourceType eq '${resourceType}'`;
+    }
     try {
       const credentials = await this.getCredentials(organizationId);
       const credential = this.createCredential(credentials);
       const resourceClient = new ResourceManagementClient(credential, credentials.subscriptionId);
 
       const resources: AzureResource[] = [];
-      let filter = resourceType ? `resourceType eq '${resourceType}'` : undefined;
 
       for await (const resource of resourceClient.resources.list({ filter })) {
         if (resources.length >= limit) break;

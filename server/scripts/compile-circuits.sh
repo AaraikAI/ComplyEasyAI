@@ -3,7 +3,7 @@
 # Circuit Compilation Script
 # Compiles Circom circuits to WebAssembly and generates R1CS
 
-set -e
+set -euo pipefail
 
 CIRCUITS_DIR="src/zkp/circuits"
 OUTPUT_DIR="src/zkp/compiled"
@@ -36,12 +36,10 @@ for circuit in "${circuits[@]}"; do
     echo -e "${YELLOW}Compiling $circuit...${NC}"
     
     # circom 0.5 uses -r for R1CS, -w for WASM, -s for SYM
-    npx circom "$CIRCUITS_DIR/${circuit}.circom" \
+    if npx circom "$CIRCUITS_DIR/${circuit}.circom" \
         -r "$R1CS_DIR/${circuit}.r1cs" \
         -w "$WASM_DIR/${circuit}.wasm" \
-        -s "$OUTPUT_DIR/${circuit}.sym" 2>&1
-    
-    if [ $? -eq 0 ]; then
+        -s "$OUTPUT_DIR/${circuit}.sym" 2>&1; then
         echo -e "${GREEN}✓ Compiled $circuit successfully${NC}"
     else
         echo -e "${RED}✗ Failed to compile $circuit${NC}"

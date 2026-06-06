@@ -129,8 +129,8 @@ class GeminiService {
       const generatePromise = model.generateContent({
         contents: [{ role: 'user', parts: [{ text: redactedText }] }],
         generationConfig: {
-          temperature: options.temperature || 0.7,
-          maxOutputTokens: options.maxOutputTokens || 2048,
+          temperature: options.temperature ?? 0.7,
+          maxOutputTokens: options.maxOutputTokens ?? 2048,
         },
       });
 

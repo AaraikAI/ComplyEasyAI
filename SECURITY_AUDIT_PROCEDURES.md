@@ -78,17 +78,19 @@ jobs:
   zap-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      
+      # Pin every third-party action to a full commit SHA (mutable tags can be
+      # re-pointed at malicious code). The trailing comment records the release.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Run ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.7.0
+        uses: zaproxy/action-baseline@5f99b4eb9d11de96da4a55afb0bf86d75b6e2965 # v0.14.0
         with:
           target: 'https://staging.complyeasyai.com'
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
-      
+
       - name: Upload ZAP results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: zap-results
           path: report_html.html
@@ -189,8 +191,9 @@ snyk monitor
 
 **CI/CD Integration:**
 ```yaml
+# Pin to a full commit SHA; never use a mutable ref such as @master.
 - name: Run Snyk security scan
-  uses: snyk/actions/node@master
+  uses: snyk/actions/node@b98d498629f1c368650224d6d212bf7dfa89e4bf # v0.4.0
   env:
     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 ```

@@ -12,6 +12,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';
+import { getCsrfToken } from '../services/api';
 import {
   Shield,
   X,
@@ -105,9 +106,12 @@ function storePreferences(prefs: CookiePreferences): void {
 
 async function syncPreferencesToApi(prefs: CookiePreferences): Promise<void> {
   try {
+    const csrf = await getCsrfToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (csrf) headers['X-CSRF-Token'] = csrf;
     await fetch(`${apiUrl}/cookie-consent/preferences`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       credentials: 'include',
       body: JSON.stringify({
         subjectIdentifier: 'self',
@@ -121,7 +125,8 @@ async function syncPreferencesToApi(prefs: CookiePreferences): Promise<void> {
       }),
     });
   } catch (err) {
-    // Cookie consent sync is best-effort; don't block UX
+    // Server-side consent sync is best-effort and must not block the UX flow.
+    logger.warn('Cookie consent sync to API failed:', err);
   }
 }
 

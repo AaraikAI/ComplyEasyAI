@@ -113,7 +113,7 @@ Services whose failure is inconvenient but has minimal immediate business or reg
 | Supabase PostgreSQL | Yes (single managed instance) | PITR, daily backups, pre-migration snapshots |
 | ElastiCache Redis | Yes (single node in current config) | In-memory fallback; degraded mode for CSRF/rate limiting |
 | ECS Fargate | No (multi-task, auto-scaling 1-4) | Circuit breaker auto-rollback; desired count redeploy |
-| S3 | No (11 9's durability, multi-AZ) | Cross-region replication available |
+| S3 | No (11 9's durability, multi-AZ) | Versioning (configured); cross-region replication / DR bucket planned (not yet in CDK) |
 | CloudFront | No (global edge network) | Direct ALB routing as fallback |
 | ALB | No (AWS-managed, multi-AZ) | Health checks auto-remove unhealthy targets |
 | Route 53 | No (100% SLA from AWS) | N/A |
@@ -141,7 +141,7 @@ Services whose failure is inconvenient but has minimal immediate business or reg
 | Supabase PostgreSQL | Scheduled full backup | Daily at 03:00 UTC | 30 days | S3 `backups/scheduled/` |
 | Supabase PostgreSQL | Pre-migration snapshot | Every CI/CD deployment | 30 days | S3 `backups/pre-migration/` |
 | ElastiCache Redis | Snapshot | None (ephemeral cache) | N/A | Rebuilt on recovery |
-| S3 Objects | Versioning + cross-region | Continuous | 90 days (versioning) | Same + DR region |
+| S3 Objects | Versioning (configured); cross-region replication planned | Continuous | 90 days (versioning) | Primary region (DR-region replication planned) |
 | Secrets Manager | Version history | Every update | All versions retained | AWS-managed |
 | Git Repository | Full history | Every push | Indefinite | GitHub + local mirrors |
 

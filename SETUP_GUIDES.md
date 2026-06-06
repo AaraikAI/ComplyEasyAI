@@ -14,7 +14,7 @@
    - Navigate to **Settings** → **API Keys**
    - Click **Create API Key**
    - Name: "ComplyEasy AI Production"
-   - Permissions: Select **Full Access** (or at minimum: **Mail Send**)
+   - Permissions: Select **Restricted Access** and grant only **Mail Send** (least privilege; avoid Full Access)
    - Click **Create & View**
    - **IMPORTANT**: Copy the API key immediately (you won't see it again)
    - Save it securely
@@ -78,7 +78,7 @@
    - Click **Create bucket**
    - Bucket name: `complyeasy-ai-uploads` (must be globally unique)
    - Region: Choose closest to your users (e.g., `us-east-1`)
-   - **Block Public Access**: Uncheck (or configure CORS properly)
+   - **Block Public Access**: Keep **ON** (all four settings enabled). The backend serves objects via short-lived presigned URLs, so the bucket must never be publicly readable. Browser access is enabled through CORS (next step), not public ACLs.
    - Click **Create bucket**
 
 3. **Configure CORS**
@@ -109,7 +109,19 @@
 
 5. **Attach S3 Policy**
    - Select **Attach policies directly**
-   - Search for and select: **AmazonS3FullAccess** (or create custom policy with only your bucket)
+   - Click **Create policy** and attach a scoped policy that grants only `s3:PutObject`, `s3:GetObject`, and `s3:DeleteObject` on your specific bucket ARN (do **not** attach the broad `AmazonS3FullAccess`):
+     ```json
+     {
+       "Version": "2012-10-17",
+       "Statement": [
+         {
+           "Effect": "Allow",
+           "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+           "Resource": "arn:aws:s3:::complyeasy-ai-uploads/*"
+         }
+       ]
+     }
+     ```
    - Click **Next** → **Create user**
 
 6. **Create Access Keys**
@@ -358,13 +370,13 @@ JWT_REFRESH_EXPIRES_IN=30d
 
 ### Behavior
 
-1. **On Login**: Both access and refresh tokens are stored in localStorage
-2. **On API Call**: If access token expires (401 error), the app automatically:
-   - Uses refresh token to get new access token
+1. **On Login**: The server issues both the access and refresh tokens as **httpOnly, secure, SameSite cookies** (set by `authController`). They are never exposed to JavaScript or stored in `localStorage`, which protects them from XSS exfiltration. The browser sends them automatically on subsequent requests.
+2. **On API Call**: If the access token expires (401 error), the app automatically:
+   - Calls the refresh endpoint, which mints a new access-token cookie from the refresh cookie
    - Retries the original request
    - If refresh fails, redirects to login
-3. **Background Refresh**: Every 6 hours, the app proactively refreshes the token
-4. **On Logout**: All tokens are cleared from localStorage
+3. **Background Refresh**: Every 6 hours, the app proactively triggers the refresh endpoint to rotate the access-token cookie
+4. **On Logout**: The server clears the auth cookies and revokes the refresh token server-side (clearing the cookie alone is not relied upon)
 
 ### Troubleshooting
 
@@ -666,7 +678,7 @@ These services are used by the multimodal intake pipeline for image/video object
 
 2. **Reuse or Create IAM User**
    - Either reuse the S3 IAM user or create a new one
-   - Attach `AmazonRekognitionFullAccess` (or a tighter custom policy)
+   - Attach a scoped policy granting only the Rekognition actions the app calls (for example `rekognition:DetectModerationLabels`, `rekognition:DetectText`, `rekognition:DetectLabels`); avoid the broad `AmazonRekognitionFullAccess`
 
 3. **Add to Backend Environment**
    - Ensure you have:

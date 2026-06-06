@@ -285,6 +285,8 @@ router.post(
         action: 'scim.sync_triggered',
         userId: user.id,
         organizationId,
+        // AuditLog.hash is the table's @unique dedupe key (see schema.prisma);
+        // a random UUID satisfies that uniqueness constraint per the project convention.
         hash: crypto.randomUUID(),
         details: JSON.stringify({ triggeredBy: user.id, triggeredAt: new Date().toISOString() }),
         ipAddress: req.ip || undefined,

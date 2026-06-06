@@ -1,3 +1,10 @@
+> **SUPERSEDED / HISTORICAL (point-in-time snapshot of 2026-01-01).**
+> The "~95% / PRODUCTION READY" verdict below reflects the state on that date and
+> is NO LONGER CURRENT. Later in-repo scans found the project to be PARTIAL.
+> The single source of truth for current production-readiness status is
+> `PRODUCTION_READINESS_REPORT.md`. Do not cite the figures below as the
+> present-day state.
+
 # FINAL VERIFIED PRODUCTION STATUS
 **Date:** January 1, 2026
 **Verified By:** Claude (Direct Commands Only - NO Agents)

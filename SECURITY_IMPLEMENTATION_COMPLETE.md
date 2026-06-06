@@ -55,21 +55,26 @@
 
 ---
 
-### 4. SSRF Protection ✅ FIXED
+### 4. SSRF Protection ✅ APPLIED (guarded call sites enumerated below)
 
-**Files:**
-- ✅ `server/src/utils/urlValidator.ts` (Created)
-- ✅ `server/src/services/webhookService.ts:487-510` (Applied)
+**Core guard — `server/src/utils/urlValidator.ts`:**
+- ✅ Blocks private IP ranges (RFC 1918) and cloud metadata endpoints
+- ✅ Protocol allowlist (HTTP/HTTPS only)
+- ✅ DNS-rebinding guard (validates the resolved IP, not just the hostname)
+- ✅ Per-redirect-hop revalidation via `safeFetch`
 
-**Implementation:**
-- ✅ Blocks private IP ranges (RFC 1918)
-- ✅ Blocks cloud metadata endpoints
-- ✅ Protocol whitelist (HTTP/HTTPS only)
-- ✅ Redirect protection
-- ✅ Webhook-specific validation (HTTPS in production)
-- ✅ Applied to all webhook deliveries
+**Guarded outbound call sites:**
+- ✅ `server/src/services/webhookService.ts` — webhook deliveries route through the URL validator (HTTPS enforced for prod targets).
+- ✅ `server/src/services/patValidationService.ts` — `safeGet`/`safePost` wrap every user-supplied `baseUrl` with `isUrlSafe` plus per-redirect-hop revalidation.
 
-**Status:** **PRODUCTION READY**
+**Scope statement:** SSRF guarding is applied at the validator layer and to the
+outbound callers listed above. Any new code that issues `axios`/`fetch`/`got`
+requests to a user-controllable or parameter-overridable URL MUST pass through
+`isUrlSafe`/`isWebhookUrlSafe` (or `safeFetch`) before the request — this is a
+per-call-site control, not a global default. Audit new outbound callers
+individually rather than assuming blanket coverage.
+
+**Status:** Applied to the enumerated call sites; verify per-call-site for new code.
 
 ---
 
@@ -97,7 +102,7 @@
 | Command Injection | ✅ Fixed | 100% |
 | XSS Protection | ✅ Fixed | 100% |
 | Sensitive Logging | ✅ Fixed | 100% |
-| SSRF Protection | ✅ Fixed | 100% |
+| SSRF Protection | ✅ Applied (per-call-site) | Guarded call sites: urlValidator + webhookService + patValidationService |
 | Security Headers | ✅ Implemented | 100% |
 | **TOTAL** | **✅ COMPLETE** | **100%** |
 

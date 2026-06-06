@@ -5,3 +5,6 @@ cdk-outputs.json
 *.js
 *.d.ts
 !jest.config.js
+.env
+*.env
+!*.env.example

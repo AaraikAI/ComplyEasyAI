@@ -648,6 +648,78 @@ export const upsertConsentPreferenceSchema = Joi.object({
 }).unknown(false);
 
 // ============================================================================
+// PRIVACY — CHILD CONSENT / AGE VERIFICATION (Art. 8)
+// ============================================================================
+
+const parentalConsentMethods = ['Email', 'InPerson', 'Phone', 'PostalMail'] as const;
+const ageVerificationMethods = ['SelfDeclaration', 'IDVerification', 'ParentalConfirmation'] as const;
+
+export const verifyAgeSchema = Joi.object({
+  consentRecordId: Joi.string().required().min(1).max(200),
+  dataSubjectAge: Joi.number().integer().min(0).max(150).required(),
+  jurisdiction: Joi.string().max(100).allow('', null).optional(),
+  ageVerificationMethod: Joi.string().valid(...ageVerificationMethods).optional(),
+  parentalConsentEmail: Joi.string().email().allow('', null).optional(),
+  parentalConsentMethod: Joi.string().valid(...parentalConsentMethods).allow(null).optional(),
+}).unknown(false);
+
+export const parentalConsentSchema = Joi.object({
+  consentRecordId: Joi.string().required().min(1).max(200),
+  parentalConsentEmail: Joi.string().email().allow('', null).optional(),
+  parentalConsentMethod: Joi.string().valid(...parentalConsentMethods).allow(null).optional(),
+}).unknown(false);
+
+// ============================================================================
+// PRIVACY — JIT NOTICES (Art. 13-14)
+// ============================================================================
+
+const noticeDisplayTypes = ['Banner', 'Modal', 'Inline', 'Tooltip', 'Toast'] as const;
+const noticePositions = ['Top', 'Bottom', 'Center', 'Left', 'Right'] as const;
+const noticeStatuses = ['Draft', 'Active', 'Archived', 'Inactive'] as const;
+
+export const createPrivacyNoticeSchema = Joi.object({
+  name: Joi.string().required().min(1).max(300).trim(),
+  triggerContext: Joi.string().required().min(1).max(200),
+  noticeContent: Joi.string().required().min(1).max(50000),
+  shortNotice: Joi.string().max(5000).allow('', null).optional(),
+  dataCollected: Joi.array().items(Joi.string()).allow(null).optional(),
+  purposes: Joi.array().items(Joi.string()).allow(null).optional(),
+  legalBasis: Joi.string().max(500).allow('', null).optional(),
+  retentionPeriod: Joi.string().max(500).allow('', null).optional(),
+  thirdPartyRecipients: Joi.array().items(Joi.string()).allow(null).optional(),
+  dataSubjectRights: Joi.array().items(Joi.string()).allow(null).optional(),
+  contactInfo: Joi.string().max(2000).allow('', null).optional(),
+  displayType: Joi.string().valid(...noticeDisplayTypes).optional(),
+  position: Joi.string().valid(...noticePositions).optional(),
+  requiresAction: Joi.boolean().optional(),
+  version: Joi.string().max(20).allow('', null).optional(),
+  language: Joi.string().max(10).allow('', null).optional(),
+  translations: Joi.object().allow(null).optional(),
+  status: Joi.string().valid(...noticeStatuses).optional(),
+}).unknown(false);
+
+export const updatePrivacyNoticeSchema = Joi.object({
+  name: Joi.string().min(1).max(300).trim().optional(),
+  triggerContext: Joi.string().min(1).max(200).optional(),
+  noticeContent: Joi.string().min(1).max(50000).optional(),
+  shortNotice: Joi.string().max(5000).allow('', null).optional(),
+  dataCollected: Joi.array().items(Joi.string()).allow(null).optional(),
+  purposes: Joi.array().items(Joi.string()).allow(null).optional(),
+  legalBasis: Joi.string().max(500).allow('', null).optional(),
+  retentionPeriod: Joi.string().max(500).allow('', null).optional(),
+  thirdPartyRecipients: Joi.array().items(Joi.string()).allow(null).optional(),
+  dataSubjectRights: Joi.array().items(Joi.string()).allow(null).optional(),
+  contactInfo: Joi.string().max(2000).allow('', null).optional(),
+  displayType: Joi.string().valid(...noticeDisplayTypes).optional(),
+  position: Joi.string().valid(...noticePositions).optional(),
+  requiresAction: Joi.boolean().optional(),
+  version: Joi.string().max(20).allow('', null).optional(),
+  language: Joi.string().max(10).allow('', null).optional(),
+  translations: Joi.object().allow(null).optional(),
+  status: Joi.string().valid(...noticeStatuses).optional(),
+}).min(1).unknown(false);
+
+// ============================================================================
 // PRIVACY — RETENTION
 // ============================================================================
 

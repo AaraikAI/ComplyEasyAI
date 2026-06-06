@@ -11,18 +11,23 @@ services:
     image: falcosecurity/falco:0.37.0
     container_name: falco
     # Replaces `privileged: true` with the minimal capability set Falco needs to
-    # load its eBPF probe and read kernel/syscall state. The docker.sock mount is
-    # retained for container.* metadata enrichment of alerts.
+    # load its eBPF probe and read kernel/syscall state. The modern_ebpf driver
+    # loads via the BPF/PERFMON capabilities, so SYS_ADMIN is intentionally NOT
+    # granted here (it would re-expand the host control surface). SYS_RESOURCE
+    # raises the locked-memory limit for the BPF maps; SYS_PTRACE supports
+    # process introspection for alert enrichment.
     cap_add:
       - SYS_PTRACE
-      - SYS_ADMIN
       - SYS_RESOURCE
       - BPF
       - PERFMON
     security_opt:
       - "no-new-privileges:true"
     volumes:
-      # Kernel modules
+      # Residual-risk acceptance: the docker.sock mount (read-only) is retained
+      # for container.* metadata enrichment of alerts. Read-only access still
+      # exposes the Docker API for enumeration; this is an accepted trade-off for
+      # alert context and is scoped to the isolated complyeasy-security network.
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /dev:/host/dev:ro
       - /proc:/host/proc:ro

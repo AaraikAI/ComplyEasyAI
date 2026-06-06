@@ -33,7 +33,28 @@ const MIDDLEWARE_DIR = path.join(SRC, 'middleware');
 const CONTROLLERS_DIR = path.join(SRC, 'controllers');
 const SERVICES_DIR = path.join(SRC, 'services');
 const UTILS_DIR = path.join(SRC, 'utils');
-const NGINX_CONF = path.join(PROJECT_ROOT, 'nginx', 'default.conf');
+// Resolve the nginx server block that is ACTUALLY served in production, not an
+// arbitrary file. docker-compose.prod.yml mounts ./nginx/default.conf to
+// /etc/nginx/conf.d/default.conf and additionally loads every ./nginx/conf.d/*.conf
+// if that directory is mounted. Read the union of those so header/TLS verdicts
+// reflect served config; if none of the deployed sources exist the readers
+// below treat the config as missing (warn/fail) rather than silently passing.
+const NGINX_DIR = path.join(PROJECT_ROOT, 'nginx');
+const NGINX_CONFD_DIR = path.join(NGINX_DIR, 'conf.d');
+const NGINX_DEFAULT_CONF = path.join(NGINX_DIR, 'default.conf');
+
+function readServedNginxConf(): string {
+  const parts: string[] = [];
+  const def = readFileSync(NGINX_DEFAULT_CONF);
+  if (def) parts.push(def);
+  if (fs.existsSync(NGINX_CONFD_DIR)) {
+    for (const f of globRecursive(NGINX_CONFD_DIR, '.conf')) {
+      const c = readFileSync(f);
+      if (c) parts.push(c);
+    }
+  }
+  return parts.join('\n');
+}
 const DOCKERFILE = path.join(PROJECT_ROOT, 'Dockerfile');
 const PRISMA_SCHEMA = path.join(ROOT, 'prisma', 'schema.prisma');
 const ENV_EXAMPLE = path.join(ROOT, '.env.example');
@@ -598,24 +619,31 @@ async function authenticationTests(): Promise<Finding[]> {
       'Verify auth cookies use httpOnly, Secure, SameSite=Strict',
       'high', 'A07:2021 — Identification & Auth Failures', 'CWE-614',
       async () => {
+        // These are loose source-text substring matches (e.g. the word
+        // 'secure' can appear in comments or unrelated identifiers), so the
+        // result is advisory only and must not assert a hard PASS. Confirming
+        // the flags are actually set on the auth cookie requires inspecting a
+        // real Set-Cookie response header at runtime.
         const hasHttpOnly = authController.includes('httpOnly') || authMiddleware.includes('httpOnly');
         const hasSecure = authController.includes('secure') || authMiddleware.includes('secure');
         const hasSameSite = authController.includes('sameSite') || authController.includes('SameSite');
 
         const issues: string[] = [];
-        if (!hasHttpOnly) issues.push('httpOnly flag not detected');
-        if (!hasSecure) issues.push('Secure flag not detected');
-        if (!hasSameSite) issues.push('SameSite attribute not detected');
+        if (!hasHttpOnly) issues.push('httpOnly flag not detected in source');
+        if (!hasSecure) issues.push('Secure flag not detected in source');
+        if (!hasSameSite) issues.push('SameSite attribute not detected in source');
 
         if (issues.length === 0) {
           return {
-            status: 'pass',
-            details: 'Auth cookies configured with httpOnly: true, Secure: true (production), SameSite: Strict. Prevents XSS-based token theft and CSRF.',
+            status: 'info',
+            details:
+              'Static scan only — httpOnly / secure / sameSite tokens are present in auth source, but this does not prove the flags are set on the actual auth cookie. Confirm by inspecting the Set-Cookie header of a live login response.',
+            remediation: 'Verify the live Set-Cookie header carries httpOnly, secure (in production), and sameSite="strict".',
           };
         }
         return {
           status: 'warning',
-          details: `Cookie security issues: ${issues.join(', ')}`,
+          details: `Cookie security tokens missing from source: ${issues.join(', ')}`,
           remediation: 'Set cookies with: httpOnly: true, secure: true, sameSite: "strict"',
         };
       },
@@ -880,16 +908,22 @@ async function authorizationTests(): Promise<Finding[]> {
         const rlsEnabled = rlsSql.match(/ENABLE ROW LEVEL SECURITY/gi);
         const enabledCount = rlsEnabled ? rlsEnabled.length : 0;
 
-        if (enabledCount >= tablesWithOrg - 5) {
-          return {
-            status: 'pass',
-            details: `RLS enabled on ${enabledCount} tables with ${policyCount} policies. ${tablesWithOrg} models have organizationId. Database-level tenant isolation active.`,
-          };
-        }
+        // SQL-text presence alone does NOT prove database-level isolation is
+        // effective: the app role may carry BYPASSRLS, FORCE may be absent, and
+        // the policy predicate may read a session variable the backend never
+        // sets. This static check is advisory only and must never assert a
+        // hard PASS; effectiveness requires a live DB probe (a query from the
+        // app role that confirms cross-tenant rows are actually filtered).
+        const coverageOk = enabledCount >= tablesWithOrg - 5;
         return {
-          status: 'warning',
-          details: `RLS enabled: ${enabledCount}, Tables with orgId: ${tablesWithOrg}, Policies: ${policyCount}`,
-          remediation: 'Add RLS policies for all remaining tables with organizationId columns.',
+          status: 'info',
+          details: `Static scan only — RLS enabled statements: ${enabledCount}, models with organizationId: ${tablesWithOrg}, CREATE POLICY count: ${policyCount}. ${
+            coverageOk
+              ? 'SQL coverage looks broad, but database-level isolation is NOT confirmed from SQL text.'
+              : 'SQL coverage is incomplete.'
+          } Verify FORCE ROW LEVEL SECURITY, a non-BYPASSRLS app role, and that the policy predicate variable is set per request via a runtime probe.`,
+          remediation:
+            'Confirm RLS effectiveness at runtime: app role lacks BYPASSRLS, tables use FORCE ROW LEVEL SECURITY, the org context variable is set per connection, and a cross-tenant read is actually blocked.',
         };
       },
     ),
@@ -1253,7 +1287,7 @@ async function rateLimitingTests(): Promise<Finding[]> {
 
 async function securityHeaderTests(): Promise<Finding[]> {
   const findings: Finding[] = [];
-  const nginx = readFileSync(NGINX_CONF);
+  const nginx = readServedNginxConf();
   const indexTs = readFileSync(INDEX_TS);
 
   const headers = [
@@ -1660,7 +1694,7 @@ async function dataProtectionTests(): Promise<Finding[]> {
 async function cryptoComplianceTests(): Promise<Finding[]> {
   const findings: Finding[] = [];
   const allTsFiles = globRecursive(SRC, '.ts').filter(f => !f.includes('__tests__'));
-  const nginx = readFileSync(NGINX_CONF);
+  const nginx = readServedNginxConf();
   const dockerfile = readFileSync(DOCKERFILE);
 
   // ---- FIPS Algorithm Inventory ----
@@ -1865,7 +1899,7 @@ async function cryptoComplianceTests(): Promise<Finding[]> {
 async function infrastructureTests(): Promise<Finding[]> {
   const findings: Finding[] = [];
   const dockerfile = readFileSync(DOCKERFILE);
-  const nginx = readFileSync(NGINX_CONF);
+  const nginx = readServedNginxConf();
   const indexTs = readFileSync(INDEX_TS);
   const envExample = readFileSync(ENV_EXAMPLE);
 

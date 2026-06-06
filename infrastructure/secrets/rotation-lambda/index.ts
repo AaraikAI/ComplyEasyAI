@@ -16,7 +16,7 @@ import {
   DescribeSecretCommand,
   UpdateSecretVersionStageCommand,
 } from '@aws-sdk/client-secrets-manager';
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes, randomInt, createHash } from 'crypto';
 
 // ============================================================================
 // TYPES
@@ -34,6 +34,11 @@ interface SecretMetadata {
   DatabaseHost?: string;
   DatabasePort?: number;
   DatabaseName?: string;
+  // Only 'internal' (self-issued) api_key secrets may be auto-rotated by this
+  // Lambda. Keys minted by external providers (Gemini/SendGrid/Stripe/etc.)
+  // must be rotated via the provider's own API, so this Lambda must not be
+  // attached to them — see generateNewSecret's api_key guard.
+  ApiKeyIssuer?: 'internal' | 'external';
 }
 
 // ============================================================================
@@ -273,6 +278,16 @@ async function generateNewSecret(
       };
 
     case 'api_key':
+      // Self-minting only produces a credential the platform itself issues and
+      // honors. A provider-issued key (Gemini/SendGrid/Stripe/etc.) cannot be
+      // rotated by generating a random string locally — the provider would
+      // reject it. Fail closed unless the secret is explicitly marked internal.
+      if (metadata.ApiKeyIssuer === 'external') {
+        throw new Error(
+          'External provider api_key secrets must be rotated through the ' +
+            "provider's API; this rotation Lambda must not be attached to them."
+        );
+      }
       return {
         key: generateApiKey(),
         rotatedAt: new Date().toISOString(),
@@ -295,10 +310,10 @@ async function generateNewSecret(
 
 function generateSecurePassword(length: number): string {
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=';
-  const bytes = randomBytes(length);
   let password = '';
+  // randomInt is rejection-sampled and unbiased across the charset.
   for (let i = 0; i < length; i++) {
-    password += charset[bytes[i] % charset.length];
+    password += charset[randomInt(charset.length)];
   }
   return password;
 }

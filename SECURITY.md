@@ -21,32 +21,49 @@ We will acknowledge within **48 hours** and aim to provide a remediation timelin
 
 ## Security Posture (Reference)
 
-The current production-readiness score is **97.51%** (see `PRODUCTION_READINESS_REPORT.md` v16). Highlights:
+The canonical production-readiness assessment is the latest `PRODUCTION_READINESS_REPORT.md` (refreshed each audit cycle); refer to it for the current score and finding counts rather than a pinned figure here. Highlights of the current posture:
 
 - **Auth:** JWT in httpOnly cookies, PBKDF2-SHA256 (600k iterations), passport-jwt, refresh-token rotation, token blacklist on logout/rotate.
 - **Multi-tenant:** every user-scoped query is filtered by `organizationId` at the service layer; v9–v11 audits verified parent-child entity scope on writes.
 - **SSRF:** `isUrlSafe()` / `isWebhookUrlSafe()` block private IP ranges + DNS-rebinding; F7 audit reviewed 97 outbound call-sites.
 - **ReDoS:** `safeRegexTest` wrapper backed by `re2` (linear-time engine); call-site verified per v10/v11 T25.
 - **Crypto-at-rest:** AES-256-GCM for OAuth tokens, integration credentials, webhook secrets.
-- **Rate limiting:** 70/70 mounts covered after the v16 patch (auth/SSO/SCIM use generous mode-specific limiters).
+- **Rate limiting:** every API mount is covered by a Redis-backed limiter (auth/SSO/SCIM use generous mode-specific limiters).
 - **Headers:** Helmet, strict CSP, HSTS, frame-ancestors deny.
 - **Logging:** Winston JSON to Elasticsearch + Sentry conditional on `SENTRY_ENABLED`.
 
 ## Known Unfixable Upstream Vulnerabilities
 
-These vulnerabilities live in transitive dependencies for which **no patched upstream version exists** at this writing. We have triaged each one and accepted the residual risk because the exposure is build-time / dev-time / library-internal — not runtime user-exposed surface. Tracked here for diligence-disclosure reasons; revisited weekly via the dependency-scan workflow.
+Current `npm audit`: **root = 0 vulnerabilities; server = 29 (0 critical, 0 high, 15 moderate, 14 low).** The previously-flagged `dompurify` and `tmp` HIGH advisories are now fixed. Every remaining advisory below requires a breaking-major upgrade of a toolchain dependency (ethers v6 / aws-sdk v3 / circom / fabric-network majors), which is out-of-scope dependency-replacement work rather than a code fix. We have triaged each one and accepted the residual risk because the exposure is build-time / dev-time / library-internal — not runtime user-exposed surface. Tracked here for diligence-disclosure reasons; revisited weekly via the dependency-scan workflow.
 
 | Package | Severity | Used By | Why Unfixable | Exploit Profile |
 |---------|----------|---------|---------------|-----------------|
-| `lodash 4.x` | Moderate | `chevrotain`, `prisma` (transitive) | No `lodash` 5.x exists. Prototype-pollution variants require attacker-controlled keys passed to `_.set` / `_.merge` paths. | **Low.** lodash methods here are called on internal AST/schema objects that never receive untrusted input. No reachable user-controlled call path. |
-| `elliptic *` | High | `fabric-network` (Hyperledger Fabric crypto) | All published versions are flagged for ECDSA signature-malleability and timing variants. No fixed release upstream. | **Low for our usage.** `fabric-network` is wired only for the optional federated-evidence ledger feature (off by default). The crypto path is server-internal; signatures are not attacker-supplied at runtime. |
-| `aws-sdk v2` | Low | residual code paths still on v2 (most code migrated to v3) | Migration to AWS SDK v3 is its own project. Already in flight: `@aws-sdk/client-s3`, `client-cloudwatch`, `client-secrets-manager`, etc. are v3. | **Low.** v2 only used by a small number of legacy modules; no known direct-RCE or data-exfil exploit, only deprecation warnings + minor parser issues. |
-| `serialize-javascript ≤7.0.2` | High | `mocha@8.4.0` ← `circom_runtime` (test-time only) | `mocha@8.4.0` pins an exact `serialize-javascript@5.0.1`. npm `overrides` cannot relax an exact-version pin from a parent. | **Build-time only.** `mocha` and `circom_runtime` are devDependencies; never reach production. The XSS surface in `serialize-javascript` requires attacker-controlled JSON serialized into `<script>` — no such path in our test suite. |
-| `effect <3.20.0` | High | `@prisma/config` ← `prisma` | Prisma's own `@prisma/config` requires older `effect`. Awaiting Prisma upstream upgrade. | **Build-time only.** `effect` used during Prisma schema generation / config evaluation. Not bundled into the runtime server. |
+| `elliptic *` | Low | `fabric-network` (Hyperledger Fabric crypto) → `fabric-common`; also via `aws-sdk` | All published versions are flagged for ECDSA signature-malleability and timing variants. No fixed release upstream; a fix requires a `fabric-network` major. | **Low for our usage.** `fabric-network` is wired only for the optional federated-evidence ledger feature (off by default). The crypto path is server-internal; signatures are not attacker-supplied at runtime. |
+| `aws-sdk v2` (→ `uuid`) | Moderate | residual code paths still on v2 (most code migrated to v3) | Migration to AWS SDK v3 is its own tracked project. Already in flight: `@aws-sdk/client-s3`, `client-cloudwatch`, `client-secrets-manager`, etc. are v3. | **Low.** v2 only used by a small number of legacy modules; no known direct-RCE or data-exfil exploit, only deprecation warnings + minor parser issues. |
+| `ws 8.0.0–8.20.0` | Moderate | `ethers` / `@ethersproject/providers` | Fix requires the ethers v6 major (breaking). | **Low.** Used by the optional blockchain-anchoring path; not on the request-handling hot path. |
+| `@ethersproject/*` / `ethers` | Low/Moderate | ethers v5 line | Fix requires the ethers v6 major (breaking). | **Low.** Optional blockchain-anchoring feature; server-internal. |
+| `serialize-javascript` | Moderate | `mocha` ← `ffjavascript` ← `circom_runtime` (test-time only) | `mocha`/`circom` pin it transitively; a fix needs a circom major (breaking). Overridden to `7.0.4` where allowed. | **Build-time only.** `mocha` and `circom_runtime` are devDependencies; never reach production. The XSS surface requires attacker-controlled JSON serialized into `<script>` — no such path in our test suite. |
+| `uuid` (via `@azure/ms-rest-js`, `exceljs`, `jest-junit`) | Moderate | reporting / Azure SDK toolchain | Needs major bumps of those parents (breaking). | **Low.** Library-internal ID generation; not a runtime user-exposed surface. |
+| `circom` / `circom_runtime` / `ffjavascript` / `mocha` | Moderate | ZK-circuit toolchain (dev/build only) | A fix requires a circom major (breaking). | **Build-time only.** ZK toolchain devDependencies; never bundled into the runtime server. |
+| `fabric-common` / `fabric-network` | Low | Hyperledger SDK | A fix requires a fabric major (breaking). | **Low.** Optional federated-evidence ledger feature (off by default). |
 
 ### Re-evaluation Cadence
 
 A weekly GitHub Actions workflow (`.github/workflows/dependency-scan.yml`) re-runs `npm audit` and posts a delta against this list. Any *new* high/critical that is **fixable** triggers a P1 ticket. The unfixable set above is suppressed from the alert but not from the scan output.
+
+## Static Analysis Gating (CodeQL)
+
+CodeQL runs from a single canonical workflow (`.github/workflows/codeql.yml`,
+"CodeQL Advanced"): all actions are SHA-pinned, the top-level token is
+least-privilege (`contents: read`), and it scans both the `actions` and
+`javascript-typescript` query packs (`security-and-quality`) on push, pull
+request, and a weekly cron.
+
+**Operational requirement (set in GitHub, not in source):** the
+`Analyze (javascript-typescript)` status check MUST be configured as a *required*
+status check in branch-protection for `main`. The workflow itself cannot enforce
+merge-gating; without the branch-protection rule, a failing CodeQL run does not
+block merges. Verify this rule remains enabled whenever branch-protection is changed.
 
 ## Cryptography Inventory
 

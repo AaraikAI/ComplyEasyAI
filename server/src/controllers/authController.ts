@@ -1035,7 +1035,7 @@ class AuthController {
 
       // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!email || !emailRegex.test(email)) {
+      if (typeof email !== 'string' || email.length > 254 || !emailRegex.test(email)) {
         throw new AppError('Invalid email format', 400);
       }
 
@@ -1391,11 +1391,14 @@ class AuthController {
       if (user && user.active) {
         const crypto = await import('crypto');
         const resetToken = crypto.randomBytes(32).toString('hex');
+        // Store only the SHA-256 digest at rest; the raw token is emailed to the user
+        // and never persisted, so a DB read cannot be used to reset another user's password.
+        const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
         const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
         await prisma.user.update({
           where: { id: user.id },
-          data: { resetToken, resetTokenExpiry },
+          data: { resetToken: resetTokenHash, resetTokenExpiry },
         });
 
         await emailService.sendPasswordReset(email, resetToken);
@@ -1425,9 +1428,14 @@ class AuthController {
       throw new AppError('Password must be at least 8 characters', 400);
     }
 
+    // The DB stores the SHA-256 digest of the reset token, so hash the incoming
+    // raw token before the lookup to match what was persisted.
+    const crypto = await import('crypto');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
     const user = await prisma.user.findFirst({
       where: {
-        resetToken: token,
+        resetToken: tokenHash,
         resetTokenExpiry: { gt: new Date() },
       },
     });

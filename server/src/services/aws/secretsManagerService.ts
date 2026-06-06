@@ -24,7 +24,7 @@ import {
   type GetSecretValueCommandOutput,
   type DescribeSecretCommandOutput,
 } from '@aws-sdk/client-secrets-manager';
-import { randomBytes } from 'crypto';
+import { randomInt } from 'crypto';
 import config from '../../config';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
@@ -326,11 +326,11 @@ export class SecretsManagerService {
       throw new AppError('At least one character type must be enabled', 400);
     }
 
-    const bytes = randomBytes(length);
     let result = '';
 
+    // randomInt is rejection-sampled and unbiased across the alphabet.
     for (let i = 0; i < length; i++) {
-      result += chars[bytes[i] % chars.length];
+      result += chars[randomInt(chars.length)];
     }
 
     return result;

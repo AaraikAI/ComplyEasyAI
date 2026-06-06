@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import {
   Shield, CheckCircle, AlertTriangle, XCircle, Clock, Activity,
-  Server, Database, Globe, Cloud, Lock, Zap, RefreshCw, Bell,
+  RefreshCw, Bell,
   ChevronDown, ChevronUp, ExternalLink, Calendar, TrendingUp,
-  Wifi, HardDrive, Cpu, BarChart3, AlertCircle, Info
+  AlertCircle, Info
 } from 'lucide-react';
 
 interface ServiceStatus {
@@ -14,7 +14,7 @@ interface ServiceStatus {
   uptime: number;
   responseTime: number;
   lastChecked: string;
-  icon: React.ComponentType<any>;
+  icon?: React.ComponentType<any>;
 }
 
 interface Incident {
@@ -48,98 +48,7 @@ interface UptimeData {
   incidents: number;
 }
 
-const services: ServiceStatus[] = [
-  {
-    name: 'Web Application',
-    description: 'Main application interface (app.complyeasyai.com)',
-    status: 'operational',
-    uptime: 99.99,
-    responseTime: 145,
-    lastChecked: '1 minute ago',
-    icon: Globe,
-  },
-  {
-    name: 'API Services',
-    description: 'REST API endpoints for all platform features',
-    status: 'operational',
-    uptime: 99.98,
-    responseTime: 89,
-    lastChecked: '1 minute ago',
-    icon: Server,
-  },
-  {
-    name: 'Database Cluster',
-    description: 'Primary and replica database servers',
-    status: 'operational',
-    uptime: 99.999,
-    responseTime: 12,
-    lastChecked: '1 minute ago',
-    icon: Database,
-  },
-  {
-    name: 'AI Processing Engine',
-    description: 'AI inference and model serving infrastructure',
-    status: 'operational',
-    uptime: 99.95,
-    responseTime: 234,
-    lastChecked: '1 minute ago',
-    icon: Cpu,
-  },
-  {
-    name: 'Evidence Storage',
-    description: 'Encrypted file storage for compliance evidence',
-    status: 'operational',
-    uptime: 99.999,
-    responseTime: 67,
-    lastChecked: '1 minute ago',
-    icon: HardDrive,
-  },
-  {
-    name: 'Authentication Services',
-    description: 'SSO, MFA, and identity management',
-    status: 'operational',
-    uptime: 99.99,
-    responseTime: 78,
-    lastChecked: '1 minute ago',
-    icon: Lock,
-  },
-  {
-    name: 'Integration Gateway',
-    description: 'Third-party integration connections (AWS, Azure, GitHub)',
-    status: 'operational',
-    uptime: 99.97,
-    responseTime: 156,
-    lastChecked: '1 minute ago',
-    icon: Wifi,
-  },
-  {
-    name: 'aCOS Automation Engine',
-    description: 'Autonomous compliance operations system',
-    status: 'operational',
-    uptime: 99.96,
-    responseTime: 189,
-    lastChecked: '1 minute ago',
-    icon: Zap,
-  },
-  {
-    name: 'Notification Services',
-    description: 'Email, Slack, and webhook notifications',
-    status: 'operational',
-    uptime: 99.98,
-    responseTime: 45,
-    lastChecked: '1 minute ago',
-    icon: Bell,
-  },
-  {
-    name: 'Analytics Pipeline',
-    description: 'Real-time metrics and reporting engine',
-    status: 'operational',
-    uptime: 99.94,
-    responseTime: 234,
-    lastChecked: '1 minute ago',
-    icon: BarChart3,
-  },
-];
+// Generic fallback icon used when a live service entry omits its own glyph.
 
 export const StatusPage: React.FC = () => {
   const { t } = useI18n();
@@ -148,7 +57,7 @@ export const StatusPage: React.FC = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [subscribedMaintenance, setSubscribedMaintenance] = useState<Set<string>>(new Set());
   const [liveServices, setLiveServices] = useState<ServiceStatus[] | null>(null);
-  const [, setLoading] = useState(true);
+  const [servicesLoading, setLoading] = useState(true);
   const [recentIncidents, setRecentIncidents] = useState<Incident[]>([]);
   const [scheduledMaintenance, setScheduledMaintenance] = useState<MaintenanceWindow[]>([]);
   const [incidentsLoading, setIncidentsLoading] = useState(true);
@@ -283,9 +192,16 @@ export const StatusPage: React.FC = () => {
     }
   }, [autoRefresh]);
 
-  const activeServices = liveServices || services;
+  // Only ever render real, live service telemetry. When the liveness probe
+  // returns no per-service detail, the list stays empty and the page shows a
+  // neutral "live status unavailable" state instead of fabricated figures.
+  const activeServices = liveServices ?? [];
+  const hasLiveServices = activeServices.length > 0;
 
   const getOverallStatus = () => {
+    if (!hasLiveServices) {
+      return { status: 'unknown', text: 'Live Status Unavailable', color: 'slate' };
+    }
     const hasOutage = activeServices.some(s => s.status === 'major_outage');
     const hasPartialOutage = activeServices.some(s => s.status === 'partial_outage');
     const hasDegraded = activeServices.some(s => s.status === 'degraded');
@@ -452,9 +368,16 @@ export const StatusPage: React.FC = () => {
             {t('common.status')}
           </h2>
           <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
+            {!hasLiveServices ? (
+              <div className="p-8 text-center text-slate-400">
+                {servicesLoading
+                  ? 'Loading live service status...'
+                  : 'Live service status is currently unavailable. Per-service availability and response times will appear here once the monitoring feed reports them.'}
+              </div>
+            ) : (
             <div className="divide-y divide-slate-700">
               {activeServices.map((service) => {
-                const Icon = service.icon;
+                const Icon = service.icon ?? Activity;
                 return (
                   <div key={service.name} className="p-4 hover:bg-slate-700/30 transition-all">
                     <div className="flex items-center justify-between">
@@ -486,6 +409,7 @@ export const StatusPage: React.FC = () => {
                 );
               })}
             </div>
+            )}
           </div>
         </section>
 

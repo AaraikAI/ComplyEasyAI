@@ -3,6 +3,10 @@
 # Security Fixes Verification Script
 # Verifies all security fixes are properly implemented
 
+# Surface unbound variables and pipe failures instead of swallowing them.
+# -e is intentionally omitted: the grep-returns-1 checks below drive pass/fail.
+set -uo pipefail
+
 echo "🔒 Verifying Security Fixes..."
 echo "================================"
 echo ""

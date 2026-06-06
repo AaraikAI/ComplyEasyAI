@@ -49,10 +49,10 @@ CREATE INDEX IF NOT EXISTS "DashboardWidget_organizationId_idx"
 CREATE INDEX IF NOT EXISTS "DashboardWidget_dashboardId_organizationId_idx"
   ON "DashboardWidget"("dashboardId", "organizationId");
 
--- TODO (follow-up migration): After verifying all rows are backfilled in
--- production, run:
---   ALTER TABLE "DashboardWidget"
---     ALTER COLUMN "organizationId" SET NOT NULL;
+-- The NOT NULL enforcement (re-backfill + ALTER COLUMN SET NOT NULL) is shipped
+-- as the follow-up migration 20260605_org_not_null_dashboard_cicd, which guards
+-- the lockdown behind a residual-NULL check so it fails closed if any row is
+-- still unbackfilled.
 
 -- ----------------------------------------------------------------------------
 -- CICDGateResult
@@ -88,7 +88,5 @@ CREATE INDEX IF NOT EXISTS "CICDGateResult_organizationId_idx"
 CREATE INDEX IF NOT EXISTS "CICDGateResult_policyId_organizationId_idx"
   ON "CICDGateResult"("policyId", "organizationId");
 
--- TODO (follow-up migration): After verifying all rows are backfilled in
--- production, run:
---   ALTER TABLE "CICDGateResult"
---     ALTER COLUMN "organizationId" SET NOT NULL;
+-- The NOT NULL enforcement (re-backfill + ALTER COLUMN SET NOT NULL) is shipped
+-- as the follow-up migration 20260605_org_not_null_dashboard_cicd.

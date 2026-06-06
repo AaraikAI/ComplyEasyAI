@@ -1570,29 +1570,35 @@ CREATE INDEX IF NOT EXISTS "AzureSecurityAlert_organizationId_idx" ON "AzureSecu
 CREATE INDEX IF NOT EXISTS "AzureSecurityAlert_severity_idx" ON "AzureSecurityAlert"("severity");
 CREATE INDEX IF NOT EXISTS "AzureSecurityAlert_status_idx" ON "AzureSecurityAlert"("status");
 
+-- Columns and unique constraint reconciled with the canonical Prisma model
+-- (schema.prisma model AzurePolicyCompliance) to prevent prisma migrate drift.
 CREATE TABLE IF NOT EXISTS "AzurePolicyCompliance" (
     "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,
     "organizationId" TEXT NOT NULL,
-    "policyAssignmentId" TEXT NOT NULL,
+    "azurePolicyAssignmentId" TEXT NOT NULL,
     "policyDefinitionId" TEXT NOT NULL,
-    "displayName" TEXT NOT NULL,
-    "category" TEXT,
+    "policyDefinitionName" TEXT NOT NULL,
+    "displayName" TEXT,
+    "description" TEXT,
+    "scope" TEXT,
     "complianceState" TEXT NOT NULL,
-    "resourceId" TEXT,
-    "resourceType" TEXT,
-    "resourceLocation" TEXT,
-    "subscriptionId" TEXT NOT NULL,
-    "properties" JSONB,
+    "enforcementMode" TEXT,
+    "parameters" JSONB,
+    "nonCompliantResources" INTEGER NOT NULL DEFAULT 0,
+    "compliantResources" INTEGER NOT NULL DEFAULT 0,
+    "exemptResources" INTEGER NOT NULL DEFAULT 0,
+    "conflictingResources" INTEGER NOT NULL DEFAULT 0,
+    "evaluatedAt" TIMESTAMP(3),
     "syncedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "AzurePolicyCompliance_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "AzurePolicyCompliance_organizationId_policyAssignmentId_resoukey" UNIQUE ("organizationId", "policyAssignmentId", "resourceId"),
+    CONSTRAINT "AzurePolicyCompliance_organizationId_azurePolicyAssignmentId_key" UNIQUE ("organizationId", "azurePolicyAssignmentId"),
     CONSTRAINT "AzurePolicyCompliance_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS "AzurePolicyCompliance_organizationId_idx" ON "AzurePolicyCompliance"("organizationId");
 CREATE INDEX IF NOT EXISTS "AzurePolicyCompliance_complianceState_idx" ON "AzurePolicyCompliance"("complianceState");
-CREATE INDEX IF NOT EXISTS "AzurePolicyCompliance_subscriptionId_idx" ON "AzurePolicyCompliance"("subscriptionId");
+CREATE INDEX IF NOT EXISTS "AzurePolicyCompliance_policyDefinitionId_idx" ON "AzurePolicyCompliance"("policyDefinitionId");
 
 CREATE TABLE IF NOT EXISTS "AzureUser" (
     "id" TEXT NOT NULL DEFAULT (uuid_generate_v4())::text,

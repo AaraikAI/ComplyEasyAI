@@ -306,6 +306,25 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
 
   const [previewReport, setPreviewReport] = useState<SBOMReport | null>(null);
 
+  // Export modal selections (wired to the Format/Scope/Include controls)
+  type ExportFormatOption =
+    | 'CycloneDX 1.5 (JSON)'
+    | 'CycloneDX 1.5 (XML)'
+    | 'SPDX 2.3 (JSON)'
+    | 'SPDX 2.3 (Tag-Value)'
+    | 'SPDX 2.3 (RDF/XML)';
+  const EXPORT_INCLUDE_OPTIONS = ['Vulnerability data', 'License information', 'Dependency tree', 'Supplier information', 'Hash values'] as const;
+  type ExportIncludeOption = (typeof EXPORT_INCLUDE_OPTIONS)[number];
+  const [exportFormat, setExportFormat] = useState<ExportFormatOption>('CycloneDX 1.5 (JSON)');
+  const [exportScope, setExportScope] = useState<string>('All Repositories');
+  const [exportInclude, setExportInclude] = useState<Record<ExportIncludeOption, boolean>>({
+    'Vulnerability data': true,
+    'License information': true,
+    'Dependency tree': true,
+    'Supplier information': true,
+    'Hash values': true,
+  });
+
   const buildReportData = useCallback((rpt: SBOMReport) => ({
     bomFormat: rpt.format,
     specVersion: rpt.version,
@@ -333,6 +352,97 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
     a.click();
     URL.revokeObjectURL(url);
   }, [buildReportData]);
+
+  // Build and download a BOM honoring the Export modal selections
+  // (format, repository scope, and which sections to include).
+  const runExport = useCallback(() => {
+    const isSpdx = exportFormat.startsWith('SPDX');
+    const isXml = exportFormat.includes('XML') || exportFormat.includes('RDF/XML');
+    const isTagValue = exportFormat.includes('Tag-Value');
+
+    // Scope filter: limit components to the selected repository when one is chosen.
+    const scopedRepo = exportScope === 'All Repositories' ? null : repositories.find(r => r.name === exportScope) ?? null;
+    const scopedComponents = scopedRepo
+      ? components.filter(c => c.purl.toLowerCase().includes(scopedRepo.name.toLowerCase()))
+      : components;
+    const scopedComponentList = scopedComponents.length > 0 ? scopedComponents : components;
+
+    const mappedComponents = scopedComponentList.map(c => {
+      const entry: Record<string, unknown> = { type: c.type, name: c.name, version: c.version, purl: c.purl };
+      if (exportInclude['License information']) entry.license = c.license;
+      if (exportInclude['Supplier information']) entry.supplier = c.supplier;
+      if (exportInclude['Dependency tree']) { entry.directDependency = c.directDependency; entry.dependencyDepth = c.dependencyDepth; }
+      if (exportInclude['Hash values']) entry.hash = c.hash;
+      return entry;
+    });
+
+    const includedComponentIds = new Set(scopedComponentList.map(c => c.id));
+    const mappedVulns = exportInclude['Vulnerability data']
+      ? vulnerabilities
+          .filter(v => includedComponentIds.has(v.componentId))
+          .map(v => ({ id: v.cveId, source: { name: 'NVD' }, ratings: [{ score: v.cvssScore, severity: v.severity }], description: v.description }))
+      : [];
+
+    const timestamp = new Date().toISOString();
+    const baseName = `SBOM_${exportFormat.replace(/[^A-Za-z0-9]+/g, '_')}_${timestamp.split('T')[0]}`;
+
+    let blob: Blob;
+    let ext: string;
+    if (isXml) {
+      const ns = isSpdx ? 'http://spdx.org/rdf/terms#' : 'http://cyclonedx.org/schema/bom/1.5';
+      const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>\n<bom xmlns="${ns}" version="1">\n  <metadata><timestamp>${timestamp}</timestamp><scope>${exportScope}</scope></metadata>\n  <components>\n${mappedComponents.map(c => `    <component type="${c.type as string}"><name>${c.name as string}</name><version>${c.version as string}</version><purl>${c.purl as string}</purl></component>`).join('\n')}\n  </components>\n  <vulnerabilities>\n${mappedVulns.map(v => `    <vulnerability ref="${v.id}"><description>${v.description}</description></vulnerability>`).join('\n')}\n  </vulnerabilities>\n</bom>`;
+      blob = new Blob([xmlContent], { type: 'application/xml' });
+      ext = isSpdx ? 'rdf.xml' : 'xml';
+    } else if (isTagValue) {
+      const lines: string[] = [
+        'SPDXVersion: SPDX-2.3',
+        'DataLicense: CC0-1.0',
+        `Created: ${timestamp}`,
+        `DocumentName: ${baseName}`,
+        `Comment: Scope ${exportScope}`,
+        '',
+        ...mappedComponents.flatMap(c => [
+          `PackageName: ${c.name as string}`,
+          `PackageVersion: ${c.version as string}`,
+          `ExternalRef: PACKAGE-MANAGER purl ${c.purl as string}`,
+          exportInclude['License information'] ? `PackageLicenseConcluded: ${(c.license as string) ?? 'NOASSERTION'}` : '',
+          exportInclude['Supplier information'] ? `PackageSupplier: ${(c.supplier as string) ?? 'NOASSERTION'}` : '',
+          '',
+        ].filter(Boolean)),
+      ];
+      blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+      ext = 'spdx';
+    } else {
+      const data = isSpdx
+        ? {
+            spdxVersion: 'SPDX-2.3',
+            dataLicense: 'CC0-1.0',
+            name: baseName,
+            documentNamespace: `urn:sbom:${timestamp}`,
+            creationInfo: { created: timestamp },
+            scope: exportScope,
+            packages: mappedComponents,
+            relationships: mappedVulns,
+          }
+        : {
+            bomFormat: 'CycloneDX',
+            specVersion: '1.5',
+            metadata: { timestamp, scope: exportScope },
+            components: mappedComponents,
+            vulnerabilities: mappedVulns,
+          };
+      blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      ext = 'json';
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${baseName}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowExportModal(false);
+  }, [exportFormat, exportScope, exportInclude, repositories, components, vulnerabilities]);
 
   const generateReport = useCallback(async () => {
     const newReport: SBOMReport = {
@@ -1138,7 +1248,11 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+              <select
+                value={exportFormat}
+                onChange={(e) => setExportFormat(e.target.value as ExportFormatOption)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
                 <option>CycloneDX 1.5 (JSON)</option>
                 <option>CycloneDX 1.5 (XML)</option>
                 <option>SPDX 2.3 (JSON)</option>
@@ -1148,7 +1262,11 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Scope</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+              <select
+                value={exportScope}
+                onChange={(e) => setExportScope(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
                 <option>All Repositories</option>
                 {repositories.map(r => <option key={r.id}>{r.name}</option>)}
               </select>
@@ -1156,16 +1274,21 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Include</label>
               <div className="space-y-2">
-                {['Vulnerability data', 'License information', 'Dependency tree', 'Supplier information', 'Hash values'].map(opt => (
+                {EXPORT_INCLUDE_OPTIONS.map(opt => (
                   <label key={opt} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" defaultChecked className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <input
+                      type="checkbox"
+                      checked={exportInclude[opt]}
+                      onChange={(e) => setExportInclude(prev => ({ ...prev, [opt]: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
                     {opt}
                   </label>
                 ))}
               </div>
             </div>
             <div className="flex items-center gap-2 pt-2">
-              <button onClick={() => setShowExportModal(false)} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center justify-center gap-2">
+              <button onClick={runExport} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center justify-center gap-2">
                 <Download className="w-4 h-4" />{t('common.export')}
               </button>
               <button onClick={() => setShowExportModal(false)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">{t('common.cancel')}</button>

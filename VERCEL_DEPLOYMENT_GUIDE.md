@@ -493,8 +493,10 @@ npm run build  # Must succeed with 0 errors
 **Error: Can't reach database server**
 ```bash
 # Solution: Check DATABASE_URL is correct
-# Ensure database allows connections from Vercel IPs
-# Add 0.0.0.0/0 to PostgreSQL allowed IPs (or Vercel IP range)
+# Ensure the database allows connections from Vercel egress IPs.
+# Allowlist ONLY the documented Vercel egress IP ranges, or use a private
+# connection (Vercel Postgres / a private network peering). Never open the
+# database to 0.0.0.0/0 — that exposes it to the entire internet.
 ```
 
 ### Issue: Environment Variables Not Working

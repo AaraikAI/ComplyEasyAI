@@ -76,7 +76,7 @@ export function apiVersioningMiddleware(): RequestHandler {
       }
     }
 
-    // 2. Check X-API-Version header (overrides URL if provided)
+    // 2. Check X-API-Version header (fallback only — the URL prefix takes precedence)
     if (!version) {
       const headerVersion = req.headers['x-api-version'] as string | undefined;
       if (headerVersion) {

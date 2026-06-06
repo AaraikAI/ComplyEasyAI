@@ -140,16 +140,44 @@ const impactLabels = ['', 'Negligible', 'Minor', 'Moderate', 'Major', 'Severe'];
 
 // ── Helper ──────────────────────────────────────────────────────────────────
 
+let csrfTokenCache: string | null = null;
+
+async function getCsrfToken(): Promise<string | null> {
+  if (csrfTokenCache) return csrfTokenCache;
+  try {
+    const res = await fetch(`${apiUrl}/csrf-token`, { credentials: 'include' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    csrfTokenCache = data.csrfToken ?? null;
+    return csrfTokenCache;
+  } catch {
+    return null;
+  }
+}
+
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  // Mutating requests require the CSRF token (server applies csrfProtection on /api).
+  const method = (options.method || 'GET').toUpperCase();
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrf = await getCsrfToken();
+    if (csrf) headers['X-CSRF-Token'] = csrf;
+  }
+
   const res = await fetch(`${apiUrl}${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
+    headers,
     credentials: 'include',
   });
   if (!res.ok) {
+    // A stale CSRF token yields 403; drop the cache so the next call re-fetches it.
+    if (res.status === 403) {
+      csrfTokenCache = null;
+    }
     const body = await res.text();
     throw new Error(`API error ${res.status}: ${body}`);
   }

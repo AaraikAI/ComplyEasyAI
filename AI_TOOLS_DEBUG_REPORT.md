@@ -64,7 +64,7 @@ Limit: 0
 ## Current Status
 
 ### API Key Configuration
-- ✅ **Key Present:** `GEMINI_API_KEY=AIzaSy...REDACTED`
+- ✅ **Key Present:** `GEMINI_API_KEY=AIzaSy...REDACTED` (actual value lives only in `server/.env`, never in this doc)
 - ✅ **Key Format:** Valid (39 characters, starts with `AIzaSy`)
 - ❌ **Quota Status:** Exceeded/No quota available
 
@@ -98,7 +98,8 @@ Limit: 0
 3. **Verify User Authentication**
    - Ensure users are logged in before using AI tools
    - Check browser console for authentication errors
-   - Verify `localStorage.getItem('authToken')` exists
+   - Confirm the httpOnly auth cookie is present in DevTools → Application → Cookies
+     (the JWT is stored in an httpOnly cookie, not in `localStorage`)
 
 ### Testing Checklist
 

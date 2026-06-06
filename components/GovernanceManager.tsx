@@ -139,180 +139,32 @@ let _uid = 5000;
 const uid = (prefix = 'id') => `${prefix}-${++_uid}`;
 
 /* ------------------------------------------------------------------ */
-/*  Demo data                                                          */
+/*  Initial state                                                      */
 /* ------------------------------------------------------------------ */
 
-const demoDPO: DPOProfile = {
-  id: 'dpo-1',
-  name: 'Dr. Elena Fischer',
-  email: 'elena.fischer@company.eu',
-  phone: '+49 30 12345678',
-  department: 'Legal & Compliance',
-  qualifications: [
-    'CIPP/E (Certified Information Privacy Professional/Europe)',
-    'CIPM (Certified Information Privacy Manager)',
-    'LLM in European Data Protection Law',
-    '10+ years privacy law experience',
-  ],
-  certifications: ['CIPP/E', 'CIPM', 'ISO 27001 Lead Auditor', 'CDPSE'],
-  appointmentDate: '2024-03-15',
-  status: 'Active',
-  conflictOfInterestCheck: 'Passed',
-  reportingTo: 'Chief Executive Officer (Board level)',
-  registeredWithDPA: true,
-  dpaRegistrationDate: '2024-04-01',
-  dpaReference: 'DPA-2024-EU-08472',
-  tasks: [
-    { id: 't1', title: 'Annual DPIA Review', description: 'Review all Data Protection Impact Assessments for current processing activities', dueDate: '2026-03-15', priority: 'High', status: 'In Progress', category: 'Monitoring' },
-    { id: 't2', title: 'Data Breach Response Drill', description: 'Coordinate quarterly tabletop exercise for breach notification process', dueDate: '2026-02-28', priority: 'Critical', status: 'Open', category: 'Training' },
-    { id: 't3', title: 'Vendor DPA Audit', description: 'Audit all third-party data processing agreements for Article 28 compliance', dueDate: '2026-04-01', priority: 'High', status: 'Open', category: 'Monitoring' },
-    { id: 't4', title: 'Privacy Policy Update', description: 'Update privacy notice to reflect new marketing analytics processing', dueDate: '2026-02-20', priority: 'Medium', status: 'In Progress', category: 'Advisory' },
-    { id: 't5', title: 'Staff Privacy Training Q1', description: 'Deliver mandatory GDPR awareness training for all employees', dueDate: '2026-03-31', priority: 'Medium', status: 'Open', category: 'Training' },
-    { id: 't6', title: 'Subject Access Request Backlog', description: 'Clear pending DSARs within statutory 30-day deadline', dueDate: '2026-02-25', priority: 'Critical', status: 'In Progress', category: 'Investigation' },
-  ],
-  activityLog: [
-    { id: 'a1', date: '2026-02-17', action: 'Reviewed DPIA for AI chatbot deployment', details: 'Identified high-risk processing requiring enhanced safeguards. Recommended additional consent mechanisms and algorithmic transparency measures.', category: 'Advisory' },
-    { id: 'a2', date: '2026-02-15', action: 'Attended Privacy Committee meeting', details: 'Presented quarterly compliance dashboard. Discussed upcoming CSRD reporting requirements and their intersection with GDPR.', category: 'Meeting' },
-    { id: 'a3', date: '2026-02-14', action: 'Investigated data subject complaint', details: 'Customer complained about marketing emails after withdrawal of consent. Traced issue to delayed sync between CRM and email platform. Remediation completed.', category: 'Investigation' },
-    { id: 'a4', date: '2026-02-12', action: 'Delivered training to Engineering team', details: 'Privacy by Design workshop covering data minimization, pseudonymization, and secure development lifecycle.', category: 'Training' },
-    { id: 'a5', date: '2026-02-10', action: 'Submitted DPA annual report', details: 'Filed annual processing activities report with national supervisory authority as per Article 30 requirements.', category: 'Reporting' },
-    { id: 'a6', date: '2026-02-08', action: 'Monitored cross-border transfer compliance', details: 'Reviewed updated adequacy decisions post-EU-US Data Privacy Framework. Verified all SCCs remain current.', category: 'Monitoring' },
-  ],
+/**
+ * Blank DPO profile used as the initial / no-record state. Holds no fabricated
+ * identity so an organization without a configured DPO renders an unconfigured
+ * profile rather than another company's named officer.
+ */
+const emptyDPO: DPOProfile = {
+  id: '',
+  name: '',
+  email: '',
+  phone: '',
+  department: '',
+  qualifications: [],
+  certifications: [],
+  appointmentDate: '',
+  status: 'Inactive',
+  conflictOfInterestCheck: 'Not Assessed',
+  reportingTo: '',
+  registeredWithDPA: false,
+  dpaRegistrationDate: '',
+  dpaReference: '',
+  tasks: [],
+  activityLog: [],
 };
-
-const demoCommittees: Committee[] = [
-  {
-    id: 'com-1', type: 'Privacy Committee', charter: 'Oversee organizational data protection strategy, review DPIAs, approve privacy policies, monitor compliance with GDPR and related regulations.', meetingFrequency: 'Monthly', status: 'Active', nextMeetingDate: '2026-03-01',
-    members: [
-      { id: 'cm1', name: 'Dr. Elena Fischer', role: 'Chair', department: 'Legal & Compliance', email: 'elena.fischer@company.eu', joinDate: '2024-03-15', status: 'Active' },
-      { id: 'cm2', name: 'Marcus Wei', role: 'Secretary', department: 'Legal & Compliance', email: 'marcus.wei@company.eu', joinDate: '2024-04-01', status: 'Active' },
-      { id: 'cm3', name: 'Sarah Johnson', role: 'Member', department: 'Engineering', email: 'sarah.johnson@company.eu', joinDate: '2024-04-01', status: 'Active' },
-      { id: 'cm4', name: 'Hans Mueller', role: 'Member', department: 'Marketing', email: 'hans.mueller@company.eu', joinDate: '2024-06-01', status: 'Active' },
-      { id: 'cm5', name: 'Priya Patel', role: 'Member', department: 'HR', email: 'priya.patel@company.eu', joinDate: '2024-04-01', status: 'Active' },
-      { id: 'cm6', name: 'Thomas Berg', role: 'Observer', department: 'Internal Audit', email: 'thomas.berg@company.eu', joinDate: '2025-01-01', status: 'Active' },
-    ],
-    meetings: [
-      {
-        id: 'mt1', date: '2026-02-01', title: 'Monthly Privacy Committee Meeting', attendees: ['Dr. Elena Fischer', 'Marcus Wei', 'Sarah Johnson', 'Hans Mueller', 'Priya Patel'],
-        agenda: ['Q4 DSAR metrics review', 'AI chatbot DPIA approval', 'Vendor DPA renewal schedule', 'CSRD privacy alignment'],
-        decisions: ['Approved AI chatbot DPIA with conditions', 'Deferred CSRD alignment to next meeting pending ESG Committee input'],
-        actionItems: [
-          { item: 'Implement AI chatbot consent mechanism', owner: 'Sarah Johnson', dueDate: '2026-02-28', status: 'In Progress' },
-          { item: 'Schedule joint session with ESG Committee', owner: 'Marcus Wei', dueDate: '2026-02-15', status: 'Completed' },
-          { item: 'Audit vendor DPAs expiring Q1', owner: 'Dr. Elena Fischer', dueDate: '2026-03-15', status: 'Open' },
-        ],
-        nextMeetingDate: '2026-03-01',
-      },
-    ],
-    decisions: [
-      { id: 'd1', date: '2026-02-01', title: 'AI Chatbot DPIA Approval', description: 'Approve deployment of customer-facing AI chatbot with enhanced consent and transparency requirements.', votesFor: 4, votesAgainst: 0, votesAbstain: 1, outcome: 'Approved', rationale: 'DPIA demonstrates adequate safeguards. Conditions: explicit consent for profiling, algorithmic transparency notice, human-in-the-loop for complaints.' },
-      { id: 'd2', date: '2026-01-05', title: 'Marketing Analytics Platform Migration', description: 'Migrate from legacy analytics to privacy-preserving server-side analytics.', votesFor: 5, votesAgainst: 0, votesAbstain: 0, outcome: 'Approved', rationale: 'Server-side analytics eliminates third-party cookie dependency and reduces cross-border transfer risks.' },
-    ],
-  },
-  {
-    id: 'com-2', type: 'Security Committee', charter: 'Govern information security strategy, incident response preparedness, vulnerability management, and security architecture reviews. Ensure compliance with ISO 27001 and NIS2.', meetingFrequency: 'Bi-weekly', status: 'Active', nextMeetingDate: '2026-02-24',
-    members: [
-      { id: 'sc1', name: 'David Kim', role: 'Chair', department: 'IT Security', email: 'david.kim@company.eu', joinDate: '2024-01-10', status: 'Active' },
-      { id: 'sc2', name: 'Alex Rivera', role: 'Secretary', department: 'IT Security', email: 'alex.rivera@company.eu', joinDate: '2024-02-01', status: 'Active' },
-      { id: 'sc3', name: 'Sarah Johnson', role: 'Member', department: 'Engineering', email: 'sarah.johnson@company.eu', joinDate: '2024-02-01', status: 'Active' },
-      { id: 'sc4', name: 'James O\'Brien', role: 'Member', department: 'IT Operations', email: 'james.obrien@company.eu', joinDate: '2024-02-01', status: 'Active' },
-      { id: 'sc5', name: 'Dr. Elena Fischer', role: 'Observer', department: 'Legal & Compliance', email: 'elena.fischer@company.eu', joinDate: '2024-03-15', status: 'Active' },
-    ],
-    meetings: [
-      {
-        id: 'mt2', date: '2026-02-10', title: 'Bi-weekly Security Review', attendees: ['David Kim', 'Alex Rivera', 'Sarah Johnson', 'James O\'Brien'],
-        agenda: ['Vulnerability scan results', 'Penetration test findings', 'NIS2 incident reporting readiness', 'SOC 2 Type II audit prep'],
-        decisions: ['Prioritize critical CVE patching within 48 hours'],
-        actionItems: [
-          { item: 'Patch critical CVEs on production servers', owner: 'James O\'Brien', dueDate: '2026-02-12', status: 'Completed' },
-          { item: 'Update incident response playbook for NIS2', owner: 'David Kim', dueDate: '2026-02-28', status: 'In Progress' },
-        ],
-        nextMeetingDate: '2026-02-24',
-      },
-    ],
-    decisions: [
-      { id: 'sd1', date: '2026-02-10', title: 'Emergency Patching Protocol', description: 'Mandate 48-hour SLA for critical CVE patches on production systems.', votesFor: 4, votesAgainst: 0, votesAbstain: 0, outcome: 'Approved', rationale: 'NIS2 Article 21 requires timely vulnerability handling. Critical CVEs pose immediate exploitation risk.' },
-    ],
-  },
-  {
-    id: 'com-3', type: 'Ethics Committee', charter: 'Oversee ethical AI development and deployment, review algorithmic bias assessments, ensure compliance with EU AI Act, and manage AI risk register.', meetingFrequency: 'Monthly', status: 'Active', nextMeetingDate: '2026-03-05',
-    members: [
-      { id: 'ec1', name: 'Prof. Anna Lindqvist', role: 'Chair', department: 'External Advisory', email: 'anna.lindqvist@university.eu', joinDate: '2025-01-01', status: 'Active' },
-      { id: 'ec2', name: 'Dr. Elena Fischer', role: 'Member', department: 'Legal & Compliance', email: 'elena.fischer@company.eu', joinDate: '2025-01-01', status: 'Active' },
-      { id: 'ec3', name: 'Raj Kapoor', role: 'Member', department: 'AI/ML Engineering', email: 'raj.kapoor@company.eu', joinDate: '2025-01-01', status: 'Active' },
-      { id: 'ec4', name: 'Lisa Chang', role: 'Secretary', department: 'Product', email: 'lisa.chang@company.eu', joinDate: '2025-02-01', status: 'Active' },
-    ],
-    meetings: [],
-    decisions: [
-      { id: 'ed1', date: '2026-01-10', title: 'High-Risk AI System Classification', description: 'Classify customer credit scoring model as high-risk under EU AI Act Annex III.', votesFor: 3, votesAgainst: 0, votesAbstain: 1, outcome: 'Approved', rationale: 'Credit scoring falls under EU AI Act Annex III point 5(b). Requires conformity assessment, transparency obligations, and human oversight.' },
-    ],
-  },
-  {
-    id: 'com-4', type: 'Risk Committee', charter: 'Enterprise risk management oversight including operational, financial, regulatory, and strategic risk assessment and mitigation.', meetingFrequency: 'Quarterly', status: 'Active', nextMeetingDate: '2026-04-01',
-    members: [
-      { id: 'rc1', name: 'Katherine Wells', role: 'Chair', department: 'Risk Management', email: 'katherine.wells@company.eu', joinDate: '2023-06-01', status: 'Active' },
-      { id: 'rc2', name: 'Michael Torres', role: 'Member', department: 'Finance', email: 'michael.torres@company.eu', joinDate: '2023-06-01', status: 'Active' },
-      { id: 'rc3', name: 'David Kim', role: 'Member', department: 'IT Security', email: 'david.kim@company.eu', joinDate: '2024-01-10', status: 'Active' },
-      { id: 'rc4', name: 'Sophie Martin', role: 'Secretary', department: 'Risk Management', email: 'sophie.martin@company.eu', joinDate: '2024-01-01', status: 'Active' },
-    ],
-    meetings: [],
-    decisions: [],
-  },
-  {
-    id: 'com-5', type: 'ESG Committee', charter: 'Govern Environmental, Social, and Governance reporting strategy. Ensure CSRD compliance, manage sustainability KPIs, and oversee ESG risk integration.', meetingFrequency: 'Monthly', status: 'Forming',  nextMeetingDate: '2026-03-10',
-    members: [
-      { id: 'esg1', name: 'Isabelle Dupont', role: 'Chair', department: 'Sustainability', email: 'isabelle.dupont@company.eu', joinDate: '2025-09-01', status: 'Active' },
-      { id: 'esg2', name: 'Michael Torres', role: 'Member', department: 'Finance', email: 'michael.torres@company.eu', joinDate: '2025-10-01', status: 'Active' },
-    ],
-    meetings: [],
-    decisions: [],
-  },
-];
-
-const demoEscalationPaths: EscalationPath[] = [
-  {
-    id: 'esc-1', name: 'Data Breach Escalation', scenario: 'Data Breach', description: 'Escalation path for personal data breaches requiring GDPR Article 33/34 notification within 72 hours.', status: 'Active', lastUpdated: '2026-01-20',
-    steps: [
-      { id: 'es1', level: 'L1', title: 'SOC Analyst / First Responder', responsible: 'SOC Team', email: 'soc@company.eu', slaMinutes: 30, notificationChannels: ['Email', 'Slack', 'PagerDuty'], autoEscalate: true, autoEscalateAfterMinutes: 30 },
-      { id: 'es2', level: 'L2', title: 'Security Manager / Incident Commander', responsible: 'David Kim', email: 'david.kim@company.eu', slaMinutes: 60, notificationChannels: ['Email', 'Phone', 'Slack'], autoEscalate: true, autoEscalateAfterMinutes: 60 },
-      { id: 'es3', level: 'L3', title: 'DPO / CISO Joint Assessment', responsible: 'Dr. Elena Fischer & David Kim', email: 'dpo@company.eu', slaMinutes: 120, notificationChannels: ['Email', 'Phone', 'SMS'], autoEscalate: true, autoEscalateAfterMinutes: 240 },
-      { id: 'es4', level: 'Executive', title: 'CEO / General Counsel', responsible: 'CEO Office', email: 'ceo@company.eu', slaMinutes: 480, notificationChannels: ['Email', 'Phone'], autoEscalate: true, autoEscalateAfterMinutes: 1440 },
-      { id: 'es5', level: 'Board', title: 'Board of Directors Emergency Session', responsible: 'Board Chair', email: 'board@company.eu', slaMinutes: 2880, notificationChannels: ['Email', 'Phone'], autoEscalate: false, autoEscalateAfterMinutes: 0 },
-    ],
-    triggers: [
-      { id: 'tr1', name: 'Confirmed personal data exposure', type: 'Incident Severity', condition: 'Severity >= High AND data_type == personal_data', startsAtLevel: 'L2' },
-      { id: 'tr2', name: '72-hour GDPR deadline approaching', type: 'Regulatory Deadline', condition: 'Hours remaining < 24 AND notification_not_sent', startsAtLevel: 'L3' },
-      { id: 'tr3', name: 'Mass data subject impact (>1000)', type: 'Risk Threshold', condition: 'affected_subjects > 1000', startsAtLevel: 'Executive' },
-    ],
-  },
-  {
-    id: 'esc-2', name: 'Audit Finding Escalation', scenario: 'Audit Finding', description: 'Escalation path for internal and external audit findings requiring remediation tracking.', status: 'Active', lastUpdated: '2026-02-05',
-    steps: [
-      { id: 'af1', level: 'L1', title: 'Control Owner / Process Owner', responsible: 'Assigned Owner', email: 'compliance@company.eu', slaMinutes: 1440, notificationChannels: ['Email'], autoEscalate: true, autoEscalateAfterMinutes: 4320 },
-      { id: 'af2', level: 'L2', title: 'Compliance Manager', responsible: 'Compliance Team', email: 'compliance.mgr@company.eu', slaMinutes: 2880, notificationChannels: ['Email', 'Slack'], autoEscalate: true, autoEscalateAfterMinutes: 10080 },
-      { id: 'af3', level: 'L3', title: 'Head of Compliance / DPO', responsible: 'Dr. Elena Fischer', email: 'dpo@company.eu', slaMinutes: 7200, notificationChannels: ['Email', 'Phone'], autoEscalate: true, autoEscalateAfterMinutes: 20160 },
-      { id: 'af4', level: 'Executive', title: 'Chief Risk Officer', responsible: 'Katherine Wells', email: 'cro@company.eu', slaMinutes: 14400, notificationChannels: ['Email', 'Phone'], autoEscalate: false, autoEscalateAfterMinutes: 0 },
-    ],
-    triggers: [
-      { id: 'at1', name: 'Critical audit finding', type: 'Audit Finding', condition: 'finding_severity == Critical', startsAtLevel: 'L2' },
-      { id: 'at2', name: 'Remediation SLA breach', type: 'SLA Breach', condition: 'days_overdue > 0 AND finding_open', startsAtLevel: 'L2' },
-      { id: 'at3', name: 'Repeat finding (3rd occurrence)', type: 'Audit Finding', condition: 'occurrence_count >= 3', startsAtLevel: 'L3' },
-    ],
-  },
-  {
-    id: 'esc-3', name: 'Vendor Incident Escalation', scenario: 'Vendor Incident', description: 'Escalation path for third-party/vendor security incidents or compliance failures.', status: 'Active', lastUpdated: '2026-02-12',
-    steps: [
-      { id: 'vi1', level: 'L1', title: 'Vendor Manager / Procurement', responsible: 'Procurement Team', email: 'procurement@company.eu', slaMinutes: 60, notificationChannels: ['Email', 'Slack'], autoEscalate: true, autoEscalateAfterMinutes: 120 },
-      { id: 'vi2', level: 'L2', title: 'IT Security / Compliance', responsible: 'Security & Compliance', email: 'security@company.eu', slaMinutes: 240, notificationChannels: ['Email', 'Slack', 'Phone'], autoEscalate: true, autoEscalateAfterMinutes: 480 },
-      { id: 'vi3', level: 'L3', title: 'DPO / CISO / Legal', responsible: 'Leadership Triad', email: 'incident@company.eu', slaMinutes: 480, notificationChannels: ['Email', 'Phone'], autoEscalate: true, autoEscalateAfterMinutes: 1440 },
-      { id: 'vi4', level: 'Executive', title: 'CFO / CEO', responsible: 'C-Suite', email: 'executive@company.eu', slaMinutes: 1440, notificationChannels: ['Email', 'Phone'], autoEscalate: false, autoEscalateAfterMinutes: 0 },
-    ],
-    triggers: [
-      { id: 'vt1', name: 'Vendor data breach notification', type: 'Incident Severity', condition: 'vendor_reported_breach == true', startsAtLevel: 'L2' },
-      { id: 'vt2', name: 'Critical vendor SLA breach', type: 'SLA Breach', condition: 'vendor_sla_breached AND vendor_criticality >= High', startsAtLevel: 'L2' },
-    ],
-  },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Helper functions                                                    */
@@ -369,20 +221,20 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const [activeTab, setActiveTab] = useState<'dpo' | 'committees' | 'escalation'>('dpo');
 
   /* ---- DPO state ---- */
-  const [dpo, setDpo] = useState<DPOProfile>(demoDPO);
+  const [dpo, setDpo] = useState<DPOProfile>(emptyDPO);
   const [dpoSubTab, setDpoSubTab] = useState<'profile' | 'tasks' | 'activity' | 'reporting'>('profile');
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', description: '', dueDate: '', priority: 'Medium' as DPOTask['priority'], category: 'Advisory' });
 
   /* ---- Committee state ---- */
-  const [committees, setCommittees] = useState<Committee[]>(demoCommittees);
+  const [committees, setCommittees] = useState<Committee[]>([]);
   const [selectedCommitteeId, setSelectedCommitteeId] = useState<string | null>(null);
   const [committeeSubTab, setCommitteeSubTab] = useState<'members' | 'meetings' | 'decisions' | 'charter'>('members');
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', role: 'Member' as MemberRole, department: '', email: '' });
 
   /* ---- Escalation state ---- */
-  const [escalationPaths, setEscalationPaths] = useState<EscalationPath[]>(demoEscalationPaths);
+  const [escalationPaths, setEscalationPaths] = useState<EscalationPath[]>([]);
   const [selectedEscalationId, setSelectedEscalationId] = useState<string | null>(null);
   const [showAddPath, setShowAddPath] = useState(false);
   const [newPath, setNewPath] = useState({ name: '', scenario: 'Custom' as EscalationPath['scenario'], description: '' });
@@ -407,7 +259,7 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
           api.modules.governance.listBodies(),
           api.modules.governance.getDPO(),
         ]);
-        if (bodies && bodies.length > 0) {
+        if (bodies) {
           setCommittees(bodies.map((b: any) => ({
             id: b.id, type: b.name as CommitteeType, charter: b.charter || '',
             meetingFrequency: b.meetingFrequency || 'Monthly',
@@ -427,16 +279,14 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
             status: b.status === 'active' ? 'Active' : 'Inactive',
             nextMeetingDate: '',
           })));
-          setEscalationPaths(prev => {
-            const apiPaths = (bodies.flatMap((b: any) => b.escalationPaths || []) as any[]).map((p: any) => ({
-              id: p.id, name: p.name, scenario: 'Custom' as const, description: '',
-              status: p.status === 'active' ? 'Active' as const : 'Draft' as const,
-              steps: (p.levels || []) as EscalationStep[],
-              triggers: (p.triggerCriteria || []) as EscalationTrigger[],
-              lastUpdated: p.updatedAt || new Date().toISOString(),
-            }));
-            return apiPaths.length > 0 ? apiPaths : prev;
-          });
+          const apiPaths = (bodies.flatMap((b: any) => b.escalationPaths || []) as any[]).map((p: any) => ({
+            id: p.id, name: p.name, scenario: 'Custom' as const, description: '',
+            status: p.status === 'active' ? 'Active' as const : 'Draft' as const,
+            steps: (p.levels || []) as EscalationStep[],
+            triggers: (p.triggerCriteria || []) as EscalationTrigger[],
+            lastUpdated: p.updatedAt || new Date().toISOString(),
+          }));
+          setEscalationPaths(apiPaths);
         }
         if (dpoData) {
           setDpo(prev => ({ ...prev, name: dpoData.name, email: dpoData.email, phone: dpoData.phone || prev.phone, tasks: dpoData.tasks || prev.tasks, activityLog: dpoData.activityLog || prev.activityLog }));

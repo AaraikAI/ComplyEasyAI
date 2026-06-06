@@ -371,10 +371,11 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // History / templates / contacts state — initialized with demos, replaced by API data on load
-  const [breachHistory, setBreachHistory] = useState<BreachRecord[]>(DEMO_BREACH_HISTORY);
-  const [templates, setTemplates] = useState<NotificationTemplate[]>(DEMO_TEMPLATES);
-  const [contacts, setContacts] = useState<RegulatoryContact[]>(DEMO_CONTACTS);
+  // History / templates / contacts state — empty until API data loads; an
+  // empty register renders a real empty state rather than fabricated rows.
+  const [breachHistory, setBreachHistory] = useState<BreachRecord[]>([]);
+  const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
+  const [contacts, setContacts] = useState<RegulatoryContact[]>([]);
 
   const [historySearch, setHistorySearch] = useState('');
   const [templateSearch, setTemplateSearch] = useState('');
@@ -397,7 +398,7 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
           api.modules.breach.listTemplates(),
           api.modules.breach.listContacts(),
         ]);
-        if (incidents && incidents.length > 0) {
+        if (Array.isArray(incidents)) {
           setBreachHistory(incidents.map((inc: any) => ({
             id: inc.id,
             title: inc.title || inc.description || 'Untitled Incident',
@@ -414,14 +415,14 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
             riskScore: inc.impactAssessment?.riskScore ?? inc.riskScore ?? 0,
           })));
         }
-        if (apiTemplates && apiTemplates.length > 0) {
+        if (Array.isArray(apiTemplates)) {
           setTemplates(apiTemplates.map((t: any) => ({
             id: t.id, name: t.name, jurisdiction: t.jurisdiction || '',
             regulation: t.regulation || '', type: t.type || 'authority',
             content: t.content || '', lastUpdated: t.updatedAt || t.lastUpdated || '',
           })));
         }
-        if (apiContacts && apiContacts.length > 0) {
+        if (Array.isArray(apiContacts)) {
           setContacts(apiContacts.map((c: any) => ({
             id: c.id, name: c.name, type: c.type || 'DPA',
             jurisdiction: c.jurisdiction || '', email: c.email || '',
@@ -431,7 +432,12 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
         }
         setLoadError(null);
       } catch (err: any) {
-        setLoadError('Unable to connect to server. Showing local data.');
+        // Server unreachable: surface example reference data behind an explicit
+        // banner so the view is never blank, but never present it as real records.
+        setBreachHistory(DEMO_BREACH_HISTORY);
+        setTemplates(DEMO_TEMPLATES);
+        setContacts(DEMO_CONTACTS);
+        setLoadError('Unable to connect to server. Showing example reference data.');
       } finally {
         setIsLoading(false);
       }

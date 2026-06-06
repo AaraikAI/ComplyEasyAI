@@ -180,12 +180,16 @@ curl http://localhost:8181/health
 ```
 
 ### Code Quality:
+> The single source of truth for feature/gap status is `COMPLETE_FEATURE_STATUS_LIST.md`.
+> That list currently records open items (e.g. 5 modules marked NOT PRODUCTION READY,
+> an action-locking stub, and placeholder/transcription paths). The counts below are
+> therefore NOT a clean "zero gaps" claim — defer to the feature-status list.
 ```
-✅ Mock/Simulation Code: 147 instances (ALL intentional features)
-✅ Production Gaps: 0 instances
-✅ TODO/FIXME: 0 instances
-✅ Hardcoded Secrets: 0 instances
-✅ Production Guards: All present
+Simulation/Synthetic Code: ~147 instances (mostly intentional features; see feature-status list)
+Open Production Gaps: see COMPLETE_FEATURE_STATUS_LIST.md (non-zero)
+TODO/FIXME / stubs: see COMPLETE_FEATURE_STATUS_LIST.md (non-zero)
+Secrets in source: none known (verify via secret scan in CI)
+Production Guards: present on covered paths
 ```
 
 ---
@@ -259,16 +263,23 @@ curl http://localhost:8181/health
 
 ## ✅ FINAL STATUS
 
-### Production Readiness: 100% ✅
+### Production Readiness: Core platform ready; advanced cryptographic layers are OPTIONAL/OFF by default
+
+> NOTE: The zk-SNARK, on-chain audit-log, and OPA-policy layers are optional add-ons
+> and are NOT production-ready. See `CONTRACTS_CIRCUITS_POLICIES_SCAN.md` for the
+> authoritative status: the on-chain audit-log contract is non-functional (a stale
+> unauthenticated duplicate remains) and the stored OPA policies are corrupted/inert.
+> These layers are disabled by default and must be independently hardened before any
+> reliance is placed on them. Do NOT treat them as "100% production ready".
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| **Code Implementation** | ✅ 100% | All services fully implemented |
+| **Code Implementation** | ✅ Core complete | Core services implemented |
 | **Build System** | ✅ 100% | 0 TypeScript errors |
-| **zk-SNARK Circuits** | ✅ Ready | Automated script provided |
-| **Blockchain Contract** | ✅ Ready | Automated script provided |
-| **OPA Server** | ✅ Ready | Automated script provided |
-| **Security Fixes** | ✅ 100% | All vulnerabilities fixed |
+| **zk-SNARK Circuits** | ⚠️ Optional / not hardened | Setup uses non-CSPRNG entropy; off by default |
+| **Blockchain Contract** | ❌ Not functional | Stale unauthenticated duplicate; see scan doc |
+| **OPA Server** | ❌ Policies inert | Stored policies corrupted/dead; see scan doc |
+| **Security Fixes** | ✅ Core | Core vulnerabilities fixed |
 | **DOMPurify XSS Protection** | ✅ Applied | Print functions secured |
 | **Helmet.js Headers** | ✅ Configured | Security headers active |
 | **Documentation** | ✅ 100% | 14 comprehensive docs |

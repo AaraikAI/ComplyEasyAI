@@ -692,20 +692,23 @@ class BYOKService {
         throw new AppError('GCP credentials required in production', 400);
       }
 
-      // Handle credentials - if it's a JSON string, parse it; if it's a file path, validate it exists
+      // Handle credentials - accept ONLY inline JSON from request input.
+      // A filesystem path from caller input is rejected to avoid arbitrary-file
+      // reads; the only file path honored is the trusted, env-sourced
+      // GOOGLE_APPLICATION_CREDENTIALS, resolved by the KMS client itself.
       let parsedCredentials = credentials;
       if (typeof credentials === 'string') {
         try {
           parsedCredentials = JSON.parse(credentials);
-        } catch {
-          // If not JSON, it might be a file path - check if it exists
-          const fs = require('fs');
-          const path = require('path');
-          if (fs.existsSync(credentials)) {
-            parsedCredentials = JSON.parse(fs.readFileSync(credentials, 'utf8'));
-          } else {
-            throw new AppError(`GCP service account file not found: ${credentials}. Please provide a valid file path or JSON credentials.`, 400);
-          }
+        } catch (error) {
+          logger.warn('Rejected non-JSON GCP credentials input for BYOK key creation', {
+            organizationId,
+            reason: error instanceof Error ? error.message : 'unparseable credentials',
+          });
+          throw new AppError(
+            'GCP credentials must be provided as a service-account JSON object or JSON string.',
+            400
+          );
         }
       }
 

@@ -37,15 +37,21 @@ Replace:
 ## ⚡ Quick Migration Commands
 
 ### 1. Export from Supabase
+Never put the password in the connection-string argv (it leaks via `ps` and
+shell history). Pass it through the `PGPASSWORD` env var (or a `~/.pgpass` file
+with `chmod 600`) instead:
 ```bash
-pg_dump "postgresql://postgres:SUPABASE_PASSWORD@db.XXXX.supabase.co:5432/postgres" \
+PGPASSWORD="$SUPABASE_PASSWORD" pg_dump \
+  --host=db.XXXX.supabase.co --port=5432 --username=postgres --dbname=postgres \
   --schema=public --no-owner --no-privileges \
   -f ~/complyeasy_backup.sql
 ```
 
 ### 2. Import to AWS RDS
 ```bash
-psql "postgresql://complyeasy_admin:RDS_PASSWORD@complyeasyai-db.XXX.rds.amazonaws.com:5432/complyeasy" \
+PGPASSWORD="$RDS_PASSWORD" psql \
+  --host=complyeasyai-db.XXX.rds.amazonaws.com --port=5432 \
+  --username=complyeasy_admin --dbname=complyeasy \
   -f ~/complyeasy_backup.sql
 ```
 
@@ -118,6 +124,11 @@ Backup Locations:
 └── /home/user/ComplyEasyAI/server/.env.backup* ──► Config backup
 ```
 
+> **Security:** `.env.backup*` files contain `DATABASE_URL` and JWT secrets in
+> plaintext. They must be git-ignored (the repo `.gitignore` covers `.env.backup*`)
+> and stored `chmod 600`, ideally OUTSIDE the checked-out repo tree (e.g. under
+> `~/complyeasy-secrets/`). Never commit a `.env.backup*` file.
+
 ---
 
 ## 🔐 AWS RDS Security Group Settings
@@ -127,7 +138,7 @@ Backup Locations:
 Type: PostgreSQL
 Protocol: TCP
 Port: 5432
-Source: Your IP Address/32 (or 0.0.0.0/0 for open access)
+Source: The app/VPC CIDR or a bastion host IP/32 (never 0.0.0.0/0 — do not expose the DB to the internet)
 ```
 
 **Find Security Group:**

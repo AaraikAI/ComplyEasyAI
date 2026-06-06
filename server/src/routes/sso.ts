@@ -55,7 +55,16 @@ function isSafeRedirect(url: string): boolean {
  * XML Signature Wrapping, where an attacker appends an unsigned malicious
  * assertion alongside a validly-signed one). Throws on invalid/missing signature.
  */
+// Upper bound on the SAML XML size accepted for signature extraction/verification.
+// Caps the input the (lazy) Signature-extraction regexes run against so they cannot
+// be driven into pathological backtracking by an oversized IdP-supplied document.
+const MAX_SAML_XML_BYTES = 2 * 1024 * 1024; // 2MB
+
 function verifySamlSignature(xml: string, certificate: string): string[] {
+  if (typeof xml !== 'string' || xml.length > MAX_SAML_XML_BYTES) {
+    throw new Error('SAML response exceeds the maximum allowed size');
+  }
+
   // Normalize the certificate to PEM format
   let pemCert = certificate.trim();
   if (!pemCert.startsWith('-----BEGIN CERTIFICATE-----')) {

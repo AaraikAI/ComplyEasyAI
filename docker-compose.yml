@@ -243,7 +243,9 @@ services:
       SENTRY_DSN: ${SENTRY_DSN:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
-      - "3001:3001"
+      # Bind to loopback only — the Node app is reachable solely through the
+      # TLS-terminating reverse proxy, never directly on a public interface.
+      - "127.0.0.1:3001:3001"
     networks:
       - complyeasy-network
     healthcheck:

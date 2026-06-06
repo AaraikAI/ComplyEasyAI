@@ -14,7 +14,7 @@
 
 Before testing, ensure you have:
 
-- **Node.js** v18+ and npm installed
+- **Node.js** 22+ and npm installed
 - **PostgreSQL** database (local or cloud)
 - **Git** installed
 - **API Keys** for testing:
@@ -124,9 +124,18 @@ sudo systemctl start postgresql
 # Create database
 psql -U postgres -c "CREATE DATABASE complyeasy;"
 
-# Create user (if needed)
-psql -U postgres -c "CREATE USER complyuser WITH PASSWORD 'your_password';"
-psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE complyeasy TO complyuser;"
+# Create a least-privilege application role (no SUPERUSER / no BYPASSRLS).
+# Set the password interactively so it is never recorded in shell history or argv:
+psql -U postgres -c "CREATE ROLE complyuser WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;"
+psql -U postgres -c "\password complyuser"
+
+# Grant only what the app needs (connect + schema usage + table CRUD), not GRANT ALL:
+psql -U postgres -d complyeasy -c "GRANT CONNECT ON DATABASE complyeasy TO complyuser;"
+psql -U postgres -d complyeasy -c "GRANT USAGE, CREATE ON SCHEMA public TO complyuser;"
+psql -U postgres -d complyeasy -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO complyuser;"
+psql -U postgres -d complyeasy -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO complyuser;"
+psql -U postgres -d complyeasy -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO complyuser;"
+psql -U postgres -d complyeasy -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO complyuser;"
 ```
 
 ### Step 2: Run Prisma Migrations
@@ -154,18 +163,17 @@ npx prisma studio
 # Check that all tables exist
 npx prisma db pull
 
-# Expected tables:
+# Expected tables (matching the Prisma model names in server/prisma/schema.prisma):
 # - User
 # - Organization
-# - Framework
-# - Control
-# - Risk
-# - Assessment
-# - Evidence
+# - ComplianceFramework
+# - FrameworkControl
+# - RiskItem
+# - EvidenceAnalysis
 # - AuditLog
 # - Integration
-# - Subscription
-# - TwoFactorBackupCode (NEW)
+# - SubscriptionHistory
+# - TwoFactorBackupCode
 ```
 
 ---

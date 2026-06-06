@@ -1,0 +1,20 @@
+# Pinned SHA-256 digests for externally-fetched ZK setup inputs.
+# setup-circuits.sh verifies every downloaded binary / ceremony file against the
+# matching line here and fails closed on mismatch or a missing entry.
+#
+# Format: <64-hex-sha256>  <basename>
+#
+# How each digest was established (provenance):
+#   - powersOfTau28_hez_final_12.ptau: cross-checked against the authoritative
+#     blake2b transcript hash published by snarkjs
+#     (ded2694169b7b08e898f736d5de95af87c3f1a64594013351b1a796dbee393bd
+#      825f88f9468c84505ddd11eb0b1465ac9b43b9064aa8ec97f2b73e04758b8a4a)
+#     using `snarkjs powersoftau verify`; the SHA-256 below is of that
+#     verified file and is what the download path enforces.
+#   - circom-*-amd64: iden3 does not publish per-asset SHA-256 digests. Pin the
+#     digest of the exact v2.1.6 asset your build trusts (compute once on a
+#     trusted host: `shasum -a 256 circom-linux-amd64`) and commit it here, or
+#     override at runtime via CIRCOM_SHA256_<OS> env vars. The setup script will
+#     refuse to install an unpinned/mismatched binary.
+
+dcf4ea473bf14b971ce5f7b7c1d6ce1c41a8ed042cdb75b65ca9178e3a3c7c17  powersOfTau28_hez_final_12.ptau

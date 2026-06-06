@@ -441,12 +441,15 @@ const ExecutiveDashboard: React.FC = () => {
         <h3 className="text-sm font-semibold mb-4">Period Comparison</h3>
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
           {[
-            { label: t('executive.compliancePosture'), current: periodComparison.current.complianceScore, previous: periodComparison.previous.complianceScore, suffix: '%', higherBetter: true },
-            { label: t('risks.riskScore'), current: periodComparison.current.riskScore, previous: periodComparison.previous.riskScore, suffix: '/100', higherBetter: true },
-            { label: 'Open Incidents', current: periodComparison.current.incidents, previous: periodComparison.previous.incidents, suffix: '', higherBetter: false },
-            { label: 'Open Findings', current: periodComparison.current.openFindings, previous: periodComparison.previous.openFindings, suffix: '', higherBetter: false },
-            { label: 'Control Coverage', current: periodComparison.current.controlCoverage, previous: periodComparison.previous.controlCoverage, suffix: '%', higherBetter: true },
-            { label: `${t('vendors.title')} ${t('vendors.complianceStatus')}`, current: periodComparison.current.vendorCompliance, previous: periodComparison.previous.vendorCompliance, suffix: '%', higherBetter: true },
+            // hasPrior=false marks metrics the backend does not yet track over time
+            // (their `previous` is the sentinel 0); those render "No prior period data"
+            // instead of a delta computed against a non-existent baseline.
+            { label: t('executive.compliancePosture'), current: periodComparison.current.complianceScore, previous: periodComparison.previous.complianceScore, suffix: '%', higherBetter: true, hasPrior: false },
+            { label: t('risks.riskScore'), current: periodComparison.current.riskScore, previous: periodComparison.previous.riskScore, suffix: '/100', higherBetter: true, hasPrior: periodComparison.previous.riskScore > 0 },
+            { label: 'Open Incidents', current: periodComparison.current.incidents, previous: periodComparison.previous.incidents, suffix: '', higherBetter: false, hasPrior: periodComparison.previous.incidents > 0 },
+            { label: 'Open Findings', current: periodComparison.current.openFindings, previous: periodComparison.previous.openFindings, suffix: '', higherBetter: false, hasPrior: periodComparison.previous.openFindings > 0 },
+            { label: 'Control Coverage', current: periodComparison.current.controlCoverage, previous: periodComparison.previous.controlCoverage, suffix: '%', higherBetter: true, hasPrior: false },
+            { label: `${t('vendors.title')} ${t('vendors.complianceStatus')}`, current: periodComparison.current.vendorCompliance, previous: periodComparison.previous.vendorCompliance, suffix: '%', higherBetter: true, hasPrior: false },
           ].map(metric => {
             const change = metric.current - metric.previous;
             const isPositive = metric.higherBetter ? change > 0 : change < 0;
@@ -454,9 +457,15 @@ const ExecutiveDashboard: React.FC = () => {
               <div key={metric.label} className="p-3 bg-slate-700/30 rounded-xl text-center">
                 <div className="text-xs text-slate-400 mb-1">{metric.label}</div>
                 <div className="text-xl font-bold">{metric.current}{metric.suffix}</div>
-                <div className={`flex items-center justify-center gap-1 text-xs mt-1 ${isPositive ? 'text-green-400' : change === 0 ? 'text-slate-400' : 'text-red-400'}`}>
-                  {change > 0 ? <ArrowUp className="w-3 h-3" /> : change < 0 ? <ArrowDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                  {Math.abs(change)}{metric.suffix} vs prior
+                <div className={`flex items-center justify-center gap-1 text-xs mt-1 ${!metric.hasPrior ? 'text-slate-500' : isPositive ? 'text-green-400' : change === 0 ? 'text-slate-400' : 'text-red-400'}`}>
+                  {!metric.hasPrior ? (
+                    <span>No prior period data</span>
+                  ) : (
+                    <>
+                      {change > 0 ? <ArrowUp className="w-3 h-3" /> : change < 0 ? <ArrowDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                      {Math.abs(change)}{metric.suffix} vs prior
+                    </>
+                  )}
                 </div>
               </div>
             );

@@ -1,8 +1,17 @@
 # 📋 NPM Audit Vulnerabilities Report
 
+> **SUPERSEDED / POINT-IN-TIME SNAPSHOT (2026-01-16).**
+> The counts below are NO LONGER CURRENT. The current audit baseline is
+> **root: 0 vulnerabilities; server: 29 (0 critical, 0 high, 15 moderate, 14 low)**.
+> The Critical and High advisories listed in this file (form-data, node-vault,
+> and the others) are no longer present in the current trees. Re-run
+> `npm audit` (root and `server/`) for live numbers, and treat the remaining
+> server advisories as the known-unfixable upstream set documented in
+> `.claude/CLAUDE.md`.
+
 **Date:** 2026-01-16  
-**Total Vulnerabilities:** 25  
-**Breakdown:** 3 Critical, 5 High, 3 Moderate, 14 Low
+**Total Vulnerabilities:** 25 _(superseded — see banner above)_  
+**Breakdown:** 3 Critical, 5 High, 3 Moderate, 14 Low _(superseded)_
 
 ---
 

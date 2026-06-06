@@ -23,8 +23,10 @@ server/.env.local
 *.env.backup
 *.env.bak
 .env.backup
+.env.backup*
 .env.bak
 server/.env.backup
+server/.env.backup*
 server/.env.bak
 
 # Editor directories and files
@@ -60,3 +62,21 @@ server/src/types/module-augmentations.ts
 
 # Retired audit-history machinery (local archive, not for the repo)
 .archive/
+
+# Downloaded executables (fetched + checksum-verified at setup time, not committed)
+server/src/policies/bin/
+server/src/zkp/bin/
+
+# ZK build artifacts (regenerated from .circom sources by setup-circuits.sh)
+server/src/zkp/test_output/
+server/src/zkp/compiled/
+server/src/zkp/keys/proving/*.zkey
+server/src/zkp/keys/verification/*.vkey
+server/src/zkp/powersOfTau28_hez_final_*.ptau
+server/src/zkp/keys/*.ptau
+server/src/zkp/**/*_js/
+server/*.r1cs
+server/*.wasm
+
+# Solidity build artifacts (recompiled from source at build time)
+server/src/blockchain/compiled/

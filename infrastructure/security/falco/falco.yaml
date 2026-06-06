@@ -52,7 +52,7 @@ syslog_output:
 
 http_output:
   enabled: true
-  url: "https://alertmanager:9093/api/v2/alerts"
+  url: "http://alertmanager:9093/api/v2/alerts"
   user_agent: "falco/0.37.0"
 
 # ============================================================================

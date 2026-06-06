@@ -94,7 +94,10 @@ if (process.env.ELASTICSEARCH_ENABLED === 'true') {
 // Create logger instance
 const logger = winston.createLogger({
   level: config.logging.level,
+  // sanitizationFormat is applied at the logger level so every transport
+  // (console, file, Elasticsearch) inherits sensitive-data redaction.
   format: combine(
+    sanitizationFormat,
     errors({ stack: true }),
     timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   ),

@@ -30,19 +30,20 @@
 ### 1. **Not Authenticated** (Most Common)
 **Symptoms:**
 - Error: "Failed to get chat response"
-- No token in localStorage
+- No active auth session
 
 **Solution:**
-1. Open browser console (F12)
-2. Check if you're logged in:
-   ```javascript
-   localStorage.getItem('authToken')
-   // Should return a JWT token string
-   ```
-3. If `null`, you need to log in:
+1. Open browser DevTools (F12)
+2. Check if you're logged in. The JWT is stored in an **httpOnly cookie**, so it
+   is not readable from JavaScript/`localStorage`. Verify the session instead:
+   - **Application tab → Cookies**: confirm the auth cookie (e.g. `accessToken`)
+     is present and not expired.
+   - **Network tab**: confirm requests are sent with `credentials: 'include'` and
+     that `/api/auth/me` returns 200.
+3. If there is no auth cookie, you need to log in:
    - Request a magic link
    - Verify the magic link token
-   - Token will be stored automatically
+   - The auth cookie will be set automatically
 
 ### 2. **Invalid/Expired Token**
 **Symptoms:**
@@ -50,11 +51,8 @@
 - Token exists but is expired or invalid
 
 **Solution:**
-1. Clear localStorage and log in again:
-   ```javascript
-   localStorage.clear()
-   // Then refresh the page and log in again
-   ```
+1. Log out and log in again. Logging out clears the auth cookie server-side; then
+   refresh the page and log in again to obtain a fresh session.
 2. Or check token expiration in backend logs
 
 ### 3. **Backend Not Running**
@@ -89,20 +87,18 @@
 ## 🔧 Step-by-Step Debugging
 
 ### Step 1: Check Authentication
-Open browser console and run:
-```javascript
-// Check if token exists
-const token = localStorage.getItem('authToken');
-console.log('Token:', token ? 'Present' : 'Missing');
+The JWT lives in an httpOnly cookie and is not exposed to JavaScript. Verify the
+session via DevTools rather than `localStorage`:
 
-// Check user data
-const user = JSON.parse(localStorage.getItem('user_data') || '{}');
-console.log('User:', user);
-```
+- **Application tab → Cookies → your app origin**: confirm the auth cookie is
+  present and unexpired.
+- **Network tab**: issue any authenticated request and confirm the auth cookie is
+  attached (requests use `credentials: 'include'`) and `/api/auth/me` returns 200
+  with your `id`, `email`, and `name`.
 
 **Expected:**
-- Token should be a JWT string (starts with `eyJ...`)
-- User should have `id`, `email`, `name` properties
+- The auth cookie is present (httpOnly, so it shows in DevTools but not in JS).
+- `/api/auth/me` returns 200 with the user object.
 
 **If Missing:**
 - You need to log in first
@@ -110,11 +106,23 @@ console.log('User:', user);
 - Verify the token from email (or use devToken in development)
 
 ### Step 2: Test API Endpoint Directly
-```bash
-# Get your token from browser console first
-TOKEN="your-jwt-token-here"
+The browser uses the httpOnly auth cookie automatically. For manual `curl` testing,
+either replay the cookie jar from a login response or supply a Bearer token captured
+from the login API response body.
 
-# Test chat endpoint
+```bash
+# Option A: reuse the auth cookie from a login round-trip
+curl -X POST http://localhost:3001/api/auth/verify-magic-link \
+  -H "Content-Type: application/json" \
+  -d '{"token":"<magic-link-token>"}' -c cookies.txt
+
+curl -X POST http://localhost:3001/api/ai/chat \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"message":"test"}'
+
+# Option B: Bearer token taken from the login API response body
+TOKEN="<jwt-from-login-response>"
 curl -X POST http://localhost:3001/api/ai/chat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
@@ -154,8 +162,8 @@ Open browser DevTools (F12) → Console tab
 ## 🎯 Quick Fix Checklist
 
 - [ ] **Are you logged in?**
-  - Check `localStorage.getItem('authToken')` in console
-  - If null, log in first
+  - In DevTools → Application → Cookies, confirm the httpOnly auth cookie is present
+  - If absent, log in first
 
 - [ ] **Is backend running?**
   - Check `http://localhost:3001/health`
@@ -163,7 +171,7 @@ Open browser DevTools (F12) → Console tab
 
 - [ ] **Is token valid?**
   - Try logging out and back in
-  - Clear localStorage and refresh
+  - Logging out clears the auth cookie; then refresh and log in again
 
 - [ ] **Check browser console**
   - Look for detailed error messages
@@ -249,9 +257,9 @@ Open browser DevTools (F12) → Console tab
 ## 📝 Next Steps
 
 1. **Check if you're logged in:**
-   - Open browser console
-   - Run: `localStorage.getItem('authToken')`
-   - If null, log in first
+   - Open DevTools → Application → Cookies
+   - Confirm the httpOnly auth cookie is present (it is not visible to JS/`localStorage`)
+   - If absent, log in first
 
 2. **If logged in but still getting errors:**
    - Check browser console for detailed error

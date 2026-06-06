@@ -130,12 +130,24 @@
 - Assignment tracking, completion records, compliance reporting
 - Admin and employee views with progress metrics
 
-#### NEW: Row-Level Security (CC6.1) — Implemented
+#### Row-Level Security (CC6.1) — Policies present; full DB enforcement pending operational cutover
 
-- PostgreSQL RLS policies (`server/prisma/migrations/rls_policies_all_tables.sql`)
-- Multi-tenant data isolation at database level (not just app-layer)
-- `organizationId` scoping enforced on all tenant-specific tables
-- Defense-in-depth: app-layer RBAC + DB-layer RLS
+- PostgreSQL RLS policies are defined and applied as a numbered migration
+  (`server/prisma/migrations/20260603_rls_enable_policies/migration.sql`; the loose
+  `rls_policies_all_tables.sql` is a synced reference copy): the accessor function
+  `public.get_current_organization_id()`, `ENABLE ROW LEVEL SECURITY`, and a per-table
+  `org_isolation` policy on every tenant-scoped table.
+- Per-request org context is supplied via the GUC `app.current_org`
+  (`server/src/config/orgContext.ts` + `server/src/config/database.ts` wrap org-scoped
+  Prisma operations in a transaction that runs `set_config('app.current_org', …, true)`).
+- `organizationId` scoping is enforced on all tenant-specific tables by these policies.
+- **Primary tenant boundary remains app-layer `organizationId` filtering.** DB-layer RLS is
+  not yet hard defense-in-depth: full enforcement requires the operational cutover in
+  `RLS_DEPLOY_RUNBOOK.md` — `FORCE ROW LEVEL SECURITY`
+  (`server/prisma/migrations/20260604_enforce_rls/migration.sql`) **plus** pointing
+  `DATABASE_URL` at a least-privilege application role with `BYPASSRLS` revoked. Until both
+  are in effect on the live database, the table-owner / `BYPASSRLS` app role bypasses every
+  policy.
 
 ### Remaining SOC 2 Gaps
 
@@ -287,7 +299,7 @@ All code-level FIPS gaps have been remediated. The remaining 5 points require CM
 | Hashing | SHA-256 | ✅ APPROVED | 40+ files (token hashing, webhooks, integrity) |
 | HMAC | HMAC-SHA256 | ✅ APPROVED | `webhookService.ts`, `webrtcSignalingService.ts` |
 | ~~HMAC~~ | ~~HMAC-SHA1~~ | ✅ **FIXED → SHA-256** | `webrtcSignalingService.ts` — migrated to HMAC-SHA256 |
-| CSPRNG | crypto.randomBytes | ✅ APPROVED | All services (Math.random fully eliminated) |
+| CSPRNG | crypto.randomBytes | ✅ APPROVED | Security/crypto-critical paths use crypto.randomBytes; remaining Math.random uses are non-cryptographic (id/sampling/jitter, e.g. ML noise, request-id generation) |
 | Digital Signatures | RSA-2048 | ✅ APPROVED | `evidenceTruthLayerService.ts` |
 | Password Hashing | PBKDF2-SHA256 (600K iterations) | ✅ APPROVED | `fipsPasswordHashing.ts` — **NEW primary hasher** |
 | ~~Password Hashing~~ | ~~bcrypt~~ | ✅ **MIGRATED** | Legacy compatibility path only; auto-rehash to PBKDF2 on login |
@@ -308,7 +320,7 @@ All code-level FIPS gaps have been remediated. The remaining 5 points require CM
 | SHA-1 → SHA-256 migration | ✅ Complete | `webrtcSignalingService.ts` HMAC migrated |
 | bcrypt → PBKDF2-SHA256 migration | ✅ Complete | `fipsPasswordHashing.ts` with 600K iterations, legacy auto-rehash |
 | scrypt → PBKDF2-SHA256 migration | ✅ Complete | `twoFactorService.ts` backup code encryption |
-| Math.random() elimination | ✅ Complete | All 10+ occurrences replaced with `crypto.randomBytes()` |
+| Math.random() in crypto paths | ✅ Complete | Security/crypto-critical occurrences replaced with `crypto.randomBytes()`; remaining Math.random uses are non-cryptographic id/sampling/jitter (ML noise, request ids) and are outside the FIPS boundary |
 | TLS FIPS cipher suites | ✅ Complete | Nginx: AES-GCM only, CHACHA20-POLY1305 removed |
 | Node.js FIPS mode | ✅ Complete | `Dockerfile`: `--force-fips` in NODE_OPTIONS |
 | Cryptographic module boundary doc | ✅ Complete | `docs/FIPS_CRYPTOGRAPHIC_MODULE_BOUNDARY.md` |
@@ -383,7 +395,7 @@ Full report: `docs/PENETRATION_TEST_REPORT.md`
 | 9 | ~~Migrate bcrypt → PBKDF2~~ | FIPS | ✅ `fipsPasswordHashing.ts` |
 | 10 | ~~Document crypto module boundaries~~ | FIPS | ✅ `docs/FIPS_CRYPTOGRAPHIC_MODULE_BOUNDARY.md` |
 | 11 | ~~Enable Node.js FIPS mode~~ | FIPS | ✅ `--force-fips` in Dockerfile |
-| 12 | ~~Add Row-Level Security~~ | SOC 2 | ✅ RLS policies for all tables |
+| 12 | ~~Add Row-Level Security~~ | SOC 2 | ✅ RLS policies (ENABLE + org_isolation) for all tenant tables; FORCE + least-privilege-role cutover pending per RLS_DEPLOY_RUNBOOK.md |
 | 13 | ~~Automate data anonymization~~ | GDPR | ✅ Service + Routes |
 | 14 | ~~Vendor security assessment~~ | SOC 2 | ✅ `docs/VENDOR_SECURITY_ASSESSMENT.md` |
 | 15 | ~~Security training dashboard~~ | SOC 2 | ✅ Routes + Component |

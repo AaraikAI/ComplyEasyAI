@@ -106,6 +106,13 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/security-headers.conf:/etc/nginx/snippets/security-headers.conf:ro
+      # PREREQUISITES (must exist on the host before `docker compose up`):
+      #   1. `./dist` — the built SPA webroot. It is a build artifact and is
+      #      gitignored, so run `npm run build` first; an empty/missing dir
+      #      serves 404s.
+      #   2. `./nginx/ssl/{cert.pem,key.pem}` — TLS material referenced by
+      #      default.conf. Provision these (or run scripts/preflight-prod.sh)
+      #      before starting, or `nginx -t` fails to load the certs.
       - ./dist:/usr/share/nginx/html:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
     ports:

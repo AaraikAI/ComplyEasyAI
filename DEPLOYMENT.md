@@ -165,12 +165,16 @@ heroku domains --app complyeasy-backend
 
 ```bash
 # Via AWS CLI
+# Source the master password from AWS Secrets Manager (do NOT pass a literal on the CLI;
+# argv and shell history are visible). Generate/store it once, then export it here:
+#   RDS_MASTER_PASSWORD=$(aws secretsmanager get-secret-value \
+#     --secret-id complyeasy/rds/master-password --query SecretString --output text)
 aws rds create-db-instance \
   --db-instance-identifier complyeasy-prod-db \
   --db-instance-class db.t3.medium \
   --engine postgres \
   --master-username complyeasy_admin \
-  --master-user-password "YourSecurePassword123!" \
+  --master-user-password "$RDS_MASTER_PASSWORD" \
   --allocated-storage 100 \
   --vpc-security-group-ids sg-xxxxx \
   --backup-retention-period 7 \
@@ -544,7 +548,10 @@ JIRA_REDIRECT_URI=https://api.complyeasyai.com/api/integrations/jira/callback
 # Advanced Features (optional)
 ETHEREUM_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/your-api-key
 POLYGON_RPC_URL=https://polygon-mainnet.g.alchemy.com/v2/your-api-key
-BLOCKCHAIN_PRIVATE_KEY=<your-private-key>
+# Do NOT store the signing key in plaintext .env. Keep BLOCKCHAIN_PRIVATE_KEY in
+# AWS Secrets Manager / KMS (or HashiCorp Vault) and inject it at runtime; this
+# line is a reference only and should resolve from the secret store, not a literal.
+BLOCKCHAIN_PRIVATE_KEY=<resolved-from-secrets-manager>
 COMPLIANCE_CONTRACT_ADDRESS=0x...
 AWS_KMS_KEY_ID=<kms-key-id>
 AZURE_KEY_VAULT_URL=https://your-vault.vault.azure.net/

@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { getCsrfToken } from '../services/api';
 import {
   DollarSign,
   Plus,
@@ -76,7 +77,17 @@ const frameworkLabels: Record<Framework, string> = {
 const API_BASE = '/api/costs';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, { credentials: 'include', ...options });
+  const method = (options?.method || 'GET').toUpperCase();
+  const headers: Record<string, string> = {
+    ...((options?.headers as Record<string, string>) || {}),
+  };
+  // Attach the double-submit CSRF token for state-changing requests; without it
+  // mutating /api requests are rejected with 403 in production.
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrf = await getCsrfToken();
+    if (csrf) headers['X-CSRF-Token'] = csrf;
+  }
+  const res = await fetch(url, { credentials: 'include', ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(body.message || `Request failed: ${res.status}`);

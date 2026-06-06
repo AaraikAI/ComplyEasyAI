@@ -863,9 +863,14 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
     }
 
     const product = selectedProduct;
-    const eolPolicy = EOL_POLICIES.find(e => e.productId === product.id);
-    const envMetrics = ENVIRONMENTAL_METRICS.filter(e => e.productId === product.id);
-    const milestones = MILESTONES.filter(m => m.productId === product.id);
+    // For API-backed products, never substitute the illustrative module-level
+    // catalogs (milestones / EOL / environmental). These are keyed by demo ids and
+    // would otherwise surface against a real product on an id collision. Until the
+    // backend returns these per product, show empty states for API-backed products
+    // (consistent with the Compliance Matrix guard).
+    const eolPolicy = usingApiData ? undefined : EOL_POLICIES.find(e => e.productId === product.id);
+    const envMetrics = usingApiData ? [] : ENVIRONMENTAL_METRICS.filter(e => e.productId === product.id);
+    const milestones = usingApiData ? [] : MILESTONES.filter(m => m.productId === product.id);
     const docs = allDocuments.filter(d => d.productId === product.id);
 
     return (
@@ -997,12 +1002,20 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
           <div className="p-5">
             <div className="relative">
               <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
-              {[
-                { version: product.version, date: product.updatedAt, note: 'Current version', tag: 'latest' },
-                { version: '2.3.0', date: '2025-11-15', note: 'Security patches and compliance updates', tag: null },
-                { version: '2.0.0', date: '2025-06-01', note: 'Major release with new compliance features', tag: 'major' },
-                { version: '1.0.0', date: product.createdAt, note: 'Initial release', tag: 'initial' },
-              ].map((v, idx) => (
+              {(usingApiData
+                // API-backed products: only the actual current version is known.
+                // The backend does not yet return a per-version changelog, so we do
+                // not synthesize intermediate releases for a real product.
+                ? [
+                    { version: product.version, date: product.updatedAt, note: 'Current version', tag: 'latest' as string | null },
+                  ]
+                : [
+                    { version: product.version, date: product.updatedAt, note: 'Current version', tag: 'latest' as string | null },
+                    { version: '2.3.0', date: '2025-11-15', note: 'Security patches and compliance updates', tag: null },
+                    { version: '2.0.0', date: '2025-06-01', note: 'Major release with new compliance features', tag: 'major' },
+                    { version: '1.0.0', date: product.createdAt, note: 'Initial release', tag: 'initial' },
+                  ]
+              ).map((v, idx) => (
                 <div key={idx} className="relative pl-10 pb-5 last:pb-0">
                   <div className={`absolute left-2.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-800 ${idx === 0 ? 'bg-indigo-500' : 'bg-gray-400'}`} />
                   <div className="flex items-center gap-2">

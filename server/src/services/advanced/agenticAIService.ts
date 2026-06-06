@@ -224,8 +224,8 @@ class AgenticAIService {
 
     visited.add(controlId);
 
-    const control = await prisma.frameworkControl.findUnique({
-      where: { id: controlId },
+    const control = await prisma.frameworkControl.findFirst({
+      where: { id: controlId, framework: { organizationId } },
       include: { framework: true },
     });
 
@@ -707,8 +707,8 @@ class AgenticAIService {
     organizationId: string
   ): Promise<RollbackCheckpoint> {
     if (agenticAction.actionType === 'control_update') {
-      const control = await prisma.frameworkControl.findUnique({
-        where: { id: agenticAction.targetId },
+      const control = await prisma.frameworkControl.findFirst({
+        where: { id: agenticAction.targetId, framework: { organizationId } },
       });
       return {
         controlId: control?.id,
@@ -717,8 +717,8 @@ class AgenticAIService {
         previousEvidence: control?.evidence,
       };
     } else if (agenticAction.actionType === 'risk_mitigation') {
-      const risk = await prisma.riskItem.findUnique({
-        where: { id: agenticAction.targetId },
+      const risk = await prisma.riskItem.findFirst({
+        where: { id: agenticAction.targetId, organizationId },
       });
       return {
         riskId: risk?.id,
@@ -1262,7 +1262,9 @@ class AgenticAIService {
       return false;
     } catch (error) {
       logger.error('[Agentic AI] Error checking action lock', error);
-      return false; // Fail open to prevent blocking
+      // Fail closed: treat as locked so a transient DB error cannot allow
+      // duplicate concurrent execution of the same agentic action.
+      return true;
     }
   }
 

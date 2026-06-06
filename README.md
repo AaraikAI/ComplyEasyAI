@@ -25,8 +25,8 @@ Maps customer evidence to framework controls, runs the audit lifecycle (scoping 
 └─────────────────┘    └──────────────────┘    └──────────────────┘
         │                       │                       │
         ▼                       ▼                       ▼
-  React Native             89 services             RLS-scoped tables
-  (mobile evidence       (one per domain)         (multi-tenant)
+  React Native             89 services             app-layer org-scoped
+  (mobile evidence       (one per domain)         tables (multi-tenant)
    capture)
 ```
 
@@ -125,7 +125,7 @@ See [`SECURITY.md`](./SECURITY.md) for:
 
 ## Multi-tenant guarantees
 
-Every user-scoped query filters by `organizationId` at the **service layer** — not middleware. Verified across all 89 service files (v11 audit). Parent-child entity scope is enforced on writes (v11 audit). PostgreSQL RLS is enabled on the 25 new compliance-workflow tables for defense-in-depth against the auto-exposed Supabase REST API.
+Every user-scoped query filters by `organizationId` at the **service layer** — not middleware. Verified across all 89 service files (v11 audit). Parent-child entity scope is enforced on writes (v11 audit). Tenant isolation is currently enforced **entirely at the application/service layer**; the PostgreSQL RLS policy file (`server/prisma/migrations/rls_policies_all_tables.sql`) is **not yet effective as a DB-layer defense** (the application `pg` role has `BYPASSRLS`, no tables are `FORCE`d, and the policy predicate depends on a `request.jwt.claims` setting the Express/Prisma backend does not set), so it should not be relied upon as defense-in-depth until those gaps are closed.
 
 ## Contributing
 

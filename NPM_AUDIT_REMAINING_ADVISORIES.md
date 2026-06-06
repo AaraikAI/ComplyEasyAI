@@ -1,38 +1,43 @@
-# NPM Audit – Remaining Advisories After `npm audit fix`
+# NPM Audit – Remaining Advisories
 
-**Last updated:** After running `npm audit fix` (without `--force`) in server and root.
+**Last updated:** 2026-06-06 (reconciled against the authoritative baseline in `.claude/CLAUDE.md`).
 
-## Server (complyeasy-server)
+> The previous version of this file (root 13 / server 11, listing `aws-sdk` region
+> validation and `path-to-regexp` as HIGH) was stale and has been corrected. The
+> single source of truth for the unfixable set is the **"Known unfixable upstream
+> vulnerabilities"** table in `.claude/CLAUDE.md`; this file only summarizes the
+> counts and points there.
 
-**Remaining:** 11 vulnerabilities (8 low, 3 moderate).
+## Current baseline
 
-| Package / issue | Severity | Fix | Notes |
-|-----------------|----------|-----|--------|
-| **aws-sdk** (region validation) | High | `npm audit fix --force` → aws-sdk@1.18.0 | Breaking; prefer validating `region` in code or migrating to AWS SDK v3. |
-| **cookie** (csurf, elastic-apm-node) | Low | `npm audit fix --force` → csurf@1.2.2 | Breaking; app uses custom CSRF (csrf.ts) and cookie-parser. |
-| **elliptic** (fabric-network) | Low | `npm audit fix --force` → fabric-network@1.4.20 | Breaking; only relevant if using Hyperledger Fabric. |
-| **js-yaml, nanoid** (circom/mocha) | Moderate | In nested circom/mocha | Dev/test dependency tree; low runtime impact. |
+| Package | Vulnerabilities | Breakdown |
+|---------|-----------------|-----------|
+| **Root** (complyeasy-ai frontend + tooling) | **0** | none |
+| **Server** (complyeasy-server) | **29** | 0 critical, 0 high, 15 moderate, 14 low |
 
-**Recommendation:** Do not run `npm audit fix --force` on server without a change request; validate region for aws-sdk in code and plan v3 migration. Document fabric-network/cookie usage for security reviews.
+Both advisories that were previously HIGH on the server (`dompurify` and `tmp`) are
+now **fixed** — see the "Fixed this pass" notes in `.claude/CLAUDE.md`. There are
+no remaining critical or high advisories in either package.
 
----
+## Remaining server advisories (all moderate/low, breaking-major to fix)
 
-## Root (complyeasy-ai frontend + tooling)
+Every remaining server advisory requires a breaking **major** upgrade of a toolchain
+dependency (`npm audit fix --force` → ethers v6 / aws-sdk v3 / circom / fabric-network /
+exceljs / jest-junit majors), which is out-of-scope dependency-replacement work rather
+than a code fix. The full per-package reasoning lives in the known-unfixable table in
+`.claude/CLAUDE.md`; the roots are:
 
-**Remaining:** 13 vulnerabilities (9 moderate, 4 high).
-
-| Package / issue | Severity | Fix | Notes |
-|-----------------|----------|-----|--------|
-| **path-to-regexp** (via @vercel/node) | High | `npm audit fix --force` → vercel@32.0.1 | Breaking; Vercel is a dev/build dependency. |
-| **undici** (via @vercel/node) | Moderate | Same as above | Same Vercel upgrade path. |
-
-**Recommendation:** Upgrade Vercel in a separate change; test build and deploy before merging. Remaining advisories are in the Vercel toolchain, not application runtime code.
-
----
+- `elliptic *` (via `fabric-network` → `fabric-common`)
+- `ws 8.0.0–8.20.0`, `@ethersproject/*` / `ethers` v5 (fix = ethers v6)
+- `aws-sdk` v2 → `uuid` (v3 migration is a separately tracked project)
+- `uuid` via `@azure/ms-rest-js`, `exceljs`, `jest-junit`
+- `serialize-javascript`, `circom` / `circom_runtime` / `ffjavascript` / `mocha`
+- `fabric-common` / `fabric-network` (Hyperledger SDK)
 
 ## Checklist
 
-- [x] Run `npm audit fix` (no `--force`) in server and root.
-- [ ] Plan aws-sdk region validation or v3 migration (server).
-- [ ] Plan Vercel upgrade for path-to-regexp/undici (root).
+- [x] `npm audit` in server and root reconciled against `.claude/CLAUDE.md`.
+- [x] Confirm no critical/high advisories remain (root 0, server 0 high).
 - [ ] Re-run `npm audit` after any dependency upgrade and update this file.
+- [ ] Track the breaking-major migrations (ethers v6, aws-sdk v3, circom major) as
+      separate change requests.

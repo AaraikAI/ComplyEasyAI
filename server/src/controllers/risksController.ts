@@ -344,10 +344,17 @@ class RisksController {
       // Use Gemini AI to prioritize
       const prioritized = await geminiService.prioritizeRisks(risks, authReq.user!.id);
 
-      // Update risks with AI scores
+      // Restrict writes to the org-scoped risk ids fetched above so an
+      // AI-returned id outside this organization cannot be written.
+      const ownedRiskIds = new Set(risks.map((r) => r.id));
+
+      // Update risks with AI scores (re-asserting org scope on each write)
       for (const item of prioritized) {
-        await prisma.riskItem.update({
-          where: { id: item.id },
+        if (!ownedRiskIds.has(item.id)) {
+          continue;
+        }
+        await prisma.riskItem.updateMany({
+          where: { id: item.id, organizationId },
           data: {
             aiPriorityScore: item.score,
             aiRationale: item.rationale,

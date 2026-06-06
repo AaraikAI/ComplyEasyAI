@@ -14,7 +14,11 @@
     "jsx": "react-jsx",
     "paths": { "@/*": ["./*"] },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "alwaysStrict": true,
+    "noImplicitThis": true,
+    "strictBindCallApply": true,
+    "noImplicitOverride": true
   },
   "include": ["components/**/*", "services/**/*", "hooks/**/*", "contexts/**/*", "constants/**/*", "i18n/**/*", "routes/**/*", "constants.ts", "*.tsx", "*.ts"],
   "exclude": ["server", "e2e", "**/__tests__/**", "**/*.test.*", "**/*.spec.*", "playwright.config.ts"]

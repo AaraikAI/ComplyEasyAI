@@ -1,4 +1,12 @@
 -- =====================================================================
+-- REFERENCE COPY — NOT auto-applied by `prisma migrate deploy`.
+-- The canonical, migrate-deploy-applied copy of these statements lives at
+--   server/prisma/migrations/20260603_rls_enable_policies/migration.sql
+-- (a numbered migration that sorts before 20260604_enforce_rls). This loose
+-- file is retained only as a standalone artifact for the penetration-test
+-- harness (server/src/__tests__/security/runPenetrationTest.ts) and manual
+-- runbook application. Keep it in sync with the numbered migration.
+-- =====================================================================
 -- ComplyEasyAI — Organization-Based Row-Level Security (RLS)
 -- =====================================================================
 -- Finding A1/A2 remediation: make DB-layer tenant isolation REAL and

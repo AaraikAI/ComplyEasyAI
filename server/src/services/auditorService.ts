@@ -791,6 +791,14 @@ class AuditorService {
       throw new AppError('Audit engagement not found', 404);
     }
 
+    // Validate auditor profile belongs to this org (parent-org check)
+    const auditor = await prisma.auditorProfile.findFirst({
+      where: { id: data.auditorId, organizationId },
+    });
+    if (!auditor) {
+      throw new AppError('Auditor profile not found', 404);
+    }
+
     const id = uuidv4();
 
     const finding = await prisma.auditFinding.create({

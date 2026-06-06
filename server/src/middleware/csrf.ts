@@ -243,7 +243,15 @@ export const generateCsrfToken = async (req: Request, res: Response): Promise<vo
   const userId = (req as any).user?.id;
   await tokenStore.set(token, { expires, userId });
 
-  // Set CSRF token as HTTP-only cookie
+  // Set CSRF token as an httpOnly cookie. Because httpOnly blocks JavaScript
+  // from reading this cookie, the SPA cannot implement a true double-submit by
+  // copying the cookie into a request header. The canonical client flow is to
+  // read the token from the JSON body returned below and echo it in the
+  // `x-csrf-token` header on mutating requests. Until a frontend client wires
+  // that header, mutating-request protection for the SPA rests on the
+  // sameSite:'strict' attribute of the auth/session cookies. If a header-based
+  // double-submit is later required, drop httpOnly on THIS cookie only and have
+  // the api client attach the body token as `x-csrf-token`.
   res.cookie(CSRF_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -251,7 +259,8 @@ export const generateCsrfToken = async (req: Request, res: Response): Promise<vo
     maxAge: CSRF_TOKEN_EXPIRY,
   });
 
-  // Also send token in response body for client to use in headers
+  // Token is returned in the response body so the client can attach it as the
+  // x-csrf-token header (the cookie above is not JS-readable).
   res.json({
     csrfToken: token,
     expiresIn: CSRF_TOKEN_EXPIRY,

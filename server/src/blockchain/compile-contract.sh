@@ -119,11 +119,35 @@ fi
 BYTECODE=$(node -e "console.log(require('./$ARTIFACT_FILE').bytecode)")
 ABI=$(node -e "console.log(JSON.stringify(require('./$ARTIFACT_FILE').abi, null, 2))")
 
-# Save bytecode to file
+# Save bytecode to file (compiled/ is git-ignored: it is a build product
+# regenerated from contracts/ via this script).
+mkdir -p compiled
 echo "$BYTECODE" > compiled/ComplianceAuditLog.bytecode
 echo "$ABI" > compiled/ComplianceAuditLog.abi.json
 
+# Record build provenance so the bytecode can be reproduced/verified: solc
+# version + optimizer settings and the SHA-256 of both the source and the
+# emitted bytecode. CI can recompile and diff this manifest to detect tamper.
+if command -v sha256sum &> /dev/null; then
+    SRC_SHA=$(sha256sum contracts/ComplianceAuditLog.sol | awk '{print $1}')
+    BYTECODE_SHA=$(sha256sum compiled/ComplianceAuditLog.bytecode | awk '{print $1}')
+else
+    SRC_SHA=$(shasum -a 256 contracts/ComplianceAuditLog.sol | awk '{print $1}')
+    BYTECODE_SHA=$(shasum -a 256 compiled/ComplianceAuditLog.bytecode | awk '{print $1}')
+fi
+cat > compiled/ComplianceAuditLog.provenance.json << EOF
+{
+  "contract": "ComplianceAuditLog",
+  "source": "contracts/ComplianceAuditLog.sol",
+  "solcVersion": "0.8.20",
+  "optimizer": { "enabled": true, "runs": 200 },
+  "sourceSha256": "$SRC_SHA",
+  "bytecodeSha256": "$BYTECODE_SHA"
+}
+EOF
+
 echo -e "${GREEN}✓ Bytecode extracted${NC}"
+echo -e "${GREEN}✓ Provenance recorded (compiled/ComplianceAuditLog.provenance.json)${NC}"
 
 # Display results
 echo ""

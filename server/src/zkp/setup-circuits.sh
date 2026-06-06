@@ -21,6 +21,48 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
+CHECKSUMS_FILE="$SCRIPT_DIR/checksums.sha256"
+
+# Cross-platform SHA-256 of a file (Linux sha256sum / macOS shasum -a 256).
+compute_sha256() {
+    if command -v sha256sum &> /dev/null; then
+        sha256sum "$1" | awk '{print $1}'
+    elif command -v shasum &> /dev/null; then
+        shasum -a 256 "$1" | awk '{print $1}'
+    else
+        echo -e "${RED}Error: neither sha256sum nor shasum is available${NC}" >&2
+        return 2
+    fi
+}
+
+# Look up the pinned digest for a basename in checksums.sha256.
+pinned_sha256() {
+    local name="$1"
+    [ -f "$CHECKSUMS_FILE" ] || return 1
+    awk -v n="$name" '$1 !~ /^#/ && $2 == n { print $1; exit }' "$CHECKSUMS_FILE"
+}
+
+# Verify a downloaded file against an expected digest; fail closed (delete +
+# exit non-zero) on missing pin or mismatch. Args: <file> <expected_sha256>
+verify_sha256() {
+    local file="$1" expected="$2" actual
+    if [ -z "$expected" ]; then
+        echo -e "${RED}Refusing to install '$file': no pinned SHA-256 found.${NC}" >&2
+        echo -e "${RED}Add its digest to $CHECKSUMS_FILE (or set the relevant *_SHA256 env var) and retry.${NC}" >&2
+        rm -f "$file"
+        exit 1
+    fi
+    actual="$(compute_sha256 "$file")" || { rm -f "$file"; exit 1; }
+    if [ "$actual" != "$expected" ]; then
+        echo -e "${RED}Integrity check FAILED for '$file'.${NC}" >&2
+        echo -e "${RED}  expected: $expected${NC}" >&2
+        echo -e "${RED}  actual:   $actual${NC}" >&2
+        rm -f "$file"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ SHA-256 verified for $(basename "$file")${NC}"
+}
+
 echo -e "${YELLOW}Working directory: $SCRIPT_DIR${NC}"
 echo ""
 
@@ -41,14 +83,16 @@ echo "Step 1/6: Installing circom compiler..."
 if ! command -v circom &> /dev/null; then
     echo "Downloading circom..."
 
-    # Detect OS
+    # Detect OS and select the pinned v2.1.6 release asset.
     OS="$(uname -s)"
     case "$OS" in
         Linux*)
-            CIRCOM_URL="https://github.com/iden3/circom/releases/download/v2.1.6/circom-linux-amd64"
+            CIRCOM_ASSET="circom-linux-amd64"
+            CIRCOM_EXPECTED="${CIRCOM_SHA256_LINUX:-$(pinned_sha256 circom-linux-amd64)}"
             ;;
         Darwin*)
-            CIRCOM_URL="https://github.com/iden3/circom/releases/download/v2.1.6/circom-macos-amd64"
+            CIRCOM_ASSET="circom-macos-amd64"
+            CIRCOM_EXPECTED="${CIRCOM_SHA256_DARWIN:-$(pinned_sha256 circom-macos-amd64)}"
             ;;
         *)
             echo -e "${RED}Unsupported OS: $OS${NC}"
@@ -56,8 +100,11 @@ if ! command -v circom &> /dev/null; then
             exit 1
             ;;
     esac
+    CIRCOM_URL="https://github.com/iden3/circom/releases/download/v2.1.6/${CIRCOM_ASSET}"
 
     curl -L -o /tmp/circom "$CIRCOM_URL"
+    # Verify integrity BEFORE making the binary executable or installing it.
+    verify_sha256 /tmp/circom "$CIRCOM_EXPECTED"
     chmod +x /tmp/circom
     sudo mv /tmp/circom /usr/local/bin/circom
     echo -e "${GREEN}✓ circom installed${NC}"
@@ -105,6 +152,9 @@ if [ ! -f "$PTAU_FILE" ]; then
     for url in "${PTAU_URLS[@]}"; do
         echo "Trying: $url"
         if curl -L -f -o "$PTAU_FILE" "$url" 2>/dev/null; then
+            # Fail closed unless the file matches the pinned ceremony digest.
+            PTAU_EXPECTED="${PTAU_SHA256:-$(pinned_sha256 "$PTAU_FILE")}"
+            verify_sha256 "$PTAU_FILE" "$PTAU_EXPECTED"
             DOWNLOAD_SUCCESS=1
             echo -e "${GREEN}✓ Powers of Tau downloaded successfully${NC}"
             break
@@ -125,6 +175,9 @@ if [ ! -f "$PTAU_FILE" ]; then
         exit 1
     fi
 else
+    # Verify a pre-existing/cached copy against the pinned digest too.
+    PTAU_EXPECTED="${PTAU_SHA256:-$(pinned_sha256 "$PTAU_FILE")}"
+    verify_sha256 "$PTAU_FILE" "$PTAU_EXPECTED"
     echo -e "${GREEN}✓ Powers of Tau already exists${NC}"
 fi
 
@@ -276,6 +329,28 @@ for circuit in compliance_check credential_verification data_ownership; do
         echo "  ✗ vKey:  MISSING"
     fi
 done
+
+# Record a SHA-256 manifest of the generated build outputs so committed/cached
+# artifacts can be integrity-checked later (CI re-runs this and diffs the
+# manifest). Note: each run draws fresh CSPRNG entropy for the phase-2
+# contribution, so .zkey/.vkey digests are expected to change per setup; the
+# manifest pins THIS build's outputs for downstream verification.
+echo ""
+echo "Recording build artifact checksums..."
+BUILD_MANIFEST="build-artifacts.sha256"
+: > "$BUILD_MANIFEST"
+for circuit in compliance_check credential_verification data_ownership; do
+    for artifact in \
+        "compiled/wasm/${circuit}.wasm" \
+        "compiled/${circuit}.r1cs" \
+        "keys/proving/${circuit}.zkey" \
+        "keys/verification/${circuit}.vkey"; do
+        if [ -f "$artifact" ]; then
+            printf '%s  %s\n' "$(compute_sha256 "$artifact")" "$artifact" >> "$BUILD_MANIFEST"
+        fi
+    done
+done
+echo -e "${GREEN}✓ Build manifest written to $BUILD_MANIFEST${NC}"
 
 # Test the circuits
 echo ""

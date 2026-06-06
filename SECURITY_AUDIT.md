@@ -79,7 +79,7 @@ app.use(helmet({
 
 ### Data Protection
 
-- ✅ Password hashing (bcrypt)
+- ✅ Password hashing (PBKDF2-SHA256, 600k iterations)
 - ✅ Encryption at rest (BYOK support)
 - ✅ Encryption in transit (HTTPS)
 - ✅ PII redaction
@@ -305,7 +305,7 @@ curl -I http://localhost:3001/health
 If you discover a security vulnerability:
 
 1. **DO NOT** create a public GitHub issue
-2. Email security@complyeasy.ai (or your security contact)
+2. Email security@aaraik.ai (or your security contact)
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce

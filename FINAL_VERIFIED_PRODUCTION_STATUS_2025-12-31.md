@@ -1,4 +1,11 @@
 # Final Verified Production Status Report
+
+> ⚠️ **SUPERSEDED POINT-IN-TIME REPORT.** The "~55% production ready" figure below
+> is the assessment as of 2025-12-31 and is **not** the current status. It also
+> conflicts with other same-era status files. The single dated source of truth for
+> production readiness is **`PRODUCTION_READINESS_REPORT.md`** (findings-driven, per
+> `.claude/CLAUDE.md`). Do not cite this file's percentage as the live state.
+
 **Date:** December 31, 2025
 **Verified By:** Claude (Direct File System Scan - All Commands Executed Directly)
 **Branch:** main (commit 5142690)

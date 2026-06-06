@@ -301,6 +301,15 @@ caught. Key genuine gaps, logged for the audit trail (NONE are in the original 4
   secrets-rotation Lambda is a real 4-step impl; `preferences.ts`/`qrCode.ts` are clean. npm audit
   unchanged (root 0, server 29 / 0 critical-high).
 
+### CodeQL posture refresh (2026-06-06)
+
+The "CodeQL backlog is 1,163 open alerts (24 critical / 199 high)" figure in the 2026-06-02 scope-gap
+section above is **stale**. A live `gh api .../code-scanning/alerts` reconciliation on 2026-06-06 shows
+**155 open alerts (24 critical / 103 high)**. The remaining triage is operational (dismiss false
+positives / resolve true positives in the GitHub Security UI); it is not re-derivable from the working
+tree and requires live GitHub auth. Treat 155 open / 24 crit / 103 high as the current posture; the
+1,163 number is superseded by this note (history elsewhere is intentionally left unchanged).
+
 ---
 
 ## Architecture Quick Reference

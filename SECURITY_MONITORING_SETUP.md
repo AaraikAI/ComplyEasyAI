@@ -211,8 +211,10 @@ import { Client } from '@elastic/elasticsearch';
 const wazuhClient = new Client({
   node: process.env.WAZUH_INDEXER_URL || 'http://localhost:9200',
   auth: {
-    username: process.env.WAZUH_USERNAME || 'admin',
-    password: process.env.WAZUH_PASSWORD || 'admin',
+    // Fail closed: require explicitly provisioned credentials rather than
+    // falling back to a well-known default.
+    username: process.env.WAZUH_USERNAME ?? (() => { throw new Error('WAZUH_USERNAME is required'); })(),
+    password: process.env.WAZUH_PASSWORD ?? (() => { throw new Error('WAZUH_PASSWORD is required'); })(),
   },
 });
 
@@ -290,7 +292,7 @@ async function sendToSIEM(event: any) {
       body: JSON.stringify(event),
     });
   } catch (error) {
-    logger.error('[SIEM] Failed to send security event', error);
+    logger.error('[SIEM] Failed to send security event', { error: error instanceof Error ? error.message : String(error) });
   }
 }
 ```
@@ -309,7 +311,7 @@ logSecurityEvent({
   severity: 'medium',
   ipAddress: req.ip,
   userAgent: req.headers['user-agent'],
-  details: { reason: 'Invalid credentials', email: req.body.email },
+  details: { reason: 'Invalid credentials', userId: req.user?.id },
   timestamp: new Date(),
 });
 
@@ -336,8 +338,8 @@ The following environment variables would need to be added to `.env` (and `.env.
 | `SIEM_ENDPOINT` | Syslog or HTTP endpoint for SIEM | `http://siem.example.com:514` |
 | `WAZUH_ENABLED` | Enable Wazuh log transport | `true` |
 | `WAZUH_INDEXER_URL` | Wazuh indexer URL | `http://localhost:9200` |
-| `WAZUH_USERNAME` | Wazuh indexer username | `admin` |
-| `WAZUH_PASSWORD` | Wazuh indexer password | `admin` |
+| `WAZUH_USERNAME` | Wazuh indexer username | set a unique non-default username |
+| `WAZUH_PASSWORD` | Wazuh indexer password | set a strong unique credential (no default) |
 
 ---
 

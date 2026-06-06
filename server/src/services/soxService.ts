@@ -299,6 +299,9 @@ export class SOXService {
     metadata?: Record<string, unknown>;
     userId?: string;
   }): Promise<SOXTestResultRecord> {
+    if (!data.organizationId) {
+      throw new AppError('organizationId is required', 400);
+    }
     const id = this.generateId();
     const userId = data.userId || data.testerId || 'system';
     const tester = data.tester || data.testerName || data.testerId || 'Unknown';
@@ -353,7 +356,7 @@ export class SOXService {
 
     // Update the parent control's last tested date and status
     try {
-      const control = await prisma.sOXControl.findUnique({ where: { id: data.controlId } });
+      const control = await prisma.sOXControl.findFirst({ where: { id: data.controlId, organizationId: data.organizationId } });
       if (control) {
         const updatePayload: Record<string, unknown> = {
           lastTestDate: new Date(),

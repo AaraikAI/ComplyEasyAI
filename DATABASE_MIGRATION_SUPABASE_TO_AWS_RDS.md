@@ -61,10 +61,12 @@ Complete step-by-step guide to migrate your ComplyEasyAI database from Supabase 
    ```
 
 7. **Connectivity**
-   - **Compute resource:** Don't connect to EC2 instance (unless you have one)
+   - **Compute resource:** Connect to the application EC2 instance (or attach the DB to the same VPC)
    - **Network type:** IPv4
-   - **VPC:** Default VPC (or your custom VPC)
-   - **Public access:** **Yes** (required for external connections)
+   - **VPC:** Same VPC as the application, using **private subnets**
+   - **Public access:** **No** — place RDS in private subnets reachable only from the
+     app/EC2 security group. If you must run migrations from a workstation, do it over an
+     SSH bastion or AWS SSM port-forward rather than exposing the DB publicly.
    - **VPC security group:** Create new
      - Name: `complyeasyai-db-sg`
    - **Availability Zone:** No preference
@@ -99,8 +101,9 @@ Complete step-by-step guide to migrate your ComplyEasyAI database from Supabase 
      Protocol: TCP
      Port: 5432
      Source:
-       - Your IP: [Your current IP]/32
-       - Or: 0.0.0.0/0 (allow from anywhere - less secure)
+       - The application/EC2 security group ID (sg-xxxxx) — preferred
+       - For one-off admin access: a bastion host security group, or your IP /32
+       - Never use 0.0.0.0/0 (do not open the database to the internet)
      Description: ComplyEasy AI Database Access
      ```
    - Click **"Save rules"**

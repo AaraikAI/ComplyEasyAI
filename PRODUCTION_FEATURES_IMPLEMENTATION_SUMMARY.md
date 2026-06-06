@@ -220,6 +220,11 @@ This document summarizes the complete implementation of 5 critical features to p
 - ✅ Policy versioning
 - ✅ Frontend UI for all operations
 
+**Security posture:** Every generated Rego policy under `server/src/policies/*.rego`
+is **default-deny** (`default allow := false`) — access is denied unless an
+explicit rule grants it — and policy rules are tenant/role-scoped so evaluation
+cannot cross organization boundaries.
+
 ---
 
 ## Frontend API Client

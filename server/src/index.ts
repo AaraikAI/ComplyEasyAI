@@ -7,7 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import crypto from 'crypto';
 import config, { validateConfig } from './config';
 import logger from './config/logger';
-import prisma, { testConnection } from './config/database';
+import prisma, { testConnection, assertRlsPosture } from './config/database';
 import { AppError, errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter, authLimiter, ssoLimiter, scimLimiter } from './middleware/rateLimiter';
 import { authenticate } from './middleware/auth';
@@ -793,9 +793,18 @@ if (process.env.NODE_ENV !== 'test') {
   testConnection().then((connected) => {
     if (!connected) {
       logger.warn('⚠️  Starting server without database connection - some features may not work');
+      return;
     }
+    // Defense-in-depth gate: verify DB-layer RLS is actually enforced (role lacks
+    // BYPASSRLS, tenant tables FORCEd). Warns by default; throws when RLS_ENFORCE=true
+    // so a misconfigured production/CI boot halts. See RLS_DEPLOY_RUNBOOK.md.
+    return assertRlsPosture().then(() => undefined);
   }).catch((error) => {
-    logger.warn('⚠️  Database connection test failed:', error.message);
+    if (process.env.RLS_ENFORCE === 'true') {
+      logger.error('Boot halted: RLS posture assertion failed under RLS_ENFORCE:', error.message);
+      throw error;
+    }
+    logger.warn('⚠️  Database connection / RLS posture check failed:', error.message);
   });
 }
 

@@ -57,7 +57,7 @@ class DemoController {
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(input.email)) {
+      if (typeof input.email !== 'string' || input.email.length > 254 || !emailRegex.test(input.email)) {
         throw new AppError('Invalid email format', 400);
       }
 
