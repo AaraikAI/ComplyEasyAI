@@ -1,5 +1,6 @@
 // Offline shell behavior. Loaded as an external script so the page can enforce
 // a strict Content-Security-Policy (script-src 'self', no inline handlers).
+/* global window, document */
 
 (function () {
   'use strict';
