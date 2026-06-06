@@ -57,8 +57,8 @@ function createFetchMock(opts: { trends?: unknown } = { trends: MOCK_TRENDS }) {
       // When opts.trends is null, the trends endpoint yields no usable prior
       // data (simulating a backend that does not yet track history).
       return Promise.resolve({
-        ok: opts.trends != null,
-        json: () => Promise.resolve(opts.trends != null ? { data: opts.trends } : {}),
+        ok: opts.trends !== null && opts.trends !== undefined,
+        json: () => Promise.resolve(opts.trends !== null && opts.trends !== undefined ? { data: opts.trends } : {}),
       });
     }
     if (typeof url === 'string' && url.includes('/api/executive/dashboard')) {
