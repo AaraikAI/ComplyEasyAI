@@ -28,6 +28,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { allowTestApiCsp } from './_csp';
 
 // Cached auth profile re-seeded before every navigation (auth tokens live in
 // httpOnly cookies; only this non-sensitive profile is restored from localStorage).
@@ -96,6 +97,9 @@ async function seedAuth(page: Page): Promise<void> {
 }
 
 async function gotoPolicies(page: Page, path = '/policies'): Promise<void> {
+  // Permit the cross-origin HTTP API under test (local E2E stack serves the
+  // frontend on :4173 and the API on http://localhost:3001). See e2e/_csp.ts.
+  await allowTestApiCsp(page);
   await seedAuth(page);
   await stubOnboarding(page);
   await page.goto(path);

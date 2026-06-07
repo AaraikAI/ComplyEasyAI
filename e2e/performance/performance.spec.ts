@@ -354,6 +354,13 @@ test.describe('Resource Loading Performance', () => {
       /\[HMR\]/i,
       /Download the React DevTools/i,
       /WebSocket connection to .* failed/i,
+      // Test-env artifact only: the app CSP is `connect-src 'self' https:`
+      // (index.html). In prod VITE_API_URL is https/same-origin, so the API is
+      // allowed. The local E2E stack serves the API as cross-origin PLAINTEXT
+      // http://localhost:3001 (and ws://), which matches neither 'self' nor
+      // https:, so the browser blocks it. This never occurs in production.
+      /violates the following Content Security Policy directive: "connect-src/i,
+      /Refused to connect because it violates the document's Content Security Policy/i,
     ];
 
     page.on('console', (msg) => {

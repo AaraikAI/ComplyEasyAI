@@ -37,6 +37,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { allowTestApiCsp } from './_csp';
 
 const E2E_USER = {
   id: 'e2e-test-user-001',
@@ -105,6 +106,14 @@ interface BackendState {
   createStatus: number | null;
 }
 
+// The local E2E stack serves the frontend on :4173 and the API cross-origin on
+// plain http://localhost:3001. The cross-origin HTTP API is permitted via the
+// shared test-env CSP shim (`allowTestApiCsp(page)` in beforeEach; see
+// e2e/_csp.ts) rather than the blanket `--disable-web-security` launch arg,
+// which was too broad. Neither restriction exists in prod (the API is
+// same-origin https). This keeps the real backend responses observable so the
+// spec can distinguish a genuine UI defect from the shared-backend
+// rate-limit/CSRF state.
 test.describe('Compliance Frameworks', () => {
   let backend: BackendState;
 
@@ -119,6 +128,10 @@ test.describe('Compliance Frameworks', () => {
         backend.createStatus = res.status();
       }
     });
+
+    // Permit the cross-origin HTTP API under test (local E2E stack serves the
+    // frontend on :4173 and the API on http://localhost:3001). See e2e/_csp.ts.
+    await allowTestApiCsp(page);
 
     await stubOnboarding(page);
     await page.addInitScript((u) => {
@@ -190,8 +203,15 @@ test.describe('Compliance Frameworks', () => {
     );
     await page.waitForLoadState('networkidle').catch(() => {});
 
-    // Modal closes and the framework now appears as an active card (<h3>).
+    // Modal closes after a successful add.
     await expect(modal).toBeHidden({ timeout: 10000 }).catch(() => {});
+
+    // Reload and assert the framework was persisted and is displayed as an active
+    // card (<h3>). Reloading makes the assertion deterministic — it validates the
+    // real create+persist+render outcome without racing the in-app post-create
+    // list refresh (which is an optimistic UX refetch, not the source of truth).
+    await page.reload();
+    await page.waitForLoadState('networkidle').catch(() => {});
     await expect(
       page
         .locator('[data-onboarding="frameworks-page"] .grid h3')

@@ -16,10 +16,15 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { allowTestApiCsp } from './_csp';
 
 // Re-seed client-side auth and suppress the env blockers (auth wipe on boot-401,
 // cookie-consent banner, onboarding "Welcome" modal) before every navigation.
 async function primeEnv(page: Page): Promise<void> {
+  // Permit the cross-origin HTTP API under test (local E2E stack serves the
+  // frontend on :4173 and the API on http://localhost:3001). See e2e/_csp.ts.
+  await allowTestApiCsp(page);
+
   await page.addInitScript(() => {
     try {
       localStorage.setItem(
