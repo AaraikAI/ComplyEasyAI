@@ -104,6 +104,7 @@ function frameworkCards(page: Page) {
 interface BackendState {
   listRateLimited: boolean;
   createStatus: number | null;
+  csrfRateLimited: boolean;
 }
 
 // The local E2E stack serves the frontend on :4173 and the API cross-origin on
@@ -118,7 +119,7 @@ test.describe('Compliance Frameworks', () => {
   let backend: BackendState;
 
   test.beforeEach(async ({ page }) => {
-    backend = { listRateLimited: false, createStatus: null };
+    backend = { listRateLimited: false, createStatus: null, csrfRateLimited: false };
     page.on('response', (res) => {
       const url = res.url();
       if (/\/api\/frameworks(\?|$)/.test(url) && res.request().method() === 'GET' && res.status() === 429) {
@@ -126,6 +127,12 @@ test.describe('Compliance Frameworks', () => {
       }
       if (/\/api\/frameworks(\?|$)/.test(url) && res.request().method() === 'POST') {
         backend.createStatus = res.status();
+      }
+      // When the CSRF-token fetch is rate-limited the create POST can never fire,
+      // so createStatus stays null — track it so the test skips on env state
+      // rather than failing as if the Add button were broken.
+      if (/\/api\/csrf-token(\?|$)/.test(url) && res.status() === 429) {
+        backend.csrfRateLimited = true;
       }
     });
 
@@ -194,12 +201,13 @@ test.describe('Compliance Frameworks', () => {
     const resp = await createResp;
     const status = resp ? resp.status() : backend.createStatus;
 
-    // If the shared backend refused the create for environment reasons (429 rate
-    // limit, or 403 because the CSRF-token fetch was itself rate-limited), the
-    // card legitimately cannot appear — skip rather than fail on backend state.
+    // If the shared backend refused the create for environment reasons — a 429
+    // rate limit, a 403, or the create POST never firing because the CSRF-token
+    // fetch was itself rate-limited (status null + csrfRateLimited) — the card
+    // legitimately cannot appear; skip rather than fail on backend state.
     test.skip(
-      status === 429 || status === 403,
-      `Backend refused framework creation (HTTP ${status}) — rate-limit/CSRF environment state, not a UI defect.`,
+      status === 429 || status === 403 || (status == null && backend.csrfRateLimited),
+      `Backend refused framework creation (HTTP ${status ?? 'no-response'}; csrfRateLimited=${backend.csrfRateLimited}) — rate-limit/CSRF environment state, not a UI defect.`,
     );
     await page.waitForLoadState('networkidle').catch(() => {});
 
