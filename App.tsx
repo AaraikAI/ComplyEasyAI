@@ -21,6 +21,12 @@ import { toast } from 'sonner';
 import GlobalSearch from './components/GlobalSearch';
 import NotificationCenter from './components/NotificationCenter';
 import { logger } from './utils/logger';
+import JsonLd from './components/seo/JsonLd';
+import {
+  organizationSchema,
+  webSiteSchema,
+  softwareApplicationSchema,
+} from './components/seo/siteSchema';
 
 // ── Lazy-loaded public pages ──────────────────────────────────────────
 const SignupPage = lazy(() => import('./components/SignupPage'));
@@ -28,6 +34,26 @@ const LearnPage = lazy(() => import('./components/LearnPage'));
 const CommunityPage = lazy(() => import('./components/CommunityPage'));
 const StatusPage = lazy(() => import('./components/StatusPage'));
 const DocsPage = lazy(() => import('./components/DocsPage'));
+
+// ── Lazy-loaded marketing / SEO pages (public, crawlable) ─────────────
+const AICompliancePillar = lazy(() => import('./components/marketing/pages/AICompliancePillar'));
+const SOC2Pillar = lazy(() => import('./components/marketing/pages/SOC2Pillar'));
+const ISO27001Pillar = lazy(() => import('./components/marketing/pages/ISO27001Pillar'));
+const GDPRPillar = lazy(() => import('./components/marketing/pages/GDPRPillar'));
+const EUAIActPillar = lazy(() => import('./components/marketing/pages/EUAIActPillar'));
+const HIPAAPillar = lazy(() => import('./components/marketing/pages/HIPAAPillar'));
+const NISTAIRMFPillar = lazy(() => import('./components/marketing/pages/NISTAIRMFPillar'));
+const GRCPillar = lazy(() => import('./components/marketing/pages/GRCPillar'));
+const VantaAlternative = lazy(() => import('./components/marketing/pages/VantaAlternative'));
+const DrataAlternative = lazy(() => import('./components/marketing/pages/DrataAlternative'));
+const SecureframeAlternative = lazy(() => import('./components/marketing/pages/SecureframeAlternative'));
+const SprintoAlternative = lazy(() => import('./components/marketing/pages/SprintoAlternative'));
+const OneTrustAlternative = lazy(() => import('./components/marketing/pages/OneTrustAlternative'));
+const FaqHubPage = lazy(() => import('./components/marketing/pages/FaqHubPage'));
+const GlossaryIndex = lazy(() => import('./components/marketing/pages/GlossaryIndex'));
+const GlossaryTerm = lazy(() => import('./components/marketing/pages/GlossaryTerm'));
+const BlogIndex = lazy(() => import('./components/marketing/pages/BlogIndex'));
+const BlogPost = lazy(() => import('./components/marketing/pages/BlogPost'));
 
 // ── Lazy-loaded core views (still used directly) ─────────────────────
 const Frameworks = lazy(() => import('./components/Frameworks').then(m => ({ default: m.Frameworks })));
@@ -442,6 +468,9 @@ const PublicPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }
 const App: React.FC = () => {
   return (
     <BrowserRouter>
+      <JsonLd data={organizationSchema()} />
+      <JsonLd data={webSiteSchema()} />
+      <JsonLd data={softwareApplicationSchema()} />
       <Toaster richColors position="top-right" />
       <QueryProvider>
       <I18nProvider>
@@ -456,6 +485,30 @@ const App: React.FC = () => {
             <Route path="/status" element={<PublicPageWrapper><StatusPage /></PublicPageWrapper>} />
             <Route path="/docs" element={<PublicPageWrapper><DocsPage /></PublicPageWrapper>} />
             <Route path="/docs/*" element={<PublicPageWrapper><DocsPage /></PublicPageWrapper>} />
+
+            {/* ── Marketing / SEO pillar pages (public, crawlable) ──── */}
+            <Route path="/platform/ai-compliance" element={<PublicPageWrapper><AICompliancePillar /></PublicPageWrapper>} />
+            <Route path="/soc2-compliance" element={<PublicPageWrapper><SOC2Pillar /></PublicPageWrapper>} />
+            <Route path="/iso-27001" element={<PublicPageWrapper><ISO27001Pillar /></PublicPageWrapper>} />
+            <Route path="/gdpr" element={<PublicPageWrapper><GDPRPillar /></PublicPageWrapper>} />
+            <Route path="/eu-ai-act" element={<PublicPageWrapper><EUAIActPillar /></PublicPageWrapper>} />
+            <Route path="/hipaa" element={<PublicPageWrapper><HIPAAPillar /></PublicPageWrapper>} />
+            <Route path="/nist-ai-rmf" element={<PublicPageWrapper><NISTAIRMFPillar /></PublicPageWrapper>} />
+            <Route path="/grc" element={<PublicPageWrapper><GRCPillar /></PublicPageWrapper>} />
+
+            {/* ── Competitor comparison pages (public) ──────────────── */}
+            <Route path="/compare/vanta-alternative" element={<PublicPageWrapper><VantaAlternative /></PublicPageWrapper>} />
+            <Route path="/compare/drata-alternative" element={<PublicPageWrapper><DrataAlternative /></PublicPageWrapper>} />
+            <Route path="/compare/secureframe-alternative" element={<PublicPageWrapper><SecureframeAlternative /></PublicPageWrapper>} />
+            <Route path="/compare/sprinto-alternative" element={<PublicPageWrapper><SprintoAlternative /></PublicPageWrapper>} />
+            <Route path="/compare/onetrust-alternative" element={<PublicPageWrapper><OneTrustAlternative /></PublicPageWrapper>} />
+
+            {/* ── FAQ, Glossary, Blog (public) ──────────────────────── */}
+            <Route path="/faq" element={<PublicPageWrapper><FaqHubPage /></PublicPageWrapper>} />
+            <Route path="/glossary" element={<PublicPageWrapper><GlossaryIndex /></PublicPageWrapper>} />
+            <Route path="/glossary/:term" element={<PublicPageWrapper><GlossaryTerm /></PublicPageWrapper>} />
+            <Route path="/blog" element={<PublicPageWrapper><BlogIndex /></PublicPageWrapper>} />
+            <Route path="/blog/:slug" element={<PublicPageWrapper><BlogPost /></PublicPageWrapper>} />
 
             {/* Landing page at root for unauthenticated users */}
             <Route path="/" element={<AuthGate />} />

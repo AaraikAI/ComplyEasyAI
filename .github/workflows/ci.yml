@@ -281,6 +281,12 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      # Gate on valid structured data: parse every prerendered JSON-LD block and
+      # assert minimal required fields per @type. Fails the job on any malformed
+      # or empty schema so SEO/AEO structured data never regresses silently.
+      - name: Validate JSON-LD structured data
+        run: npm run validate:seo
+
       - name: Start frontend preview
         run: |
           npx vite preview --port 4173 &
@@ -672,11 +678,22 @@ jobs:
 
       - name: Deploy frontend to S3 + CloudFront
         run: |
+          # 1) Upload hashed assets with a 1-year immutable cache. Every HTML
+          #    file (root index.html AND nested prerendered per-route
+          #    index.html) is excluded here so it never inherits immutable
+          #    caching, then re-uploaded with no-cache below.
           aws s3 sync ./dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
-            --exclude "index.html" --exclude "*.json"
-          aws s3 cp ./dist/index.html s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html \
+            --exclude "*.html" --exclude "*.json"
+          # 2) Re-upload all HTML (root + nested prerendered shells) with a
+          #    no-cache policy so deploys are picked up immediately. The
+          #    recursive copy with --exclude "*" --include "*.html" covers
+          #    every index.html at any depth (e.g. /learn/index.html).
+          aws s3 cp ./dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
+            --recursive \
+            --exclude "*" --include "*.html" \
+            --content-type "text/html" \
             --cache-control "no-cache, no-store, must-revalidate"
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
