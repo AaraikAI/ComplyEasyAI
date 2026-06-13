@@ -131,6 +131,31 @@ export default [
     },
   },
   {
+    // Build/SEO scripts run under Node (sitemap, prerender, JSON-LD validation).
+    // prerender.mjs additionally references browser globals inside the
+    // page.evaluate() callbacks it injects into the headless browser.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        fetch: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        // browser globals (used only inside page.evaluate callbacks)
+        window: 'readonly',
+        document: 'readonly',
+      },
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
       'dist/**',
