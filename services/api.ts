@@ -773,10 +773,12 @@ export const api = {
 
   // --- Billing ---
   billing: {
-    createCheckout: async (tier: TierName, billingCycle: BillingCycle = 'annual') => {
+    createCheckout: async (tier: TierName, billingCycle: BillingCycle = 'annual', bundles?: string[]) => {
+      const body: any = { tier, billingCycle };
+      if (bundles && bundles.length > 0) body.bundles = bundles;
       return fetchAPI<{ url: string }>('/billing/checkout', {
         method: 'POST',
-        body: JSON.stringify({ tier, billingCycle }),
+        body: JSON.stringify(body),
       });
     },
 
@@ -2048,11 +2050,16 @@ export const api = {
   /**
    * Subscribe to a feature bundle
    */
-  subscribeToBundle: async (bundleId: string, billingCycle: 'monthly' | 'annual' = 'annual'): Promise<{ subscriptions: any[]; count: number }> => {
-    return fetchAPI<{ subscriptions: any[]; count: number }>(`/billing/bundles/${bundleId}/subscribe`, {
+  subscribeToBundle: async (bundleId: string, billingCycle: 'monthly' | 'annual' = 'annual'): Promise<{ success: boolean; bundleId: string; billingCycle: string }> => {
+    return fetchAPI<{ success: boolean; bundleId: string; billingCycle: string }>(`/billing/bundles/${bundleId}/subscribe`, {
       method: 'POST',
       body: JSON.stringify({ billingCycle }),
     });
+  },
+
+  /** Remove a feature bundle subscription */
+  removeBundle: async (bundleId: string): Promise<{ success: boolean; bundleId: string }> => {
+    return fetchAPI<{ success: boolean; bundleId: string }>(`/billing/bundles/${bundleId}`, { method: 'DELETE' });
   },
 
   // ============================================================================

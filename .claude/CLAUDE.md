@@ -310,6 +310,61 @@ positives / resolve true positives in the GitHub Security UI); it is not re-deri
 tree and requires live GitHub auth. Treat 155 open / 24 crit / 103 high as the current posture; the
 1,163 number is superseded by this note (history elsewhere is intentionally left unchanged).
 
+### ZK / blockchain status refresh (2026-06-11)
+
+Two prior claims in the 2026-06-02 scope-gap section are now **partially stale** — verified against the
+current working tree (file:line below):
+
+- **ZK trusted-setup entropy is FIXED (no longer forgeable).** The earlier claim ("toxic waste = literal
+  `"random text"` / `date +%s`; proofs are forgeable") is **no longer true**. All three setup paths now
+  draw from a CSPRNG: `server/scripts/trusted-setup.sh:50,78` and `server/src/zkp/setup-circuits.sh:253`
+  use `head -c 64 /dev/urandom | base64`. `setup-circuits.sh:235-260` also adds a multi-party contributor
+  loop (`ZKEY_EXTRA_CONTRIBUTORS`). **However ZK is still EXPERIMENTAL / not runnable as-shipped:** no
+  compiled artifacts exist — `server/src/zkp/keys/` and `server/src/zkp/compiled/` are **absent**, so no
+  proving/verification keys are present and proofs cannot be generated at runtime. The service is
+  **fail-closed**: `zeroKnowledgeService.ts:116-119,465-498` only emits a simulated proof when
+  `ZK_ALLOW_SIMULATED==='true'` (OFF by default); otherwise it throws. Verdict: **EXPERIMENTAL** — sound
+  circuits + entropy, but needs the one-time circuit compile/key-gen (ideally a real multi-party ceremony)
+  before it does anything in prod.
+- **Blockchain anchoring is EXPERIMENTAL by deployment, not by code quality.** Contracts are real and
+  compiled (`server/src/blockchain/contracts/ComplianceRegistry.sol` ~1,262 lines; compiled artifact in
+  `server/src/blockchain/artifacts/ComplianceRegistry.json`), and the ethers integration is complete
+  (`services/advanced/blockchainService.ts`). But **no contract is deployed**: init is env-gated on
+  `COMPLIANCE_CONTRACT_ADDRESS` / `COMPLIANCE_REGISTRY_ADDRESS` (`blockchainService.ts:233-253`), and the
+  scoring/cert paths **throw 501** when the registry isn't configured (`:663-668,770-774`) — fail-closed,
+  not fail-open. Verdict: **EXPERIMENTAL** until contracts are deployed to a network and the addresses set.
+
+Net: the Section-13 "treat as experimental" guidance in `Go Live to Production.md` still holds, but the
+*reason* is now "no compiled keys / no deployed contracts," not "forgeable entropy."
+
+#### ZK keys GENERATED + runtime proofs verified (2026-06-12 build)
+
+The "no compiled keys / not runnable" gap above is now **closed for ZK** (blockchain anchoring still needs
+on-chain deployment). This session compiled the circuits and ran the phase-2 setup end-to-end:
+
+- **circom via Docker (no sudo):** built a pinned `circom v2.1.6` linux/amd64 image (`complyeasy/circom:2.1.6`)
+  and a `/tmp/zkbin/circom` shim that mounts the repo root (so the circuits' `../../../node_modules/circomlib`
+  includes resolve in-container). `circomlib@2.0.5` added as a **server devDependency** (the circuits
+  `include` its `.circom` sources; only `circomlibjs` was present before — that was the compile blocker).
+- **Artifacts generated** under `server/src/zkp/compiled/` + `keys/` via `setup-circuits.sh` with
+  `ZKEY_EXTRA_CONTRIBUTORS=2` (**3 phase-2 contributions**, each `/dev/urandom` entropy). Real constraint
+  counts: compliance_check 444, credential_verification 976, data_ownership 1003.
+- **Runtime-faithful validation PASSED:** all 3 circuits prove+verify through the exact paths
+  `zeroKnowledgeService.ts` reads (`compiled/wasm/<c>.wasm`, `keys/proving/<c>.zkey`,
+  `keys/verification/<c>.vkey`); a tampered public signal is **rejected**. The service uses real proofs
+  whenever these files exist (simulated path stays OFF unless `ZK_ALLOW_SIMULATED='true'`).
+- **Phase-2 trust caveat:** the 3 contributions are **single-machine** (sound entropy, but not independent
+  parties). For a genuinely distributed ceremony, run the new tooling in **`server/src/zkp/ceremony/`**
+  (coordinator-init → participant-contribute on separate machines → finalize-beacon → verify-transcript +
+  attestation template). Phase 1 = the public Hermez `powersOfTau28_hez_final_12.ptau` (real ceremony,
+  SHA-pinned, never committed).
+- **Artifact storage:** `*.wasm` + `*.vkey` (+ `*.r1cs`/`*.sym`) are committed; proving `*.zkey` + the
+  `.ptau` are gitignored (Git LFS is **not installed** on this machine) — deploy must run `setup-circuits.sh`
+  (or fetch the zkeys) so the server can generate proofs.
+- **Two latent bugs fixed (not band-aids):** `setup-circuits.sh` now `mkdir -p compiled` before `circom -o
+  compiled/` (it errored "invalid output path" without it); `test-end-to-end.js` now reads
+  `compiled/wasm/<c>.wasm` (the relocated/runtime path) instead of the stale circom-default `<c>_js/` path.
+
 ---
 
 ## Operational lessons learned — tooling & environment (2026-06-06 remediation run)
@@ -379,6 +434,61 @@ Bring the full stack up locally to verify E2E before pushing (CI E2E round-trips
   completion by which files exist, and re-run only the missing batches (resume-friendly).
 - **Session limits can truncate a long swarm mid-run.** Make every phase resumable: write per-unit artifacts,
   then detect-missing-and-rerun rather than restarting the whole workflow.
+
+---
+
+## E2E (Playwright) stabilization — what the static deep-scan structurally missed (2026-06-07)
+
+A 100%-file-coverage **static** deep-scan (D1/D2/D3/D5 only) implied near-readiness, but the dynamic E2E
+phase (**D6**) had **never run to completion** in CI (always cancelled). When finally run end-to-end, the
+chromium suite had **96 failures** that line-by-line reads **could not** find. **Lesson: a deep scan is NOT
+production-grade until D6 actually runs the FULL Playwright suite to completion against a real stack and
+every failure is triaged to a root cause.** The 96 collapsed to a handful of root causes:
+
+1. **Onboarding Welcome modal intercepts ALL clicks (~85 of the 96).** A full-screen
+   `<div role="dialog" aria-label="Welcome to ComplyEasy AI" class="fixed inset-0 z-50 …">` overlays the app.
+   `contexts/OnboardingContext.tsx`'s progress-load **catch block** force-started the welcome flow whenever
+   `/onboarding/progress` failed (the e2e mock user has no real session → 401), **ignoring** the persisted
+   `onboarding_completed`/`hasSeenOnboarding` localStorage markers. Fixed: on load failure, respect the local
+   markers and do NOT auto-pop the wizard (also a real UX bug — an API hiccup shouldn't block a returning
+   user). A static reader sees a normal modal component; only a running browser shows it eating every click.
+2. **CSP `frame-ancestors` in a `<meta>` tag is ignored by browsers** (works only as an HTTP header) and logs
+   a fatal console error the perf test catches. Removed from `index.html` meta; framing is enforced by the
+   CloudFront `ResponseHeadersPolicy` + nginx header. Static reads "see CSP present" and pass it.
+3. **The local backend MUST be started with the EXACT CI env** or you get false failures: `CORS_ORIGIN` +
+   `CLIENT_URL=http://localhost:4173`, `ENCRYPTION_KEY`, `GEMINI_API_KEY`, `SENDGRID_*`, JWT secrets (see
+   `.github/workflows/ci.yml` → `Start backend` env). Missing `CORS_ORIGIN` made all CORS tests fail locally
+   while passing in CI — a local-only artifact that wasted a debugging cycle.
+4. **Rate-limiting (429) under concurrent E2E load is BY DESIGN and cannot be disabled.** `isDev` in
+   `server/src/middleware/rateLimiter.ts` is `env==='development'` only, so `NODE_ENV=test` uses strict prod
+   limits, **and** jest `security/rate-limiting.contract.test.ts` + `unit/middleware/rateLimiter.test.ts`
+   REQUIRE the limiter to return 429 (so you cannot relax it for tests). The suite is architected around it:
+   per-test 429-tolerance + CI **`retries: 2`**. A single-backend `--workers=3 --retries=0` local run is
+   HARSHER than CI's 4-sharded `--workers=2 --retries=2` (4 separate backends), so it exposes flakes CI
+   absorbs. Reproduce CI faithfully or you will chase non-CI failures.
+5. **THE deep one — cross-origin httpOnly-cookie auth does NOT work in the E2E env, so org-scoped CREATE
+   flows can't persist.** The stack is cross-origin (frontend `:4173`, API `:3001`). Real auth uses httpOnly
+   cookies, but a cross-origin XHR only sends them as `SameSite=None; Secure`, which browsers reject over
+   plain http. So the suite uses a **localStorage mock user with NO real backend session** → every create
+   POST 401s and **never even fires** (the client gates on auth). Read/render tests pass; tests requiring
+   **persisted** org-scoped data (e.g. `compliance-frameworks` "add a framework from the catalog" → the new
+   card must appear) CANNOT pass with mock-auth on a fresh DB. **This one test took 4 GitHub pushes of
+   band-aid fixes (reload-and-assert, create-429 skip, list-429 skip, CSRF-429 skip) that ALL failed in CI**
+   because they treated symptoms, not the cross-origin root. Diagnosis only landed by **probing the running
+   app** (Playwright: clicking "Add" fired ZERO `/api/frameworks` requests) — impossible from static reads.
+   **The correct, production-aligned fix is to make the E2E env SAME-ORIGIN** (vite `preview.proxy` routes
+   `/api` → backend; build the frontend with `VITE_API_URL=/api`), exactly like production (CloudFront serves
+   the SPA and proxies `/api`). Then real `register`+`login` cookies flow, CSP `connect-src 'self'` covers the
+   API (no per-spec CSP shim needed), and create flows persist. **Rule: when an E2E test needs persisted
+   backend state, do NOT patch the assertion — fix the auth/origin architecture so the test exercises the
+   real flow the way production does. Patching assertions across 4 pushes is the anti-pattern to avoid.**
+
+> **Local E2E stack that reproduces CI faithfully** (added to the tooling section above): postgres:16-alpine +
+> redis:7-alpine containers, `prisma db push`, build FE+BE, start backend on `:3001` with the **full** CI env
+> block (item 3), `vite preview --port 4173`, then `CI=true E2E_BASE_URL=http://localhost:4173
+> API_URL=http://localhost:3001 npx playwright test --project=chromium`. Reset the DB (`DROP SCHEMA public
+> CASCADE; CREATE SCHEMA public; prisma db push`) between full runs — accumulated state hides fresh-DB failures
+> (e.g. add-framework "passes" locally only because a prior run already created the framework).
 
 ---
 

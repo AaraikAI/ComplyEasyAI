@@ -436,6 +436,14 @@ class FeatureService {
 
   /**
    * Subscribe to a feature bundle
+   *
+   * @deprecated This path charges the inflated sum-of-individual-feature prices
+   * (it creates one subscription per feature in the bundle, so the customer pays
+   * the full a-la-carte total with NO 15% bundle discount). The billing endpoint
+   * (POST /api/billing/bundles/:bundleId/subscribe) now uses
+   * `stripeService.addBundle`, which charges the single discounted bundle price.
+   * Kept only for any internal / a-la-carte callers that still need per-feature
+   * provisioning.
    */
   async subscribeToBundle(
     organizationId: string,

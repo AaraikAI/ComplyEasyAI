@@ -22,6 +22,7 @@ import logger from '../config/logger';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { TierName, TIERS, getTier, getTierIndex, BillingCycle } from '../config/tiers';
+import { FEATURE_BUNDLES } from '../config/features';
 import type { Plan, SubscriptionStatus, SubscriptionChangeType } from '../generated/prisma/client';
 import notificationService from './notificationService';
 
@@ -52,6 +53,7 @@ interface CreateCheckoutSessionOptions {
   cancelUrl: string;
   userCount?: number; // For scaled pricing
   addOns?: string[]; // Add-on IDs to include
+  bundles?: string[]; // Feature-bundle IDs to include (single discounted price each)
   trialDays?: number;
   couponCode?: string;
 }
@@ -114,6 +116,28 @@ const ADDON_PRICE_IDS: Record<string, string> = {
   'custom-ai-models': process.env.STRIPE_ADDON_CUSTOM_AI_PRICE_ID || '',
   'vciso-service': process.env.STRIPE_ADDON_VCISO_PRICE_ID || '',
   'audit-bundling': process.env.STRIPE_ADDON_AUDIT_BUNDLING_PRICE_ID || '',
+};
+
+// Feature-bundle price IDs (single discounted price per bundle; monthly + annual).
+// Keyed by the FEATURE_BUNDLES id from config/features.ts. Each bundle already
+// bakes in its 15% discount via FEATURE_BUNDLES[id].basePrice{Annual,Monthly}.
+const BUNDLE_PRICE_IDS: Record<string, { monthly: string; annual: string }> = {
+  'ai-suite-bundle': {
+    monthly: process.env.STRIPE_BUNDLE_AI_SUITE_MONTHLY_PRICE_ID || '',
+    annual: process.env.STRIPE_BUNDLE_AI_SUITE_ANNUAL_PRICE_ID || '',
+  },
+  'enterprise-bundle': {
+    monthly: process.env.STRIPE_BUNDLE_ENTERPRISE_MONTHLY_PRICE_ID || '',
+    annual: process.env.STRIPE_BUNDLE_ENTERPRISE_ANNUAL_PRICE_ID || '',
+  },
+  'acos-bundle': {
+    monthly: process.env.STRIPE_BUNDLE_ACOS_MONTHLY_PRICE_ID || '',
+    annual: process.env.STRIPE_BUNDLE_ACOS_ANNUAL_PRICE_ID || '',
+  },
+  'visionary-bundle': {
+    monthly: process.env.STRIPE_BUNDLE_VISIONARY_MONTHLY_PRICE_ID || '',
+    annual: process.env.STRIPE_BUNDLE_VISIONARY_ANNUAL_PRICE_ID || '',
+  },
 };
 
 // Canonical annual pricing in cents for each tier (used for auto-provisioning)
@@ -194,6 +218,80 @@ async function ensureStripePricesExist(): Promise<void> {
   }
 }
 
+/**
+ * Ensure Stripe products & prices exist for every feature bundle.
+ * Mirrors ensureStripePricesExist for the discounted bundles. When the
+ * STRIPE_BUNDLE_*_{MONTHLY,ANNUAL}_PRICE_ID env vars are empty, this provisions
+ * a product + monthly/annual prices from the canonical FEATURE_BUNDLES base
+ * prices and caches the resulting ids in BUNDLE_PRICE_IDS for the process lifetime.
+ */
+let bundlePricesProvisioned = false;
+async function ensureStripeBundlePricesExist(): Promise<void> {
+  if (bundlePricesProvisioned) return;
+  if (!config.stripe.secretKey) return;
+
+  bundlePricesProvisioned = true; // prevent re-entrance
+
+  for (const bundleId of Object.keys(BUNDLE_PRICE_IDS)) {
+    const ids = BUNDLE_PRICE_IDS[bundleId];
+    const bundle = FEATURE_BUNDLES[bundleId];
+    if (!bundle) continue;
+
+    // Skip if both prices are already configured
+    if (ids.annual && ids.annual.startsWith('price_') && ids.monthly && ids.monthly.startsWith('price_')) {
+      continue;
+    }
+
+    try {
+      // Search for an existing product with matching metadata
+      const existingProducts = await stripe.products.search({
+        query: `metadata["bundleId"]:"${bundleId}"`,
+        limit: 1,
+      });
+
+      let productId: string;
+      if (existingProducts.data.length > 0) {
+        productId = existingProducts.data[0].id;
+      } else {
+        const product = await stripe.products.create({
+          name: `ComplyEasy – ${bundle.name}`,
+          description: bundle.description || undefined,
+          metadata: { bundleId, type: 'bundle' },
+        });
+        productId = product.id;
+      }
+
+      // Create annual price if missing
+      if (!ids.annual || !ids.annual.startsWith('price_')) {
+        const annualPrice = await stripe.prices.create({
+          product: productId,
+          currency: 'usd',
+          unit_amount: Math.round(bundle.basePriceAnnual * 100),
+          recurring: { interval: 'year' },
+          metadata: { bundleId, billingCycle: 'annual', type: 'bundle' },
+        });
+        ids.annual = annualPrice.id;
+      }
+
+      // Create monthly price if missing
+      if (!ids.monthly || !ids.monthly.startsWith('price_')) {
+        const monthlyPrice = await stripe.prices.create({
+          product: productId,
+          currency: 'usd',
+          unit_amount: Math.round(bundle.basePriceMonthly * 100),
+          recurring: { interval: 'month' },
+          metadata: { bundleId, billingCycle: 'monthly', type: 'bundle' },
+        });
+        ids.monthly = monthlyPrice.id;
+      }
+
+      logger.info(`[Stripe] Bundle prices provisioned for ${bundleId}: annual=${ids.annual}, monthly=${ids.monthly}`);
+    } catch (error) {
+      logger.error(`[Stripe] Failed to provision bundle prices for ${bundleId}`, error);
+    }
+  }
+}
+
 // ============================================================================
 // STRIPE SERVICE CLASS
 // ============================================================================
@@ -247,12 +345,16 @@ class StripeService {
         cancelUrl,
         userCount = 10,
         addOns = [],
+        bundles = [],
         trialDays,
         couponCode,
       } = options;
 
       // Ensure Stripe prices exist (auto-provisions if env vars are empty)
       await ensureStripePricesExist();
+      if (bundles.length > 0) {
+        await ensureStripeBundlePricesExist();
+      }
 
       // Get price ID for the tier and billing cycle
       const priceId = PRICE_IDS[tierName][billingCycle];
@@ -284,6 +386,20 @@ class StripeService {
         }
       }
 
+      // Add feature bundles if selected (single discounted price per bundle,
+      // matching the chosen billing cycle).
+      for (const bundleId of bundles) {
+        const bundlePriceId = BUNDLE_PRICE_IDS[bundleId]?.[billingCycle];
+        if (bundlePriceId && bundlePriceId.startsWith('price_')) {
+          lineItems.push({
+            price: bundlePriceId,
+            quantity: 1,
+          });
+        } else {
+          logger.warn(`[Stripe] Skipping bundle "${bundleId}" — no ${billingCycle} price configured`);
+        }
+      }
+
       // Build session params
       const sessionParams: Stripe.Checkout.SessionCreateParams = {
         customer: customerId,
@@ -299,6 +415,7 @@ class StripeService {
           billingCycle,
           userCount: userCount.toString(),
           addOns: JSON.stringify(addOns),
+          bundles: JSON.stringify(bundles),
         },
         subscription_data: {
           metadata: {
@@ -774,6 +891,149 @@ class StripeService {
   }
 
   /**
+   * Add a feature bundle to an existing subscription as a single discounted
+   * line item (the bundle's monthly/annual price). The bundle id is recorded
+   * in organization.activeAddOns alongside add-ons.
+   */
+  async addBundle(
+    organizationId: string,
+    bundleId: string,
+    billingCycle: 'monthly' | 'annual' = 'annual'
+  ): Promise<boolean> {
+    try {
+      const bundle = FEATURE_BUNDLES[bundleId];
+      if (!bundle) {
+        throw new AppError('Bundle not found', 404);
+      }
+
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!org?.stripeSubscriptionId) {
+        throw new AppError('No active subscription found', 404);
+      }
+
+      // Enforce the bundle's minimum-tier requirement
+      if (bundle.requiresTier) {
+        const currentTier = org.plan as TierName;
+        if (getTierIndex(currentTier) < getTierIndex(bundle.requiresTier)) {
+          throw new AppError(`Bundle requires ${bundle.requiresTier} tier or higher`, 403);
+        }
+      }
+
+      // Auto-provision bundle prices if env vars are empty, then resolve the id
+      await ensureStripeBundlePricesExist();
+      const ids = BUNDLE_PRICE_IDS[bundleId];
+      const bundlePriceId = ids?.[billingCycle];
+      if (!bundlePriceId || !bundlePriceId.startsWith('price_')) {
+        throw new AppError(`Price for bundle ${bundleId} (${billingCycle}) is not configured`, 400);
+      }
+
+      // Don't add the bundle twice — check the live subscription items
+      const subscription = await stripe.subscriptions.retrieve(org.stripeSubscriptionId);
+      const alreadyOnSub = subscription.items.data.some(
+        item => item.price.id === ids.monthly || item.price.id === ids.annual
+      );
+      if (!alreadyOnSub) {
+        await stripe.subscriptionItems.create({
+          subscription: org.stripeSubscriptionId,
+          price: bundlePriceId,
+          quantity: 1,
+        });
+      }
+
+      // Record the bundle on the organization
+      const currentAddOns = org.activeAddOns || [];
+      if (!currentAddOns.includes(bundleId)) {
+        await prisma.organization.update({
+          where: { id: organizationId },
+          data: { activeAddOns: [...currentAddOns, bundleId] },
+        });
+      }
+
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId,
+          previousPlan: org.plan,
+          newPlan: org.plan,
+          previousStatus: org.subscriptionStatus,
+          newStatus: org.subscriptionStatus,
+          changeType: 'addon_added',
+          metadata: { bundleId, billingCycle, type: 'bundle' },
+          changedBy: 'system',
+        },
+      });
+
+      logger.info(`Bundle ${bundleId} (${billingCycle}) added for org ${organizationId}`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to add bundle', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to add bundle', 502);
+    }
+  }
+
+  /**
+   * Remove a feature bundle from a subscription. Matches the bundle's monthly
+   * OR annual price on the live subscription, deletes that item, and clears the
+   * id from organization.activeAddOns.
+   */
+  async removeBundle(organizationId: string, bundleId: string): Promise<boolean> {
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!org?.stripeSubscriptionId) {
+        throw new AppError('No active subscription found', 404);
+      }
+
+      // Find and remove the bundle's line item from the Stripe subscription
+      const subscription = await stripe.subscriptions.retrieve(org.stripeSubscriptionId);
+      const ids = BUNDLE_PRICE_IDS[bundleId];
+      const bundleItem = ids
+        ? subscription.items.data.find(
+            item => item.price.id === ids.monthly || item.price.id === ids.annual
+          )
+        : undefined;
+
+      if (bundleItem) {
+        await stripe.subscriptionItems.del(bundleItem.id);
+      }
+
+      // Update organization
+      const currentAddOns = org.activeAddOns || [];
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: {
+          activeAddOns: currentAddOns.filter(id => id !== bundleId),
+        },
+      });
+
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId,
+          previousPlan: org.plan,
+          newPlan: org.plan,
+          previousStatus: org.subscriptionStatus,
+          newStatus: org.subscriptionStatus,
+          changeType: 'addon_removed',
+          metadata: { bundleId, type: 'bundle' },
+          changedBy: 'system',
+        },
+      });
+
+      logger.info(`Bundle ${bundleId} removed for org ${organizationId}`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to remove bundle', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to remove bundle', 502);
+    }
+  }
+
+  /**
    * Handle Stripe webhooks
    */
   async handleWebhook(payload: Buffer, signature: string): Promise<{
@@ -875,6 +1135,10 @@ class StripeService {
     const tierName = (session.metadata?.tierName as TierName) || 'Foundation';
     const billingCycle = (session.metadata?.billingCycle as 'monthly' | 'annual') || 'annual';
     const addOns = session.metadata?.addOns ? JSON.parse(session.metadata.addOns) : [];
+    const bundles = session.metadata?.bundles ? JSON.parse(session.metadata.bundles) : [];
+    // Bundles and add-ons share the organization.activeAddOns array (ids are
+    // namespaced and non-colliding); de-dupe in case of replays.
+    const activeEntitlements = Array.from(new Set([...addOns, ...bundles]));
 
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },
@@ -917,7 +1181,7 @@ class StripeService {
           subscriptionStartedAt: new Date(),
           subscriptionEndsAt: subscriptionEnd,
           trialEndsAt: trialEnd,
-          activeAddOns: addOns,
+          activeAddOns: activeEntitlements,
         },
       });
 
@@ -930,7 +1194,7 @@ class StripeService {
           newStatus: 'active',
           changeType: organization.subscriptionStatus === 'trialing' ? 'trial_ended' : 'upgrade',
           stripeEventId: session.id,
-          metadata: { billingCycle, addOns },
+          metadata: { billingCycle, addOns, bundles },
           changedBy: 'system',
         },
       });
