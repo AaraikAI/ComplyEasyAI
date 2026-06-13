@@ -23,6 +23,8 @@ const mockReactivateSubscription = createMock();
 const mockAddAddOn = createMock();
 const mockRemoveAddOn = createMock();
 const mockCreateQuote = createMock();
+const mockAddBundle = createMock();
+const mockRemoveBundle = createMock();
 
 jest.mock('../../../services/stripeService', () => ({
   __esModule: true,
@@ -38,6 +40,8 @@ jest.mock('../../../services/stripeService', () => ({
     addAddOn: mockAddAddOn,
     removeAddOn: mockRemoveAddOn,
     createQuote: mockCreateQuote,
+    addBundle: mockAddBundle,
+    removeBundle: mockRemoveBundle,
   },
 }));
 

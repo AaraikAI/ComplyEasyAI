@@ -771,9 +771,16 @@ class BillingController {
         throw new AppError('Invalid billing cycle. Use "monthly" or "annual"', 400);
       }
 
+      // Add the bundle as a single Stripe line item (billing), then grant the
+      // per-feature entitlements the bundle includes and return them.
       await stripeService.addBundle(organizationId, bundleId, billingCycle);
+      const subscriptions = await featureService.subscribeToBundle(
+        organizationId,
+        bundleId,
+        billingCycle
+      );
 
-      res.json({ success: true, bundleId, billingCycle });
+      res.json({ subscriptions, count: subscriptions.length });
     } catch (error) {
       logger.error('Subscribe to bundle error', error);
       if (error instanceof AppError) throw error;
