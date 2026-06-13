@@ -11,7 +11,10 @@ export interface JsonLdProps {
 const JsonLd: React.FC<JsonLdProps> = ({ data }) => (
   <script
     type="application/ld+json"
-    dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    // Escape every '<' as its < JSON escape so a value containing a
+    // literal </script> can never break out of the element (defense-in-depth;
+    // the browser still parses it back to valid JSON-LD).
+    dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, '\\u003c') }}
   />
 );
 
