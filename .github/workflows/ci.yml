@@ -280,6 +280,13 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+        env:
+          # Build the SPA to call the API same-origin (/api). `vite preview`
+          # reverse-proxies /api to the backend on :3001, so the real httpOnly
+          # session cookies flow with the app's XHRs — mirroring production
+          # (CloudFront serves the SPA and proxies /api) and letting org-scoped
+          # create flows persist in E2E instead of 401'ing under mock auth.
+          VITE_API_URL: /api
 
       # Gate on valid structured data: parse every prerendered JSON-LD block and
       # assert minimal required fields per @type. Fails the job on any malformed
