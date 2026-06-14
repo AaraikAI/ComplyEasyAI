@@ -111,6 +111,68 @@ setup('authenticate', async ({ page }) => {
     }
   }
 
+  // Establish a REAL backend session (additive). The E2E app is served
+  // SAME-ORIGIN (vite preview proxies /api -> backend), so the httpOnly session
+  // cookies the backend sets — sameSite 'strict', secure off under NODE_ENV=test
+  // — flow with the app's same-origin XHRs exactly like production. This lets
+  // specs that exercise persisted, org-scoped flows (create -> persist -> render)
+  // actually persist, instead of 401'ing the way cross-origin mock auth did.
+  // CSRF is exempt for /auth/register and /auth/login (bootstrap endpoints), so
+  // no token is needed here. We keep the mock `user_data` above for display
+  // continuity and register the real user with the SAME name/org name, so any
+  // spec asserting on those strings is unaffected. Best-effort: if the backend
+  // is unavailable or login fails, the suite falls back to mock-only auth.
+  const REAL_EMAIL = process.env.E2E_REAL_EMAIL || 'e2e-real@complyeasyai.com';
+  const REAL_PASSWORD = process.env.E2E_REAL_PASSWORD || 'E2eRealPass!2026';
+  try {
+    // Register creates the user (and its organization). The user row is committed
+    // before the welcome-email step, so even if email delivery is unconfigured
+    // and the call returns 500, the account still exists for the login below.
+    await page.request.post('/api/auth/register', {
+      data: {
+        email: REAL_EMAIL,
+        password: REAL_PASSWORD,
+        name: TEST_USER.name,
+        organizationName: TEST_USER.organization.name,
+      },
+      failOnStatusCode: false,
+    });
+    const loginRes = await page.request.post('/api/auth/login', {
+      data: { email: REAL_EMAIL, password: REAL_PASSWORD },
+      failOnStatusCode: false,
+    });
+    if (loginRes.ok()) {
+      console.log('Real E2E backend session established for', REAL_EMAIL);
+      // A freshly-registered real user legitimately has welcomeCompleted=false,
+      // so the app's full-screen "Welcome to ComplyEasy AI" onboarding wizard
+      // (a fixed inset-0 z-50 dialog) auto-opens on every page and intercepts all
+      // clicks. The suite models a RETURNING user, so mark the onboarding flows
+      // skipped in the BACKEND — now the real source of truth, since the app reads
+      // a real session and no longer trusts the localStorage markers alone. These
+      // are mutating POSTs, so fetch a CSRF token first (double-submit cookie).
+      try {
+        const csrfBody = await (await page.request.get('/api/csrf-token')).json();
+        if (csrfBody?.csrfToken) {
+          for (const flowName of ['welcome', 'tier_tour']) {
+            await page.request.post('/api/onboarding/skip-flow', {
+              headers: { 'x-csrf-token': csrfBody.csrfToken },
+              data: { flowName },
+              failOnStatusCode: false,
+            });
+          }
+        }
+      } catch {
+        // best-effort: spec-level overlay suppressors still cover the modal
+      }
+    } else {
+      console.log(
+        `Real login returned ${loginRes.status()} — continuing with mock-only auth`,
+      );
+    }
+  } catch (err) {
+    console.log('Real auth setup skipped:', (err as Error).message);
+  }
+
   // Re-seed the cached user profile immediately before snapshotting. During boot
   // the app may issue an API call that returns 401 (the E2E user has no real
   // backend session); the api layer then clears `user_data` and redirects to '/'.

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { csrfFetch } from '../../services/api';
 import { analyzeContract } from '../../services/geminiService';
 import { Search, Loader2, ArrowLeft, AlertTriangle, Upload, FileText, X, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -67,7 +68,7 @@ export const ContractAnalyzer: React.FC<{ onBack: () => void }> = ({ onBack }) =
         // Send binary files to backend for text extraction
         const formData = new FormData();
         formData.append('file', file);
-        fetch('/api/contracts/extract-text', {
+        csrfFetch('/api/contracts/extract-text', {
           method: 'POST',
           body: formData,
           credentials: 'include',

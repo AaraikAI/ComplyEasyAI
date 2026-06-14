@@ -280,6 +280,13 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+        env:
+          # Build the SPA to call the API same-origin (/api). `vite preview`
+          # reverse-proxies /api to the backend on :3001, so the real httpOnly
+          # session cookies flow with the app's XHRs — mirroring production
+          # (CloudFront serves the SPA and proxies /api) and letting org-scoped
+          # create flows persist in E2E instead of 401'ing under mock auth.
+          VITE_API_URL: /api
 
       # Gate on valid structured data: parse every prerendered JSON-LD block and
       # assert minimal required fields per @type. Fails the job on any malformed
@@ -343,6 +350,16 @@ jobs:
           SENDGRID_FROM_EMAIL: test@test.com
           CLIENT_URL: http://localhost:4173
           CORS_ORIGIN: http://localhost:4173
+          # E2E ONLY: relax the per-IP GENERAL API rate limiter (apiLimiter,
+          # default 100 req / 15 min). Now that the E2E app authenticates with a
+          # real session (same-origin auth.setup), every page loads real org data,
+          # so the single Playwright source IP issues hundreds of /api reads and
+          # trips the abuse limiter — surfacing as false "Failed to load (429)"
+          # failures rather than real defects. Production keeps the strict default
+          # (this env var is set ONLY for the E2E backend). authLimiter stays
+          # hardcoded at 5/15min, so the dedicated brute-force rate-limit test
+          # still exercises the real limiter.
+          RATE_LIMIT_MAX_REQUESTS: '100000'
 
       - name: Run Playwright tests
         run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/4

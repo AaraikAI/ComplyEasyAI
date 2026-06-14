@@ -9,6 +9,21 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         host: '0.0.0.0',
       },
+      // SAME-ORIGIN E2E: `vite preview` serves the built SPA and reverse-proxies
+      // /api to the backend, mirroring production (CloudFront serves the SPA and
+      // proxies /api). With the app built using VITE_API_URL=/api, its XHRs are
+      // same-origin, so the backend's httpOnly session cookies (sameSite 'strict')
+      // flow exactly as in prod — letting real auth + org-scoped create flows
+      // persist in E2E instead of 401'ing under cross-origin mock auth.
+      preview: {
+        port: 4173,
+        proxy: {
+          '/api': {
+            target: process.env.E2E_API_PROXY_TARGET || 'http://localhost:3001',
+            changeOrigin: true,
+          },
+        },
+      },
       plugins: [react()],
       // SECURITY: Gemini API key is NOT exposed to the frontend bundle.
       // All AI calls are routed through backend API endpoints (/api/ai/*).

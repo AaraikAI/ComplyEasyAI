@@ -56,25 +56,27 @@ test.describe('Asset Management', () => {
         await addBtn.click();
         await page.waitForTimeout(500);
 
-        // Clicking "Add Asset" must open the create form with a name field.
-        const nameInput = page.locator('[name="name"], [name="title"], input[type="text"]').first();
+        // Scope every form locator to the create modal (a fixed inset-0 z-50
+        // overlay). The page also renders a search box (input[type=text]), so an
+        // unscoped `.first()` would fill THAT and leave the modal's name field —
+        // which has no name attribute, only a placeholder — empty, keeping the
+        // submit button disabled (handleCreate is disabled while form.name is
+        // blank). Target the name field by its unique placeholder.
+        const modal = page.locator('div.fixed.inset-0.z-50').last();
+        await expect(modal).toBeVisible({ timeout: 5000 });
+        const nameInput = modal.getByPlaceholder('e.g. Production Web Server');
         await expect(nameInput).toBeVisible({ timeout: 5000 });
         await nameInput.fill('E2E Asset - Production Database Server');
 
-        const typeSelect = page.locator('select[name="type"], select[name="category"]');
+        const typeSelect = modal.locator('select').first();
         if (await typeSelect.isVisible().catch(() => false)) {
           const options = await typeSelect.locator('option').all();
           if (options.length > 1) await typeSelect.selectOption({ index: 1 });
         }
 
-        const descInput = page.locator('[name="description"], textarea').first();
-        if (await descInput.isVisible()) {
-          await descInput.fill('Primary production database hosting customer data');
-        }
-
         // The submit control must be present and enabled once a name is entered
         // (handleCreate is disabled while form.name is blank).
-        const saveBtn = page.getByRole('button', { name: /save|create|submit|add asset/i }).last();
+        const saveBtn = modal.getByRole('button', { name: /add asset/i }).last();
         await expect(saveBtn).toBeVisible();
         await expect(saveBtn).toBeEnabled();
         await saveBtn.click();
@@ -259,11 +261,15 @@ test.describe('Asset Management', () => {
       const addBtn = page.getByRole('button', { name: /add|create/i }).first();
       if (await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await addBtn.click();
-        const nameInput = page.locator('[name="name"], [name="title"], input[type="text"]').first();
+        // Scope to the create modal; the name field has only a placeholder (no
+        // name attr), so an unscoped input[type=text] would match the page search
+        // box and leave the submit disabled.
+        const modal = page.locator('div.fixed.inset-0.z-50').last();
+        const nameInput = modal.getByPlaceholder('e.g. Production Web Server');
         if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
           await nameInput.fill('E2E Asset - CSRF Check');
-          const saveBtn = page.getByRole('button', { name: /save|create|submit|add asset/i }).last();
-          if (await saveBtn.isVisible().catch(() => false)) {
+          const saveBtn = modal.getByRole('button', { name: /add asset/i }).last();
+          if (await saveBtn.isEnabled().catch(() => false)) {
             await saveBtn.click();
             await page.waitForTimeout(2000);
           }

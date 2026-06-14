@@ -346,6 +346,11 @@ test.describe('Notifications', () => {
     });
 
     test('notification API endpoints are authenticated', async ({ page }) => {
+      // Genuinely UNAUTHENTICATED probe — the shared storageState now carries a
+      // real session that `page.request` would send, which would turn this into a
+      // 200 and invert the check. Clear it so we verify the endpoint rejects a
+      // request with no session.
+      await page.context().clearCookies();
       const response = await page.request.get(
         `${process.env.VITE_API_URL || 'http://localhost:3001'}/api/notifications`,
         { headers: { 'Content-Type': 'application/json' } }

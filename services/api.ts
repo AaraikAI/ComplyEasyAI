@@ -47,6 +47,25 @@ export async function getCsrfToken(): Promise<string | null> {
   }
 }
 
+/**
+ * Same-origin `fetch` wrapper for components that issue RAW requests to absolute
+ * `/api/*` paths instead of going through `fetchAPI`. It attaches the
+ * double-submit CSRF token on mutating methods (and always sends credentials),
+ * mirroring `fetchAPI`'s handling so these mutations are not rejected with a 403
+ * "CSRF token missing" in production (where the API is same-origin and CSRF is
+ * enforced). GET/HEAD/OPTIONS pass through unchanged. Returns the raw Response so
+ * callers keep their existing status/body handling.
+ */
+export async function csrfFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const method = (init.method || 'GET').toUpperCase();
+  const headers = new Headers(init.headers || {});
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrf = await getCsrfToken();
+    if (csrf && !headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', csrf);
+  }
+  return fetch(input, { credentials: 'include', ...init, headers });
+}
+
 // HTTP Client with authentication and timeout
 async function fetchAPI<T>(
   endpoint: string,

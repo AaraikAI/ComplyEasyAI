@@ -227,9 +227,15 @@ const MainApp: React.FC = () => {
       await api.frameworks.create({
         name,
         region: region || '',
-        status: ComplianceStatus.IN_REVIEW,
-        progress: 0,
-        nextAuditDate: '2025-01-01',
+        // `status` and `progress` are backend-controlled (status defaults on
+        // create; progress is computed from control completion). The create
+        // schema is strict (`.unknown(false)`), so sending them makes the request
+        // 400 ("status is not allowed") and the framework is never created — send
+        // only the schema-accepted fields. `nextAuditDate` is required; default it
+        // to one year out rather than a hardcoded past date.
+        nextAuditDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10),
       });
       await loadData();
     } catch (error) {

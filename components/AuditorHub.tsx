@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { csrfFetch } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
@@ -216,7 +217,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
   const postJson = async (url: string, body: unknown): Promise<boolean> => {
     setActionError(null);
     try {
-      const res = await fetch(url, {
+      const res = await csrfFetch(url, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -273,7 +274,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
     setBusyWorkpaperId(id);
     setActionError(null);
     try {
-      const res = await fetch(`/api/auditor/workpapers/${encodeURIComponent(id)}`, {
+      const res = await csrfFetch(`/api/auditor/workpapers/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
