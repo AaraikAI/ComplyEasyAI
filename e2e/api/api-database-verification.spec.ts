@@ -17,6 +17,7 @@
  */
 
 import { test, expect } from '../fixtures/test-fixtures';
+import { request as pwRequest } from '@playwright/test';
 import type { APIRequestContext, APIResponse } from '@playwright/test';
 
 const API_BASE = process.env.API_URL || process.env.VITE_API_URL || 'http://localhost:3001';
@@ -635,28 +636,32 @@ test.describe('Tier Gating', () => {
     expect([401, 403]).toContain(response.status());
   });
 
-  test('Basic AI endpoints require Foundation+ tier', async ({ request }) => {
-    const csrfToken = await getCsrfToken(request);
-    test.skip(csrfToken === null, 'CSRF token fetch was rate-limited (429) — shared backend window exhausted.');
-
-    // aiGapAnalysisSchema requires `current` and `target` — without them the
-    // authenticated request 400s before the tier guard, so send a valid body to
-    // actually exercise the entitlement check (authed+entitled → 200; under-tier → 403).
-    const response = await request.post(`${API_BASE}/api/ai/gap-analysis`, {
+  test('Basic AI endpoints reject unauthenticated callers (gate runs before the AI)', async ({}) => {
+    // Verify the auth/CSRF gate rejects an UNAUTHENTICATED mutation BEFORE it can
+    // reach the AI provider. We deliberately do NOT use the authenticated fixture:
+    // the e2e user is Foundation (entitled to this Basic-AI endpoint), so an authed
+    // call would pass the gate and then invoke Gemini — whose result varies by env
+    // — and asserting on that would mean tolerating a 5xx, which masks any real
+    // pre-AI 500 (exactly how a `current.join` controller bug once hid here). An
+    // anonymous probe is deterministic, never touches the AI provider, and never
+    // masks a server error. (Tier-boundary specifics are covered by the backend's
+    // authorization-matrix contract tests.)
+    const anon = await pwRequest.newContext({
+      baseURL: API_BASE,
+      storageState: { cookies: [], origins: [] },
+    });
+    const response = await anon.post(`${API_BASE}/api/ai/gap-analysis`, {
       data: { current: 'No controls in place', target: 'SOC2' },
-      headers: { 'X-CSRF-Token': csrfToken as string },
       failOnStatusCode: false,
     });
+    await anon.dispose();
 
     test.skip(isRateLimited(response), 'POST /api/ai/gap-analysis was rate-limited (429) — shared backend window exhausted.');
 
-    // The valid body passes input validation, so the response reflects the tier
-    // guard and the downstream AI provider: 401 unauthenticated, 403 under-tier,
-    // 200 when entitled and the AI call succeeds. In the E2E env the Gemini key is
-    // a non-functional placeholder, so an entitled caller's downstream AI call
-    // legitimately fails with 5xx — that still proves the tier guard let the
-    // request THROUGH (it is not a 403/401), which is what this test verifies.
-    expect([200, 401, 403, 500, 502, 503]).toContain(response.status());
+    // No session + no CSRF token → the request must be rejected by the auth/CSRF
+    // gate (401 or 403) and never reach the AI provider. A 2xx/5xx here would mean
+    // the gate let an anonymous mutation through.
+    expect([401, 403]).toContain(response.status());
   });
 
   test('Advanced AI endpoints require Essentials+ tier', async ({ request }) => {

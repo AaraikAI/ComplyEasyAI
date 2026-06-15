@@ -183,7 +183,7 @@ class RedisCacheService {
   /**
    * Get a value from cache.
    */
-  async get<T = any>(key: string, options?: { namespace?: string }): Promise<T | null> {
+  async get<T = any>(key: string, options?: { namespace?: string; throwOnError?: boolean }): Promise<T | null> {
     if (!this.initialized) await this.initialize();
 
     const fullKey = this.buildKey(key, options?.namespace);
@@ -201,6 +201,14 @@ class RedisCacheService {
         this.updateHitRate();
         return JSON.parse(raw) as T;
       } catch (error) {
+        // SECURITY: for fail-closed reads (e.g. token-revocation lookups) the
+        // caller must NOT fall back to the in-memory map — the authoritative
+        // entry lives in Redis, so a silent miss would fail OPEN (accept a
+        // revoked token). Surface the error so the caller can deny.
+        if (options?.throwOnError) {
+          logger.error(`[Cache] Redis get error for key "${fullKey}" (fail-closed read)`, error);
+          throw error;
+        }
         logger.warn(`[Cache] Redis get error for key "${fullKey}", falling back to memory`, error);
         // Fall through to in-memory
       }
