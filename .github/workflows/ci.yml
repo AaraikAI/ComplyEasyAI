@@ -362,7 +362,13 @@ jobs:
           RATE_LIMIT_MAX_REQUESTS: '100000'
 
       - name: Run Playwright tests
-        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/4
+        # --workers=1: the same-origin REAL-session suite exercises authenticated
+        # flows that issue far more real /api calls per page than the old mock-auth
+        # suite, so two concurrent browser contexts overload this shard's single
+        # backend (and the 4-vCPU runner's memory) — producing flaky timeouts and
+        # browser crashes on pages that pass in isolation. One worker per shard
+        # keeps each backend within capacity; the 4 shards still run in parallel.
+        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/4 --workers=1
         env:
           CI: true
           E2E_BASE_URL: http://localhost:4173

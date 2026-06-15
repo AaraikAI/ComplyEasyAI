@@ -54,19 +54,18 @@ test.describe('Asset Management', () => {
       await expect(addBtn).toBeVisible();
       {
         await addBtn.click();
-        await page.waitForTimeout(500);
 
-        // Scope every form locator to the create modal (a fixed inset-0 z-50
-        // overlay). The page also renders a search box (input[type=text]), so an
-        // unscoped `.first()` would fill THAT and leave the modal's name field —
-        // which has no name attribute, only a placeholder — empty, keeping the
-        // submit button disabled (handleCreate is disabled while form.name is
-        // blank). Target the name field by its unique placeholder.
-        const modal = page.locator('div.fixed.inset-0.z-50').last();
-        await expect(modal).toBeVisible({ timeout: 5000 });
-        const nameInput = modal.getByPlaceholder('e.g. Production Web Server');
-        await expect(nameInput).toBeVisible({ timeout: 5000 });
+        // The create modal's name field has no `name` attribute — only a unique
+        // placeholder — so target it directly (an unscoped input[type=text] would
+        // match the page search box). Filling it enables the otherwise-disabled
+        // "Add Asset" submit. Under CI's concurrent load the React state update can
+        // lag the fill, so confirm the value actually landed and wait generously
+        // for the submit to enable before clicking.
+        const nameInput = page.getByPlaceholder('e.g. Production Web Server');
+        await expect(nameInput).toBeVisible({ timeout: 10000 });
         await nameInput.fill('E2E Asset - Production Database Server');
+        await expect(nameInput).toHaveValue('E2E Asset - Production Database Server');
+        const modal = page.locator('div.fixed.inset-0.z-50').filter({ has: nameInput });
 
         const typeSelect = modal.locator('select').first();
         if (await typeSelect.isVisible().catch(() => false)) {
@@ -78,7 +77,7 @@ test.describe('Asset Management', () => {
         // (handleCreate is disabled while form.name is blank).
         const saveBtn = modal.getByRole('button', { name: /add asset/i }).last();
         await expect(saveBtn).toBeVisible();
-        await expect(saveBtn).toBeEnabled();
+        await expect(saveBtn).toBeEnabled({ timeout: 15000 });
         await saveBtn.click();
         await page.waitForTimeout(1000);
       }
@@ -261,15 +260,17 @@ test.describe('Asset Management', () => {
       const addBtn = page.getByRole('button', { name: /add|create/i }).first();
       if (await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await addBtn.click();
-        // Scope to the create modal; the name field has only a placeholder (no
-        // name attr), so an unscoped input[type=text] would match the page search
-        // box and leave the submit disabled.
-        const modal = page.locator('div.fixed.inset-0.z-50').last();
-        const nameInput = modal.getByPlaceholder('e.g. Production Web Server');
-        if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+        // The name field has only a unique placeholder (no name attr) — target it
+        // directly. Confirm the value landed (React state can lag the fill under CI
+        // load) and wait for the submit to enable before clicking, so the create
+        // mutation actually fires.
+        const nameInput = page.getByPlaceholder('e.g. Production Web Server');
+        if (await nameInput.isVisible({ timeout: 8000 }).catch(() => false)) {
           await nameInput.fill('E2E Asset - CSRF Check');
+          await expect(nameInput).toHaveValue('E2E Asset - CSRF Check');
+          const modal = page.locator('div.fixed.inset-0.z-50').filter({ has: nameInput });
           const saveBtn = modal.getByRole('button', { name: /add asset/i }).last();
-          if (await saveBtn.isEnabled().catch(() => false)) {
+          if (await saveBtn.isEnabled({ timeout: 15000 }).catch(() => false)) {
             await saveBtn.click();
             await page.waitForTimeout(2000);
           }
