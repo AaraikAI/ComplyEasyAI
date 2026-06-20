@@ -42,6 +42,24 @@ setup('authenticate', async ({ page }) => {
     localStorage.setItem('onboarding_completed', 'true');
     localStorage.setItem('onboarding_skipped', 'true');
     localStorage.setItem('hasSeenOnboarding', 'true');
+
+    // Pre-accept cookie consent so the fixed-bottom GDPR banner
+    // (role="dialog" aria-label="Cookie consent preferences") never renders. It
+    // overlays the bottom of the viewport and otherwise intercepts pointer events
+    // on controls anchored there (e.g. a create modal's submit button), which the
+    // shared authenticated session models as a returning, already-consented user.
+    // The dedicated Cookie Consent specs clear this key to force the banner.
+    localStorage.setItem(
+      'complyeasy_cookie_consent',
+      JSON.stringify({
+        essential: true,
+        functional: true,
+        analytics: true,
+        targeting: true,
+        consentDate: new Date().toISOString(),
+        consentVersion: '1.0',
+      }),
+    );
   }, TEST_USER);
 
   // Reload the page to pick up the auth state
@@ -183,6 +201,17 @@ setup('authenticate', async ({ page }) => {
     localStorage.setItem('onboarding_completed', 'true');
     localStorage.setItem('onboarding_skipped', 'true');
     localStorage.setItem('hasSeenOnboarding', 'true');
+    localStorage.setItem(
+      'complyeasy_cookie_consent',
+      JSON.stringify({
+        essential: true,
+        functional: true,
+        analytics: true,
+        targeting: true,
+        consentDate: new Date().toISOString(),
+        consentVersion: '1.0',
+      }),
+    );
   }, TEST_USER);
 
   // Save authentication state

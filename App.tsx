@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ComplianceFramework, RiskItem, ComplianceStatus } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
@@ -22,6 +22,7 @@ import GlobalSearch from './components/GlobalSearch';
 import NotificationCenter from './components/NotificationCenter';
 import { logger } from './utils/logger';
 import JsonLd from './components/seo/JsonLd';
+import RouteErrorBoundary from './components/RouteErrorBoundary';
 import {
   organizationSchema,
   webSiteSchema,
@@ -171,6 +172,7 @@ const AIRMFDetailsRoute: React.FC = () => {
 const MainApp: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [frameworks, setFrameworks] = useState<ComplianceFramework[]>([]);
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
@@ -252,6 +254,7 @@ const MainApp: React.FC = () => {
   return (
     <OnboardingProvider onNavigate={handleNavigate}>
       <Layout>
+        <RouteErrorBoundary resetKey={location.pathname}>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             {/* Home OS (new AI-first home) */}
@@ -441,6 +444,7 @@ const MainApp: React.FC = () => {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>
+        </RouteErrorBoundary>
         {/* AI Compliance Copilot Sidebar */}
         <AIComplianceCopilot currentView="dashboard" isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
       </Layout>

@@ -91,6 +91,11 @@ async function seedAuth(page: Page, opts: { acceptCookies?: boolean } = {}): Pro
             consentDate: new Date().toISOString(), consentVersion: '1.0',
           }),
         );
+      } else {
+        // The shared storageState now pre-accepts consent globally, so to force
+        // the GDPR banner to render (the dedicated Cookie Consent test) the key
+        // must be actively removed, not merely left unset.
+        localStorage.removeItem('complyeasy_cookie_consent');
       }
     },
     { u: E2E_USER, acceptCookies },

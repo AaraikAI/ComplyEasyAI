@@ -184,6 +184,19 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   return res.json();
 }
 
+// Normalize an API response to its underlying array, tolerating a bare array,
+// a `{ data: [...] }` envelope, or a paginated `{ data: { <key>: [...] } }`
+// envelope. Always returns an array so list state never holds a wrapper object
+// (which would make .map()/.filter() throw during render).
+function extractArray<T>(res: unknown, key: string): T[] {
+  if (Array.isArray(res)) return res as T[];
+  const data = (res as { data?: unknown })?.data;
+  if (Array.isArray(data)) return data as T[];
+  const nested = (data as Record<string, unknown> | undefined)?.[key];
+  if (Array.isArray(nested)) return nested as T[];
+  return [];
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -242,18 +255,19 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       const failedApis: string[] = [];
 
+      // The /dpia endpoint returns a paginated envelope
+      // ({ data: { dpias, total, page, ... } }); older shapes returned a bare array
+      // or { data: [...] }. Normalize all of them to the underlying array —
+      // assigning the wrapper object to state would make dpias.map()/.filter() throw
+      // during render and (absent an error boundary) blank the whole app.
       if (dpiaRes.status === 'fulfilled') {
-        const d = dpiaRes.value;
-        if (Array.isArray(d)) setDpias(d);
-        else if (d?.data) setDpias(d.data);
+        setDpias(extractArray<DPIA>(dpiaRes.value, 'dpias'));
       } else {
         failedApis.push('DPIAs');
       }
 
       if (riskRes.status === 'fulfilled') {
-        const d = riskRes.value;
-        if (Array.isArray(d)) setRisks(d);
-        else if (d?.data) setRisks(d.data);
+        setRisks(extractArray<RiskEntry>(riskRes.value, 'risks'));
       } else {
         failedApis.push('Risk Assessments');
       }
