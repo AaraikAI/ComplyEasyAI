@@ -391,20 +391,35 @@ class AzureService {
     overallRisk: string;
     scanTimestamp: string;
     findings: any[];
+    scanComplete: boolean;
+    degradedSources: string[];
   }> {
     try {
       logger.info(`Starting Azure compliance scan for org ${organizationId}`);
 
-      // Fetch all data in parallel
+      // Fetch all data in parallel. A failed source must NOT be silently swallowed
+      // to an empty list — that would let the scan report a clean "Low" posture for
+      // data it never actually retrieved (a false compliance attestation). Track
+      // and log each failure so the result can be marked degraded below.
+      const degradedSources: string[] = [];
+      const safeSource = async (name: string, p: Promise<any[]>): Promise<any[]> => {
+        try {
+          return await p;
+        } catch (error) {
+          logger.error(`Azure compliance scan: source "${name}" failed for org ${organizationId}`, error);
+          degradedSources.push(name);
+          return [];
+        }
+      };
       const [resources, recommendations, alerts, policies] = await Promise.all([
-        this.getResources(organizationId).catch(() => []),
-        this.getSecurityRecommendations(organizationId).catch(() => []),
-        this.getSecurityAlerts(organizationId).catch(() => []),
-        this.getPolicyCompliance(organizationId).catch(() => []),
+        safeSource('resources', this.getResources(organizationId)),
+        safeSource('securityRecommendations', this.getSecurityRecommendations(organizationId)),
+        safeSource('securityAlerts', this.getSecurityAlerts(organizationId)),
+        safeSource('policyCompliance', this.getPolicyCompliance(organizationId)),
       ]);
 
       // Calculate risk level based on findings
-      const highSeverityCount = recommendations.filter(r => 
+      const highSeverityCount = recommendations.filter(r =>
         r.severity?.toLowerCase() === 'high'
       ).length + alerts.filter(a => a.severity?.toLowerCase() === 'high').length;
 
@@ -412,6 +427,15 @@ class AzureService {
       if (highSeverityCount > 10) overallRisk = 'Critical';
       else if (highSeverityCount > 5) overallRisk = 'High';
       else if (highSeverityCount > 0) overallRisk = 'Medium';
+
+      // A partial scan must not present as a clean/Low posture — surface it.
+      const scanComplete = degradedSources.length === 0;
+      if (!scanComplete) {
+        overallRisk = 'Unknown';
+        logger.warn(
+          `Azure compliance scan DEGRADED for org ${organizationId}; sources failed: ${degradedSources.join(', ')} — risk reported as "Unknown" (not "Low").`,
+        );
+      }
 
       // Compile findings
       const findings = [
@@ -440,6 +464,8 @@ class AzureService {
         overallRisk,
         scanTimestamp: new Date().toISOString(),
         findings,
+        scanComplete,
+        degradedSources,
       };
 
       logger.info(`Azure compliance scan completed for org ${organizationId}`, {

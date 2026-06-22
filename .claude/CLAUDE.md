@@ -310,6 +310,61 @@ positives / resolve true positives in the GitHub Security UI); it is not re-deri
 tree and requires live GitHub auth. Treat 155 open / 24 crit / 103 high as the current posture; the
 1,163 number is superseded by this note (history elsewhere is intentionally left unchanged).
 
+### ZK / blockchain status refresh (2026-06-11)
+
+Two prior claims in the 2026-06-02 scope-gap section are now **partially stale** — verified against the
+current working tree (file:line below):
+
+- **ZK trusted-setup entropy is FIXED (no longer forgeable).** The earlier claim ("toxic waste = literal
+  `"random text"` / `date +%s`; proofs are forgeable") is **no longer true**. All three setup paths now
+  draw from a CSPRNG: `server/scripts/trusted-setup.sh:50,78` and `server/src/zkp/setup-circuits.sh:253`
+  use `head -c 64 /dev/urandom | base64`. `setup-circuits.sh:235-260` also adds a multi-party contributor
+  loop (`ZKEY_EXTRA_CONTRIBUTORS`). **However ZK is still EXPERIMENTAL / not runnable as-shipped:** no
+  compiled artifacts exist — `server/src/zkp/keys/` and `server/src/zkp/compiled/` are **absent**, so no
+  proving/verification keys are present and proofs cannot be generated at runtime. The service is
+  **fail-closed**: `zeroKnowledgeService.ts:116-119,465-498` only emits a simulated proof when
+  `ZK_ALLOW_SIMULATED==='true'` (OFF by default); otherwise it throws. Verdict: **EXPERIMENTAL** — sound
+  circuits + entropy, but needs the one-time circuit compile/key-gen (ideally a real multi-party ceremony)
+  before it does anything in prod.
+- **Blockchain anchoring is EXPERIMENTAL by deployment, not by code quality.** Contracts are real and
+  compiled (`server/src/blockchain/contracts/ComplianceRegistry.sol` ~1,262 lines; compiled artifact in
+  `server/src/blockchain/artifacts/ComplianceRegistry.json`), and the ethers integration is complete
+  (`services/advanced/blockchainService.ts`). But **no contract is deployed**: init is env-gated on
+  `COMPLIANCE_CONTRACT_ADDRESS` / `COMPLIANCE_REGISTRY_ADDRESS` (`blockchainService.ts:233-253`), and the
+  scoring/cert paths **throw 501** when the registry isn't configured (`:663-668,770-774`) — fail-closed,
+  not fail-open. Verdict: **EXPERIMENTAL** until contracts are deployed to a network and the addresses set.
+
+Net: the Section-13 "treat as experimental" guidance in `Go Live to Production.md` still holds, but the
+*reason* is now "no compiled keys / no deployed contracts," not "forgeable entropy."
+
+#### ZK keys GENERATED + runtime proofs verified (2026-06-12 build)
+
+The "no compiled keys / not runnable" gap above is now **closed for ZK** (blockchain anchoring still needs
+on-chain deployment). This session compiled the circuits and ran the phase-2 setup end-to-end:
+
+- **circom via Docker (no sudo):** built a pinned `circom v2.1.6` linux/amd64 image (`complyeasy/circom:2.1.6`)
+  and a `/tmp/zkbin/circom` shim that mounts the repo root (so the circuits' `../../../node_modules/circomlib`
+  includes resolve in-container). `circomlib@2.0.5` added as a **server devDependency** (the circuits
+  `include` its `.circom` sources; only `circomlibjs` was present before — that was the compile blocker).
+- **Artifacts generated** under `server/src/zkp/compiled/` + `keys/` via `setup-circuits.sh` with
+  `ZKEY_EXTRA_CONTRIBUTORS=2` (**3 phase-2 contributions**, each `/dev/urandom` entropy). Real constraint
+  counts: compliance_check 444, credential_verification 976, data_ownership 1003.
+- **Runtime-faithful validation PASSED:** all 3 circuits prove+verify through the exact paths
+  `zeroKnowledgeService.ts` reads (`compiled/wasm/<c>.wasm`, `keys/proving/<c>.zkey`,
+  `keys/verification/<c>.vkey`); a tampered public signal is **rejected**. The service uses real proofs
+  whenever these files exist (simulated path stays OFF unless `ZK_ALLOW_SIMULATED='true'`).
+- **Phase-2 trust caveat:** the 3 contributions are **single-machine** (sound entropy, but not independent
+  parties). For a genuinely distributed ceremony, run the new tooling in **`server/src/zkp/ceremony/`**
+  (coordinator-init → participant-contribute on separate machines → finalize-beacon → verify-transcript +
+  attestation template). Phase 1 = the public Hermez `powersOfTau28_hez_final_12.ptau` (real ceremony,
+  SHA-pinned, never committed).
+- **Artifact storage:** `*.wasm` + `*.vkey` (+ `*.r1cs`/`*.sym`) are committed; proving `*.zkey` + the
+  `.ptau` are gitignored (Git LFS is **not installed** on this machine) — deploy must run `setup-circuits.sh`
+  (or fetch the zkeys) so the server can generate proofs.
+- **Two latent bugs fixed (not band-aids):** `setup-circuits.sh` now `mkdir -p compiled` before `circom -o
+  compiled/` (it errored "invalid output path" without it); `test-end-to-end.js` now reads
+  `compiled/wasm/<c>.wasm` (the relocated/runtime path) instead of the stale circom-default `<c>_js/` path.
+
 ---
 
 ## Operational lessons learned — tooling & environment (2026-06-06 remediation run)
@@ -379,6 +434,208 @@ Bring the full stack up locally to verify E2E before pushing (CI E2E round-trips
   completion by which files exist, and re-run only the missing batches (resume-friendly).
 - **Session limits can truncate a long swarm mid-run.** Make every phase resumable: write per-unit artifacts,
   then detect-missing-and-rerun rather than restarting the whole workflow.
+
+---
+
+## E2E (Playwright) stabilization — what the static deep-scan structurally missed (2026-06-07)
+
+A 100%-file-coverage **static** deep-scan (D1/D2/D3/D5 only) implied near-readiness, but the dynamic E2E
+phase (**D6**) had **never run to completion** in CI (always cancelled). When finally run end-to-end, the
+chromium suite had **96 failures** that line-by-line reads **could not** find. **Lesson: a deep scan is NOT
+production-grade until D6 actually runs the FULL Playwright suite to completion against a real stack and
+every failure is triaged to a root cause.** The 96 collapsed to a handful of root causes:
+
+1. **Onboarding Welcome modal intercepts ALL clicks (~85 of the 96).** A full-screen
+   `<div role="dialog" aria-label="Welcome to ComplyEasy AI" class="fixed inset-0 z-50 …">` overlays the app.
+   `contexts/OnboardingContext.tsx`'s progress-load **catch block** force-started the welcome flow whenever
+   `/onboarding/progress` failed (the e2e mock user has no real session → 401), **ignoring** the persisted
+   `onboarding_completed`/`hasSeenOnboarding` localStorage markers. Fixed: on load failure, respect the local
+   markers and do NOT auto-pop the wizard (also a real UX bug — an API hiccup shouldn't block a returning
+   user). A static reader sees a normal modal component; only a running browser shows it eating every click.
+2. **CSP `frame-ancestors` in a `<meta>` tag is ignored by browsers** (works only as an HTTP header) and logs
+   a fatal console error the perf test catches. Removed from `index.html` meta; framing is enforced by the
+   CloudFront `ResponseHeadersPolicy` + nginx header. Static reads "see CSP present" and pass it.
+3. **The local backend MUST be started with the EXACT CI env** or you get false failures: `CORS_ORIGIN` +
+   `CLIENT_URL=http://localhost:4173`, `ENCRYPTION_KEY`, `GEMINI_API_KEY`, `SENDGRID_*`, JWT secrets (see
+   `.github/workflows/ci.yml` → `Start backend` env). Missing `CORS_ORIGIN` made all CORS tests fail locally
+   while passing in CI — a local-only artifact that wasted a debugging cycle.
+4. **Rate-limiting (429) under concurrent E2E load is BY DESIGN and cannot be disabled.** `isDev` in
+   `server/src/middleware/rateLimiter.ts` is `env==='development'` only, so `NODE_ENV=test` uses strict prod
+   limits, **and** jest `security/rate-limiting.contract.test.ts` + `unit/middleware/rateLimiter.test.ts`
+   REQUIRE the limiter to return 429 (so you cannot relax it for tests). The suite is architected around it:
+   per-test 429-tolerance + CI **`retries: 2`**. A single-backend `--workers=3 --retries=0` local run is
+   HARSHER than CI's 4-sharded `--workers=2 --retries=2` (4 separate backends), so it exposes flakes CI
+   absorbs. Reproduce CI faithfully or you will chase non-CI failures.
+5. **THE deep one — cross-origin httpOnly-cookie auth does NOT work in the E2E env, so org-scoped CREATE
+   flows can't persist.** The stack is cross-origin (frontend `:4173`, API `:3001`). Real auth uses httpOnly
+   cookies, but a cross-origin XHR only sends them as `SameSite=None; Secure`, which browsers reject over
+   plain http. So the suite uses a **localStorage mock user with NO real backend session** → every create
+   POST 401s and **never even fires** (the client gates on auth). Read/render tests pass; tests requiring
+   **persisted** org-scoped data (e.g. `compliance-frameworks` "add a framework from the catalog" → the new
+   card must appear) CANNOT pass with mock-auth on a fresh DB. **This one test took 4 GitHub pushes of
+   band-aid fixes (reload-and-assert, create-429 skip, list-429 skip, CSRF-429 skip) that ALL failed in CI**
+   because they treated symptoms, not the cross-origin root. Diagnosis only landed by **probing the running
+   app** (Playwright: clicking "Add" fired ZERO `/api/frameworks` requests) — impossible from static reads.
+   **The correct, production-aligned fix is to make the E2E env SAME-ORIGIN** (vite `preview.proxy` routes
+   `/api` → backend; build the frontend with `VITE_API_URL=/api`), exactly like production (CloudFront serves
+   the SPA and proxies `/api`). Then real `register`+`login` cookies flow, CSP `connect-src 'self'` covers the
+   API (no per-spec CSP shim needed), and create flows persist. **Rule: when an E2E test needs persisted
+   backend state, do NOT patch the assertion — fix the auth/origin architecture so the test exercises the
+   real flow the way production does. Patching assertions across 4 pushes is the anti-pattern to avoid.**
+
+> **Local E2E stack that reproduces CI faithfully** (added to the tooling section above): postgres:16-alpine +
+> redis:7-alpine containers, `prisma db push`, build FE+BE, start backend on `:3001` with the **full** CI env
+> block (item 3), `vite preview --port 4173`, then `CI=true E2E_BASE_URL=http://localhost:4173
+> API_URL=http://localhost:3001 npx playwright test --project=chromium`. Reset the DB (`DROP SCHEMA public
+> CASCADE; CREATE SCHEMA public; prisma db push`) between full runs — accumulated state hides fresh-DB failures
+> (e.g. add-framework "passes" locally only because a prior run already created the framework).
+
+### Same-origin E2E rework — empirical blast radius (CORRECTION to item 5, 2026-06-13)
+
+Item 5 above calls the **same-origin E2E env** "the correct, production-aligned fix" for the
+`compliance-frameworks` add-from-catalog test. That is true for THAT test — but the one-paragraph framing
+**understates the scope**. It was actually attempted this session and measured against CI:
+
+- **It does fix the target.** Building the SPA with `VITE_API_URL=/api`, adding a `vite preview` `/api`
+  proxy to the backend, and making `auth.setup.ts` do a REAL `register`→password-`login` (both CSRF-exempt;
+  cookies are `secure:false` under `NODE_ENV=test` + `sameSite:'strict'`, so they flow same-origin)
+  **persisted the create and turned `compliance-frameworks` green.**
+- **But introducing a real backend session regressed ~10 OTHER tests** that are built around the
+  *no-real-session* mock-auth model — overwhelmingly **security/auth specs**:
+  `security/auth-security.spec.ts` (session-cleared / logout-invalidation / token-in-query),
+  `security/data-isolation.spec.ts` (org-scoping: list scoping, cross-org search, `organizationId` filter
+  override, path-traversal), plus `asset-management` create, `incident-management` create-POST, and the
+  `comprehensive-e2e` invalid-credentials message. These passed before precisely because every API call
+  401'd; with a real session they get real 200s and the old assertions no longer hold.
+- **Net for that push: fixed 1, broke ~10.** So the same-origin migration is **a security-test-rework
+  project, not a config tweak**: it requires carefully updating each of those security specs to assert the
+  correct behavior *under a real session* (without weakening the security checks) — and that rework must be
+  verified against a working local E2E stack (the per-cycle CI cost is ~20 min). It was reverted this
+  session (the lone pre-existing `compliance-frameworks` red is also red on `main`, so it is not a
+  PR regression). **Before re-attempting, budget for the security-spec rework + local verification; do not
+  ship the same-origin flip on its own.**
+
+### Same-origin E2E rework — LANDED (the recipe that works, 2026-06-14)
+
+The 2026-06-13 note above said "do not ship the same-origin flip on its own." It was then done **properly**
+this session (Docker back up → full local E2E stack), and it WORKS. Net result of one local full run after
+the rework: **610→ effectively all green** (16 residual failures all triaged: 10 fixed by the reworks below,
+6 are the single-backend browser-crash/timeout flakes CI's 4 sharded backends + `retries:2` absorb). The
+migration is **net-positive for production-readiness** — it caught real shipped bugs the mock-auth suite
+structurally could not. The working recipe (committed in `fa171a00`):
+
+- **Same-origin stack.** `vite.config.ts` `preview.proxy` routes `/api`→backend (`E2E_API_PROXY_TARGET`);
+  build the E2E frontend with **`VITE_API_URL=/api`** (ci.yml) so the SPA is same-origin; the backend's
+  `secure:false`-in-test + `sameSite:'strict'` cookies then flow with the app's XHRs like prod.
+- **Real session in `auth.setup.ts`:** real `register`→password-`login` (both CSRF-exempt), THEN
+  `GET /api/csrf-token` → `POST /api/onboarding/skip-flow {flowName:'welcome'|'tier_tour'}` so the
+  freshly-registered real user doesn't get the full-screen welcome wizard that intercepts every click.
+- **Rate limits:** real auth loads real data → the single E2E source IP trips `apiLimiter` (100/15min).
+  Relax it for the E2E backend ONLY via **`RATE_LIMIT_MAX_REQUESTS`** (it's already env-driven —
+  `config/index.ts`); keep `authLimiter` hardcoded at 5 so the brute-force test still verifies the limiter.
+  (Locally, in-memory limiters survive `redis FLUSHALL` — only a backend restart resets them; CI is fresh.)
+
+**Real PRODUCTION bugs the rework surfaced + fixed (the payoff):**
+- **Catalog "Add framework" was broken in prod.** `App.tsx handleAddFramework` sent backend-controlled
+  `status`/`progress`; `createFrameworkSchema` is `.unknown(false)`, and even with `stripUnknown:true` Joi
+  **rejects** (not strips) unknown keys → **400, framework never created.** Fixed: send only schema-accepted
+  fields. (This is the real reason `compliance-frameworks:176` failed — NOT cross-origin cookies.)
+- **4 components did raw `fetch('/api/…',{method:POST/PATCH/DELETE})` with NO `X-CSRF-Token`** → 403 in prod
+  (`IncidentManagement`, `AssetManagement`, `AuditorHub`, `AIFeatures/ContractAnalyzer`). Fixed with a shared
+  `csrfFetch` wrapper in `services/api.ts`. Mock-auth hid all four (the POST 401'd before the CSRF gate).
+- **Every mobile/API Bearer mutation would 403 in prod:** `middleware/csrf.ts` required a CSRF token for ALL
+  mutations except the auth-bootstrap paths, but mobile authenticates via `Authorization: Bearer` and sends
+  no token. Fixed by exempting Bearer-authenticated requests (header-token auth carries no CSRF risk).
+
+**Test-rot the real session exposed (fix the assertion to the REAL authed behavior — never weaken):**
+the global `storageState` now carries a real session, so `request`/`page.request` are authenticated. Specs
+that *tolerated* the unauthenticated 401 now reach real validation. Patterns + fixes: pin
+`storageState:{cookies:[],origins:[]}` for whole-file unauthenticated-isolation specs (`auth-security`,
+`data-isolation`); `page.context().clearCookies()` for a single unauthenticated probe inside an otherwise-
+authed describe (`integrations`/`notifications` "require auth"); send schema-valid payloads + unwrap the
+`{status:'success',data}` envelope + correct stale routes (`/api/ai-rmf`, `/api/privacy/retention`) in
+`api-database-verification`; scope create-modal locators to the modal (the asset name field has only a
+placeholder, so an unscoped `input[type=text]` filled the page search box — the create test never actually
+ran before). See `FULL_DEEP_SCAN_PROMPT.md` §0 Round 5 + §3 test-rot track for the generalized guidance.
+
+### Discrepancies found & corrected — seo-geo-aeo branch CI greening (2026-06-13)
+
+Logged for the audit trail while driving the `seo-geo-aeo` PR's CI green (the SEO/GEO/AEO overhaul commit
+`caf77862` introduced several breaks it did not also fix):
+
+- **The SEO commit broke the production Docker build** (the `frontend-build` stage never `COPY`'d the new
+  `data/` dir or `scripts/` — both imported by the build — and the new `scripts/prerender.mjs` needs a
+  headless browser that alpine lacks). Fixed in `Dockerfile`: `COPY data/`, `COPY scripts/`, `apk add
+  chromium nss freetype harfbuzz ttf-freefont` + `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser`
+  (puppeteer's bundled glibc Chromium can't run on musl) and `PUPPETEER_SKIP_DOWNLOAD=true` in
+  `frontend-deps`.
+- **The SEO `.mjs` build scripts had no ESLint globals** → 33 `no-undef` errors (`process`/`document`/
+  `window`/`setTimeout`) failing Lint & Type Check, because the flat config only defined globals for
+  `**/*.{ts,tsx}` and `scripts/**/*.mjs` fell through to `js.configs.recommended` (no-undef on). Fixed with
+  a `files: ['scripts/**/*.mjs']` flat-config block.
+- **Bundle billing controller diverged from its committed test contract.** `billingController.subscribeToBundle`
+  was changed (in the uncommitted working tree) to call `stripeService.addBundle` (billing only) and return
+  `{success,bundleId}`, but the on-`main` test expects `featureService.subscribeToBundle` → `{subscriptions,
+  count}`. Correct behavior is BOTH: bill via Stripe AND grant the per-feature entitlements, returning
+  `{subscriptions,count}`. Also added `addBundle`/`removeBundle` to the controller-test `stripeService` mock
+  and `removeBundleSubscription` to the routes-test controller-method list (the route `.bind()`'d an
+  undefined mock method → suite failed to load).
+- **`<script type="application/ld+json">` (SEO structured data) tripped the XSS E2E heuristic.** The
+  `xss-csrf-browser.spec.ts` inline-script check flagged ANY inline `<script>` with a body; `ld+json`/`json`
+  are inert data, so the heuristic was refined to exclude those types (executable inline scripts still
+  caught). Also hardened `components/seo/JsonLd.tsx` to escape every `<` as `<` (prevents a
+  `</script>` breakout; output stays valid JSON-LD).
+- **Trivy CRITICAL `shell-quote` (CVE-2026-9277)** in `mobile/package-lock.json` (transitive via
+  `react-native`→`react-devtools-core`) gated Security Scan; pinned `^1.8.4` via a `mobile` `overrides`.
+  Also flaky on `main` independently (the advisory post-dated main's last green run).
+- **`incident-management.spec.ts` "no passwords" test was fragile AND incomplete**: substring-matched
+  `password|secret|token` over the whole body (false-positive on legitimate incident text; *missed* an
+  `apiKey` field). Replaced with a structural walk flagging sensitive credential FIELD KEYS with real values.
+
+### seo-geo-aeo E2E shard 1 + 3 failures — root causes (2026-06-19)
+
+The PR's last CI run (`27526183687`) had two red E2E shards. Both were diagnosed by reproducing the
+**real-session** stack locally (the targeted-test runs are reliable; full-suite local runs OOM the 8GB host
+— see the env caveat below) and fixed. Verified: the 4 previously-failing tests pass in a clean targeted
+`--workers=1` local run against the real backend.
+
+- **Shard 1 — `asset-management.spec.ts` "can create a new asset" + "…not rejected by CSRF" (HIGH).** The
+  GDPR **Cookie Consent banner** (`<div role="dialog" aria-label="Cookie consent preferences"
+  class="fixed bottom-0 … z-50">`, `components/CookieConsentBanner.tsx`) overlays the viewport bottom and
+  **intercepts pointer events** on the create-modal's "Add Asset" submit button (Playwright: "subtree
+  intercepts pointer events" → `locator.click` 60s timeout). The asset spec has no per-file `seedAuth`; it
+  rides the global `storageState`, which never pre-accepted consent. Fix: seed `complyeasy_cookie_consent`
+  (the banner's `STORAGE_KEY`, `consentVersion:'1.0'`) in BOTH `e2e/auth.setup.ts` localStorage blocks so the
+  shared authed session models a returning, already-consented user. Audited safe: no spec hard-asserts the
+  banner is *visible* (only `toHaveCount(0)` absence checks); the one `acceptCookies:false` user
+  (`privacy-management.spec.ts` "accepting cookies dismisses") now actively `removeItem`s the key in its
+  `seedAuth` else-branch so it still forces the banner.
+- **Shard 3 — `privacy-management.spec.ts` DPIA + RoPA "page loads" (HIGH, real prod white-screen bug).**
+  `/api/ropa` and `/api/dpia` return a **paginated envelope** `{status,data:{records|dpias:[],total,page,…}}`,
+  but `RoPAManagement.tsx`/`DPIAWorkflow.tsx` (which use a LOCAL `apiFetch` returning raw JSON, NOT the
+  shared `api` service) did `setActivities(res.data)` / `setDpias(d.data)` — storing the **wrapper object**
+  as list state. The `stats` `useMemo` then calls `.filter()` on a non-array → **TypeError during render**,
+  and with **NO ErrorBoundary anywhere in the tree** (verified: `index.tsx`/`App.tsx`/`Layout.tsx` had zero
+  `getDerivedStateFromError`), one throwing route **unmounts the entire React tree → blank white screen, no
+  h1/h2** (test: "element(s) not found"). It passed *locally without a backend* only because the fetch failed
+  → catch left state `[]`. Fixes: (1) normalize all shapes to the underlying array in both components
+  (bare array / `{data:[]}` / `{data:{records|dpias:[]}}`); (2) added `components/RouteErrorBoundary.tsx` and
+  wrapped `<Suspense><Routes>` in `App.tsx` (`resetKey={location.pathname}`) so any future page throw degrades
+  to a recoverable error card instead of white-screening the whole SPA. The shared-`api` list pages
+  (`AccountDeletionWorkflow`, `PrivacyNoticeServing`, +5 others with the `setX(res.data)` pattern) render h1
+  fine against the real backend (they passed in CI) — left as-is; the new boundary covers them defensively.
+
+> **Local full-suite E2E is memory-bound on this 8GB host (caveat for future runs).** Running the full
+> privacy+asset specs (or even 2–3 privacy tests) back-to-back OOM-kills the `vite preview` server and/or
+> crashes chromium — Playwright reports `Target page, context or browser has been closed` / `ERR_CONNECTION_
+> REFUSED`, with a bare "Notifications + Tanstack devtools" page snapshot (NOT a render bug — a real throw
+> shows the new ErrorBoundary card). Symptoms: `PhysMem` ~69–233M unused, heavy swapping. The privacy
+> "platform/notices/data-deletion page loads" tests fail this way locally yet **pass in CI in ~2s** (each
+> shard is a dedicated runner). Proven not-a-regression: `:350` fails identically with my changes **stashed**.
+> Reproduce reliably by running ONE spec/test at a time with fresh `vite preview`; trust CI's per-shard
+> runners for the full sweep. Also: Docker build cache + dangling images had grown to ~30GB — `docker
+> builder prune -af && docker image prune -af` (keeps running pg/redis) reclaimed it. And `authLimiter` is
+> hardcoded at 5/window, so repeated manual `/api/auth/login` probes 429 — restart the backend to reset.
 
 ---
 

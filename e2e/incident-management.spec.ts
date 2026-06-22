@@ -354,17 +354,48 @@ test.describe('Incident Management', () => {
       expect(url).not.toMatch(/[a-f0-9]{32}/); // raw UUID without dashes
     });
 
-    test('API responses for incidents do not contain passwords', async ({ page }) => {
-      const sensitiveResponses: string[] = [];
+    test('API responses for incidents do not leak credential fields', async ({ page }) => {
+      // A genuine credential leak is a sensitive FIELD carrying a real value —
+      // not the mere appearance of the words "password"/"secret"/"token" in
+      // free text. This is a security-incident tool, so incident titles and
+      // descriptions legitimately mention passwords, secrets, and tokens; a
+      // substring scan over the body flags that legitimate content (and would
+      // still miss a leaked field like `apiKey` that contains none of those
+      // words). Walk the parsed JSON and flag only sensitive keys with a value.
+      const SENSITIVE_KEYS = new Set([
+        'password', 'passwordhash', 'hashedpassword', 'salt',
+        'secret', 'clientsecret', 'apikey', 'apisecret',
+        'accesstoken', 'refreshtoken', 'privatekey', 'sessionsecret',
+      ]);
+      const REDACTED = new Set(['', '[redacted]', '***', 'null', 'undefined']);
 
+      const findLeak = (value: unknown): boolean => {
+        if (Array.isArray(value)) return value.some(findLeak);
+        if (value && typeof value === 'object') {
+          return Object.entries(value as Record<string, unknown>).some(([k, v]) => {
+            if (
+              SENSITIVE_KEYS.has(k.toLowerCase()) &&
+              v != null &&
+              !REDACTED.has(String(v).toLowerCase())
+            ) {
+              return true;
+            }
+            return findLeak(v);
+          });
+        }
+        return false;
+      };
+
+      const leaks: string[] = [];
       page.on('response', async (res) => {
         if (res.url().includes('/api/') && res.status() === 200) {
           try {
-            const body = await res.text();
-            if (/password|secret|token/i.test(body) && !/csrf/i.test(body)) {
-              sensitiveResponses.push(res.url());
-            }
-          } catch {}
+            const ct = res.headers()['content-type'] || '';
+            if (!ct.includes('application/json')) return;
+            if (findLeak(await res.json())) leaks.push(res.url());
+          } catch {
+            // non-JSON or already-consumed body — nothing to inspect
+          }
         }
       });
 
@@ -372,7 +403,7 @@ test.describe('Incident Management', () => {
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.waitForTimeout(2000);
 
-      expect(sensitiveResponses).toHaveLength(0);
+      expect(leaks).toHaveLength(0);
     });
   });
 });

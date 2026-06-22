@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { csrfFetch } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import {
   Shield,
@@ -203,7 +204,7 @@ const AssetManagement: React.FC = () => {
       setLoading(true);
       setFetchError(null);
       try {
-        const res = await fetch('/api/assets?limit=100', { credentials: 'include' });
+        const res = await csrfFetch('/api/assets?limit=100', { credentials: 'include' });
         if (!res.ok) throw new Error(`Failed to load assets (${res.status})`);
         const json = await res.json();
         const data = Array.isArray(json.data) ? json.data : [];
@@ -252,7 +253,7 @@ const AssetManagement: React.FC = () => {
 
   const handleCreate = useCallback(async () => {
     try {
-      const res = await fetch('/api/assets', {
+      const res = await csrfFetch('/api/assets', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -280,7 +281,7 @@ const AssetManagement: React.FC = () => {
 
   const deleteAsset = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/assets/${encodeURIComponent(id)}`, {
+      const res = await csrfFetch(`/api/assets/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -305,7 +306,7 @@ const AssetManagement: React.FC = () => {
     const apiStatus = REVERSE_STATUS_MAP[nextStatus];
 
     try {
-      const res = await fetch(`/api/assets/${encodeURIComponent(id)}`, {
+      const res = await csrfFetch(`/api/assets/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

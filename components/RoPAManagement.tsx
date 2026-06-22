@@ -206,12 +206,23 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await apiFetch<{ data: ProcessingActivity[] } | ProcessingActivity[]>('/ropa');
-      if (Array.isArray(res)) {
-        setActivities(res);
-      } else if (res?.data) {
-        setActivities(res.data);
-      }
+      const res = await apiFetch<
+        | ProcessingActivity[]
+        | { data: ProcessingActivity[] | { records: ProcessingActivity[] } }
+      >('/ropa');
+      // The /ropa endpoint returns a paginated envelope
+      // ({ data: { records, total, page, ... } }); older shapes returned a bare
+      // array or { data: [...] }. Normalize all of them to the activities array —
+      // assigning the wrapper object to state would make activities.filter()/.map()
+      // throw during render and (absent an error boundary) blank the whole app.
+      const activitiesList = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray((res?.data as { records?: ProcessingActivity[] })?.records)
+            ? (res.data as { records: ProcessingActivity[] }).records
+            : [];
+      setActivities(activitiesList);
     } catch (err) {
       setLoadError('Failed to load processing activities. Please check your connection and try again.');
       logger.error('RoPAManagement data load error:', err);

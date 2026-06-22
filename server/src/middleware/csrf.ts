@@ -303,6 +303,20 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
     return next();
   }
 
+  // Skip CSRF for requests authenticated via an `Authorization: Bearer` token
+  // (non-browser / API clients such as the mobile app). CSRF defends against the
+  // browser AUTO-attaching ambient credentials (the httpOnly auth cookie) to a
+  // forged cross-site request; a Bearer token is attached explicitly by the
+  // client and is never sent automatically, and an attacker cannot add an
+  // `Authorization` header to a victim's cross-site request (it forces a CORS
+  // preflight the attacker's origin cannot satisfy). So Bearer-authenticated
+  // mutations carry no CSRF risk — without this exemption every mobile/API
+  // POST/PUT/PATCH/DELETE 403s in production. Cookie-authenticated requests (the
+  // web app, which sends no Authorization header) still require the token below.
+  if ((req.headers.authorization || '').startsWith('Bearer ')) {
+    return next();
+  }
+
   // Get CSRF token from header
   const headerToken = req.headers[CSRF_HEADER_NAME] as string;
 

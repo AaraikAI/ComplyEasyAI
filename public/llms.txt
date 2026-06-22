@@ -1,0 +1,60 @@
+# ComplyEasy AI
+
+ComplyEasy AI is an AI-powered compliance automation platform that helps organizations
+achieve and maintain readiness across major security, privacy, and AI-governance
+frameworks. It combines AI evidence collection, continuous control monitoring, risk and
+vendor management, and audit preparation in a single workspace. The platform helps teams
+reach compliance outcomes faster while keeping a verifiable, audit-ready record.
+
+## What it is
+
+ComplyEasy AI is a governance, risk, and compliance (GRC) platform that automates the
+repetitive work of compliance: collecting evidence, monitoring controls, generating
+policies, assessing risk, and preparing for audits. It is built for continuous compliance
+rather than point-in-time assessments.
+
+## Who it's for
+
+- Startups and SMBs pursuing their first SOC 2 or ISO 27001 certification.
+- Growing companies managing multiple overlapping frameworks at once.
+- Mid-market organizations and MSPs running compliance programs at scale.
+- Enterprises and regulated entities with AI-governance and EU regulatory obligations.
+
+## Frameworks supported
+
+ComplyEasy AI helps customers achieve and maintain readiness for, among others:
+
+- SOC 2 (Type I and Type II)
+- ISO 27001 / ISO 27701 / ISO 42001
+- GDPR
+- HIPAA
+- PCI DSS
+- NIST CSF and NIST AI RMF (AI 600-1)
+- EU AI Act
+- DORA (Digital Operational Resilience Act)
+- DMA (Digital Markets Act) and DSA (Digital Services Act)
+- EU CRA, CSRD, Ecodesign, and NIS2
+- US state privacy laws
+
+## Key capabilities
+
+- AI evidence collection — gather and map evidence to controls automatically.
+- Continuous monitoring — detect control drift and surface issues in real time.
+- Risk management — identify, score, and track risks with treatment workflows.
+- Vendor risk — assess and monitor third-party and supply-chain risk.
+- Policy generation — draft and maintain policies aligned to chosen frameworks.
+- Audit readiness — assemble audit-ready packages and track remediation.
+- Agentic automation — autonomous compliance workflows for ongoing operations.
+
+## Key pages
+
+- https://complyeasyai.com/ — Home
+- https://complyeasyai.com/platform/ai-compliance — Platform overview
+- https://complyeasyai.com/soc2-compliance — SOC 2 compliance
+- https://complyeasyai.com/iso-27001-compliance — ISO 27001 compliance
+- https://complyeasyai.com/gdpr-compliance — GDPR compliance
+- https://complyeasyai.com/hipaa-compliance — HIPAA compliance
+- https://complyeasyai.com/eu-ai-act-compliance — EU AI Act compliance
+- https://complyeasyai.com/pricing — Pricing and plans
+- https://complyeasyai.com/learn — Learning resources
+- https://complyeasyai.com/docs — Documentation

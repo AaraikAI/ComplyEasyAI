@@ -196,8 +196,10 @@ setup_circuit() {
         return 1
     fi
 
-    # Compile circuit
+    # Compile circuit. circom requires the -o output directory to already exist
+    # (it errors "invalid output path" otherwise), so create it first.
     echo "  [1/5] Compiling circuit..."
+    mkdir -p compiled
     circom "$CIRCUIT_FILE" \
         --r1cs \
         --wasm \

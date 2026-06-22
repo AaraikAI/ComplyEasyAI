@@ -17,6 +17,7 @@
  */
 
 import { test, expect } from '../fixtures/test-fixtures';
+import { request as pwRequest } from '@playwright/test';
 import type { APIRequestContext, APIResponse } from '@playwright/test';
 
 const API_BASE = process.env.API_URL || process.env.VITE_API_URL || 'http://localhost:3001';
@@ -57,6 +58,18 @@ async function getCsrfToken(request: APIRequestContext): Promise<string | null> 
   return body.csrfToken as string;
 }
 
+/**
+ * The API wraps every 2xx body in a success envelope ({ status:'success', data })
+ * via `responseEnvelope()` (server/src/middleware/standardResponse.ts). The app's
+ * `fetchAPI` unwraps it transparently, but these tests use the raw request
+ * context, so unwrap `.data` here to read the actual resource.
+ */
+function unwrap(json: any): any {
+  return json && typeof json === 'object' && json.status === 'success' && 'data' in json
+    ? json.data
+    : json;
+}
+
 test.describe('Framework API with Database Verification', () => {
   test('POST /api/frameworks creates framework and verifies in database', async ({
     request,
@@ -68,13 +81,11 @@ test.describe('Framework API with Database Verification', () => {
     const csrfToken = await getCsrfToken(request);
     test.skip(csrfToken === null, 'CSRF token fetch was rate-limited (429) — shared backend window exhausted.');
 
-    // Create framework via API
+    // Create framework via API. `testData` is the schema-valid payload
+    // ({ name, region, nextAuditDate }); sending backend-controlled fields like
+    // `type`/`status`/`progress` would be rejected by the strict create schema.
     const response = await request.post(`${API_BASE}/api/frameworks`, {
-      data: {
-        name: testData.name,
-        type: testData.type,
-        region: testData.region,
-      },
+      data: testData,
       headers: {
         'X-CSRF-Token': csrfToken as string,
       },
@@ -87,7 +98,7 @@ test.describe('Framework API with Database Verification', () => {
     expect([200, 201, 401]).toContain(response.status());
 
     if (response.ok()) {
-      const framework = await response.json();
+      const framework = unwrap(await response.json());
       expect(framework.id).toBeTruthy();
       expect(framework.name).toBe(testData.name);
 
@@ -114,7 +125,7 @@ test.describe('Framework API with Database Verification', () => {
     expect([200, 401]).toContain(response.status());
 
     if (response.ok()) {
-      const frameworks = await response.json();
+      const frameworks = unwrap(await response.json());
       expect(Array.isArray(frameworks)).toBe(true);
 
       // When the DB client is configured, the API list must be a superset of
@@ -147,12 +158,14 @@ test.describe('Framework API with Database Verification', () => {
     expect([200, 201, 401]).toContain(createResponse.status());
 
     if (createResponse.ok()) {
-      const framework = await createResponse.json();
+      const framework = unwrap(await createResponse.json());
       expect(framework.id).toBeTruthy();
 
-      // Update framework
+      // Update framework. Only fields updateFrameworkSchema accepts: `status` is
+      // settable; `progress` is NOT (it is recomputed by the backend from control
+      // completion), so sending it would 400 under the strict update schema.
       const updateResponse = await request.patch(`${API_BASE}/api/frameworks/${framework.id}`, {
-        data: { status: 'Compliant', progress: 100 },
+        data: { status: 'Compliant' },
         headers: { 'X-CSRF-Token': csrfToken as string },
         failOnStatusCode: false,
       });
@@ -163,15 +176,13 @@ test.describe('Framework API with Database Verification', () => {
       expect(updateResponse.ok()).toBe(true);
 
       if (updateResponse.ok()) {
-        const updated = await updateResponse.json();
+        const updated = unwrap(await updateResponse.json());
         expect(updated.status).toBe('Compliant');
-        expect(updated.progress).toBe(100);
 
         // Verify in database
         if (db.client) {
           const dbFramework = await db.getFramework(framework.id);
           expect(dbFramework?.status).toBe('Compliant');
-          expect(dbFramework?.progress).toBe(100);
 
           // Cleanup
           await db.deleteTestFramework(framework.id);
@@ -197,7 +208,7 @@ test.describe('Framework API with Database Verification', () => {
     expect([200, 201, 401]).toContain(createResponse.status());
 
     if (createResponse.ok()) {
-      const framework = await createResponse.json();
+      const framework = unwrap(await createResponse.json());
       expect(framework.id).toBeTruthy();
 
       // Delete framework
@@ -566,12 +577,15 @@ test.describe('Tier Gating', () => {
     const csrfToken = await getCsrfToken(request);
     test.skip(csrfToken === null, 'CSRF token fetch was rate-limited (429) — shared backend window exhausted.');
 
-    const response = await request.get(`${API_BASE}/api/eu-regulations/ai-rmf/systems`, {
+    // AI RMF is mounted at /api/ai-rmf (server/src/index.ts), not under
+    // /api/eu-regulations. The route is guarded by requireVisionaryFeature, so an
+    // authenticated under-tier caller gets 403 and an unauthenticated one 401.
+    const response = await request.get(`${API_BASE}/api/ai-rmf/systems`, {
       headers: { 'X-CSRF-Token': csrfToken as string },
       failOnStatusCode: false,
     });
 
-    test.skip(isRateLimited(response), 'GET /api/eu-regulations/ai-rmf/systems was rate-limited (429) — shared backend window exhausted.');
+    test.skip(isRateLimited(response), 'GET /api/ai-rmf/systems was rate-limited (429) — shared backend window exhausted.');
 
     // Should return 401 (unauthenticated) or 403 (tier restriction)
     expect([401, 403]).toContain(response.status());
@@ -622,20 +636,32 @@ test.describe('Tier Gating', () => {
     expect([401, 403]).toContain(response.status());
   });
 
-  test('Basic AI endpoints require Foundation+ tier', async ({ request }) => {
-    const csrfToken = await getCsrfToken(request);
-    test.skip(csrfToken === null, 'CSRF token fetch was rate-limited (429) — shared backend window exhausted.');
-
-    const response = await request.post(`${API_BASE}/api/ai/gap-analysis`, {
-      data: { framework: 'SOC2' },
-      headers: { 'X-CSRF-Token': csrfToken as string },
+  test('Basic AI endpoints reject unauthenticated callers (gate runs before the AI)', async ({}) => {
+    // Verify the auth/CSRF gate rejects an UNAUTHENTICATED mutation BEFORE it can
+    // reach the AI provider. We deliberately do NOT use the authenticated fixture:
+    // the e2e user is Foundation (entitled to this Basic-AI endpoint), so an authed
+    // call would pass the gate and then invoke Gemini — whose result varies by env
+    // — and asserting on that would mean tolerating a 5xx, which masks any real
+    // pre-AI 500 (exactly how a `current.join` controller bug once hid here). An
+    // anonymous probe is deterministic, never touches the AI provider, and never
+    // masks a server error. (Tier-boundary specifics are covered by the backend's
+    // authorization-matrix contract tests.)
+    const anon = await pwRequest.newContext({
+      baseURL: API_BASE,
+      storageState: { cookies: [], origins: [] },
+    });
+    const response = await anon.post(`${API_BASE}/api/ai/gap-analysis`, {
+      data: { current: 'No controls in place', target: 'SOC2' },
       failOnStatusCode: false,
     });
+    await anon.dispose();
 
     test.skip(isRateLimited(response), 'POST /api/ai/gap-analysis was rate-limited (429) — shared backend window exhausted.');
 
-    // Should return 401, 403, or 200 depending on auth
-    expect([200, 401, 403]).toContain(response.status());
+    // No session + no CSRF token → the request must be rejected by the auth/CSRF
+    // gate (401 or 403) and never reach the AI provider. A 2xx/5xx here would mean
+    // the gate let an anonymous mutation through.
+    expect([401, 403]).toContain(response.status());
   });
 
   test('Advanced AI endpoints require Essentials+ tier', async ({ request }) => {
@@ -662,9 +688,9 @@ test.describe('API Pagination', () => {
     test.skip(isRateLimited(response), 'GET /api/frameworks (paginated) was rate-limited (429) — shared backend window exhausted.');
 
     if (response.ok()) {
-      const data = await response.json();
-      // Response should respect pagination
-      expect(Array.isArray(data) || data.items).toBeTruthy();
+      const data = unwrap(await response.json());
+      // Response should respect pagination (a list array, or a paged container)
+      expect(Array.isArray(data) || data.items || data.pagination).toBeTruthy();
     }
   });
 });

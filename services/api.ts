@@ -47,6 +47,25 @@ export async function getCsrfToken(): Promise<string | null> {
   }
 }
 
+/**
+ * Same-origin `fetch` wrapper for components that issue RAW requests to absolute
+ * `/api/*` paths instead of going through `fetchAPI`. It attaches the
+ * double-submit CSRF token on mutating methods (and always sends credentials),
+ * mirroring `fetchAPI`'s handling so these mutations are not rejected with a 403
+ * "CSRF token missing" in production (where the API is same-origin and CSRF is
+ * enforced). GET/HEAD/OPTIONS pass through unchanged. Returns the raw Response so
+ * callers keep their existing status/body handling.
+ */
+export async function csrfFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const method = (init.method || 'GET').toUpperCase();
+  const headers = new Headers(init.headers || {});
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrf = await getCsrfToken();
+    if (csrf && !headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', csrf);
+  }
+  return fetch(input, { credentials: 'include', ...init, headers });
+}
+
 // HTTP Client with authentication and timeout
 async function fetchAPI<T>(
   endpoint: string,
@@ -773,10 +792,12 @@ export const api = {
 
   // --- Billing ---
   billing: {
-    createCheckout: async (tier: TierName, billingCycle: BillingCycle = 'annual') => {
+    createCheckout: async (tier: TierName, billingCycle: BillingCycle = 'annual', bundles?: string[]) => {
+      const body: any = { tier, billingCycle };
+      if (bundles && bundles.length > 0) body.bundles = bundles;
       return fetchAPI<{ url: string }>('/billing/checkout', {
         method: 'POST',
-        body: JSON.stringify({ tier, billingCycle }),
+        body: JSON.stringify(body),
       });
     },
 
@@ -2048,11 +2069,16 @@ export const api = {
   /**
    * Subscribe to a feature bundle
    */
-  subscribeToBundle: async (bundleId: string, billingCycle: 'monthly' | 'annual' = 'annual'): Promise<{ subscriptions: any[]; count: number }> => {
-    return fetchAPI<{ subscriptions: any[]; count: number }>(`/billing/bundles/${bundleId}/subscribe`, {
+  subscribeToBundle: async (bundleId: string, billingCycle: 'monthly' | 'annual' = 'annual'): Promise<{ success: boolean; bundleId: string; billingCycle: string }> => {
+    return fetchAPI<{ success: boolean; bundleId: string; billingCycle: string }>(`/billing/bundles/${bundleId}/subscribe`, {
       method: 'POST',
       body: JSON.stringify({ billingCycle }),
     });
+  },
+
+  /** Remove a feature bundle subscription */
+  removeBundle: async (bundleId: string): Promise<{ success: boolean; bundleId: string }> => {
+    return fetchAPI<{ success: boolean; bundleId: string }>(`/billing/bundles/${bundleId}`, { method: 'DELETE' });
   },
 
   // ============================================================================

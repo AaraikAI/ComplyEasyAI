@@ -78,5 +78,26 @@ server/src/zkp/**/*_js/
 server/*.r1cs
 server/*.wasm
 
+# ── ZK artifact storage policy (see server/src/zkp/ZK_OPERATIONAL_RUNBOOK.md) ──
+# COMMIT these: verification keys, compiled wasm, build manifest, and .r1cs.
+# Re-include them despite the broad ignores above (negations must follow the ignore).
+!server/src/zkp/compiled/
+!server/src/zkp/compiled/wasm/
+!server/src/zkp/compiled/wasm/*.wasm
+!server/src/zkp/compiled/build-manifest.json
+!server/src/zkp/keys/
+!server/src/zkp/keys/verification/
+!server/src/zkp/keys/verification/*.vkey
+!server/src/zkp/**/*.r1cs
+# Git LFS is NOT installed on this environment, so large proving keys are
+# gitignored (already covered by keys/proving/*.zkey above) and are regenerated
+# by setup-circuits.sh on deploy rather than tracked via LFS.
+
+# Intermediate ZK junk — never commit (downloaded ptau + scratch proof I/O).
+server/src/zkp/*.ptau
+server/src/zkp/test_input.json
+server/src/zkp/proof.json
+server/src/zkp/public.json
+
 # Solidity build artifacts (recompiled from source at build time)
 server/src/blockchain/compiled/

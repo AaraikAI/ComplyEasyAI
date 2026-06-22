@@ -88,39 +88,45 @@ describe('LandingPage', () => {
 
   it('renders the hero headline', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText(/Compliance that/)).toBeInTheDocument();
-    expect(screen.getByText(/runs itself/)).toBeInTheDocument();
+    // New SEO headline: "AI Compliance Automation for SOC 2, ISO 27001, GDPR & the EU AI Act".
+    // The H1 is split across nodes; the highlighted span text is unique to the headline.
+    expect(screen.getByText(/AI Compliance Automation for/)).toBeInTheDocument();
+    expect(screen.getByText('SOC 2, ISO 27001, GDPR & the EU AI Act')).toBeInTheDocument();
   });
 
   it('renders the hero subtext', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText(/Empower your SMB/)).toBeInTheDocument();
+    // New sub-headline copy
+    expect(screen.getByText(/ComplyEasy AI uses autonomous agents to collect evidence/)).toBeInTheDocument();
   });
 
   it('renders the aCOS badge', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText(/aCOS - Autonomous Compliance Operating System/)).toBeInTheDocument();
+    // Badge now uses an em-dash and reads "aCOS — the Autonomous Compliance Operating System"
+    expect(screen.getByText(/aCOS — the Autonomous Compliance Operating System/)).toBeInTheDocument();
   });
 
   it('renders "Start Free Trial" button', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Start Free Trial')).toBeInTheDocument();
+    // "Start Free Trial" now appears in the hero, the final CTA, and the footer link
+    expect(screen.getAllByText('Start Free Trial').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders "Book a Demo" button', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Book a Demo')).toBeInTheDocument();
+    // "Book a Demo" appears in both the hero and the final CTA
+    expect(screen.getAllByText('Book a Demo').length).toBeGreaterThanOrEqual(1);
   });
 
   it('opens demo modal when "Book a Demo" is clicked', () => {
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Book a Demo'));
+    fireEvent.click(screen.getAllByText('Book a Demo')[0]);
     expect(screen.getByTestId('demo-form')).toBeInTheDocument();
   });
 
   it('closes demo modal via close button', () => {
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Book a Demo'));
+    fireEvent.click(screen.getAllByText('Book a Demo')[0]);
     expect(screen.getByTestId('demo-form')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Close Demo'));
     expect(screen.queryByTestId('demo-form')).not.toBeInTheDocument();
@@ -130,7 +136,8 @@ describe('LandingPage', () => {
 
   it('renders the features section heading', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Platform Features')).toBeInTheDocument();
+    // Eyebrow heading is now "Platform Capabilities"
+    expect(screen.getByText('Platform Capabilities')).toBeInTheDocument();
     expect(screen.getByText('Everything you need to stay compliant')).toBeInTheDocument();
   });
 
@@ -141,7 +148,8 @@ describe('LandingPage', () => {
     expect(screen.getByText('Global Frameworks')).toBeInTheDocument();
     expect(screen.getByText('Real-time Analytics')).toBeInTheDocument();
     expect(screen.getByText('Vendor Management')).toBeInTheDocument();
-    expect(screen.getByText('100+ Integrations')).toBeInTheDocument();
+    // Integrations card is now "80+ Integrations"
+    expect(screen.getByText('80+ Integrations')).toBeInTheDocument();
   });
 
   it('renders aCOS feature cards on AI tab', () => {
@@ -149,7 +157,9 @@ describe('LandingPage', () => {
     // Switch to AI & Automation tab
     fireEvent.click(screen.getByText('AI & Automation'));
     expect(screen.getByText('Agentic AI with Rollback')).toBeInTheDocument();
-    expect(screen.getByText('Temporal Graph Networks')).toBeInTheDocument();
+    // The temporal-graph capability is now titled "Predictive Risk Modeling"
+    // (temporal graph networks live in its description)
+    expect(screen.getByText('Predictive Risk Modeling')).toBeInTheDocument();
   });
 
   it('renders security features on security tab', () => {
@@ -186,47 +196,52 @@ describe('LandingPage', () => {
 
   it('renders the about section', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Our Mission')).toBeInTheDocument();
-    expect(screen.getByText('Making compliance accessible to everyone.')).toBeInTheDocument();
+    // The "Our Mission" block was replaced by the "Why ComplyEasy AI" differentiators section.
+    expect(screen.getByText('Why ComplyEasy AI')).toBeInTheDocument();
+    expect(screen.getByText('Compliance that operates itself')).toBeInTheDocument();
   });
 
-  it('renders about section statistics', () => {
+  it('renders the about/credibility trust block', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('95%')).toBeInTheDocument();
-    expect(screen.getByText('Time Saved on Audits')).toBeInTheDocument();
-    expect(screen.getByText('24/7')).toBeInTheDocument();
-    expect(screen.getByText('500+')).toBeInTheDocument();
-    expect(screen.getByText('100%')).toBeInTheDocument();
+    // The numeric stat tiles were removed; the closest equivalent is the
+    // "Built by security and AI engineers" trust block and its capability bullets.
+    expect(screen.getByText('Built by security and AI engineers')).toBeInTheDocument();
+    expect(screen.getByText('Role-based access control (RBAC)')).toBeInTheDocument();
+    expect(screen.getByText('Full, versioned audit trail')).toBeInTheDocument();
   });
 
-  it('renders the security score in about section card', () => {
+  it('renders the security architecture card', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Security Score')).toBeInTheDocument();
-    expect(screen.getByText('98/100')).toBeInTheDocument();
+    // The "Security Score 98/100" card was replaced by a "Security architecture" card.
+    expect(screen.getByText('Security architecture')).toBeInTheDocument();
+    expect(screen.getByText('Defense in depth')).toBeInTheDocument();
   });
 
   // ---- Footer ----
 
   it('renders footer with brand', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('AI-powered compliance automation for modern businesses.')).toBeInTheDocument();
+    // New footer tagline copy
+    expect(screen.getByText('Autonomous AI compliance automation for SOC 2, ISO 27001, GDPR, HIPAA, and the EU AI Act.')).toBeInTheDocument();
   });
 
   it('renders footer section headings', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Product')).toBeInTheDocument();
+    // Footer nav columns were restructured to Frameworks / Platform / Compare / Resources.
+    // "Frameworks" also appears as a navbar link, so allow multiple matches.
+    expect(screen.getAllByText('Frameworks').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Platform')).toBeInTheDocument();
+    expect(screen.getByText('Compare')).toBeInTheDocument();
     expect(screen.getByText('Resources')).toBeInTheDocument();
-    expect(screen.getByText('Company')).toBeInTheDocument();
-    expect(screen.getByText('Legal')).toBeInTheDocument();
   });
 
   it('renders compliance badges', () => {
     renderWithRouter(<LandingPage />);
-    // Badges appear in both hero section and footer
+    // Trust badges now read as bare framework names (no "Compliant"/"Ready" suffix)
     expect(screen.getAllByText('SOC 2 Type II').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('ISO 27001').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('GDPR Compliant').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('HIPAA Ready').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('GDPR').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('HIPAA').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders copyright notice', () => {
@@ -234,9 +249,12 @@ describe('LandingPage', () => {
     expect(screen.getByText(/2026 ComplyEasy AI Inc/)).toBeInTheDocument();
   });
 
-  it('renders support email', () => {
+  it('renders the footer Documentation/help link', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('support@complyeasyai.com')).toBeInTheDocument();
+    // The footer support-email line was removed in the SEO overhaul. The closest
+    // equivalent help/support affordance the new footer renders is the
+    // "Documentation" link under the Resources column.
+    expect(screen.getByText('Documentation')).toBeInTheDocument();
   });
 
   // ---- Auth Modal - Email / Magic Link ----
@@ -465,7 +483,7 @@ describe('LandingPage', () => {
     sessionStorage.removeItem('hasSeenSignupModal');
     renderWithRouter(<LandingPage />);
     expect(screen.getByText('Start Your Free Trial')).toBeInTheDocument();
-    expect(screen.getByText('Get 3 days of full access to ComplyEasyAI. No credit card required.')).toBeInTheDocument();
+    expect(screen.getByText('Get full access to ComplyEasy AI. No credit card required.')).toBeInTheDocument();
   });
 
   it('does not show signup modal on repeat visits', () => {
@@ -489,7 +507,8 @@ describe('LandingPage', () => {
     expect(screen.getByText('AI-powered compliance automation')).toBeInTheDocument();
     expect(screen.getByText('Up to 3 compliance frameworks')).toBeInTheDocument();
     expect(screen.getByText('Up to 10 team members')).toBeInTheDocument();
-    expect(screen.getByText('24/7 automated evidence collection')).toBeInTheDocument();
+    // Feature bullet is now "Automated evidence collection" (no "24/7" prefix)
+    expect(screen.getByText('Automated evidence collection')).toBeInTheDocument();
   });
 
   it('opens auth modal when "Sign In" is clicked from signup modal', () => {
