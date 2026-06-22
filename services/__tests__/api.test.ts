@@ -940,6 +940,31 @@ describe('api service', () => {
       expect(body).toEqual({ tier: 'Growth', billingCycle: 'annual' });
     });
 
+    it('createCheckout includes bundles in the body when provided', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ url: 'https://stripe' }));
+      await api.billing.createCheckout('Growth' as any, 'annual', ['bundle-a', 'bundle-b']);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body !== null && c[1]?.body !== undefined) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
+      expect(body).toEqual({ tier: 'Growth', billingCycle: 'annual', bundles: ['bundle-a', 'bundle-b'] });
+    });
+
+    it('createCheckout omits the bundles field when none are provided', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ url: 'https://stripe' }));
+      await api.billing.createCheckout('Growth' as any, 'monthly');
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body !== null && c[1]?.body !== undefined) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
+      expect(body).toEqual({ tier: 'Growth', billingCycle: 'monthly' });
+      expect(body).not.toHaveProperty('bundles');
+    });
+
+    it('createCheckout omits the bundles field when given an empty array', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ url: 'https://stripe' }));
+      await api.billing.createCheckout('Growth' as any, 'annual', []);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body !== null && c[1]?.body !== undefined) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
+      expect(body).not.toHaveProperty('bundles');
+    });
+
     it('createPortalSession sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({ url: 'https://portal' }));
       await api.billing.createPortalSession();
@@ -2239,6 +2264,26 @@ describe('api service', () => {
       const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body !== null && c[1]?.body !== undefined) as [string, RequestInit] | undefined;
       const body = parseBodyFromCall(callWithBody);
       expect(body.billingCycle).toBe('annual');
+    });
+
+    it('subscribeToBundle returns the success/bundleId/billingCycle shape', async () => {
+      // State-changing request: first fetch is the CSRF token, second is the API call.
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
+      mockFetch.mockResolvedValueOnce(ok({ success: true, bundleId: 'bundle1', billingCycle: 'annual' }));
+      const result = await api.subscribeToBundle('bundle1');
+      expect(result).toEqual({ success: true, bundleId: 'bundle1', billingCycle: 'annual' });
+    });
+
+    it('removeBundle sends DELETE to the bundle endpoint', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
+      mockFetch.mockResolvedValueOnce(ok({ success: true, bundleId: 'bundle1' }));
+      const result = await api.removeBundle('bundle1');
+      expect(getCallForEndpoint(mockFetch, '/billing/bundles/bundle1')).toBeDefined();
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${API}/billing/bundles/bundle1`,
+        expect.objectContaining({ method: 'DELETE' }),
+      );
+      expect(result).toEqual({ success: true, bundleId: 'bundle1' });
     });
   });
 

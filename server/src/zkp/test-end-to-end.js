@@ -18,7 +18,9 @@ async function poseidon(inputs) {
 }
 
 async function runTest(name, witnessInput, expectedOutput) {
-  const wasmPath = path.join(ROOT, 'compiled', `${name}_js`, `${name}.wasm`);
+  // setup-circuits.sh relocates the circom-default compiled/<name>_js/<name>.wasm
+  // to compiled/wasm/<name>.wasm — the same path the runtime service loads.
+  const wasmPath = path.join(ROOT, 'compiled', 'wasm', `${name}.wasm`);
   const zkeyPath = path.join(ROOT, 'keys', 'proving', `${name}.zkey`);
   const vkeyPath = path.join(ROOT, 'keys', 'verification', `${name}.vkey`);
   const vkey = JSON.parse(fs.readFileSync(vkeyPath, 'utf8'));

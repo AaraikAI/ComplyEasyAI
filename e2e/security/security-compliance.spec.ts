@@ -618,17 +618,21 @@ test.describe('Compliance Verification', () => {
   });
 
   test('Data retention policies are enforced', async ({ request }) => {
-    // Check if there's a data retention configuration
-    const response = await request.get(`${API_BASE}/api/organization`, {
+    // Retention is a first-class feature served by the privacy module
+    // (GET /api/privacy/retention) — the organization endpoint never carried it.
+    // Verify the retention API is implemented and reachable.
+    const response = await request.get(`${API_BASE}/api/privacy/retention`, {
       failOnStatusCode: false,
     });
 
+    expect([200, 401, 403, 429]).toContain(response.status());
+
     if (response.ok()) {
       const body = await response.json();
-      // Organization should have retention settings
-      expect(
-        body.dataRetentionDays !== undefined || body.settings?.dataRetention !== undefined
-      ).toBeTruthy();
+      // Responses are wrapped in a success envelope ({ status:'success', data });
+      // the retention payload is { policies, total, page, ... }.
+      const inner = body?.data ?? body;
+      expect(Array.isArray(inner?.policies)).toBeTruthy();
     }
   });
 });

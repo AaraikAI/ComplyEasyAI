@@ -24,6 +24,10 @@ RUN apk add --no-cache libc6-compat openssl
 # ---------------------------------------------------------------------------
 FROM base AS frontend-deps
 COPY package.json package-lock.json ./
+# Puppeteer's bundled Chromium is a glibc build that cannot run on alpine/musl,
+# so skip the download here; the prerender step uses the system chromium package
+# installed in the frontend-build stage instead.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 RUN npm ci
 
 # ---------------------------------------------------------------------------
@@ -41,6 +45,13 @@ RUN npm ci
 # Stage 4: Build frontend (Vite → static assets)
 # ---------------------------------------------------------------------------
 FROM base AS frontend-build
+# The build runs scripts/prerender.mjs, which drives a headless browser over each
+# public route to capture prerendered HTML for SEO. Install the system Chromium
+# (puppeteer's bundled glibc build won't run on alpine/musl) plus the fonts/libs
+# it needs, and point puppeteer at it.
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 COPY --from=frontend-deps /app/node_modules ./node_modules
 COPY package.json package-lock.json tsconfig.json vite.config.ts index.html ./
 COPY App.tsx App.test.tsx index.tsx types.ts constants.ts setupTests.ts ./
@@ -54,6 +65,8 @@ COPY routes/ ./routes/
 COPY i18n/ ./i18n/
 COPY public/ ./public/
 COPY utils/ ./utils/
+COPY data/ ./data/
+COPY scripts/ ./scripts/
 RUN npm run build
 
 # ---------------------------------------------------------------------------
@@ -107,6 +120,15 @@ RUN if [ -n "$FIPS_INTEGRITY_KEY" ]; then \
 
 # Copy runtime data files (framework templates, control definitions)
 COPY --from=backend-build /app/server/src/data ./dist/data
+
+# Real zk-SNARK circuit artifacts (regenerated in CI before this build) so the
+# runtime can generate/verify real Groth16 proofs. Paths match
+# zeroKnowledgeService.ts (dist/zkp/{compiled,keys}). These are COPY'd from the
+# build context, not a build stage: the CI "Generate ZK proving keys" step writes
+# them into server/src/zkp/ before `docker build`. A local `docker build` must
+# first run `server/src/zkp/setup-circuits.sh`, or these COPYs will fail.
+COPY server/src/zkp/compiled ./dist/zkp/compiled
+COPY server/src/zkp/keys ./dist/zkp/keys
 
 # Copy frontend build so Express can serve it (optional — when NOT using Nginx)
 COPY --from=frontend-build /app/dist ./public

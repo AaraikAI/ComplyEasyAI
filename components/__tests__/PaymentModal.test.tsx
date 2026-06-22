@@ -15,7 +15,8 @@ vi.mock('../../services/api', () => ({
   api: {
     billing: {
       createCheckout: vi.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/test' })
-    }
+    },
+    getAvailableBundles: vi.fn().mockResolvedValue({ bundles: [] })
   }
 }));
 
@@ -59,7 +60,7 @@ describe('PaymentModal Component', () => {
 
     // The modal defaults to the annual cycle when no billingCycle prop is supplied.
     const { api } = await import('../../services/api');
-    expect(api.billing.createCheckout).toHaveBeenCalledWith('Pro', 'annual');
+    expect(api.billing.createCheckout).toHaveBeenCalledWith('Pro', 'annual', []);
   });
 
   it('forwards the selected billing cycle to createCheckout', async () => {
@@ -73,9 +74,37 @@ describe('PaymentModal Component', () => {
       );
       fireEvent.click(screen.getByText(/Continue to Secure Checkout/i));
       await waitFor(() => {
-        expect(api.billing.createCheckout).toHaveBeenCalledWith('Enterprise', cycle);
+        expect(api.billing.createCheckout).toHaveBeenCalledWith('Enterprise', cycle, []);
       });
       unmount();
     }
+  });
+
+  it('renders available bundles and forwards the selected bundle ids to createCheckout', async () => {
+    const { api } = await import('../../services/api');
+    (api.getAvailableBundles as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      bundles: [
+        { id: 'bundle-a', name: 'Security Bundle', description: 'Extra security controls', basePriceAnnual: 1200 },
+        { id: 'bundle-b', name: 'Privacy Bundle', description: 'Privacy add-ons', basePriceAnnual: 800 },
+      ],
+    });
+
+    render(
+      <PaymentModal plan="Pro" price="$99" onClose={mockClose} onSuccess={mockSuccess} />
+    );
+
+    // Bundles render as checkboxes once loaded.
+    const securityCheckbox = await screen.findByLabelText('Security Bundle');
+    expect(screen.getByText('Add-on bundles')).toBeInTheDocument();
+    expect(screen.getByLabelText('Privacy Bundle')).toBeInTheDocument();
+
+    // Select one bundle.
+    fireEvent.click(securityCheckbox);
+
+    fireEvent.click(screen.getByText(/Continue to Secure Checkout/i));
+
+    await waitFor(() => {
+      expect(api.billing.createCheckout).toHaveBeenCalledWith('Pro', 'annual', ['bundle-a']);
+    });
   });
 });

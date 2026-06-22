@@ -55,7 +55,7 @@ const controllerMethods = [
   'createCheckout', 'createPortalSession', 'previewTierChange', 'changeTier', 'cancelSubscription',
   'reactivateSubscription', 'processRefund', 'addAddOn', 'removeAddOn', 'requestQuote',
   'getAvailableFeatures', 'getFeatureSubscriptions', 'subscribeToFeature', 'unsubscribeFromFeature',
-  'checkFeatureAccess', 'getAvailableBundles', 'subscribeToBundle',
+  'checkFeatureAccess', 'getAvailableBundles', 'subscribeToBundle', 'removeBundleSubscription',
 ];
 jest.mock('../../../controllers/billingController', () => ({
   __esModule: true,

@@ -37,6 +37,7 @@ export interface TestFramework {
   region?: string;
   status: string;
   progress: number;
+  nextAuditDate?: string;
 }
 
 export interface TestVendor {
@@ -272,12 +273,14 @@ export class TestDataFactory {
   }
 
   createFrameworkData(overrides: Partial<TestFramework> = {}): Partial<TestFramework> {
+    // Only the fields createFrameworkSchema accepts: it is strict
+    // (`.unknown(false)`), so `type`/`status`/`progress` would be rejected with a
+    // 400 ("... is not allowed"). `nextAuditDate` is required — default it to a
+    // future date.
     return {
       name: `TEST_Framework_${this.uniqueId()}`,
-      type: 'SOC2',
       region: 'US',
-      status: 'In Progress',
-      progress: 0,
+      nextAuditDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       ...overrides,
     };
   }

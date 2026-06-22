@@ -88,8 +88,14 @@ class AIController {
     try {
       const authReq = req as AuthRequest;
       const { current, target } = req.body;
+      // geminiService.performGapAnalysis expects string[] for BOTH args (it calls
+      // current.join()/target.some()). The schema accepts `current` as a string
+      // and `target` as string|string[], so normalise both to arrays — otherwise
+      // a valid request throws "current.join is not a function" → 500 for every
+      // caller (the endpoint was broken in production).
+      const currentArray = Array.isArray(current) ? current : [current];
       const targetArray = Array.isArray(target) ? target : [target];
-      const result = await geminiService.performGapAnalysis(current, targetArray, authReq.user!.id);
+      const result = await geminiService.performGapAnalysis(currentArray, targetArray, authReq.user!.id);
       res.json(result);
     } catch (error: any) {
       logger.error('Gap analysis error', error);

@@ -7,6 +7,17 @@
 
 import { test, expect } from '@playwright/test';
 
+// Every test in this file is an UNAUTHENTICATED-security assertion: it verifies
+// that a request WITHOUT a valid session is rejected (401/403), that no token in
+// a query param authenticates, and that a cleared session denies access. The
+// shared project storageState now carries a REAL backend session (the
+// same-origin auth.setup performs a real register+login), which would
+// authenticate the `request`/`context` fixtures via the session cookie and mask
+// these checks. Pin an EMPTY storage state for this file so every fixture is
+// genuinely session-less — this strengthens the assertions (an explicit
+// no-session, not one that merely happened to be empty under mock auth).
+test.use({ storageState: { cookies: [], origins: [] } });
+
 const API_BASE =
   process.env.VITE_API_URL || process.env.API_URL || 'http://localhost:3001';
 const APP_URL =

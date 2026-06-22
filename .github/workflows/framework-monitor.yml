@@ -1,0 +1,84 @@
+# Framework / regulation amendment monitor.
+#
+# Weekly: fetch every source in scripts/self-improvement/sources.json, detect
+# content changes (deterministic hash diff), commit the refreshed baseline state,
+# and — when something changed — open a review issue AND hand the change report to
+# the compliance agent so it can draft proposal PRs.
+name: Framework Monitor
+
+on:
+  schedule:
+    - cron: '23 7 * * 1' # Mondays 07:23 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+  actions: write # to dispatch the compliance-agent workflow
+
+concurrency:
+  group: framework-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    name: Detect framework/regulation changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v4
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v4
+        with:
+          node-version: 20
+
+      - name: Run monitor
+        id: monitor
+        run: |
+          node scripts/self-improvement/monitor-sources.mjs \
+            --out "$RUNNER_TEMP/si" --update-state | tee -a "$GITHUB_OUTPUT"
+
+      - name: Commit refreshed baseline state
+        if: always()
+        run: |
+          if [ -n "$(git status --porcelain -- scripts/self-improvement/state)" ]; then
+            git config user.name "complyeasy-self-heal[bot]"
+            git config user.email "self-heal@users.noreply.github.com"
+            git add scripts/self-improvement/state
+            git commit -m "chore(monitor): refresh framework source baselines [skip ci]"
+            # Direct push; if the default branch is protected and the bot can't push,
+            # don't fail the run — log it (grant the Action bypass or use a state branch).
+            git push origin "HEAD:${GITHUB_REF_NAME}" || \
+              echo "::warning::Could not push baseline state (branch protection?). Change detection will re-baseline next run; see docs/SELF_IMPROVEMENT.md."
+          fi
+
+      - name: Open review issue for detected changes
+        if: steps.monitor.outputs.changed_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for L in "compliance:5319e7" "needs-review:fbca04"; do
+            gh label create "${L%%:*}" --color "${L##*:}" 2>/dev/null || true
+          done
+          gh issue create \
+            --title "Framework/regulation change(s) detected ($(date -u +%Y-%m-%d))" \
+            --body-file "$RUNNER_TEMP/si/monitor-report.md" \
+            --label "compliance" --label "needs-review"
+
+      - name: Upload report artifact
+        if: steps.monitor.outputs.changed_count != '0'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4
+        with:
+          name: framework-monitor-report
+          path: ${{ runner.temp }}/si/monitor-report.json
+          retention-days: 30
+
+      - name: Hand off to the compliance agent (draft proposal PRs)
+        if: steps.monitor.outputs.changed_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Best-effort: only fires if the agent workflow exists and a key is set;
+          # the agent workflow itself no-ops when ANTHROPIC_API_KEY is absent.
+          gh workflow run compliance-agent.yml \
+            -f reason="framework-monitor detected changes" || \
+            echo "::notice::compliance-agent workflow not dispatched (optional)."

@@ -280,6 +280,19 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+        env:
+          # Build the SPA to call the API same-origin (/api). `vite preview`
+          # reverse-proxies /api to the backend on :3001, so the real httpOnly
+          # session cookies flow with the app's XHRs — mirroring production
+          # (CloudFront serves the SPA and proxies /api) and letting org-scoped
+          # create flows persist in E2E instead of 401'ing under mock auth.
+          VITE_API_URL: /api
+
+      # Gate on valid structured data: parse every prerendered JSON-LD block and
+      # assert minimal required fields per @type. Fails the job on any malformed
+      # or empty schema so SEO/AEO structured data never regresses silently.
+      - name: Validate JSON-LD structured data
+        run: npm run validate:seo
 
       - name: Start frontend preview
         run: |
@@ -337,9 +350,25 @@ jobs:
           SENDGRID_FROM_EMAIL: test@test.com
           CLIENT_URL: http://localhost:4173
           CORS_ORIGIN: http://localhost:4173
+          # E2E ONLY: relax the per-IP GENERAL API rate limiter (apiLimiter,
+          # default 100 req / 15 min). Now that the E2E app authenticates with a
+          # real session (same-origin auth.setup), every page loads real org data,
+          # so the single Playwright source IP issues hundreds of /api reads and
+          # trips the abuse limiter — surfacing as false "Failed to load (429)"
+          # failures rather than real defects. Production keeps the strict default
+          # (this env var is set ONLY for the E2E backend). authLimiter stays
+          # hardcoded at 5/15min, so the dedicated brute-force rate-limit test
+          # still exercises the real limiter.
+          RATE_LIMIT_MAX_REQUESTS: '100000'
 
       - name: Run Playwright tests
-        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/4
+        # --workers=1: the same-origin REAL-session suite exercises authenticated
+        # flows that issue far more real /api calls per page than the old mock-auth
+        # suite, so two concurrent browser contexts overload this shard's single
+        # backend (and the 4-vCPU runner's memory) — producing flaky timeouts and
+        # browser crashes on pages that pass in isolation. One worker per shard
+        # keeps each backend within capacity; the 4 shards still run in parallel.
+        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/4 --workers=1
         env:
           CI: true
           E2E_BASE_URL: http://localhost:4173
@@ -427,6 +456,9 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Login to GHCR
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
@@ -434,6 +466,65 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Regenerate the ZK proving keys + compiled circuits into the workspace so
+      # the Docker build context contains them and the backend-production stage
+      # can COPY them into dist/zkp/. The .zkey/.wasm are gitignored (regenerated
+      # per environment), so without this step the deployed image has no ZK
+      # artifacts and cannot generate/verify real Groth16 proofs.
+      - name: Generate ZK proving keys
+        run: |
+          set -euo pipefail
+
+          # (a) Install the pinned circom v2.1.6 linux-amd64 binary, verifying its
+          # SHA-256 against the digest committed in checksums.sha256.
+          CIRCOM_SHA256=f3958483caaaa0cdd3912df5049e2e635eab4d09b9a66807be9633d547859f12
+          curl -L -o /tmp/circom \
+            https://github.com/iden3/circom/releases/download/v2.1.6/circom-linux-amd64
+          ACTUAL_SHA256="$(sha256sum /tmp/circom | awk '{print $1}')"
+          if [ "$ACTUAL_SHA256" != "$CIRCOM_SHA256" ]; then
+            echo "circom binary SHA-256 mismatch:"
+            echo "  expected: $CIRCOM_SHA256"
+            echo "  actual:   $ACTUAL_SHA256"
+            exit 1
+          fi
+          chmod +x /tmp/circom
+          sudo mv /tmp/circom /usr/local/bin/circom
+
+          # (b) Install the JS deps the setup needs (circomlib for the .circom
+          # includes, snarkjs for the Groth16 setup) without touching package.json.
+          cd server
+          npm install --no-save --legacy-peer-deps circomlib@2.0.5 snarkjs@0.7.6
+          cd ..
+
+          # (c) Compile circuits + run the (multi-contributor) trusted setup.
+          cd server/src/zkp
+          ZKEY_EXTRA_CONTRIBUTORS=2 bash setup-circuits.sh
+          cd -
+
+          # (d) Assert every required artifact was produced; fail closed otherwise.
+          ZKP=server/src/zkp
+          MISSING=0
+          for f in \
+            "$ZKP/compiled/wasm/compliance_check.wasm" \
+            "$ZKP/compiled/wasm/credential_verification.wasm" \
+            "$ZKP/compiled/wasm/data_ownership.wasm" \
+            "$ZKP/keys/proving/compliance_check.zkey" \
+            "$ZKP/keys/proving/credential_verification.zkey" \
+            "$ZKP/keys/proving/data_ownership.zkey" \
+            "$ZKP/keys/verification/compliance_check.vkey" \
+            "$ZKP/keys/verification/credential_verification.vkey" \
+            "$ZKP/keys/verification/data_ownership.vkey"; do
+            if [ ! -f "$f" ]; then
+              echo "Missing required ZK artifact: $f"
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -ne 0 ]; then
+            echo "ZK artifact generation incomplete — refusing to build image."
+            exit 1
+          fi
+          echo "All ZK artifacts present."
 
       # --- API image ---
       - name: API metadata
@@ -672,11 +763,22 @@ jobs:
 
       - name: Deploy frontend to S3 + CloudFront
         run: |
+          # 1) Upload hashed assets with a 1-year immutable cache. Every HTML
+          #    file (root index.html AND nested prerendered per-route
+          #    index.html) is excluded here so it never inherits immutable
+          #    caching, then re-uploaded with no-cache below.
           aws s3 sync ./dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
-            --exclude "index.html" --exclude "*.json"
-          aws s3 cp ./dist/index.html s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html \
+            --exclude "*.html" --exclude "*.json"
+          # 2) Re-upload all HTML (root + nested prerendered shells) with a
+          #    no-cache policy so deploys are picked up immediately. The
+          #    recursive copy with --exclude "*" --include "*.html" covers
+          #    every index.html at any depth (e.g. /learn/index.html).
+          aws s3 cp ./dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
+            --recursive \
+            --exclude "*" --include "*.html" \
+            --content-type "text/html" \
             --cache-control "no-cache, no-store, must-revalidate"
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \

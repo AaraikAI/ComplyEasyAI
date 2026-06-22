@@ -91,6 +91,11 @@ async function seedAuth(page: Page, opts: { acceptCookies?: boolean } = {}): Pro
             consentDate: new Date().toISOString(), consentVersion: '1.0',
           }),
         );
+      } else {
+        // The shared storageState now pre-accepts consent globally, so to force
+        // the GDPR banner to render (the dedicated Cookie Consent test) the key
+        // must be actively removed, not merely left unset.
+        localStorage.removeItem('complyeasy_cookie_consent');
       }
     },
     { u: E2E_USER, acceptCookies },
@@ -108,8 +113,12 @@ test.describe('Privacy Management', () => {
     });
 
     test('privacy platform page loads', async ({ page }) => {
+      // The page header (h1) renders unconditionally; under CI's concurrent load
+      // (4 shards x 2 workers on one backend) the SPA boot can be slow, so wait for
+      // the network to settle and allow a generous window rather than racing it.
+      await page.waitForLoadState('networkidle').catch(() => {});
       const heading = page.locator('h1, h2').first();
-      await expect(heading).toBeVisible({ timeout: 10000 });
+      await expect(heading).toBeVisible({ timeout: 20000 });
     });
 
     test('privacy hub shows navigation to sub-features', async ({ page }) => {
@@ -132,8 +141,12 @@ test.describe('Privacy Management', () => {
     });
 
     test('DPIA page loads with create option', async ({ page }) => {
+      // The page header (h1) renders unconditionally; under CI's concurrent load
+      // (4 shards x 2 workers on one backend) the SPA boot can be slow, so wait for
+      // the network to settle and allow a generous window rather than racing it.
+      await page.waitForLoadState('networkidle').catch(() => {});
       const heading = page.locator('h1, h2').first();
-      await expect(heading).toBeVisible({ timeout: 10000 });
+      await expect(heading).toBeVisible({ timeout: 20000 });
     });
 
     test('DPIA wizard can be started', async ({ page }) => {
@@ -204,8 +217,12 @@ test.describe('Privacy Management', () => {
     });
 
     test('RoPA page loads with processing activities', async ({ page }) => {
+      // The page header (h1) renders unconditionally; under CI's concurrent load
+      // (4 shards x 2 workers on one backend) the SPA boot can be slow, so wait for
+      // the network to settle and allow a generous window rather than racing it.
+      await page.waitForLoadState('networkidle').catch(() => {});
       const heading = page.locator('h1, h2').first();
-      await expect(heading).toBeVisible({ timeout: 10000 });
+      await expect(heading).toBeVisible({ timeout: 20000 });
     });
 
     test('can add a new processing activity', async ({ page }) => {
@@ -243,8 +260,12 @@ test.describe('Privacy Management', () => {
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
 
+      // The page header (h1) renders unconditionally; under CI's concurrent load
+      // (4 shards x 2 workers on one backend) the SPA boot can be slow, so wait for
+      // the network to settle and allow a generous window rather than racing it.
+      await page.waitForLoadState('networkidle').catch(() => {});
       const heading = page.locator('h1, h2').first();
-      await expect(heading).toBeVisible({ timeout: 10000 });
+      await expect(heading).toBeVisible({ timeout: 20000 });
     });
 
     test('can create a new privacy notice', async ({ page }) => {
@@ -331,8 +352,12 @@ test.describe('Privacy Management', () => {
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1500);
 
+      // The page header (h1) renders unconditionally; under CI's concurrent load
+      // (4 shards x 2 workers on one backend) the SPA boot can be slow, so wait for
+      // the network to settle and allow a generous window rather than racing it.
+      await page.waitForLoadState('networkidle').catch(() => {});
       const heading = page.locator('h1, h2').first();
-      await expect(heading).toBeVisible({ timeout: 10000 });
+      await expect(heading).toBeVisible({ timeout: 20000 });
     });
   });
 

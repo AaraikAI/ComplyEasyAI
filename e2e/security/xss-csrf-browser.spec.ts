@@ -232,9 +232,15 @@ test.describe('DOM Security', () => {
       allElements.forEach((el) => {
         if (STRUCTURAL.has(el.tagName)) return;
         const html = el.innerHTML;
-        // Inline <script> with executable content (external-src refs without a
-        // body are inert under CSP/sniffing and are how bundlers ship code).
-        const hasInlineScript = /<script(?![^>]*\bsrc=)[^>]*>[^<]/i.test(html);
+        // Inline <script> with EXECUTABLE content. Excluded as inert:
+        //  - external-src refs without a body (how bundlers ship code), and
+        //  - data blocks the browser never executes as JS, i.e.
+        //    type="application/ld+json" (schema.org SEO structured data) and
+        //    type="application/json". These are data, not an XSS execution vector.
+        const hasInlineScript =
+          /<script(?![^>]*\bsrc=)(?![^>]*\btype=["']application\/(?:ld\+json|json)["'])[^>]*>[^<]/i.test(
+            html,
+          );
         if (
           hasInlineScript ||
           html.includes('javascript:') ||
