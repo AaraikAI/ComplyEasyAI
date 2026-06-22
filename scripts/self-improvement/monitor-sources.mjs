@@ -29,6 +29,37 @@ const FETCH_TIMEOUT_MS = 30000;
 const USER_AGENT =
   'ComplyEasyAI-framework-monitor/1.0 (+https://github.com/AaraikAI/ComplyEasyAI; compliance standard change detection)';
 
+// The monitor must only ever reach the known public standards-body hosts. URLs
+// come from sources.json (a committed config file); constraining outbound
+// requests to this explicit allowlist over HTTPS prevents the fetcher from being
+// repurposed for SSRF / data exfiltration if that file is ever modified, and is
+// the sanitizing barrier between file-sourced data and the network. Adding a new
+// source requires adding its host here on purpose.
+const ALLOWED_HOSTS = new Set([
+  'eur-lex.europa.eu',
+  'www.nist.gov',
+  'www.hhs.gov',
+  'www.pcisecuritystandards.org',
+  'www.iso.org',
+  'www.aicpa-cima.com',
+]);
+
+// Validate a source URL and return a safe absolute https URL, or throw. Only the
+// allowlisted hosts over https are permitted; everything else (other schemes,
+// other hosts, private/loopback addresses) is rejected before any network call.
+function assertAllowedUrl(raw) {
+  let u;
+  try {
+    u = new URL(String(raw));
+  } catch {
+    throw new Error('malformed URL');
+  }
+  if (u.protocol !== 'https:') throw new Error(`blocked non-https scheme: ${u.protocol}`);
+  const host = u.hostname.toLowerCase();
+  if (!ALLOWED_HOSTS.has(host)) throw new Error(`host not in allowlist: ${host}`);
+  return `https://${host}${u.pathname}${u.search}`;
+}
+
 function parseArgs(argv) {
   const out = { outDir: resolve(process.cwd(), 'self-improvement-report'), updateState: false };
   for (let i = 0; i < argv.length; i++) {
@@ -45,17 +76,18 @@ function parseArgs(argv) {
 // "changed" (a human glances at it) than a missed amendment.
 function normalize(html) {
   let text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+    // Drop the contents of script/style/noscript. End tags allow trailing
+    // whitespace (</script >, </style\n>) so the blocks are fully removed.
+    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, ' ')
+    .replace(/<noscript\b[\s\S]*?<\/noscript\s*>/gi, ' ')
     .replace(/<!--[\s\S]*?-->/g, ' ')
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    // Collapse ALL HTML entities to a space in a SINGLE pass. We never chain
+    // partial decodes (e.g. &amp; -> &), which could double-unescape sequences
+    // like &amp;lt; into <. For a content fingerprint the exact decoded value is
+    // irrelevant — only stable, injection-free normalization matters.
+    .replace(/&(?:#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/gi, ' ');
   text = text
     // Volatile patterns that change every request but carry no meaning.
     .replace(/\b[0-9a-f]{16,}\b/gi, '') // long hex (nonces, csrf, build ids)
@@ -68,10 +100,17 @@ function normalize(html) {
 }
 
 async function fetchSource(url) {
+  // Sanitize file-sourced URL against the host allowlist BEFORE any network call.
+  let safeUrl;
+  try {
+    safeUrl = assertAllowedUrl(url);
+  } catch (err) {
+    return { ok: false, error: `rejected URL (${String(err?.message || err)})` };
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, {
+    const res = await fetch(safeUrl, {
       signal: controller.signal,
       redirect: 'follow',
       headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,application/xhtml+xml' },
