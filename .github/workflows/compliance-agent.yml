@@ -1,0 +1,97 @@
+# Compliance agent — drafts review-only proposal PRs.
+#
+# Covers two of the requested loops:
+#   - Feature-gap proposer: when a framework adds controls the app doesn't cover,
+#     scaffold the new control set / component for review.
+#   - Compliance content updater: keep the in-repo framework/control definitions
+#     in sync with amended standards.
+#
+# It ALWAYS opens DRAFT pull requests for human review — it never auto-merges and
+# never touches CI, secrets, infra, or auth code. It is gated on ANTHROPIC_API_KEY;
+# without that secret the job no-ops, so the repo stays functional with the secret
+# unset. Runs weekly and on demand (the monitor dispatches it on a detected change).
+name: Compliance Agent
+
+on:
+  schedule:
+    - cron: '41 8 * * 1' # Mondays 08:41 UTC (after the monitor)
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why the agent is running
+        required: false
+        default: manual
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: compliance-agent
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then echo "enabled=true" >> "$GITHUB_OUTPUT";
+          else echo "enabled=false" >> "$GITHUB_OUTPUT"; echo "::notice::ANTHROPIC_API_KEY not set — compliance agent skipped."; fi
+
+  propose:
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v4
+        with:
+          node-version: 20
+
+      - name: Refresh framework monitor report (context for the agent)
+        run: node scripts/self-improvement/monitor-sources.mjs --out "$RUNNER_TEMP/si" || true
+
+      - name: Run compliance agent
+        uses: anthropics/claude-code-action@2fee15510437d71399d9139ed60433470484a8fb # v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: '--max-turns 30'
+          prompt: |
+            You are the ComplyEasyAI compliance-maintenance agent running in CI. Your job is to
+            propose SMALL, REVIEWABLE changes that keep the product aligned with compliance
+            standards. You MUST open your work as a DRAFT pull request for human review — never
+            merge, and never enable auto-merge.
+
+            Hard constraints (do not violate):
+            - Touch ONLY: compliance framework/control definitions and seeds (e.g. files under
+              server/prisma/seed*, server/src/**/frameworks/**, data/**), and at most ONE new
+              UI component/route if a framework genuinely adds a capability the app lacks.
+            - NEVER modify: .github/workflows/**, any *.env*, secrets, infra/**, auth/** , CI config,
+              or dependency manifests. If a change would require those, describe it in the PR body
+              instead of making it.
+            - Keep the diff focused and minimal (ideally one framework). If a DB schema change is
+              needed, add a Prisma migration file but clearly flag it for human review in the PR body.
+            - If nothing actionable is found, do nothing and exit without opening a PR.
+
+            Steps:
+            1. Read $RUNNER_TEMP/si/monitor-report.json (changed sources, if any) and the newest
+               open GitHub issues labelled "needs-review" or "compliance".
+            2. Inspect how this repo defines compliance frameworks and controls (search the seeds and
+               framework definition modules). Identify the single highest-value gap or amendment to
+               address now.
+            3. Create a branch named compliance-agent/<framework>-<short-desc>, make the minimal
+               change, and open a DRAFT PR (gh pr create --draft) titled
+               "proposal: <framework> <what changed>". In the PR body explain: the source/amendment,
+               exactly what you changed, what a reviewer must verify, and any migration/breaking notes.
+            4. Do not open more than one PR per run.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUNNER_TEMP: ${{ runner.temp }}
