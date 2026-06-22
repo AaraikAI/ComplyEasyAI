@@ -54,29 +54,30 @@ test.describe('Asset Management', () => {
       await expect(addBtn).toBeVisible();
       {
         await addBtn.click();
-        await page.waitForTimeout(500);
 
-        // Clicking "Add Asset" must open the create form with a name field.
-        const nameInput = page.locator('[name="name"], [name="title"], input[type="text"]').first();
-        await expect(nameInput).toBeVisible({ timeout: 5000 });
+        // The create modal's name field has no `name` attribute — only a unique
+        // placeholder — so target it directly (an unscoped input[type=text] would
+        // match the page search box). Filling it enables the otherwise-disabled
+        // "Add Asset" submit. Under CI's concurrent load the React state update can
+        // lag the fill, so confirm the value actually landed and wait generously
+        // for the submit to enable before clicking.
+        const nameInput = page.getByPlaceholder('e.g. Production Web Server');
+        await expect(nameInput).toBeVisible({ timeout: 10000 });
         await nameInput.fill('E2E Asset - Production Database Server');
+        await expect(nameInput).toHaveValue('E2E Asset - Production Database Server');
+        const modal = page.locator('div.fixed.inset-0.z-50').filter({ has: nameInput });
 
-        const typeSelect = page.locator('select[name="type"], select[name="category"]');
+        const typeSelect = modal.locator('select').first();
         if (await typeSelect.isVisible().catch(() => false)) {
           const options = await typeSelect.locator('option').all();
           if (options.length > 1) await typeSelect.selectOption({ index: 1 });
         }
 
-        const descInput = page.locator('[name="description"], textarea').first();
-        if (await descInput.isVisible()) {
-          await descInput.fill('Primary production database hosting customer data');
-        }
-
         // The submit control must be present and enabled once a name is entered
         // (handleCreate is disabled while form.name is blank).
-        const saveBtn = page.getByRole('button', { name: /save|create|submit|add asset/i }).last();
+        const saveBtn = modal.getByRole('button', { name: /add asset/i }).last();
         await expect(saveBtn).toBeVisible();
-        await expect(saveBtn).toBeEnabled();
+        await expect(saveBtn).toBeEnabled({ timeout: 15000 });
         await saveBtn.click();
         await page.waitForTimeout(1000);
       }
@@ -259,11 +260,17 @@ test.describe('Asset Management', () => {
       const addBtn = page.getByRole('button', { name: /add|create/i }).first();
       if (await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await addBtn.click();
-        const nameInput = page.locator('[name="name"], [name="title"], input[type="text"]').first();
-        if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+        // The name field has only a unique placeholder (no name attr) — target it
+        // directly. Confirm the value landed (React state can lag the fill under CI
+        // load) and wait for the submit to enable before clicking, so the create
+        // mutation actually fires.
+        const nameInput = page.getByPlaceholder('e.g. Production Web Server');
+        if (await nameInput.isVisible({ timeout: 8000 }).catch(() => false)) {
           await nameInput.fill('E2E Asset - CSRF Check');
-          const saveBtn = page.getByRole('button', { name: /save|create|submit|add asset/i }).last();
-          if (await saveBtn.isVisible().catch(() => false)) {
+          await expect(nameInput).toHaveValue('E2E Asset - CSRF Check');
+          const modal = page.locator('div.fixed.inset-0.z-50').filter({ has: nameInput });
+          const saveBtn = modal.getByRole('button', { name: /add asset/i }).last();
+          if (await saveBtn.isEnabled({ timeout: 15000 }).catch(() => false)) {
             await saveBtn.click();
             await page.waitForTimeout(2000);
           }

@@ -1,0 +1,70 @@
+{
+  "//": "Registry of authoritative sources the framework-amendment monitor watches.",
+  "//hashStrategy": "Each source is fetched, reduced to normalized visible text, and hashed. A changed hash opens a review issue — it flags 'something changed here, a human should check whether a standard was amended'. Tune `note` and prune noisy sources over time.",
+  "sources": [
+    {
+      "id": "eu-ai-act",
+      "name": "EU AI Act (Regulation 2024/1689)",
+      "framework": "EU AI Act",
+      "type": "regulation",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689",
+      "note": "Consolidated text on EUR-Lex; changes when corrigenda/amendments are published."
+    },
+    {
+      "id": "gdpr",
+      "name": "GDPR (Regulation 2016/679)",
+      "framework": "GDPR",
+      "type": "regulation",
+      "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng",
+      "note": "Consolidated GDPR text on EUR-Lex."
+    },
+    {
+      "id": "nist-ai-rmf",
+      "name": "NIST AI Risk Management Framework",
+      "framework": "NIST AI RMF",
+      "type": "framework",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "note": "NIST AI RMF hub; watch for profile/playbook updates."
+    },
+    {
+      "id": "nist-csf",
+      "name": "NIST Cybersecurity Framework",
+      "framework": "NIST CSF",
+      "type": "framework",
+      "url": "https://www.nist.gov/cyberframework",
+      "note": "NIST CSF hub."
+    },
+    {
+      "id": "hipaa",
+      "name": "HIPAA for Professionals (HHS)",
+      "framework": "HIPAA",
+      "type": "regulation",
+      "url": "https://www.hhs.gov/hipaa/for-professionals/index.html",
+      "note": "HHS HIPAA hub; watch for NPRM/final-rule changes."
+    },
+    {
+      "id": "pci-dss",
+      "name": "PCI DSS Document Library",
+      "framework": "PCI DSS",
+      "type": "framework",
+      "url": "https://www.pcisecuritystandards.org/document_library/",
+      "note": "PCI SSC document library; watch for new DSS versions/SAQs."
+    },
+    {
+      "id": "iso-27001",
+      "name": "ISO/IEC 27001",
+      "framework": "ISO 27001",
+      "type": "framework",
+      "url": "https://www.iso.org/standard/27001",
+      "note": "ISO 27001 standard page; watch for amendments/new editions."
+    },
+    {
+      "id": "soc2-aicpa",
+      "name": "AICPA SOC 2",
+      "framework": "SOC 2",
+      "type": "framework",
+      "url": "https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2",
+      "note": "AICPA SOC 2 hub; watch for Trust Services Criteria updates."
+    }
+  ]
+}

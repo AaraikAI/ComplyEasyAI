@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { csrfFetch } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import { useSubmitGuard } from '../hooks/useSubmitGuard';
 import {
@@ -248,7 +249,7 @@ const IncidentManagement: React.FC = () => {
       setLoading(true);
       setFetchError(null);
       try {
-        const res = await fetch('/api/incidents?limit=100', { credentials: 'include' });
+        const res = await csrfFetch('/api/incidents?limit=100', { credentials: 'include' });
         if (!res.ok) throw new Error(`Failed to load incidents (${res.status})`);
         const json = await res.json();
         const data = Array.isArray(json.data) ? json.data : [];
@@ -313,7 +314,7 @@ const IncidentManagement: React.FC = () => {
   const handleCreateIncident = useCallback(async () => {
     await guard(async () => {
       try {
-        const res = await fetch('/api/incidents', {
+        const res = await csrfFetch('/api/incidents', {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -347,7 +348,7 @@ const IncidentManagement: React.FC = () => {
     const apiStatus = REVERSE_STATUS_MAP[nextStatus] || nextStatus;
 
     try {
-      const res = await fetch(`/api/incidents/${encodeURIComponent(incidentId)}`, {
+      const res = await csrfFetch(`/api/incidents/${encodeURIComponent(incidentId)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -387,7 +388,7 @@ const IncidentManagement: React.FC = () => {
 
   const deleteIncident = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/incidents/${encodeURIComponent(id)}`, {
+      const res = await csrfFetch(`/api/incidents/${encodeURIComponent(id)}`, {
         method: 'DELETE',
         credentials: 'include',
       });

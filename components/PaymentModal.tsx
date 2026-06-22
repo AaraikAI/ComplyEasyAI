@@ -15,11 +15,49 @@ interface PaymentModalProps {
   onSuccess: () => void;
 }
 
+interface FeatureBundle {
+  id: string;
+  name?: string;
+  description?: string;
+  basePriceAnnual?: number;
+  basePriceMonthly?: number;
+}
+
 export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billingCycle = 'annual', onClose, onSuccess }) => {
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'processing' | 'success'>('form');
+  const [bundles, setBundles] = useState<FeatureBundle[]>([]);
+  const [selectedBundleIds, setSelectedBundleIds] = useState<string[]>([]);
   const { isSubmitting, guard } = useSubmitGuard();
+
+  useEffect(() => {
+    let active = true;
+    api.getAvailableBundles()
+      .then((res) => {
+        if (active && res?.bundles) setBundles(res.bundles);
+      })
+      .catch((error) => {
+        // A bundle-fetch failure must not block checkout; leave the list empty.
+        logger.warn('Failed to load feature bundles:', error);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const toggleBundle = (bundleId: string) => {
+    setSelectedBundleIds((prev) =>
+      prev.includes(bundleId) ? prev.filter((id) => id !== bundleId) : [...prev, bundleId],
+    );
+  };
+
+  const formatBundlePrice = (bundle: FeatureBundle): string | null => {
+    const amount = billingCycle === 'monthly' ? bundle.basePriceMonthly : bundle.basePriceAnnual;
+    if (typeof amount !== 'number') return null;
+    const suffix = billingCycle === 'monthly' ? t('subscription.perMonth') : t('subscription.perYear');
+    return `+$${amount}/${suffix}`;
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -28,7 +66,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
       setStep('processing');
 
       try {
-        const response: any = await api.billing.createCheckout(plan as import('../types').TierName, billingCycle);
+        const response: any = await api.billing.createCheckout(plan as import('../types').TierName, billingCycle, selectedBundleIds);
         if (response?.url) {
           window.location.href = response.url;
         } else {
@@ -98,6 +136,38 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
                     <span className="font-bold text-gray-900">{price}/{t('subscription.perMonth')}</span>
                   </div>
                 </div>
+
+                {bundles.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-gray-700">Add-on bundles</p>
+                    {bundles.map((bundle) => {
+                      const priceHint = formatBundlePrice(bundle);
+                      return (
+                        <label
+                          key={bundle.id}
+                          className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1"
+                            checked={selectedBundleIds.includes(bundle.id)}
+                            onChange={() => toggleBundle(bundle.id)}
+                            aria-label={bundle.name || bundle.id}
+                          />
+                          <span className="flex-1">
+                            <span className="flex justify-between items-center">
+                              <span className="font-medium text-gray-900">{bundle.name || bundle.id}</span>
+                              {priceHint && <span className="text-sm font-semibold text-gray-700">{priceHint}</span>}
+                            </span>
+                            {bundle.description && (
+                              <span className="block text-xs text-gray-500 mt-0.5">{bundle.description}</span>
+                            )}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <button
                   onClick={handleSubmit}

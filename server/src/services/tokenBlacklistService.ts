@@ -75,11 +75,20 @@ class TokenBlacklistService {
    */
   async isRevoked(token: string): Promise<boolean> {
     const hash = tokenHash(token);
-    const entry = await cacheService.get(
-      `blacklist:${hash}`,
-      { namespace: BLACKLIST_NAMESPACE }
-    );
-    return entry !== null;
+    try {
+      const entry = await cacheService.get(
+        `blacklist:${hash}`,
+        { namespace: BLACKLIST_NAMESPACE, throwOnError: true }
+      );
+      return entry !== null;
+    } catch (error) {
+      // SECURITY: the authoritative revocation store (Redis) errored. Fail
+      // CLOSED — treat the token as revoked rather than falling back to a store
+      // that cannot contain the blacklist entry (which would accept a
+      // logged-out / password-reset-invalidated token while Redis is unhealthy).
+      logger.error('[TokenBlacklist] isRevoked lookup failed; failing closed (token treated as revoked)', error);
+      return true;
+    }
   }
 
   /**
@@ -107,10 +116,17 @@ class TokenBlacklistService {
    * @returns true if the token was issued before the revoke-all timestamp
    */
   async isRevokedByUserReset(token: string, userId: string): Promise<boolean> {
-    const entry = await cacheService.get<{ revokedAt: number }>(
-      `revoke-all:${userId}`,
-      { namespace: BLACKLIST_NAMESPACE }
-    );
+    let entry: { revokedAt: number } | null;
+    try {
+      entry = await cacheService.get<{ revokedAt: number }>(
+        `revoke-all:${userId}`,
+        { namespace: BLACKLIST_NAMESPACE, throwOnError: true }
+      );
+    } catch (error) {
+      // SECURITY: fail CLOSED if the authoritative store errored (see isRevoked).
+      logger.error('[TokenBlacklist] isRevokedByUserReset lookup failed; failing closed', error);
+      return true;
+    }
     if (!entry) return false;
 
     try {

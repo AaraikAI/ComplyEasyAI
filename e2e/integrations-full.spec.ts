@@ -397,6 +397,12 @@ test.describe('Integrations', () => {
     });
 
     test('integration endpoints require authentication', async ({ page }) => {
+      // Genuinely UNAUTHENTICATED probe. The shared storageState now carries a
+      // real session (same-origin auth.setup), which `page.request` would send —
+      // turning this into an authenticated 200 and inverting the test. Clear the
+      // session from this context first so we truly verify the endpoint rejects a
+      // request with no session.
+      await page.context().clearCookies();
       const response = await page.request.get(
         `${process.env.VITE_API_URL || 'http://localhost:3001'}/api/integrations`,
         { headers: { 'Content-Type': 'application/json' } }

@@ -7,6 +7,15 @@
 
 import { test, expect } from '@playwright/test';
 
+// Every test here verifies multi-tenant isolation for an UNAUTHENTICATED or
+// cross-org request — the assertions are all "without auth, this must be
+// rejected / must not leak another org's data". The shared project storageState
+// now carries a REAL backend session (same-origin auth.setup register+login),
+// which would authenticate the `request`/`context` fixtures and turn these
+// unauthenticated probes into authenticated 200s, masking the checks. Pin an
+// EMPTY storage state so every fixture in this file is genuinely session-less.
+test.use({ storageState: { cookies: [], origins: [] } });
+
 const API_BASE =
   process.env.VITE_API_URL || process.env.API_URL || 'http://localhost:3001';
 const APP_URL =

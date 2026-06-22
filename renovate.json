@@ -1,0 +1,38 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "//": "OPTIONAL, best-practice dependency automation. Activates only when the Renovate GitHub App (mend.io) is installed OR a self-hosted renovate Action runs. It complements .github/workflows/self-heal-cve.yml: Renovate gives richer grouping/scheduling, the workflow is the zero-setup fallback. Same safety contract — auto-merge only non-major that passes CI; majors and security-but-major open PRs for review.",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "group:monorepos"
+  ],
+  "timezone": "Etc/UTC",
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 10,
+  "rangeStrategy": "bump",
+  "lockFileMaintenance": { "enabled": true, "schedule": ["before 6am on monday"] },
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "schedule": ["at any time"],
+    "//": "Security fixes are prioritized; non-major security fixes auto-merge after CI.",
+    "automerge": true,
+    "automergeStrategy": "squash"
+  },
+  "packageRules": [
+    {
+      "description": "Auto-merge non-major dev + prod updates once full CI passes.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Major upgrades always require human review.",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "addLabels": ["needs-review", "breaking"]
+    }
+  ]
+}

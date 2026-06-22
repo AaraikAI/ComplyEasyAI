@@ -194,4 +194,7 @@ router.get('/bundles', asyncHandler(billingController.getAvailableBundles.bind(b
 // Subscribe to a feature bundle
 router.post('/bundles/:bundleId/subscribe', authorize('admin'), asyncHandler(billingController.subscribeToBundle.bind(billingController)));
 
+// Remove a feature bundle subscription
+router.delete('/bundles/:bundleId', authorize('admin'), asyncHandler(billingController.removeBundleSubscription.bind(billingController)));
+
 export default router;

@@ -112,6 +112,47 @@ export class FrontendStack extends cdk.Stack {
       : undefined;
 
     // ---------------------------------------------------------------
+    // Viewer-request URI rewrite for prerendered per-route HTML.
+    // ---------------------------------------------------------------
+    // The build prerenders public routes to /<route>/index.html in S3, but a
+    // crawler requests the clean path (e.g. /soc2-compliance). CloudFront's
+    // default-root-object only resolves '/' to index.html, so a clean
+    // sub-path would otherwise 404/403 and fall back to the empty SPA shell —
+    // defeating prerendering. This function rewrites any extension-less URI
+    // that does not already end in '/' by appending '/index.html' (and maps a
+    // bare '/' to '/index.html'). Requests for hashed assets (which carry a
+    // file extension) and /api, /health, /socket.io (separate behaviors) are
+    // left untouched. Unknown routes with no prerendered object still fall
+    // through to the 403/404 → /index.html SPA fallback below.
+    const rewriteFunction = new cloudfront.Function(this, 'RouteRewrite', {
+      functionName: `${prefix}-route-rewrite`,
+      comment: 'Append /index.html to extension-less clean paths for prerendered routes',
+      runtime: cloudfront.FunctionRuntime.JS_2_0,
+      code: cloudfront.FunctionCode.fromInline(
+        [
+          'function handler(event) {',
+          '  var request = event.request;',
+          '  var uri = request.uri;',
+          "  if (uri === '/' || uri === '') {",
+          "    request.uri = '/index.html';",
+          '    return request;',
+          '  }',
+          "  if (uri.endsWith('/')) {",
+          "    request.uri = uri + 'index.html';",
+          '    return request;',
+          '  }',
+          '  // Only rewrite paths with no file extension in the last segment.',
+          "  var lastSegment = uri.slice(uri.lastIndexOf('/') + 1);",
+          "  if (lastSegment.indexOf('.') === -1) {",
+          "    request.uri = uri + '/index.html';",
+          '  }',
+          '  return request;',
+          '}',
+        ].join('\n')
+      ),
+    });
+
+    // ---------------------------------------------------------------
     // Security response headers (CSP + standard hardening) for the SPA
     // ---------------------------------------------------------------
     // CloudFront-served HTML must carry a Content-Security-Policy; the static
@@ -158,6 +199,12 @@ export class FrontendStack extends cdk.Stack {
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         responseHeadersPolicy: securityHeaders,
+        functionAssociations: [
+          {
+            function: rewriteFunction,
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+          },
+        ],
       },
       additionalBehaviors: {
         '/api/*': {

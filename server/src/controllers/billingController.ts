@@ -39,7 +39,7 @@ class BillingController {
   createCheckout: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { tier, billingCycle = 'annual', addOns = [], couponCode } = req.body;
+      const { tier, billingCycle = 'annual', addOns = [], bundles = [], couponCode } = req.body;
       const organizationId = authReq.user!.organizationId;
 
       // Validate tier
@@ -75,6 +75,15 @@ class BillingController {
         throw new AppError(`Add-ons not available for ${tier} tier: ${invalidAddOns.join(', ')}`, 400);
       }
 
+      // Validate bundles are available for the tier
+      const availableBundleIds = Object.values(FEATURE_BUNDLES)
+        .filter(b => b.availableAsAddOn && (!b.requiresTier || getTierIndex(tier as TierName) >= getTierIndex(b.requiresTier)))
+        .map(b => b.id);
+      const invalidBundles = bundles.filter((id: string) => !availableBundleIds.includes(id));
+      if (invalidBundles.length > 0) {
+        throw new AppError(`Bundles not available for ${tier} tier: ${invalidBundles.join(', ')}`, 400);
+      }
+
       const checkoutUrl = await stripeService.createCheckoutSession({
         tierName: tier as TierName,
         billingCycle,
@@ -84,6 +93,7 @@ class BillingController {
         successUrl: `${config.server.clientUrl}/settings?success=true&tier=${tier}`,
         cancelUrl: `${config.server.clientUrl}/settings?canceled=true`,
         addOns,
+        bundles,
         couponCode,
       });
 
@@ -761,6 +771,9 @@ class BillingController {
         throw new AppError('Invalid billing cycle. Use "monthly" or "annual"', 400);
       }
 
+      // Add the bundle as a single Stripe line item (billing), then grant the
+      // per-feature entitlements the bundle includes and return them.
+      await stripeService.addBundle(organizationId, bundleId, billingCycle);
       const subscriptions = await featureService.subscribeToBundle(
         organizationId,
         bundleId,
@@ -772,6 +785,24 @@ class BillingController {
       logger.error('Subscribe to bundle error', error);
       if (error instanceof AppError) throw error;
       throw new AppError(error instanceof Error ? error.message : 'Failed to subscribe to bundle', 500);
+    }
+  };
+
+  /**
+   * Remove a feature bundle subscription
+   * DELETE /api/billing/bundles/:bundleId
+   */
+  removeBundleSubscription: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { bundleId } = req.params;
+      const organizationId = authReq.user!.organizationId;
+      await stripeService.removeBundle(organizationId, bundleId);
+      res.json({ success: true, bundleId });
+    } catch (error) {
+      logger.error('Remove bundle error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError(error instanceof Error ? error.message : 'Failed to remove bundle', 500);
     }
   };
 
