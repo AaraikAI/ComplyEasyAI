@@ -592,6 +592,38 @@ Logged for the audit trail while driving the `seo-geo-aeo` PR's CI green (the SE
   `password|secret|token` over the whole body (false-positive on legitimate incident text; *missed* an
   `apiKey` field). Replaced with a structural walk flagging sensitive credential FIELD KEYS with real values.
 
+### Dependabot major-bump remediation — lessons (2026-06-22)
+
+Drove the post-merge Dependabot queue green on `main`. Key reusable findings:
+
+- **Verify Dependabot PRs with `npm ci`, NOT `npm install`.** `npm install` re-resolves the tree and can
+  silently keep a compatible older version, MASKING type errors that CI's `npm ci` (exact committed lock)
+  surfaces. Twice this gave a false "tsc clean" locally while CI's `Lint & Type Check` failed. Always
+  `npm ci --cache /tmp/<x>` then `tsc` to faithfully reproduce a dep-bump PR.
+- **Stripe bumps require updating the pinned `apiVersion` string.** Bumping `stripe` advances the SDK's
+  pinned API version *type*; the hardcoded `apiVersion` in `server/src/services/stripeService.ts` AND
+  `featureService.ts` must move in lockstep (e.g. `'2026-03-25.dahlia'`→`'2026-05-27.dahlia'`), else
+  `error TS2322: Type '<old>' is not assignable to type '<new>'`.
+- **jest 30 renamed `--testPathPattern`→`--testPathPatterns`** (plural). Broke `server/package.json`
+  `test:unit`/`test:integration`/`test:e2e`/`test:all`/`test:performance`/`test:resilience` → jest prints
+  help, exits non-zero → Backend/Integration Tests fail. Rename the flag in all six scripts.
+- **Expo SDK bumps: all `expo-*` + `jest-expo` must match the SDK major.** expo 55→56 with `jest-expo` left
+  at `^55` → expo's winter `fetch` runtime throws `Super expression must either be null or a function`. Bump
+  `jest-expo` and `expo-secure-store` to `^56`. Likewise `@react-native/jest-preset` must track
+  `react-native` EXACTLY — Dependabot proposes it ahead (0.86 while RN is 0.85); hold it via `dependabot.yml`.
+- **@testing-library/react-native v14 is BLOCKED on this stack — hold the major.** v14 requires the new
+  React-19 `test-renderer` (`require('test-renderer')`), but `jest-expo` 56 / `@react-native/jest-preset`
+  0.85 still wire the legacy `react-test-renderer` and don't register the RN host config for the new
+  renderer. Result: `render(<Text>)` works, but `renderHook` for hooks using `mountedRef` unmount guards
+  (`useApi`/`usePaginatedApi`) returns a **null `result.current`** (React 19 effect double-invoke nulls the
+  tree). Forcing v14 needs either production-hook rewrites or a fragile renderer hack — neither acceptable.
+  Held via `.github/dependabot.yml` ignore (`>=14.0.0`); keep RNTL 13 (68 mobile tests green) until the
+  jest preset adopts the new renderer. Mechanical migration (async `render`/`renderHook` + `await waitFor`
+  after interactions) is necessary-but-insufficient: the renderer gap blocks it regardless.
+- **Dependabot regenerates PRs every time `main` moves** — a few routine bumps are ALWAYS open; that's
+  normal, not a failure. Triage real failures with `gh pr checks <n> | awk -F'\t' '$2=="fail"'`, EXCLUDING
+  the `E2E Tests (1)` baseline + `Deploy to Production` (AWS-creds) which are red on `main` independently.
+
 ### seo-geo-aeo E2E shard 1 + 3 failures — root causes (2026-06-19)
 
 The PR's last CI run (`27526183687`) had two red E2E shards. Both were diagnosed by reproducing the
