@@ -104,8 +104,12 @@ updates:
         versions: [">=30.0.0"]
       - dependency-name: "@types/jest"
         versions: [">=30.0.0"]
-    labels:
-      - "dependencies"
-      - "mobile"
+      # RNTL v14 requires the new React-19 `test-renderer`, but jest-expo 56 /
+      # @react-native/jest-preset 0.85 still wire the legacy `react-test-renderer`
+      # and don't register the RN host config for the new renderer. Forcing v14
+      # nulls the render tree for hooks using mount-guard refs (useApi family).
+      # Hold the major until jest-expo's preset adopts the new renderer.
+      - dependency-name: "@testing-library/react-native"
+        versions: [">=14.0.0"]
     commit-message:
       prefix: "chore(deps):"
