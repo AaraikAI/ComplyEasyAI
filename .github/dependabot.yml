@@ -111,5 +111,10 @@ updates:
       # Hold the major until jest-expo's preset adopts the new renderer.
       - dependency-name: "@testing-library/react-native"
         versions: [">=14.0.0"]
+      # @react-native/jest-preset must track the react-native version exactly;
+      # Dependabot proposes it ahead of react-native (e.g. 0.86 while RN is 0.85),
+      # which breaks the mobile jest preset. Hold it until react-native moves.
+      - dependency-name: "@react-native/jest-preset"
+        versions: [">=0.86.0"]
     commit-message:
       prefix: "chore(deps):"
