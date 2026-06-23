@@ -33,7 +33,7 @@ import notificationService from './notificationService';
 // startup. Avoid sk_*-prefixed placeholders, since secret scanners flag them.
 const stripeSecretKey = config.stripe.secretKey || 'unconfigured-no-billing-key-set';
 const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2026-03-25.dahlia',
+  apiVersion: '2026-05-27.dahlia',
 });
 if (!config.stripe.secretKey) {
   logger.warn('[Stripe] STRIPE_SECRET_KEY is not set — billing endpoints will reject all requests');

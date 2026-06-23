@@ -33,7 +33,7 @@ import config from '../config';
 // API call still fails fast with a Stripe auth error). The unusual prefix
 // avoids triggering secret scanners.
 const stripe = new Stripe(config.stripe.secretKey || 'unconfigured-no-billing-key-set', {
-  apiVersion: '2026-03-25.dahlia',
+  apiVersion: '2026-05-27.dahlia',
 });
 
 // ============================================================================
