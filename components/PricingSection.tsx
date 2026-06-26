@@ -306,6 +306,7 @@ const TIER_ADD_ONS: TierAddOn[] = [
     name: 'Dedicated vCISO Service',
     description: 'Compliance advisory from certified experts. 10 hours/month consulting. For companies without internal GRC teams.',
     priceAnnual: 9997,
+    startingFrom: true,
     availableForTiers: [...ALL_TIERS],
   },
   {
@@ -440,7 +441,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                   key={tierName}
                   tier={tier}
                   isCurrentTier={isCurrentTier}
-                  isPopular={tierName === 'Essentials'}
+                  isPopular={tierName === 'Growth'}
                   onSelect={handleSelectTier}
                   onBookDemo={handleBookDemo}
                   billingCycle={billingCycle}
@@ -580,7 +581,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                       ? `${formatPrice(addon.priceOneTime)} one-time + ${formatPrice(addon.priceAnnual)}/yr`
                       : addon.priceAnnual === 0
                         ? 'Variable (contact sales)'
-                        : `${formatPrice(addon.priceAnnual)}/yr`}
+                        : `${addon.startingFrom ? 'Starting from ' : ''}${formatPrice(addon.priceAnnual)}/yr`}
                   </p>
                   <p className="text-sm text-gray-500">
                     Available for: {addon.availableForTiers.join(', ')}

@@ -143,10 +143,13 @@ const TierCard: React.FC<TierCardProps> = ({
   return (
     <div
       className={`relative rounded-2xl p-6 transition-all duration-300 ${
-        isCurrentTier ? 'ring-2 ring-offset-2' : ''
+        // Use the bg-white class (not an inline style) for non-current cards so the
+        // app's global dark-mode override (.dark .bg-white) darkens the card; an
+        // inline backgroundColor would escape it and leave light text on white.
+        isCurrentTier ? 'ring-2 ring-offset-2' : 'bg-white'
       } ${isPopular ? 'shadow-xl scale-105' : 'shadow-lg hover:shadow-xl'}`}
       style={{
-        backgroundColor: isCurrentTier ? colors.bg : 'white',
+        ...(isCurrentTier && { backgroundColor: colors.bg }),
         borderColor: colors.border,
         borderWidth: '1px',
         borderStyle: 'solid',
