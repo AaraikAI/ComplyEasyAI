@@ -623,6 +623,44 @@ Drove the post-merge Dependabot queue green on `main`. Key reusable findings:
 - **Dependabot regenerates PRs every time `main` moves** — a few routine bumps are ALWAYS open; that's
   normal, not a failure. Triage real failures with `gh pr checks <n> | awk -F'\t' '$2=="fail"'`, EXCLUDING
   the `E2E Tests (1)` baseline + `Deploy to Production` (AWS-creds) which are red on `main` independently.
+- **NEVER grep a lockfile to decide whether a package is installed/resolvable — that produced a wrong
+  conclusion here.** Chasing #316/#327 (server prod-deps group), CI failed with
+  `sso.ts(20,27): Cannot find module 'fast-xml-parser'`. I ran `grep -c '"node_modules/fast-xml-parser"'`
+  / `grep -c 'fast-xml-parser'` on `package-lock.json`, got `0`, and **hand-waved that the grep "just
+  didn't match its hoisted form"** — both the grep AND that explanation were WRONG. npm v3+ lockfiles key
+  packages under many forms (top-level `node_modules/<pkg>`, nested `node_modules/<parent>/node_modules/<pkg>`,
+  `packages` map, dependency refs) and hoist transitives, so a single literal `grep` gives false negatives,
+  and my `tsc` "0 errors" readings were stale-`node_modules` artifacts (the `--cache` reuse left a prior
+  copy). **Correct verification, every time:** `rm -rf node_modules && npm ci && node -e
+  "console.log(require.resolve('<pkg>'))"` (or `npm ls <pkg>` / `test -e node_modules/<pkg>`) — resolve the
+  module, don't grep the lock. Trust CI (clean room) over a local grep.
+- **Root cause of the #316 lock corruption (real finding): a package listed in BOTH `dependencies` AND a
+  self-referential `overrides` entry.** `server/package.json` had `fast-xml-parser` as a direct dep `^5.3.6`
+  AND `overrides.fast-xml-parser: ^5.3.6`; the Dependabot group bump regenerated a lock that dropped the
+  resolved entry, so `npm ci` couldn't install it → `Cannot find module`. A self-referential override of a
+  direct dep is redundant and fragile; the clean fix is to remove the override (keep the direct dep) and
+  regenerate the lock — but VERIFY via `require.resolve`, and prefer letting Dependabot regenerate a fresh
+  group PR against fixed `main` over hand-patching a 700-line corrupted lock. (#316/#327 were deferred, not
+  forced: routine AWS-SDK patch housekeeping, non-blocking; main's server deps are green/deployable.)
+
+### Process directive — use a multi-agent swarm for multi-PR / multi-package remediation (2026-06-25)
+
+This Dependabot-queue remediation was done **serially by one agent** and it cost too much time, repeated
+the same `npm install` vs `npm ci` and grep mistakes across PRs, and risked regressions from branch-hopping
++ stale local state. **For tasks of this shape — N independent PRs / packages / workspaces to verify and fix
+to green — drive it with the `Workflow` multi-agent tool, not a serial loop.** Pattern that fits here:
+- **Fan-out (one agent per PR/workspace, isolated git worktree)** so branch state never collides — each agent:
+  checks out its PR, merges `main`, runs the FAITHFUL repro (`rm -rf node_modules && npm ci` + `tsc`/tests +
+  `require.resolve` checks, NEVER `npm install`/grep), classifies real-vs-stale failure, and returns a
+  structured verdict (fixable / fix-applied / upstream-blocked / defer) — it does NOT merge.
+- **Barrier → synthesize**: the orchestrator dedupes findings, applies the holds (`dependabot.yml`), opens
+  superseding PRs for the genuinely-fixed ones, and merges only after the FULL CI pipeline is green.
+- **Adversarial verify** each "fixed" claim with a second agent doing a clean-room `npm ci`+build before
+  merge, so no agent's stale-`node_modules` false-positive reaches `main`.
+This is correct (per-PR isolation prevents cross-contamination), complete (every PR triaged in parallel),
+faster (wall-clock = slowest single PR, not the sum), and regression-safe (clean-room verify gate before
+any merge). Worktree isolation (`isolation:'worktree'`) is mandatory because the agents mutate
+`package.json`/lockfiles concurrently.
 
 ### seo-geo-aeo E2E shard 1 + 3 failures — root causes (2026-06-19)
 
