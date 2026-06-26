@@ -306,6 +306,7 @@ const TIER_ADD_ONS: TierAddOn[] = [
     name: 'Dedicated vCISO Service',
     description: 'Compliance advisory from certified experts. 10 hours/month consulting. For companies without internal GRC teams.',
     priceAnnual: 9997,
+    startingFrom: true,
     availableForTiers: [...ALL_TIERS],
   },
   {
@@ -368,7 +369,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
             </p>
             <button
               onClick={() => handleBookDemo()}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-brand-600 hover:to-brand-700 transition-all shadow-lg hover:shadow-xl"
             >
               <Calendar size={20} />
               Book a Demo
@@ -381,7 +382,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
           <div className="flex justify-center mb-8">
             <button
               onClick={() => handleBookDemo()}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-brand-600 hover:to-brand-700 transition-all shadow-lg hover:shadow-xl"
             >
               <Calendar size={20} />
               Book a Demo
@@ -421,7 +422,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
             <span className="ml-3 text-gray-600">{t('common.loading')}</span>
           </div>
         )}
@@ -440,7 +441,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                   key={tierName}
                   tier={tier}
                   isCurrentTier={isCurrentTier}
-                  isPopular={tierName === 'Essentials'}
+                  isPopular={tierName === 'Growth'}
                   onSelect={handleSelectTier}
                   onBookDemo={handleBookDemo}
                   billingCycle={billingCycle}
@@ -457,7 +458,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
         <div className="mt-12 text-center">
           <button
             onClick={() => setShowComparison(!showComparison)}
-            className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium"
+            className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-800 font-medium"
           >
             {showComparison ? 'Hide' : 'Show'} detailed feature comparison
             {showComparison ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -571,7 +572,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                   className="bg-white rounded-xl p-6 shadow-lg border border-gray-200"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <Zap className="w-8 h-8 text-indigo-600" />
+                    <Zap className="w-8 h-8 text-brand-600" />
                     <h4 className="text-lg font-semibold text-gray-900">{addon.name}</h4>
                   </div>
                   <p className="text-gray-600 mb-4">{addon.description}</p>
@@ -580,7 +581,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                       ? `${formatPrice(addon.priceOneTime)} one-time + ${formatPrice(addon.priceAnnual)}/yr`
                       : addon.priceAnnual === 0
                         ? 'Variable (contact sales)'
-                        : `${formatPrice(addon.priceAnnual)}/yr`}
+                        : `${addon.startingFrom ? 'Starting from ' : ''}${formatPrice(addon.priceAnnual)}/yr`}
                   </p>
                   <p className="text-sm text-gray-500">
                     Available for: {addon.availableForTiers.join(', ')}

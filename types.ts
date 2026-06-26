@@ -162,6 +162,8 @@ export interface TierAddOn {
   priceAnnual: number;
   /** Optional one-time setup fee (e.g. On-Prem, Custom AI) */
   priceOneTime?: number;
+  /** When true, show the price as a "Starting from" baseline (e.g. vCISO) */
+  startingFrom?: boolean;
   availableForTiers: TierName[];
 }
 

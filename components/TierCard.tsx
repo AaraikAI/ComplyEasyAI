@@ -91,7 +91,7 @@ const TierCard: React.FC<TierCardProps> = ({
       return 'bg-gray-200 text-gray-500 cursor-not-allowed';
     }
     if (isPopular) {
-      return `bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700`;
+      return `bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700`;
     }
     return `bg-white text-gray-900 border-2 hover:bg-gray-50`;
   };
@@ -143,10 +143,13 @@ const TierCard: React.FC<TierCardProps> = ({
   return (
     <div
       className={`relative rounded-2xl p-6 transition-all duration-300 ${
-        isCurrentTier ? 'ring-2 ring-offset-2' : ''
+        // Use the bg-white class (not an inline style) for non-current cards so the
+        // app's global dark-mode override (.dark .bg-white) darkens the card; an
+        // inline backgroundColor would escape it and leave light text on white.
+        isCurrentTier ? 'ring-2 ring-offset-2' : 'bg-white'
       } ${isPopular ? 'shadow-xl scale-105' : 'shadow-lg hover:shadow-xl'}`}
       style={{
-        backgroundColor: isCurrentTier ? colors.bg : 'white',
+        ...(isCurrentTier && { backgroundColor: colors.bg }),
         borderColor: colors.border,
         borderWidth: '1px',
         borderStyle: 'solid',
@@ -191,7 +194,7 @@ const TierCard: React.FC<TierCardProps> = ({
         {/* Book a Demo - Primary CTA for all tiers */}
         <button
           onClick={handleBookDemo}
-          className="w-full py-3 px-4 rounded-xl font-semibold transition-all bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 rounded-xl font-semibold transition-all bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700 flex items-center justify-center gap-2"
         >
           <Calendar size={18} />
           Book a Demo
