@@ -709,6 +709,13 @@ The PR's last CI run (`27526183687`) had two red E2E shards. Both were diagnosed
 
 ---
 
+### Go-live session — Sentry triage + dependency remediation (2026-07-12)
+
+- **Deep-scan report H6 (`fast-xml-parser` "build blocker") was a FALSE POSITIVE — the lockfile-grep trap again.** A batch agent claimed `sso.ts:20`'s `fast-xml-parser` import is unresolvable "under clean `npm ci`" (TS2307). The CORRECT check (`rm -rf server/node_modules && npm ci --cache /tmp/x` then `node -e "require.resolve('fast-xml-parser')"`) resolves it to `node_modules/fast-xml-parser/lib/fxp.cjs`, and clean-room server `tsc --noEmit` = **0 errors**. The TS2307 (and the 2 stripe `apiVersion` D1 errors) were **drifted local `node_modules`**, NOT the committed state — which is why main CI Lint&TypeCheck is green. Lesson reinforced: never conclude "unresolvable/vulnerable" from grep or a drifted tree; `npm ci` clean-room + `require.resolve` is the only authority.
+- **Dependency remediation (safe, non-breaking):** `npm audit fix` **without `--force`** on the clean lock took server **46→30** advisories (**HIGH 10→1**) and root **1→0**, changing **only lockfiles** (no `package.json`). Fixed in-range: `multer/undici/form-data/hono/protobufjs/@grpc/grpc-js/ws@8.21.0/engine.io/socket.io-adapter` + root `js-yaml`. Verified: server `tsc` + `npm run build` clean, 64 ws/upload/middleware tests green. The remaining server advisories are the **known-unfixable set** (needs breaking majors, DO NOT `--force`): `ws@8.18.0` via `circomlibjs`→`ethers@5`; `aws-sdk` v2→v3; `exceljs`; `mocha`/`serialize-javascript`/`js-yaml`-via-circom; `fabric-*`/`elliptic`; `@azure/graph`/`ms-rest-js`/`uuid` (no fix); `@opentelemetry/*` via `elastic-apm-node`. Note the CVE accumulation happened because the **`Self-Heal CVEs` workflow is failing** on every scheduled run.
+- **Machine gotcha:** `~/.npm` cache has root-owned files → `npm ci` fails `EACCES`. Work around with `npm ci --cache /tmp/<x>` (permanent fix: `sudo chown -R 501:20 ~/.npm`).
+- **Sentry noise root cause (fixed):** `middleware/monitoring.ts` `errorTrackingMiddleware` captured EVERY `next(err)` error — including operational 4xx `AppError`s (validation/not-found/auth) — to Sentry. Gated to 5xx/non-operational only; also removed the duplicate `captureException` in `errorHandler.ts` (every 5xx was reported twice). Of the 21 stale Sentry issues, verified against code: 0 are live unfixed bugs (3 real bugs already fixed incl. the register-500-on-email-failure `authController.ts` fix; ~13 expected 4xx; rest = test-env config / transient).
+
 ## Architecture Quick Reference
 
 - **Server:** Express 5 + Prisma 7 + PostgreSQL
