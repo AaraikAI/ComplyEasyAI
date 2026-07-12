@@ -823,7 +823,9 @@ describe('AuthController', () => {
       expect(mockRes.status).toHaveBeenCalledWith(201);
     });
 
-    it('should throw AppError when email send fails in new user registration (production)', async () => {
+    it('should still succeed (201, emailDelivered:false) when email send fails in production — email is best-effort', async () => {
+      // The account is committed before the email send; a transactional-email
+      // failure must NOT fail registration (that left a created user with a 500).
       process.env.NODE_ENV = 'production';
       process.env.HCAPTCHA_SECRET = 'test-secret';
       const originalFetch = global.fetch;
@@ -836,9 +838,10 @@ describe('AuthController', () => {
       (prismaMock.magicLink.create as jest.Mock<any>).mockResolvedValue({ email: 'new@example.com', token: 'tok' });
 
       try {
-        await expect(
-          authController.register(mockReq as Request, mockRes as Response)
-        ).rejects.toThrow('Failed to send welcome email');
+        await authController.register(mockReq as Request, mockRes as Response);
+        expect(mockRes.status).toHaveBeenCalledWith(201);
+        const jsonCall = (mockRes.json as jest.Mock<any>).mock.calls[0][0];
+        expect(jsonCall.emailDelivered).toBe(false);
       } finally {
         global.fetch = originalFetch;
         delete process.env.HCAPTCHA_SECRET;

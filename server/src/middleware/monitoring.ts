@@ -110,31 +110,48 @@ export function errorTrackingMiddleware(
   res: Response,
   next: NextFunction
 ): void {
-  // Capture exception to Sentry
-  monitoring.captureException(error, {
-    request: {
-      method: req.method,
-      path: req.path,
-      query: req.query,
-      headers: {
-        // Don't log sensitive headers
-        'user-agent': req.get('user-agent'),
-        'content-type': req.get('content-type'),
-      },
-    },
-    user: (req as any).user ? {
-      id: (req as any).user.id,
-      email: (req as any).user.email,
-    } : undefined,
-  });
+  // Distinguish expected operational client errors (4xx AppErrors — validation,
+  // not-found, auth) from unexpected server-side failures. Only the latter are
+  // defects worth reporting to Sentry; capturing every 400/401/404 floods the
+  // dashboard and buries genuine incidents.
+  const statusCode: number =
+    (error as any).statusCode ?? (error as any).status ?? 500;
+  const isExpectedClientError =
+    (error as any).isOperational === true && statusCode >= 400 && statusCode < 500;
 
-  // Log error
-  logger.error('Unhandled error:', {
-    error: error.message,
-    stack: error.stack,
-    path: req.path,
-    method: req.method,
-  });
+  if (!isExpectedClientError) {
+    // This is the single Sentry capture point for unhandled/server errors; the
+    // global errorHandler no longer re-captures, so 5xx are reported exactly once.
+    monitoring.captureException(error, {
+      request: {
+        method: req.method,
+        path: req.path,
+        query: req.query,
+        headers: {
+          // Don't log sensitive headers
+          'user-agent': req.get('user-agent'),
+          'content-type': req.get('content-type'),
+        },
+      },
+      user: (req as any).user ? {
+        id: (req as any).user.id,
+        email: (req as any).user.email,
+      } : undefined,
+    });
+  }
+
+  // Server failures are error-level; expected client errors are warn-level so
+  // they don't masquerade as incidents in the logs either.
+  if (isExpectedClientError) {
+    logger.warn(`Client error ${statusCode}: ${error.message} - ${req.method} ${req.path}`);
+  } else {
+    logger.error('Unhandled error:', {
+      error: error.message,
+      stack: error.stack,
+      path: req.path,
+      method: req.method,
+    });
+  }
 
   next(error);
 }

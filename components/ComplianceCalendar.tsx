@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { csrfFetch } from '../services/api';
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -255,7 +256,7 @@ const ComplianceCalendar: React.FC = () => {
     setSaving(true);
     try {
       const url = editingDeadline ? `${apiUrl}/calendar/deadlines/${editingDeadline.id}` : `${apiUrl}/calendar/deadlines`;
-      const res = await fetch(url, { method: editingDeadline ? 'PUT' : 'POST', headers: getAuthHeaders(), credentials: 'include', body: JSON.stringify(form) });
+      const res = await csrfFetch(url, { method: editingDeadline ? 'PUT' : 'POST', headers: getAuthHeaders(), credentials: 'include', body: JSON.stringify(form) });
       if (!res.ok) throw new Error(`Failed to save: ${res.status}`);
       setShowModal(false);
       setEditingDeadline(null);
@@ -271,7 +272,7 @@ const ComplianceCalendar: React.FC = () => {
   const deleteDeadline = async (id: string) => {
     if (!confirm('Delete this deadline?')) return;
     try {
-      const res = await fetch(`${apiUrl}/calendar/deadlines/${id}`, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
+      const res = await csrfFetch(`${apiUrl}/calendar/deadlines/${id}`, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
       if (!res.ok) throw new Error('Delete failed');
       setViewingDeadline(null);
       await fetchDeadlines();
@@ -282,7 +283,7 @@ const ComplianceCalendar: React.FC = () => {
 
   const markComplete = async (id: string) => {
     try {
-      const res = await fetch(`${apiUrl}/calendar/deadlines/${id}/complete`, { method: 'PATCH', headers: getAuthHeaders(), credentials: 'include' });
+      const res = await csrfFetch(`${apiUrl}/calendar/deadlines/${id}/complete`, { method: 'PATCH', headers: getAuthHeaders(), credentials: 'include' });
       if (!res.ok) throw new Error('Failed to complete');
       setViewingDeadline(null);
       await fetchDeadlines();

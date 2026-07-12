@@ -15,6 +15,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import DOMPurify from 'dompurify';
+import { csrfFetch } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
@@ -72,7 +73,7 @@ interface BrandingSettingsProps {
 const API_BASE = '/api/branding';
 
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(endpoint, {
+  const res = await csrfFetch(endpoint, {
     headers: { 'Content-Type': 'application/json', ...options.headers as Record<string, string> },
     credentials: 'include',
     ...options,
@@ -188,7 +189,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) => {
         const formData = new FormData();
         formData.append('file', mainLogoFile);
         formData.append('type', 'main_logo');
-        const uploadRes = await fetch(`${API_BASE}/upload`, {
+        const uploadRes = await csrfFetch(`${API_BASE}/upload`, {
           method: 'POST',
           credentials: 'include',
           body: formData,
@@ -203,7 +204,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) => {
         const formData = new FormData();
         formData.append('file', faviconFile);
         formData.append('type', 'favicon');
-        const uploadRes = await fetch(`${API_BASE}/upload`, {
+        const uploadRes = await csrfFetch(`${API_BASE}/upload`, {
           method: 'POST',
           credentials: 'include',
           body: formData,

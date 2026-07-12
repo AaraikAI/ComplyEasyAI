@@ -13,6 +13,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';
+import { csrfFetch } from '../services/api';
 import {
   AlertTriangle,
   Plus,
@@ -105,7 +106,7 @@ const defaultForm: ExceptionForm = {
 const API_BASE = '/api/exceptions';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, { credentials: 'include', ...options });
+  const res = await csrfFetch(url, { credentials: 'include', ...options });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(body.message || `Request failed: ${res.status}`);

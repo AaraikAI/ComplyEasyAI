@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { csrfFetch } from '../services/api';
 import {
   Activity,
   Plus,
@@ -183,7 +184,7 @@ const BusinessImpactAnalysis: React.FC = () => {
         impactScores: form.impactScores,
       };
       const url = editingProcess ? `${apiUrl}/bia/processes/${editingProcess.id}` : `${apiUrl}/bia/processes`;
-      const res = await fetch(url, { method: editingProcess ? 'PUT' : 'POST', headers: getAuthHeaders(), credentials: 'include', body: JSON.stringify(payload) });
+      const res = await csrfFetch(url, { method: editingProcess ? 'PUT' : 'POST', headers: getAuthHeaders(), credentials: 'include', body: JSON.stringify(payload) });
       if (!res.ok) throw new Error(`Failed to save: ${res.status}`);
       setShowModal(false);
       setEditingProcess(null);
@@ -199,7 +200,7 @@ const BusinessImpactAnalysis: React.FC = () => {
   const deleteProcess = async (id: string) => {
     if (!confirm('Delete this process?')) return;
     try {
-      const res = await fetch(`${apiUrl}/bia/processes/${id}`, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
+      const res = await csrfFetch(`${apiUrl}/bia/processes/${id}`, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
       if (!res.ok) throw new Error('Delete failed');
       if (selectedProcess?.id === id) setSelectedProcess(null);
       await fetchProcesses();

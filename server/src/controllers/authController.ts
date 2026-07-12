@@ -844,19 +844,27 @@ class AuthController {
         return { user: newUser };
       });
 
-      // Send welcome email and magic link; in development allow registration to succeed if email is not configured
+      // Send welcome email + magic link on a BEST-EFFORT basis. The account is
+      // already committed in the transaction above; a transactional-email
+      // failure (SendGrid outage / misconfigured key) must NOT fail registration
+      // and leave the user with a persisted account but a 500 response — that
+      // produced a "created but 500" state where the retry then hit
+      // "email already registered". Log it and continue; the user can sign in
+      // with their password or request a fresh magic link.
+      let emailDelivered = true;
       try {
         await emailService.sendWelcomeEmail(email, name);
         await emailService.sendMagicLink(email, token);
       } catch (emailError: any) {
+        emailDelivered = false;
         logger.warn('Registration: email send failed', { userId: user.id, error: emailError?.message });
-        if (process.env.NODE_ENV !== 'development') {
-          throw new AppError('Failed to send welcome email. Please try again or contact support.', 500);
-        }
       }
 
       const response: any = {
-        message: 'Registration successful. Check your email for login link.',
+        message: emailDelivered
+          ? 'Registration successful. Check your email for login link.'
+          : 'Registration successful. We could not send your login email — sign in with your password or request a new login link.',
+        emailDelivered,
         user: {
           id: user.id,
           email: user.email,

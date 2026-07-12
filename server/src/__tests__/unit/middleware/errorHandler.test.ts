@@ -222,7 +222,10 @@ describe('Error Handler Middleware', () => {
       expect(responseBody).not.toHaveProperty('stack');
     });
 
-    it('should call monitoring.captureException for non-AppError errors', () => {
+    it('should NOT re-capture non-AppError errors (capture happens once, upstream in errorTrackingMiddleware)', () => {
+      // Sentry capture was moved to errorTrackingMiddleware, which runs before
+      // this handler. errorHandler re-capturing here double-reported every 5xx,
+      // so it no longer calls captureException at all.
       const err = new Error('Unexpected crash');
       const req = buildReq({ method: 'POST', originalUrl: '/api/data' });
       const { res } = buildRes();
@@ -230,15 +233,7 @@ describe('Error Handler Middleware', () => {
 
       errorHandler(err, req as Request, res as Response, next);
 
-      expect(mockCaptureException).toHaveBeenCalledWith(
-        err,
-        expect.objectContaining({
-          request: expect.objectContaining({
-            method: 'POST',
-            path: '/api/data',
-          }),
-        })
-      );
+      expect(mockCaptureException).not.toHaveBeenCalled();
     });
 
     it('should NOT call monitoring.captureException for AppError', () => {
@@ -276,41 +271,11 @@ describe('Error Handler Middleware', () => {
       expect(mockLoggerError).toHaveBeenCalled();
     });
 
-    it('should include user info in monitoring context when user is attached', () => {
-      const err = new Error('Error with user');
-      const req = buildReq({ method: 'GET', originalUrl: '/api/me' }) as any;
-      req.user = { id: 'u1', email: 'u1@test.com' };
-      const { res } = buildRes();
-      const next = buildNext();
-
-      errorHandler(err, req as Request, res as Response, next);
-
-      expect(mockCaptureException).toHaveBeenCalledWith(
-        err,
-        expect.objectContaining({
-          user: expect.objectContaining({
-            id: 'u1',
-            email: 'u1@test.com',
-          }),
-        })
-      );
-    });
-
-    it('should handle missing user gracefully when capturing exception context', () => {
-      const err = new Error('Error no user');
-      const req = buildReq({ method: 'GET', originalUrl: '/api/open' });
-      const { res } = buildRes();
-      const next = buildNext();
-
-      errorHandler(err, req as Request, res as Response, next);
-
-      expect(mockCaptureException).toHaveBeenCalledWith(
-        err,
-        expect.objectContaining({
-          user: undefined,
-        })
-      );
-    });
+    // Note: Sentry capture (incl. user context) moved to errorTrackingMiddleware,
+    // which runs before errorHandler. That capture behavior is covered by
+    // monitoring.test.ts ("errorTrackingMiddleware ... should include user info").
+    // errorHandler itself no longer calls captureException (see the "should NOT
+    // re-capture" test above), so the old capture-context tests were removed.
   });
 
   // =========================================================================

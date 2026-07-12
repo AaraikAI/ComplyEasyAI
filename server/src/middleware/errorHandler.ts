@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { MulterError } from 'multer';
 import logger from '../config/logger';
-import monitoring from '../config/monitoring';
 import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
 
 export class AppError extends Error {
@@ -111,21 +110,10 @@ export const errorHandler = (
     return;
   }
 
-  // Unhandled errors
+  // Unhandled errors. Sentry capture happens once, upstream, in
+  // errorTrackingMiddleware (mounted before this handler) — re-capturing here
+  // double-reported every 5xx. Log the request context and respond.
   logger.error(`500 - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, err);
-  
-  // Capture to Sentry (if not already captured by errorTrackingMiddleware)
-  monitoring.captureException(err, {
-    request: {
-      method: req.method,
-      path: req.originalUrl,
-      query: req.query,
-    },
-    user: (req as any).user ? {
-      id: (req as any).user.id,
-      email: (req as any).user.email,
-    } : undefined,
-  });
 
   res.status(500).json({
     error: 'Internal server error',

@@ -11,6 +11,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { csrfFetch } from '../services/api';
 import {
   Award,
   Plus,
@@ -89,7 +90,7 @@ const statusConfig: Record<CertStatus, { color: string; icon: React.ReactNode }>
 const API_BASE = '/api/certifications';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, { credentials: 'include', ...options });
+  const res = await csrfFetch(url, { credentials: 'include', ...options });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(body.message || `Request failed: ${res.status}`);
