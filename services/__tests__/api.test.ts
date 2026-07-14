@@ -378,9 +378,18 @@ describe('api service', () => {
       expect(user.organization).toBeDefined();
     });
 
-    it('login throws when no access token', async () => {
+    it('login throws on an unexpected/empty response (no user)', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockResolvedValueOnce(ok({}));
-      await expect(api.auth.login('a@b.com', 'pw')).rejects.toThrow('No access token received');
+      await expect(api.auth.login('a@b.com', 'pw')).rejects.toThrow('unexpected response');
+    });
+
+    it('login surfaces a clear message when 2FA is required (requires2FA branch)', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
+      mockFetch.mockResolvedValueOnce(
+        ok({ requires2FA: true, twoFactorToken: 'tt', message: 'Two-factor authentication required' }),
+      );
+      await expect(api.auth.login('a@b.com', 'pw')).rejects.toThrow(/two-factor/i);
     });
 
     it('refreshToken sends POST and updates auth flag', async () => {

@@ -296,9 +296,21 @@ export const api = {
         body: JSON.stringify({ email, password }),
       });
 
-      if (response.accessToken) {
-        // Tokens are set via httpOnly cookies by the backend; just flag UI
-        setAuthToken(response.accessToken);
+      // 2FA-enabled accounts: the /auth/login branch signals with `requires2FA`
+      // (note: /auth/verify uses `twoFactorRequired` instead — different key). There
+      // is no 2FA code-entry step on the login form yet, so surface a clear message
+      // rather than falling through to a confusing error or a half-authenticated state.
+      if (response.requires2FA) {
+        throw new Error(response.message || 'Two-factor authentication is required to sign in.');
+      }
+
+      // Tokens are delivered as httpOnly cookies by the backend (setAuthCookies); the
+      // response body carries only the user. Gate on `response.user`, exactly like
+      // verifyMagicLink. The previous `response.accessToken` check was a pre-cookie
+      // leftover that always failed (the backend no longer returns tokens in the body),
+      // so password login always threw "No access token received".
+      if (response.user) {
+        setAuthToken('__cookie__');
 
         const user = {
           id: response.user.id,
@@ -314,7 +326,7 @@ export const api = {
         return user;
       }
 
-      throw new Error('No access token received');
+      throw new Error('Login failed: unexpected response from server');
     },
 
     refreshToken: async () => {
@@ -324,9 +336,10 @@ export const api = {
         body: JSON.stringify({}),
       });
 
-      if (response.accessToken) {
-        setAuthToken(response.accessToken);
-      }
+      // Refresh succeeded (fetchAPI throws on non-2xx). Tokens were rotated into
+      // httpOnly cookies server-side (the body carries only a message, no token),
+      // so keep the UI auth flag set.
+      setAuthToken('__cookie__');
 
       return response;
     },

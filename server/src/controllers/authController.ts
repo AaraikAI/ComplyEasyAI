@@ -6,6 +6,7 @@ import prisma from '../config/database';
 import { Prisma } from '../generated/prisma/client';
 import config from '../config';
 import { generateToken, generateRefreshToken, verifyRefreshToken } from '../middleware/auth';
+import type { VersionedRequest } from '../middleware/apiVersioning';
 import emailService from '../services/emailService';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
@@ -42,6 +43,32 @@ function setAuthCookies(res: Response, accessToken: string, refreshToken: string
 function clearAuthCookies(res: Response): void {
   res.clearCookie(ACCESS_TOKEN_COOKIE, { ...COOKIE_OPTIONS });
   res.clearCookie(REFRESH_TOKEN_COOKIE, { ...COOKIE_OPTIONS });
+}
+
+/**
+ * Token fields to merge into an auth response BODY for Bearer/API clients only.
+ *
+ * The mobile app authenticates via `Authorization: Bearer` (hardcoded to the v2
+ * API) and cannot use the httpOnly auth cookies — a React Native `fetch` will not
+ * attach a `sameSite:'strict'; secure` cookie — so it reads the JWTs from the
+ * response body. Web clients use the unversioned `/api` cookie flow and must NEVER
+ * receive tokens in the body: doing so would expose them to page JavaScript and
+ * defeat the httpOnly-cookie XSS protection.
+ *
+ * We therefore include body tokens ONLY when the resolved API version is `v2`
+ * (set by apiVersioningMiddleware from the `/api/v2` mount or the `X-API-Version: v2`
+ * header). The web `/api/auth` mount does not run that middleware, so `apiVersion`
+ * is undefined there and this returns `{}` — cookies remain the sole delivery for web.
+ *
+ * The access JWT is exposed under both `token` and `accessToken` because the mobile
+ * client reads it inconsistently (`data.token` in the auth context, `data.token ??
+ * data.accessToken` in the api service); providing both keeps every read path working.
+ */
+function bearerAuthTokens(req: Request, accessToken: string, refreshToken: string): Record<string, string> {
+  if ((req as VersionedRequest).apiVersion !== 'v2') {
+    return {};
+  }
+  return { token: accessToken, accessToken, refreshToken };
 }
 
 class AuthController {
@@ -376,6 +403,7 @@ class AuthController {
             plan: user.organization.plan,
           },
         },
+        ...bearerAuthTokens(req, accessToken, refreshToken), // v2/Bearer clients only
       });
 
       logSecurityEvent({
@@ -483,7 +511,10 @@ class AuthController {
       // Set httpOnly secure cookies for new tokens
       setAuthCookies(res, accessToken, newRefreshToken);
 
-      res.json({ message: 'Token refreshed successfully' });
+      res.json({
+        message: 'Token refreshed successfully',
+        ...bearerAuthTokens(req, accessToken, newRefreshToken), // v2/Bearer clients only
+      });
     } catch (error) {
       logger.error('Refresh token error', error);
       if (error instanceof AppError) throw error;
@@ -684,6 +715,7 @@ class AuthController {
           },
         },
         ...sessionInfo, // Include session info if sessions were terminated
+        ...bearerAuthTokens(req, accessToken, refreshToken), // v2/Bearer clients only
       });
     } catch (error: any) {
       logger.error('Login error', error);
@@ -1004,6 +1036,7 @@ class AuthController {
             plan: user.organization.plan,
           },
         },
+        ...bearerAuthTokens(req, accessToken, refreshToken), // v2/Bearer clients only
       });
 
       logSecurityEvent({
@@ -1023,6 +1056,59 @@ class AuthController {
       logger.error('Complete 2FA login error', error);
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to complete 2FA login', 500);
+    }
+  }
+
+  /**
+   * GET /auth/me — return the authenticated user's current profile.
+   *
+   * Requires the `authenticate` guard (so `req.user` is set from the Bearer token
+   * or the httpOnly cookie). Re-queries the user + organization fresh from the DB
+   * (authoritative, not stale JWT claims). The user fields are returned at the TOP
+   * level of the body — the response envelope places this whole object under `data`,
+   * and clients read the current user directly from `data` (the mobile app calls
+   * this for session hydration via `normalizeUser(meResult.data)`).
+   */
+  async getCurrentUser(req: Request, res: Response): Promise<void> {
+    try {
+      const authReq = req as any;
+      const userId = authReq.user?.id;
+      if (!userId) {
+        throw new AppError('Not authenticated', 401);
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          avatar: true,
+          organizationId: true,
+          organization: { select: { id: true, name: true, plan: true } },
+        },
+      });
+
+      if (!user) {
+        throw new AppError('User not found', 404);
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatar: user.avatar,
+        organizationId: user.organizationId,
+        organization: user.organization
+          ? { id: user.organization.id, name: user.organization.name, plan: user.organization.plan }
+          : undefined,
+      });
+    } catch (error: any) {
+      logger.error('Get current user error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to fetch current user', 500);
     }
   }
 

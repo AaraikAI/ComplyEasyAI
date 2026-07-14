@@ -28,6 +28,7 @@ const upload = multer({
     cb(null, allowed.includes(file.mimetype));
   },
 });
+router.get('/me', authenticate, asyncHandler(authController.getCurrentUser.bind(authController)));
 router.patch('/profile', authenticate, validateBody(updateProfileSchema), asyncHandler(authController.updateProfile.bind(authController)));
 router.post('/profile/avatar', authenticate, upload.single('avatar'), asyncHandler(authController.uploadAvatar.bind(authController)));
 router.patch('/password', authenticate, validateBody(changePasswordSchema), asyncHandler(authController.changePassword.bind(authController)));

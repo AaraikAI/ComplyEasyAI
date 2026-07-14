@@ -989,6 +989,55 @@ describe('AuthController', () => {
   // ==========================================================================
   // updateProfile
   // ==========================================================================
+  describe('getCurrentUser()', () => {
+    const meUser = {
+      id: 'user-1',
+      email: 'me@example.com',
+      name: 'Me User',
+      role: 'admin',
+      avatar: null,
+      organizationId: 'org-1',
+      organization: { id: 'org-1', name: 'Org One', plan: 'Foundation' },
+    };
+
+    it('returns the current user at the top level of the body (mobile hydration shape)', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(meUser as never);
+
+      await authController.getCurrentUser(mockReq as Request, mockRes as Response);
+
+      expect(prismaMock.user.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'user-1' } }),
+      );
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'user-1',
+          email: 'me@example.com',
+          role: 'admin',
+          organization: { id: 'org-1', name: 'Org One', plan: 'Foundation' },
+        }),
+      );
+      // User fields must sit at the TOP level (NOT nested under `user`) so the
+      // response envelope places them directly under `data` for the mobile app's
+      // `normalizeUser(meResult.data)` hydration path.
+      const jsonCall = (mockRes.json as jest.Mock<any>).mock.calls[0][0];
+      expect(jsonCall.user).toBeUndefined();
+    });
+
+    it('throws 401 when the request is not authenticated', async () => {
+      mockReq.user = undefined;
+      await expect(
+        authController.getCurrentUser(mockReq as Request, mockRes as Response),
+      ).rejects.toThrow('Not authenticated');
+    });
+
+    it('throws 404 when the user no longer exists', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null as never);
+      await expect(
+        authController.getCurrentUser(mockReq as Request, mockRes as Response),
+      ).rejects.toThrow('User not found');
+    });
+  });
+
   describe('updateProfile()', () => {
     it('should throw AppError when name is empty', async () => {
       mockReq.body = { name: '', email: 'test@example.com' };
