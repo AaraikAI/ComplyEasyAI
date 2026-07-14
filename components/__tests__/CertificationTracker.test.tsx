@@ -36,7 +36,11 @@ const MOCK_CERTIFICATIONS = [
   },
   {
     id: 'cert-3', name: 'PCI DSS v4.0', frameworkId: 'PCIDSS', scope: 'Payment Systems', status: 'EXPIRING_SOON',
-    certBody: 'QSA Inc', issueDate: '2024-04-14T00:00:00Z', expiryDate: '2026-07-14T00:00:00Z',
+    // Expire 45 days from "now" so this cert is always inside the 90-day warning
+    // window AND still in the future (a hardcoded date became a time bomb — it was
+    // set to 2026-07-14, which the test run eventually reached, flipping the cert to
+    // "expired" and dropping the "until expiry" countdown the test below asserts).
+    certBody: 'QSA Inc', issueDate: '2024-04-14T00:00:00Z', expiryDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
     surveillanceAudits: [],
     documents: [],
     controlsInScope: 250, nonconformities: 5,
@@ -229,7 +233,8 @@ describe('CertificationTracker', () => {
 
   it('shows expiry warning for certs expiring within 90 days', async () => {
     await renderAndWait(<CertificationTracker />);
-    // PCI DSS expires 2026-07-14 which is within 90 days of test run
+    // cert-3 (PCI DSS) is seeded to expire 45 days from now — always inside the
+    // 90-day warning window — so the countdown text is rendered.
     const content = document.body.textContent || '';
     expect(content).toContain('until expiry');
   });
