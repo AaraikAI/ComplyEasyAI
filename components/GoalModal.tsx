@@ -167,14 +167,14 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">
+      <div className="bg-white dark:bg-signal-panel2 rounded-lg dark:rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white dark:bg-signal-panel2 border-b border-gray-200 dark:border-white/[0.06] px-6 py-4 flex items-center justify-between">
+          <h2 className="font-display text-xl font-semibold">
             {goal ? 'Edit Compliance Goal' : 'Create Compliance Goal'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:hover:text-signal-body"
           >
             <X size={24} />
           </button>
@@ -183,21 +183,21 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Goal Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Goal Name <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
+              Goal Name <span className="text-red-500 dark:text-signal-bad">*</span>
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className={`w-full px-3 py-2 border rounded-lg ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:[color-scheme:dark] ${
+                errors.name ? 'border-red-500 dark:border-signal-bad' : 'border-gray-300 dark:border-white/[0.10]'
               }`}
               placeholder="e.g., Maintain SOC 2 Type II compliance"
               maxLength={500}
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
+              <p className="mt-1 text-sm text-red-600 dark:text-signal-bad flex items-center">
                 <AlertCircle size={14} className="mr-1" />
                 {errors.name}
               </p>
@@ -206,13 +206,13 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
 
           {/* Goal Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Goal Type <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
+              Goal Type <span className="text-red-500 dark:text-signal-bad">*</span>
             </label>
             <select
               value={formData.goalType}
               onChange={(e) => setFormData({ ...formData, goalType: e.target.value as any })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
             >
               <option value="maintain">Maintain</option>
               <option value="achieve">Achieve</option>
@@ -222,12 +222,12 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
 
           {/* Frameworks */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Frameworks <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
+              Frameworks <span className="text-red-500 dark:text-signal-bad">*</span>
             </label>
-            <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
+            <div className="border border-gray-300 dark:border-white/[0.10] rounded-lg p-3 max-h-48 overflow-y-auto">
               {availableFrameworks.length === 0 ? (
-                <p className="text-sm text-gray-500">{t('common.loading')}</p>
+                <p className="text-sm text-gray-500 dark:text-signal-muted">{t('common.loading')}</p>
               ) : (
                 <div className="space-y-2">
                   {availableFrameworks.map((framework) => (
@@ -236,16 +236,16 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
                         type="checkbox"
                         checked={formData.frameworks.includes(framework)}
                         onChange={() => handleFrameworkToggle(framework)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 dark:border-white/[0.10] text-blue-600 dark:text-signal-green focus:ring-blue-500 dark:focus:ring-signal-green/40"
                       />
-                      <span className="text-sm text-gray-700">{framework}</span>
+                      <span className="text-sm text-gray-700 dark:text-signal-body">{framework}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
             {errors.frameworks && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
+              <p className="mt-1 text-sm text-red-600 dark:text-signal-bad flex items-center">
                 <AlertCircle size={14} className="mr-1" />
                 {errors.frameworks}
               </p>
@@ -254,13 +254,13 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
 
           {/* Risk Tolerance */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Risk Tolerance <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
+              Risk Tolerance <span className="text-red-500 dark:text-signal-bad">*</span>
             </label>
             <select
               value={formData.riskTolerance}
               onChange={(e) => setFormData({ ...formData, riskTolerance: e.target.value as any })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -270,14 +270,14 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
 
           {/* Horizon */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Time Horizon (days) <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
+              Time Horizon (days) <span className="text-red-500 dark:text-signal-bad">*</span>
             </label>
             <input
               type="number"
               value={formData.horizon}
               onChange={(e) => setFormData({ ...formData, horizon: parseInt(e.target.value) || 90 })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
               min="1"
               max="3650"
             />
@@ -285,21 +285,21 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
 
           {/* Target Score */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Target Score (%) <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
+              Target Score (%) <span className="text-red-500 dark:text-signal-bad">*</span>
             </label>
             <input
               type="number"
               value={formData.targetScore}
               onChange={(e) => setFormData({ ...formData, targetScore: parseInt(e.target.value) || 85 })}
-              className={`w-full px-3 py-2 border rounded-lg ${
-                errors.targetScore ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:[color-scheme:dark] ${
+                errors.targetScore ? 'border-red-500 dark:border-signal-bad' : 'border-gray-300 dark:border-white/[0.10]'
               }`}
               min="0"
               max="100"
             />
             {errors.targetScore && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
+              <p className="mt-1 text-sm text-red-600 dark:text-signal-bad flex items-center">
                 <AlertCircle size={14} className="mr-1" />
                 {errors.targetScore}
               </p>
@@ -308,13 +308,13 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
 
           {/* Auto Action Policy */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Auto Action Policy <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
+              Auto Action Policy <span className="text-red-500 dark:text-signal-bad">*</span>
             </label>
             <select
               value={formData.autoActionPolicy}
               onChange={(e) => setFormData({ ...formData, autoActionPolicy: e.target.value as any })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
             >
               <option value="conservative">Conservative</option>
               <option value="moderate">Moderate</option>
@@ -324,7 +324,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
 
           {/* Deadline */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
               Deadline (Optional)
             </label>
             <div className="relative">
@@ -333,14 +333,14 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
                 value={formData.deadline}
                 onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
                 min={new Date().toISOString().split('T')[0]}
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  errors.deadline ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:[color-scheme:dark] ${
+                  errors.deadline ? 'border-red-500 dark:border-signal-bad' : 'border-gray-300 dark:border-white/[0.10]'
                 }`}
               />
-              <Calendar className="absolute right-3 top-2.5 text-gray-400" size={20} />
+              <Calendar className="absolute right-3 top-2.5 text-gray-400 dark:text-signal-muted" size={20} />
             </div>
             {errors.deadline && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
+              <p className="mt-1 text-sm text-red-600 dark:text-signal-bad flex items-center">
                 <AlertCircle size={14} className="mr-1" />
                 {errors.deadline}
               </p>
@@ -348,18 +348,18 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-white/[0.06]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg text-gray-700 dark:text-signal-body hover:bg-gray-50 dark:hover:bg-white/[0.06]"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 disabled:opacity-50"
             >
               {loading ? t('common.loading') : goal ? t('common.save') : t('common.create')}
             </button>

@@ -81,26 +81,26 @@ interface DashboardMetrics {
 }
 
 const CHANGE_TYPE_CONFIG: Record<ChangeType, { label: string; icon: React.ReactNode; color: string }> = {
-  new_regulation: { label: 'New Regulation', icon: <Gavel className="w-4 h-4" />, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
-  amendment: { label: 'Amendment', icon: <Edit3 className="w-4 h-4" />, color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' },
-  guidance: { label: 'Guidance', icon: <BookOpen className="w-4 h-4" />, color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
-  enforcement: { label: 'Enforcement', icon: <Scale className="w-4 h-4" />, color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
-  repeal: { label: 'Repeal', icon: <XCircle className="w-4 h-4" />, color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
+  new_regulation: { label: 'New Regulation', icon: <Gavel className="w-4 h-4" />, color: 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue' },
+  amendment: { label: 'Amendment', icon: <Edit3 className="w-4 h-4" />, color: 'bg-orange-100 text-orange-800 dark:bg-signal-warn/10 dark:text-signal-warn' },
+  guidance: { label: 'Guidance', icon: <BookOpen className="w-4 h-4" />, color: 'bg-purple-100 text-purple-800 dark:bg-signal-violet/10 dark:text-signal-violet' },
+  enforcement: { label: 'Enforcement', icon: <Scale className="w-4 h-4" />, color: 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad' },
+  repeal: { label: 'Repeal', icon: <XCircle className="w-4 h-4" />, color: 'bg-gray-100 text-gray-800 dark:bg-white/[0.06] dark:text-signal-muted' },
 };
 
 const SEVERITY_CONFIG: Record<ChangeSeverity, { label: string; color: string; dotColor: string }> = {
-  critical: { label: 'Critical', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', dotColor: 'bg-red-500' },
-  high: { label: 'High', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300', dotColor: 'bg-orange-500' },
-  medium: { label: 'Medium', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', dotColor: 'bg-yellow-500' },
-  low: { label: 'Low', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', dotColor: 'bg-green-500' },
+  critical: { label: 'Critical', color: 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad', dotColor: 'bg-red-500 dark:bg-signal-bad' },
+  high: { label: 'High', color: 'bg-orange-100 text-orange-800 dark:bg-signal-warn/10 dark:text-signal-warn', dotColor: 'bg-orange-500 dark:bg-signal-warn' },
+  medium: { label: 'Medium', color: 'bg-yellow-100 text-yellow-800 dark:bg-signal-amber/10 dark:text-signal-amber', dotColor: 'bg-yellow-500 dark:bg-signal-amber' },
+  low: { label: 'Low', color: 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good', dotColor: 'bg-green-500 dark:bg-signal-good' },
 
 };
 
 const STATUS_CONFIG: Record<ChangeStatus, { label: string; color: string; icon: React.ReactNode }> = {
-  new: { label: 'New', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300', icon: <Bell className="w-3.5 h-3.5" /> },
-  reviewing: { label: 'Reviewing', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', icon: <Eye className="w-3.5 h-3.5" /> },
-  in_progress: { label: 'In Progress', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300', icon: <Activity className="w-3.5 h-3.5" /> },
-  resolved: { label: 'Resolved', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  new: { label: 'New', color: 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue', icon: <Bell className="w-3.5 h-3.5" /> },
+  reviewing: { label: 'Reviewing', color: 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn', icon: <Eye className="w-3.5 h-3.5" /> },
+  in_progress: { label: 'In Progress', color: 'bg-purple-100 text-purple-800 dark:bg-signal-violet/10 dark:text-signal-violet', icon: <Activity className="w-3.5 h-3.5" /> },
+  resolved: { label: 'Resolved', color: 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good', icon: <CheckCircle className="w-3.5 h-3.5" /> },
 };
 
 const STATUS_FLOW: ChangeStatus[] = ['new', 'reviewing', 'in_progress', 'resolved'];
@@ -297,16 +297,16 @@ const RegulatoryChangeTracker: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Regulatory Change Tracker</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Monitor and manage regulatory updates impacting your compliance posture</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">Regulatory Change Tracker</h2>
+          <p className="text-sm text-gray-500 dark:text-signal-muted mt-1">Monitor and manage regulatory updates impacting your compliance posture</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={loadChanges} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+          <button onClick={loadChanges} className="p-2 text-gray-500 dark:text-signal-muted hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition">
             <RefreshCw className="w-4 h-4" />
           </button>
           <button
             onClick={() => { resetForm(); setEditingId(null); setShowAddModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-primary-700 dark:hover:bg-signal-green/90 transition"
           >
             <Plus className="w-4 h-4" />
             Add Change
@@ -323,12 +323,12 @@ const RegulatoryChangeTracker: React.FC = () => {
             { label: 'Critical', value: metrics.criticalChanges, icon: <AlertTriangle className="w-5 h-5" />, color: 'text-red-600 dark:text-red-400' },
             { label: 'Pending Review', value: metrics.pendingReview, icon: <Eye className="w-5 h-5" />, color: 'text-yellow-600 dark:text-yellow-400' },
             { label: 'Resolved (Month)', value: metrics.resolvedThisMonth, icon: <CheckCircle className="w-5 h-5" />, color: 'text-green-600 dark:text-green-400' },
-            { label: 'Avg Resolution', value: `${metrics.avgResolutionDays}d`, icon: <Clock className="w-5 h-5" />, color: 'text-gray-600 dark:text-gray-400' },
+            { label: 'Avg Resolution', value: `${metrics.avgResolutionDays}d`, icon: <Clock className="w-5 h-5" />, color: 'text-gray-600 dark:text-signal-sub' },
           ].map((metric, i) => (
-            <div key={i} className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+            <div key={i} className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-xl dark:rounded-2xl p-4">
               <div className={`${metric.color} mb-2`}>{metric.icon}</div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{metric.value}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{metric.label}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{metric.value}</p>
+              <p className="text-xs text-gray-500 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em] dark:mt-1">{metric.label}</p>
             </div>
           ))}
         </div>
@@ -343,13 +343,13 @@ const RegulatoryChangeTracker: React.FC = () => {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder={t('common.search')}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink placeholder-gray-400 dark:placeholder-signal-muted focus:ring-2 focus:ring-primary-500 dark:focus:ring-signal-green/40"
           />
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition text-sm ${
-            showFilters ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'
+            showFilters ? 'border-primary-500 text-primary-600 bg-primary-50 dark:border-signal-green/50 dark:text-signal-green dark:bg-signal-green/10' : 'border-gray-200 dark:border-white/[0.10] text-gray-700 dark:text-signal-body'
           }`}
         >
           <Filter className="w-4 h-4" />
@@ -358,20 +358,20 @@ const RegulatoryChangeTracker: React.FC = () => {
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap gap-3 p-4 bg-gray-50 dark:bg-surface-700/50 rounded-xl">
-          <select value={filterType} onChange={e => setFilterType(e.target.value as any)} className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white">
+        <div className="flex flex-wrap gap-3 p-4 bg-gray-50 dark:bg-white/[0.03] dark:border dark:border-white/[0.06] rounded-xl dark:rounded-2xl">
+          <select value={filterType} onChange={e => setFilterType(e.target.value as any)} className="px-3 py-1.5 text-sm border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink">
             <option value="all">All Types</option>
             {Object.entries(CHANGE_TYPE_CONFIG).map(([key, cfg]) => (<option key={key} value={key}>{cfg.label}</option>))}
           </select>
-          <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value as any)} className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white">
+          <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value as any)} className="px-3 py-1.5 text-sm border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink">
             <option value="all">All Severities</option>
             {Object.entries(SEVERITY_CONFIG).map(([key, cfg]) => (<option key={key} value={key}>{cfg.label}</option>))}
           </select>
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)} className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white">
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)} className="px-3 py-1.5 text-sm border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink">
             <option value="all">All Statuses</option>
             {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (<option key={key} value={key}>{cfg.label}</option>))}
           </select>
-          <select value={filterRegulation} onChange={e => setFilterRegulation(e.target.value)} className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white">
+          <select value={filterRegulation} onChange={e => setFilterRegulation(e.target.value)} className="px-3 py-1.5 text-sm border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink">
             <option value="all">All Regulations</option>
             {REGULATIONS.map(r => (<option key={r} value={r}>{r}</option>))}
           </select>
@@ -380,11 +380,11 @@ const RegulatoryChangeTracker: React.FC = () => {
 
       {/* Changes List */}
       {loading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>
+        <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary-500 dark:text-signal-green" /></div>
       ) : filteredChanges.length === 0 ? (
         <div className="text-center py-20">
-          <Scale className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
+          <Scale className="w-12 h-12 mx-auto text-gray-300 dark:text-signal-muted mb-4" />
+          <p className="text-gray-500 dark:text-signal-muted">{t('common.noResults')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -396,7 +396,7 @@ const RegulatoryChangeTracker: React.FC = () => {
             return (
               <div
                 key={change.id}
-                className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition cursor-pointer group"
+                className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-xl dark:rounded-2xl p-4 hover:shadow-md dark:hover:bg-white/[0.05] transition cursor-pointer group"
                 onClick={() => openDetail(change)}
               >
                 <div className="flex items-start gap-4">
@@ -405,14 +405,14 @@ const RegulatoryChangeTracker: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">{change.title}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-signal-ink truncate">{change.title}</h3>
                       <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${sevConfig.color}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${sevConfig.dotColor}`} />
                         {sevConfig.label}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mb-2">{change.summary || change.description}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-signal-body line-clamp-1 mb-2">{change.summary || change.description}</p>
+                    <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-signal-muted">
                       <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${statusConfig.color}`}>
                         {statusConfig.icon}
                         {statusConfig.label}
@@ -422,21 +422,21 @@ const RegulatoryChangeTracker: React.FC = () => {
                       </span>
                       <span className="flex items-center gap-1"><Shield className="w-3 h-3" />{change.regulation}</span>
                       {change.effectiveDate && (
-                        <span className={`flex items-center gap-1 ${daysLeft !== null && daysLeft <= 30 ? 'text-red-500' : ''}`}>
+                        <span className={`flex items-center gap-1 ${daysLeft !== null && daysLeft <= 30 ? 'text-red-500 dark:text-signal-bad' : ''}`}>
                           <Calendar className="w-3 h-3" />
                           Effective: {new Date(change.effectiveDate).toLocaleDateString()}
                           {daysLeft !== null && daysLeft > 0 && ` (${daysLeft}d)`}
                         </span>
                       )}
                       {change.affectedControlsCount > 0 && (
-                        <span className="flex items-center gap-1 text-orange-500">
+                        <span className="flex items-center gap-1 text-orange-500 dark:text-signal-warn">
                           <Target className="w-3 h-3" />
                           {change.affectedControlsCount} controls affected
                         </span>
                       )}
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition" />
+                  <ChevronRight className="w-5 h-5 text-gray-300 dark:text-signal-muted flex-shrink-0 opacity-0 group-hover:opacity-100 transition" />
                 </div>
               </div>
             );
@@ -459,39 +459,39 @@ const RegulatoryChangeTracker: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => { setViewMode('list'); setSelectedChange(null); }} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
-              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            <button onClick={() => { setViewMode('list'); setSelectedChange(null); }} className="p-2 hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition">
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-signal-body" />
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedChange.title}</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{selectedChange.title}</h2>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${sevConfig.color}`}>{sevConfig.label}</span>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{selectedChange.regulation} &middot; {typeConfig.label}</p>
+              <p className="text-sm text-gray-500 dark:text-signal-muted">{selectedChange.regulation} &middot; {typeConfig.label}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => runImpactAnalysis(selectedChange.id)}
               disabled={analyzing}
-              className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
+              className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 dark:border-white/[0.10] rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.06] text-gray-700 dark:text-signal-body transition"
             >
               {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
               AI Impact Analysis
             </button>
-            <button onClick={() => openEdit(selectedChange)} className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition">
+            <button onClick={() => openEdit(selectedChange)} className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 dark:border-white/[0.10] rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.06] text-gray-700 dark:text-signal-body transition">
               <Edit3 className="w-4 h-4" />
               {t('common.edit')}
             </button>
-            <button onClick={() => setShowDeleteConfirm(selectedChange.id)} className="flex items-center gap-2 px-3 py-2 text-sm border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition">
+            <button onClick={() => setShowDeleteConfirm(selectedChange.id)} className="flex items-center gap-2 px-3 py-2 text-sm border border-red-200 dark:border-signal-bad/30 rounded-lg hover:bg-red-50 dark:hover:bg-signal-bad/10 text-red-600 dark:text-signal-bad transition">
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Status Pipeline */}
-        <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Status Tracking</h3>
+        <div className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-xl dark:rounded-2xl p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-3 dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em] dark:text-signal-muted">Status Tracking</h3>
           <div className="flex items-center gap-2">
             {STATUS_FLOW.map((status, idx) => {
               const cfg = STATUS_CONFIG[status];
@@ -502,15 +502,15 @@ const RegulatoryChangeTracker: React.FC = () => {
                   <button
                     onClick={() => updateStatus(selectedChange.id, status)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-                      isCurrent ? cfg.color + ' ring-2 ring-offset-2 ring-primary-500 dark:ring-offset-surface-800' :
+                      isCurrent ? cfg.color + ' ring-2 ring-offset-2 ring-primary-500 dark:ring-signal-green dark:ring-offset-signal-canvas' :
                       isActive ? cfg.color + ' opacity-60' :
-                      'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                      'bg-gray-100 dark:bg-white/[0.04] text-gray-400 dark:text-signal-muted'
                     }`}
                   >
                     {cfg.icon}
                     {cfg.label}
                   </button>
-                  {idx < STATUS_FLOW.length - 1 && <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />}
+                  {idx < STATUS_FLOW.length - 1 && <ArrowRight className="w-4 h-4 text-gray-300 dark:text-signal-muted" />}
                 </React.Fragment>
               );
             })}
@@ -521,11 +521,11 @@ const RegulatoryChangeTracker: React.FC = () => {
           {/* Main Content */}
           <div className="col-span-2 space-y-6">
             {/* Summary */}
-            <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Summary</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{selectedChange.summary || selectedChange.description}</p>
+            <div className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-xl dark:rounded-2xl p-5">
+              <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3">Summary</h3>
+              <p className="text-sm text-gray-600 dark:text-signal-body whitespace-pre-wrap">{selectedChange.summary || selectedChange.description}</p>
               {selectedChange.sourceUrl && (
-                <a href={selectedChange.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                <a href={selectedChange.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-3 text-sm text-primary-600 dark:text-signal-green hover:underline">
                   <ExternalLink className="w-4 h-4" />
                   View Source
                 </a>
@@ -534,39 +534,39 @@ const RegulatoryChangeTracker: React.FC = () => {
 
             {/* AI Analysis */}
             {selectedChange.aiAnalysis && (
-              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-5">
-                <h3 className="font-semibold text-purple-800 dark:text-purple-300 mb-3 flex items-center gap-2">
+              <div className="bg-purple-50 dark:bg-signal-violet/[0.08] border border-purple-200 dark:border-signal-violet/20 rounded-xl dark:rounded-2xl p-5">
+                <h3 className="font-semibold text-purple-800 dark:text-signal-violet mb-3 flex items-center gap-2">
                   <Brain className="w-5 h-5" />
                   AI Impact Analysis
                 </h3>
-                <p className="text-sm text-purple-700 dark:text-purple-300 whitespace-pre-wrap">{selectedChange.aiAnalysis}</p>
+                <p className="text-sm text-purple-700 dark:text-signal-body whitespace-pre-wrap">{selectedChange.aiAnalysis}</p>
               </div>
             )}
 
             {/* Affected Controls */}
-            <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                <Target className="w-5 h-5 text-orange-500" />
+            <div className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-xl dark:rounded-2xl p-5">
+              <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3 flex items-center gap-2">
+                <Target className="w-5 h-5 text-orange-500 dark:text-signal-warn" />
                 Affected Controls ({selectedChange.affectedControls?.length || 0})
               </h3>
               {(!selectedChange.affectedControls || selectedChange.affectedControls.length === 0) ? (
                 <div className="text-center py-8">
-                  <Target className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Run AI Impact Analysis to identify affected controls</p>
+                  <Target className="w-8 h-8 mx-auto text-gray-300 dark:text-signal-muted mb-2" />
+                  <p className="text-sm text-gray-500 dark:text-signal-muted">Run AI Impact Analysis to identify affected controls</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {selectedChange.affectedControls.map(ctrl => (
-                    <div key={ctrl.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-surface-700 rounded-lg">
+                    <div key={ctrl.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/[0.04] rounded-lg">
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{ctrl.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{ctrl.framework} &middot; {ctrl.currentStatus}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-signal-ink">{ctrl.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-signal-muted">{ctrl.framework} &middot; {ctrl.currentStatus}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          ctrl.impactLevel === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
-                          ctrl.impactLevel === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                          'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                          ctrl.impactLevel === 'high' ? 'bg-red-100 text-red-700 dark:bg-signal-bad/10 dark:text-signal-bad' :
+                          ctrl.impactLevel === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-signal-warn/10 dark:text-signal-warn' :
+                          'bg-green-100 text-green-700 dark:bg-signal-good/10 dark:text-signal-good'
                         }`}>{ctrl.impactLevel} impact</span>
                       </div>
                     </div>
@@ -576,29 +576,29 @@ const RegulatoryChangeTracker: React.FC = () => {
             </div>
 
             {/* Remediation Suggestions */}
-            <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-500" />
+            <div className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-xl dark:rounded-2xl p-5">
+              <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-yellow-500 dark:text-signal-warn" />
                 Remediation Suggestions
               </h3>
               {(!selectedChange.remediationSuggestions || selectedChange.remediationSuggestions.length === 0) ? (
                 <div className="text-center py-8">
-                  <Zap className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No remediation suggestions yet</p>
+                  <Zap className="w-8 h-8 mx-auto text-gray-300 dark:text-signal-muted mb-2" />
+                  <p className="text-sm text-gray-500 dark:text-signal-muted">No remediation suggestions yet</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {selectedChange.remediationSuggestions.map((rem, idx) => (
-                    <div key={rem.id || idx} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-surface-700 rounded-lg">
+                    <div key={rem.id || idx} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-white/[0.04] rounded-lg">
                       <span className={`text-xs px-2 py-0.5 rounded-full mt-0.5 ${
-                        rem.priority === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
-                        rem.priority === 'high' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' :
-                        rem.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                        'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                        rem.priority === 'critical' ? 'bg-red-100 text-red-700 dark:bg-signal-bad/10 dark:text-signal-bad' :
+                        rem.priority === 'high' ? 'bg-orange-100 text-orange-700 dark:bg-signal-warn/10 dark:text-signal-warn' :
+                        rem.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-signal-amber/10 dark:text-signal-amber' :
+                        'bg-green-100 text-green-700 dark:bg-signal-good/10 dark:text-signal-good'
                       }`}>{rem.priority}</span>
                       <div className="flex-1">
-                        <p className="text-sm text-gray-900 dark:text-white">{rem.action}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Effort: {rem.effort}</p>
+                        <p className="text-sm text-gray-900 dark:text-signal-ink">{rem.action}</p>
+                        <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">Effort: {rem.effort}</p>
                       </div>
                     </div>
                   ))}
@@ -609,8 +609,8 @@ const RegulatoryChangeTracker: React.FC = () => {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{t('common.details')}</h4>
+            <div className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-xl dark:rounded-2xl p-4 space-y-3">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{t('common.details')}</h4>
               {[
                 { label: 'Regulation', value: selectedChange.regulation },
                 { label: 'Jurisdiction', value: selectedChange.jurisdiction },
@@ -620,8 +620,8 @@ const RegulatoryChangeTracker: React.FC = () => {
                 { label: 'Last Updated', value: new Date(selectedChange.updatedAt).toLocaleDateString() },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">{label}</span>
-                  <span className="text-gray-900 dark:text-white font-medium">{value}</span>
+                  <span className="text-gray-500 dark:text-signal-muted">{label}</span>
+                  <span className="text-gray-900 dark:text-signal-ink font-medium">{value}</span>
                 </div>
               ))}
             </div>
@@ -630,15 +630,15 @@ const RegulatoryChangeTracker: React.FC = () => {
               const dl = daysUntil(selectedChange.effectiveDate);
               if (dl === null) return null;
               return (
-                <div className={`border rounded-xl p-4 ${
-                  dl <= 0 ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
-                  dl <= 30 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' :
-                  'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                <div className={`border rounded-xl dark:rounded-2xl p-4 ${
+                  dl <= 0 ? 'bg-red-50 dark:bg-signal-bad/[0.08] border-red-200 dark:border-signal-bad/20' :
+                  dl <= 30 ? 'bg-orange-50 dark:bg-signal-warn/[0.08] border-orange-200 dark:border-signal-warn/20' :
+                  'bg-green-50 dark:bg-signal-good/[0.08] border-green-200 dark:border-signal-good/20'
                 }`}>
-                  <p className={`text-2xl font-bold ${dl <= 0 ? 'text-red-700 dark:text-red-300' : dl <= 30 ? 'text-orange-700 dark:text-orange-300' : 'text-green-700 dark:text-green-300'}`}>
+                  <p className={`text-2xl font-bold dark:font-display ${dl <= 0 ? 'text-red-700 dark:text-signal-bad' : dl <= 30 ? 'text-orange-700 dark:text-signal-warn' : 'text-green-700 dark:text-signal-good'}`}>
                     {dl <= 0 ? 'Past Due' : `${dl} days`}
                   </p>
-                  <p className={`text-sm ${dl <= 0 ? 'text-red-600 dark:text-red-400' : dl <= 30 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}`}>
+                  <p className={`text-sm ${dl <= 0 ? 'text-red-600 dark:text-signal-bad' : dl <= 30 ? 'text-orange-600 dark:text-signal-warn' : 'text-green-600 dark:text-signal-good'}`}>
                     {dl <= 0 ? 'Effective date has passed' : 'until effective date'}
                   </p>
                 </div>
@@ -654,69 +654,69 @@ const RegulatoryChangeTracker: React.FC = () => {
 
   const renderAddModal = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setShowAddModal(false); setEditingId(null); }}>
-      <div className="bg-white dark:bg-surface-800 rounded-xl shadow-xl w-full max-w-xl mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold text-gray-900 dark:text-white">{editingId ? t('common.edit') : t('common.add')} Regulatory Change</h3>
-          <button onClick={() => { setShowAddModal(false); setEditingId(null); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"><X className="w-5 h-5 text-gray-500" /></button>
+      <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-xl dark:rounded-2xl shadow-xl w-full max-w-xl mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/[0.08]">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink">{editingId ? t('common.edit') : t('common.add')} Regulatory Change</h3>
+          <button onClick={() => { setShowAddModal(false); setEditingId(null); }} className="p-1 hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded"><X className="w-5 h-5 text-gray-500 dark:text-signal-muted" /></button>
         </div>
         <div className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
-            <input type="text" value={form.title || ''} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="Regulatory change title" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Title</label>
+            <input type="text" value={form.title || ''} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink" placeholder="Regulatory change title" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Change Type</label>
-              <select value={form.changeType} onChange={e => setForm({ ...form, changeType: e.target.value as ChangeType })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white text-sm">
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Change Type</label>
+              <select value={form.changeType} onChange={e => setForm({ ...form, changeType: e.target.value as ChangeType })} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink text-sm">
                 {Object.entries(CHANGE_TYPE_CONFIG).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.severity')}</label>
-              <select value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value as ChangeSeverity })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white text-sm">
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('common.severity')}</label>
+              <select value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value as ChangeSeverity })} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink text-sm">
                 {Object.entries(SEVERITY_CONFIG).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Regulation</label>
-              <select value={form.regulation || ''} onChange={e => setForm({ ...form, regulation: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white text-sm">
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Regulation</label>
+              <select value={form.regulation || ''} onChange={e => setForm({ ...form, regulation: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink text-sm">
                 <option value="">Select...</option>
                 {REGULATIONS.map(r => (<option key={r} value={r}>{r}</option>))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jurisdiction</label>
-              <input type="text" value={form.jurisdiction || ''} onChange={e => setForm({ ...form, jurisdiction: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="e.g., EU, US, CA" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Jurisdiction</label>
+              <input type="text" value={form.jurisdiction || ''} onChange={e => setForm({ ...form, jurisdiction: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink" placeholder="e.g., EU, US, CA" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Summary</label>
-            <textarea value={form.summary || ''} onChange={e => setForm({ ...form, summary: e.target.value })} rows={3} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="Brief summary of the change" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Summary</label>
+            <textarea value={form.summary || ''} onChange={e => setForm({ ...form, summary: e.target.value })} rows={3} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink" placeholder="Brief summary of the change" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
-            <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} rows={4} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="Detailed description" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('common.description')}</label>
+            <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} rows={4} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink" placeholder="Detailed description" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Source URL</label>
-            <input type="url" value={form.sourceUrl || ''} onChange={e => setForm({ ...form, sourceUrl: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="https://..." />
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Source URL</label>
+            <input type="url" value={form.sourceUrl || ''} onChange={e => setForm({ ...form, sourceUrl: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink" placeholder="https://..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Published Date</label>
-              <input type="date" value={form.publishedDate || ''} onChange={e => setForm({ ...form, publishedDate: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Published Date</label>
+              <input type="date" value={form.publishedDate || ''} onChange={e => setForm({ ...form, publishedDate: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Effective Date</label>
-              <input type="date" value={form.effectiveDate || ''} onChange={e => setForm({ ...form, effectiveDate: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Effective Date</label>
+              <input type="date" value={form.effectiveDate || ''} onChange={e => setForm({ ...form, effectiveDate: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-white/[0.10] rounded-lg bg-white dark:bg-white/[0.04] text-gray-900 dark:text-signal-ink" />
             </div>
           </div>
         </div>
-        <div className="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
-          <button onClick={() => { setShowAddModal(false); setEditingId(null); }} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">{t('common.cancel')}</button>
-          <button onClick={saveChange} disabled={!form.title} className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">{editingId ? t('common.save') : t('common.create')}</button>
+        <div className="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-white/[0.08]">
+          <button onClick={() => { setShowAddModal(false); setEditingId(null); }} className="px-4 py-2 text-sm text-gray-700 dark:text-signal-body hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg">{t('common.cancel')}</button>
+          <button onClick={saveChange} disabled={!form.title} className="px-4 py-2 text-sm bg-primary-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-primary-700 dark:hover:bg-signal-green/90 disabled:opacity-50">{editingId ? t('common.save') : t('common.create')}</button>
         </div>
       </div>
     </div>
@@ -724,19 +724,19 @@ const RegulatoryChangeTracker: React.FC = () => {
 
   const renderDeleteConfirm = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowDeleteConfirm(null)}>
-      <div className="bg-white dark:bg-surface-800 rounded-xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Change</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Are you sure? This action cannot be undone.</p>
+      <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-xl dark:rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-2">Delete Change</h3>
+        <p className="text-sm text-gray-500 dark:text-signal-muted mb-4">Are you sure? This action cannot be undone.</p>
         <div className="flex justify-end gap-2">
-          <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">{t('common.cancel')}</button>
-          <button onClick={() => showDeleteConfirm && deleteChange(showDeleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">{t('common.delete')}</button>
+          <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-700 dark:text-signal-body hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg">{t('common.cancel')}</button>
+          <button onClick={() => showDeleteConfirm && deleteChange(showDeleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white dark:bg-signal-bad dark:text-signal-canvas rounded-lg hover:bg-red-700 dark:hover:bg-signal-bad/90">{t('common.delete')}</button>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="bg-white dark:bg-surface-800 min-h-screen">
+    <div className="bg-white dark:bg-signal-canvas min-h-screen">
       <div className="max-w-7xl mx-auto p-6">
         {viewMode === 'list' && renderListView()}
         {viewMode === 'detail' && renderDetailView()}

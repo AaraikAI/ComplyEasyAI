@@ -214,26 +214,26 @@ const formatCurrency = (n: number): string => new Intl.NumberFormat('en-EU', { s
 const formatNumber = (n: number): string => n.toLocaleString('en-US');
 
 const riskColor = (level: SupplierRiskLevel): string => {
-  switch (level) { case 'critical': return 'bg-red-100 text-red-800'; case 'high': return 'bg-orange-100 text-orange-800'; case 'medium': return 'bg-yellow-100 text-yellow-800'; case 'low': return 'bg-green-100 text-green-800'; }
+  switch (level) { case 'critical': return 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad dark:bg-signal-bad/10 dark:text-signal-bad'; case 'high': return 'bg-orange-100 dark:bg-signal-amber/10 text-orange-800 dark:text-signal-amber dark:bg-signal-amber/10 dark:text-signal-amber'; case 'medium': return 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn dark:bg-signal-warn/10 dark:text-signal-warn'; case 'low': return 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good dark:bg-signal-good/10 dark:text-signal-good'; }
 };
 
 const measureStatusColor = (s: MeasureStatus): string => {
-  switch (s) { case 'implemented': return 'bg-green-100 text-green-800'; case 'in_progress': return 'bg-blue-100 text-blue-800'; case 'planned': return 'bg-yellow-100 text-yellow-800'; case 'not_started': return 'bg-gray-100 text-gray-600'; }
+  switch (s) { case 'implemented': return 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good dark:bg-signal-good/10 dark:text-signal-good'; case 'in_progress': return 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue'; case 'planned': return 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn dark:bg-signal-warn/10 dark:text-signal-warn'; case 'not_started': return 'bg-gray-100 dark:bg-white/[0.06] text-gray-600 dark:bg-white/[0.06] dark:text-signal-muted'; }
 };
 
 const incidentSeverityColor = (s: IncidentSeverity): string => {
-  switch (s) { case 'critical': return 'bg-red-100 text-red-800'; case 'significant': return 'bg-orange-100 text-orange-800'; case 'minor': return 'bg-yellow-100 text-yellow-800'; }
+  switch (s) { case 'critical': return 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad dark:bg-signal-bad/10 dark:text-signal-bad'; case 'significant': return 'bg-orange-100 dark:bg-signal-amber/10 text-orange-800 dark:text-signal-amber dark:bg-signal-amber/10 dark:text-signal-amber'; case 'minor': return 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn dark:bg-signal-warn/10 dark:text-signal-warn'; }
 };
 
 const incidentStatusColor = (s: IncidentStatus): string => {
-  switch (s) { case 'detected': return 'bg-red-100 text-red-800'; case 'early_warning_sent': return 'bg-orange-100 text-orange-800'; case 'notification_sent': return 'bg-yellow-100 text-yellow-800'; case 'final_report_pending': return 'bg-blue-100 text-blue-800'; case 'closed': return 'bg-green-100 text-green-800'; }
+  switch (s) { case 'detected': return 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad dark:bg-signal-bad/10 dark:text-signal-bad'; case 'early_warning_sent': return 'bg-orange-100 dark:bg-signal-amber/10 text-orange-800 dark:text-signal-amber dark:bg-signal-amber/10 dark:text-signal-amber'; case 'notification_sent': return 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn dark:bg-signal-warn/10 dark:text-signal-warn'; case 'final_report_pending': return 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue'; case 'closed': return 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good dark:bg-signal-good/10 dark:text-signal-good'; }
 };
 
 const hoursRemaining = (deadline: string): number => Math.max(0, (new Date(deadline).getTime() - Date.now()) / 3600000);
 
 const renderScoreBar = (score: number, max: number = 100) => (
-  <div className="w-full bg-gray-200 rounded-full h-2.5">
-    <div className={`h-2.5 rounded-full ${score / max >= 0.8 ? 'bg-green-500' : score / max >= 0.5 ? 'bg-yellow-500' : 'bg-red-500'}`}
+  <div className="w-full bg-gray-200 dark:bg-white/[0.06] rounded-full h-2.5">
+    <div className={`h-2.5 rounded-full ${score / max >= 0.8 ? 'bg-green-500 dark:bg-signal-good' : score / max >= 0.5 ? 'bg-yellow-500 dark:bg-signal-warn' : 'bg-red-500 dark:bg-signal-bad'}`}
       style={{ width: `${Math.min(100, (score / max) * 100)}%` }} />
   </div>
 );
@@ -407,83 +407,83 @@ export const NIS2Dashboard: React.FC = () => {
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 dark:bg-white/[0.03] dark:border-white/[0.06]">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Entity Type</p><p className="text-2xl font-bold text-gray-900 mt-1 capitalize">{entity.entityType}</p></div>
-            <Building2 className="w-8 h-8 text-indigo-600" />
+            <div><p className="text-sm text-gray-600 dark:text-signal-body">Entity Type</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1 capitalize">{entity.entityType}</p></div>
+            <Building2 className="w-8 h-8 text-indigo-600 dark:text-signal-violet" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{SECTOR_LABELS[entity.sector]}</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{SECTOR_LABELS[entity.sector]}</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 dark:bg-white/[0.03] dark:border-white/[0.06]">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Security Measures</p><p className="text-2xl font-bold text-gray-900 mt-1">{measureComplianceRate}%</p></div>
-            <Shield className="w-8 h-8 text-green-600" />
+            <div><p className="text-sm text-gray-600 dark:text-signal-body">Security Measures</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{measureComplianceRate}%</p></div>
+            <Shield className="w-8 h-8 text-green-600 dark:text-signal-good" />
           </div>
           <div className="mt-2">{renderScoreBar(measureComplianceRate)}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 dark:bg-white/[0.03] dark:border-white/[0.06]">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Open Incidents</p><p className="text-2xl font-bold text-gray-900 mt-1">{openIncidents}</p></div>
-            <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div><p className="text-sm text-gray-600 dark:text-signal-body">Open Incidents</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{openIncidents}</p></div>
+            <AlertTriangle className="w-8 h-8 text-red-600 dark:text-signal-bad" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{incidents.length} total incidents tracked</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{incidents.length} total incidents tracked</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 dark:bg-white/[0.03] dark:border-white/[0.06]">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">High-Risk Suppliers</p><p className="text-2xl font-bold text-gray-900 mt-1">{criticalSuppliers}</p></div>
-            <Truck className="w-8 h-8 text-orange-600" />
+            <div><p className="text-sm text-gray-600 dark:text-signal-body">High-Risk Suppliers</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{criticalSuppliers}</p></div>
+            <Truck className="w-8 h-8 text-orange-600 dark:text-signal-amber" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{suppliers.length} total suppliers assessed</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{suppliers.length} total suppliers assessed</p>
         </div>
       </div>
 
       {/* Urgent Incident Alerts */}
       {incidents.filter(i => i.status === 'detected').length > 0 && (
-        <div className="bg-red-50 border border-red-300 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2"><Bell className="w-5 h-5 text-red-600" /><h4 className="font-semibold text-red-800">Urgent: 24-Hour Early Warning Required</h4></div>
+        <div className="bg-red-50 border border-red-300 dark:bg-signal-bad/[0.08] dark:border-signal-bad/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2"><Bell className="w-5 h-5 text-red-600 dark:text-signal-bad" /><h4 className="font-semibold text-red-800 dark:text-signal-bad">Urgent: 24-Hour Early Warning Required</h4></div>
           {incidents.filter(i => i.status === 'detected').map(inc => (
-            <div key={inc.id} className="flex items-center justify-between bg-white rounded p-3 mt-2 border border-red-200">
+            <div key={inc.id} className="flex items-center justify-between bg-white rounded p-3 mt-2 border border-red-200 dark:bg-white/[0.03] dark:border-signal-bad/20">
               <div>
-                <p className="font-medium text-gray-900">{inc.title}</p>
-                <p className="text-sm text-red-700"><Clock className="w-3 h-3 inline mr-1" />{hoursRemaining(inc.earlyWarningDeadline).toFixed(1)}h remaining</p>
+                <p className="font-medium text-gray-900 dark:text-signal-ink">{inc.title}</p>
+                <p className="text-sm text-red-700 dark:text-signal-bad"><Clock className="w-3 h-3 inline mr-1" />{hoursRemaining(inc.earlyWarningDeadline).toFixed(1)}h remaining</p>
               </div>
-              <button onClick={() => handleSendEarlyWarning(inc.id)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm flex items-center gap-1"><ArrowUpRight className="w-4 h-4" /> Send Early Warning</button>
+              <button onClick={() => handleSendEarlyWarning(inc.id)} className="px-4 py-2 bg-red-600 dark:bg-signal-bad text-white dark:text-signal-canvas rounded-lg hover:bg-red-700 dark:hover:bg-signal-bad/90 text-sm flex items-center gap-1"><ArrowUpRight className="w-4 h-4" /> Send Early Warning</button>
             </div>
           ))}
         </div>
       )}
 
       {/* Penalty Risk */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Penalty Risk Overview</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-4">Penalty Risk Overview</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-            <p className="text-sm text-gray-600">Maximum Penalty</p>
-            <p className="text-2xl font-bold text-red-800">{formatCurrency(penaltyRisk.maxFine)}</p>
-            <p className="text-xs text-red-600 mt-1">{entity.entityType === 'essential' ? '10M or 2% of turnover' : '7M or 1.4% of turnover'} (whichever is higher)</p>
+          <div className="p-4 bg-red-50 rounded-lg border border-red-200 dark:bg-signal-bad/[0.08] dark:border-signal-bad/20">
+            <p className="text-sm text-gray-600 dark:text-signal-body">Maximum Penalty</p>
+            <p className="text-2xl font-bold text-red-800 dark:text-signal-bad dark:font-display">{formatCurrency(penaltyRisk.maxFine)}</p>
+            <p className="text-xs text-red-600 dark:text-signal-bad mt-1">{entity.entityType === 'essential' ? '10M or 2% of turnover' : '7M or 1.4% of turnover'} (whichever is higher)</p>
           </div>
-          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-            <p className="text-sm text-gray-600">Non-Compliance Areas</p>
-            <p className="text-2xl font-bold text-orange-800">{measures.filter(m => m.status !== 'implemented').length}</p>
-            <p className="text-xs text-orange-600 mt-1">measures not yet implemented</p>
+          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200 dark:bg-signal-amber/[0.08] dark:border-signal-amber/20">
+            <p className="text-sm text-gray-600 dark:text-signal-body">Non-Compliance Areas</p>
+            <p className="text-2xl font-bold text-orange-800 dark:text-signal-amber dark:font-display">{measures.filter(m => m.status !== 'implemented').length}</p>
+            <p className="text-xs text-orange-600 dark:text-signal-amber mt-1">measures not yet implemented</p>
           </div>
-          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p className="text-sm text-gray-600">Management Liability</p>
-            <p className="text-2xl font-bold text-yellow-800">{entity.managementTrainingCompleted ? 'Training Complete' : 'Training Required'}</p>
-            <p className="text-xs text-yellow-600 mt-1">Art. 20 - Management bodies personally accountable</p>
+          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200 dark:bg-signal-warn/[0.08] dark:border-signal-warn/20">
+            <p className="text-sm text-gray-600 dark:text-signal-body">Management Liability</p>
+            <p className="text-2xl font-bold text-yellow-800 dark:text-signal-warn dark:font-display">{entity.managementTrainingCompleted ? 'Training Complete' : 'Training Required'}</p>
+            <p className="text-xs text-yellow-600 dark:text-signal-warn mt-1">Art. 20 - Management bodies personally accountable</p>
           </div>
         </div>
       </div>
 
       {/* Article 21 Measures Progress */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Article 21 - Cybersecurity Risk Measures</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-4">Article 21 - Cybersecurity Risk Measures</h3>
         <div className="space-y-2">
           {measures.map(m => (
-            <div key={m.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
-              <span className={`w-3 h-3 rounded-full ${m.status === 'implemented' ? 'bg-green-500' : m.status === 'in_progress' ? 'bg-blue-500' : m.status === 'planned' ? 'bg-yellow-500' : 'bg-gray-300'}`} />
-              <span className="text-xs text-gray-500 w-24 font-mono">{m.article21Ref}</span>
-              <span className="text-sm text-gray-900 flex-1">{m.measure}</span>
+            <div key={m.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-white/[0.04]">
+              <span className={`w-3 h-3 rounded-full ${m.status === 'implemented' ? 'bg-green-500 dark:bg-signal-good' : m.status === 'in_progress' ? 'bg-blue-500 dark:bg-signal-blue' : m.status === 'planned' ? 'bg-yellow-500 dark:bg-signal-warn' : 'bg-gray-300 dark:bg-white/[0.20]'}`} />
+              <span className="text-xs text-gray-500 dark:text-signal-muted w-24 font-mono">{m.article21Ref}</span>
+              <span className="text-sm text-gray-900 dark:text-signal-ink flex-1">{m.measure}</span>
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${measureStatusColor(m.status)}`}>{m.status.replace('_', ' ').toUpperCase()}</span>
             </div>
           ))}
@@ -497,46 +497,46 @@ export const NIS2Dashboard: React.FC = () => {
   const renderClassification = () => (
     <div className="space-y-6">
       {/* Entity Details */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Entity Classification</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-4">Entity Classification</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div><label className="text-sm font-medium text-gray-500">Entity Name</label><p className="text-gray-900 font-medium">{entity.name}</p></div>
-          <div><label className="text-sm font-medium text-gray-500">Entity Type</label><p className="mt-1"><span className={`px-3 py-1 rounded-full text-sm font-medium ${entity.entityType === 'essential' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>{entity.entityType.toUpperCase()}</span></p></div>
-          <div><label className="text-sm font-medium text-gray-500">Sector</label><p className="text-gray-900">{SECTOR_LABELS[entity.sector]}</p></div>
-          <div><label className="text-sm font-medium text-gray-500">Sub-Sector</label><p className="text-gray-900">{entity.subSector}</p></div>
-          <div><label className="text-sm font-medium text-gray-500">Member State</label><p className="text-gray-900">{entity.memberState}</p></div>
-          <div><label className="text-sm font-medium text-gray-500">Competent Authority</label><p className="text-gray-900">{entity.competentAuthority}</p></div>
-          <div><label className="text-sm font-medium text-gray-500">Employees</label><p className="text-gray-900">{formatNumber(entity.employeeCount)}</p></div>
-          <div><label className="text-sm font-medium text-gray-500">Annual Turnover</label><p className="text-gray-900">{formatCurrency(entity.annualTurnover)}</p></div>
-          <div><label className="text-sm font-medium text-gray-500">Balance Sheet</label><p className="text-gray-900">{formatCurrency(entity.balanceSheet)}</p></div>
+          <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Entity Name</label><p className="text-gray-900 dark:text-signal-ink font-medium">{entity.name}</p></div>
+          <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Entity Type</label><p className="mt-1"><span className={`px-3 py-1 rounded-full text-sm font-medium ${entity.entityType === 'essential' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' : 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn'}`}>{entity.entityType.toUpperCase()}</span></p></div>
+          <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Sector</label><p className="text-gray-900 dark:text-signal-ink">{SECTOR_LABELS[entity.sector]}</p></div>
+          <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Sub-Sector</label><p className="text-gray-900 dark:text-signal-ink">{entity.subSector}</p></div>
+          <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Member State</label><p className="text-gray-900 dark:text-signal-ink">{entity.memberState}</p></div>
+          <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Competent Authority</label><p className="text-gray-900 dark:text-signal-ink">{entity.competentAuthority}</p></div>
+          <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Employees</label><p className="text-gray-900 dark:text-signal-ink">{formatNumber(entity.employeeCount)}</p></div>
+          <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Annual Turnover</label><p className="text-gray-900 dark:text-signal-ink">{formatCurrency(entity.annualTurnover)}</p></div>
+          <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Balance Sheet</label><p className="text-gray-900 dark:text-signal-ink">{formatCurrency(entity.balanceSheet)}</p></div>
         </div>
-        <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-4">
-          <span className="flex items-center gap-2 text-sm">{entity.registeredWithAuthority ? <CheckCircle className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-red-600" />} Registered with Authority</span>
-          <span className="flex items-center gap-2 text-sm">{entity.managementTrainingCompleted ? <CheckCircle className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-red-600" />} Management Training Complete</span>
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/[0.06] flex flex-wrap gap-4">
+          <span className="flex items-center gap-2 text-sm">{entity.registeredWithAuthority ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" /> : <X className="w-4 h-4 text-red-600 dark:text-signal-bad" />} Registered with Authority</span>
+          <span className="flex items-center gap-2 text-sm">{entity.managementTrainingCompleted ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" /> : <X className="w-4 h-4 text-red-600 dark:text-signal-bad" />} Management Training Complete</span>
         </div>
       </div>
 
       {/* Sector Classification Guide */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><Shield className="w-5 h-5 text-red-600" /> Essential Entities (Annex I)</h3>
-          <p className="text-sm text-gray-600 mb-3">Entities in sectors of high criticality. Subject to proactive supervision and higher penalties.</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3 flex items-center gap-2"><Shield className="w-5 h-5 text-red-600 dark:text-signal-bad" /> Essential Entities (Annex I)</h3>
+          <p className="text-sm text-gray-600 dark:text-signal-body mb-3">Entities in sectors of high criticality. Subject to proactive supervision and higher penalties.</p>
           <div className="space-y-1">
             {ESSENTIAL_SECTORS.map(s => (
-              <div key={s} className={`flex items-center gap-2 p-2 rounded text-sm ${entity.sector === s ? 'bg-red-50 border border-red-200 font-medium' : 'hover:bg-gray-50'}`}>
-                {entity.sector === s && <ChevronRight className="w-4 h-4 text-red-600" />}
+              <div key={s} className={`flex items-center gap-2 p-2 rounded text-sm ${entity.sector === s ? 'bg-red-50 border border-red-200 dark:bg-signal-bad/[0.08] dark:border-signal-bad/20 font-medium' : 'hover:bg-gray-50 dark:hover:bg-white/[0.04]'}`}>
+                {entity.sector === s && <ChevronRight className="w-4 h-4 text-red-600 dark:text-signal-bad" />}
                 <span>{SECTOR_LABELS[s]}</span>
               </div>
             ))}
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><AlertCircle className="w-5 h-5 text-yellow-600" /> Important Entities (Annex II)</h3>
-          <p className="text-sm text-gray-600 mb-3">Entities in other critical sectors. Subject to reactive supervision and lower penalties.</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3 flex items-center gap-2"><AlertCircle className="w-5 h-5 text-yellow-600 dark:text-signal-warn" /> Important Entities (Annex II)</h3>
+          <p className="text-sm text-gray-600 dark:text-signal-body mb-3">Entities in other critical sectors. Subject to reactive supervision and lower penalties.</p>
           <div className="space-y-1">
             {IMPORTANT_SECTORS.map(s => (
-              <div key={s} className={`flex items-center gap-2 p-2 rounded text-sm ${entity.sector === s ? 'bg-yellow-50 border border-yellow-200 font-medium' : 'hover:bg-gray-50'}`}>
-                {entity.sector === s && <ChevronRight className="w-4 h-4 text-yellow-600" />}
+              <div key={s} className={`flex items-center gap-2 p-2 rounded text-sm ${entity.sector === s ? 'bg-yellow-50 border border-yellow-200 dark:bg-signal-warn/[0.08] dark:border-signal-warn/20 font-medium' : 'hover:bg-gray-50 dark:hover:bg-white/[0.04]'}`}>
+                {entity.sector === s && <ChevronRight className="w-4 h-4 text-yellow-600 dark:text-signal-warn" />}
                 <span>{SECTOR_LABELS[s]}</span>
               </div>
             ))}
@@ -545,21 +545,21 @@ export const NIS2Dashboard: React.FC = () => {
       </div>
 
       {/* Size Thresholds */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Size Classification Thresholds</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-4">Size Classification Thresholds</h3>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="border-b border-gray-200 bg-gray-50">
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Criterion</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Medium (min)</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Large (min)</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Your Entity</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Status</th>
+            <thead><tr className="border-b border-gray-200 dark:border-white/[0.06] bg-gray-50 dark:bg-white/[0.04]">
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Criterion</th>
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Medium (min)</th>
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Large (min)</th>
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Your Entity</th>
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Status</th>
             </tr></thead>
-            <tbody className="divide-y divide-gray-100">
-              <tr><td className="px-4 py-3 text-sm">Employees</td><td className="px-4 py-3 text-sm">50+</td><td className="px-4 py-3 text-sm">250+</td><td className="px-4 py-3 text-sm font-medium">{formatNumber(entity.employeeCount)}</td><td className="px-4 py-3"><span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">In Scope</span></td></tr>
-              <tr><td className="px-4 py-3 text-sm">Annual Turnover</td><td className="px-4 py-3 text-sm">10M+</td><td className="px-4 py-3 text-sm">50M+</td><td className="px-4 py-3 text-sm font-medium">{formatCurrency(entity.annualTurnover)}</td><td className="px-4 py-3"><span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">In Scope</span></td></tr>
-              <tr><td className="px-4 py-3 text-sm">Balance Sheet</td><td className="px-4 py-3 text-sm">10M+</td><td className="px-4 py-3 text-sm">43M+</td><td className="px-4 py-3 text-sm font-medium">{formatCurrency(entity.balanceSheet)}</td><td className="px-4 py-3"><span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">In Scope</span></td></tr>
+            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
+              <tr><td className="px-4 py-3 text-sm">Employees</td><td className="px-4 py-3 text-sm">50+</td><td className="px-4 py-3 text-sm">250+</td><td className="px-4 py-3 text-sm font-medium">{formatNumber(entity.employeeCount)}</td><td className="px-4 py-3"><span className="px-2 py-0.5 bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good rounded text-xs">In Scope</span></td></tr>
+              <tr><td className="px-4 py-3 text-sm">Annual Turnover</td><td className="px-4 py-3 text-sm">10M+</td><td className="px-4 py-3 text-sm">50M+</td><td className="px-4 py-3 text-sm font-medium">{formatCurrency(entity.annualTurnover)}</td><td className="px-4 py-3"><span className="px-2 py-0.5 bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good rounded text-xs">In Scope</span></td></tr>
+              <tr><td className="px-4 py-3 text-sm">Balance Sheet</td><td className="px-4 py-3 text-sm">10M+</td><td className="px-4 py-3 text-sm">43M+</td><td className="px-4 py-3 text-sm font-medium">{formatCurrency(entity.balanceSheet)}</td><td className="px-4 py-3"><span className="px-2 py-0.5 bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good rounded text-xs">In Scope</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -573,33 +573,33 @@ export const NIS2Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {(['implemented', 'in_progress', 'planned', 'not_started'] as MeasureStatus[]).map(status => (
-          <div key={status} className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">{measures.filter(m => m.status === status).length}</p>
-            <p className="text-sm text-gray-500 capitalize">{status.replace('_', ' ')}</p>
+          <div key={status} className="bg-white rounded-lg border border-gray-200 p-4 text-center dark:bg-white/[0.03] dark:border-white/[0.06]">
+            <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{measures.filter(m => m.status === status).length}</p>
+            <p className="text-sm text-gray-500 dark:text-signal-muted capitalize">{status.replace('_', ' ')}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-200"><h4 className="font-semibold text-gray-900">Article 21 - Cybersecurity Risk-Management Measures</h4></div>
-        <div className="divide-y divide-gray-100">
+      <div className="bg-white rounded-lg border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <div className="p-4 border-b border-gray-200 dark:border-white/[0.06]"><h4 className="font-semibold text-gray-900 dark:text-signal-ink">Article 21 - Cybersecurity Risk-Management Measures</h4></div>
+        <div className="divide-y divide-gray-100 dark:divide-white/[0.06]">
           {measures.map(m => (
-            <div key={m.id} className="p-4 hover:bg-gray-50">
+            <div key={m.id} className="p-4 hover:bg-gray-50 dark:hover:bg-white/[0.04]">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{m.article21Ref}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${m.priority === 'critical' ? 'bg-red-100 text-red-800' : m.priority === 'high' ? 'bg-orange-100 text-orange-800' : m.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>{m.priority.toUpperCase()}</span>
+                  <span className="text-xs font-mono text-gray-500 dark:text-signal-muted bg-gray-100 dark:bg-white/[0.06] px-2 py-0.5 rounded">{m.article21Ref}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${m.priority === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' : m.priority === 'high' ? 'bg-orange-100 dark:bg-signal-amber/10 text-orange-800 dark:text-signal-amber' : m.priority === 'medium' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' : 'bg-gray-100 dark:bg-white/[0.06] text-gray-600 dark:text-signal-muted'}`}>{m.priority.toUpperCase()}</span>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${measureStatusColor(m.status)}`}>{m.status.replace('_', ' ').toUpperCase()}</span>
                 </div>
-                <span className="text-xs text-gray-500">Responsible: {m.responsiblePerson}</span>
+                <span className="text-xs text-gray-500 dark:text-signal-muted">Responsible: {m.responsiblePerson}</span>
               </div>
-              <h5 className="font-medium text-gray-900 mb-1">{m.measure}</h5>
-              <p className="text-sm text-gray-600 mb-2">{m.description}</p>
-              <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+              <h5 className="font-medium text-gray-900 dark:text-signal-ink mb-1">{m.measure}</h5>
+              <p className="text-sm text-gray-600 dark:text-signal-body mb-2">{m.description}</p>
+              <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-signal-muted">
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {m.implementationDate ? `Implemented: ${formatDate(m.implementationDate)}` : `Next Review: ${formatDate(m.nextReviewDate)}`}</span>
                 {m.evidence.length > 0 && <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {m.evidence.length} evidence doc{m.evidence.length > 1 ? 's' : ''}</span>}
               </div>
-              {m.evidence.length > 0 && <div className="flex flex-wrap gap-1 mt-2">{m.evidence.map((e, i) => <span key={i} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">{e}</span>)}</div>}
+              {m.evidence.length > 0 && <div className="flex flex-wrap gap-1 mt-2">{m.evidence.map((e, i) => <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-white/[0.06] rounded text-xs text-gray-600 dark:text-signal-muted">{e}</span>)}</div>}
             </div>
           ))}
         </div>
@@ -613,77 +613,77 @@ export const NIS2Dashboard: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-signal-muted" />
           <input type="text" placeholder="Search incidents..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink rounded-lg dark:rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green" />
         </div>
-        <button onClick={() => setShowIncidentModal(true)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 text-sm"><Plus className="w-4 h-4" /> Report Incident</button>
+        <button onClick={() => setShowIncidentModal(true)} className="px-4 py-2 bg-red-600 dark:bg-signal-bad text-white dark:text-signal-canvas rounded-lg hover:bg-red-700 dark:hover:bg-signal-bad/90 flex items-center gap-2 text-sm"><Plus className="w-4 h-4" /> Report Incident</button>
       </div>
 
       {/* Reporting Timeline Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-semibold text-blue-800 mb-2">NIS2 Incident Reporting Timeline (Article 23)</h4>
+      <div className="bg-blue-50 border border-blue-200 dark:bg-signal-blue/[0.08] dark:border-signal-blue/20 rounded-lg p-4">
+        <h4 className="font-semibold text-blue-800 dark:text-signal-blue mb-2">NIS2 Incident Reporting Timeline (Article 23)</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center"><Clock className="w-5 h-5 text-red-600" /></div>
-            <div><p className="font-medium text-gray-900 text-sm">24 Hours</p><p className="text-xs text-gray-600">Early warning to CSIRT/competent authority</p></div>
+            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-signal-bad/10 flex items-center justify-center"><Clock className="w-5 h-5 text-red-600 dark:text-signal-bad" /></div>
+            <div><p className="font-medium text-gray-900 dark:text-signal-ink text-sm">24 Hours</p><p className="text-xs text-gray-600 dark:text-signal-muted">Early warning to CSIRT/competent authority</p></div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center"><Clock className="w-5 h-5 text-orange-600" /></div>
-            <div><p className="font-medium text-gray-900 text-sm">72 Hours</p><p className="text-xs text-gray-600">Incident notification with assessment and IoCs</p></div>
+            <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-signal-amber/10 flex items-center justify-center"><Clock className="w-5 h-5 text-orange-600 dark:text-signal-amber" /></div>
+            <div><p className="font-medium text-gray-900 dark:text-signal-ink text-sm">72 Hours</p><p className="text-xs text-gray-600 dark:text-signal-muted">Incident notification with assessment and IoCs</p></div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center"><Clock className="w-5 h-5 text-blue-600" /></div>
-            <div><p className="font-medium text-gray-900 text-sm">1 Month</p><p className="text-xs text-gray-600">Final report with root cause and remediation</p></div>
+            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-signal-blue/10 flex items-center justify-center"><Clock className="w-5 h-5 text-blue-600 dark:text-signal-blue" /></div>
+            <div><p className="font-medium text-gray-900 dark:text-signal-ink text-sm">1 Month</p><p className="text-xs text-gray-600 dark:text-signal-muted">Final report with root cause and remediation</p></div>
           </div>
         </div>
       </div>
 
       {/* Incident List */}
       {filteredIncidents.map(inc => (
-        <div key={inc.id} className="bg-white rounded-lg border border-gray-200 p-6">
+        <div key={inc.id} className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
           <div className="flex items-start justify-between mb-3">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <h4 className="font-semibold text-gray-900">{inc.title}</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-signal-ink">{inc.title}</h4>
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${incidentSeverityColor(inc.severity)}`}>{inc.severity.toUpperCase()}</span>
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${incidentStatusColor(inc.status)}`}>{inc.status.replace('_', ' ').toUpperCase()}</span>
-                {inc.crossBorderImpact && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">CROSS-BORDER</span>}
+                {inc.crossBorderImpact && <span className="px-2 py-0.5 bg-purple-100 dark:bg-signal-violet/10 text-purple-800 dark:text-signal-violet rounded text-xs font-medium">CROSS-BORDER</span>}
               </div>
-              <p className="text-sm text-gray-600">{inc.description}</p>
+              <p className="text-sm text-gray-600 dark:text-signal-body">{inc.description}</p>
             </div>
-            <button onClick={() => { setSelectedIncident(inc); setShowDetailModal(true); }} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"><Eye className="w-4 h-4" /></button>
+            <button onClick={() => { setSelectedIncident(inc); setShowDetailModal(true); }} className="px-3 py-1.5 bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-200 dark:hover:bg-white/[0.10] text-sm"><Eye className="w-4 h-4" /></button>
           </div>
 
           {/* Reporting Milestones */}
           <div className="grid grid-cols-3 gap-3 mt-4">
-            <div className={`p-3 rounded-lg border ${inc.earlyWarningSentDate ? 'bg-green-50 border-green-200' : hoursRemaining(inc.earlyWarningDeadline) <= 0 ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}`}>
-              <p className="text-xs font-medium text-gray-700">24h Early Warning</p>
+            <div className={`p-3 rounded-lg border ${inc.earlyWarningSentDate ? 'bg-green-50 border-green-200 dark:bg-signal-good/[0.08] dark:border-signal-good/20' : hoursRemaining(inc.earlyWarningDeadline) <= 0 ? 'bg-red-50 border-red-200 dark:bg-signal-bad/[0.08] dark:border-signal-bad/20' : 'bg-yellow-50 border-yellow-200 dark:bg-signal-warn/[0.08] dark:border-signal-warn/20'}`}>
+              <p className="text-xs font-medium text-gray-700 dark:text-signal-body">24h Early Warning</p>
               {inc.earlyWarningSentDate ? (
-                <p className="text-xs text-green-700 flex items-center gap-1 mt-1"><CheckCircle className="w-3 h-3" /> Sent {formatDate(inc.earlyWarningSentDate)}</p>
+                <p className="text-xs text-green-700 dark:text-signal-good flex items-center gap-1 mt-1"><CheckCircle className="w-3 h-3" /> Sent {formatDate(inc.earlyWarningSentDate)}</p>
               ) : (
                 <div>
-                  <p className="text-xs text-orange-700 mt-1">{hoursRemaining(inc.earlyWarningDeadline).toFixed(1)}h remaining</p>
-                  <button onClick={() => handleSendEarlyWarning(inc.id)} className="mt-1 px-2 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700">Send</button>
+                  <p className="text-xs text-orange-700 dark:text-signal-amber mt-1">{hoursRemaining(inc.earlyWarningDeadline).toFixed(1)}h remaining</p>
+                  <button onClick={() => handleSendEarlyWarning(inc.id)} className="mt-1 px-2 py-1 bg-orange-600 dark:bg-signal-amber text-white dark:text-signal-canvas rounded text-xs hover:bg-orange-700 dark:hover:bg-signal-amber/90">Send</button>
                 </div>
               )}
             </div>
-            <div className={`p-3 rounded-lg border ${inc.notificationSentDate ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-              <p className="text-xs font-medium text-gray-700">72h Notification</p>
+            <div className={`p-3 rounded-lg border ${inc.notificationSentDate ? 'bg-green-50 border-green-200 dark:bg-signal-good/[0.08] dark:border-signal-good/20' : 'bg-gray-50 border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06]'}`}>
+              <p className="text-xs font-medium text-gray-700 dark:text-signal-body">72h Notification</p>
               {inc.notificationSentDate ? (
-                <p className="text-xs text-green-700 flex items-center gap-1 mt-1"><CheckCircle className="w-3 h-3" /> Sent {formatDate(inc.notificationSentDate)}</p>
+                <p className="text-xs text-green-700 dark:text-signal-good flex items-center gap-1 mt-1"><CheckCircle className="w-3 h-3" /> Sent {formatDate(inc.notificationSentDate)}</p>
               ) : inc.earlyWarningSentDate ? (
                 <div>
-                  <p className="text-xs text-gray-600 mt-1">{hoursRemaining(inc.notificationDeadline).toFixed(1)}h remaining</p>
-                  <button onClick={() => handleSendNotification(inc.id)} className="mt-1 px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Send</button>
+                  <p className="text-xs text-gray-600 dark:text-signal-muted mt-1">{hoursRemaining(inc.notificationDeadline).toFixed(1)}h remaining</p>
+                  <button onClick={() => handleSendNotification(inc.id)} className="mt-1 px-2 py-1 bg-blue-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded text-xs hover:bg-blue-700 dark:hover:bg-signal-green/90">Send</button>
                 </div>
-              ) : <p className="text-xs text-gray-400 mt-1">Awaiting early warning</p>}
+              ) : <p className="text-xs text-gray-400 dark:text-signal-muted mt-1">Awaiting early warning</p>}
             </div>
-            <div className={`p-3 rounded-lg border ${inc.finalReportSentDate ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-              <p className="text-xs font-medium text-gray-700">1 Month Final Report</p>
+            <div className={`p-3 rounded-lg border ${inc.finalReportSentDate ? 'bg-green-50 border-green-200 dark:bg-signal-good/[0.08] dark:border-signal-good/20' : 'bg-gray-50 border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06]'}`}>
+              <p className="text-xs font-medium text-gray-700 dark:text-signal-body">1 Month Final Report</p>
               {inc.finalReportSentDate ? (
-                <p className="text-xs text-green-700 flex items-center gap-1 mt-1"><CheckCircle className="w-3 h-3" /> Sent {formatDate(inc.finalReportSentDate)}</p>
-              ) : <p className="text-xs text-gray-600 mt-1">Due: {formatDate(inc.finalReportDeadline)}</p>}
+                <p className="text-xs text-green-700 dark:text-signal-good flex items-center gap-1 mt-1"><CheckCircle className="w-3 h-3" /> Sent {formatDate(inc.finalReportSentDate)}</p>
+              ) : <p className="text-xs text-gray-600 dark:text-signal-muted mt-1">Due: {formatDate(inc.finalReportDeadline)}</p>}
             </div>
           </div>
         </div>
@@ -696,49 +696,49 @@ export const NIS2Dashboard: React.FC = () => {
   const renderSupplyChain = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900">{suppliers.length}</p><p className="text-sm text-gray-500">Total Suppliers</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{suppliers.length}</p><p className="text-sm text-gray-500 dark:text-signal-muted">Total Suppliers</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-red-700">{suppliers.filter(s => s.riskLevel === 'critical').length}</p><p className="text-sm text-gray-500">Critical Risk</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <p className="text-2xl font-bold text-red-700 dark:text-signal-bad">{suppliers.filter(s => s.riskLevel === 'critical').length}</p><p className="text-sm text-gray-500 dark:text-signal-muted">Critical Risk</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-green-700">{suppliers.filter(s => s.contractualSecurityClauses).length}</p><p className="text-sm text-gray-500">With Security Clauses</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <p className="text-2xl font-bold text-green-700 dark:text-signal-good">{suppliers.filter(s => s.contractualSecurityClauses).length}</p><p className="text-sm text-gray-500 dark:text-signal-muted">With Security Clauses</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-orange-700">{suppliers.filter(s => s.criticalDependency && s.alternativeSuppliers === 0).length}</p><p className="text-sm text-gray-500">Single Point of Failure</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <p className="text-2xl font-bold text-orange-700 dark:text-signal-amber">{suppliers.filter(s => s.criticalDependency && s.alternativeSuppliers === 0).length}</p><p className="text-sm text-gray-500 dark:text-signal-muted">Single Point of Failure</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-200"><h4 className="font-semibold text-gray-900">Supply Chain Security Assessment (Art. 21(2)(d))</h4></div>
+      <div className="bg-white rounded-lg border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <div className="p-4 border-b border-gray-200 dark:border-white/[0.06]"><h4 className="font-semibold text-gray-900 dark:text-signal-ink">Supply Chain Security Assessment (Art. 21(2)(d))</h4></div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="border-b border-gray-200 bg-gray-50">
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Supplier</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Service</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Risk</th>
-              <th className="text-center text-xs font-medium text-gray-500 px-4 py-2">Security Clauses</th>
-              <th className="text-center text-xs font-medium text-gray-500 px-4 py-2">Incident Clause</th>
-              <th className="text-center text-xs font-medium text-gray-500 px-4 py-2">Audit Rights</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Certifications</th>
-              <th className="text-center text-xs font-medium text-gray-500 px-4 py-2">Critical</th>
-              <th className="text-center text-xs font-medium text-gray-500 px-4 py-2">Alt. Suppliers</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-2">Country</th>
+            <thead><tr className="border-b border-gray-200 dark:border-white/[0.06] bg-gray-50 dark:bg-white/[0.04]">
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Supplier</th>
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Service</th>
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Risk</th>
+              <th className="text-center text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Security Clauses</th>
+              <th className="text-center text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Incident Clause</th>
+              <th className="text-center text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Audit Rights</th>
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Certifications</th>
+              <th className="text-center text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Critical</th>
+              <th className="text-center text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Alt. Suppliers</th>
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-wider px-4 py-2">Country</th>
             </tr></thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
               {suppliers.map(s => (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{s.supplierName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{s.service}</td>
+                <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.04]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-signal-ink">{s.supplierName}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-signal-body max-w-xs truncate">{s.service}</td>
                   <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${riskColor(s.riskLevel)}`}>{s.riskLevel.toUpperCase()}</span></td>
-                  <td className="px-4 py-3 text-center">{s.contractualSecurityClauses ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-red-600 mx-auto" />}</td>
-                  <td className="px-4 py-3 text-center">{s.incidentNotificationClause ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-red-600 mx-auto" />}</td>
-                  <td className="px-4 py-3 text-center">{s.accessToAuditRights ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-red-600 mx-auto" />}</td>
-                  <td className="px-4 py-3 text-sm"><div className="flex flex-wrap gap-1">{s.securityCertifications.length > 0 ? s.securityCertifications.map(c => <span key={c} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{c}</span>) : <span className="text-gray-400 text-xs">None</span>}</div></td>
-                  <td className="px-4 py-3 text-center">{s.criticalDependency ? <AlertTriangle className="w-4 h-4 text-red-600 mx-auto" /> : <span className="text-gray-400 text-xs">No</span>}</td>
+                  <td className="px-4 py-3 text-center">{s.contractualSecurityClauses ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-red-600 dark:text-signal-bad mx-auto" />}</td>
+                  <td className="px-4 py-3 text-center">{s.incidentNotificationClause ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-red-600 dark:text-signal-bad mx-auto" />}</td>
+                  <td className="px-4 py-3 text-center">{s.accessToAuditRights ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-red-600 dark:text-signal-bad mx-auto" />}</td>
+                  <td className="px-4 py-3 text-sm"><div className="flex flex-wrap gap-1">{s.securityCertifications.length > 0 ? s.securityCertifications.map(c => <span key={c} className="px-1.5 py-0.5 bg-blue-50 dark:bg-signal-blue/10 text-blue-700 dark:text-signal-blue rounded text-xs">{c}</span>) : <span className="text-gray-400 dark:text-signal-muted text-xs">None</span>}</div></td>
+                  <td className="px-4 py-3 text-center">{s.criticalDependency ? <AlertTriangle className="w-4 h-4 text-red-600 dark:text-signal-bad mx-auto" /> : <span className="text-gray-400 dark:text-signal-muted text-xs">No</span>}</td>
                   <td className="px-4 py-3 text-center text-sm">{s.alternativeSuppliers}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{s.countryOfOrigin}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-signal-body">{s.countryOfOrigin}</td>
                 </tr>
               ))}
             </tbody>
@@ -747,24 +747,24 @@ export const NIS2Dashboard: React.FC = () => {
       </div>
 
       {/* Business Continuity */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Business Continuity Plans (Art. 21(2)(c))</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-4">Business Continuity Plans (Art. 21(2)(c))</h3>
         <div className="space-y-4">
           {bcps.map(bcp => (
-            <div key={bcp.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div key={bcp.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06]">
               <div className="flex items-start justify-between mb-2">
-                <div><h4 className="font-medium text-gray-900">{bcp.name}</h4><p className="text-sm text-gray-600">{bcp.scope}</p></div>
+                <div><h4 className="font-medium text-gray-900 dark:text-signal-ink">{bcp.name}</h4><p className="text-sm text-gray-600 dark:text-signal-body">{bcp.scope}</p></div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mt-3">
-                <div><span className="text-gray-500 text-xs">RTO</span><p className="font-medium">{bcp.rto}h</p></div>
-                <div><span className="text-gray-500 text-xs">RPO</span><p className="font-medium">{bcp.rpo}h</p></div>
-                <div><span className="text-gray-500 text-xs">Backup</span><p className="font-medium">{bcp.backupFrequency}</p></div>
-                <div><span className="text-gray-500 text-xs">Last Tested</span><p className="font-medium">{formatDate(bcp.lastTested)}</p></div>
+                <div><span className="text-gray-500 dark:text-signal-muted text-xs">RTO</span><p className="font-medium">{bcp.rto}h</p></div>
+                <div><span className="text-gray-500 dark:text-signal-muted text-xs">RPO</span><p className="font-medium">{bcp.rpo}h</p></div>
+                <div><span className="text-gray-500 dark:text-signal-muted text-xs">Backup</span><p className="font-medium">{bcp.backupFrequency}</p></div>
+                <div><span className="text-gray-500 dark:text-signal-muted text-xs">Last Tested</span><p className="font-medium">{formatDate(bcp.lastTested)}</p></div>
               </div>
               <div className="flex flex-wrap gap-3 mt-3">
-                <span className="flex items-center gap-1 text-xs">{bcp.disasterRecoveryReady ? <CheckCircle className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />} DR Ready</span>
-                <span className="flex items-center gap-1 text-xs">{bcp.crisisTeamDefined ? <CheckCircle className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />} Crisis Team</span>
-                <span className="flex items-center gap-1 text-xs">{bcp.communicationPlan ? <CheckCircle className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />} Comms Plan</span>
+                <span className="flex items-center gap-1 text-xs">{bcp.disasterRecoveryReady ? <CheckCircle className="w-3 h-3 text-green-600 dark:text-signal-good" /> : <X className="w-3 h-3 text-red-600 dark:text-signal-bad" />} DR Ready</span>
+                <span className="flex items-center gap-1 text-xs">{bcp.crisisTeamDefined ? <CheckCircle className="w-3 h-3 text-green-600 dark:text-signal-good" /> : <X className="w-3 h-3 text-red-600 dark:text-signal-bad" />} Crisis Team</span>
+                <span className="flex items-center gap-1 text-xs">{bcp.communicationPlan ? <CheckCircle className="w-3 h-3 text-green-600 dark:text-signal-good" /> : <X className="w-3 h-3 text-red-600 dark:text-signal-bad" />} Comms Plan</span>
               </div>
             </div>
           ))}
@@ -790,39 +790,39 @@ export const NIS2Dashboard: React.FC = () => {
   const renderCompliance = () => (
     <div className="space-y-6">
       {/* Compliance Score Card */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg p-6 text-white dark:from-transparent dark:to-transparent dark:bg-white/[0.03] dark:border dark:border-white/[0.06] dark:rounded-2xl">
         <div className="flex items-center justify-between">
-          <div><h3 className="text-xl font-semibold">NIS2 Compliance Score</h3><p className="text-indigo-200">Based on Article 21 measures implementation, incident handling, and supply chain readiness</p></div>
-          <div className="text-right"><p className="text-5xl font-bold">{measureComplianceRate}%</p><p className="text-indigo-200">measures implemented</p></div>
+          <div><h3 className="text-xl font-semibold dark:text-signal-ink">NIS2 Compliance Score</h3><p className="text-indigo-200 dark:text-signal-muted">Based on Article 21 measures implementation, incident handling, and supply chain readiness</p></div>
+          <div className="text-right"><p className="text-5xl font-bold dark:text-signal-green dark:font-display">{measureComplianceRate}%</p><p className="text-indigo-200 dark:text-signal-muted">measures implemented</p></div>
         </div>
-        <div className="mt-4"><div className="w-full bg-indigo-800 rounded-full h-3"><div className="bg-white rounded-full h-3" style={{ width: `${measureComplianceRate}%` }} /></div></div>
+        <div className="mt-4"><div className="w-full bg-indigo-800 dark:bg-white/[0.06] rounded-full h-3"><div className="bg-white dark:bg-signal-green rounded-full h-3" style={{ width: `${measureComplianceRate}%` }} /></div></div>
       </div>
 
       {/* Penalty Calculator */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Penalty Risk Calculator</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-4">Penalty Risk Calculator</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-            <h4 className="font-medium text-red-800 mb-2">Essential Entities</h4>
-            <p className="text-3xl font-bold text-red-900">{formatCurrency(10000000)}</p>
-            <p className="text-sm text-red-700">or 2% of total worldwide annual turnover</p>
-            <p className="text-xs text-red-600 mt-2">Whichever is higher. Your exposure: {formatCurrency(penaltyRisk.maxFine)}</p>
+          <div className="p-4 bg-red-50 rounded-lg border border-red-200 dark:bg-signal-bad/[0.08] dark:border-signal-bad/20">
+            <h4 className="font-medium text-red-800 dark:text-signal-bad mb-2">Essential Entities</h4>
+            <p className="text-3xl font-bold text-red-900 dark:text-signal-bad">{formatCurrency(10000000)}</p>
+            <p className="text-sm text-red-700 dark:text-signal-bad">or 2% of total worldwide annual turnover</p>
+            <p className="text-xs text-red-600 dark:text-signal-bad mt-2">Whichever is higher. Your exposure: {formatCurrency(penaltyRisk.maxFine)}</p>
           </div>
-          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-            <h4 className="font-medium text-orange-800 mb-2">Important Entities</h4>
-            <p className="text-3xl font-bold text-orange-900">{formatCurrency(7000000)}</p>
-            <p className="text-sm text-orange-700">or 1.4% of total worldwide annual turnover</p>
-            <p className="text-xs text-orange-600 mt-2">Whichever is higher. Additional: management body personal accountability.</p>
+          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200 dark:bg-signal-amber/[0.08] dark:border-signal-amber/20">
+            <h4 className="font-medium text-orange-800 dark:text-signal-amber mb-2">Important Entities</h4>
+            <p className="text-3xl font-bold text-orange-900 dark:text-signal-amber">{formatCurrency(7000000)}</p>
+            <p className="text-sm text-orange-700 dark:text-signal-amber">or 1.4% of total worldwide annual turnover</p>
+            <p className="text-xs text-orange-600 dark:text-signal-amber mt-2">Whichever is higher. Additional: management body personal accountability.</p>
           </div>
         </div>
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 dark:bg-signal-warn/[0.08] dark:border-signal-warn/20 rounded-lg text-sm text-yellow-800 dark:text-signal-warn">
           <strong>Management Accountability (Art. 20):</strong> Members of management bodies can be held personally liable for NIS2 non-compliance. They must approve cybersecurity measures, oversee implementation, and undergo regular cybersecurity training.
         </div>
       </div>
 
       {/* Compliance Checklist */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">NIS2 Compliance Checklist</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-4">NIS2 Compliance Checklist</h3>
         <div className="space-y-3">
           {[
             { label: 'Entity registered with competent authority', done: entity.registeredWithAuthority },
@@ -844,9 +844,9 @@ export const NIS2Dashboard: React.FC = () => {
             { label: 'CSIRT integration verified', done: isMeasureImplemented('sm-002') },
             { label: 'Cross-border incident notification process tested', done: crossBorderProcessTested },
           ].map((item, idx) => (
-            <label key={idx} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
-              <input type="checkbox" checked={item.done} readOnly className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-              <span className={`text-sm ${item.done ? 'text-gray-900 line-through' : 'text-gray-700'}`}>{item.label}</span>
+            <label key={idx} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-white/[0.04]">
+              <input type="checkbox" checked={item.done} readOnly className="rounded border-gray-300 dark:border-white/[0.20] dark:bg-white/[0.04] text-indigo-600 dark:text-signal-violet focus:ring-indigo-500 dark:focus:ring-signal-green" />
+              <span className={`text-sm ${item.done ? 'text-gray-900 dark:text-signal-ink line-through' : 'text-gray-700 dark:text-signal-body'}`}>{item.label}</span>
             </label>
           ))}
         </div>
@@ -860,20 +860,20 @@ export const NIS2Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.nis2')}</h2>
-          <p className="text-gray-600 mt-1">Network and Information Security Directive (EU) 2022/2555</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('euRegulations.nis2')}</h2>
+          <p className="text-gray-600 dark:text-signal-body mt-1">Network and Information Security Directive (EU) 2022/2555</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => setShowPenaltyModal(true)} className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Penalty Risk</button>
-          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"><Download className="w-4 h-4" /> Export Report</button>
+          <button onClick={() => setShowPenaltyModal(true)} className="px-4 py-2 bg-orange-600 dark:bg-signal-amber text-white dark:text-signal-canvas rounded-lg hover:bg-orange-700 dark:hover:bg-signal-amber/90 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Penalty Risk</button>
+          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 flex items-center gap-2"><Download className="w-4 h-4" /> Export Report</button>
         </div>
       </div>
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-white/[0.06]">
         <nav className="flex gap-4 -mb-px overflow-x-auto">
           {tabs.map(tab => (
             <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchTerm(''); }}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-indigo-600 text-indigo-600 dark:border-signal-green dark:text-signal-green' : 'border-transparent text-gray-500 dark:text-signal-muted hover:text-gray-700 dark:hover:text-signal-body hover:border-gray-300 dark:hover:border-white/[0.20]'}`}>
               {tab.icon} {tab.label}
             </button>
           ))}
@@ -881,10 +881,10 @@ export const NIS2Dashboard: React.FC = () => {
       </div>
 
       {loadError && (
-        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-          <span className="text-sm text-amber-700 flex-1">{loadError}</span>
-          <button onClick={() => setLoadError(null)} className="text-amber-500 hover:text-amber-700"><X className="w-3 h-3" /></button>
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 dark:bg-signal-warn/[0.08] dark:border-signal-warn/20">
+          <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-signal-warn flex-shrink-0" />
+          <span className="text-sm text-amber-700 dark:text-signal-warn flex-1">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="text-amber-500 dark:text-signal-warn hover:text-amber-700"><X className="w-3 h-3" /></button>
         </div>
       )}
 
@@ -897,27 +897,27 @@ export const NIS2Dashboard: React.FC = () => {
 
       {/* ── Report Incident Modal ── */}
       {showIncidentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Report Security Incident</h3>
-              <button onClick={() => setShowIncidentModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto dark:bg-signal-panel2 dark:border dark:border-white/[0.08]">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Report Security Incident</h3>
+              <button onClick={() => setShowIncidentModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleReportIncident} className="p-6 space-y-4">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+              <div className="bg-red-50 border border-red-200 dark:bg-signal-bad/[0.08] dark:border-signal-bad/20 rounded-lg p-3 text-sm text-red-800 dark:text-signal-bad">
                 <strong>NIS2 Article 23:</strong> Significant incidents must be reported within 24 hours (early warning), 72 hours (notification), and 1 month (final report).
               </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Incident Title *</label><input type="text" required value={incidentForm.title} onChange={(e) => setIncidentForm({ ...incidentForm, title: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Description *</label><textarea required value={incidentForm.description} onChange={(e) => setIncidentForm({ ...incidentForm, description: e.target.value })} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Incident Title *</label><input type="text" required value={incidentForm.title} onChange={(e) => setIncidentForm({ ...incidentForm, title: e.target.value })} className="w-full px-3 py-2 border border-gray-300 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink rounded-lg dark:rounded-xl focus:ring-2 focus:ring-indigo-500 dark:focus:ring-signal-green" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Description *</label><textarea required value={incidentForm.description} onChange={(e) => setIncidentForm({ ...incidentForm, description: e.target.value })} rows={3} className="w-full px-3 py-2 border border-gray-300 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink rounded-lg dark:rounded-xl focus:ring-2 focus:ring-indigo-500 dark:focus:ring-signal-green" /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Severity *</label><select value={incidentForm.severity} onChange={(e) => setIncidentForm({ ...incidentForm, severity: e.target.value as IncidentSeverity })} className="w-full px-3 py-2 border border-gray-300 rounded-lg"><option value="critical">Critical</option><option value="significant">Significant</option><option value="minor">Minor</option></select></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Affected Users</label><input type="number" min={0} value={incidentForm.affectedUsers} onChange={(e) => setIncidentForm({ ...incidentForm, affectedUsers: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
+                <div><label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Severity *</label><select value={incidentForm.severity} onChange={(e) => setIncidentForm({ ...incidentForm, severity: e.target.value as IncidentSeverity })} className="w-full px-3 py-2 border border-gray-300 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink rounded-lg dark:rounded-xl"><option value="critical">Critical</option><option value="significant">Significant</option><option value="minor">Minor</option></select></div>
+                <div><label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Affected Users</label><input type="number" min={0} value={incidentForm.affectedUsers} onChange={(e) => setIncidentForm({ ...incidentForm, affectedUsers: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink rounded-lg dark:rounded-xl" /></div>
               </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Affected Services (comma-separated)</label><input type="text" value={incidentForm.affectedServices} onChange={(e) => setIncidentForm({ ...incidentForm, affectedServices: e.target.value })} placeholder="e.g., Customer Portal, API Gateway" className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={incidentForm.crossBorderImpact} onChange={(e) => setIncidentForm({ ...incidentForm, crossBorderImpact: e.target.checked })} className="rounded border-gray-300 text-red-600" /><span className="text-sm text-gray-700">Cross-border impact (affects other EU member states)</span></label>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Affected Services (comma-separated)</label><input type="text" value={incidentForm.affectedServices} onChange={(e) => setIncidentForm({ ...incidentForm, affectedServices: e.target.value })} placeholder="e.g., Customer Portal, API Gateway" className="w-full px-3 py-2 border border-gray-300 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink rounded-lg dark:rounded-xl" /></div>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={incidentForm.crossBorderImpact} onChange={(e) => setIncidentForm({ ...incidentForm, crossBorderImpact: e.target.checked })} className="rounded border-gray-300 dark:border-white/[0.20] dark:bg-white/[0.04] text-red-600 dark:text-signal-bad" /><span className="text-sm text-gray-700 dark:text-signal-body">Cross-border impact (affects other EU member states)</span></label>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Report Incident</button>
-                <button type="button" onClick={() => setShowIncidentModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-red-600 dark:bg-signal-bad text-white dark:text-signal-canvas rounded-lg hover:bg-red-700 dark:hover:bg-signal-bad/90">Report Incident</button>
+                <button type="button" onClick={() => setShowIncidentModal(false)} className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]">{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -926,24 +926,24 @@ export const NIS2Dashboard: React.FC = () => {
 
       {/* ── Incident Detail Modal ── */}
       {showDetailModal && selectedIncident && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">{selectedIncident.title}</h3>
-              <button onClick={() => { setShowDetailModal(false); setSelectedIncident(null); }} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto dark:bg-signal-panel2 dark:border dark:border-white/[0.08]">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">{selectedIncident.title}</h3>
+              <button onClick={() => { setShowDetailModal(false); setSelectedIncident(null); }} className="text-gray-400 dark:text-signal-muted hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-gray-600">{selectedIncident.description}</p>
+              <p className="text-gray-600 dark:text-signal-body">{selectedIncident.description}</p>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-sm font-medium text-gray-500">Severity</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${incidentSeverityColor(selectedIncident.severity)}`}>{selectedIncident.severity.toUpperCase()}</span></p></div>
-                <div><label className="text-sm font-medium text-gray-500">Status</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${incidentStatusColor(selectedIncident.status)}`}>{selectedIncident.status.replace('_', ' ').toUpperCase()}</span></p></div>
-                <div><label className="text-sm font-medium text-gray-500">Detected</label><p className="text-sm mt-1">{formatDate(selectedIncident.detectedDate)}</p></div>
-                <div><label className="text-sm font-medium text-gray-500">Affected Users</label><p className="text-sm mt-1">{formatNumber(selectedIncident.affectedUsers)}</p></div>
+                <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Severity</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${incidentSeverityColor(selectedIncident.severity)}`}>{selectedIncident.severity.toUpperCase()}</span></p></div>
+                <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Status</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${incidentStatusColor(selectedIncident.status)}`}>{selectedIncident.status.replace('_', ' ').toUpperCase()}</span></p></div>
+                <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Detected</label><p className="text-sm mt-1">{formatDate(selectedIncident.detectedDate)}</p></div>
+                <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Affected Users</label><p className="text-sm mt-1">{formatNumber(selectedIncident.affectedUsers)}</p></div>
               </div>
-              {selectedIncident.rootCause && <div><label className="text-sm font-medium text-gray-500">Root Cause</label><p className="text-sm mt-1">{selectedIncident.rootCause}</p></div>}
-              {selectedIncident.containmentActions.length > 0 && <div><label className="text-sm font-medium text-gray-500">Containment Actions</label><ul className="list-disc list-inside text-sm mt-1">{selectedIncident.containmentActions.map((a, i) => <li key={i}>{a}</li>)}</ul></div>}
-              {selectedIncident.remediationActions.length > 0 && <div><label className="text-sm font-medium text-gray-500">Remediation Actions</label><ul className="list-disc list-inside text-sm mt-1">{selectedIncident.remediationActions.map((a, i) => <li key={i}>{a}</li>)}</ul></div>}
-              {selectedIncident.affectedServices.length > 0 && <div><label className="text-sm font-medium text-gray-500">Affected Services</label><div className="flex flex-wrap gap-1 mt-1">{selectedIncident.affectedServices.map(s => <span key={s} className="px-2 py-0.5 bg-gray-100 rounded text-xs">{s}</span>)}</div></div>}
+              {selectedIncident.rootCause && <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Root Cause</label><p className="text-sm mt-1">{selectedIncident.rootCause}</p></div>}
+              {selectedIncident.containmentActions.length > 0 && <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Containment Actions</label><ul className="list-disc list-inside text-sm mt-1">{selectedIncident.containmentActions.map((a, i) => <li key={i}>{a}</li>)}</ul></div>}
+              {selectedIncident.remediationActions.length > 0 && <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Remediation Actions</label><ul className="list-disc list-inside text-sm mt-1">{selectedIncident.remediationActions.map((a, i) => <li key={i}>{a}</li>)}</ul></div>}
+              {selectedIncident.affectedServices.length > 0 && <div><label className="text-sm font-medium text-gray-500 dark:text-signal-muted">Affected Services</label><div className="flex flex-wrap gap-1 mt-1">{selectedIncident.affectedServices.map(s => <span key={s} className="px-2 py-0.5 bg-gray-100 dark:bg-white/[0.06] rounded text-xs">{s}</span>)}</div></div>}
             </div>
           </div>
         </div>
@@ -951,23 +951,23 @@ export const NIS2Dashboard: React.FC = () => {
 
       {/* ── Penalty Risk Modal ── */}
       {showPenaltyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Penalty Risk Assessment</h3>
-              <button onClick={() => setShowPenaltyModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-lg w-full dark:bg-signal-panel2 dark:border dark:border-white/[0.08]">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Penalty Risk Assessment</h3>
+              <button onClick={() => setShowPenaltyModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                <p className="text-sm text-gray-700">Based on your entity classification as <strong>{entity.entityType}</strong> with annual turnover of <strong>{formatCurrency(entity.annualTurnover)}</strong>:</p>
-                <p className="text-3xl font-bold text-red-800 mt-2">Maximum: {formatCurrency(penaltyRisk.maxFine)}</p>
-                <p className="text-sm text-red-700 mt-1">= max({formatCurrency(entity.entityType === 'essential' ? 10000000 : 7000000)}, {penaltyRisk.percentage} x {formatCurrency(entity.annualTurnover)})</p>
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200 dark:bg-signal-bad/[0.08] dark:border-signal-bad/20">
+                <p className="text-sm text-gray-700 dark:text-signal-body">Based on your entity classification as <strong>{entity.entityType}</strong> with annual turnover of <strong>{formatCurrency(entity.annualTurnover)}</strong>:</p>
+                <p className="text-3xl font-bold text-red-800 dark:text-signal-bad dark:font-display mt-2">Maximum: {formatCurrency(penaltyRisk.maxFine)}</p>
+                <p className="text-sm text-red-700 dark:text-signal-bad mt-1">= max({formatCurrency(entity.entityType === 'essential' ? 10000000 : 7000000)}, {penaltyRisk.percentage} x {formatCurrency(entity.annualTurnover)})</p>
               </div>
-              <div className="text-sm text-gray-600 space-y-2">
+              <div className="text-sm text-gray-600 dark:text-signal-body space-y-2">
                 <p><strong>Compliance gaps that increase penalty risk:</strong></p>
                 <ul className="list-disc list-inside">{measures.filter(m => m.status !== 'implemented').map(m => <li key={m.id}>{m.article21Ref}: {m.measure}</li>)}</ul>
               </div>
-              <button onClick={() => setShowPenaltyModal(false)} className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.close')}</button>
+              <button onClick={() => setShowPenaltyModal(false)} className="w-full px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]">{t('common.close')}</button>
             </div>
           </div>
         </div>

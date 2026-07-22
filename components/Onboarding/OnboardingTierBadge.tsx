@@ -10,31 +10,31 @@ export interface OnboardingTierBadgeProps {
 const tierConfig: Record<TierName, { icon: React.ElementType; color: string; bg: string; border: string; glow: string }> = {
   Foundation: {
     icon: Building2,
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/30',
-    glow: 'shadow-blue-500/20',
+    color: 'text-signal-blue',
+    bg: 'bg-signal-blue/10',
+    border: 'border-signal-blue/30',
+    glow: 'shadow-signal-blue/20',
   },
   Essentials: {
     icon: Rocket,
-    color: 'text-purple-400',
-    bg: 'bg-purple-500/10',
-    border: 'border-purple-500/30',
-    glow: 'shadow-purple-500/20',
+    color: 'text-signal-violet',
+    bg: 'bg-signal-violet/10',
+    border: 'border-signal-violet/30',
+    glow: 'shadow-signal-violet/20',
   },
   Growth: {
     icon: TrendingUp,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/30',
-    glow: 'shadow-emerald-500/20',
+    color: 'text-signal-green',
+    bg: 'bg-signal-green/10',
+    border: 'border-signal-green/30',
+    glow: 'shadow-signal-green/20',
   },
   Visionary: {
     icon: Crown,
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/30',
-    glow: 'shadow-amber-500/20',
+    color: 'text-signal-amber',
+    bg: 'bg-signal-amber/10',
+    border: 'border-signal-amber/30',
+    glow: 'shadow-signal-amber/20',
   },
 };
 
@@ -50,8 +50,8 @@ export const OnboardingTierBadge: React.FC<OnboardingTierBadgeProps> = ({ tier, 
       >
         <Icon className={`w-7 h-7 ${config.color}`} />
         <div>
-          <p className={`text-lg font-bold ${config.color}`}>{tier}</p>
-          <p className="text-xs text-slate-400">Plan</p>
+          <p className={`font-display text-lg font-bold ${config.color}`}>{tier}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted">Plan</p>
         </div>
       </div>
     );
@@ -59,7 +59,7 @@ export const OnboardingTierBadge: React.FC<OnboardingTierBadgeProps> = ({ tier, 
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${config.bg} ${config.border} ${config.color}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[11px] font-medium uppercase tracking-[0.12em] border ${config.bg} ${config.border} ${config.color}`}
     >
       <Icon className="w-3.5 h-3.5" />
       {tier}

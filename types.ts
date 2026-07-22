@@ -376,7 +376,7 @@ export interface Organization {
 export interface RiskItem {
   id: string;
   title?: string;
-  severity: 'High' | 'Medium' | 'Low';
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
   description: string;
   category: string;
   detectedAt: string;

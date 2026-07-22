@@ -184,15 +184,15 @@ export const AuditTrail: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">{t('audit.title')}</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-bold text-gray-900 dark:font-display dark:text-signal-ink">{t('audit.title')}</h2>
+          <p className="text-sm text-gray-500 dark:text-signal-sub">
             {user?.role === 'admin' ? 'All organization activity history' : 'Your activity history'}
           </p>
         </div>
         <div className="flex space-x-3 w-full sm:w-auto">
           <button 
             onClick={handleExport}
-            className="flex items-center space-x-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 dark:bg-signal-green dark:text-signal-canvas dark:font-semibold dark:hover:bg-signal-green/90 transition-colors"
           >
             <Download size={16} />
             <span className="hidden sm:inline">{t('audit.exportAuditLog')}</span>
@@ -201,29 +201,29 @@ export const AuditTrail: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+      <div className="bg-white p-4 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06]">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t('common.search')}</label>
+            <label className="block font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted mb-1">{t('common.search')}</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-signal-muted" size={16} />
               <input 
                 type="text" 
                 placeholder="Search logs..." 
                 value={filterText}
                 onChange={(e) => setFilterText(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full"
+                className="pl-9 pr-4 py-2 border border-gray-300 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/60 w-full"
               />
             </div>
           </div>
           
           {user?.role === 'admin' && (
             <div className="min-w-[150px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">{t('audit.filterByUser')}</label>
+              <label className="block font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted mb-1">{t('audit.filterByUser')}</label>
               <select
                 value={filterUser}
                 onChange={(e) => setFilterUser(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/60"
               >
                 <option value="">{t('common.all')}</option>
                 {allUsers.map(u => (
@@ -234,11 +234,11 @@ export const AuditTrail: React.FC = () => {
           )}
 
           <div className="min-w-[150px]">
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t('audit.filterByAction')}</label>
+            <label className="block font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted mb-1">{t('audit.filterByAction')}</label>
             <select
               value={filterAction}
               onChange={(e) => setFilterAction(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/60"
             >
               <option value="">{t('common.all')}</option>
               {allActions.map(a => (
@@ -253,7 +253,7 @@ export const AuditTrail: React.FC = () => {
               setFilterUser('');
               setFilterAction('');
             }}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-signal-sub dark:hover:text-signal-ink"
           >
             Clear Filters
           </button>
@@ -261,18 +261,18 @@ export const AuditTrail: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
-          <Loader2 className="animate-spin text-brand-600 mr-3" size={24} />
-          <span className="text-gray-600">{t('common.loading')}</span>
+        <div className="bg-white rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] p-12 flex items-center justify-center">
+          <Loader2 className="animate-spin text-brand-600 dark:text-signal-green mr-3" size={24} />
+          <span className="text-gray-600 dark:text-signal-sub">{t('common.loading')}</span>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-            <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+            <thead className="font-mono text-[10px] tracking-[0.14em] text-gray-500 uppercase bg-gray-50 border-b border-gray-100 dark:text-signal-muted dark:bg-white/[0.02] dark:border-white/[0.06]">
               <tr>
                 <th 
-                  className="px-6 py-4 font-medium cursor-pointer hover:text-brand-600"
+                  className="px-6 py-4 font-medium cursor-pointer hover:text-brand-600 dark:hover:text-signal-green"
                   onClick={() => handleSort('timestamp')}
                 >
                   <div className="flex items-center">
@@ -283,7 +283,7 @@ export const AuditTrail: React.FC = () => {
                 </th>
                 {user?.role === 'admin' && (
                   <th 
-                    className="px-6 py-4 font-medium cursor-pointer hover:text-brand-600"
+                    className="px-6 py-4 font-medium cursor-pointer hover:text-brand-600 dark:hover:text-signal-green"
                     onClick={() => handleSort('user')}
                   >
                     <div className="flex items-center">
@@ -294,7 +294,7 @@ export const AuditTrail: React.FC = () => {
                   </th>
                 )}
                 <th 
-                  className="px-6 py-4 font-medium cursor-pointer hover:text-brand-600"
+                  className="px-6 py-4 font-medium cursor-pointer hover:text-brand-600 dark:hover:text-signal-green"
                   onClick={() => handleSort('action')}
                 >
                   <div className="flex items-center">
@@ -304,7 +304,7 @@ export const AuditTrail: React.FC = () => {
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 font-medium cursor-pointer hover:text-brand-600"
+                  className="px-6 py-4 font-medium cursor-pointer hover:text-brand-600 dark:hover:text-signal-green"
                   onClick={() => handleSort('hash')}
                 >
                   <div className="flex items-center">
@@ -316,28 +316,28 @@ export const AuditTrail: React.FC = () => {
                 <th className="px-6 py-4 font-medium">{t('common.status')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
               {sortedLogs.length > 0 ? sortedLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-gray-600 font-medium whitespace-nowrap">
+                <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors">
+                  <td className="px-6 py-4 text-gray-600 dark:text-signal-body font-medium whitespace-nowrap">
                     {log.timestamp.toLocaleString()}
                   </td>
                   {user?.role === 'admin' && (
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center mr-2 text-xs font-bold text-slate-600">
+                        <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center mr-2 text-xs font-bold text-slate-600 dark:text-signal-body">
                           {log.user?.charAt(0) || 'S'}
                         </div>
-                        <span className="text-gray-900">{log.user}</span>
+                        <span className="text-gray-900 dark:text-signal-ink">{log.user}</span>
                       </div>
                     </td>
                   )}
-                  <td className="px-6 py-4 text-gray-800">{log.action}</td>
+                  <td className="px-6 py-4 text-gray-800 dark:text-signal-body">{log.action}</td>
                   <td className="px-6 py-4">
                     {log.hash ? (
                       <div className="flex items-center space-x-2">
                         <span 
-                          className="font-mono text-xs text-brand-600 bg-brand-50 px-2 py-1 rounded cursor-help" 
+                          className="font-mono text-xs text-brand-600 bg-brand-50 dark:text-signal-green dark:bg-signal-green/10 px-2 py-1 rounded cursor-help"
                           title="Verified on blockchain"
                         >
                           {log.hash.substring(0, 16)}...
@@ -347,7 +347,7 @@ export const AuditTrail: React.FC = () => {
                             href={getBlockchainExplorerUrl(log.transactionHash, log.network || 'polygon') || '#'}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-brand-600 hover:text-brand-800 flex items-center"
+                            className="text-brand-600 hover:text-brand-800 dark:text-signal-green dark:hover:text-signal-green/80 flex items-center"
                             title={`View on ${log.network === 'ethereum' ? 'Etherscan' : log.network === 'polygon' ? 'Polygonscan' : 'Blockchain Explorer'}`}
                           >
                             <ExternalLink size={14} />
@@ -355,7 +355,7 @@ export const AuditTrail: React.FC = () => {
                         )}
                       </div>
                     ) : (
-                      <span className="text-red-600 text-xs flex items-center">
+                      <span className="text-red-600 dark:text-signal-bad text-xs flex items-center">
                         <AlertTriangle size={12} className="mr-1" />
                         Missing Hash
                       </span>
@@ -363,15 +363,15 @@ export const AuditTrail: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     {log.verification === 'verified' ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" title="Integrity confirmed by the server">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good" title="Integrity confirmed by the server">
                         <ShieldCheck size={12} className="mr-1" /> Verified
                       </span>
                     ) : log.verification === 'format' ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800" title="Hash is well-formed; integrity not confirmed by the server">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-signal-warn/10 dark:text-signal-warn" title="Hash is well-formed; integrity not confirmed by the server">
                         <ShieldCheck size={12} className="mr-1" /> Format check
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad">
                         <AlertTriangle size={12} className="mr-1" /> Invalid
                       </span>
                     )}
@@ -379,7 +379,7 @@ export const AuditTrail: React.FC = () => {
                 </tr>
               )) : (
                  <tr>
-                    <td colSpan={user?.role === 'admin' ? 5 : 4} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={user?.role === 'admin' ? 5 : 4} className="px-6 py-8 text-center text-gray-500 dark:text-signal-muted">
                        {t('common.noResults')}
                     </td>
                  </tr>
@@ -387,9 +387,9 @@ export const AuditTrail: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
-            <span className="text-xs text-gray-400">Showing {sortedLogs.length} of {auditLogs.length} logs</span>
-            <span className="text-xs text-gray-400">Older logs archived on-chain.</span>
+        <div className="p-4 border-t border-gray-100 bg-gray-50 dark:border-white/[0.06] dark:bg-white/[0.02] flex justify-between items-center">
+            <span className="text-xs text-gray-400 dark:text-signal-muted">Showing {sortedLogs.length} of {auditLogs.length} logs</span>
+            <span className="text-xs text-gray-400 dark:text-signal-muted">Older logs archived on-chain.</span>
         </div>
       </div>
       )}

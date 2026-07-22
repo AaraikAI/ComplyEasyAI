@@ -184,15 +184,15 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 dark:text-signal-ink">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('common.overview')}</h1>
-          <p className="text-gray-600 mt-1">Autonomous Compliance Operating System</p>
+          <h1 className="font-display text-3xl font-bold text-gray-900 dark:text-signal-ink">{t('common.overview')}</h1>
+          <p className="text-gray-600 dark:text-signal-sub mt-1">Autonomous Compliance Operating System</p>
         </div>
         <button
           onClick={onBack}
-          className="px-4 py-2 text-gray-600 hover:text-gray-900"
+          className="px-4 py-2 text-gray-600 dark:text-signal-sub hover:text-gray-900 dark:hover:text-signal-ink"
         >
           {t('common.back')}
         </button>
@@ -202,10 +202,10 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
       <div className="flex gap-6">
         {/* Left Sidebar - Navigation Tabs */}
         <div className="w-64 flex-shrink-0">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-6">
+          <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl shadow-sm dark:shadow-none border border-gray-200 dark:border-white/[0.06] p-4 sticky top-6">
             {/* Core Features Section */}
             <div className="mb-6">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-signal-muted uppercase tracking-wide mb-3 px-2 dark:font-mono dark:text-[10px] dark:tracking-[0.14em]">
                 Core Features
               </h3>
               <nav className="space-y-1">
@@ -221,11 +221,11 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
                       onClick={() => setActiveTab(tab.id as any)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
                         activeTab === tab.id
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas shadow-sm'
+                          : 'text-gray-700 dark:text-signal-body hover:bg-gray-50 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-signal-ink'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white dark:text-signal-canvas' : 'text-gray-500 dark:text-signal-muted'}`} />
                       <span className="text-sm">{tab.label}</span>
                     </button>
                   );
@@ -235,7 +235,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
             {/* Analytics & Intelligence Section */}
             <div className="mb-6">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-signal-muted uppercase tracking-wide mb-3 px-2 dark:font-mono dark:text-[10px] dark:tracking-[0.14em]">
                 Analytics & Intelligence
               </h3>
               <nav className="space-y-1">
@@ -250,11 +250,11 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
                       onClick={() => setActiveTab(tab.id as any)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
                         activeTab === tab.id
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas shadow-sm'
+                          : 'text-gray-700 dark:text-signal-body hover:bg-gray-50 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-signal-ink'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white dark:text-signal-canvas' : 'text-gray-500 dark:text-signal-muted'}`} />
                       <span className="text-sm">{tab.label}</span>
                     </button>
                   );
@@ -264,7 +264,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
             {/* Security & Testing Section */}
             <div className="mb-6">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-signal-muted uppercase tracking-wide mb-3 px-2 dark:font-mono dark:text-[10px] dark:tracking-[0.14em]">
                 Security & Testing
               </h3>
               <nav className="space-y-1">
@@ -279,11 +279,11 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
                       onClick={() => setActiveTab(tab.id as any)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
                         activeTab === tab.id
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas shadow-sm'
+                          : 'text-gray-700 dark:text-signal-body hover:bg-gray-50 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-signal-ink'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white dark:text-signal-canvas' : 'text-gray-500 dark:text-signal-muted'}`} />
                       <span className="text-sm">{tab.label}</span>
                     </button>
                   );
@@ -293,7 +293,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
             {/* AI & Advanced Features Section */}
             <div className="mb-6">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-signal-muted uppercase tracking-wide mb-3 px-2 dark:font-mono dark:text-[10px] dark:tracking-[0.14em]">
                 AI & Advanced
               </h3>
               <nav className="space-y-1">
@@ -309,11 +309,11 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
                       onClick={() => setActiveTab(tab.id as any)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
                         activeTab === tab.id
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas shadow-sm'
+                          : 'text-gray-700 dark:text-signal-body hover:bg-gray-50 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-signal-ink'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white dark:text-signal-canvas' : 'text-gray-500 dark:text-signal-muted'}`} />
                       <span className="text-sm">{tab.label}</span>
                     </button>
                   );
@@ -323,7 +323,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
             {/* Integration & Devices Section */}
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-signal-muted uppercase tracking-wide mb-3 px-2 dark:font-mono dark:text-[10px] dark:tracking-[0.14em]">
                 Integration & Devices
               </h3>
               <nav className="space-y-1">
@@ -338,11 +338,11 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
                       onClick={() => setActiveTab(tab.id as any)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
                         activeTab === tab.id
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas shadow-sm'
+                          : 'text-gray-700 dark:text-signal-body hover:bg-gray-50 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-signal-ink'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white dark:text-signal-canvas' : 'text-gray-500 dark:text-signal-muted'}`} />
                       <span className="text-sm">{tab.label}</span>
                     </button>
                   );
@@ -354,83 +354,83 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
         {/* Right Content Area */}
         <div className="flex-1 min-w-0">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl shadow-sm dark:shadow-none border border-gray-200 dark:border-white/[0.06] p-6">
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="animate-spin text-blue-500 mb-4" size={48} />
-                <p className="text-gray-600 text-lg">{t('common.loading')}</p>
-                <p className="text-gray-500 text-sm mt-2">Fetching Active Goals, Control Loops, and Early Warnings</p>
+                <Loader2 className="animate-spin text-blue-500 dark:text-signal-green mb-4" size={48} />
+                <p className="text-gray-600 dark:text-signal-sub text-lg">{t('common.loading')}</p>
+                <p className="text-gray-500 dark:text-signal-muted text-sm mt-2">Fetching Active Goals, Control Loops, and Early Warnings</p>
               </div>
             ) : (
               <>
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                  <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-600">Active Goals</p>
-                        <p className="text-2xl font-bold mt-1">{goals.length}</p>
+                        <p className="text-sm text-gray-600 dark:text-signal-sub">Active Goals</p>
+                        <p className="font-display text-2xl font-bold mt-1">{goals.length}</p>
                       </div>
-                      <Target className="text-blue-500" size={24} />
+                      <Target className="text-blue-500 dark:text-signal-green" size={24} />
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                  <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-600">Control Loops</p>
-                        <p className="text-2xl font-bold mt-1">{loops.length}</p>
+                        <p className="text-sm text-gray-600 dark:text-signal-sub">Control Loops</p>
+                        <p className="font-display text-2xl font-bold mt-1">{loops.length}</p>
                       </div>
-                      <Zap className="text-yellow-500" size={24} />
+                      <Zap className="text-yellow-500 dark:text-signal-warn" size={24} />
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                  <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-600">Early Warnings</p>
-                        <p className="text-2xl font-bold mt-1">{warnings.length}</p>
+                        <p className="text-sm text-gray-600 dark:text-signal-sub">Early Warnings</p>
+                        <p className="font-display text-2xl font-bold mt-1">{warnings.length}</p>
                       </div>
-                      <AlertTriangle className="text-red-500" size={24} />
+                      <AlertTriangle className="text-red-500 dark:text-signal-bad" size={24} />
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                  <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-600">System Status</p>
-                        <p className="text-2xl font-bold mt-1 text-green-600">Active</p>
+                        <p className="text-sm text-gray-600 dark:text-signal-sub">System Status</p>
+                        <p className="font-display text-2xl font-bold mt-1 text-green-600 dark:text-signal-good">Active</p>
                       </div>
-                      <CheckCircle className="text-green-500" size={24} />
+                      <CheckCircle className="text-green-500 dark:text-signal-good" size={24} />
                     </div>
                   </div>
                 </div>
 
                 {/* Active Goals Details */}
                 {goals.length > 0 && (
-                  <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center">
-                      <Target className="text-blue-500 mr-2" size={20} />
+                  <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06] p-6">
+                    <h2 className="font-display text-xl font-semibold mb-4 flex items-center">
+                      <Target className="text-blue-500 dark:text-signal-green mr-2" size={20} />
                       Active Goals
                     </h2>
                     <div className="space-y-3">
                       {goals.slice(0, 5).map((goal) => (
-                        <div key={goal.id} className="border-l-4 border-blue-500 pl-4 py-2">
+                        <div key={goal.id} className="border-l-4 border-blue-500 dark:border-signal-green pl-4 py-2">
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">{goal.goalType}</p>
-                              <p className="text-sm text-gray-600 mt-1">
+                              <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">
                                 Frameworks: {goal.frameworks.join(', ')}
                               </p>
                               {goal.targetScore && (
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className="text-sm text-gray-500 dark:text-signal-muted mt-1">
                                   Target Score: {goal.targetScore}%
                                 </p>
                               )}
                             </div>
-                            <span className={`ml-4 px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${
-                              goal.status === 'Active' ? 'bg-green-100 text-green-800' :
-                              goal.status === 'Paused' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
+                            <span className={`ml-4 px-2 py-1 rounded text-xs font-medium flex-shrink-0 dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em] ${
+                              goal.status === 'Active' ? 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good' :
+                              goal.status === 'Paused' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                              'bg-gray-100 dark:bg-white/[0.06] text-gray-800 dark:text-signal-body'
                             }`}>
                               {goal.status}
                             </span>
@@ -443,25 +443,25 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
                 {/* Control Loops Details */}
                 {loops.length > 0 && (
-                  <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center">
-                      <Zap className="text-yellow-500 mr-2" size={20} />
+                  <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06] p-6">
+                    <h2 className="font-display text-xl font-semibold mb-4 flex items-center">
+                      <Zap className="text-yellow-500 dark:text-signal-warn mr-2" size={20} />
                       Control Loops
                     </h2>
                     <div className="space-y-3">
                       {loops.slice(0, 5).map((loop) => (
-                        <div key={loop.id} className="border-l-4 border-yellow-500 pl-4 py-2">
+                        <div key={loop.id} className="border-l-4 border-yellow-500 dark:border-signal-warn pl-4 py-2">
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">Control: {loop.controlId}</p>
-                              <p className="text-sm text-gray-600 mt-1">
+                              <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">
                                 Cycles: {loop.cycleCount} • Confidence: {Math.round(loop.confidence * 100)}%
                               </p>
                             </div>
-                            <span className={`ml-4 px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${
-                              loop.status === 'Active' ? 'bg-green-100 text-green-800' :
-                              loop.status === 'Paused' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
+                            <span className={`ml-4 px-2 py-1 rounded text-xs font-medium flex-shrink-0 dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em] ${
+                              loop.status === 'Active' ? 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good' :
+                              loop.status === 'Paused' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                              'bg-gray-100 dark:bg-white/[0.06] text-gray-800 dark:text-signal-body'
                             }`}>
                               {loop.status}
                             </span>
@@ -474,28 +474,28 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
                 {/* Early Warnings */}
                 {warnings.length > 0 && (
-                  <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center">
-                      <AlertTriangle className="text-red-500 mr-2" size={20} />
+                  <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06] p-6">
+                    <h2 className="font-display text-xl font-semibold mb-4 flex items-center">
+                      <AlertTriangle className="text-red-500 dark:text-signal-bad mr-2" size={20} />
                       Early Warnings
                     </h2>
                     <div className="space-y-3">
                       {warnings.slice(0, 5).map((warning, idx) => (
-                        <div key={idx} className="border-l-4 border-red-500 pl-4 py-2">
+                        <div key={idx} className="border-l-4 border-red-500 dark:border-signal-bad pl-4 py-2">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-medium">{warning.description}</p>
-                              <p className="text-sm text-gray-600 mt-1">{warning.recommendedAction}</p>
+                              <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">{warning.recommendedAction}</p>
                             </div>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              warning.severity === 'Critical' ? 'bg-red-100 text-red-800' :
-                              warning.severity === 'High' ? 'bg-orange-100 text-orange-800' :
-                              'bg-yellow-100 text-yellow-800'
+                            <span className={`px-2 py-1 rounded text-xs font-medium dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em] ${
+                              warning.severity === 'Critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' :
+                              warning.severity === 'High' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn' :
+                              'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn'
                             }`}>
                               {warning.severity}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">
                             Predicted: {new Date(warning.predictedDate).toLocaleDateString()} • Confidence: {Math.round(warning.confidence * 100)}%
                           </p>
                         </div>
@@ -505,32 +505,32 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
                 )}
 
                 {/* Quick Actions */}
-                <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-                  <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+                <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06] p-6">
+                  <h2 className="font-display text-xl font-semibold mb-4">Quick Actions</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <button
                       onClick={handleCreateGoal}
-                      className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                      className="p-4 border-2 border-dashed border-gray-300 dark:border-white/[0.10] rounded-lg hover:border-blue-500 dark:hover:border-signal-green/40 hover:bg-blue-50 dark:hover:bg-signal-green/[0.08] transition-colors text-left"
                     >
-                      <Target className="text-blue-500 mb-2" size={24} />
+                      <Target className="text-blue-500 dark:text-signal-green mb-2" size={24} />
                       <p className="font-medium">Create Compliance Goal</p>
-                      <p className="text-sm text-gray-600 mt-1">Set intent-driven compliance objectives</p>
+                      <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">Set intent-driven compliance objectives</p>
                     </button>
                     <button
                       onClick={() => setActiveTab('simulations')}
-                      className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                      className="p-4 border-2 border-dashed border-gray-300 dark:border-white/[0.10] rounded-lg hover:border-blue-500 dark:hover:border-signal-green/40 hover:bg-blue-50 dark:hover:bg-signal-green/[0.08] transition-colors text-left"
                     >
-                      <Network className="text-blue-500 mb-2" size={24} />
+                      <Network className="text-blue-500 dark:text-signal-green mb-2" size={24} />
                       <p className="font-medium">Run Simulation</p>
-                      <p className="text-sm text-gray-600 mt-1">Test "what-if" scenarios</p>
+                      <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">Test "what-if" scenarios</p>
                     </button>
                     <button
                       onClick={() => setActiveTab('redteam')}
-                      className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                      className="p-4 border-2 border-dashed border-gray-300 dark:border-white/[0.10] rounded-lg hover:border-blue-500 dark:hover:border-signal-green/40 hover:bg-blue-50 dark:hover:bg-signal-green/[0.08] transition-colors text-left"
                     >
-                      <Shield className="text-blue-500 mb-2" size={24} />
+                      <Shield className="text-blue-500 dark:text-signal-green mb-2" size={24} />
                       <p className="font-medium">Red Team Scan</p>
-                      <p className="text-sm text-gray-600 mt-1">Automated security testing</p>
+                      <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">Automated security testing</p>
                     </button>
                   </div>
                 </div>
@@ -641,21 +641,21 @@ const GoalsTab: React.FC<{
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Compliance Goals</h2>
+        <h2 className="font-display text-xl font-semibold">Compliance Goals</h2>
         <button
           onClick={onCreateGoal}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90"
         >
           + Create Goal
         </button>
       </div>
       {goals.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Target className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-gray-600">No compliance goals yet</p>
+        <div className="text-center py-12 bg-gray-50 dark:bg-white/[0.03] rounded-lg dark:rounded-2xl">
+          <Target className="mx-auto text-gray-400 dark:text-signal-muted mb-4" size={48} />
+          <p className="text-gray-600 dark:text-signal-sub">No compliance goals yet</p>
           <button
             onClick={onCreateGoal}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90"
           >
             Create Your First Goal
           </button>
@@ -663,34 +663,34 @@ const GoalsTab: React.FC<{
       ) : (
         <div className="space-y-4">
           {goals.map((goal) => (
-            <div key={goal.id} className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <div key={goal.id} className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <h3 className="font-semibold">
                     {(goal as any).name || `${goal.goalType.charAt(0).toUpperCase() + goal.goalType.slice(1)} Compliance Goal`}
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">
                     Frameworks: {goal.frameworks.length > 0 ? goal.frameworks.join(', ') : 'None'} • Horizon: {goal.horizon} days • Risk Tolerance: {goal.riskTolerance}
                   </p>
                   {(goal as any).deadline && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">
                       Deadline: {new Date((goal as any).deadline).toLocaleDateString()}
                     </p>
                   )}
                 </div>
                 <div className="flex items-center space-x-3">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    goal.status === 'active' ? 'bg-green-100 text-green-800' :
-                    goal.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                    goal.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium dark:font-mono dark:text-[11px] dark:uppercase dark:tracking-[0.12em] ${
+                    goal.status === 'active' ? 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good' :
+                    goal.status === 'paused' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                    goal.status === 'completed' ? 'bg-blue-100 dark:bg-signal-green/10 text-blue-800 dark:text-signal-green' :
+                    'bg-gray-100 dark:bg-white/[0.06] text-gray-800 dark:text-signal-body'
                   }`}>
                     {goal.status}
                   </span>
                   {onEditGoal && (
                     <button
                       onClick={() => onEditGoal(goal)}
-                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800"
+                      className="px-3 py-1 text-sm text-blue-600 dark:text-signal-green hover:text-blue-800 dark:hover:text-signal-green/80"
                     >
                       Edit
                     </button>
@@ -699,7 +699,7 @@ const GoalsTab: React.FC<{
                     onRestoreGoal && (
                       <button
                         onClick={() => onRestoreGoal(goal.id)}
-                        className="px-3 py-1 text-sm text-green-600 hover:text-green-800"
+                        className="px-3 py-1 text-sm text-green-600 dark:text-signal-good hover:text-green-800 dark:hover:text-signal-good/80"
                       >
                         Restore
                       </button>
@@ -709,7 +709,7 @@ const GoalsTab: React.FC<{
                       <button
                         onClick={() => onDeleteGoal(goal.id)}
                         disabled={deletingGoal === goal.id}
-                        className="px-3 py-1 text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                        className="px-3 py-1 text-sm text-red-600 dark:text-signal-bad hover:text-red-800 dark:hover:text-signal-bad/80 disabled:opacity-50"
                       >
                         {deletingGoal === goal.id ? 'Deleting...' : 'Delete'}
                       </button>
@@ -723,9 +723,9 @@ const GoalsTab: React.FC<{
                     <span>Target Score</span>
                     <span>{goal.targetScore}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-white/[0.08] rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full"
+                      className="bg-blue-600 dark:bg-signal-green h-2 rounded-full"
                       style={{ width: `${goal.targetScore}%` }}
                     />
                   </div>
@@ -871,25 +871,25 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Control Loops</h2>
+        <h2 className="font-display text-xl font-semibold">Control Loops</h2>
         <button
           onClick={() => setShowCreate(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90"
         >
           + Create Control Loop
         </button>
       </div>
 
       {showCreate && (
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
           <h3 className="font-semibold mb-4">Create New Control Loop</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Control</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Select Control</label>
               <select
                 value={selectedControlId}
                 onChange={(e) => setSelectedControlId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
               >
                 <option value="">-- Select a Control --</option>
                 {availableControls.map((ctrl) => (
@@ -900,11 +900,11 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Trigger Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Trigger Type</label>
               <select
                 value={triggerType}
                 onChange={(e) => setTriggerType(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
               >
                 <option value="manual">Manual</option>
                 <option value="schedule">Schedule</option>
@@ -916,7 +916,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
               <button
                 onClick={handleCreateLoop}
                 disabled={loading || !selectedControlId}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 disabled:opacity-50"
               >
                 {loading ? 'Creating...' : 'Create'}
               </button>
@@ -925,7 +925,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                   setShowCreate(false);
                   setSelectedControlId('');
                 }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 dark:bg-white/[0.08] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.12]"
               >
                 Cancel
               </button>
@@ -935,17 +935,17 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
       )}
 
       {loading && loops.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Zap className="mx-auto text-gray-400 mb-4 animate-spin" size={48} />
-          <p className="text-gray-600">{t('common.loading')}</p>
+        <div className="text-center py-12 bg-gray-50 dark:bg-white/[0.03] rounded-lg dark:rounded-2xl">
+          <Zap className="mx-auto text-gray-400 dark:text-signal-muted mb-4 animate-spin" size={48} />
+          <p className="text-gray-600 dark:text-signal-sub">{t('common.loading')}</p>
         </div>
       ) : loops.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Zap className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-gray-600">No active control loops</p>
+        <div className="text-center py-12 bg-gray-50 dark:bg-white/[0.03] rounded-lg dark:rounded-2xl">
+          <Zap className="mx-auto text-gray-400 dark:text-signal-muted mb-4" size={48} />
+          <p className="text-gray-600 dark:text-signal-sub">No active control loops</p>
           <button
             onClick={() => setShowCreate(true)}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90"
           >
             Create Your First Control Loop
           </button>
@@ -956,9 +956,9 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
             const control = availableControls.find(c => c.id === loop.controlId);
             const isExpanded = showHistory === loop.id;
             return (
-              <div key={loop.id} className="bg-white p-6 rounded-lg shadow border border-gray-200">
+              <div key={loop.id} className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
                 <div 
-                  className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded transition-colors"
+                  className="flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.06] p-2 -m-2 rounded transition-colors"
                   onClick={async () => {
                     if (!isExpanded) {
                       try {
@@ -977,14 +977,14 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                     <h3 className="font-semibold">
                       {control ? `${control.name} (${control.frameworkName})` : `Control: ${loop.controlId.substring(0, 8)}...`}
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">
                       Cycles: {loop.cycleCount} • Status: {loop.status}
                     </p>
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
-                      <p className="text-sm text-gray-600">Confidence</p>
-                      <p className="text-lg font-semibold">{Math.round(loop.confidence * 100)}%</p>
+                      <p className="text-sm text-gray-600 dark:text-signal-sub">Confidence</p>
+                      <p className="font-display text-lg font-semibold">{Math.round(loop.confidence * 100)}%</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
@@ -1012,7 +1012,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                               toast.error('Failed to resume control loop');
                             }
                           }}
-                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          className="px-3 py-1 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas text-sm rounded hover:bg-blue-700 dark:hover:bg-signal-green/90"
                           title="Resume"
                         >
                           <Play size={16} />
@@ -1062,8 +1062,8 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                 </div>
                 {/* Show execution result for this loop */}
                 {executionResult && executingLoopId === loop.id && (
-                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">Execution Details</h4>
+                  <div className="mt-4 p-4 bg-blue-50 dark:bg-signal-green/[0.06] border border-blue-200 dark:border-signal-green/20 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 dark:text-signal-green mb-2">Execution Details</h4>
                     <div className="space-y-2 text-sm">
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -1080,24 +1080,24 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                         </div>
                       </div>
                       {executionResult.observed && (
-                        <div className="mt-2 pt-2 border-t border-blue-200">
-                          <p className="font-medium text-blue-900">Observed:</p>
-                          <p className="text-gray-700">Control: {executionResult.observed.controlName || executionResult.observed.controlId}</p>
-                          <p className="text-gray-700">Status: {executionResult.observed.currentStatus}</p>
-                          <p className="text-gray-700">Framework: {executionResult.observed.frameworkName || executionResult.observed.frameworkStatus}</p>
+                        <div className="mt-2 pt-2 border-t border-blue-200 dark:border-signal-green/20">
+                          <p className="font-medium text-blue-900 dark:text-signal-green">Observed:</p>
+                          <p className="text-gray-700 dark:text-signal-body">Control: {executionResult.observed.controlName || executionResult.observed.controlId}</p>
+                          <p className="text-gray-700 dark:text-signal-body">Status: {executionResult.observed.currentStatus}</p>
+                          <p className="text-gray-700 dark:text-signal-body">Framework: {executionResult.observed.frameworkName || executionResult.observed.frameworkStatus}</p>
                         </div>
                       )}
                       {executionResult.predicted && (
-                        <div className="mt-2 pt-2 border-t border-blue-200">
-                          <p className="font-medium text-blue-900">Predicted:</p>
-                          <p className="text-gray-700">Risk Level: {executionResult.predicted.riskLevel}</p>
-                          <p className="text-gray-700">Needs Action: {executionResult.predicted.needsAction ? 'Yes' : 'No'}</p>
+                        <div className="mt-2 pt-2 border-t border-blue-200 dark:border-signal-green/20">
+                          <p className="font-medium text-blue-900 dark:text-signal-green">Predicted:</p>
+                          <p className="text-gray-700 dark:text-signal-body">Risk Level: {executionResult.predicted.riskLevel}</p>
+                          <p className="text-gray-700 dark:text-signal-body">Needs Action: {executionResult.predicted.needsAction ? 'Yes' : 'No'}</p>
                         </div>
                       )}
                       {executionResult.learned && executionResult.learned.insights && (
-                        <div className="mt-2 pt-2 border-t border-blue-200">
-                          <p className="font-medium text-blue-900">Insights:</p>
-                          <ul className="list-disc list-inside text-gray-700">
+                        <div className="mt-2 pt-2 border-t border-blue-200 dark:border-signal-green/20">
+                          <p className="font-medium text-blue-900 dark:text-signal-green">Insights:</p>
+                          <ul className="list-disc list-inside text-gray-700 dark:text-signal-body">
                             {executionResult.learned.insights.map((insight: string, idx: number) => (
                               <li key={idx}>{insight}</li>
                             ))}
@@ -1105,8 +1105,8 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                         </div>
                       )}
                       {executionResult.scoreChange !== undefined && executionResult.scoreChange !== 0 && (
-                        <div className="mt-2 pt-2 border-t border-blue-200">
-                          <p className="font-medium text-blue-900">
+                        <div className="mt-2 pt-2 border-t border-blue-200 dark:border-signal-green/20">
+                          <p className="font-medium text-blue-900 dark:text-signal-green">
                             Score Change: {executionResult.scoreChange > 0 ? '+' : ''}{executionResult.scoreChange}%
                           </p>
                         </div>
@@ -1117,15 +1117,15 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
 
                 {/* Show detailed execution history if expanded */}
                 {isExpanded && history.length > 0 && (
-                  <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="mt-4 p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-lg">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold text-gray-900">Execution History</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-signal-ink">Execution History</h4>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowHistory(null);
                         }}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-500 dark:text-signal-muted hover:text-gray-700 dark:hover:text-signal-body"
                       >
                         <X size={20} />
                       </button>
@@ -1161,10 +1161,10 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                           const executionPhases = execution.filter((h: any) => phases.includes(h.executionPhase));
                           
                           return (
-                            <div key={execIdx} className="p-4 bg-white rounded-lg border border-gray-200">
-                              <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
-                                <h5 className="font-semibold text-gray-900">Execution #{executions.length - execIdx}</h5>
-                                <span className="text-xs text-gray-500">{executionTime}</span>
+                            <div key={execIdx} className="p-4 bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06]">
+                              <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-white/[0.06]">
+                                <h5 className="font-semibold text-gray-900 dark:text-signal-ink">Execution #{executions.length - execIdx}</h5>
+                                <span className="text-xs text-gray-500 dark:text-signal-muted">{executionTime}</span>
                               </div>
                               <div className="space-y-3">
                                 {executionPhases.map((h: any, phaseIdx: number) => {
@@ -1173,9 +1173,9 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                                     : h.phaseResult;
                                   
                                   return (
-                                    <div key={phaseIdx} className="p-3 bg-gray-50 rounded border-l-4 border-blue-500">
+                                    <div key={phaseIdx} className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded border-l-4 border-blue-500 dark:border-signal-green">
                                       <div className="flex items-center justify-between mb-2">
-                                        <span className="font-medium capitalize text-blue-700">
+                                        <span className="font-medium capitalize text-blue-700 dark:text-signal-green">
                                           {h.executionPhase === 'sense' ? 'Observe' : 
                                            h.executionPhase === 'analyze' ? 'Predict' :
                                            h.executionPhase === 'plan' ? 'Plan' :
@@ -1185,18 +1185,18 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                                            h.executionPhase}
                                         </span>
                                         <div className="flex items-center space-x-2">
-                                          <span className="text-xs text-gray-600">{h.durationMs}ms</span>
+                                          <span className="text-xs text-gray-600 dark:text-signal-sub">{h.durationMs}ms</span>
                                           {h.success ? (
-                                            <CheckCircle className="text-green-600" size={16} />
+                                            <CheckCircle className="text-green-600 dark:text-signal-good" size={16} />
                                           ) : (
-                                            <AlertTriangle className="text-red-600" size={16} />
+                                            <AlertTriangle className="text-red-600 dark:text-signal-bad" size={16} />
                                           )}
                                         </div>
                                       </div>
                                       
                                       {/* Show phase-specific details */}
                                       {h.executionPhase === 'sense' && phaseResult && (
-                                        <div className="text-xs text-gray-700 space-y-1">
+                                        <div className="text-xs text-gray-700 dark:text-signal-body space-y-1">
                                           <p><strong>Control:</strong> {phaseResult.controlName || phaseResult.controlId}</p>
                                           <p><strong>Status:</strong> {phaseResult.currentStatus}</p>
                                           <p><strong>Framework:</strong> {phaseResult.frameworkName}</p>
@@ -1207,7 +1207,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                                       )}
                                       
                                       {h.executionPhase === 'analyze' && phaseResult && (
-                                        <div className="text-xs text-gray-700 space-y-1">
+                                        <div className="text-xs text-gray-700 dark:text-signal-body space-y-1">
                                           <p><strong>Risk Level:</strong> {phaseResult.riskLevel}</p>
                                           <p><strong>Needs Action:</strong> {phaseResult.needsAction ? 'Yes' : 'No'}</p>
                                           {phaseResult.confidence !== undefined && (
@@ -1217,7 +1217,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                                       )}
                                       
                                       {h.executionPhase === 'plan' && phaseResult && (
-                                        <div className="text-xs text-gray-700 space-y-1">
+                                        <div className="text-xs text-gray-700 dark:text-signal-body space-y-1">
                                           <p><strong>Action Type:</strong> {phaseResult.actionType}</p>
                                           <p><strong>Target Status:</strong> {phaseResult.targetStatus}</p>
                                           <p><strong>Estimated Impact:</strong> {phaseResult.estimatedImpact}</p>
@@ -1225,25 +1225,25 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                                       )}
                                       
                                       {h.executionPhase === 'act' && phaseResult && (
-                                        <div className="text-xs text-gray-700 space-y-1">
+                                        <div className="text-xs text-gray-700 dark:text-signal-body space-y-1">
                                           <p><strong>Action Taken:</strong> {phaseResult.acted ? 'Yes' : 'No'}</p>
                                           {phaseResult.scoreChange !== undefined && (
                                             <p><strong>Score Change:</strong> {phaseResult.scoreChange > 0 ? '+' : ''}{phaseResult.scoreChange}%</p>
                                           )}
                                           {phaseResult.error && (
-                                            <p className="text-red-600"><strong>Error:</strong> {phaseResult.error}</p>
+                                            <p className="text-red-600 dark:text-signal-bad"><strong>Error:</strong> {phaseResult.error}</p>
                                           )}
                                         </div>
                                       )}
                                       
                                       {h.executionPhase === 'verify' && phaseResult && (
-                                        <div className="text-xs text-gray-700 space-y-1">
+                                        <div className="text-xs text-gray-700 dark:text-signal-body space-y-1">
                                           <p><strong>Verified:</strong> {phaseResult.verified ? 'Yes' : 'No'}</p>
                                         </div>
                                       )}
                                       
                                       {h.executionPhase === 'learn' && phaseResult && (
-                                        <div className="text-xs text-gray-700 space-y-1">
+                                        <div className="text-xs text-gray-700 dark:text-signal-body space-y-1">
                                           <p><strong>Action Taken:</strong> {phaseResult.actionTaken ? 'Yes' : 'No'}</p>
                                           <p><strong>Action Successful:</strong> {phaseResult.actionSuccessful ? 'Yes' : 'No'}</p>
                                           {phaseResult.insights && Array.isArray(phaseResult.insights) && (
@@ -1260,7 +1260,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                                       )}
                                       
                                       {h.error && (
-                                        <p className="text-xs text-red-600 mt-2"><strong>Error:</strong> {h.error}</p>
+                                        <p className="text-xs text-red-600 dark:text-signal-bad mt-2"><strong>Error:</strong> {h.error}</p>
                                       )}
                                     </div>
                                   );
@@ -1275,7 +1275,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                 )}
                 
                 {isExpanded && history.length === 0 && (
-                  <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg text-center text-gray-500">
+                  <div className="mt-4 p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-lg text-center text-gray-500 dark:text-signal-muted">
                     <p>No execution history available for this control loop.</p>
                   </div>
                 )}
@@ -1311,53 +1311,53 @@ const PredictionsTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Risk Predictions (6 Months)</h2>
+        <h2 className="font-display text-xl font-semibold">Risk Predictions (6 Months)</h2>
         <button
           onClick={loadPredictions}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90"
           disabled={loading}
         >
           {loading ? 'Loading...' : 'Refresh'}
         </button>
       </div>
       {predictions.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <TrendingUp className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-gray-600">No predictions available</p>
+        <div className="text-center py-12 bg-gray-50 dark:bg-white/[0.03] rounded-lg dark:rounded-2xl">
+          <TrendingUp className="mx-auto text-gray-400 dark:text-signal-muted mb-4" size={48} />
+          <p className="text-gray-600 dark:text-signal-sub">No predictions available</p>
         </div>
       ) : (
         <div className="space-y-4">
           {predictions.map((pred, idx) => (
-            <div key={idx} className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <div key={idx} className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{pred.riskType || 'Unknown Risk'}</h3>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h3 className="font-display font-semibold text-lg">{pred.riskType || 'Unknown Risk'}</h3>
+                  <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">
                     Predicted Date: {pred.predictedDate ? new Date(pred.predictedDate).toLocaleDateString() : 'N/A'}
                   </p>
                   {pred.predictedSeverity && (
-                    <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${
-                      pred.predictedSeverity === 'Critical' ? 'bg-red-100 text-red-800' :
-                      pred.predictedSeverity === 'High' ? 'bg-orange-100 text-orange-800' :
-                      pred.predictedSeverity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-blue-100 text-blue-800'
+                    <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em] ${
+                      pred.predictedSeverity === 'Critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' :
+                      pred.predictedSeverity === 'High' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn' :
+                      pred.predictedSeverity === 'Medium' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                      'bg-blue-100 dark:bg-signal-green/10 text-blue-800 dark:text-signal-green'
                     }`}>
                       {pred.predictedSeverity} Severity
                     </span>
                   )}
                 </div>
                 <div className="text-right ml-4">
-                  <p className="text-sm text-gray-600">Probability</p>
-                  <p className="text-2xl font-semibold">{Math.round((pred.predictedProbability || 0) * 100)}%</p>
+                  <p className="text-sm text-gray-600 dark:text-signal-sub">Probability</p>
+                  <p className="font-display text-2xl font-semibold">{Math.round((pred.predictedProbability || 0) * 100)}%</p>
                   {pred.confidence && (
-                    <p className="text-xs text-gray-500 mt-1">Confidence: {Math.round(pred.confidence * 100)}%</p>
+                    <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">Confidence: {Math.round(pred.confidence * 100)}%</p>
                   )}
                 </div>
               </div>
               {pred.factors && pred.factors.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Contributing Factors:</p>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/[0.06]">
+                  <p className="text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Contributing Factors:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-600 dark:text-signal-sub space-y-1">
                     {pred.factors.map((factor: string, fIdx: number) => (
                       <li key={fIdx}>{factor}</li>
                     ))}
@@ -1365,7 +1365,7 @@ const PredictionsTab: React.FC = () => {
                 </div>
               )}
               {pred.riskId && (
-                <p className="text-xs text-gray-400 mt-2">Risk ID: {pred.riskId}</p>
+                <p className="text-xs text-gray-400 dark:text-signal-muted mt-2">Risk ID: {pred.riskId}</p>
               )}
             </div>
           ))}
@@ -1402,17 +1402,17 @@ const SimulationsTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Compliance Digital Twin</h2>
-      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+      <h2 className="font-display text-xl font-semibold">Compliance Digital Twin</h2>
+      <div className="bg-white dark:bg-gradient-to-br dark:from-[#0F1B18] dark:to-[#0C1017] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-signal-green/25">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
               Scenario Type
             </label>
             <select
               value={scenarioType}
               onChange={(e) => setScenarioType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
             >
               <option value="control_change">Control Change</option>
               <option value="policy_update">Policy Update</option>
@@ -1431,52 +1431,52 @@ const SimulationsTab: React.FC = () => {
           <button
             onClick={handleRunSimulation}
             disabled={loading}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="w-full px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 disabled:opacity-50"
           >
             {loading ? 'Running Simulation...' : 'Run Simulation'}
           </button>
         </div>
         {result && (
-          <div className="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-lg mb-4">Simulation Result</h3>
+          <div className="mt-6 p-6 bg-gray-50 dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06]">
+            <h3 className="font-display font-semibold text-lg mb-4">Simulation Result</h3>
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-white p-3 rounded">
-                <p className="text-sm text-gray-600">Baseline Score</p>
-                <p className="text-2xl font-bold">{result.baselineScore}%</p>
+              <div className="bg-white dark:bg-white/[0.03] p-3 rounded">
+                <p className="text-sm text-gray-600 dark:text-signal-sub">Baseline Score</p>
+                <p className="font-display text-2xl font-bold">{result.baselineScore}%</p>
               </div>
-              <div className="bg-white p-3 rounded">
-                <p className="text-sm text-gray-600">Simulated Score</p>
-                <p className="text-2xl font-bold">{result.simulatedScore}%</p>
+              <div className="bg-white dark:bg-white/[0.03] p-3 rounded">
+                <p className="text-sm text-gray-600 dark:text-signal-sub">Simulated Score</p>
+                <p className="font-display text-2xl font-bold">{result.simulatedScore}%</p>
               </div>
             </div>
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-1">Score Change</p>
-              <p className={`text-xl font-semibold ${result.scoreChange > 0 ? 'text-green-600' : result.scoreChange < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+              <p className="text-sm text-gray-600 dark:text-signal-sub mb-1">Score Change</p>
+              <p className={`font-display text-xl font-semibold ${result.scoreChange > 0 ? 'text-green-600 dark:text-signal-good' : result.scoreChange < 0 ? 'text-red-600 dark:text-signal-bad' : 'text-gray-600 dark:text-signal-sub'}`}>
                 {result.scoreChange > 0 ? '+' : ''}{result.scoreChange}%
               </p>
             </div>
             {result.affectedControls !== undefined && (
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-1">Affected Controls</p>
-                <p className="text-lg font-semibold">{result.affectedControls}</p>
+                <p className="text-sm text-gray-600 dark:text-signal-sub mb-1">Affected Controls</p>
+                <p className="font-display text-lg font-semibold">{result.affectedControls}</p>
               </div>
             )}
             {result.affectedFrameworks !== undefined && (
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-1">Affected Frameworks</p>
-                <p className="text-lg font-semibold">{result.affectedFrameworks}</p>
+                <p className="text-sm text-gray-600 dark:text-signal-sub mb-1">Affected Frameworks</p>
+                <p className="font-display text-lg font-semibold">{result.affectedFrameworks}</p>
               </div>
             )}
             {result.confidence !== undefined && (
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-1">Confidence</p>
-                <p className="text-lg font-semibold">{Math.round(result.confidence * 100)}%</p>
+                <p className="text-sm text-gray-600 dark:text-signal-sub mb-1">Confidence</p>
+                <p className="font-display text-lg font-semibold">{Math.round(result.confidence * 100)}%</p>
               </div>
             )}
             {result.recommendations && result.recommendations.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-300">
-                <p className="text-sm font-medium text-gray-700 mb-2">Recommendations:</p>
-                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+              <div className="mt-4 pt-4 border-t border-gray-300 dark:border-white/[0.10]">
+                <p className="text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Recommendations:</p>
+                <ul className="list-disc list-inside text-sm text-gray-600 dark:text-signal-sub space-y-1">
                   {result.recommendations.map((rec: string, idx: number) => (
                     <li key={idx}>{rec}</li>
                   ))}
@@ -1484,9 +1484,9 @@ const SimulationsTab: React.FC = () => {
               </div>
             )}
             {result.riskChanges && Array.isArray(result.riskChanges) && result.riskChanges.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-300">
-                <p className="text-sm font-medium text-gray-700 mb-2">Risk Changes:</p>
-                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+              <div className="mt-4 pt-4 border-t border-gray-300 dark:border-white/[0.10]">
+                <p className="text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Risk Changes:</p>
+                <ul className="list-disc list-inside text-sm text-gray-600 dark:text-signal-sub space-y-1">
                   {result.riskChanges.map((risk: any, idx: number) => (
                     <li key={idx}>
                       {risk.riskType || risk.type}: {risk.change || risk.description || 'Risk change detected'}
@@ -1522,7 +1522,7 @@ const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Red Team & Adversarial Testing</h2>
+        <h2 className="font-display text-xl font-semibold">Red Team & Adversarial Testing</h2>
         <button
           onClick={handleRunScan}
           disabled={scanning}
@@ -1534,7 +1534,7 @@ const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
       {results.length > 0 && (
         <div className="space-y-4">
           {results.map((result, idx) => (
-            <div key={idx} className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <div key={idx} className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <h3 className="font-semibold">Scenario: {result.scenarioId?.replace(/redteam_\d+_/, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || `Scenario ${idx + 1}`}</h3>
@@ -1549,7 +1549,7 @@ const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
                           window.location.hash = '#frameworks';
                         }
                       }}
-                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                      className="px-3 py-1 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas text-xs rounded hover:bg-blue-700 dark:hover:bg-signal-green/90"
                     >
                       View Controls
                     </button>
@@ -1570,8 +1570,8 @@ const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
                     </button>
                   )}
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  result.success ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                <span className={`px-3 py-1 rounded-full text-sm font-medium dark:font-mono dark:text-[11px] dark:uppercase dark:tracking-[0.12em] ${
+                  result.success ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' : 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good'
                 }`}>
                   {result.success ? 'Vulnerabilities Found' : 'No Issues'}
                 </span>
@@ -1580,12 +1580,12 @@ const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
                 <div className="mt-4 space-y-3">
                   <p className="font-medium mb-2">Vulnerabilities:</p>
                   {result.vulnerabilitiesFound.map((vuln: any, vIdx: number) => (
-                    <div key={vIdx} className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded">
+                    <div key={vIdx} className="border-l-4 border-red-500 dark:border-signal-bad pl-4 py-2 bg-red-50 dark:bg-signal-bad/[0.06] rounded">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{vuln.type}: {vuln.description}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-signal-ink">{vuln.type}: {vuln.description}</p>
                           {vuln.affectedControls && vuln.affectedControls.length > 0 && (
-                            <p className="text-xs text-gray-600 mt-1">Affected Controls: {vuln.affectedControls.length}</p>
+                            <p className="text-xs text-gray-600 dark:text-signal-sub mt-1">Affected Controls: {vuln.affectedControls.length}</p>
                           )}
                         </div>
                         <div className="flex space-x-2 ml-4">
@@ -1606,7 +1606,7 @@ const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
                                   window.location.hash = '#frameworks';
                                 }
                               }}
-                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                              className="px-3 py-1 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas text-xs rounded hover:bg-blue-700 dark:hover:bg-signal-green/90"
                             >
                               Upload Evidence: {vuln.description.match(/"([^"]+)"/)?.[1] || 'Control'}
                             </button>
@@ -1685,11 +1685,11 @@ const SwarmTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Federated Swarm Insights</h2>
+        <h2 className="font-display text-xl font-semibold">Federated Swarm Insights</h2>
         <button
           onClick={loadInsights}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 disabled:opacity-50"
         >
           {loading ? 'Loading...' : 'Refresh'}
         </button>
@@ -1697,8 +1697,8 @@ const SwarmTab: React.FC = () => {
 
       {/* Framework Filter */}
       {availableFrameworks.length > 0 && (
-        <div className="mb-4 bg-white p-4 rounded-lg shadow border border-gray-200">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="mb-4 bg-white dark:bg-white/[0.03] p-4 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
+          <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">
             Filter by Frameworks (optional)
           </label>
           <div className="flex flex-wrap gap-2">
@@ -1714,9 +1714,9 @@ const SwarmTab: React.FC = () => {
                       setSelectedFrameworks(selectedFrameworks.filter(f => f !== framework));
                     }
                   }}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-gray-300 dark:border-white/[0.10] text-blue-600 dark:text-signal-green focus:ring-blue-500 dark:focus:ring-signal-green/40"
                 />
-                <span className="text-sm text-gray-700">{framework}</span>
+                <span className="text-sm text-gray-700 dark:text-signal-body">{framework}</span>
               </label>
             ))}
           </div>
@@ -1726,56 +1726,56 @@ const SwarmTab: React.FC = () => {
       {/* Stats Summary */}
       {insights.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
-            <p className="text-sm text-gray-600">Total Insights</p>
-            <p className="text-2xl font-bold">{insights.length}</p>
+          <div className="bg-white dark:bg-white/[0.03] p-4 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
+            <p className="text-sm text-gray-600 dark:text-signal-sub">Total Insights</p>
+            <p className="font-display text-2xl font-bold">{insights.length}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
-            <p className="text-sm text-gray-600">Avg Confidence</p>
-            <p className="text-2xl font-bold">
+          <div className="bg-white dark:bg-white/[0.03] p-4 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
+            <p className="text-sm text-gray-600 dark:text-signal-sub">Avg Confidence</p>
+            <p className="font-display text-2xl font-bold">
               {Math.round((insights.reduce((sum, i) => sum + (i.confidence || 0), 0) / insights.length) * 100)}%
             </p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
-            <p className="text-sm text-gray-600">Total Sources</p>
-            <p className="text-2xl font-bold">
+          <div className="bg-white dark:bg-white/[0.03] p-4 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
+            <p className="text-sm text-gray-600 dark:text-signal-sub">Total Sources</p>
+            <p className="font-display text-2xl font-bold">
               {insights.reduce((sum, i) => sum + (i.sourceCount || 0), 0)}
             </p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
-            <p className="text-sm text-gray-600">Last Updated</p>
+          <div className="bg-white dark:bg-white/[0.03] p-4 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
+            <p className="text-sm text-gray-600 dark:text-signal-sub">Last Updated</p>
             <p className="text-sm font-semibold">{new Date().toLocaleTimeString()}</p>
           </div>
         </div>
       )}
       {insights.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Brain className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-gray-600">No swarm insights available</p>
+        <div className="text-center py-12 bg-gray-50 dark:bg-white/[0.03] rounded-lg dark:rounded-2xl">
+          <Brain className="mx-auto text-gray-400 dark:text-signal-muted mb-4" size={48} />
+          <p className="text-gray-600 dark:text-signal-sub">No swarm insights available</p>
         </div>
       ) : (
         <div className="space-y-4">
           {insights.map((insight, idx) => (
-            <div key={idx} className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <div key={idx} className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="font-semibold">{insight.insightType.replace('_', ' ').toUpperCase()}</h3>
-                  <p className="text-gray-700 mt-2">{insight.description}</p>
+                  <p className="text-gray-700 dark:text-signal-body mt-2">{insight.description}</p>
                   {insight.recommendations && insight.recommendations.length > 0 && (
                     <div className="mt-4">
                       <p className="font-medium mb-2">Recommendations:</p>
                       <ul className="list-disc list-inside space-y-1">
                         {insight.recommendations.map((rec: string, rIdx: number) => (
-                          <li key={rIdx} className="text-sm text-gray-600">{rec}</li>
+                          <li key={rIdx} className="text-sm text-gray-600 dark:text-signal-sub">{rec}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                 </div>
                 <div className="ml-4 text-right">
-                  <p className="text-sm text-gray-600">Confidence</p>
-                  <p className="text-lg font-semibold">{Math.round(insight.confidence * 100)}%</p>
-                  <p className="text-xs text-gray-500 mt-1">{insight.sourceCount} sources</p>
+                  <p className="text-sm text-gray-600 dark:text-signal-sub">Confidence</p>
+                  <p className="font-display text-lg font-semibold">{Math.round(insight.confidence * 100)}%</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">{insight.sourceCount} sources</p>
                 </div>
               </div>
             </div>
@@ -1837,69 +1837,69 @@ const IoTTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">IoT Devices</h2>
+        <h2 className="font-display text-xl font-semibold">IoT Devices</h2>
         <button
           onClick={() => setShowRegister(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90"
         >
           + Register Device
         </button>
       </div>
 
       {showRegister && (
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
           <h3 className="font-semibold mb-4">Register New IoT Device</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Device ID</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Device ID</label>
               <input
                 type="text"
                 value={deviceForm.deviceId}
                 onChange={(e) => setDeviceForm({ ...deviceForm, deviceId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                 placeholder="device-001"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Device Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Device Type</label>
               <input
                 type="text"
                 value={deviceForm.deviceType}
                 onChange={(e) => setDeviceForm({ ...deviceForm, deviceType: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                 placeholder="Sensor, Camera, etc."
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Location</label>
               <input
                 type="text"
                 value={deviceForm.location}
                 onChange={(e) => setDeviceForm({ ...deviceForm, location: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                 placeholder="Building A, Floor 3"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">MQTT Topic (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">MQTT Topic (optional)</label>
               <input
                 type="text"
                 value={deviceForm.mqttTopic}
                 onChange={(e) => setDeviceForm({ ...deviceForm, mqttTopic: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                 placeholder="devices/device-001/data"
               />
             </div>
             <div className="flex space-x-3">
               <button
                 onClick={handleRegisterDevice}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90"
               >
                 Register
               </button>
               <button
                 onClick={() => setShowRegister(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 dark:bg-white/[0.08] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.12]"
               >
                 Cancel
               </button>
@@ -1909,25 +1909,25 @@ const IoTTab: React.FC = () => {
       )}
 
       {devices.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Cpu className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-gray-600">No IoT devices registered</p>
+        <div className="text-center py-12 bg-gray-50 dark:bg-white/[0.03] rounded-lg dark:rounded-2xl">
+          <Cpu className="mx-auto text-gray-400 dark:text-signal-muted mb-4" size={48} />
+          <p className="text-gray-600 dark:text-signal-sub">No IoT devices registered</p>
         </div>
       ) : (
         <div className="space-y-4">
           {devices.map((device) => (
-            <div key={device.id} className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <div key={device.id} className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold">{device.deviceId}</h3>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">
                     {device.deviceType} • {device.location}
                   </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  device.complianceStatus === 'compliant' ? 'bg-green-100 text-green-800' :
-                  device.complianceStatus === 'non_compliant' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
+                <span className={`px-3 py-1 rounded-full text-sm font-medium dark:font-mono dark:text-[11px] dark:uppercase dark:tracking-[0.12em] ${
+                  device.complianceStatus === 'compliant' ? 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good' :
+                  device.complianceStatus === 'non_compliant' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' :
+                  'bg-gray-100 dark:bg-white/[0.06] text-gray-800 dark:text-signal-body'
                 }`}>
                   {device.complianceStatus}
                 </span>
@@ -2024,7 +2024,7 @@ const NeuroSymbolicTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Tabs for different views */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-white/[0.06]">
         <nav className="-mb-px flex space-x-8">
           {[
             { id: 'reasoning', label: 'Hybrid Reasoning' },
@@ -2037,8 +2037,8 @@ const NeuroSymbolicTab: React.FC = () => {
               onClick={() => setActiveView(view.id as any)}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeView === view.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 dark:border-signal-green text-blue-600 dark:text-signal-green'
+                  : 'border-transparent text-gray-500 dark:text-signal-muted hover:text-gray-700 dark:hover:text-signal-body hover:border-gray-300 dark:hover:border-white/[0.16]'
               }`}
             >
               {view.label}
@@ -2050,18 +2050,18 @@ const NeuroSymbolicTab: React.FC = () => {
       {/* Hybrid Reasoning View */}
       {activeView === 'reasoning' && (
         <div className="space-y-4">
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <h3 className="text-lg font-semibold mb-4">Hybrid Neural-Symbolic Reasoning</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
+            <h3 className="font-display text-lg font-semibold mb-4">Hybrid Neural-Symbolic Reasoning</h3>
+            <p className="text-sm text-gray-600 dark:text-signal-sub mb-4">
               Combine neural network predictions with symbolic rule-based reasoning for explainable AI decisions.
             </p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Query</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Query</label>
                 <textarea
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                   rows={4}
                   placeholder="e.g., What actions should be taken for a high-risk non-compliant control?"
                 />
@@ -2069,7 +2069,7 @@ const NeuroSymbolicTab: React.FC = () => {
               <button
                 onClick={handleHybridReasoning}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 disabled:opacity-50"
               >
                 {loading ? (
                   <span className="flex items-center">
@@ -2084,31 +2084,31 @@ const NeuroSymbolicTab: React.FC = () => {
 
             {reasoningResult && (
               <div className="mt-6 space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-900 mb-2">Hybrid Result</h4>
-                  <p className="text-blue-800">{reasoningResult.hybridResult?.finalDecision || 'N/A'}</p>
-                  <p className="text-sm text-blue-700 mt-2">
+                <div className="bg-blue-50 dark:bg-signal-green/[0.06] p-4 rounded-lg border border-blue-200 dark:border-signal-green/20">
+                  <h4 className="font-semibold text-blue-900 dark:text-signal-green mb-2">Hybrid Result</h4>
+                  <p className="text-blue-800 dark:text-signal-green">{reasoningResult.hybridResult?.finalDecision || 'N/A'}</p>
+                  <p className="text-sm text-blue-700 dark:text-signal-green mt-2">
                     Confidence: {(reasoningResult.hybridResult?.confidence * 100 || 0).toFixed(0)}%
                   </p>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="bg-gray-50 dark:bg-white/[0.03] p-4 rounded-lg border border-gray-200 dark:border-white/[0.06]">
                   <h4 className="font-semibold mb-2">Explanation</h4>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  <p className="text-sm text-gray-700 dark:text-signal-body whitespace-pre-wrap">
                     {reasoningResult.hybridResult?.explanation || 'No explanation available'}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                    <h4 className="font-semibold text-purple-900 mb-2">Neural Prediction</h4>
-                    <p className="text-purple-800 text-sm">{reasoningResult.neuralPrediction?.result || 'N/A'}</p>
-                    <p className="text-xs text-purple-700 mt-1">
+                  <div className="bg-purple-50 dark:bg-signal-violet/10 p-4 rounded-lg border border-purple-200 dark:border-signal-violet/20">
+                    <h4 className="font-semibold text-purple-900 dark:text-signal-violet mb-2">Neural Prediction</h4>
+                    <p className="text-purple-800 dark:text-signal-violet text-sm">{reasoningResult.neuralPrediction?.result || 'N/A'}</p>
+                    <p className="text-xs text-purple-700 dark:text-signal-violet mt-1">
                       Confidence: {(reasoningResult.neuralPrediction?.confidence * 100 || 0).toFixed(0)}%
                     </p>
                   </div>
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <h4 className="font-semibold text-green-900 mb-2">Symbolic Reasoning</h4>
-                    <p className="text-green-800 text-sm">{reasoningResult.symbolicReasoning?.conclusion || 'N/A'}</p>
-                    <p className="text-xs text-green-700 mt-1">
+                  <div className="bg-green-50 dark:bg-signal-good/[0.06] p-4 rounded-lg border border-green-200 dark:border-signal-good/20">
+                    <h4 className="font-semibold text-green-900 dark:text-signal-good mb-2">Symbolic Reasoning</h4>
+                    <p className="text-green-800 dark:text-signal-good text-sm">{reasoningResult.symbolicReasoning?.conclusion || 'N/A'}</p>
+                    <p className="text-xs text-green-700 dark:text-signal-good mt-1">
                       Confidence: {(reasoningResult.symbolicReasoning?.confidence * 100 || 0).toFixed(0)}%
                     </p>
                   </div>
@@ -2122,46 +2122,46 @@ const NeuroSymbolicTab: React.FC = () => {
       {/* Causal Reasoning View */}
       {activeView === 'causal' && (
         <div className="space-y-4">
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <h3 className="text-lg font-semibold mb-4">Causal Reasoning for Compliance Violations</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
+            <h3 className="font-display text-lg font-semibold mb-4">Causal Reasoning for Compliance Violations</h3>
+            <p className="text-sm text-gray-600 dark:text-signal-sub mb-4">
               Identify root causes and causal chains for compliance violations using neural-symbolic reasoning.
             </p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Control ID</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Control ID</label>
                 <input
                   type="text"
                   value={violationData.controlId}
                   onChange={(e) => setViolationData({ ...violationData, controlId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                   placeholder="control-id-123"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Framework ID</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Framework ID</label>
                 <input
                   type="text"
                   value={violationData.frameworkId}
                   onChange={(e) => setViolationData({ ...violationData, frameworkId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                   placeholder="framework-id-456"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Violation Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Violation Type</label>
                 <input
                   type="text"
                   value={violationData.violationType}
                   onChange={(e) => setViolationData({ ...violationData, violationType: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                   placeholder="Non-Compliant, Missing Evidence, etc."
                 />
               </div>
               <button
                 onClick={handleCausalReasoning}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 disabled:opacity-50"
               >
                 {loading ? (
                   <span className="flex items-center">
@@ -2176,25 +2176,25 @@ const NeuroSymbolicTab: React.FC = () => {
 
             {causalResult && (
               <div className="mt-6 space-y-4">
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                  <h4 className="font-semibold text-red-900 mb-2">Root Causes</h4>
-                  <ul className="list-disc list-inside text-red-800 space-y-1">
+                <div className="bg-red-50 dark:bg-signal-bad/[0.06] p-4 rounded-lg border border-red-200 dark:border-signal-bad/20">
+                  <h4 className="font-semibold text-red-900 dark:text-signal-bad mb-2">Root Causes</h4>
+                  <ul className="list-disc list-inside text-red-800 dark:text-signal-bad space-y-1">
                     {causalResult.rootCauses?.map((cause: string, i: number) => (
                       <li key={i}>{cause}</li>
                     ))}
                   </ul>
                 </div>
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <h4 className="font-semibold text-yellow-900 mb-2">Causal Chain</h4>
-                  <ul className="list-disc list-inside text-yellow-800 space-y-1">
+                <div className="bg-yellow-50 dark:bg-signal-warn/[0.06] p-4 rounded-lg border border-yellow-200 dark:border-signal-warn/20">
+                  <h4 className="font-semibold text-yellow-900 dark:text-signal-warn mb-2">Causal Chain</h4>
+                  <ul className="list-disc list-inside text-yellow-800 dark:text-signal-warn space-y-1">
                     {causalResult.causalChain?.map((step: string, i: number) => (
                       <li key={i}>{step}</li>
                     ))}
                   </ul>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <h4 className="font-semibold text-green-900 mb-2">Recommendations</h4>
-                  <ul className="list-disc list-inside text-green-800 space-y-1">
+                <div className="bg-green-50 dark:bg-signal-good/[0.06] p-4 rounded-lg border border-green-200 dark:border-signal-good/20">
+                  <h4 className="font-semibold text-green-900 dark:text-signal-good mb-2">Recommendations</h4>
+                  <ul className="list-disc list-inside text-green-800 dark:text-signal-good space-y-1">
                     {causalResult.recommendations?.map((rec: string, i: number) => (
                       <li key={i}>{rec}</li>
                     ))}
@@ -2209,16 +2209,16 @@ const NeuroSymbolicTab: React.FC = () => {
       {/* Rule Inference View */}
       {activeView === 'rules' && (
         <div className="space-y-4">
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <h3 className="text-lg font-semibold mb-4">Infer Rules from Patterns</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
+            <h3 className="font-display text-lg font-semibold mb-4">Infer Rules from Patterns</h3>
+            <p className="text-sm text-gray-600 dark:text-signal-sub mb-4">
               Automatically infer new compliance rules from observed patterns in your data.
             </p>
             <div className="space-y-4">
               {patterns.map((pattern, index) => (
-                <div key={index} className="border border-gray-200 p-4 rounded-lg space-y-2">
+                <div key={index} className="border border-gray-200 dark:border-white/[0.06] p-4 rounded-lg space-y-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Condition</label>
                     <input
                       type="text"
                       value={pattern.condition}
@@ -2227,12 +2227,12 @@ const NeuroSymbolicTab: React.FC = () => {
                         newPatterns[index].condition = e.target.value;
                         setPatterns(newPatterns);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                       placeholder="control.status == 'Non-Compliant'"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Outcome</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Outcome</label>
                     <input
                       type="text"
                       value={pattern.outcome}
@@ -2241,12 +2241,12 @@ const NeuroSymbolicTab: React.FC = () => {
                         newPatterns[index].outcome = e.target.value;
                         setPatterns(newPatterns);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                       placeholder="create_remediation_plan"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Frequency</label>
                     <input
                       type="number"
                       value={pattern.frequency}
@@ -2255,7 +2255,7 @@ const NeuroSymbolicTab: React.FC = () => {
                         newPatterns[index].frequency = parseInt(e.target.value) || 0;
                         setPatterns(newPatterns);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted"
                       placeholder="10"
                     />
                   </div>
@@ -2264,14 +2264,14 @@ const NeuroSymbolicTab: React.FC = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setPatterns([...patterns, { condition: '', outcome: '', frequency: 0 }])}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 dark:bg-white/[0.08] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.12]"
                 >
                   + Add Pattern
                 </button>
                 <button
                   onClick={handleInferRules}
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 disabled:opacity-50"
                 >
                   {loading ? (
                     <span className="flex items-center">
@@ -2291,24 +2291,24 @@ const NeuroSymbolicTab: React.FC = () => {
       {/* History View */}
       {activeView === 'history' && (
         <div className="space-y-4">
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-            <h3 className="text-lg font-semibold mb-4">Reasoning History</h3>
+          <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
+            <h3 className="font-display text-lg font-semibold mb-4">Reasoning History</h3>
             {reasoningHistory.length === 0 ? (
-              <p className="text-gray-500">No reasoning history available</p>
+              <p className="text-gray-500 dark:text-signal-muted">No reasoning history available</p>
             ) : (
               <div className="space-y-4">
                 {reasoningHistory.map((item: any) => (
-                  <div key={item.id} className="border border-gray-200 p-4 rounded-lg">
+                  <div key={item.id} className="border border-gray-200 dark:border-white/[0.06] p-4 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <p className="font-medium">{item.query}</p>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-signal-muted">
                         {new Date(item.createdAt).toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-signal-sub">
                       Result: {item.hybridResult?.finalDecision || 'N/A'}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">
                       Confidence: {(item.hybridResult?.confidence * 100 || 0).toFixed(0)}%
                     </p>
                   </div>
@@ -2407,20 +2407,20 @@ const VRCollaborationsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+      <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h2 className="text-xl font-semibold mb-2 flex items-center">
+            <h2 className="font-display text-xl font-semibold mb-2 flex items-center">
               <Video className="mr-2" size={24} />
               VR Collaborative Review Sessions
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-signal-sub">
               3D compliance visualization, multi-user VR sessions, real-time collaboration, annotations, and training scenarios.
             </p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 flex items-center space-x-2"
           >
             <Plus size={18} />
             <span>Create Session</span>
@@ -2429,23 +2429,23 @@ const VRCollaborationsTab: React.FC = () => {
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="animate-spin text-blue-600" size={24} />
+            <Loader2 className="animate-spin text-blue-600 dark:text-signal-green" size={24} />
           </div>
         ) : sessions.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <Video className="mx-auto mb-4 text-gray-400" size={48} />
+          <div className="text-center py-8 text-gray-500 dark:text-signal-muted">
+            <Video className="mx-auto mb-4 text-gray-400 dark:text-signal-muted" size={48} />
             <p>No VR sessions available</p>
             <p className="text-sm mt-2">Create a new VR session to start collaborative compliance reviews</p>
           </div>
         ) : (
           <div className="space-y-4">
             {sessions.map((session) => (
-              <div key={session.id} className="border border-gray-200 rounded-lg p-4">
+              <div key={session.id} className="border border-gray-200 dark:border-white/[0.06] rounded-lg p-4">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-medium">{session.sessionName}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{session.description}</p>
-                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                    <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">{session.description}</p>
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-signal-muted">
                       <span>Type: {session.sessionType}</span>
                       <span>Status: {session.status}</span>
                       <span>Participants: {session.participants?.length || 0}</span>
@@ -2468,7 +2468,7 @@ const VRCollaborationsTab: React.FC = () => {
                         }
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90"
                   >
                     Join Session
                   </button>
@@ -2482,48 +2482,48 @@ const VRCollaborationsTab: React.FC = () => {
       {/* Create VR Session Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-signal-panel2 rounded-xl dark:rounded-2xl shadow-xl max-w-md w-full p-6 dark:border dark:border-white/[0.08]">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Create VR Session</h3>
+              <h3 className="font-display text-xl font-semibold">Create VR Session</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:hover:text-signal-body"
               >
                 <X size={24} />
               </button>
             </div>
             <form onSubmit={handleCreateSession} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   Session Name *
                 </label>
                 <input
                   type="text"
                   value={formData.sessionName}
                   onChange={(e) => setFormData({ ...formData, sessionName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 dark:focus:border-signal-green/50"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   Description
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 dark:focus:border-signal-green/50"
                   rows={3}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   Session Type *
                 </label>
                 <select
                   value={formData.sessionType}
                   onChange={(e) => setFormData({ ...formData, sessionType: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 dark:focus:border-signal-green/50"
                   required
                 >
                   <option value="review">Review</option>
@@ -2533,13 +2533,13 @@ const VRCollaborationsTab: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   Environment Template
                 </label>
                 <select
                   value={formData.environment}
                   onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 dark:focus:border-signal-green/50"
                 >
                   <option value="compliance_landscape">Compliance Landscape</option>
                   <option value="control_network">Control Network</option>
@@ -2548,14 +2548,14 @@ const VRCollaborationsTab: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   Max Participants
                 </label>
                 <input
                   type="number"
                   value={formData.maxParticipants}
                   onChange={(e) => setFormData({ ...formData, maxParticipants: parseInt(e.target.value) || 10 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 dark:focus:border-signal-green/50"
                   min={1}
                   max={50}
                 />
@@ -2564,14 +2564,14 @@ const VRCollaborationsTab: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.06]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 disabled:opacity-50"
                 >
                   {creating ? 'Creating...' : 'Create Session'}
                 </button>
@@ -2741,20 +2741,20 @@ const JITAccessTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+      <div className="bg-white dark:bg-white/[0.03] p-6 rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06]">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h2 className="text-xl font-semibold mb-2 flex items-center">
+            <h2 className="font-display text-xl font-semibold mb-2 flex items-center">
               <Timer className="mr-2" size={24} />
               Just-In-Time Admin Access
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-signal-sub">
               Grant temporary, time-bound privileged access that automatically expires after the task is done. Eliminate dormant admin accounts.
             </p>
           </div>
           <button
             onClick={() => setShowRequestModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 flex items-center space-x-2"
           >
             <Plus size={18} />
             <span>Request Access</span>
@@ -2763,13 +2763,13 @@ const JITAccessTab: React.FC = () => {
 
         {/* Admin Tabs */}
         {isAdmin && (
-          <div className="flex space-x-2 mb-4 border-b border-gray-200">
+          <div className="flex space-x-2 mb-4 border-b border-gray-200 dark:border-white/[0.06]">
             <button
               onClick={() => setActiveTab('my-requests')}
               className={`px-4 py-2 font-medium text-sm ${
                 activeTab === 'my-requests'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'border-b-2 border-blue-600 dark:border-signal-green text-blue-600 dark:text-signal-green'
+                  : 'text-gray-600 dark:text-signal-sub hover:text-gray-900 dark:hover:text-signal-ink'
               }`}
             >
               My Requests
@@ -2781,13 +2781,13 @@ const JITAccessTab: React.FC = () => {
               }}
               className={`px-4 py-2 font-medium text-sm relative ${
                 activeTab === 'pending-approvals'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'border-b-2 border-blue-600 dark:border-signal-green text-blue-600 dark:text-signal-green'
+                  : 'text-gray-600 dark:text-signal-sub hover:text-gray-900 dark:hover:text-signal-ink'
               }`}
             >
               Pending Approvals
               {pendingRequests.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                <span className="ml-2 px-2 py-0.5 bg-red-500 dark:bg-signal-bad text-white text-xs rounded-full">
                   {pendingRequests.length}
                 </span>
               )}
@@ -2799,8 +2799,8 @@ const JITAccessTab: React.FC = () => {
               }}
               className={`px-4 py-2 font-medium text-sm ${
                 activeTab === 'all-requests'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'border-b-2 border-blue-600 dark:border-signal-green text-blue-600 dark:text-signal-green'
+                  : 'text-gray-600 dark:text-signal-sub hover:text-gray-900 dark:hover:text-signal-ink'
               }`}
             >
               All Requests
@@ -2813,27 +2813,27 @@ const JITAccessTab: React.FC = () => {
           <div>
             {loadingPending ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="animate-spin text-blue-600" size={24} />
+                <Loader2 className="animate-spin text-blue-600 dark:text-signal-green" size={24} />
               </div>
             ) : pendingRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <CheckCircle className="mx-auto mb-4 text-gray-400" size={48} />
+              <div className="text-center py-8 text-gray-500 dark:text-signal-muted">
+                <CheckCircle className="mx-auto mb-4 text-gray-400 dark:text-signal-muted" size={48} />
                 <p>No pending access requests</p>
                 <p className="text-sm mt-2">All requests have been processed</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {pendingRequests.map((request: any) => (
-                  <div key={request.id} className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
+                  <div key={request.id} className="border border-yellow-200 dark:border-signal-warn/20 bg-yellow-50 dark:bg-signal-warn/[0.06] rounded-lg p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
                           <h3 className="font-medium capitalize">{request.requestedPrivilege?.replace(/_/g, ' ') || 'Admin Access'}</h3>
-                          <span className="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs font-medium rounded">
+                          <span className="px-2 py-1 bg-yellow-200 dark:bg-signal-warn/20 text-yellow-800 dark:text-signal-warn text-xs font-medium rounded">
                             Pending Approval
                           </span>
                         </div>
-                        <div className="text-sm text-gray-600 space-y-1">
+                        <div className="text-sm text-gray-600 dark:text-signal-sub space-y-1">
                           <p><strong>Requested by:</strong> {request.user?.name || request.user?.email || 'Unknown User'}</p>
                           <p><strong>Reason:</strong> <span className="capitalize">{request.reason?.replace(/_/g, ' ') || 'N/A'}</span></p>
                           <p><strong>Duration:</strong> {request.duration} minutes</p>
@@ -2872,8 +2872,8 @@ const JITAccessTab: React.FC = () => {
         {isAdmin && activeTab === 'all-requests' && (
           <div>
             {allRequests.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <History className="mx-auto mb-4 text-gray-400" size={48} />
+              <div className="text-center py-8 text-gray-500 dark:text-signal-muted">
+                <History className="mx-auto mb-4 text-gray-400 dark:text-signal-muted" size={48} />
                 <p>No access requests found</p>
               </div>
             ) : (
@@ -2882,20 +2882,20 @@ const JITAccessTab: React.FC = () => {
                   const status = request.status || 'pending';
                   return (
                     <div key={request.id} className={`border rounded-lg p-4 ${
-                      status === 'approved' ? 'border-green-200 bg-green-50' :
-                      status === 'denied' ? 'border-red-200 bg-red-50' :
-                      status === 'pending' ? 'border-yellow-200 bg-yellow-50' :
-                      'border-gray-200 bg-gray-50'
+                      status === 'approved' ? 'border-green-200 dark:border-signal-good/20 bg-green-50 dark:bg-signal-good/[0.06]' :
+                      status === 'denied' ? 'border-red-200 dark:border-signal-bad/20 bg-red-50 dark:bg-signal-bad/[0.06]' :
+                      status === 'pending' ? 'border-yellow-200 dark:border-signal-warn/20 bg-yellow-50 dark:bg-signal-warn/[0.06]' :
+                      'border-gray-200 dark:border-white/[0.06] bg-gray-50 dark:bg-white/[0.03]'
                     }`}>
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <h3 className="font-medium capitalize">{request.requestedPrivilege?.replace(/_/g, ' ') || 'Admin Access'}</h3>
                             <span className={`px-2 py-1 text-xs font-medium rounded ${
-                              status === 'approved' ? 'bg-green-200 text-green-800' :
-                              status === 'denied' ? 'bg-red-200 text-red-800' :
-                              status === 'pending' ? 'bg-yellow-200 text-yellow-800' :
-                              'bg-gray-200 text-gray-800'
+                              status === 'approved' ? 'bg-green-200 dark:bg-signal-good/20 text-green-800 dark:text-signal-good' :
+                              status === 'denied' ? 'bg-red-200 dark:bg-signal-bad/20 text-red-800 dark:text-signal-bad' :
+                              status === 'pending' ? 'bg-yellow-200 dark:bg-signal-warn/20 text-yellow-800 dark:text-signal-warn' :
+                              'bg-gray-200 dark:bg-white/[0.08] text-gray-800 dark:text-signal-body'
                             }`}>
                               {status === 'approved' ? 'Approved' :
                                status === 'denied' ? 'Denied' :
@@ -2904,7 +2904,7 @@ const JITAccessTab: React.FC = () => {
                                status === 'revoked' ? 'Revoked' : status}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-600 space-y-1">
+                          <div className="text-sm text-gray-600 dark:text-signal-sub space-y-1">
                             <p><strong>Requested by:</strong> {request.user?.name || request.user?.email || 'Unknown User'}</p>
                             <p><strong>Reason:</strong> <span className="capitalize">{request.reason?.replace(/_/g, ' ') || 'N/A'}</span></p>
                             <p><strong>Duration:</strong> {request.duration} minutes</p>
@@ -2954,11 +2954,11 @@ const JITAccessTab: React.FC = () => {
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="animate-spin text-blue-600" size={24} />
+            <Loader2 className="animate-spin text-blue-600 dark:text-signal-green" size={24} />
           </div>
         ) : sessions.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <Timer className="mx-auto mb-4 text-gray-400" size={48} />
+          <div className="text-center py-8 text-gray-500 dark:text-signal-muted">
+            <Timer className="mx-auto mb-4 text-gray-400 dark:text-signal-muted" size={48} />
             <p>No active JIT access sessions</p>
             <p className="text-sm mt-2">Request temporary admin access when needed</p>
           </div>
@@ -2976,22 +2976,22 @@ const JITAccessTab: React.FC = () => {
               const sessionId = isSession ? session.id : (isRequest ? session.id : session.id);
               
               return (
-                <div key={sessionId} className="border border-gray-200 rounded-lg p-4">
+                <div key={sessionId} className="border border-gray-200 dark:border-white/[0.06] rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="font-medium capitalize">{privilege?.replace(/_/g, ' ') || 'Admin Access'}</h3>
-                      <p className="text-sm text-gray-600 mt-1 capitalize">{reason?.replace(/_/g, ' ') || 'N/A'}</p>
-                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      <p className="text-sm text-gray-600 dark:text-signal-sub mt-1 capitalize">{reason?.replace(/_/g, ' ') || 'N/A'}</p>
+                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-signal-muted">
+                        <span className={`px-2 py-1 rounded text-xs font-medium dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em] ${
                           status === 'active' || status === 'approved' 
-                            ? 'bg-green-100 text-green-800' 
+                            ? 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good' 
                             : status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
+                            ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn'
                             : status === 'revoked'
-                            ? 'bg-red-100 text-red-800'
+                            ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad'
                             : status === 'expired'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-gray-100 text-gray-800'
+                            ? 'bg-gray-100 dark:bg-white/[0.06] text-gray-800 dark:text-signal-body'
+                            : 'bg-gray-100 dark:bg-white/[0.06] text-gray-800 dark:text-signal-body'
                         }`}>
                           {status === 'active' ? 'Active' : status === 'approved' ? 'Approved' : status === 'pending' ? 'Pending' : status === 'revoked' ? 'Cancelled' : status === 'expired' ? 'Expired' : 'Unknown'}
                         </span>
@@ -3002,7 +3002,7 @@ const JITAccessTab: React.FC = () => {
                           <span>Actions: {session.actionsPerformed.length}</span>
                         )}
                         {isRequest && session.justification && (
-                          <span className="text-xs text-gray-400 truncate max-w-xs" title={session.justification}>
+                          <span className="text-xs text-gray-400 dark:text-signal-muted truncate max-w-xs" title={session.justification}>
                             {session.justification.substring(0, 50)}...
                           </span>
                         )}
@@ -3030,7 +3030,7 @@ const JITAccessTab: React.FC = () => {
                               }
                             }
                           }}
-                          className="px-4 py-2 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100"
+                          className="px-4 py-2 bg-yellow-50 dark:bg-signal-warn/[0.06] text-yellow-700 dark:text-signal-warn rounded-lg hover:bg-yellow-100 dark:hover:bg-signal-warn/15"
                         >
                           Cancel
                         </button>
@@ -3049,7 +3049,7 @@ const JITAccessTab: React.FC = () => {
                                 });
                             }
                           }}
-                          className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                          className="px-4 py-2 bg-red-50 dark:bg-signal-bad/[0.06] text-red-600 dark:text-signal-bad rounded-lg hover:bg-red-100 dark:hover:bg-signal-bad/15"
                         >
                           Revoke
                         </button>
@@ -3062,7 +3062,7 @@ const JITAccessTab: React.FC = () => {
                             : `Session ID: ${sessionId}\nPrivilege: ${privilege}\nStatus: ${status}\n${expiresAt ? `Expires: ${new Date(expiresAt).toLocaleString()}` : ''}`;
                           toast.info(details);
                         }}
-                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                        className="px-4 py-2 bg-blue-50 dark:bg-signal-green/[0.06] text-blue-600 dark:text-signal-green rounded-lg hover:bg-blue-100 dark:hover:bg-signal-green/15"
                       >
                         View Details
                       </button>
@@ -3080,25 +3080,25 @@ const JITAccessTab: React.FC = () => {
       {/* Request JIT Access Modal */}
       {showRequestModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-signal-panel2 rounded-xl dark:rounded-2xl shadow-xl max-w-md w-full p-6 dark:border dark:border-white/[0.08]">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Request JIT Access</h3>
+              <h3 className="font-display text-xl font-semibold">Request JIT Access</h3>
               <button
                 onClick={() => setShowRequestModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:hover:text-signal-body"
               >
                 <X size={24} />
               </button>
             </div>
             <form onSubmit={handleRequestAccess} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   Privilege Level *
                 </label>
                 <select
                   value={formData.privilege}
                   onChange={(e) => setFormData({ ...formData, privilege: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 dark:focus:border-signal-green/50"
                   required
                 >
                   <option value="admin">Admin</option>
@@ -3108,13 +3108,13 @@ const JITAccessTab: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   Reason *
                 </label>
                 <select
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 dark:focus:border-signal-green/50"
                   required
                 >
                   <option value="incident_response">Incident Response</option>
@@ -3126,45 +3126,45 @@ const JITAccessTab: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   Justification *
                 </label>
                 <textarea
                   value={formData.justification}
                   onChange={(e) => setFormData({ ...formData, justification: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 dark:focus:border-signal-green/50"
                   rows={3}
                   placeholder="Explain why you need temporary admin access..."
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   Duration (minutes) *
                 </label>
                 <input
                   type="number"
                   value={formData.duration}
                   onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 dark:focus:border-signal-green/50"
                   min={5}
                   max={480}
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">Maximum duration depends on privilege level</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">Maximum duration depends on privilege level</p>
               </div>
               <div className="flex space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowRequestModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.06]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={requesting}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 disabled:opacity-50"
                 >
                   {requesting ? 'Requesting...' : 'Request Access'}
                 </button>
@@ -3177,39 +3177,39 @@ const JITAccessTab: React.FC = () => {
       {/* Deny Request Modal */}
       {showDenyModal && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-signal-panel2 rounded-xl dark:rounded-2xl shadow-xl max-w-md w-full p-6 dark:border dark:border-white/[0.08]">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Deny Access Request</h3>
+              <h3 className="font-display text-xl font-semibold">Deny Access Request</h3>
               <button
                 onClick={() => {
                   setShowDenyModal(false);
                   setSelectedRequest(null);
                   setDenyReason('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:hover:text-signal-body"
               >
                 <X size={24} />
               </button>
             </div>
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-sm text-gray-600 dark:text-signal-sub mb-2">
                 <strong>Requested by:</strong> {selectedRequest.user?.name || selectedRequest.user?.email || 'Unknown User'}
               </p>
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-sm text-gray-600 dark:text-signal-sub mb-2">
                 <strong>Privilege:</strong> <span className="capitalize">{selectedRequest.requestedPrivilege?.replace(/_/g, ' ')}</span>
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-signal-sub">
                 <strong>Justification:</strong> {selectedRequest.justification || 'N/A'}
               </p>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                 Reason for Denial *
               </label>
               <textarea
                 value={denyReason}
                 onChange={(e) => setDenyReason(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg dark:rounded-xl dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 rows={4}
                 placeholder="Please provide a reason for denying this access request..."
                 required
@@ -3223,7 +3223,7 @@ const JITAccessTab: React.FC = () => {
                   setSelectedRequest(null);
                   setDenyReason('');
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.06]"
               >
                 Cancel
               </button>
@@ -3253,48 +3253,48 @@ const HomomorphicAITab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl shadow dark:shadow-none border border-gray-200 dark:border-white/[0.06] p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-semibold flex items-center">
-              <Lock className="mr-2 text-blue-500" size={24} />
+            <h2 className="font-display text-xl font-semibold flex items-center">
+              <Lock className="mr-2 text-blue-500 dark:text-signal-green" size={24} />
               Homomorphic AI
             </h2>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-600 dark:text-signal-sub mt-1">
               Privacy-preserving machine learning on encrypted data
             </p>
           </div>
           <button
             onClick={() => setShowFullView(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90"
           >
             Open Full Interface
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 mb-2">Key Generation</h3>
-            <p className="text-sm text-gray-600">
+          <div className="border border-gray-200 dark:border-white/[0.06] rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 dark:text-signal-ink mb-2">Key Generation</h3>
+            <p className="text-sm text-gray-600 dark:text-signal-sub">
               Generate encryption keys for BFV (integer) or CKKS (floating point) schemes
             </p>
           </div>
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 mb-2">Encryption/Decryption</h3>
-            <p className="text-sm text-gray-600">
+          <div className="border border-gray-200 dark:border-white/[0.06] rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 dark:text-signal-ink mb-2">Encryption/Decryption</h3>
+            <p className="text-sm text-gray-600 dark:text-signal-sub">
               Encrypt and decrypt data while preserving privacy
             </p>
           </div>
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 mb-2">ML Operations</h3>
-            <p className="text-sm text-gray-600">
+          <div className="border border-gray-200 dark:border-white/[0.06] rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 dark:text-signal-ink mb-2">ML Operations</h3>
+            <p className="text-sm text-gray-600 dark:text-signal-sub">
               Perform linear regression, statistics, and neural network inference on encrypted data
             </p>
           </div>
         </div>
 
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-signal-green/[0.06] border border-blue-200 dark:border-signal-green/20 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-signal-green">
             <strong>Note:</strong> Homomorphic encryption allows you to perform computations on encrypted data without ever decrypting it. 
             This ensures complete privacy while enabling AI/ML operations.
           </p>

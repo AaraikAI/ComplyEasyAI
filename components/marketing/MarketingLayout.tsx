@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Shield, ChevronDown, Menu, X } from 'lucide-react';
-import { ThemeToggleCompact } from '../ThemeToggle';
+import { Link, useLocation } from 'react-router-dom';
+import { ChevronDown, Menu, X } from 'lucide-react';
+import { SignalLogo } from './signal';
+import { FRAMEWORK_PILLARS } from '../../data/frameworkPillarContent';
 
 interface MarketingLayoutProps {
   children: React.ReactNode;
@@ -12,19 +13,13 @@ interface NavLinkItem {
   to: string;
 }
 
-/** Framework pillar pages (also used in the footer "Frameworks" column). */
-const FRAMEWORK_LINKS: NavLinkItem[] = [
-  { label: 'SOC 2', to: '/frameworks/soc-2' },
-  { label: 'ISO 27001', to: '/frameworks/iso-27001' },
-  { label: 'GDPR', to: '/frameworks/gdpr' },
-  { label: 'HIPAA', to: '/frameworks/hipaa' },
-  { label: 'EU AI Act', to: '/frameworks/eu-ai-act' },
-  { label: 'NIST AI RMF', to: '/frameworks/nist-ai-rmf' },
-  { label: 'PCI DSS', to: '/frameworks/pci-dss' },
-  { label: 'NIS2', to: '/frameworks/nis2' },
-];
+/** Framework pillar pages (footer "Frameworks" column), from the content module. */
+const FRAMEWORK_LINKS: NavLinkItem[] = Object.values(FRAMEWORK_PILLARS).map((f) => ({
+  label: f.name,
+  to: f.path,
+}));
 
-/** Competitor comparison pages (also used in the footer "Compare" column). */
+/** Competitor comparison pages (nav dropdown + footer "Compare" column). */
 const COMPARE_LINKS: NavLinkItem[] = [
   { label: 'Vanta alternative', to: '/compare/vanta-alternative' },
   { label: 'Drata alternative', to: '/compare/drata-alternative' },
@@ -51,69 +46,74 @@ const LEGAL_LINKS: NavLinkItem[] = [
   { label: 'DPA', to: '/dpa' },
 ];
 
-const Wordmark: React.FC<{ inverse?: boolean }> = ({ inverse = false }) => (
-  <span className="flex items-center gap-2">
-    <span className="rounded-lg bg-brand-600 p-1.5 shadow-lg shadow-brand-500/20">
-      <Shield className="h-5 w-5 text-white" aria-hidden="true" />
-    </span>
-    <span
-      className={`text-lg font-bold tracking-tight ${
-        inverse ? 'text-white' : 'text-surface-900 dark:text-white'
-      }`}
-    >
-      ComplyEasy AI
-    </span>
-  </span>
-);
+/** Primary nav links (Signal spec: Platform, Frameworks, Pricing, Compare). */
+const PRIMARY_LINKS: NavLinkItem[] = [
+  { label: 'Platform', to: '/platform' },
+  { label: 'Frameworks', to: '/frameworks' },
+  { label: 'Pricing', to: '/pricing' },
+];
 
 /**
- * Public chrome for marketing and content pages: a sticky header with primary
- * navigation and an SEO-rich footer. Wraps every content page (frameworks,
- * comparisons, blog, glossary, FAQ).
+ * Public chrome for marketing and content pages — "Signal" design system.
+ * Dark-only: sticky nav on the near-black canvas with the green pill CTA, and
+ * an SEO-rich dark footer. The root carries the `dark` class so legacy content
+ * pages (blog, glossary, FAQ) render their dark variants underneath.
  */
 const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [platformOpen, setPlatformOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const location = useLocation();
 
-  const navHover =
-    'text-sm font-medium text-surface-600 transition-colors hover:text-brand-600 dark:text-surface-300 dark:hover:text-brand-400';
+  const isActive = (to: string) =>
+    to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+
+  const navLink = (active: boolean) =>
+    `text-sm font-medium transition-colors ${
+      active ? 'text-signal-green' : 'text-signal-sub hover:text-signal-ink'
+    }`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-white font-sans text-surface-900 dark:bg-surface-950 dark:text-surface-100">
+    <div className="dark flex min-h-screen flex-col bg-signal-canvas font-plex text-signal-ink antialiased">
       {/* ============================== Header ============================== */}
-      <header className="sticky top-0 z-50 border-b border-surface-200/60 glass dark:border-surface-700/60 dark:glass-dark">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-signal-canvas/85 backdrop-blur-md">
+        <div className="mx-auto max-w-[1200px] px-6 md:px-10">
           <div className="flex h-16 items-center justify-between">
-            <Link to="/" aria-label="ComplyEasy AI home">
-              <Wordmark />
+            <Link to="/" aria-label="ComplyEasyAI home">
+              <SignalLogo />
             </Link>
 
             {/* Desktop navigation */}
-            <nav aria-label="Primary" className="hidden items-center gap-7 md:flex">
-              {/* Platform dropdown */}
+            <nav aria-label="Primary" className="hidden items-center gap-8 md:flex">
+              {PRIMARY_LINKS.map((item) => (
+                <Link key={item.to} to={item.to} className={navLink(isActive(item.to))}>
+                  {item.label}
+                </Link>
+              ))}
+
+              {/* Compare dropdown */}
               <div
                 className="relative"
-                onMouseEnter={() => setPlatformOpen(true)}
-                onMouseLeave={() => setPlatformOpen(false)}
+                onMouseEnter={() => setCompareOpen(true)}
+                onMouseLeave={() => setCompareOpen(false)}
               >
                 <button
                   type="button"
-                  className={`flex items-center gap-1 ${navHover}`}
+                  className={`flex items-center gap-1 ${navLink(isActive('/compare'))}`}
                   aria-haspopup="true"
-                  aria-expanded={platformOpen}
-                  onClick={() => setPlatformOpen((v) => !v)}
+                  aria-expanded={compareOpen}
+                  onClick={() => setCompareOpen((v) => !v)}
                 >
-                  Platform
+                  Compare
                   <ChevronDown size={14} aria-hidden="true" />
                 </button>
-                {platformOpen && (
-                  <div className="absolute left-0 top-full w-56 pt-2">
-                    <div className="grid grid-cols-1 gap-1 rounded-2xl border border-surface-200 bg-white p-2 shadow-xl dark:border-surface-700 dark:bg-surface-900">
-                      {FRAMEWORK_LINKS.map((item) => (
+                {compareOpen && (
+                  <div className="absolute left-0 top-full w-60 pt-2">
+                    <div className="grid grid-cols-1 gap-1 rounded-2xl border border-white/[0.08] bg-signal-panel p-2 shadow-2xl shadow-black/50">
+                      {COMPARE_LINKS.map((item) => (
                         <Link
                           key={item.to}
                           to={item.to}
-                          className="rounded-lg px-3 py-2 text-sm text-surface-600 transition-colors hover:bg-surface-50 hover:text-brand-600 dark:text-surface-300 dark:hover:bg-surface-800 dark:hover:text-brand-400"
+                          className="rounded-lg px-3 py-2 text-sm text-signal-sub transition-colors hover:bg-white/[0.05] hover:text-signal-green"
                         >
                           {item.label}
                         </Link>
@@ -122,45 +122,28 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
                   </div>
                 )}
               </div>
+            </nav>
 
-              <Link to="/compare/vanta-alternative" className={navHover}>
-                Compare
-              </Link>
-              <Link to="/" className={navHover}>
-                Pricing
-              </Link>
-              <Link to="/blog" className={navHover}>
-                Blog
-              </Link>
-              <Link to="/glossary" className={navHover}>
-                Glossary
-              </Link>
-              <Link to="/faq" className={navHover}>
-                FAQ
-              </Link>
-
-              <ThemeToggleCompact />
-
-              <Link to="/login" className={navHover}>
+            <div className="hidden items-center gap-6 md:flex">
+              <Link to="/login" className={navLink(false)}>
                 Log in
               </Link>
               <Link
-                to="/signup"
-                className="rounded-full bg-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                to="/demo"
+                className="rounded-full bg-signal-green px-5 py-2.5 text-sm font-semibold text-signal-canvas shadow-[0_6px_24px_rgba(56,232,166,0.28)] transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-signal-green/60"
               >
-                Start free
+                Book a demo
               </Link>
-            </nav>
+            </div>
 
             {/* Mobile toggle */}
             <div className="flex items-center gap-3 md:hidden">
-              <ThemeToggleCompact />
               <button
                 type="button"
                 onClick={() => setMobileOpen((v) => !v)}
                 aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={mobileOpen}
-                className="rounded-lg p-2 text-surface-600 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800"
+                className="rounded-lg p-2 text-signal-sub hover:bg-white/[0.06] hover:text-signal-ink"
               >
                 {mobileOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
@@ -172,30 +155,32 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
         {mobileOpen && (
           <nav
             aria-label="Mobile"
-            className="border-t border-surface-200 bg-white px-4 py-4 dark:border-surface-700 dark:bg-surface-950 md:hidden"
+            className="border-t border-white/[0.06] bg-signal-canvas px-6 py-4 md:hidden"
           >
             <div className="flex flex-col gap-1">
-              {[...FRAMEWORK_LINKS.slice(0, 4)].map((item) => (
+              {[...PRIMARY_LINKS, { label: 'Compare', to: '/compare/vanta-alternative' }].map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-50 dark:text-surface-200 dark:hover:bg-surface-800"
+                  className="rounded-lg px-3 py-2 text-sm text-signal-body hover:bg-white/[0.05] hover:text-signal-ink"
                 >
                   {item.label}
                 </Link>
               ))}
-              <Link to="/compare/vanta-alternative" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-50 dark:text-surface-200 dark:hover:bg-surface-800">Compare</Link>
-              <Link to="/blog" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-50 dark:text-surface-200 dark:hover:bg-surface-800">Blog</Link>
-              <Link to="/glossary" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-50 dark:text-surface-200 dark:hover:bg-surface-800">Glossary</Link>
-              <Link to="/faq" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-50 dark:text-surface-200 dark:hover:bg-surface-800">FAQ</Link>
-              <Link to="/login" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-50 dark:text-surface-200 dark:hover:bg-surface-800">Log in</Link>
               <Link
-                to="/signup"
+                to="/login"
                 onClick={() => setMobileOpen(false)}
-                className="mt-2 rounded-full bg-brand-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-brand-700"
+                className="rounded-lg px-3 py-2 text-sm text-signal-body hover:bg-white/[0.05] hover:text-signal-ink"
               >
-                Start free
+                Log in
+              </Link>
+              <Link
+                to="/demo"
+                onClick={() => setMobileOpen(false)}
+                className="mt-2 rounded-full bg-signal-green px-4 py-2.5 text-center text-sm font-semibold text-signal-canvas"
+              >
+                Book a demo
               </Link>
             </div>
           </nav>
@@ -203,44 +188,53 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
       </header>
 
       {/* ============================== Main =============================== */}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 bg-signal-canvas">{children}</main>
 
       {/* ============================== Footer ============================= */}
-      <footer className="border-t border-surface-800 bg-surface-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <footer className="border-t border-white/[0.06] bg-signal-canvas">
+        <div className="mx-auto max-w-[1200px] px-6 py-16 md:px-10">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
-              <Link to="/" aria-label="ComplyEasy AI home">
-                <Wordmark inverse />
+              <Link to="/" aria-label="ComplyEasyAI home">
+                <SignalLogo />
               </Link>
-              <p className="mt-4 text-sm text-surface-400">
-                AI-native compliance automation that helps teams achieve and maintain readiness across
-                security, privacy, and AI-governance frameworks.
+              <p className="mt-4 text-sm leading-relaxed text-signal-muted">
+                Autonomous compliance that watches your stack, closes the gaps, and keeps you
+                audit-ready across every major framework.
               </p>
             </div>
 
             {/* Frameworks */}
             <div>
-              <h2 className="mb-4 text-sm font-semibold text-white">Frameworks</h2>
-              <ul className="space-y-3 text-sm text-surface-400">
-                {FRAMEWORK_LINKS.map((item) => (
+              <h2 className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-signal-muted">
+                Frameworks
+              </h2>
+              <ul className="space-y-3 text-sm text-signal-sub">
+                {FRAMEWORK_LINKS.slice(0, 8).map((item) => (
                   <li key={item.to}>
-                    <Link to={item.to} className="transition-colors hover:text-white">
+                    <Link to={item.to} className="transition-colors hover:text-signal-ink">
                       {item.label}
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <Link to="/frameworks" className="text-signal-green transition-opacity hover:opacity-80">
+                    All frameworks →
+                  </Link>
+                </li>
               </ul>
             </div>
 
             {/* Compare */}
             <div>
-              <h2 className="mb-4 text-sm font-semibold text-white">Compare</h2>
-              <ul className="space-y-3 text-sm text-surface-400">
+              <h2 className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-signal-muted">
+                Compare
+              </h2>
+              <ul className="space-y-3 text-sm text-signal-sub">
                 {COMPARE_LINKS.map((item) => (
                   <li key={item.to}>
-                    <Link to={item.to} className="transition-colors hover:text-white">
+                    <Link to={item.to} className="transition-colors hover:text-signal-ink">
                       {item.label}
                     </Link>
                   </li>
@@ -250,11 +244,13 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
 
             {/* Resources */}
             <div>
-              <h2 className="mb-4 text-sm font-semibold text-white">Resources</h2>
-              <ul className="space-y-3 text-sm text-surface-400">
+              <h2 className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-signal-muted">
+                Resources
+              </h2>
+              <ul className="space-y-3 text-sm text-signal-sub">
                 {RESOURCE_LINKS.map((item) => (
                   <li key={item.to}>
-                    <Link to={item.to} className="transition-colors hover:text-white">
+                    <Link to={item.to} className="transition-colors hover:text-signal-ink">
                       {item.label}
                     </Link>
                   </li>
@@ -264,29 +260,33 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
 
             {/* Company + Legal */}
             <div>
-              <h2 className="mb-4 text-sm font-semibold text-white">Company</h2>
-              <ul className="space-y-3 text-sm text-surface-400">
+              <h2 className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-signal-muted">
+                Company
+              </h2>
+              <ul className="space-y-3 text-sm text-signal-sub">
                 <li>
-                  <a href="/about" className="transition-colors hover:text-white">
-                    About
-                  </a>
+                  <Link to="/platform" className="transition-colors hover:text-signal-ink">
+                    Platform
+                  </Link>
                 </li>
                 <li>
-                  <a href="/careers" className="transition-colors hover:text-white">
-                    Careers
-                  </a>
+                  <Link to="/pricing" className="transition-colors hover:text-signal-ink">
+                    Pricing
+                  </Link>
                 </li>
                 <li>
-                  <a href="/contact" className="transition-colors hover:text-white">
-                    Contact
-                  </a>
+                  <Link to="/demo" className="transition-colors hover:text-signal-ink">
+                    Book a demo
+                  </Link>
                 </li>
               </ul>
-              <h2 className="mb-4 mt-6 text-sm font-semibold text-white">Legal</h2>
-              <ul className="space-y-3 text-sm text-surface-400">
+              <h2 className="mb-4 mt-6 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-signal-muted">
+                Legal
+              </h2>
+              <ul className="space-y-3 text-sm text-signal-sub">
                 {LEGAL_LINKS.map((item) => (
                   <li key={item.to}>
-                    <Link to={item.to} className="transition-colors hover:text-white">
+                    <Link to={item.to} className="transition-colors hover:text-signal-ink">
                       {item.label}
                     </Link>
                   </li>
@@ -295,8 +295,25 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          <div className="mt-12 border-t border-surface-800 pt-8 text-sm text-surface-400">
-            &copy; 2026 ComplyEasy AI. All rights reserved.
+          <div className="mt-12 flex flex-col gap-4 border-t border-white/[0.06] pt-8 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <SignalLogo withWordmark={false} size={22} />
+              <span className="text-sm text-signal-muted">© 2026 ComplyEasyAI. All rights reserved.</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-5 font-mono text-[11px] uppercase tracking-[0.14em] text-signal-muted">
+              <Link to="/privacy" className="transition-colors hover:text-signal-sub">
+                Privacy
+              </Link>
+              <Link to="/terms" className="transition-colors hover:text-signal-sub">
+                Terms
+              </Link>
+              <Link to="/security" className="transition-colors hover:text-signal-sub">
+                Security
+              </Link>
+              <Link to="/status" className="transition-colors hover:text-signal-sub">
+                Status
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

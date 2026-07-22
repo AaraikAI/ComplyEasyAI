@@ -179,22 +179,22 @@ export const DMAGatekeeperManagement: React.FC = () => {
   const getDesignationStatusColor = (status: string) => {
     switch (status) {
       case 'designated':
-        return 'bg-orange-100 text-orange-800 border-orange-300';
+        return 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/30';
       case 'under_review':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-signal-amber/10 dark:text-signal-amber dark:border-signal-amber/30';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:border-white/[0.10]';
     }
   };
 
   const getComplianceStatusColor = (status: string) => {
     switch (status) {
       case 'compliant':
-        return 'text-green-600';
+        return 'text-green-600 dark:text-signal-good';
       case 'non_compliant':
-        return 'text-red-600';
+        return 'text-red-600 dark:text-signal-bad';
       default:
-        return 'text-gray-600';
+        return 'text-gray-600 dark:text-signal-muted';
     }
   };
 
@@ -208,7 +208,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-signal-green"></div>
       </div>
     );
   }
@@ -218,12 +218,12 @@ export const DMAGatekeeperManagement: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.dma')}</h2>
-          <p className="text-gray-600 mt-1">Manage gatekeeper platforms and track DMA obligations (Regulation EU 2022/1925)</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('euRegulations.dma')}</h2>
+          <p className="text-gray-600 mt-1 dark:text-signal-muted">Manage gatekeeper platforms and track DMA obligations (Regulation EU 2022/1925)</p>
         </div>
         <button
           onClick={() => setShowRegisterModal(true)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
           Register Platform
@@ -231,85 +231,85 @@ export const DMAGatekeeperManagement: React.FC = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-600" />
-          <span className="text-red-800">{error}</span>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 dark:bg-signal-bad/10 dark:border-signal-bad/30">
+          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-signal-bad" />
+          <span className="text-red-800 dark:text-signal-bad">{error}</span>
           <button onClick={() => setError(null)} className="ml-auto">
-            <X className="w-4 h-4 text-red-600" />
+            <X className="w-4 h-4 text-red-600 dark:text-signal-bad" />
           </button>
         </div>
       )}
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">{t('common.total')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{gatekeepers.length}</p>
+              <p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{t('common.total')}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1 dark:text-signal-ink dark:font-display">{gatekeepers.length}</p>
             </div>
-            <Building2 className="w-8 h-8 text-blue-600" />
+            <Building2 className="w-8 h-8 text-blue-600 dark:text-signal-blue" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">{t('common.status')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{t('common.status')}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1 dark:text-signal-ink dark:font-display">
                 {gatekeepers.filter(g => g.designationStatus === 'designated').length}
               </p>
             </div>
-            <Shield className="w-8 h-8 text-orange-600" />
+            <Shield className="w-8 h-8 text-orange-600 dark:text-signal-warn" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">{t('common.status')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{t('common.status')}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1 dark:text-signal-ink dark:font-display">
                 {gatekeepers.filter(g => g.complianceStatus === 'compliant').length}
               </p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-600" />
+            <CheckCircle className="w-8 h-8 text-green-600 dark:text-signal-good" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Obligations</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Total Obligations</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1 dark:text-signal-ink dark:font-display">
                 {gatekeepers.reduce((sum, g) => sum + g.obligations.length, 0)}
               </p>
             </div>
-            <BarChart3 className="w-8 h-8 text-purple-600" />
+            <BarChart3 className="w-8 h-8 text-purple-600 dark:text-signal-violet" />
           </div>
         </div>
       </div>
 
       {/* Gatekeepers List */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Registered Platforms</h3>
+      <div className="bg-white rounded-lg border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl">
+        <div className="p-6 border-b border-gray-200 dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">Registered Platforms</h3>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-white/[0.06]">
           {gatekeepers.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+            <div className="p-8 text-center text-gray-500 dark:text-signal-muted">
+              <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-signal-muted" />
               <p>No platforms registered yet</p>
               <button
                 onClick={() => setShowRegisterModal(true)}
-                className="mt-4 text-indigo-600 hover:text-indigo-700 font-medium"
+                className="mt-4 text-indigo-600 hover:text-indigo-700 dark:text-signal-green dark:hover:text-signal-green/90 font-medium"
               >
                 Register your first platform
               </button>
             </div>
           ) : (
             gatekeepers.map((gatekeeper) => (
-              <div key={gatekeeper.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={gatekeeper.id} className="p-6 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h4 className="text-lg font-semibold text-gray-900">{gatekeeper.platformName}</h4>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">{gatekeeper.platformName}</h4>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getDesignationStatusColor(gatekeeper.designationStatus)}`}>
                         {gatekeeper.designationStatus.replace('_', ' ').toUpperCase()}
                       </span>
@@ -320,42 +320,42 @@ export const DMAGatekeeperManagement: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 text-sm">
                       {gatekeeper.annualRevenue && (
                         <div>
-                          <span className="text-gray-600">Annual Revenue:</span>
-                          <p className="font-medium text-gray-900">{formatNumber(gatekeeper.annualRevenue)}</p>
+                          <span className="text-gray-600 dark:text-signal-muted">Annual Revenue:</span>
+                          <p className="font-medium text-gray-900 dark:text-signal-ink">{formatNumber(gatekeeper.annualRevenue)}</p>
                         </div>
                       )}
                       {gatekeeper.marketCapitalization && (
                         <div>
-                          <span className="text-gray-600">Market Cap:</span>
-                          <p className="font-medium text-gray-900">{formatNumber(gatekeeper.marketCapitalization)}</p>
+                          <span className="text-gray-600 dark:text-signal-muted">Market Cap:</span>
+                          <p className="font-medium text-gray-900 dark:text-signal-ink">{formatNumber(gatekeeper.marketCapitalization)}</p>
                         </div>
                       )}
                       {gatekeeper.monthlyActiveUsers && (
                         <div>
-                          <span className="text-gray-600">Monthly Users:</span>
-                          <p className="font-medium text-gray-900">{(gatekeeper.monthlyActiveUsers / 1000000).toFixed(1)}M</p>
+                          <span className="text-gray-600 dark:text-signal-muted">Monthly Users:</span>
+                          <p className="font-medium text-gray-900 dark:text-signal-ink">{(gatekeeper.monthlyActiveUsers / 1000000).toFixed(1)}M</p>
                         </div>
                       )}
                       <div>
-                        <span className="text-gray-600">CPS Count:</span>
-                        <p className="font-medium text-gray-900">{gatekeeper.corePlatformServices.length}</p>
+                        <span className="text-gray-600 dark:text-signal-muted">CPS Count:</span>
+                        <p className="font-medium text-gray-900 dark:text-signal-ink">{gatekeeper.corePlatformServices.length}</p>
                       </div>
                     </div>
                     <div className="mt-3">
-                      <p className="text-sm text-gray-600 mb-1">Core Platform Services:</p>
+                      <p className="text-sm text-gray-600 mb-1 dark:text-signal-muted">Core Platform Services:</p>
                       <div className="flex flex-wrap gap-2">
                         {gatekeeper.corePlatformServices.map((cps, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+                          <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs dark:bg-signal-blue/10 dark:text-signal-blue">
                             {cps.replace(/_/g, ' ')}
                           </span>
                         ))}
                       </div>
                     </div>
                     <div className="mt-3">
-                      <p className="text-sm text-gray-600 mb-1">Obligations ({gatekeeper.obligations.length}):</p>
+                      <p className="text-sm text-gray-600 mb-1 dark:text-signal-muted">Obligations ({gatekeeper.obligations.length}):</p>
                       <div className="flex flex-wrap gap-2">
                         {gatekeeper.obligations.map((obligation, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                          <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs dark:bg-white/[0.06] dark:text-signal-body">
                             {obligation.replace(/_/g, ' ')}
                           </span>
                         ))}
@@ -369,7 +369,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
                         await loadObligations(gatekeeper.id);
                         setShowObligationsModal(true);
                       }}
-                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-blue/15 dark:text-signal-blue dark:hover:bg-signal-blue/25 text-sm"
                     >
                       View Obligations
                     </button>
@@ -378,7 +378,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
                         setSelectedGatekeeper(gatekeeper);
                         setShowUpdateStatusModal(true);
                       }}
-                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 text-sm"
                     >
                       Update Status
                     </button>
@@ -387,7 +387,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
                         setSelectedGatekeeper(gatekeeper);
                         setShowReportModal(true);
                       }}
-                      className="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                      className="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10] text-sm"
                     >
                       Generate Report
                     </button>
@@ -401,28 +401,28 @@ export const DMAGatekeeperManagement: React.FC = () => {
 
       {/* Register Gatekeeper Modal */}
       {showRegisterModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Register Platform</h3>
-              <button onClick={() => setShowRegisterModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto dark:bg-signal-panel2 dark:border dark:border-white/[0.08]">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.08] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Register Platform</h3>
+              <button onClick={() => setShowRegisterModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleRegisterGatekeeper} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Platform Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Platform Name *</label>
                 <input
                   type="text"
                   required
                   value={registrationForm.platformName}
                   onChange={(e) => setRegistrationForm({ ...registrationForm, platformName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Core Platform Services *</label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-signal-body">Core Platform Services *</label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 dark:border-white/[0.10] dark:rounded-xl">
                   {corePlatformServicesOptions.map((cps) => (
                     <label key={cps} className="flex items-center gap-2">
                       <input
@@ -441,59 +441,59 @@ export const DMAGatekeeperManagement: React.FC = () => {
                             });
                           }
                         }}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-white/[0.20] dark:bg-white/[0.04] dark:text-signal-green"
                       />
-                      <span className="text-sm text-gray-700">{cps.replace(/_/g, ' ')}</span>
+                      <span className="text-sm text-gray-700 dark:text-signal-body">{cps.replace(/_/g, ' ')}</span>
                     </label>
                   ))}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Annual Revenue (€)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Annual Revenue (€)</label>
                   <input
                     type="number"
                     value={registrationForm.annualRevenue}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, annualRevenue: e.target.value })}
                     placeholder="e.g., 75000000000"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Threshold: €75B for gatekeeper designation</p>
+                  <p className="text-xs text-gray-500 mt-1 dark:text-signal-muted">Threshold: €75B for gatekeeper designation</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Market Capitalization (€)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Market Capitalization (€)</label>
                   <input
                     type="number"
                     value={registrationForm.marketCapitalization}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, marketCapitalization: e.target.value })}
                     placeholder="e.g., 750000000000"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Threshold: €750B for gatekeeper designation</p>
+                  <p className="text-xs text-gray-500 mt-1 dark:text-signal-muted">Threshold: €750B for gatekeeper designation</p>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Active Users (EU)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Monthly Active Users (EU)</label>
                 <input
                   type="number"
                   value={registrationForm.monthlyActiveUsers}
                   onChange={(e) => setRegistrationForm({ ...registrationForm, monthlyActiveUsers: e.target.value })}
                   placeholder="e.g., 45000000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40"
                 />
-                <p className="text-xs text-gray-500 mt-1">Threshold: 45M users for gatekeeper designation</p>
+                <p className="text-xs text-gray-500 mt-1 dark:text-signal-muted">Threshold: 45M users for gatekeeper designation</p>
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90"
                 >
                   Register Platform
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowRegisterModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -505,31 +505,31 @@ export const DMAGatekeeperManagement: React.FC = () => {
 
       {/* Obligations Modal */}
       {showObligationsModal && selectedGatekeeper && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Obligations: {selectedGatekeeper.platformName}</h3>
-              <button onClick={() => setShowObligationsModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto dark:bg-signal-panel2 dark:border dark:border-white/[0.08]">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.08] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Obligations: {selectedGatekeeper.platformName}</h3>
+              <button onClick={() => setShowObligationsModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6">
               <div className="space-y-4">
                 {obligations.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">Loading obligations...</p>
+                  <p className="text-gray-500 text-center py-8 dark:text-signal-muted">Loading obligations...</p>
                 ) : (
                   obligations.map((obligation, idx) => (
-                    <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                    <div key={idx} className="border border-gray-200 rounded-lg p-4 dark:border-white/[0.06]">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{obligation.obligationType.replace(/_/g, ' ')}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{obligation.description}</p>
+                          <h4 className="font-medium text-gray-900 dark:text-signal-ink">{obligation.obligationType.replace(/_/g, ' ')}</h4>
+                          <p className="text-sm text-gray-600 mt-1 dark:text-signal-muted">{obligation.description}</p>
                         </div>
                         <div className="flex items-center gap-3">
                           <select
                             value={obligation.complianceStatus}
                             onChange={(e) => handleUpdateObligationStatus(obligation.obligationType, e.target.value)}
-                            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40"
                           >
                             <option value="pending">Pending</option>
                             <option value="compliant">Compliant</option>
@@ -539,7 +539,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
                         </div>
                       </div>
                       {obligation.lastVerified && (
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-gray-500 mt-2 dark:text-signal-muted">
                           Last verified: {new Date(obligation.lastVerified).toLocaleDateString()}
                         </p>
                       )}
@@ -554,11 +554,11 @@ export const DMAGatekeeperManagement: React.FC = () => {
 
       {/* Update Status Modal */}
       {showUpdateStatusModal && selectedGatekeeper && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Update Gatekeeper Status</h3>
-              <button onClick={() => setShowUpdateStatusModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full dark:bg-signal-panel2 dark:border dark:border-white/[0.08]">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.08] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Update Gatekeeper Status</h3>
+              <button onClick={() => setShowUpdateStatusModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -579,11 +579,11 @@ export const DMAGatekeeperManagement: React.FC = () => {
               }
             }} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Designation Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-signal-body">Designation Status</label>
                 <select
                   name="designationStatus"
                   defaultValue={selectedGatekeeper.designationStatus}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40"
                 >
                   <option value="not_designated">Not Designated</option>
                   <option value="designated">Designated</option>
@@ -591,11 +591,11 @@ export const DMAGatekeeperManagement: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Compliance Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-signal-body">Compliance Status</label>
                 <select
                   name="complianceStatus"
                   defaultValue={selectedGatekeeper.complianceStatus}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40"
                 >
                   <option value="compliant">Compliant</option>
                   <option value="non_compliant">Non-Compliant</option>
@@ -605,14 +605,14 @@ export const DMAGatekeeperManagement: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90"
                 >
                   Update Status
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowUpdateStatusModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -624,33 +624,33 @@ export const DMAGatekeeperManagement: React.FC = () => {
 
       {/* Report View Modal */}
       {showReportViewModal && complianceReport && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Compliance Report</h3>
-              <button onClick={() => setShowReportViewModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto dark:bg-signal-panel2 dark:border dark:border-white/[0.08]">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.08] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Compliance Report</h3>
+              <button onClick={() => setShowReportViewModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Reporting Period</label>
-                <p className="text-gray-900 mt-1">
+                <label className="text-sm font-medium text-gray-700 dark:text-signal-body">Reporting Period</label>
+                <p className="text-gray-900 mt-1 dark:text-signal-body">
                   {new Date(complianceReport.reportingPeriod.start).toLocaleDateString()} - {new Date(complianceReport.reportingPeriod.end).toLocaleDateString()}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Obligations Status</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-signal-body">Obligations Status</label>
                 {Object.keys(complianceReport.obligationsStatus || {}).length > 0 ? (
                   <div className="mt-2 space-y-2">
                     {Object.entries(complianceReport.obligationsStatus || {}).map(([obligation, status]: [string, any]) => (
-                      <div key={obligation} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-900 capitalize">{obligation.replace(/_/g, ' ')}</span>
+                      <div key={obligation} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg dark:bg-white/[0.04]">
+                        <span className="text-sm text-gray-900 capitalize dark:text-signal-ink">{obligation.replace(/_/g, ' ')}</span>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          status?.status === 'compliant' ? 'bg-green-100 text-green-800' :
-                          status?.status === 'non_compliant' ? 'bg-red-100 text-red-800' :
-                          status?.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
+                          status?.status === 'compliant' ? 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good' :
+                          status?.status === 'non_compliant' ? 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad' :
+                          status?.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue' :
+                          'bg-yellow-100 text-yellow-800 dark:bg-signal-amber/10 dark:text-signal-amber'
                         }`}>
                           {(status?.status || 'pending').replace('_', ' ')}
                         </span>
@@ -658,17 +658,17 @@ export const DMAGatekeeperManagement: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 mt-2 italic">No obligations found for this gatekeeper.</p>
+                  <p className="text-sm text-gray-500 mt-2 italic dark:text-signal-muted">No obligations found for this gatekeeper.</p>
                 )}
               </div>
               {complianceReport.violations && complianceReport.violations.length > 0 && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Violations</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-signal-body">Violations</label>
                   <div className="mt-2 space-y-2">
                     {complianceReport.violations.map((violation: any, idx: number) => (
-                      <div key={idx} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm font-medium text-red-900">{violation.description}</p>
-                        <p className="text-xs text-red-700 mt-1">Severity: {violation.severity}</p>
+                      <div key={idx} className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-signal-bad/10 dark:border-signal-bad/30">
+                        <p className="text-sm font-medium text-red-900 dark:text-signal-bad">{violation.description}</p>
+                        <p className="text-xs text-red-700 mt-1 dark:text-signal-bad/80">Severity: {violation.severity}</p>
                       </div>
                     ))}
                   </div>
@@ -677,7 +677,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowReportViewModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                 >
                   {t('common.close')}
                 </button>
@@ -689,21 +689,21 @@ export const DMAGatekeeperManagement: React.FC = () => {
 
       {/* Generate Report Modal */}
       {showReportModal && selectedGatekeeper && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Generate Compliance Report</h3>
-              <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full dark:bg-signal-panel2 dark:border dark:border-white/[0.08]">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.08] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Generate Compliance Report</h3>
+              <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleGenerateReport(); }} className="p-6 space-y-4">
-              <p className="text-gray-600 mb-4">
-                Generate a compliance report for <strong>{selectedGatekeeper.platformName}</strong>. Select the reporting period below.
+              <p className="text-gray-600 mb-4 dark:text-signal-muted">
+                Generate a compliance report for <strong className="dark:text-signal-ink">{selectedGatekeeper.platformName}</strong>. Select the reporting period below.
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Start Date *</label>
                   <input
                     type="date"
                     required
@@ -714,11 +714,11 @@ export const DMAGatekeeperManagement: React.FC = () => {
                         setReportPeriod({ ...reportPeriod, start: parsedDate });
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">End Date *</label>
                   <input
                     type="date"
                     required
@@ -729,21 +729,21 @@ export const DMAGatekeeperManagement: React.FC = () => {
                         setReportPeriod({ ...reportPeriod, end: parsedDate });
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40"
                   />
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90"
                 >
                   Generate Report
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowReportModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>

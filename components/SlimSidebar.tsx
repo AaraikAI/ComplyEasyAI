@@ -36,12 +36,11 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ onSwitchToClassic }) =
   return (
     <>
       {/* Desktop: vertical sidebar */}
-      <aside className="hidden lg:flex flex-col w-[58px] bg-surface-900 text-white shrink-0 h-screen">
+      <aside className="hidden lg:flex flex-col w-[58px] bg-signal-panel text-signal-ink border-r border-white/[0.06] shrink-0 h-screen">
         {/* Logo */}
-        <div className="flex items-center justify-center h-16 border-b border-surface-700/50">
-          <Link to="/dashboard" className="relative w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-600/30">
-            <ShieldCheck className="w-5 h-5 text-white" />
-            <div className="absolute inset-0 rounded-xl bg-brand-400/20 blur-sm" />
+        <div className="flex items-center justify-center h-16 border-b border-white/[0.06]">
+          <Link to="/dashboard" aria-label="Dashboard" className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-gradient-to-br from-signal-green to-signal-blue">
+            <span aria-hidden="true" className="h-[13px] w-[13px] rounded-[3px] border-[2.5px] border-signal-canvas" />
           </Link>
         </div>
 
@@ -57,13 +56,13 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ onSwitchToClassic }) =
                 data-onboarding={`${item.id}-nav`}
                 className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
                   active
-                    ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30'
-                    : 'text-surface-400 hover:bg-surface-800 hover:text-white'
+                    ? 'bg-signal-green/10 text-signal-green'
+                    : 'text-signal-sub hover:bg-white/[0.05] hover:text-signal-ink'
                 }`}
               >
                 <Icon className="w-5 h-5" />
                 {/* Tooltip */}
-                <span className="absolute left-full ml-3 px-2.5 py-1 bg-surface-800 text-white text-xs font-medium rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+                <span className="absolute left-full ml-3 px-2.5 py-1 bg-signal-panel2 border border-white/[0.08] text-signal-ink text-xs font-medium rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
                   {item.label}
                 </span>
               </Link>
@@ -76,10 +75,10 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ onSwitchToClassic }) =
           {onSwitchToClassic && (
             <button
               onClick={onSwitchToClassic}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-xl text-surface-400 hover:bg-surface-800 hover:text-white transition-all duration-200"
+              className="group relative flex items-center justify-center w-10 h-10 rounded-xl text-signal-sub hover:bg-white/[0.05] hover:text-signal-ink transition-all duration-200"
             >
               <PanelLeft className="w-5 h-5" />
-              <span className="absolute left-full ml-3 px-2.5 py-1 bg-surface-800 text-white text-xs font-medium rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+              <span className="absolute left-full ml-3 px-2.5 py-1 bg-signal-panel2 border border-white/[0.08] text-signal-ink text-xs font-medium rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
                 Classic view
               </span>
             </button>
@@ -89,24 +88,24 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ onSwitchToClassic }) =
             data-onboarding="settings-nav"
             className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
               location.pathname.startsWith('/settings')
-                ? 'bg-brand-600 text-white'
-                : 'text-surface-400 hover:bg-surface-800 hover:text-white'
+                ? 'bg-signal-green/10 text-signal-green'
+                : 'text-signal-sub hover:bg-white/[0.05] hover:text-signal-ink'
             }`}
           >
             <Settings className="w-5 h-5" />
-            <span className="absolute left-full ml-3 px-2.5 py-1 bg-surface-800 text-white text-xs font-medium rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+            <span className="absolute left-full ml-3 px-2.5 py-1 bg-signal-panel2 border border-white/[0.08] text-signal-ink text-xs font-medium rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
               Settings
             </span>
           </Link>
 
           <button
             onClick={logout}
-            className="group relative flex items-center justify-center w-10 h-10 rounded-xl text-surface-400 hover:bg-surface-800 hover:text-white transition-all duration-200"
+            className="group relative flex items-center justify-center w-10 h-10 rounded-xl text-signal-sub hover:bg-white/[0.05] hover:text-signal-ink transition-all duration-200"
           >
-            <div className="w-7 h-7 rounded-full bg-brand-700 flex items-center justify-center text-[10px] font-bold text-white">
+            <div className="w-7 h-7 rounded-full bg-signal-green flex items-center justify-center text-[10px] font-bold text-signal-canvas">
               {initials}
             </div>
-            <span className="absolute left-full ml-3 px-2.5 py-1 bg-surface-800 text-white text-xs font-medium rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+            <span className="absolute left-full ml-3 px-2.5 py-1 bg-signal-panel2 border border-white/[0.08] text-signal-ink text-xs font-medium rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
               {user?.name || 'Account'}
             </span>
           </button>
@@ -114,7 +113,7 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ onSwitchToClassic }) =
       </aside>
 
       {/* Mobile: bottom tab bar */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-surface-900 border-t border-surface-700/50 flex items-center justify-around py-2 px-1 safe-area-pb">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-signal-panel border-t border-white/[0.06] flex items-center justify-around py-2 px-1 safe-area-pb">
         {NAV_PILLARS.slice(0, 5).map(item => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -123,7 +122,7 @@ export const SlimSidebar: React.FC<SlimSidebarProps> = ({ onSwitchToClassic }) =
               key={item.id}
               to={item.path}
               className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
-                active ? 'text-brand-400' : 'text-surface-400'
+                active ? 'text-signal-green' : 'text-signal-sub'
               }`}
             >
               <Icon className="w-5 h-5" />

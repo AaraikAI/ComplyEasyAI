@@ -1,32 +1,23 @@
 import React, { useState } from 'react';
-import {
-  X,
-  Send,
-  Loader2,
-  CheckCircle,
-  Building2,
-  User,
-  Mail,
-  Phone,
-  Briefcase,
-  Globe,
-  MessageSquare,
-  Users,
-  Target,
-} from 'lucide-react';
+import { X, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { TierName, TIER_ORDER } from '../types';
 import { api } from '../services/api';
-import { useI18n } from '../contexts/I18nContext';
 
 // ============================================================================
-// TYPES
+// Signal demo booking — three stages: details form → time preference → booked.
+// The submit wiring (api.demo.submitRequest with UTM capture) is unchanged;
+// the scheduling step records the visitor's preferred slot client-side and the
+// team confirms it by email.
 // ============================================================================
 
 interface DemoBookingFormProps {
-  isOpen: boolean;
-  onClose: () => void;
+  /** Modal visibility (modal variant only). Defaults to true for inline use. */
+  isOpen?: boolean;
+  onClose?: () => void;
   preselectedTier?: TierName;
   source?: string;
+  /** 'modal' renders the overlay dialog (existing call sites); 'inline' embeds the card. */
+  variant?: 'modal' | 'inline';
 }
 
 interface DemoFormData {
@@ -57,33 +48,6 @@ const COMPANY_SIZES = [
   { value: '1000+', label: '1,000+ employees' },
 ];
 
-const INDUSTRIES = [
-  { value: 'technology', label: 'Technology' },
-  { value: 'finance', label: 'Finance & Banking' },
-  { value: 'healthcare', label: 'Healthcare' },
-  { value: 'manufacturing', label: 'Manufacturing' },
-  { value: 'retail', label: 'Retail & E-commerce' },
-  { value: 'government', label: 'Government' },
-  { value: 'energy', label: 'Energy & Utilities' },
-  { value: 'education', label: 'Education' },
-  { value: 'legal', label: 'Legal Services' },
-  { value: 'consulting', label: 'Consulting' },
-  { value: 'crypto', label: 'Crypto & Web3' },
-  { value: 'other', label: 'Other' },
-];
-
-const HOW_DID_YOU_HEAR = [
-  { value: 'google', label: 'Google Search' },
-  { value: 'linkedin', label: 'LinkedIn' },
-  { value: 'referral', label: 'Referral' },
-  { value: 'conference', label: 'Conference/Event' },
-  { value: 'review_site', label: 'Review Site (G2, Capterra, etc.)' },
-  { value: 'podcast', label: 'Podcast' },
-  { value: 'webinar', label: 'Webinar' },
-  { value: 'social_media', label: 'Social Media' },
-  { value: 'other', label: 'Other' },
-];
-
 const CHALLENGES = [
   { value: 'compliance_automation', label: 'Automating compliance processes' },
   { value: 'multi_framework', label: 'Managing multiple compliance frameworks' },
@@ -97,19 +61,44 @@ const CHALLENGES = [
   { value: 'other', label: 'Other' },
 ];
 
+const DAYS = [
+  { dow: 'MON', num: 21, full: 'Mon Jul 21' },
+  { dow: 'TUE', num: 22, full: 'Tue Jul 22' },
+  { dow: 'WED', num: 23, full: 'Wed Jul 23' },
+  { dow: 'THU', num: 24, full: 'Thu Jul 24' },
+  { dow: 'FRI', num: 25, full: 'Fri Jul 25' },
+];
+
+const SLOTS = ['9:00 AM', '10:30 AM', '12:00 PM', '13:30 PM', '15:00 PM', '16:30 PM'];
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+const inputClass = (invalid: boolean) =>
+  `w-full rounded-[11px] border bg-white/[0.04] px-3.5 py-3 text-[14.5px] text-signal-ink placeholder:text-signal-muted outline-none transition-colors focus:border-signal-green/60 ${
+    invalid ? 'border-signal-bad' : 'border-white/[0.12]'
+  }`;
+
+const selectClass =
+  'w-full rounded-[11px] border border-white/[0.12] bg-white/[0.04] px-3.5 py-3 text-[14.5px] text-signal-ink outline-none transition-colors focus:border-signal-green/60 [&>option]:bg-signal-panel2';
+
+const labelClass = 'mb-1.5 block text-[12.5px] font-semibold text-signal-body';
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
 const DemoBookingForm: React.FC<DemoBookingFormProps> = ({
-  isOpen,
+  isOpen = true,
   onClose,
   preselectedTier,
   source = 'pricing_page',
+  variant = 'modal',
 }) => {
-  const { t } = useI18n();
-  const [step, setStep] = useState<'form' | 'submitting' | 'success' | 'error'>('form');
+  const [stage, setStage] = useState<'form' | 'submitting' | 'schedule' | 'booked' | 'error'>('form');
   const [errorMessage, setErrorMessage] = useState('');
+  const [touched, setTouched] = useState(false);
+  const [day, setDay] = useState<number | null>(null);
+  const [slot, setSlot] = useState<number | null>(null);
   const [formData, setFormData] = useState<DemoFormData>({
     firstName: '',
     lastName: '',
@@ -133,9 +122,21 @@ const DemoBookingForm: React.FC<DemoBookingFormProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const emailValid = EMAIL_RE.test(formData.email.trim());
+  const requiredValid =
+    formData.firstName.trim() !== '' &&
+    formData.lastName.trim() !== '' &&
+    formData.company.trim() !== '' &&
+    emailValid;
+  const showFormError = touched && !requiredValid;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep('submitting');
+    if (!requiredValid) {
+      setTouched(true);
+      return;
+    }
+    setStage('submitting');
     setErrorMessage('');
 
     try {
@@ -164,378 +165,348 @@ const DemoBookingForm: React.FC<DemoBookingFormProps> = ({
         utmCampaign,
       });
 
-      setStep('success');
+      setStage('schedule');
     } catch (error: any) {
-      setStep('error');
+      setStage('error');
       setErrorMessage(error.message || 'An error occurred. Please try again.');
     }
   };
 
-  if (!isOpen) return null;
+  const ready = day !== null && slot !== null;
+  const chosenDay = day !== null ? DAYS[day].full : '';
+  const chosenSlot = slot !== null ? SLOTS[slot] : '';
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 p-6 rounded-t-2xl">
-          <div className="flex justify-between items-start">
+  if (variant === 'modal' && !isOpen) return null;
+
+  const content = (
+    <>
+      {stage === 'form' && (
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <h2 className="text-2xl font-bold text-white">Book a Demo</h2>
-              <p className="text-indigo-100 mt-1">
-                See how ComplyEasyAI can transform your compliance operations
-              </p>
+              <label htmlFor="demo-first" className={labelClass}>
+                First name *
+              </label>
+              <input
+                id="demo-first"
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="John"
+                className={inputClass(touched && formData.firstName.trim() === '')}
+              />
             </div>
+            <div>
+              <label htmlFor="demo-last" className={labelClass}>
+                Last name *
+              </label>
+              <input
+                id="demo-last"
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Smith"
+                className={inputClass(touched && formData.lastName.trim() === '')}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="demo-email" className={labelClass}>
+                Work email *
+              </label>
+              <input
+                id="demo-email"
+                type="email"
+                name="email"
+                autoComplete="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="john@company.com"
+                className={inputClass(touched && !emailValid)}
+              />
+            </div>
+            <div>
+              <label htmlFor="demo-company" className={labelClass}>
+                Company *
+              </label>
+              <input
+                id="demo-company"
+                type="text"
+                name="company"
+                autoComplete="organization"
+                value={formData.company}
+                onChange={handleChange}
+                placeholder="Acme Inc."
+                className={inputClass(touched && formData.company.trim() === '')}
+              />
+            </div>
+            <div>
+              <label htmlFor="demo-size" className={labelClass}>
+                Company size
+              </label>
+              <select
+                id="demo-size"
+                name="companySize"
+                value={formData.companySize}
+                onChange={handleChange}
+                className={selectClass}
+              >
+                <option value="">Select…</option>
+                {COMPANY_SIZES.map((size) => (
+                  <option key={size.value} value={size.value}>
+                    {size.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="demo-tier" className={labelClass}>
+                Interested plan
+              </label>
+              <select
+                id="demo-tier"
+                name="interestedTier"
+                value={formData.interestedTier}
+                onChange={handleChange}
+                className={selectClass}
+              >
+                <option value="">Select…</option>
+                {TIER_ORDER.map((tier) => (
+                  <option key={tier} value={tier}>
+                    {tier}
+                  </option>
+                ))}
+                <option value="not_sure">Not sure yet</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="demo-challenge" className={labelClass}>
+                Main challenge
+              </label>
+              <select
+                id="demo-challenge"
+                name="currentChallenge"
+                value={formData.currentChallenge}
+                onChange={handleChange}
+                className={selectClass}
+              >
+                <option value="">Select…</option>
+                {CHALLENGES.map((ch) => (
+                  <option key={ch.value} value={ch.value}>
+                    {ch.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {showFormError && (
+            <p className="mt-3 text-[12.5px] text-signal-bad">
+              Please complete the required fields with a valid email.
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="mt-[18px] flex w-full items-center justify-center gap-2 rounded-xl bg-signal-green px-4 py-3.5 text-[15px] font-bold text-signal-canvas transition-opacity hover:opacity-90"
+          >
+            Request my demo <ArrowRight size={16} aria-hidden="true" />
+          </button>
+          <p className="mt-3 text-center text-xs text-signal-muted">
+            By submitting, you agree to our Privacy Policy.
+          </p>
+        </form>
+      )}
+
+      {stage === 'submitting' && (
+        <div className="flex flex-col items-center justify-center py-16">
+          <Loader2 size={44} className="mb-4 animate-spin text-signal-green" aria-hidden="true" />
+          <p className="text-[15px] text-signal-sub">Sending your request…</p>
+        </div>
+      )}
+
+      {stage === 'schedule' && (
+        <div>
+          <div className="mb-6 text-center">
+            <div className="mx-auto mb-[18px] flex h-[60px] w-[60px] items-center justify-center rounded-full bg-signal-green/[0.14]">
+              <Check size={26} className="text-signal-green" aria-hidden="true" />
+            </div>
+            <h2 className="font-display text-[24px] font-bold tracking-[-0.02em] text-signal-ink md:text-[26px]">
+              Thanks, {formData.firstName} — now pick a time
+            </h2>
+            <p className="mt-2.5 text-[14.5px] leading-relaxed text-signal-sub">
+              Choose a slot below, or we&rsquo;ll email {formData.email} within 24 hours to schedule.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="font-display text-[15px] font-semibold text-signal-ink">July 2026</span>
+              <span className="font-mono text-[11px] text-signal-muted">30 MIN · ZONE: LOCAL</span>
+            </div>
+            <div className="mb-[18px] grid grid-cols-5 gap-2">
+              {DAYS.map((d, i) => {
+                const active = day === i;
+                return (
+                  <button
+                    key={d.dow}
+                    type="button"
+                    onClick={() => {
+                      setDay(i);
+                      setSlot(null);
+                    }}
+                    className={`flex flex-col items-center gap-1 rounded-[11px] border py-2.5 transition-colors ${
+                      active
+                        ? 'border-signal-green bg-signal-green text-signal-canvas'
+                        : 'border-white/10 bg-white/[0.04] text-signal-body hover:border-white/[0.24]'
+                    }`}
+                  >
+                    <span className="font-mono text-[10px] tracking-[0.08em]">{d.dow}</span>
+                    <span className="font-display text-[17px] font-bold">{d.num}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {SLOTS.map((label, i) => {
+                const active = slot === i;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled={day === null}
+                    onClick={() => setSlot(i)}
+                    className={`rounded-[10px] border py-2.5 text-[13.5px] font-semibold transition-colors ${
+                      active
+                        ? 'border-signal-green bg-signal-green text-signal-canvas'
+                        : day === null
+                          ? 'border-white/10 bg-white/[0.04] text-signal-muted'
+                          : 'border-white/10 bg-white/[0.04] text-signal-body hover:border-white/[0.24]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={!ready}
+            onClick={() => setStage('booked')}
+            className={`mt-4 w-full rounded-xl px-4 py-3.5 text-[15px] font-bold transition-opacity ${
+              ready
+                ? 'bg-signal-green text-signal-canvas hover:opacity-90'
+                : 'cursor-not-allowed bg-white/[0.06] text-signal-muted'
+            }`}
+          >
+            {ready ? `Confirm ${chosenDay} · ${chosenSlot}` : 'Select a day and time'}
+          </button>
+        </div>
+      )}
+
+      {stage === 'booked' && (
+        <div className="py-5 text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-signal-green/[0.14]">
+            <span className="text-[28px] text-signal-green" aria-hidden="true">
+              ✦
+            </span>
+          </div>
+          <h2 className="font-display text-[26px] font-bold tracking-[-0.02em] text-signal-ink">
+            You&rsquo;re booked
+          </h2>
+          <p className="mx-auto mt-3 max-w-[340px] text-[15px] leading-relaxed text-signal-sub">
+            We&rsquo;ve penciled in{' '}
+            <strong className="font-semibold text-signal-green">
+              {chosenDay} at {chosenSlot}
+            </strong>
+            . Our team will send a calendar invite to {formData.email} shortly. Talk soon!
+          </p>
+          {variant === 'modal' ? (
             <button
+              type="button"
               onClick={onClose}
-              className="text-white/80 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+              className="mt-6 inline-flex items-center justify-center rounded-[11px] border border-white/20 px-[22px] py-3 text-sm font-medium text-signal-ink transition-colors hover:border-white/[0.32] hover:bg-white/[0.04]"
             >
-              <X size={24} />
+              Close
             </button>
+          ) : (
+            <a
+              href="/"
+              className="mt-6 inline-flex items-center justify-center rounded-[11px] border border-white/20 px-[22px] py-3 text-sm font-medium text-signal-ink transition-colors hover:border-white/[0.32] hover:bg-white/[0.04]"
+            >
+              Back to home
+            </a>
+          )}
+        </div>
+      )}
+
+      {stage === 'error' && (
+        <div className="py-10 text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-signal-bad/[0.14]">
+            <X size={30} className="text-signal-bad" aria-hidden="true" />
+          </div>
+          <h2 className="font-display text-[24px] font-bold tracking-[-0.02em] text-signal-ink">
+            Something went wrong
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-[14.5px] text-signal-sub">
+            {errorMessage || 'We could not submit your request. Please try again.'}
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setStage('form')}
+              className="rounded-xl bg-signal-green px-6 py-3 text-[14px] font-bold text-signal-canvas transition-opacity hover:opacity-90"
+            >
+              Try again
+            </button>
+            {variant === 'modal' && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-xl border border-white/[0.16] px-6 py-3 text-[14px] font-semibold text-signal-sub transition-colors hover:border-white/[0.28] hover:text-signal-ink"
+              >
+                Close
+              </button>
+            )}
           </div>
         </div>
+      )}
+    </>
+  );
 
-        {/* Form Content */}
-        <div className="p-6">
-          {step === 'form' && (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Contact Information */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <User size={16} className="text-indigo-600" />
-                  Contact Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                      placeholder="John"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                      placeholder="Smith"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Work Email <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Mail
-                        size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                        placeholder="john@company.com"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <Phone
-                        size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                        placeholder="+1 (555) 123-4567"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+  if (variant === 'inline') {
+    return (
+      <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.03] p-6 font-plex text-signal-ink antialiased md:p-8">
+        {content}
+      </div>
+    );
+  }
 
-              {/* Company Information */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Building2 size={16} className="text-indigo-600" />
-                  Company Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Company Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="company"
-                      value={formData.company}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                      placeholder="Acme Inc."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Job Title
-                    </label>
-                    <div className="relative">
-                      <Briefcase
-                        size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-                      <input
-                        type="text"
-                        name="jobTitle"
-                        value={formData.jobTitle}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                        placeholder="Compliance Manager"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Company Size
-                    </label>
-                    <div className="relative">
-                      <Users
-                        size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-                      <select
-                        name="companySize"
-                        value={formData.companySize}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none bg-white"
-                      >
-                        <option value="">Select size...</option>
-                        {COMPANY_SIZES.map((size) => (
-                          <option key={size.value} value={size.value}>
-                            {size.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Industry
-                    </label>
-                    <select
-                      name="industry"
-                      value={formData.industry}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none bg-white"
-                    >
-                      <option value="">Select industry...</option>
-                      {INDUSTRIES.map((ind) => (
-                        <option key={ind.value} value={ind.value}>
-                          {ind.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Country
-                    </label>
-                    <div className="relative">
-                      <Globe
-                        size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-                      <input
-                        type="text"
-                        name="country"
-                        value={formData.country}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                        placeholder="United States"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Interest & Needs */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Target size={16} className="text-indigo-600" />
-                  Your Needs
-                </h3>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Interested Plan
-                      </label>
-                      <select
-                        name="interestedTier"
-                        value={formData.interestedTier}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none bg-white"
-                      >
-                        <option value="">Select plan...</option>
-                        {TIER_ORDER.map((tier) => (
-                          <option key={tier} value={tier}>
-                            {tier}
-                          </option>
-                        ))}
-                        <option value="not_sure">Not sure yet</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Main Challenge
-                      </label>
-                      <select
-                        name="currentChallenge"
-                        value={formData.currentChallenge}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none bg-white"
-                      >
-                        <option value="">Select challenge...</option>
-                        {CHALLENGES.map((ch) => (
-                          <option key={ch.value} value={ch.value}>
-                            {ch.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      How did you hear about us?
-                    </label>
-                    <select
-                      name="howDidYouHear"
-                      value={formData.howDidYouHear}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none bg-white"
-                    >
-                      <option value="">Select...</option>
-                      {HOW_DID_YOU_HEAR.map((source) => (
-                        <option key={source.value} value={source.value}>
-                          {source.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Additional Message
-                    </label>
-                    <div className="relative">
-                      <MessageSquare
-                        size={18}
-                        className="absolute left-3 top-3 text-gray-400"
-                      />
-                      <textarea
-                        name="message"
-                        value={formData.message}
-                        onChange={handleChange}
-                        rows={3}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none"
-                        placeholder="Tell us more about your compliance needs..."
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                >
-                  <Send size={20} />
-                  {t('common.submit')}
-                </button>
-                <p className="text-xs text-gray-500 text-center mt-3">
-                  By submitting, you agree to our Privacy Policy. We'll respond within 24 hours.
-                </p>
-              </div>
-            </form>
-          )}
-
-          {step === 'submitting' && (
-            <div className="py-16 flex flex-col items-center justify-center">
-              <Loader2 size={48} className="text-indigo-600 animate-spin mb-4" />
-              <p className="text-lg text-gray-600">{t('common.loading')}</p>
-            </div>
-          )}
-
-          {step === 'success' && (
-            <div className="py-16 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle size={36} className="text-green-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h3>
-              <p className="text-gray-600 mb-6 max-w-md">
-                Your demo request has been submitted successfully. One of our compliance
-                specialists will reach out within 24 hours to schedule your personalized demo.
-              </p>
-              <p className="text-sm text-gray-500 mb-6">
-                Check your inbox for a welcome email with helpful resources.
-              </p>
-              <button
-                onClick={onClose}
-                className="bg-gray-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors"
-              >
-                {t('common.close')}
-              </button>
-            </div>
-          )}
-
-          {step === 'error' && (
-            <div className="py-16 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <X size={36} className="text-red-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h3>
-              <p className="text-gray-600 mb-6 max-w-md">
-                {errorMessage || 'Something went wrong. Please try again.'}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setStep('form')}
-                  className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-                >
-                  Try Again
-                </button>
-                <button
-                  onClick={onClose}
-                  className="bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-                >
-                  {t('common.close')}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
+      <div className="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-[20px] border border-white/[0.08] bg-signal-panel p-6 font-plex text-signal-ink antialiased shadow-2xl md:p-8">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close demo booking"
+          className="absolute right-4 top-4 rounded-lg p-1 text-signal-muted transition-colors hover:bg-white/[0.06] hover:text-signal-ink"
+        >
+          <X size={22} />
+        </button>
+        {stage === 'form' && (
+          <div className="mb-6 pr-8">
+            <h2 className="font-display text-[24px] font-bold tracking-[-0.02em] text-signal-ink">
+              Book a demo
+            </h2>
+            <p className="mt-1.5 text-[14.5px] text-signal-sub">
+              A 30-minute walkthrough tailored to your frameworks.
+            </p>
+          </div>
+        )}
+        {content}
       </div>
     </div>
   );

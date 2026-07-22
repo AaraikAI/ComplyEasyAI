@@ -196,28 +196,28 @@ const DEFAULT_REPORTS: SustainabilityReport[] = [
 
 const materialityColor = (level: MaterialityLevel): string => {
   switch (level) {
-    case 'high': return 'bg-red-100 text-red-800';
-    case 'medium': return 'bg-yellow-100 text-yellow-800';
-    case 'low': return 'bg-green-100 text-green-800';
-    case 'not_material': return 'bg-gray-100 text-gray-600';
+    case 'high': return 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad';
+    case 'medium': return 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn';
+    case 'low': return 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good';
+    case 'not_material': return 'bg-gray-100 dark:bg-white/[0.06] text-gray-600 dark:text-signal-muted';
   }
 };
 
 const statusColor = (s: ComplianceStatus): string => {
   switch (s) {
-    case 'compliant': return 'bg-green-100 text-green-800';
-    case 'partial': return 'bg-yellow-100 text-yellow-800';
-    case 'non_compliant': return 'bg-red-100 text-red-800';
-    case 'not_started': return 'bg-gray-100 text-gray-600';
+    case 'compliant': return 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good';
+    case 'partial': return 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn';
+    case 'non_compliant': return 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad';
+    case 'not_started': return 'bg-gray-100 dark:bg-white/[0.06] text-gray-600 dark:text-signal-muted';
   }
 };
 
 const reportStatusColor = (s: ReportStatus): string => {
   switch (s) {
-    case 'draft': return 'bg-gray-100 text-gray-800';
-    case 'in_review': return 'bg-yellow-100 text-yellow-800';
-    case 'approved': return 'bg-blue-100 text-blue-800';
-    case 'published': return 'bg-green-100 text-green-800';
+    case 'draft': return 'bg-gray-100 dark:bg-white/[0.06] text-gray-800 dark:text-signal-body';
+    case 'in_review': return 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn';
+    case 'approved': return 'bg-blue-100 dark:bg-signal-blue/10 text-blue-800 dark:text-signal-blue';
+    case 'published': return 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good';
   }
 };
 
@@ -371,7 +371,7 @@ export const CSRDDashboard: React.FC = () => {
   }, [materialTopics, totalGHG, envMetrics, socialMetrics, govMetrics]);
 
   const renderScoreBar = (score: number, color?: string) => (
-    <div className="w-full bg-gray-200 rounded-full h-2.5">
+    <div className="w-full bg-gray-200 dark:bg-white/[0.08] rounded-full h-2.5">
       <div className={`h-2.5 rounded-full ${color || (score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500')}`}
         style={{ width: `${Math.min(100, score)}%` }} />
     </div>
@@ -391,70 +391,70 @@ export const CSRDDashboard: React.FC = () => {
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Material Topics</p><p className="text-2xl font-bold text-gray-900 mt-1">{materialTopics.length}</p></div>
+            <div><p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Material Topics</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{materialTopics.length}</p></div>
             <Scale className="w-8 h-8 text-purple-600" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{highMateriality.length} high materiality</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{highMateriality.length} high materiality</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Total GHG Emissions</p><p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(totalGHG)}</p></div>
-            <Factory className="w-8 h-8 text-gray-600" />
+            <div><p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Total GHG Emissions</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{formatNumber(totalGHG)}</p></div>
+            <Factory className="w-8 h-8 text-gray-600 dark:text-signal-body" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">tCO2e ({envMetrics.ghg.reductionAchieved}% reduction from baseline)</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">tCO2e ({envMetrics.ghg.reductionAchieved}% reduction from baseline)</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Data Readiness</p><p className="text-2xl font-bold text-gray-900 mt-1">{dataReadiness}%</p></div>
+            <div><p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Data Readiness</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{dataReadiness}%</p></div>
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
           <div className="mt-2">{renderScoreBar(dataReadiness)}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Workforce</p><p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(socialMetrics.workforce.totalEmployees)}</p></div>
+            <div><p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Workforce</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{formatNumber(socialMetrics.workforce.totalEmployees)}</p></div>
             <Users className="w-8 h-8 text-blue-600" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{socialMetrics.workforce.femalePercentage}% female</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{socialMetrics.workforce.femalePercentage}% female</p>
         </div>
       </div>
 
       {/* ESG Pillar Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4"><Leaf className="w-5 h-5 text-green-600" /><h3 className="font-semibold text-gray-900">Environmental</h3></div>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <div className="flex items-center gap-2 mb-4"><Leaf className="w-5 h-5 text-green-600" /><h3 className="font-semibold text-gray-900 dark:text-signal-ink">Environmental</h3></div>
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-gray-600">Renewable Energy</span><span className="font-medium">{Math.round((envMetrics.energyConsumption.renewable / envMetrics.energyConsumption.total) * 100)}%</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">Waste Recycled</span><span className="font-medium">{Math.round((envMetrics.waste.recycled / envMetrics.waste.totalGenerated) * 100)}%</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">Water Recycled</span><span className="font-medium">{Math.round((envMetrics.waterUsage.recycled / envMetrics.waterUsage.total) * 100)}%</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">GHG Reduction Progress</span><span className="font-medium">{envMetrics.ghg.reductionAchieved}% of {envMetrics.ghg.reductionTarget}%</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Renewable Energy</span><span className="font-medium dark:text-signal-ink">{Math.round((envMetrics.energyConsumption.renewable / envMetrics.energyConsumption.total) * 100)}%</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Waste Recycled</span><span className="font-medium dark:text-signal-ink">{Math.round((envMetrics.waste.recycled / envMetrics.waste.totalGenerated) * 100)}%</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Water Recycled</span><span className="font-medium dark:text-signal-ink">{Math.round((envMetrics.waterUsage.recycled / envMetrics.waterUsage.total) * 100)}%</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">GHG Reduction Progress</span><span className="font-medium dark:text-signal-ink">{envMetrics.ghg.reductionAchieved}% of {envMetrics.ghg.reductionTarget}%</span></div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4"><Users className="w-5 h-5 text-blue-600" /><h3 className="font-semibold text-gray-900">Social</h3></div>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <div className="flex items-center gap-2 mb-4"><Users className="w-5 h-5 text-blue-600" /><h3 className="font-semibold text-gray-900 dark:text-signal-ink">Social</h3></div>
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-gray-600">Gender Pay Gap</span><span className="font-medium">{socialMetrics.payGap.genderPayGap}%</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">Incident Rate</span><span className="font-medium">{socialMetrics.healthSafety.incidentRate}</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">Training Hours/Employee</span><span className="font-medium">{socialMetrics.healthSafety.trainingHoursPerEmployee}h</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">Supply Chain Audits</span><span className="font-medium">{socialMetrics.humanRights.supplyChainAudits}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Gender Pay Gap</span><span className="font-medium dark:text-signal-ink">{socialMetrics.payGap.genderPayGap}%</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Incident Rate</span><span className="font-medium dark:text-signal-ink">{socialMetrics.healthSafety.incidentRate}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Training Hours/Employee</span><span className="font-medium dark:text-signal-ink">{socialMetrics.healthSafety.trainingHoursPerEmployee}h</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Supply Chain Audits</span><span className="font-medium dark:text-signal-ink">{socialMetrics.humanRights.supplyChainAudits}</span></div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4"><Building2 className="w-5 h-5 text-purple-600" /><h3 className="font-semibold text-gray-900">Governance</h3></div>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <div className="flex items-center gap-2 mb-4"><Building2 className="w-5 h-5 text-purple-600" /><h3 className="font-semibold text-gray-900 dark:text-signal-ink">Governance</h3></div>
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-gray-600">Board Independence</span><span className="font-medium">{Math.round((govMetrics.board.independentMembers / govMetrics.board.totalMembers) * 100)}%</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">Board Gender Diversity</span><span className="font-medium">{Math.round((govMetrics.board.femaleMembers / govMetrics.board.totalMembers) * 100)}%</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">Anti-Corruption Training</span><span className="font-medium">{govMetrics.antiCorruption.trainingCoverage}%</span></div>
-            <div className="flex justify-between"><span className="text-gray-600">ESG Risks Mitigated</span><span className="font-medium">{govMetrics.riskManagement.mitigationPlansInPlace}/{govMetrics.riskManagement.esgRisksIdentified}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Board Independence</span><span className="font-medium dark:text-signal-ink">{Math.round((govMetrics.board.independentMembers / govMetrics.board.totalMembers) * 100)}%</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Board Gender Diversity</span><span className="font-medium dark:text-signal-ink">{Math.round((govMetrics.board.femaleMembers / govMetrics.board.totalMembers) * 100)}%</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">Anti-Corruption Training</span><span className="font-medium dark:text-signal-ink">{govMetrics.antiCorruption.trainingCoverage}%</span></div>
+            <div className="flex justify-between"><span className="text-gray-600 dark:text-signal-body">ESG Risks Mitigated</span><span className="font-medium dark:text-signal-ink">{govMetrics.riskManagement.mitigationPlansInPlace}/{govMetrics.riskManagement.esgRisksIdentified}</span></div>
           </div>
         </div>
       </div>
 
       {/* CSRD Timeline */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">CSRD Reporting Timeline</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">CSRD Reporting Timeline</h3>
         <div className="space-y-3">
           {[
             { year: '2025', desc: 'Large public-interest entities (>500 employees) - First reports due for FY2024', status: 'completed' as const },
@@ -462,13 +462,13 @@ export const CSRDDashboard: React.FC = () => {
             { year: '2027', desc: 'Listed SMEs, small credit institutions, captive insurers - Reports due for FY2026', status: 'upcoming' as const },
             { year: '2029', desc: 'Non-EU companies with >150M EU revenue - Reports due for FY2028', status: 'upcoming' as const },
           ].map((item, idx) => (
-            <div key={idx} className={`flex items-center gap-4 p-3 rounded-lg border ${item.status === 'completed' ? 'bg-green-50 border-green-200' : item.status === 'active' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${item.status === 'completed' ? 'bg-green-100' : item.status === 'active' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                {item.status === 'completed' ? <CheckCircle className="w-5 h-5 text-green-600" /> : item.status === 'active' ? <Clock className="w-5 h-5 text-blue-600" /> : <Clock className="w-5 h-5 text-gray-400" />}
+            <div key={idx} className={`flex items-center gap-4 p-3 rounded-lg border ${item.status === 'completed' ? 'bg-green-50 dark:bg-signal-good/10 border-green-200 dark:border-signal-good/30' : item.status === 'active' ? 'bg-blue-50 dark:bg-signal-blue/10 border-blue-200 dark:border-signal-blue/30' : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/[0.06]'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${item.status === 'completed' ? 'bg-green-100 dark:bg-signal-good/15' : item.status === 'active' ? 'bg-blue-100 dark:bg-signal-blue/15' : 'bg-gray-100 dark:bg-white/[0.06]'}`}>
+                {item.status === 'completed' ? <CheckCircle className="w-5 h-5 text-green-600" /> : item.status === 'active' ? <Clock className="w-5 h-5 text-blue-600" /> : <Clock className="w-5 h-5 text-gray-400 dark:text-signal-muted" />}
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-gray-900">{item.year}</p>
-                <p className="text-sm text-gray-600">{item.desc}</p>
+                <p className="font-semibold text-gray-900 dark:text-signal-ink">{item.year}</p>
+                <p className="text-sm text-gray-600 dark:text-signal-body">{item.desc}</p>
               </div>
             </div>
           ))}
@@ -484,12 +484,12 @@ export const CSRDDashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-3 flex-1">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-signal-muted" />
             <input type="text" placeholder="Search topics..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
           </div>
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            className="px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm">
             <option value="all">All Pillars</option>
             <option value="environmental">Environmental</option>
             <option value="social">Social</option>
@@ -499,24 +499,24 @@ export const CSRDDashboard: React.FC = () => {
       </div>
 
       {/* Materiality Matrix */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Double Materiality Matrix</h3>
-        <p className="text-sm text-gray-600 mb-6">The matrix plots each ESRS topic based on its impact materiality (effect on people and environment) and financial materiality (effect on the company).</p>
-        <div className="relative border border-gray-300 rounded-lg" style={{ height: 400 }}>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">Double Materiality Matrix</h3>
+        <p className="text-sm text-gray-600 dark:text-signal-body mb-6">The matrix plots each ESRS topic based on its impact materiality (effect on people and environment) and financial materiality (effect on the company).</p>
+        <div className="relative border border-gray-300 dark:border-white/[0.10] rounded-lg" style={{ height: 400 }}>
           {/* Axis Labels */}
-          <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90 text-xs font-medium text-gray-500 whitespace-nowrap">Financial Materiality</div>
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-6 text-xs font-medium text-gray-500">Impact Materiality</div>
+          <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90 text-xs font-medium text-gray-500 dark:text-signal-muted whitespace-nowrap">Financial Materiality</div>
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-6 text-xs font-medium text-gray-500 dark:text-signal-muted">Impact Materiality</div>
           {/* Grid */}
           <div className="absolute inset-4 grid grid-cols-3 grid-rows-3">
-            <div className="border border-gray-100 bg-green-50 rounded-tl flex items-center justify-center text-xs text-gray-400">Low / High</div>
-            <div className="border border-gray-100 bg-yellow-50 flex items-center justify-center text-xs text-gray-400">Med / High</div>
-            <div className="border border-gray-100 bg-red-50 rounded-tr flex items-center justify-center text-xs text-gray-400">High / High</div>
-            <div className="border border-gray-100 bg-green-50 flex items-center justify-center text-xs text-gray-400">Low / Med</div>
-            <div className="border border-gray-100 bg-yellow-50 flex items-center justify-center text-xs text-gray-400">Med / Med</div>
-            <div className="border border-gray-100 bg-orange-50 flex items-center justify-center text-xs text-gray-400">High / Med</div>
-            <div className="border border-gray-100 bg-gray-50 rounded-bl flex items-center justify-center text-xs text-gray-400">Low / Low</div>
-            <div className="border border-gray-100 bg-green-50 flex items-center justify-center text-xs text-gray-400">Med / Low</div>
-            <div className="border border-gray-100 bg-yellow-50 rounded-br flex items-center justify-center text-xs text-gray-400">High / Low</div>
+            <div className="border border-gray-100 dark:border-white/[0.06] bg-green-50 dark:bg-signal-good/10 rounded-tl flex items-center justify-center text-xs text-gray-400 dark:text-signal-muted">Low / High</div>
+            <div className="border border-gray-100 dark:border-white/[0.06] bg-yellow-50 dark:bg-signal-warn/10 flex items-center justify-center text-xs text-gray-400 dark:text-signal-muted">Med / High</div>
+            <div className="border border-gray-100 dark:border-white/[0.06] bg-red-50 dark:bg-signal-bad/10 rounded-tr flex items-center justify-center text-xs text-gray-400 dark:text-signal-muted">High / High</div>
+            <div className="border border-gray-100 dark:border-white/[0.06] bg-green-50 dark:bg-signal-good/10 flex items-center justify-center text-xs text-gray-400 dark:text-signal-muted">Low / Med</div>
+            <div className="border border-gray-100 dark:border-white/[0.06] bg-yellow-50 dark:bg-signal-warn/10 flex items-center justify-center text-xs text-gray-400 dark:text-signal-muted">Med / Med</div>
+            <div className="border border-gray-100 dark:border-white/[0.06] bg-orange-50 dark:bg-signal-amber/10 flex items-center justify-center text-xs text-gray-400 dark:text-signal-muted">High / Med</div>
+            <div className="border border-gray-100 dark:border-white/[0.06] bg-gray-50 dark:bg-white/[0.03] rounded-bl flex items-center justify-center text-xs text-gray-400 dark:text-signal-muted">Low / Low</div>
+            <div className="border border-gray-100 dark:border-white/[0.06] bg-green-50 dark:bg-signal-good/10 flex items-center justify-center text-xs text-gray-400 dark:text-signal-muted">Med / Low</div>
+            <div className="border border-gray-100 dark:border-white/[0.06] bg-yellow-50 dark:bg-signal-warn/10 rounded-br flex items-center justify-center text-xs text-gray-400 dark:text-signal-muted">High / Low</div>
           </div>
           {/* Topic Dots */}
           {topics.map(topic => {
@@ -542,23 +542,23 @@ export const CSRDDashboard: React.FC = () => {
       </div>
 
       {/* Topic List */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-200"><h4 className="font-semibold text-gray-900">ESRS Topics Assessment</h4></div>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06]">
+        <div className="p-4 border-b border-gray-200 dark:border-white/[0.06]"><h4 className="font-semibold text-gray-900 dark:text-signal-ink">ESRS Topics Assessment</h4></div>
         <div className="divide-y divide-gray-100">
           {filteredTopics.map(topic => (
-            <div key={topic.id} className="p-4 hover:bg-gray-50 cursor-pointer" onClick={() => { setSelectedTopic(topic); setShowTopicModal(true); }}>
+            <div key={topic.id} className="p-4 hover:bg-gray-50 dark:hover:bg-white/[0.04] cursor-pointer" onClick={() => { setSelectedTopic(topic); setShowTopicModal(true); }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-mono text-gray-500 w-20">{topic.esrsStandard}</span>
-                  <span className="font-medium text-gray-900">{topic.topic}</span>
+                  <span className="text-sm font-mono text-gray-500 dark:text-signal-muted w-20">{topic.esrsStandard}</span>
+                  <span className="font-medium text-gray-900 dark:text-signal-ink">{topic.topic}</span>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${materialityColor(topic.overallMateriality)}`}>{topic.overallMateriality.toUpperCase()}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColor(topic.dataCollectionStatus)}`}>{topic.dataCollectionStatus.replace('_', ' ').toUpperCase()}</span>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                  <ChevronRight className="w-4 h-4 text-gray-400 dark:text-signal-muted" />
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mt-1 ml-20">{topic.description}</p>
+              <p className="text-sm text-gray-600 dark:text-signal-body mt-1 ml-20">{topic.description}</p>
             </div>
           ))}
         </div>
@@ -571,57 +571,57 @@ export const CSRDDashboard: React.FC = () => {
   const renderEnvironmental = () => (
     <div className="space-y-6">
       {/* GHG Emissions */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Greenhouse Gas Emissions (ESRS E1)</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">Greenhouse Gas Emissions (ESRS E1)</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-gray-600">Scope 1 (Direct)</p>
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(envMetrics.ghg.scope1.total)}</p>
-            <p className="text-xs text-gray-500">tCO2e</p>
+          <div className="p-4 bg-blue-50 dark:bg-signal-blue/10 rounded-lg border border-blue-200 dark:border-signal-blue/20">
+            <p className="text-sm text-gray-600 dark:text-signal-body">Scope 1 (Direct)</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink">{formatNumber(envMetrics.ghg.scope1.total)}</p>
+            <p className="text-xs text-gray-500 dark:text-signal-muted">tCO2e</p>
           </div>
-          <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-            <p className="text-sm text-gray-600">Scope 2 (Market-based)</p>
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(envMetrics.ghg.scope2.marketBased)}</p>
-            <p className="text-xs text-gray-500">tCO2e</p>
+          <div className="p-4 bg-indigo-50 dark:bg-signal-violet/10 rounded-lg border border-indigo-200 dark:border-signal-violet/20">
+            <p className="text-sm text-gray-600 dark:text-signal-body">Scope 2 (Market-based)</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink">{formatNumber(envMetrics.ghg.scope2.marketBased)}</p>
+            <p className="text-xs text-gray-500 dark:text-signal-muted">tCO2e</p>
           </div>
-          <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-            <p className="text-sm text-gray-600">Scope 3 (Indirect)</p>
-            <p className="text-2xl font-bold text-gray-900">{formatNumber(envMetrics.ghg.scope3.total)}</p>
-            <p className="text-xs text-gray-500">tCO2e</p>
+          <div className="p-4 bg-purple-50 dark:bg-signal-violet/10 rounded-lg border border-purple-200 dark:border-signal-violet/20">
+            <p className="text-sm text-gray-600 dark:text-signal-body">Scope 3 (Indirect)</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink">{formatNumber(envMetrics.ghg.scope3.total)}</p>
+            <p className="text-xs text-gray-500 dark:text-signal-muted">tCO2e</p>
           </div>
         </div>
 
         {/* Scope 1 Breakdown */}
-        <h4 className="font-medium text-gray-700 mb-2">Scope 1 Breakdown</h4>
+        <h4 className="font-medium text-gray-700 dark:text-signal-body mb-2">Scope 1 Breakdown</h4>
         <div className="space-y-2 mb-6">
           {envMetrics.ghg.scope1.breakdown.map((item, idx) => {
             const pct = (item.value / envMetrics.ghg.scope1.total) * 100;
             return (
               <div key={idx}>
-                <div className="flex justify-between text-sm mb-1"><span className="text-gray-600">{item.source}</span><span className="font-medium">{formatNumber(item.value)} {item.unit} ({pct.toFixed(1)}%)</span></div>
-                <div className="w-full bg-gray-200 rounded-full h-2"><div className="h-2 rounded-full bg-blue-500" style={{ width: `${pct}%` }} /></div>
+                <div className="flex justify-between text-sm mb-1"><span className="text-gray-600 dark:text-signal-body">{item.source}</span><span className="font-medium dark:text-signal-ink">{formatNumber(item.value)} {item.unit} ({pct.toFixed(1)}%)</span></div>
+                <div className="w-full bg-gray-200 dark:bg-white/[0.08] rounded-full h-2"><div className="h-2 rounded-full bg-blue-500" style={{ width: `${pct}%` }} /></div>
               </div>
             );
           })}
         </div>
 
         {/* Scope 3 Categories */}
-        <h4 className="font-medium text-gray-700 mb-2">Scope 3 Categories</h4>
+        <h4 className="font-medium text-gray-700 dark:text-signal-body mb-2">Scope 3 Categories</h4>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="border-b border-gray-200 bg-gray-50">
-              <th className="text-left text-xs font-medium text-gray-500 px-3 py-2">Category</th>
-              <th className="text-right text-xs font-medium text-gray-500 px-3 py-2">Emissions</th>
-              <th className="text-right text-xs font-medium text-gray-500 px-3 py-2">% of Scope 3</th>
-              <th className="text-center text-xs font-medium text-gray-500 px-3 py-2">Data Quality</th>
+            <thead><tr className="border-b border-gray-200 dark:border-white/[0.06] bg-gray-50 dark:bg-white/[0.03]">
+              <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted px-3 py-2">Category</th>
+              <th className="text-right text-xs font-medium text-gray-500 dark:text-signal-muted px-3 py-2">Emissions</th>
+              <th className="text-right text-xs font-medium text-gray-500 dark:text-signal-muted px-3 py-2">% of Scope 3</th>
+              <th className="text-center text-xs font-medium text-gray-500 dark:text-signal-muted px-3 py-2">Data Quality</th>
             </tr></thead>
             <tbody className="divide-y divide-gray-100">
               {envMetrics.ghg.scope3.categories.map((cat, idx) => (
-                <tr key={idx} className="hover:bg-gray-50">
-                  <td className="px-3 py-2 text-sm text-gray-900">{cat.name}</td>
-                  <td className="px-3 py-2 text-sm text-right font-medium">{formatNumber(cat.value)} {cat.unit}</td>
+                <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-white/[0.04]">
+                  <td className="px-3 py-2 text-sm text-gray-900 dark:text-signal-ink">{cat.name}</td>
+                  <td className="px-3 py-2 text-sm text-right font-medium dark:text-signal-ink">{formatNumber(cat.value)} {cat.unit}</td>
                   <td className="px-3 py-2 text-sm text-right">{((cat.value / envMetrics.ghg.scope3.total) * 100).toFixed(1)}%</td>
-                  <td className="px-3 py-2 text-center"><span className={`px-2 py-0.5 rounded text-xs ${cat.estimated ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>{cat.estimated ? 'Estimated' : 'Measured'}</span></td>
+                  <td className="px-3 py-2 text-center"><span className={`px-2 py-0.5 rounded text-xs ${cat.estimated ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' : 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good'}`}>{cat.estimated ? 'Estimated' : 'Measured'}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -629,47 +629,47 @@ export const CSRDDashboard: React.FC = () => {
         </div>
 
         {/* Reduction Target */}
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <h4 className="font-medium text-green-800 mb-2">GHG Reduction Progress (Baseline: {envMetrics.ghg.baselineYear})</h4>
-          <div className="flex justify-between text-sm mb-1"><span className="text-green-700">Target: {envMetrics.ghg.reductionTarget}% reduction</span><span className="font-bold text-green-800">{envMetrics.ghg.reductionAchieved}% achieved</span></div>
+        <div className="mt-6 p-4 bg-green-50 dark:bg-signal-good/10 border border-green-200 dark:border-signal-good/30 rounded-lg">
+          <h4 className="font-medium text-green-800 dark:text-signal-good mb-2">GHG Reduction Progress (Baseline: {envMetrics.ghg.baselineYear})</h4>
+          <div className="flex justify-between text-sm mb-1"><span className="text-green-700 dark:text-signal-good">Target: {envMetrics.ghg.reductionTarget}% reduction</span><span className="font-bold text-green-800 dark:text-signal-good">{envMetrics.ghg.reductionAchieved}% achieved</span></div>
           {renderScoreBar(Math.round((envMetrics.ghg.reductionAchieved / envMetrics.ghg.reductionTarget) * 100), 'bg-green-500')}
         </div>
       </div>
 
       {/* Water, Waste, Energy, Biodiversity */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4"><Droplets className="w-5 h-5 text-blue-600" /><h3 className="font-semibold text-gray-900">Water Usage (ESRS E3)</h3></div>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <div className="flex items-center gap-2 mb-4"><Droplets className="w-5 h-5 text-blue-600" /><h3 className="font-semibold text-gray-900 dark:text-signal-ink">Water Usage (ESRS E3)</h3></div>
           <div className="space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Total Withdrawal</span><span className="font-medium">{formatNumber(envMetrics.waterUsage.total)} m3</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Recycled</span><span className="font-medium">{formatNumber(envMetrics.waterUsage.recycled)} m3 ({Math.round((envMetrics.waterUsage.recycled / envMetrics.waterUsage.total) * 100)}%)</span></div>
-            {envMetrics.waterUsage.waterStressAreas && <div className="p-2 bg-yellow-50 rounded text-xs text-yellow-800 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Operations in water stress areas</div>}
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Total Withdrawal</span><span className="font-medium dark:text-signal-ink">{formatNumber(envMetrics.waterUsage.total)} m3</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Recycled</span><span className="font-medium dark:text-signal-ink">{formatNumber(envMetrics.waterUsage.recycled)} m3 ({Math.round((envMetrics.waterUsage.recycled / envMetrics.waterUsage.total) * 100)}%)</span></div>
+            {envMetrics.waterUsage.waterStressAreas && <div className="p-2 bg-yellow-50 dark:bg-signal-warn/10 rounded text-xs text-yellow-800 dark:text-signal-warn flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Operations in water stress areas</div>}
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4"><Recycle className="w-5 h-5 text-green-600" /><h3 className="font-semibold text-gray-900">Waste Management (ESRS E5)</h3></div>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <div className="flex items-center gap-2 mb-4"><Recycle className="w-5 h-5 text-green-600" /><h3 className="font-semibold text-gray-900 dark:text-signal-ink">Waste Management (ESRS E5)</h3></div>
           <div className="space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Total Generated</span><span className="font-medium">{formatNumber(envMetrics.waste.totalGenerated)} tonnes</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Recycled</span><span className="font-medium">{formatNumber(envMetrics.waste.recycled)} tonnes ({Math.round((envMetrics.waste.recycled / envMetrics.waste.totalGenerated) * 100)}%)</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Landfill</span><span className="font-medium">{formatNumber(envMetrics.waste.landfill)} tonnes</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Hazardous</span><span className="font-medium text-red-700">{formatNumber(envMetrics.waste.hazardous)} tonnes</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Total Generated</span><span className="font-medium dark:text-signal-ink">{formatNumber(envMetrics.waste.totalGenerated)} tonnes</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Recycled</span><span className="font-medium dark:text-signal-ink">{formatNumber(envMetrics.waste.recycled)} tonnes ({Math.round((envMetrics.waste.recycled / envMetrics.waste.totalGenerated) * 100)}%)</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Landfill</span><span className="font-medium dark:text-signal-ink">{formatNumber(envMetrics.waste.landfill)} tonnes</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Hazardous</span><span className="font-medium text-red-700 dark:text-signal-bad">{formatNumber(envMetrics.waste.hazardous)} tonnes</span></div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4"><Zap className="w-5 h-5 text-yellow-600" /><h3 className="font-semibold text-gray-900">Energy Consumption (ESRS E1)</h3></div>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <div className="flex items-center gap-2 mb-4"><Zap className="w-5 h-5 text-yellow-600" /><h3 className="font-semibold text-gray-900 dark:text-signal-ink">Energy Consumption (ESRS E1)</h3></div>
           <div className="space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Total</span><span className="font-medium">{formatNumber(envMetrics.energyConsumption.total)} MWh</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Renewable</span><span className="font-medium text-green-700">{formatNumber(envMetrics.energyConsumption.renewable)} MWh ({Math.round((envMetrics.energyConsumption.renewable / envMetrics.energyConsumption.total) * 100)}%)</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Efficiency Improvement</span><span className="font-medium">{envMetrics.energyConsumption.efficiencyImprovement}% YoY</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Total</span><span className="font-medium dark:text-signal-ink">{formatNumber(envMetrics.energyConsumption.total)} MWh</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Renewable</span><span className="font-medium text-green-700 dark:text-signal-good">{formatNumber(envMetrics.energyConsumption.renewable)} MWh ({Math.round((envMetrics.energyConsumption.renewable / envMetrics.energyConsumption.total) * 100)}%)</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Efficiency Improvement</span><span className="font-medium dark:text-signal-ink">{envMetrics.energyConsumption.efficiencyImprovement}% YoY</span></div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4"><TreePine className="w-5 h-5 text-green-700" /><h3 className="font-semibold text-gray-900">Biodiversity (ESRS E4)</h3></div>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <div className="flex items-center gap-2 mb-4"><TreePine className="w-5 h-5 text-green-700" /><h3 className="font-semibold text-gray-900 dark:text-signal-ink">Biodiversity (ESRS E4)</h3></div>
           <div className="space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Sites Near Protected Areas</span><span className="font-medium">{envMetrics.biodiversity.sitesNearProtectedAreas}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Land Use Change</span><span className="font-medium">{envMetrics.biodiversity.landUseChange} hectares</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Restoration Projects</span><span className="font-medium">{envMetrics.biodiversity.restorationProjects}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Biodiversity Score</span><span className="font-medium">{envMetrics.biodiversity.score}/100</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Sites Near Protected Areas</span><span className="font-medium dark:text-signal-ink">{envMetrics.biodiversity.sitesNearProtectedAreas}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Land Use Change</span><span className="font-medium dark:text-signal-ink">{envMetrics.biodiversity.landUseChange} hectares</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Restoration Projects</span><span className="font-medium dark:text-signal-ink">{envMetrics.biodiversity.restorationProjects}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Biodiversity Score</span><span className="font-medium dark:text-signal-ink">{envMetrics.biodiversity.score}/100</span></div>
           </div>
         </div>
       </div>
@@ -681,15 +681,15 @@ export const CSRDDashboard: React.FC = () => {
   const renderSocial = () => (
     <div className="space-y-6">
       {/* Workforce */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Own Workforce (ESRS S1)</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">Own Workforce (ESRS S1)</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Total Employees</p><p className="text-xl font-bold">{formatNumber(socialMetrics.workforce.totalEmployees)}</p></div>
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Full-Time</p><p className="text-xl font-bold">{formatNumber(socialMetrics.workforce.fullTime)}</p></div>
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Female %</p><p className="text-xl font-bold">{socialMetrics.workforce.femalePercentage}%</p></div>
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Turnover Rate</p><p className="text-xl font-bold">{socialMetrics.workforce.turnoverRate}%</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Total Employees</p><p className="text-xl font-bold dark:text-signal-ink">{formatNumber(socialMetrics.workforce.totalEmployees)}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Full-Time</p><p className="text-xl font-bold dark:text-signal-ink">{formatNumber(socialMetrics.workforce.fullTime)}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Female %</p><p className="text-xl font-bold dark:text-signal-ink">{socialMetrics.workforce.femalePercentage}%</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Turnover Rate</p><p className="text-xl font-bold dark:text-signal-ink">{socialMetrics.workforce.turnoverRate}%</p></div>
         </div>
-        <h4 className="font-medium text-gray-700 mb-2">Workforce Composition</h4>
+        <h4 className="font-medium text-gray-700 dark:text-signal-body mb-2">Workforce Composition</h4>
         <div className="space-y-2">
           {[
             { label: 'Full-Time', value: socialMetrics.workforce.fullTime, color: 'bg-blue-500' },
@@ -699,8 +699,8 @@ export const CSRDDashboard: React.FC = () => {
             const pct = (item.value / socialMetrics.workforce.totalEmployees) * 100;
             return (
               <div key={item.label}>
-                <div className="flex justify-between text-sm mb-1"><span className="text-gray-600">{item.label}</span><span className="font-medium">{formatNumber(item.value)} ({pct.toFixed(1)}%)</span></div>
-                <div className="w-full bg-gray-200 rounded-full h-2"><div className={`h-2 rounded-full ${item.color}`} style={{ width: `${pct}%` }} /></div>
+                <div className="flex justify-between text-sm mb-1"><span className="text-gray-600 dark:text-signal-body">{item.label}</span><span className="font-medium dark:text-signal-ink">{formatNumber(item.value)} ({pct.toFixed(1)}%)</span></div>
+                <div className="w-full bg-gray-200 dark:bg-white/[0.08] rounded-full h-2"><div className={`h-2 rounded-full ${item.color}`} style={{ width: `${pct}%` }} /></div>
               </div>
             );
           })}
@@ -709,31 +709,31 @@ export const CSRDDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Pay Gap */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Pay Equity</h3>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-4">Pay Equity</h3>
           <div className="space-y-4">
             <div>
-              <div className="flex justify-between text-sm mb-1"><span className="text-gray-600">Gender Pay Gap</span><span className={`font-bold ${socialMetrics.payGap.genderPayGap > 5 ? 'text-red-600' : 'text-green-600'}`}>{socialMetrics.payGap.genderPayGap}%</span></div>
+              <div className="flex justify-between text-sm mb-1"><span className="text-gray-600 dark:text-signal-body">Gender Pay Gap</span><span className={`font-bold ${socialMetrics.payGap.genderPayGap > 5 ? 'text-red-600' : 'text-green-600'}`}>{socialMetrics.payGap.genderPayGap}%</span></div>
               {renderScoreBar(100 - socialMetrics.payGap.genderPayGap * 5, socialMetrics.payGap.genderPayGap > 5 ? 'bg-red-500' : 'bg-green-500')}
             </div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">CEO-to-Median Ratio</span><span className="font-medium">{socialMetrics.payGap.ceoToMedianRatio}:1</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">CEO-to-Median Ratio</span><span className="font-medium dark:text-signal-ink">{socialMetrics.payGap.ceoToMedianRatio}:1</span></div>
             <div>
-              <div className="flex justify-between text-sm mb-1"><span className="text-gray-600">Living Wage Compliance</span><span className="font-bold text-green-600">{socialMetrics.payGap.livingWageCompliance}%</span></div>
+              <div className="flex justify-between text-sm mb-1"><span className="text-gray-600 dark:text-signal-body">Living Wage Compliance</span><span className="font-bold text-green-600">{socialMetrics.payGap.livingWageCompliance}%</span></div>
               {renderScoreBar(socialMetrics.payGap.livingWageCompliance, 'bg-green-500')}
             </div>
           </div>
         </div>
 
         {/* Health & Safety */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Health & Safety</h3>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-4">Health & Safety</h3>
           <div className="space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Incident Rate</span><span className="font-medium">{socialMetrics.healthSafety.incidentRate} per 200k hours</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Fatalities</span><span className={`font-bold ${socialMetrics.healthSafety.fatalityCount === 0 ? 'text-green-600' : 'text-red-600'}`}>{socialMetrics.healthSafety.fatalityCount}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Lost Time Injury Rate</span><span className="font-medium">{socialMetrics.healthSafety.lostTimeInjuryRate}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Training Hours/Employee</span><span className="font-medium">{socialMetrics.healthSafety.trainingHoursPerEmployee}h</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Incident Rate</span><span className="font-medium dark:text-signal-ink">{socialMetrics.healthSafety.incidentRate} per 200k hours</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Fatalities</span><span className={`font-bold ${socialMetrics.healthSafety.fatalityCount === 0 ? 'text-green-600' : 'text-red-600'}`}>{socialMetrics.healthSafety.fatalityCount}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Lost Time Injury Rate</span><span className="font-medium dark:text-signal-ink">{socialMetrics.healthSafety.lostTimeInjuryRate}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Training Hours/Employee</span><span className="font-medium dark:text-signal-ink">{socialMetrics.healthSafety.trainingHoursPerEmployee}h</span></div>
             <div>
-              <div className="flex justify-between text-sm mb-1"><span className="text-gray-600">Wellbeing Program Coverage</span><span className="font-medium">{socialMetrics.healthSafety.wellbeingProgramCoverage}%</span></div>
+              <div className="flex justify-between text-sm mb-1"><span className="text-gray-600 dark:text-signal-body">Wellbeing Program Coverage</span><span className="font-medium dark:text-signal-ink">{socialMetrics.healthSafety.wellbeingProgramCoverage}%</span></div>
               {renderScoreBar(socialMetrics.healthSafety.wellbeingProgramCoverage, 'bg-blue-500')}
             </div>
           </div>
@@ -741,21 +741,21 @@ export const CSRDDashboard: React.FC = () => {
       </div>
 
       {/* Human Rights Due Diligence */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Human Rights Due Diligence (ESRS S2)</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">Human Rights Due Diligence (ESRS S2)</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Due Diligence</p><p className="text-lg font-bold">{socialMetrics.humanRights.dueDiligenceCompleted ? 'Completed' : 'Pending'}</p></div>
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Supply Chain Audits</p><p className="text-lg font-bold">{socialMetrics.humanRights.supplyChainAudits}</p></div>
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Grievances Reported</p><p className="text-lg font-bold">{socialMetrics.humanRights.grievancesReported}</p></div>
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Grievances Resolved</p><p className="text-lg font-bold">{socialMetrics.humanRights.grievancesResolved}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Due Diligence</p><p className="text-lg font-bold dark:text-signal-ink">{socialMetrics.humanRights.dueDiligenceCompleted ? 'Completed' : 'Pending'}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Supply Chain Audits</p><p className="text-lg font-bold dark:text-signal-ink">{socialMetrics.humanRights.supplyChainAudits}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Grievances Reported</p><p className="text-lg font-bold dark:text-signal-ink">{socialMetrics.humanRights.grievancesReported}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Grievances Resolved</p><p className="text-lg font-bold dark:text-signal-ink">{socialMetrics.humanRights.grievancesResolved}</p></div>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-2 p-2 rounded bg-gray-50">
-            <span className="text-sm text-gray-600">Child Labour Risk:</span>
+          <div className="flex items-center gap-2 p-2 rounded bg-gray-50 dark:bg-white/[0.03]">
+            <span className="text-sm text-gray-600 dark:text-signal-body">Child Labour Risk:</span>
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${materialityColor(socialMetrics.humanRights.childLabourRisk)}`}>{socialMetrics.humanRights.childLabourRisk.toUpperCase()}</span>
           </div>
-          <div className="flex items-center gap-2 p-2 rounded bg-gray-50">
-            <span className="text-sm text-gray-600">Forced Labour Risk:</span>
+          <div className="flex items-center gap-2 p-2 rounded bg-gray-50 dark:bg-white/[0.03]">
+            <span className="text-sm text-gray-600 dark:text-signal-body">Forced Labour Risk:</span>
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${materialityColor(socialMetrics.humanRights.forcedLabourRisk)}`}>{socialMetrics.humanRights.forcedLabourRisk.toUpperCase()}</span>
           </div>
         </div>
@@ -768,59 +768,59 @@ export const CSRDDashboard: React.FC = () => {
   const renderGovernance = () => (
     <div className="space-y-6">
       {/* Board Composition */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Board Composition (ESRS G1)</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">Board Composition (ESRS G1)</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          <div className="p-4 bg-gray-50 rounded-lg text-center">
-            <p className="text-3xl font-bold text-gray-900">{govMetrics.board.totalMembers}</p><p className="text-xs text-gray-500">Total Members</p>
+          <div className="p-4 bg-gray-50 dark:bg-white/[0.03] rounded-lg text-center">
+            <p className="text-3xl font-bold text-gray-900 dark:text-signal-ink">{govMetrics.board.totalMembers}</p><p className="text-xs text-gray-500 dark:text-signal-muted">Total Members</p>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg text-center">
-            <p className="text-3xl font-bold text-blue-700">{Math.round((govMetrics.board.independentMembers / govMetrics.board.totalMembers) * 100)}%</p><p className="text-xs text-gray-500">Independent</p>
+          <div className="p-4 bg-gray-50 dark:bg-white/[0.03] rounded-lg text-center">
+            <p className="text-3xl font-bold text-blue-700 dark:text-signal-blue dark:font-display">{Math.round((govMetrics.board.independentMembers / govMetrics.board.totalMembers) * 100)}%</p><p className="text-xs text-gray-500 dark:text-signal-muted">Independent</p>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg text-center">
-            <p className="text-3xl font-bold text-purple-700">{Math.round((govMetrics.board.femaleMembers / govMetrics.board.totalMembers) * 100)}%</p><p className="text-xs text-gray-500">Female</p>
+          <div className="p-4 bg-gray-50 dark:bg-white/[0.03] rounded-lg text-center">
+            <p className="text-3xl font-bold text-purple-700 dark:text-signal-violet dark:font-display">{Math.round((govMetrics.board.femaleMembers / govMetrics.board.totalMembers) * 100)}%</p><p className="text-xs text-gray-500 dark:text-signal-muted">Female</p>
           </div>
         </div>
         <div className="space-y-2">
-          <div className="flex justify-between text-sm"><span className="text-gray-600">Sustainability Expertise</span><span className="font-medium">{govMetrics.board.sustainabilityExpertise} members</span></div>
-          <div className="flex justify-between text-sm"><span className="text-gray-600">Meetings Per Year</span><span className="font-medium">{govMetrics.board.meetingsPerYear}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-gray-600">Average Tenure</span><span className="font-medium">{govMetrics.board.avgTenureYears} years</span></div>
+          <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Sustainability Expertise</span><span className="font-medium dark:text-signal-ink">{govMetrics.board.sustainabilityExpertise} members</span></div>
+          <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Meetings Per Year</span><span className="font-medium dark:text-signal-ink">{govMetrics.board.meetingsPerYear}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Average Tenure</span><span className="font-medium dark:text-signal-ink">{govMetrics.board.avgTenureYears} years</span></div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Anti-Corruption */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Anti-Corruption</h3>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-4">Anti-Corruption</h3>
           <div className="space-y-3">
-            <div className="flex justify-between text-sm items-center"><span className="text-gray-600">Policy in Place</span>{govMetrics.antiCorruption.policyInPlace ? <CheckCircle className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-600" />}</div>
-            <div className="flex justify-between text-sm items-center"><span className="text-gray-600">Whistleblower Protection</span>{govMetrics.antiCorruption.whistleblowerProtection ? <CheckCircle className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-600" />}</div>
-            <div><div className="flex justify-between text-sm mb-1"><span className="text-gray-600">Training Coverage</span><span className="font-medium">{govMetrics.antiCorruption.trainingCoverage}%</span></div>{renderScoreBar(govMetrics.antiCorruption.trainingCoverage, 'bg-blue-500')}</div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Incidents Reported</span><span className="font-medium">{govMetrics.antiCorruption.incidentsReported}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Political Contributions</span><span className="font-medium">{formatCurrency(govMetrics.antiCorruption.politicalContributions)}</span></div>
+            <div className="flex justify-between text-sm items-center"><span className="text-gray-600 dark:text-signal-body">Policy in Place</span>{govMetrics.antiCorruption.policyInPlace ? <CheckCircle className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-600" />}</div>
+            <div className="flex justify-between text-sm items-center"><span className="text-gray-600 dark:text-signal-body">Whistleblower Protection</span>{govMetrics.antiCorruption.whistleblowerProtection ? <CheckCircle className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-600" />}</div>
+            <div><div className="flex justify-between text-sm mb-1"><span className="text-gray-600 dark:text-signal-body">Training Coverage</span><span className="font-medium dark:text-signal-ink">{govMetrics.antiCorruption.trainingCoverage}%</span></div>{renderScoreBar(govMetrics.antiCorruption.trainingCoverage, 'bg-blue-500')}</div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Incidents Reported</span><span className="font-medium dark:text-signal-ink">{govMetrics.antiCorruption.incidentsReported}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Political Contributions</span><span className="font-medium dark:text-signal-ink">{formatCurrency(govMetrics.antiCorruption.politicalContributions)}</span></div>
           </div>
         </div>
 
         {/* Lobbying */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Lobbying & Political Engagement</h3>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-4">Lobbying & Political Engagement</h3>
           <div className="space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Total Spend</span><span className="font-medium">{formatCurrency(govMetrics.lobbying.totalSpend)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-600">Trade Associations</span><span className="font-medium">{govMetrics.lobbying.tradeAssociations}</span></div>
-            <div className="flex justify-between text-sm items-center"><span className="text-gray-600">Transparency Register</span>{govMetrics.lobbying.transparencyRegisterCompliant ? <CheckCircle className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-600" />}</div>
-            <div><p className="text-sm text-gray-600 mb-1">Topics Engaged:</p><div className="flex flex-wrap gap-1">{govMetrics.lobbying.topicsEngaged.map((t, i) => <span key={i} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">{t}</span>)}</div></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Total Spend</span><span className="font-medium dark:text-signal-ink">{formatCurrency(govMetrics.lobbying.totalSpend)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-body">Trade Associations</span><span className="font-medium dark:text-signal-ink">{govMetrics.lobbying.tradeAssociations}</span></div>
+            <div className="flex justify-between text-sm items-center"><span className="text-gray-600 dark:text-signal-body">Transparency Register</span>{govMetrics.lobbying.transparencyRegisterCompliant ? <CheckCircle className="w-5 h-5 text-green-600" /> : <X className="w-5 h-5 text-red-600" />}</div>
+            <div><p className="text-sm text-gray-600 dark:text-signal-body mb-1">Topics Engaged:</p><div className="flex flex-wrap gap-1">{govMetrics.lobbying.topicsEngaged.map((t, i) => <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-white/[0.06] rounded text-xs text-gray-700 dark:text-signal-body">{t}</span>)}</div></div>
           </div>
         </div>
       </div>
 
       {/* ESG Risk Management */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">ESG Risk Management</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">ESG Risk Management</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">ESG Risks Identified</p><p className="text-xl font-bold">{govMetrics.riskManagement.esgRisksIdentified}</p></div>
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Mitigation Plans</p><p className="text-xl font-bold">{govMetrics.riskManagement.mitigationPlansInPlace}/{govMetrics.riskManagement.esgRisksIdentified}</p></div>
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Climate Scenario Analysis</p><p className="text-xl font-bold">{govMetrics.riskManagement.climateScenarioAnalysis ? 'Done' : 'Pending'}</p></div>
-          <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">Transition Plan</p><p className="text-xl font-bold">{govMetrics.riskManagement.transitionPlanPublished ? 'Published' : 'In Draft'}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">ESG Risks Identified</p><p className="text-xl font-bold dark:text-signal-ink">{govMetrics.riskManagement.esgRisksIdentified}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Mitigation Plans</p><p className="text-xl font-bold dark:text-signal-ink">{govMetrics.riskManagement.mitigationPlansInPlace}/{govMetrics.riskManagement.esgRisksIdentified}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Climate Scenario Analysis</p><p className="text-xl font-bold dark:text-signal-ink">{govMetrics.riskManagement.climateScenarioAnalysis ? 'Done' : 'Pending'}</p></div>
+          <div className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg"><p className="text-xs text-gray-500 dark:text-signal-muted">Transition Plan</p><p className="text-xl font-bold dark:text-signal-ink">{govMetrics.riskManagement.transitionPlanPublished ? 'Published' : 'In Draft'}</p></div>
         </div>
       </div>
     </div>
@@ -831,45 +831,45 @@ export const CSRDDashboard: React.FC = () => {
   const renderReports = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Sustainability Reports</h3>
-        <button onClick={() => setShowReportModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm"><Plus className="w-4 h-4" /> New Report</button>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Sustainability Reports</h3>
+        <button onClick={() => setShowReportModal(true)} className="px-4 py-2 bg-indigo-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-indigo-700 dark:hover:bg-signal-green/90 flex items-center gap-2 text-sm"><Plus className="w-4 h-4" /> New Report</button>
       </div>
       <div className="space-y-4">
         {reports.map(report => (
-          <div key={report.id} className="bg-white rounded-lg border border-gray-200 p-6">
+          <div key={report.id} className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h4 className="font-semibold text-gray-900">{report.title}</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-signal-ink">{report.title}</h4>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${reportStatusColor(report.status)}`}>{report.status.replace('_', ' ').toUpperCase()}</span>
                 </div>
-                <p className="text-sm text-gray-600">Reporting Year: {report.reportingYear} | Last Modified: {formatDate(report.lastModified)}</p>
+                <p className="text-sm text-gray-600 dark:text-signal-body">Reporting Year: {report.reportingYear} | Last Modified: {formatDate(report.lastModified)}</p>
               </div>
               <div className="flex gap-2">
-                <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm flex items-center gap-1"><Eye className="w-4 h-4" /> View</button>
-                <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm flex items-center gap-1"><Edit className="w-4 h-4" /> Edit</button>
+                <button className="px-3 py-1.5 bg-gray-100 text-gray-700 dark:text-signal-body rounded-lg dark:bg-white/[0.06] hover:bg-gray-200 dark:hover:bg-white/[0.10] text-sm flex items-center gap-1"><Eye className="w-4 h-4" /> View</button>
+                <button className="px-3 py-1.5 bg-gray-100 text-gray-700 dark:text-signal-body rounded-lg dark:bg-white/[0.06] hover:bg-gray-200 dark:hover:bg-white/[0.10] text-sm flex items-center gap-1"><Edit className="w-4 h-4" /> Edit</button>
               </div>
             </div>
             <div className="mb-3">
-              <div className="flex justify-between text-sm mb-1"><span className="text-gray-600">Completion</span><span className="font-medium">{report.completionPercentage}%</span></div>
+              <div className="flex justify-between text-sm mb-1"><span className="text-gray-600 dark:text-signal-body">Completion</span><span className="font-medium dark:text-signal-ink">{report.completionPercentage}%</span></div>
               {renderScoreBar(report.completionPercentage)}
             </div>
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-signal-body">
               {report.assuranceProvider && <span className="flex items-center gap-1"><Shield className="w-4 h-4" /> {report.assuranceProvider} ({report.assuranceLevel} assurance)</span>}
               <span className="flex items-center gap-1"><FileText className="w-4 h-4" /> {report.esrsTopicsCovered.length} ESRS topics</span>
             </div>
             {report.esrsTopicsCovered.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">{report.esrsTopicsCovered.map(tp => <span key={tp} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">{tp}</span>)}</div>
+              <div className="flex flex-wrap gap-1 mt-2">{report.esrsTopicsCovered.map(tp => <span key={tp} className="px-2 py-0.5 bg-indigo-50 dark:bg-signal-blue/10 text-indigo-700 dark:text-signal-blue rounded text-xs">{tp}</span>)}</div>
             )}
           </div>
         ))}
       </div>
 
       {/* Statement Generator */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Sustainability Statement Generator</h3>
-        <p className="text-sm text-gray-600 mb-4">Generate a CSRD-compliant sustainability statement based on your collected data and materiality assessment.</p>
-        <button onClick={() => setShowGenerateModal(true)} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-2">Sustainability Statement Generator</h3>
+        <p className="text-sm text-gray-600 dark:text-signal-body mb-4">Generate a CSRD-compliant sustainability statement based on your collected data and materiality assessment.</p>
+        <button onClick={() => setShowGenerateModal(true)} className="px-4 py-2 bg-green-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-green-700 dark:hover:bg-signal-green/90 flex items-center gap-2">
           <FileText className="w-4 h-4" /> Generate Statement
         </button>
       </div>
@@ -882,27 +882,27 @@ export const CSRDDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.csrd')}</h2>
-          <p className="text-gray-600 mt-1">Corporate Sustainability Reporting Directive (EU) 2022/2464 with ESRS standards</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('euRegulations.csrd')}</h2>
+          <p className="text-gray-600 dark:text-signal-body mt-1">Corporate Sustainability Reporting Directive (EU) 2022/2464 with ESRS standards</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"><Download className="w-4 h-4" /> {t('common.export')}</button>
+          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-green/90 flex items-center gap-2"><Download className="w-4 h-4" /> {t('common.export')}</button>
         </div>
       </div>
 
       {isTemplateData && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-lg border border-amber-200 dark:border-signal-warn/30 bg-amber-50 dark:bg-signal-warn/10 px-4 py-3 text-sm text-amber-800 dark:text-signal-warn">
           {loadError
             ? loadError
             : 'Showing example template data. These figures are not saved as your organisation’s CSRD data — edit a topic or add a report to begin entering your own values.'}
         </div>
       )}
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-white/[0.06]">
         <nav className="flex gap-4 -mb-px overflow-x-auto">
           {tabs.map(tab => (
             <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchTerm(''); }}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-indigo-600 dark:border-signal-green text-indigo-600 dark:text-signal-green' : 'border-transparent text-gray-500 dark:text-signal-muted hover:text-gray-700 dark:hover:text-signal-body hover:border-gray-300 dark:hover:border-white/[0.10]'}`}>
               {tab.icon} {tab.label}
             </button>
           ))}
@@ -919,20 +919,20 @@ export const CSRDDashboard: React.FC = () => {
       {/* ── Topic Detail Modal ── */}
       {showTopicModal && selectedTopic && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">{selectedTopic.esrsStandard}: {selectedTopic.topic}</h3>
-              <button onClick={() => { setShowTopicModal(false); setSelectedTopic(null); }} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">{selectedTopic.esrsStandard}: {selectedTopic.topic}</h3>
+              <button onClick={() => { setShowTopicModal(false); setSelectedTopic(null); }} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:hover:text-signal-body"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-gray-600">{selectedTopic.description}</p>
+              <p className="text-gray-600 dark:text-signal-body">{selectedTopic.description}</p>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-sm font-medium text-gray-700">Impact Materiality</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${materialityColor(selectedTopic.impactMateriality)}`}>{selectedTopic.impactMateriality.toUpperCase()}</span></p></div>
-                <div><label className="text-sm font-medium text-gray-700">Financial Materiality</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${materialityColor(selectedTopic.financialMateriality)}`}>{selectedTopic.financialMateriality.toUpperCase()}</span></p></div>
-                <div><label className="text-sm font-medium text-gray-700">Overall Materiality</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${materialityColor(selectedTopic.overallMateriality)}`}>{selectedTopic.overallMateriality.toUpperCase()}</span></p></div>
-                <div><label className="text-sm font-medium text-gray-700">Data Collection</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColor(selectedTopic.dataCollectionStatus)}`}>{selectedTopic.dataCollectionStatus.replace('_', ' ').toUpperCase()}</span></p></div>
+                <div><label className="text-sm font-medium text-gray-700 dark:text-signal-body">Impact Materiality</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${materialityColor(selectedTopic.impactMateriality)}`}>{selectedTopic.impactMateriality.toUpperCase()}</span></p></div>
+                <div><label className="text-sm font-medium text-gray-700 dark:text-signal-body">Financial Materiality</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${materialityColor(selectedTopic.financialMateriality)}`}>{selectedTopic.financialMateriality.toUpperCase()}</span></p></div>
+                <div><label className="text-sm font-medium text-gray-700 dark:text-signal-body">Overall Materiality</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${materialityColor(selectedTopic.overallMateriality)}`}>{selectedTopic.overallMateriality.toUpperCase()}</span></p></div>
+                <div><label className="text-sm font-medium text-gray-700 dark:text-signal-body">Data Collection</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColor(selectedTopic.dataCollectionStatus)}`}>{selectedTopic.dataCollectionStatus.replace('_', ' ').toUpperCase()}</span></p></div>
               </div>
-              <div><label className="text-sm font-medium text-gray-700">Stakeholders Affected</label><div className="flex flex-wrap gap-1 mt-1">{selectedTopic.stakeholdersAffected.map(s => <span key={s} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">{s}</span>)}</div></div>
+              <div><label className="text-sm font-medium text-gray-700 dark:text-signal-body">Stakeholders Affected</label><div className="flex flex-wrap gap-1 mt-1">{selectedTopic.stakeholdersAffected.map(s => <span key={s} className="px-2 py-0.5 bg-gray-100 dark:bg-white/[0.06] rounded text-xs text-gray-700 dark:text-signal-body">{s}</span>)}</div></div>
             </div>
           </div>
         </div>
@@ -941,19 +941,19 @@ export const CSRDDashboard: React.FC = () => {
       {/* ── New Report Modal ── */}
       {showReportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Create Sustainability Report</h3>
-              <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-lg w-full">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Create Sustainability Report</h3>
+              <button onClick={() => setShowReportModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:hover:text-signal-body"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleAddReport} className="p-6 space-y-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Report Title *</label><input type="text" required value={reportForm.title} onChange={(e) => setReportForm({ ...reportForm, title: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Reporting Year *</label><select value={reportForm.reportingYear} onChange={(e) => setReportForm({ ...reportForm, reportingYear: parseInt(e.target.value) })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value={2025}>2025</option><option value={2024}>2024</option><option value={2026}>2026</option></select></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Assurance Provider</label><input type="text" value={reportForm.assuranceProvider} onChange={(e) => setReportForm({ ...reportForm, assuranceProvider: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Assurance Level</label><select value={reportForm.assuranceLevel} onChange={(e) => setReportForm({ ...reportForm, assuranceLevel: e.target.value as any })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="limited">Limited</option><option value="reasonable">Reasonable</option><option value="none">None</option></select></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Report Title *</label><input type="text" required value={reportForm.title} onChange={(e) => setReportForm({ ...reportForm, title: e.target.value })} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Reporting Year *</label><select value={reportForm.reportingYear} onChange={(e) => setReportForm({ ...reportForm, reportingYear: parseInt(e.target.value) })} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value={2025}>2025</option><option value={2024}>2024</option><option value={2026}>2026</option></select></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Assurance Provider</label><input type="text" value={reportForm.assuranceProvider} onChange={(e) => setReportForm({ ...reportForm, assuranceProvider: e.target.value })} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Assurance Level</label><select value={reportForm.assuranceLevel} onChange={(e) => setReportForm({ ...reportForm, assuranceLevel: e.target.value as any })} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="limited">Limited</option><option value="reasonable">Reasonable</option><option value="none">None</option></select></div>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Create Report</button>
-                <button type="button" onClick={() => setShowReportModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-indigo-700 dark:hover:bg-signal-green/90">Create Report</button>
+                <button type="button" onClick={() => setShowReportModal(false)} className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]">{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -963,19 +963,19 @@ export const CSRDDashboard: React.FC = () => {
       {/* ── Generate Statement Modal ── */}
       {showGenerateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Generate Sustainability Statement</h3>
-              <button onClick={() => setShowGenerateModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-lg w-full">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Generate Sustainability Statement</h3>
+              <button onClick={() => setShowGenerateModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:hover:text-signal-body"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-600">This will generate a CSRD-compliant sustainability statement incorporating your materiality assessment, environmental data, social metrics, and governance information.</p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+              <p className="text-sm text-gray-600 dark:text-signal-body">This will generate a CSRD-compliant sustainability statement incorporating your materiality assessment, environmental data, social metrics, and governance information.</p>
+              <div className="bg-blue-50 dark:bg-signal-blue/10 border border-blue-200 dark:border-signal-blue/30 rounded-lg p-3 text-sm text-blue-800 dark:text-signal-blue">
                 <strong>Data sources:</strong> {materialTopics.length} material topics, GHG data (Scopes 1-3), {socialMetrics.workforce.totalEmployees} employees, {govMetrics.board.totalMembers} board members.
               </div>
               <div className="flex gap-3">
-                <button onClick={() => { setShowGenerateModal(false); handleDownloadReport(); }} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">{t('common.download')}</button>
-                <button onClick={() => setShowGenerateModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
+                <button onClick={() => { setShowGenerateModal(false); handleDownloadReport(); }} className="flex-1 px-4 py-2 bg-green-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-green-700 dark:hover:bg-signal-green/90">{t('common.download')}</button>
+                <button onClick={() => setShowGenerateModal(false)} className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]">{t('common.cancel')}</button>
               </div>
             </div>
           </div>

@@ -101,18 +101,18 @@ const API_BASE = (import.meta as ImportMeta & { env: Record<string, string> }).e
 const apiUrl = API_BASE.endsWith('/api') ? API_BASE : API_BASE.replace(/\/?$/, '') + '/api';
 
 const statusColors: Record<DPIAStatus, string> = {
-  Draft: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
-  InProgress: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  UnderReview: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  Approved: 'bg-green-500/20 text-green-400 border-green-500/30',
-  Rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
+  Draft: 'bg-white/[0.06] text-signal-muted border-white/[0.10]',
+  InProgress: 'bg-signal-warn/10 text-signal-warn border-signal-warn/30',
+  UnderReview: 'bg-signal-blue/10 text-signal-blue border-signal-blue/30',
+  Approved: 'bg-signal-good/10 text-signal-good border-signal-good/30',
+  Rejected: 'bg-signal-bad/10 text-signal-bad border-signal-bad/30',
 };
 
 const riskLevelColors: Record<string, string> = {
-  Low: 'bg-green-500/20 text-green-400',
-  Medium: 'bg-yellow-500/20 text-yellow-400',
-  High: 'bg-orange-500/20 text-orange-400',
-  Critical: 'bg-red-500/20 text-red-400',
+  Low: 'bg-signal-good/10 text-signal-good',
+  Medium: 'bg-signal-warn/10 text-signal-warn',
+  High: 'bg-signal-amber/10 text-signal-amber',
+  Critical: 'bg-signal-bad/10 text-signal-bad',
 };
 
 const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
@@ -434,10 +434,10 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const getRiskColor = (likelihood: number, impact: number): string => {
     const score = likelihood * impact;
-    if (score >= 16) return 'bg-red-500';
-    if (score >= 10) return 'bg-orange-500';
-    if (score >= 5) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (score >= 16) return 'bg-signal-bad';
+    if (score >= 10) return 'bg-signal-amber';
+    if (score >= 5) return 'bg-signal-warn';
+    return 'bg-signal-good';
   };
 
   const getRiskLabel = (likelihood: number, impact: number): string => {
@@ -453,52 +453,52 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-blue-400 text-sm mb-1">
-            <FileText className="w-4 h-4" /> Total DPIAs
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-2">
+            <FileText className="w-4 h-4 text-signal-blue" /> Total DPIAs
           </div>
-          <div className="text-3xl font-bold text-blue-400">{stats.total}</div>
-          <div className="text-xs text-slate-500 mt-1">{stats.draft} drafts</div>
+          <div className="text-3xl font-bold font-display text-signal-blue">{stats.total}</div>
+          <div className="text-xs text-signal-muted mt-1">{stats.draft} drafts</div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-yellow-400 text-sm mb-1">
-            <Clock className="w-4 h-4" /> In Progress
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-2">
+            <Clock className="w-4 h-4 text-signal-warn" /> In Progress
           </div>
-          <div className="text-3xl font-bold text-yellow-400">{stats.inProgress}</div>
-          <div className="text-xs text-slate-500 mt-1">{stats.underReview} under review</div>
+          <div className="text-3xl font-bold font-display text-signal-warn">{stats.inProgress}</div>
+          <div className="text-xs text-signal-muted mt-1">{stats.underReview} under review</div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-green-400 text-sm mb-1">
-            <CheckCircle className="w-4 h-4" /> Approved
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-2">
+            <CheckCircle className="w-4 h-4 text-signal-good" /> Approved
           </div>
-          <div className="text-3xl font-bold text-green-400">{stats.approved}</div>
-          <div className="text-xs text-slate-500 mt-1">{stats.rejected} rejected</div>
+          <div className="text-3xl font-bold font-display text-signal-good">{stats.approved}</div>
+          <div className="text-xs text-signal-muted mt-1">{stats.rejected} rejected</div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-red-400 text-sm mb-1">
-            <AlertTriangle className="w-4 h-4" /> High Risk
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-2">
+            <AlertTriangle className="w-4 h-4 text-signal-bad" /> High Risk
           </div>
-          <div className="text-3xl font-bold text-red-400">{stats.highRisk}</div>
-          <div className="text-xs text-slate-500 mt-1">assessments flagged</div>
+          <div className="text-3xl font-bold font-display text-signal-bad">{stats.highRisk}</div>
+          <div className="text-xs text-signal-muted mt-1">assessments flagged</div>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-wrap gap-2 items-center">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-signal-muted" />
             <input
               type="text"
               placeholder={`${t('common.search')}...`}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
+              className="pl-9 pr-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green w-64"
             />
           </div>
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value as DPIAStatus | 'All')}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink focus:outline-none focus:ring-1 focus:ring-signal-green"
           >
             <option value="All">All Statuses</option>
             <option value="Draft">Draft</option>
@@ -510,33 +510,33 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-signal-green hover:bg-signal-green/90 text-signal-canvas font-medium rounded-xl text-sm transition-colors"
         >
           <Plus className="w-4 h-4" /> {t('dpia.createDPIA')}
         </button>
       </div>
 
-      <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">ID</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Title</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Project</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.status')}</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Risk Level</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.assignee')}</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Updated</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.actions')}</th>
+              <tr className="border-b border-white/[0.06]">
+                <th className="text-left px-4 py-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">ID</th>
+                <th className="text-left px-4 py-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Title</th>
+                <th className="text-left px-4 py-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Project</th>
+                <th className="text-left px-4 py-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">{t('common.status')}</th>
+                <th className="text-left px-4 py-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Risk Level</th>
+                <th className="text-left px-4 py-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">{t('common.assignee')}</th>
+                <th className="text-left px-4 py-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Updated</th>
+                <th className="text-left px-4 py-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {filteredDPIAs.map(dpia => (
-                <tr key={dpia.id} className="border-b border-slate-700/50 hover:bg-slate-750/50">
-                  <td className="px-4 py-3 text-slate-500 font-mono text-xs">{dpia.id}</td>
-                  <td className="px-4 py-3 text-slate-200">{dpia.title}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{dpia.projectName}</td>
+                <tr key={dpia.id} className="border-b border-white/[0.06] hover:bg-white/[0.04]">
+                  <td className="px-4 py-3 text-signal-muted font-mono text-xs">{dpia.id}</td>
+                  <td className="px-4 py-3 text-signal-ink">{dpia.title}</td>
+                  <td className="px-4 py-3 text-signal-muted text-xs">{dpia.projectName}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded border ${statusColors[dpia.status]}`}>
                       {dpia.status === 'InProgress' ? 'In Progress' : dpia.status === 'UnderReview' ? 'Under Review' : dpia.status}
@@ -547,20 +547,20 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       {dpia.riskLevel}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{dpia.assignedTo}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{dpia.updatedAt}</td>
+                  <td className="px-4 py-3 text-signal-muted text-xs">{dpia.assignedTo}</td>
+                  <td className="px-4 py-3 text-signal-muted text-xs">{dpia.updatedAt}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setSelectedDPIA(dpia.id)}
-                        className="p-1.5 text-slate-400 hover:text-white transition-colors"
+                        className="p-1.5 text-signal-muted hover:text-signal-ink transition-colors"
                         title="View Details"
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => openEditDPIA(dpia)}
-                        className="p-1.5 text-slate-400 hover:text-white transition-colors"
+                        className="p-1.5 text-signal-muted hover:text-signal-ink transition-colors"
                         title="Edit"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -573,7 +573,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </table>
         </div>
         {filteredDPIAs.length === 0 && (
-          <div className="text-center py-8 text-slate-500 text-sm">
+          <div className="text-center py-8 text-signal-muted text-sm">
             {loading ? 'Loading DPIAs...' : 'No DPIAs match the current filters.'}
           </div>
         )}
@@ -581,8 +581,8 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {/* Status Distribution */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-white mb-3">Status Distribution</h3>
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+          <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-3">Status Distribution</h3>
           <div className="space-y-2">
             {(['Draft', 'InProgress', 'UnderReview', 'Approved', 'Rejected'] as DPIAStatus[]).map(status => {
               const count = dpias.filter(d => d.status === status).length;
@@ -590,54 +590,54 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               const label = status === 'InProgress' ? 'In Progress' : status === 'UnderReview' ? 'Under Review' : status;
               return (
                 <div key={status} className="flex items-center gap-3">
-                  <div className="w-28 text-xs text-slate-400">{label}</div>
-                  <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
+                  <div className="w-28 text-xs text-signal-muted">{label}</div>
+                  <div className="flex-1 bg-white/[0.06] rounded-full h-2 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
                         status === 'Approved'
-                          ? 'bg-green-500'
+                          ? 'bg-signal-good'
                           : status === 'Rejected'
-                          ? 'bg-red-500'
+                          ? 'bg-signal-bad'
                           : status === 'InProgress'
-                          ? 'bg-yellow-500'
+                          ? 'bg-signal-warn'
                           : status === 'UnderReview'
-                          ? 'bg-blue-500'
-                          : 'bg-slate-500'
+                          ? 'bg-signal-blue'
+                          : 'bg-white/20'
                       }`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <div className="w-6 text-xs text-slate-400 text-right">{count}</div>
+                  <div className="w-6 text-xs text-signal-body text-right">{count}</div>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-white mb-3">Risk Level Distribution</h3>
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+          <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-3">Risk Level Distribution</h3>
           <div className="space-y-2">
             {(['Low', 'Medium', 'High', 'Critical'] as const).map(level => {
               const count = dpias.filter(d => d.riskLevel === level).length;
               const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
               return (
                 <div key={level} className="flex items-center gap-3">
-                  <div className="w-28 text-xs text-slate-400">{level}</div>
-                  <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
+                  <div className="w-28 text-xs text-signal-muted">{level}</div>
+                  <div className="flex-1 bg-white/[0.06] rounded-full h-2 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
                         level === 'Critical'
-                          ? 'bg-red-500'
+                          ? 'bg-signal-bad'
                           : level === 'High'
-                          ? 'bg-orange-500'
+                          ? 'bg-signal-amber'
                           : level === 'Medium'
-                          ? 'bg-yellow-500'
-                          : 'bg-green-500'
+                          ? 'bg-signal-warn'
+                          : 'bg-signal-good'
                       }`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <div className="w-6 text-xs text-slate-400 text-right">{count}</div>
+                  <div className="w-6 text-xs text-signal-body text-right">{count}</div>
                 </div>
               );
             })}
@@ -651,9 +651,9 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderScreening = () => (
     <div className="space-y-6">
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-        <h3 className="text-lg font-medium text-white mb-2">DPIA Screening Questionnaire</h3>
-        <p className="text-sm text-slate-400 mb-6">
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+        <h3 className="text-lg font-display font-medium text-signal-ink mb-2">DPIA Screening Questionnaire</h3>
+        <p className="text-sm text-signal-body mb-6">
           Answer the following questions to determine whether a DPIA is required for your processing activity.
           If two or more indicators are checked, a DPIA is mandatory under GDPR Article 35.
         </p>
@@ -662,20 +662,20 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           {screeningQuestions.map(q => (
             <label
               key={q.id}
-              className="flex items-start gap-3 p-3 bg-slate-700/50 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors"
+              className="flex items-start gap-3 p-3 bg-white/[0.04] border border-white/[0.06] rounded-xl cursor-pointer hover:bg-white/[0.06] transition-colors"
             >
               <input
                 type="checkbox"
                 checked={screeningAnswers[q.id] || false}
                 onChange={e => setScreeningAnswers(prev => ({ ...prev, [q.id]: e.target.checked }))}
-                className="mt-0.5 w-4 h-4 rounded border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 bg-slate-700"
+                className="mt-0.5 w-4 h-4 rounded border-white/[0.10] text-signal-green focus:ring-signal-green focus:ring-offset-0 bg-white/[0.06]"
               />
               <div className="flex-1">
-                <div className="text-sm text-slate-200">{q.question}</div>
+                <div className="text-sm text-signal-body">{q.question}</div>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs px-2 py-0.5 rounded bg-slate-600 text-slate-300">{q.category}</span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-white/[0.06] text-signal-muted">{q.category}</span>
                   {q.isHighRisk && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400">High Risk Indicator</span>
+                    <span className="text-xs px-2 py-0.5 rounded bg-signal-bad/10 text-signal-bad">High Risk Indicator</span>
                   )}
                 </div>
               </div>
@@ -686,7 +686,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="mt-6 flex items-center gap-4">
           <button
             onClick={handleScreeningSubmit}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-signal-green hover:bg-signal-green/90 text-signal-canvas font-medium rounded-xl text-sm transition-colors"
           >
             <ClipboardList className="w-4 h-4" /> Evaluate
           </button>
@@ -695,11 +695,11 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               setScreeningAnswers({});
               setScreeningResult(null);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-signal-ink rounded-xl text-sm transition-colors"
           >
             <RefreshCw className="w-4 h-4" /> {t('common.reset')}
           </button>
-          <div className="text-sm text-slate-400">
+          <div className="text-sm text-signal-muted">
             {Object.values(screeningAnswers).filter(Boolean).length} of {screeningQuestions.length} indicators checked
           </div>
         </div>
@@ -707,29 +707,29 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {screeningResult && (
         <div
-          className={`p-4 rounded-lg border flex items-start gap-3 ${
+          className={`p-4 rounded-2xl border flex items-start gap-3 ${
             screeningResult === 'required'
-              ? 'bg-red-500/10 border-red-500/30'
+              ? 'bg-signal-bad/10 border-signal-bad/30'
               : screeningResult === 'recommended'
-              ? 'bg-yellow-500/10 border-yellow-500/30'
-              : 'bg-green-500/10 border-green-500/30'
+              ? 'bg-signal-warn/10 border-signal-warn/30'
+              : 'bg-signal-good/10 border-signal-good/30'
           }`}
         >
           {screeningResult === 'required' ? (
-            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-signal-bad flex-shrink-0 mt-0.5" />
           ) : screeningResult === 'recommended' ? (
-            <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-signal-warn flex-shrink-0 mt-0.5" />
           ) : (
-            <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-signal-good flex-shrink-0 mt-0.5" />
           )}
           <div>
             <div
               className={`text-sm font-medium ${
                 screeningResult === 'required'
-                  ? 'text-red-400'
+                  ? 'text-signal-bad'
                   : screeningResult === 'recommended'
-                  ? 'text-yellow-400'
-                  : 'text-green-400'
+                  ? 'text-signal-warn'
+                  : 'text-signal-good'
               }`}
             >
               {screeningResult === 'required'
@@ -741,10 +741,10 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div
               className={`text-xs mt-1 ${
                 screeningResult === 'required'
-                  ? 'text-red-400/70'
+                  ? 'text-signal-bad/70'
                   : screeningResult === 'recommended'
-                  ? 'text-yellow-400/70'
-                  : 'text-green-400/70'
+                  ? 'text-signal-warn/70'
+                  : 'text-signal-good/70'
               }`}
             >
               {screeningResult === 'required'
@@ -764,11 +764,11 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const renderRiskAssessment = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-4 mb-2">
-        <div className="text-sm text-slate-400">Select a DPIA to view its risk assessment:</div>
+        <div className="text-sm text-signal-body">Select a DPIA to view its risk assessment:</div>
         <select
           value={selectedDPIA || ''}
           onChange={e => setSelectedDPIA(e.target.value || null)}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink focus:outline-none focus:ring-1 focus:ring-signal-green"
         >
           <option value="">-- Select DPIA --</option>
           {dpias.map(d => (
@@ -780,15 +780,15 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       {/* Risk Matrix */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-        <h3 className="text-sm font-medium text-white mb-4">Risk Matrix - Likelihood vs Impact</h3>
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+        <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-4">Risk Matrix - Likelihood vs Impact</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr>
-                <th className="px-3 py-2 text-slate-400 font-medium text-left w-32">Likelihood / Impact</th>
+                <th className="px-3 py-2 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em] text-left w-32">Likelihood / Impact</th>
                 {[1, 2, 3, 4, 5].map(impact => (
-                  <th key={impact} className="px-3 py-2 text-slate-400 font-medium text-center">
+                  <th key={impact} className="px-3 py-2 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em] text-center">
                     {impactLabels[impact]}
                   </th>
                 ))}
@@ -797,7 +797,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <tbody>
               {[5, 4, 3, 2, 1].map(likelihood => (
                 <tr key={likelihood}>
-                  <td className="px-3 py-2 text-slate-400 text-xs font-medium">{likelihoodLabels[likelihood]}</td>
+                  <td className="px-3 py-2 text-signal-muted text-xs font-medium">{likelihoodLabels[likelihood]}</td>
                   {[1, 2, 3, 4, 5].map(impact => {
                     const cellRisks = selectedDPIARisks.filter(
                       r => r.likelihood === likelihood && r.impact === impact
@@ -808,15 +808,15 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           className={`rounded-lg p-2 min-h-[48px] flex items-center justify-center ${getRiskColor(
                             likelihood,
                             impact
-                          )}/20 border border-slate-700/50`}
+                          )}/20 border border-white/[0.06]`}
                         >
                           {cellRisks.length > 0 ? (
                             <div className="flex flex-col items-center gap-0.5">
-                              <span className="text-white font-bold text-sm">{cellRisks.length}</span>
-                              <span className="text-xs text-slate-300">{getRiskLabel(likelihood, impact)}</span>
+                              <span className="text-signal-ink font-display font-bold text-sm">{cellRisks.length}</span>
+                              <span className="text-xs text-signal-body">{getRiskLabel(likelihood, impact)}</span>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-500">{getRiskLabel(likelihood, impact)}</span>
+                            <span className="text-xs text-signal-muted">{getRiskLabel(likelihood, impact)}</span>
                           )}
                         </div>
                       </td>
@@ -829,44 +829,44 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
         <div className="flex items-center gap-4 mt-4">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-green-500/40" />
-            <span className="text-xs text-slate-400">Low</span>
+            <div className="w-3 h-3 rounded bg-signal-good/40" />
+            <span className="text-xs text-signal-muted">Low</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-yellow-500/40" />
-            <span className="text-xs text-slate-400">Medium</span>
+            <div className="w-3 h-3 rounded bg-signal-warn/40" />
+            <span className="text-xs text-signal-muted">Medium</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-orange-500/40" />
-            <span className="text-xs text-slate-400">High</span>
+            <div className="w-3 h-3 rounded bg-signal-amber/40" />
+            <span className="text-xs text-signal-muted">High</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-red-500/40" />
-            <span className="text-xs text-slate-400">Critical</span>
+            <div className="w-3 h-3 rounded bg-signal-bad/40" />
+            <span className="text-xs text-signal-muted">Critical</span>
           </div>
         </div>
       </div>
 
       {/* Risk List */}
       {selectedDPIA && (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-700">
-            <h3 className="text-sm font-medium text-white">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/[0.06]">
+            <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted">
               Identified Risks ({selectedDPIARisks.length})
             </h3>
           </div>
           {selectedDPIARisks.length > 0 ? (
-            <div className="divide-y divide-slate-700/50">
+            <div className="divide-y divide-white/[0.06]">
               {selectedDPIARisks.map(risk => (
                 <div key={risk.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="text-sm text-slate-200">{risk.riskDescription}</div>
+                      <div className="text-sm text-signal-body">{risk.riskDescription}</div>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-signal-muted">
                           Likelihood: {likelihoodLabels[risk.likelihood]}
                         </span>
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-signal-muted">
                           Impact: {impactLabels[risk.impact]}
                         </span>
                         <span className={`text-xs px-2 py-0.5 rounded ${riskLevelColors[risk.residualRisk]}`}>
@@ -875,20 +875,20 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <span
                           className={`text-xs px-2 py-0.5 rounded ${
                             risk.status === 'Mitigated'
-                              ? 'bg-green-500/20 text-green-400'
+                              ? 'bg-signal-good/10 text-signal-good'
                               : risk.status === 'Accepted'
-                              ? 'bg-blue-500/20 text-blue-400'
+                              ? 'bg-signal-blue/10 text-signal-blue'
                               : risk.status === 'Transferred'
-                              ? 'bg-purple-500/20 text-purple-400'
-                              : 'bg-yellow-500/20 text-yellow-400'
+                              ? 'bg-signal-violet/10 text-signal-violet'
+                              : 'bg-signal-warn/10 text-signal-warn'
                           }`}
                         >
                           {risk.status}
                         </span>
                       </div>
                       {risk.mitigationMeasures && (
-                        <div className="mt-2 text-xs text-slate-400">
-                          <span className="font-medium text-slate-300">Mitigation:</span> {risk.mitigationMeasures}
+                        <div className="mt-2 text-xs text-signal-muted">
+                          <span className="font-medium text-signal-body">Mitigation:</span> {risk.mitigationMeasures}
                         </div>
                       )}
                     </div>
@@ -897,7 +897,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-slate-500 text-sm">
+            <div className="text-center py-8 text-signal-muted text-sm">
               No risks identified for this DPIA yet.
             </div>
           )}
@@ -905,9 +905,9 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       )}
 
       {!selectedDPIA && (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-8 text-center">
-          <AlertTriangle className="w-8 h-8 text-slate-500 mx-auto mb-3" />
-          <div className="text-sm text-slate-400">Select a DPIA from the dropdown above to view its risk assessment.</div>
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center">
+          <AlertTriangle className="w-8 h-8 text-signal-muted mx-auto mb-3" />
+          <div className="text-sm text-signal-body">Select a DPIA from the dropdown above to view its risk assessment.</div>
         </div>
       )}
     </div>
@@ -918,42 +918,42 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const renderDPOReview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-blue-400 text-sm mb-1">
-            <Clock className="w-4 h-4" /> Pending Review
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-2">
+            <Clock className="w-4 h-4 text-signal-blue" /> Pending Review
           </div>
-          <div className="text-3xl font-bold text-blue-400">
+          <div className="text-3xl font-bold font-display text-signal-blue">
             {dpias.filter(d => d.status === 'UnderReview').length}
           </div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-green-400 text-sm mb-1">
-            <CheckCircle className="w-4 h-4" /> Approved
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-2">
+            <CheckCircle className="w-4 h-4 text-signal-good" /> Approved
           </div>
-          <div className="text-3xl font-bold text-green-400">{stats.approved}</div>
+          <div className="text-3xl font-bold font-display text-signal-good">{stats.approved}</div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-red-400 text-sm mb-1">
-            <X className="w-4 h-4" /> Rejected
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-2">
+            <X className="w-4 h-4 text-signal-bad" /> Rejected
           </div>
-          <div className="text-3xl font-bold text-red-400">{stats.rejected}</div>
+          <div className="text-3xl font-bold font-display text-signal-bad">{stats.rejected}</div>
         </div>
       </div>
 
       {/* Awaiting Review List */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-700">
-          <h3 className="text-sm font-medium text-white">DPIAs Awaiting DPO Review</h3>
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/[0.06]">
+          <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted">DPIAs Awaiting DPO Review</h3>
         </div>
-        <div className="divide-y divide-slate-700/50">
+        <div className="divide-y divide-white/[0.06]">
           {dpias
             .filter(d => d.status === 'UnderReview')
             .map(dpia => (
               <div key={dpia.id} className="px-4 py-3 flex items-center justify-between">
                 <div>
-                  <div className="text-sm text-slate-200">{dpia.title}</div>
+                  <div className="text-sm text-signal-body">{dpia.title}</div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-slate-500">Project: {dpia.projectName}</span>
+                    <span className="text-xs text-signal-muted">Project: {dpia.projectName}</span>
                     <span className={`text-xs px-2 py-0.5 rounded ${riskLevelColors[dpia.riskLevel]}`}>
                       {dpia.riskLevel} Risk
                     </span>
@@ -961,28 +961,28 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
                 <button
                   onClick={() => setDpoReviewForm(prev => ({ ...prev, dpiaId: dpia.id }))}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-signal-green hover:bg-signal-green/90 text-signal-canvas font-medium rounded-lg text-xs transition-colors"
                 >
                   <UserCheck className="w-3.5 h-3.5" /> Review
                 </button>
               </div>
             ))}
           {dpias.filter(d => d.status === 'UnderReview').length === 0 && (
-            <div className="text-center py-8 text-slate-500 text-sm">No DPIAs pending review.</div>
+            <div className="text-center py-8 text-signal-muted text-sm">No DPIAs pending review.</div>
           )}
         </div>
       </div>
 
       {/* DPO Review Form */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-        <h3 className="text-sm font-medium text-white mb-4">DPO Consultation Form</h3>
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+        <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted mb-4">DPO Consultation Form</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Select DPIA</label>
+            <label className="block text-xs text-signal-muted mb-1">Select DPIA</label>
             <select
               value={dpoReviewForm.dpiaId}
               onChange={e => setDpoReviewForm(prev => ({ ...prev, dpiaId: e.target.value }))}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink focus:outline-none focus:ring-1 focus:ring-signal-green"
             >
               <option value="">-- Select DPIA --</option>
               {dpias
@@ -995,17 +995,17 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">DPO Name</label>
+            <label className="block text-xs text-signal-muted mb-1">DPO Name</label>
             <input
               type="text"
               value={dpoReviewForm.dpoName}
               onChange={e => setDpoReviewForm(prev => ({ ...prev, dpoName: e.target.value }))}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
               placeholder="Enter DPO name"
             />
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Opinion</label>
+            <label className="block text-xs text-signal-muted mb-1">Opinion</label>
             <select
               value={dpoReviewForm.opinion}
               onChange={e =>
@@ -1014,7 +1014,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   opinion: e.target.value as 'Approve' | 'Reject' | 'RequestChanges',
                 }))
               }
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink focus:outline-none focus:ring-1 focus:ring-signal-green"
             >
               <option value="Approve">Approve</option>
               <option value="Reject">Reject</option>
@@ -1022,22 +1022,22 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Conditions (comma-separated)</label>
+            <label className="block text-xs text-signal-muted mb-1">Conditions (comma-separated)</label>
             <input
               type="text"
               value={dpoReviewForm.conditions}
               onChange={e => setDpoReviewForm(prev => ({ ...prev, conditions: e.target.value }))}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
               placeholder="e.g., Implement encryption, Limit retention to 12 months"
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-xs text-slate-400 mb-1">{t('dpia.dpoOpinion')}</label>
+            <label className="block text-xs text-signal-muted mb-1">{t('dpia.dpoOpinion')}</label>
             <textarea
               value={dpoReviewForm.comments}
               onChange={e => setDpoReviewForm(prev => ({ ...prev, comments: e.target.value }))}
               rows={4}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+              className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green resize-none"
               placeholder="Enter DPO review comments and opinion..."
             />
           </div>
@@ -1049,9 +1049,9 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 onChange={e =>
                   setDpoReviewForm(prev => ({ ...prev, consultationRequired: e.target.checked }))
                 }
-                className="w-4 h-4 rounded border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 bg-slate-700"
+                className="w-4 h-4 rounded border-white/[0.10] text-signal-green focus:ring-signal-green focus:ring-offset-0 bg-white/[0.06]"
               />
-              <span className="text-sm text-slate-300">
+              <span className="text-sm text-signal-body">
                 {t('dpia.consultationRequired')}
               </span>
             </label>
@@ -1061,7 +1061,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <button
             onClick={handleDPOReviewSubmit}
             disabled={!dpoReviewForm.dpiaId || !dpoReviewForm.dpoName || submitting}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-signal-green hover:bg-signal-green/90 disabled:bg-white/[0.06] disabled:text-signal-muted disabled:cursor-not-allowed text-signal-canvas font-medium rounded-xl text-sm transition-colors"
           >
             <CheckCircle className="w-4 h-4" /> {submitting ? `${t('common.loading')}...` : t('common.submit')}
           </button>
@@ -1076,105 +1076,105 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!showCreateModal) return null;
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-            <h2 className="text-lg font-semibold text-white">{t('dpia.createDPIA')}</h2>
+        <div className="bg-signal-panel2 border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08]">
+            <h2 className="text-lg font-display font-semibold text-signal-ink">{t('dpia.createDPIA')}</h2>
             <button
               onClick={() => setShowCreateModal(false)}
-              className="p-1 text-slate-400 hover:text-white transition-colors"
+              className="p-1 text-signal-muted hover:text-signal-ink transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
           <div className="px-6 py-4 space-y-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Title *</label>
+              <label className="block text-xs text-signal-muted mb-1">Title *</label>
               <input
                 type="text"
                 value={createForm.title}
                 onChange={e => setCreateForm(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
                 placeholder="e.g., Customer Profiling System DPIA"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">{t('common.description')} *</label>
+              <label className="block text-xs text-signal-muted mb-1">{t('common.description')} *</label>
               <textarea
                 value={createForm.description}
                 onChange={e => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green resize-none"
                 placeholder="Describe the processing activity and its purpose"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Project Name *</label>
+                <label className="block text-xs text-signal-muted mb-1">Project Name *</label>
                 <input
                   type="text"
                   value={createForm.projectName}
                   onChange={e => setCreateForm(prev => ({ ...prev, projectName: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
                   placeholder="Project name"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Assigned To *</label>
+                <label className="block text-xs text-signal-muted mb-1">Assigned To *</label>
                 <input
                   type="text"
                   value={createForm.assignedTo}
                   onChange={e => setCreateForm(prev => ({ ...prev, assignedTo: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
                   placeholder="Assessor name"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">
+              <label className="block text-xs text-signal-muted mb-1">
                 {t('dpia.dataSubjects')} (comma-separated)
               </label>
               <input
                 type="text"
                 value={createForm.dataSubjects}
                 onChange={e => setCreateForm(prev => ({ ...prev, dataSubjects: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
                 placeholder="e.g., Customers, Employees, Contractors"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">
+              <label className="block text-xs text-signal-muted mb-1">
                 {t('dpia.processingActivity')} (comma-separated)
               </label>
               <input
                 type="text"
                 value={createForm.processingPurposes}
                 onChange={e => setCreateForm(prev => ({ ...prev, processingPurposes: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
                 placeholder="e.g., Marketing, Analytics, Service delivery"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">{t('dpia.necessity')}</label>
+              <label className="block text-xs text-signal-muted mb-1">{t('dpia.necessity')}</label>
               <textarea
                 value={createForm.necessityJustification}
                 onChange={e => setCreateForm(prev => ({ ...prev, necessityJustification: e.target.value }))}
                 rows={3}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green resize-none"
                 placeholder="Explain why this processing is necessary and proportionate to the purpose"
               />
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.08]">
             <button
               onClick={() => setShowCreateModal(false)}
-              className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm text-signal-muted hover:text-signal-ink transition-colors"
             >
               {t('common.cancel')}
             </button>
             <button
               onClick={handleCreateDPIA}
               disabled={!createForm.title || !createForm.description || !createForm.projectName || submitting}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-signal-green hover:bg-signal-green/90 disabled:bg-white/[0.06] disabled:text-signal-muted disabled:cursor-not-allowed text-signal-canvas font-medium rounded-xl text-sm transition-colors"
             >
               <Plus className="w-4 h-4" /> {submitting ? `${t('common.loading')}...` : t('dpia.createDPIA')}
             </button>
@@ -1190,58 +1190,58 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!editingDPIA) return null;
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-            <h2 className="text-lg font-semibold text-white">Edit DPIA</h2>
-            <button onClick={() => setEditingDPIA(null)} className="p-1 text-slate-400 hover:text-white transition-colors">
+        <div className="bg-signal-panel2 border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08]">
+            <h2 className="text-lg font-display font-semibold text-signal-ink">Edit DPIA</h2>
+            <button onClick={() => setEditingDPIA(null)} className="p-1 text-signal-muted hover:text-signal-ink transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
           <div className="px-6 py-4 space-y-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Title *</label>
+              <label className="block text-xs text-signal-muted mb-1">Title *</label>
               <input
                 type="text"
                 value={editForm.title}
                 onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">{t('common.description')}</label>
+              <label className="block text-xs text-signal-muted mb-1">{t('common.description')}</label>
               <textarea
                 value={editForm.description}
                 onChange={e => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green resize-none"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Project Name *</label>
+                <label className="block text-xs text-signal-muted mb-1">Project Name *</label>
                 <input
                   type="text"
                   value={editForm.projectName}
                   onChange={e => setEditForm(prev => ({ ...prev, projectName: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">{t('common.assignee')}</label>
+                <label className="block text-xs text-signal-muted mb-1">{t('common.assignee')}</label>
                 <input
                   type="text"
                   value={editForm.assignedTo}
                   onChange={e => setEditForm(prev => ({ ...prev, assignedTo: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:ring-1 focus:ring-signal-green"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">{t('common.status')}</label>
+              <label className="block text-xs text-signal-muted mb-1">{t('common.status')}</label>
               <select
                 value={editForm.status}
                 onChange={e => setEditForm(prev => ({ ...prev, status: e.target.value as DPIAStatus }))}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-sm text-signal-ink focus:outline-none focus:ring-1 focus:ring-signal-green"
               >
                 <option value="Draft">Draft</option>
                 <option value="InProgress">In Progress</option>
@@ -1251,17 +1251,17 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </select>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.08]">
             <button
               onClick={() => setEditingDPIA(null)}
-              className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm text-signal-muted hover:text-signal-ink transition-colors"
             >
               {t('common.cancel')}
             </button>
             <button
               onClick={handleUpdateDPIA}
               disabled={!editForm.title || !editForm.projectName || submitting}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-signal-green hover:bg-signal-green/90 disabled:bg-white/[0.06] disabled:text-signal-muted disabled:cursor-not-allowed text-signal-canvas font-medium rounded-xl text-sm transition-colors"
             >
               <CheckCircle className="w-4 h-4" /> {submitting ? `${t('common.loading')}...` : t('common.save')}
             </button>
@@ -1275,14 +1275,14 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderErrorBanner = () =>
     loadError ? (
-      <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+      <div className="mb-4 p-4 bg-signal-bad/10 border border-signal-bad/30 rounded-2xl flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-          <span className="text-sm text-red-300">{loadError}</span>
+          <AlertTriangle className="w-5 h-5 text-signal-bad flex-shrink-0" />
+          <span className="text-sm text-signal-bad">{loadError}</span>
         </div>
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-signal-bad/15 text-signal-bad rounded-lg text-sm hover:bg-signal-bad/25 transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" /> Retry
         </button>
@@ -1295,8 +1295,8 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (loading) {
       return (
         <div className="flex items-center justify-center py-20">
-          <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
-          <span className="ml-3 text-slate-400">{t('common.loading')}...</span>
+          <RefreshCw className="w-6 h-6 text-signal-green animate-spin" />
+          <span className="ml-3 text-signal-muted">{t('common.loading')}...</span>
         </div>
       );
     }
@@ -1317,29 +1317,29 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // ── Main Return ───────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      <div className="border-b border-slate-700 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-40">
+    <div className="min-h-screen bg-signal-canvas text-signal-ink">
+      <div className="border-b border-white/[0.06] bg-signal-canvas/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
               <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+                className="flex items-center gap-2 text-signal-muted hover:text-signal-ink transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="text-sm">{t('common.back')}</span>
               </button>
-              <div className="h-5 w-px bg-slate-700" />
+              <div className="h-5 w-px bg-white/[0.10]" />
               <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-blue-400" />
-                <h1 className="text-lg font-semibold text-white">{t('dpia.title')}</h1>
+                <Shield className="w-5 h-5 text-signal-green" />
+                <h1 className="text-lg font-display font-semibold text-signal-ink">{t('dpia.title')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Data Protection Impact Assessment</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted">Data Protection Impact Assessment</span>
               <button
                 onClick={loadData}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
+                className="p-2 text-signal-muted hover:text-signal-ink transition-colors"
                 title="Refresh"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -1350,15 +1350,15 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex gap-1 mb-6 bg-slate-800 rounded-lg p-1 overflow-x-auto">
+        <div className="flex gap-1 mb-6 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 overflow-x-auto">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-slate-700 text-white font-medium'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-white/[0.06] text-signal-ink font-medium'
+                  : 'text-signal-muted hover:text-signal-ink hover:bg-white/[0.04]'
               }`}
             >
               {tab.icon}

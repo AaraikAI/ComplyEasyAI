@@ -97,7 +97,8 @@ describe('LearnPage', () => {
 
   it('displays course listings', () => {
     render(<LearnPage />);
-    expect(screen.getAllByText(/SOC 2 Compliance Masterclass/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Your first SOC 2 in 30 days/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/SOC 2 Type I vs Type II/i).length).toBeGreaterThan(0);
   });
 
   it('shows course categories or filters', () => {

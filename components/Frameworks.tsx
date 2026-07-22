@@ -681,17 +681,31 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
   };
 
   const getConfidenceColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-100';
-    if (score >= 50) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
+    if (score >= 80) return 'text-green-600 bg-green-100 dark:text-signal-good dark:bg-signal-good/10';
+    if (score >= 50) return 'text-yellow-600 bg-yellow-100 dark:text-signal-warn dark:bg-signal-warn/10';
+    return 'text-red-600 bg-red-100 dark:text-signal-bad dark:bg-signal-bad/10';
   };
 
   const getPriorityColor = (priority: string) => {
     const p = priority?.toLowerCase();
-    if (p === 'critical') return 'bg-red-100 text-red-800 border-red-200';
-    if (p === 'high') return 'bg-orange-100 text-orange-800 border-orange-200';
-    if (p === 'medium') return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    return 'bg-blue-100 text-blue-800 border-blue-200';
+    if (p === 'critical') return 'bg-red-100 text-red-800 border-red-200 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/30';
+    if (p === 'high') return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-signal-amber/10 dark:text-signal-amber dark:border-signal-amber/30';
+    if (p === 'medium') return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/30';
+    return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/30';
+  };
+
+  // Signal dark-theme progress tones (presentation only)
+  const getProgressToneBar = (progress: number) => {
+    if (progress >= 90) return 'dark:bg-signal-good';
+    if (progress >= 75) return 'dark:bg-signal-green';
+    if (progress >= 60) return 'dark:bg-signal-warn';
+    return 'dark:bg-signal-bad';
+  };
+  const getProgressToneText = (progress: number) => {
+    if (progress >= 90) return 'dark:text-signal-good';
+    if (progress >= 75) return 'dark:text-signal-green';
+    if (progress >= 60) return 'dark:text-signal-warn';
+    return 'dark:text-signal-bad';
   };
 
   const frameworkLimitReached = maxFrameworks !== -1 && activeFrameworks.length >= maxFrameworks;
@@ -708,18 +722,18 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
     <div className="space-y-6" data-onboarding="frameworks-page">
       <div className="flex justify-between items-center">
         <div>
-           <h2 className="text-lg font-bold text-gray-900">Active Frameworks</h2>
-           <p className="text-sm text-gray-500">Monitor and manage your compliance standards with AI-powered insights.</p>
+           <h2 className="text-lg font-bold text-gray-900 dark:text-signal-ink dark:font-display">Active Frameworks</h2>
+           <p className="text-sm text-gray-500 dark:text-signal-sub">Monitor and manage your compliance standards with AI-powered insights.</p>
         </div>
         <div className="flex items-center space-x-3">
           {frameworkLimitReached && (
-            <span className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+            <span className="text-sm text-amber-700 bg-amber-50 border border-amber-200 dark:text-signal-amber dark:bg-signal-amber/10 dark:border-signal-amber/30 px-3 py-1.5 rounded-lg">
               Framework limit reached ({activeFrameworks.length}/{maxFrameworks}). Upgrade to add more.
             </span>
           )}
           <button
             onClick={handleExportControlReport}
-            className="flex items-center space-x-2 bg-white text-brand-600 border border-brand-200 px-4 py-2 rounded-lg hover:bg-brand-50 transition-colors shadow-sm"
+            className="flex items-center space-x-2 bg-white text-brand-600 border border-brand-200 dark:bg-white/[0.04] dark:text-signal-body dark:border-white/[0.10] px-4 py-2 rounded-lg hover:bg-brand-50 dark:hover:bg-white/[0.08] transition-colors shadow-sm dark:shadow-none"
             title="Export Control Report"
           >
             <Download size={18} />
@@ -729,7 +743,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
             onClick={() => !frameworkLimitReached && setIsModalOpen(true)}
             disabled={frameworkLimitReached}
             data-onboarding="add-framework-btn"
-            className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center space-x-2 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold px-4 py-2 rounded-lg hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors shadow-sm dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
             title={frameworkLimitReached ? 'Framework limit reached. Upgrade in Settings → Billing.' : undefined}
           >
             <Plus size={18} />
@@ -742,33 +756,33 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
         {activeFrameworks.map((fw) => {
           const template = getTemplateForFramework(fw.name);
           return (
-            <div key={fw.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+            <div key={fw.id} className="bg-white dark:bg-white/[0.03] rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/[0.06] overflow-hidden hover:shadow-md dark:hover:shadow-none dark:hover:border-white/[0.12] transition-all">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">{fw.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-signal-ink dark:font-display">{fw.name}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      {fw.region && <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{fw.region}</span>}
+                      {fw.region && <span className="text-xs text-gray-400 bg-gray-100 dark:text-signal-sub dark:bg-white/[0.06] px-2 py-0.5 rounded-full">{fw.region}</span>}
                       {template && (
-                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                        <span className="text-xs text-blue-600 bg-blue-50 dark:text-signal-blue dark:bg-signal-blue/10 px-2 py-0.5 rounded-full font-medium">
                           {template.controlCount} controls available
                         </span>
                       )}
                     </div>
                   </div>
-                  {fw.status === ComplianceStatus.COMPLIANT && <CheckCircle className="text-green-500" />}
-                  {fw.status === ComplianceStatus.AT_RISK && <AlertTriangle className="text-red-500" />}
-                  {fw.status === ComplianceStatus.IN_REVIEW && <Clock className="text-yellow-500" />}
+                  {fw.status === ComplianceStatus.COMPLIANT && <CheckCircle className="text-green-500 dark:text-signal-good" />}
+                  {fw.status === ComplianceStatus.AT_RISK && <AlertTriangle className="text-red-500 dark:text-signal-bad" />}
+                  {fw.status === ComplianceStatus.IN_REVIEW && <Clock className="text-yellow-500 dark:text-signal-warn" />}
                 </div>
 
                 <div className="mb-4">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-500">{t('common.status')}</span>
-                    <span className="font-bold text-gray-900">{fw.progress}%</span>
+                  <div className="flex justify-between items-center text-sm mb-1">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">{t('common.status')}</span>
+                    <span className={`font-bold text-gray-900 dark:font-display ${getProgressToneText(fw.progress)}`}>{fw.progress}%</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="w-full bg-gray-100 dark:bg-white/[0.08] rounded-full h-2 overflow-hidden">
                     <div
-                      className={`h-2 rounded-full ${fw.progress > 90 ? 'bg-green-500' : fw.progress > 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                      className={`h-2 rounded-full ${fw.progress > 90 ? 'bg-green-500' : fw.progress > 70 ? 'bg-yellow-500' : 'bg-red-500'} ${getProgressToneBar(fw.progress)}`}
                       style={{ width: `${fw.progress}%` }}
                     ></div>
                   </div>
@@ -782,7 +796,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                       handleAICoPilot(fw);
                     }}
                     disabled={coPilotLoading}
-                    className="flex items-center justify-center gap-1 bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1.5 rounded-lg hover:bg-purple-100 transition-colors text-xs font-medium disabled:opacity-50"
+                    className="flex items-center justify-center gap-1 bg-purple-50 text-purple-700 border border-purple-200 dark:bg-signal-violet/10 dark:text-signal-violet dark:border-signal-violet/30 px-2 py-1.5 rounded-lg hover:bg-purple-100 dark:hover:bg-signal-violet/20 transition-colors text-xs font-medium disabled:opacity-50"
                     title="AI Recommendations"
                   >
                     <Brain size={12} />
@@ -797,7 +811,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                       setEvidenceDescription('');
                       setEvidenceFile(null);
                     }}
-                    className="flex items-center justify-center gap-1 bg-green-50 text-green-700 border border-green-200 px-2 py-1.5 rounded-lg hover:bg-green-100 transition-colors text-xs font-medium"
+                    className="flex items-center justify-center gap-1 bg-green-50 text-green-700 border border-green-200 dark:bg-signal-green/10 dark:text-signal-green dark:border-signal-green/30 px-2 py-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-signal-green/20 transition-colors text-xs font-medium"
                     title="AI Evidence Classification"
                   >
                     <Upload size={12} />
@@ -814,7 +828,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                         handleApplyTemplate(fw.id, fw.name);
                       }}
                       disabled={applyingTemplate === fw.id || aiGapLoading === fw.id}
-                      className="w-full flex items-center justify-center space-x-2 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium disabled:opacity-50"
+                      className="w-full flex items-center justify-center space-x-2 bg-blue-50 text-blue-700 border border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/30 px-3 py-2 rounded-lg hover:bg-blue-100 dark:hover:bg-signal-blue/20 transition-colors text-sm font-medium disabled:opacity-50"
                     >
                       {applyingTemplate === fw.id ? (
                         <>
@@ -836,18 +850,18 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                     {applyResult && applyingTemplate !== fw.id && !aiGapLoading && (
                       <div className="flex flex-col mt-2 space-y-1">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs text-green-600">
+                          <p className="text-xs text-green-600 dark:text-signal-good">
                             {applyResult.applied} controls added, {applyResult.skipped} skipped
                           </p>
                           <button
                             onClick={() => handleAIGapAnalysis(fw.id, fw.name, applyResult.applied)}
-                            className="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1"
+                            className="text-xs text-purple-600 hover:text-purple-800 dark:text-signal-violet dark:hover:text-signal-violet/80 flex items-center gap-1"
                           >
                             <Zap size={10} /> View AI Analysis
                           </button>
                         </div>
                         {applyResult.applied > 0 && (
-                          <p className="text-xs text-brand-600">
+                          <p className="text-xs text-brand-600 dark:text-signal-green">
                             ✓ Cross-framework mappings auto-generated for "Also Satisfies"
                           </p>
                         )}
@@ -856,12 +870,12 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                   </div>
                 )}
 
-                <div className="flex justify-between items-center text-sm text-gray-500 pt-4 border-t border-gray-50">
+                <div className="flex justify-between items-center text-sm text-gray-500 dark:text-signal-sub pt-4 border-t border-gray-50 dark:border-white/[0.06]">
                   <span className={(() => {
                     const days = Math.ceil((new Date(fw.nextAuditDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-                    if (days < 0) return 'text-red-600 font-medium';
-                    if (days === 0) return 'text-yellow-600 font-medium';
-                    return 'text-gray-500';
+                    if (days < 0) return 'text-red-600 dark:text-signal-bad font-medium';
+                    if (days === 0) return 'text-yellow-600 dark:text-signal-warn font-medium';
+                    return 'text-gray-500 dark:text-signal-sub';
                   })()}>
                     Audit Due: {formatAuditDate(fw.nextAuditDate)}
                   </span>
@@ -873,7 +887,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                           handleDeleteFramework(fw.id, fw.name);
                         }}
                         disabled={deletingFramework === fw.id}
-                        className="p-1.5 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                        className="p-1.5 text-gray-400 hover:text-red-600 dark:text-signal-muted dark:hover:text-signal-bad transition-colors disabled:opacity-50"
                         title="Delete Framework"
                       >
                         <Trash2 size={16} />
@@ -881,7 +895,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                     )}
                     <button
                       onClick={() => onSelectFramework(fw.id)}
-                      className="text-brand-600 hover:text-brand-800 font-medium flex items-center"
+                      className="text-brand-600 hover:text-brand-800 dark:text-signal-green dark:hover:text-signal-green/80 font-medium flex items-center"
                     >
                       Manage <ArrowRight size={16} className="ml-1" />
                     </button>
@@ -895,76 +909,76 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
         <button
           onClick={() => !frameworkLimitReached && setIsModalOpen(true)}
           disabled={frameworkLimitReached}
-          className="bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-brand-300 hover:bg-brand-50 transition-colors group h-full min-h-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-gray-50 dark:bg-white/[0.02] rounded-2xl border-2 border-dashed border-gray-300 dark:border-white/[0.10] flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-brand-300 dark:hover:border-signal-green/40 hover:bg-brand-50 dark:hover:bg-signal-green/5 transition-colors group h-full min-h-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
-            <Plus className="text-gray-400 group-hover:text-brand-500" size={24} />
+          <div className="w-12 h-12 bg-white dark:bg-white/[0.06] rounded-full flex items-center justify-center mb-3 shadow-sm dark:shadow-none group-hover:scale-110 transition-transform">
+            <Plus className="text-gray-400 group-hover:text-brand-500 dark:text-signal-sub dark:group-hover:text-signal-green" size={24} />
           </div>
-          <h3 className="text-sm font-bold text-gray-900">{t('frameworks.addFramework')}</h3>
-          <p className="text-xs text-gray-500 mt-1">{frameworkLimitReached ? 'Limit reached — upgrade to add more' : 'Browse catalog...'}</p>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('frameworks.addFramework')}</h3>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">{frameworkLimitReached ? 'Limit reached — upgrade to add more' : 'Browse catalog...'}</p>
         </button>
       </div>
 
       {/* Add Framework Modal with Template Support */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl animate-fadeIn">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-gray-100 dark:border-white/[0.06] flex justify-between items-center">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">{t('frameworks.addFramework')}</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('frameworks.addFramework')}</h3>
                 {templatesLoaded && templates.length > 0 && (
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-signal-sub mt-1">
                     {templates.length} frameworks have pre-built control templates
                   </p>
                 )}
               </div>
-              <button onClick={() => { setIsModalOpen(false); setTemplatePreview(null); }} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { setIsModalOpen(false); setTemplatePreview(null); }} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X size={24} />
               </button>
             </div>
 
-            <div className="p-4 border-b border-gray-100 bg-gray-50">
+            <div className="p-4 border-b border-gray-100 dark:border-white/[0.06] bg-gray-50 dark:bg-transparent">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-signal-muted" size={18} />
                 <input
                   type="text"
                   placeholder="Search standards (e.g. NIST, ISO, SOC 2)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40"
                 />
               </div>
             </div>
 
             <div className="flex flex-1 overflow-hidden">
               {/* Framework List */}
-              <div className={`${templatePreview ? 'w-1/2 border-r border-gray-100' : 'w-full'} overflow-y-auto p-6 space-y-3`}>
+              <div className={`${templatePreview ? 'w-1/2 border-r border-gray-100 dark:border-white/[0.06]' : 'w-full'} overflow-y-auto p-6 space-y-3`}>
                 {filteredAvailable.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">{t('common.noResults')}</p>
+                  <p className="text-center text-gray-500 dark:text-signal-sub py-8">{t('common.noResults')}</p>
                 ) : (
                   filteredAvailable.map((fw, idx) => {
                     const template = getTemplateForFramework(fw.name);
                     return (
-                      <div key={idx} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg hover:border-brand-200 hover:bg-brand-50 transition-colors">
+                      <div key={idx} className="flex justify-between items-center p-4 border border-gray-200 dark:border-white/[0.10] dark:bg-white/[0.04] rounded-xl hover:border-brand-200 dark:hover:border-signal-green/30 hover:bg-brand-50 dark:hover:bg-white/[0.06] transition-colors">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-gray-900 truncate">{fw.name}</h4>
+                            <h4 className="font-bold text-gray-900 dark:text-signal-ink truncate">{fw.name}</h4>
                             {template && (
-                              <span className="flex-shrink-0 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                              <span className="flex-shrink-0 text-xs text-blue-600 bg-blue-50 dark:text-signal-blue dark:bg-signal-blue/10 px-2 py-0.5 rounded-full font-medium">
                                 {template.controlCount} controls
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-500 truncate">{fw.description}</p>
+                          <p className="text-sm text-gray-500 dark:text-signal-sub truncate">{fw.description}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{fw.region}</span>
+                            <span className="text-xs bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-signal-sub px-2 py-0.5 rounded">{fw.region}</span>
                             {template && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handlePreviewTemplate(template.frameworkType);
                                 }}
-                                className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                className="text-xs text-blue-600 hover:text-blue-800 dark:text-signal-blue dark:hover:text-signal-blue/80 underline"
                               >
                                 Preview controls
                               </button>
@@ -977,7 +991,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                             setIsModalOpen(false);
                             setTemplatePreview(null);
                           }}
-                          className="flex-shrink-0 ml-3 bg-white text-brand-600 border border-brand-200 hover:bg-brand-600 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                          className="flex-shrink-0 ml-3 bg-white text-brand-600 border border-brand-200 dark:bg-signal-green/10 dark:text-signal-green dark:border-signal-green/30 hover:bg-brand-600 dark:hover:bg-signal-green hover:text-white dark:hover:text-signal-canvas px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                         >
                           {t('common.add')}
                         </button>
@@ -991,56 +1005,56 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
               {templatePreview && (
                 <div className="w-1/2 overflow-y-auto p-6">
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-bold text-gray-900">
+                    <h4 className="font-bold text-gray-900 dark:text-signal-ink dark:font-display">
                       Template Preview: {templatePreview.frameworkType}
                     </h4>
                     <button
                       onClick={() => setTemplatePreview(null)}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink"
                     >
                       <X size={18} />
                     </button>
                   </div>
 
-                  <div className="text-sm text-gray-600 mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <span className="font-medium text-blue-800">{templatePreview.controlCount} controls</span>
+                  <div className="text-sm text-gray-600 dark:text-signal-sub mb-4 bg-blue-50 dark:bg-signal-blue/10 p-3 rounded-lg border border-blue-100 dark:border-signal-blue/20">
+                    <span className="font-medium text-blue-800 dark:text-signal-blue">{templatePreview.controlCount} controls</span>
                     {' '}across{' '}
-                    <span className="font-medium text-blue-800">{templatePreview.categories.length} categories</span>
+                    <span className="font-medium text-blue-800 dark:text-signal-blue">{templatePreview.categories.length} categories</span>
                     {' '}will be auto-populated when you add this framework.
                   </div>
 
                   {templatePreviewLoading ? (
                     <div className="flex items-center justify-center py-12">
-                      <Loader2 className="animate-spin text-blue-500" size={32} />
+                      <Loader2 className="animate-spin text-blue-500 dark:text-signal-blue" size={32} />
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {templatePreview.categories.map((cat) => (
-                        <div key={cat.category} className="border border-gray-200 rounded-lg">
+                        <div key={cat.category} className="border border-gray-200 dark:border-white/[0.10] rounded-lg">
                           <button
                             onClick={() => toggleCategory(cat.category)}
-                            className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 transition-colors"
+                            className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
                           >
                             <div className="flex items-center gap-2">
                               {expandedCategories.has(cat.category) ? (
-                                <ChevronDown size={16} className="text-gray-400" />
+                                <ChevronDown size={16} className="text-gray-400 dark:text-signal-muted" />
                               ) : (
-                                <ChevronRight size={16} className="text-gray-400" />
+                                <ChevronRight size={16} className="text-gray-400 dark:text-signal-muted" />
                               )}
-                              <span className="text-sm font-medium text-gray-900">{cat.category}</span>
+                              <span className="text-sm font-medium text-gray-900 dark:text-signal-ink">{cat.category}</span>
                             </div>
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                            <span className="text-xs text-gray-500 dark:text-signal-muted bg-gray-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full">
                               {cat.controlCount} controls
                             </span>
                           </button>
                           {expandedCategories.has(cat.category) && (
-                            <div className="border-t border-gray-100 p-3 space-y-2 bg-gray-50">
+                            <div className="border-t border-gray-100 dark:border-white/[0.06] p-3 space-y-2 bg-gray-50 dark:bg-white/[0.02]">
                               {cat.controls.map((ctrl) => (
-                                <div key={ctrl.controlId} className="text-xs p-2 bg-white rounded border border-gray-100">
-                                  <div className="font-medium text-gray-800">
+                                <div key={ctrl.controlId} className="text-xs p-2 bg-white dark:bg-white/[0.04] rounded border border-gray-100 dark:border-white/[0.06]">
+                                  <div className="font-medium text-gray-800 dark:text-signal-body">
                                     {ctrl.controlId}: {ctrl.name}
                                   </div>
-                                  <p className="text-gray-500 mt-1 line-clamp-2">{ctrl.description}</p>
+                                  <p className="text-gray-500 dark:text-signal-sub mt-1 line-clamp-2">{ctrl.description}</p>
                                 </div>
                               ))}
                             </div>
@@ -1058,19 +1072,19 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
 
       {/* AI Gap Analysis Modal */}
       {showGapAnalysisModal && aiGapAnalysis && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-gray-100 dark:border-white/[0.06] flex justify-between items-center sticky top-0 bg-white dark:bg-signal-panel2 z-10">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Brain className="w-5 h-5 text-purple-600" />
+                <div className="p-2 bg-purple-100 dark:bg-signal-violet/10 rounded-lg">
+                  <Brain className="w-5 h-5 text-purple-600 dark:text-signal-violet" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">AI Gap Analysis</h3>
-                  <p className="text-sm text-gray-500">{selectedFrameworkForAI?.name || 'Framework'}</p>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-signal-ink dark:font-display">AI Gap Analysis</h3>
+                  <p className="text-sm text-gray-500 dark:text-signal-sub">{selectedFrameworkForAI?.name || 'Framework'}</p>
                 </div>
               </div>
-              <button onClick={() => setShowGapAnalysisModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowGapAnalysisModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X size={24} />
               </button>
             </div>
@@ -1088,9 +1102,9 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
               </div>
 
               {/* Summary */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Summary</h4>
-                <div className="prose prose-sm max-w-none text-gray-700">
+              <div className="bg-gray-50 dark:bg-white/[0.04] rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 dark:text-signal-ink mb-2">Summary</h4>
+                <div className="prose prose-sm max-w-none text-gray-700 dark:text-signal-body">
                   <ReactMarkdown>{aiGapAnalysis.summary}</ReactMarkdown>
                 </div>
               </div>
@@ -1098,20 +1112,20 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
               {/* Gaps */}
               {aiGapAnalysis.gaps && aiGapAnalysis.gaps.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Priority Gaps</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-signal-ink mb-3">Priority Gaps</h4>
                   <div className="space-y-2">
                     {aiGapAnalysis.gaps.map((gap, i) => (
-                      <div key={i} className="bg-white border rounded-lg p-3">
+                      <div key={i} className="bg-white dark:bg-white/[0.03] border dark:border-white/[0.08] rounded-lg p-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">{gap.control}</span>
+                              <span className="font-medium text-gray-900 dark:text-signal-ink">{gap.control}</span>
                               <span className={`text-xs px-2 py-0.5 rounded-full border ${getPriorityColor(gap.priority)}`}>
                                 {gap.priority}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">{gap.gap}</p>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-sm text-gray-600 dark:text-signal-sub mt-1">{gap.gap}</p>
+                            <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">
                               <span className="font-medium">Recommendation:</span> {gap.recommendation}
                             </p>
                           </div>
@@ -1125,17 +1139,17 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
               {/* Roadmap */}
               {aiGapAnalysis.prioritizedRoadmap && aiGapAnalysis.prioritizedRoadmap.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Remediation Roadmap</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-signal-ink mb-3">Remediation Roadmap</h4>
                   <div className="space-y-3">
                     {aiGapAnalysis.prioritizedRoadmap.map((phase, i) => (
-                      <div key={i} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div key={i} className="bg-blue-50 border border-blue-200 dark:bg-signal-blue/10 dark:border-signal-blue/20 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <h5 className="font-medium text-blue-800">{phase.phase}</h5>
-                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">{phase.timeline}</span>
+                          <h5 className="font-medium text-blue-800 dark:text-signal-blue">{phase.phase}</h5>
+                          <span className="text-xs text-blue-600 bg-blue-100 dark:text-signal-blue dark:bg-signal-blue/10 px-2 py-0.5 rounded">{phase.timeline}</span>
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {phase.controls.map((ctrl, j) => (
-                            <span key={j} className="text-xs bg-white text-blue-700 px-2 py-0.5 rounded border border-blue-200">
+                            <span key={j} className="text-xs bg-white text-blue-700 dark:bg-white/[0.04] dark:text-signal-blue px-2 py-0.5 rounded border border-blue-200 dark:border-signal-blue/30">
                               {ctrl}
                             </span>
                           ))}
@@ -1152,50 +1166,50 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
 
       {/* AI Evidence Classification Modal */}
       {showEvidenceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-gray-100 dark:border-white/[0.06] flex justify-between items-center sticky top-0 bg-white dark:bg-signal-panel2 z-10">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Upload className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-green-100 dark:bg-signal-green/10 rounded-lg">
+                  <Upload className="w-5 h-5 text-green-600 dark:text-signal-green" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">AI Evidence Classification</h3>
-                  <p className="text-sm text-gray-500">{selectedFrameworkForAI?.name || 'Framework'}</p>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-signal-ink dark:font-display">AI Evidence Classification</h3>
+                  <p className="text-sm text-gray-500 dark:text-signal-sub">{selectedFrameworkForAI?.name || 'Framework'}</p>
                 </div>
               </div>
-              <button onClick={() => setShowEvidenceModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowEvidenceModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X size={24} />
               </button>
             </div>
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Evidence Description</label>
                 <textarea
                   value={evidenceDescription}
                   onChange={(e) => setEvidenceDescription(e.target.value)}
                   placeholder="Describe the evidence document (e.g., 'Annual security training completion certificates for all employees')"
-                  className="w-full border rounded-lg px-3 py-2 text-sm h-24"
+                  className="w-full border dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl px-3 py-2 text-sm h-24"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Or Upload File (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Or Upload File (optional)</label>
                 <input
                   type="file"
                   onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-xl px-3 py-2 text-sm"
                 />
                 {evidenceFile && (
-                  <p className="text-xs text-gray-500 mt-1">Selected: {evidenceFile.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">Selected: {evidenceFile.name}</p>
                 )}
               </div>
 
               <button
                 onClick={handleAIEvidenceClassify}
                 disabled={evidenceClassifyLoading || (!evidenceDescription && !evidenceFile)}
-                className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-green-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold py-2 rounded-xl hover:bg-green-700 dark:hover:bg-signal-green/90 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {evidenceClassifyLoading ? (
                   <>
@@ -1212,38 +1226,38 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
 
               {/* Classification Result */}
               {evidenceClassification && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-                  <h4 className="font-semibold text-green-800 mb-3">Classification Result</h4>
+                <div className="bg-green-50 border border-green-200 dark:bg-signal-green/10 dark:border-signal-green/20 rounded-lg p-4 mt-4">
+                  <h4 className="font-semibold text-green-800 dark:text-signal-green mb-3">Classification Result</h4>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Suggested Control:</span>
-                      <span className="font-medium text-gray-900">{evidenceClassification.suggestedControl}</span>
+                      <span className="text-sm text-gray-600 dark:text-signal-sub">Suggested Control:</span>
+                      <span className="font-medium text-gray-900 dark:text-signal-ink">{evidenceClassification.suggestedControl}</span>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Control ID:</span>
-                      <span className="font-mono text-sm bg-gray-100 px-2 py-0.5 rounded">{evidenceClassification.suggestedControlId}</span>
+                      <span className="text-sm text-gray-600 dark:text-signal-sub">Control ID:</span>
+                      <span className="font-mono text-sm bg-gray-100 dark:bg-white/[0.06] dark:text-signal-body px-2 py-0.5 rounded">{evidenceClassification.suggestedControlId}</span>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Confidence:</span>
+                      <span className="text-sm text-gray-600 dark:text-signal-sub">Confidence:</span>
                       <span className={`text-sm font-bold px-2 py-0.5 rounded ${getConfidenceColor(evidenceClassification.confidenceScore)}`}>
                         {evidenceClassification.confidenceScore}%
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-sm text-gray-600">Reasoning:</span>
-                      <p className="text-sm text-gray-700 mt-1">{evidenceClassification.reasoning}</p>
+                      <span className="text-sm text-gray-600 dark:text-signal-sub">Reasoning:</span>
+                      <p className="text-sm text-gray-700 dark:text-signal-body mt-1">{evidenceClassification.reasoning}</p>
                     </div>
 
                     {evidenceClassification.alternativeControls && evidenceClassification.alternativeControls.length > 0 && (
                       <div>
-                        <span className="text-sm text-gray-600">Alternatives:</span>
+                        <span className="text-sm text-gray-600 dark:text-signal-sub">Alternatives:</span>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {evidenceClassification.alternativeControls.map((alt, i) => (
-                            <span key={i} className="text-xs bg-white border px-2 py-1 rounded">
+                            <span key={i} className="text-xs bg-white dark:bg-white/[0.04] dark:text-signal-body border dark:border-white/[0.10] px-2 py-1 rounded">
                               {alt.control} ({alt.confidence}%)
                             </span>
                           ))}
@@ -1260,19 +1274,19 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
 
       {/* AI Control Assessment Modal */}
       {showControlAssessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-gray-100 dark:border-white/[0.06] flex justify-between items-center sticky top-0 bg-white dark:bg-signal-panel2 z-10">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
+                <div className="p-2 bg-blue-100 dark:bg-signal-blue/10 rounded-lg">
                   <Eye className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">AI Control Assessment</h3>
-                  <p className="text-sm text-gray-500">{selectedControl?.name || 'Control'}</p>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-signal-ink dark:font-display">AI Control Assessment</h3>
+                  <p className="text-sm text-gray-500 dark:text-signal-sub">{selectedControl?.name || 'Control'}</p>
                 </div>
               </div>
-              <button onClick={() => setShowControlAssessModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowControlAssessModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X size={24} />
               </button>
             </div>
@@ -1280,33 +1294,33 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
             <div className="p-6">
               {controlAssessLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 mr-3" />
-                  <span className="text-gray-600">AI is assessing the control...</span>
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-signal-blue mr-3" />
+                  <span className="text-gray-600 dark:text-signal-sub">AI is assessing the control...</span>
                 </div>
               ) : controlAssessment ? (
                 <div className="space-y-4">
                   {/* Status & Priority */}
                   <div className="flex gap-4">
-                    <div className="flex-1 bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">Current Status</p>
-                      <p className="font-medium text-gray-900">{controlAssessment.currentStatus}</p>
+                    <div className="flex-1 bg-gray-50 dark:bg-white/[0.04] rounded-lg p-4">
+                      <p className="text-xs text-gray-500 dark:text-signal-muted mb-1">Current Status</p>
+                      <p className="font-medium text-gray-900 dark:text-signal-ink">{controlAssessment.currentStatus}</p>
                     </div>
-                    <div className="flex-1 bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">Priority</p>
+                    <div className="flex-1 bg-gray-50 dark:bg-white/[0.04] rounded-lg p-4">
+                      <p className="text-xs text-gray-500 dark:text-signal-muted mb-1">Priority</p>
                       <span className={`text-sm px-2 py-0.5 rounded-full border ${getPriorityColor(controlAssessment.priority)}`}>
                         {controlAssessment.priority}
                       </span>
                     </div>
-                    <div className="flex-1 bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">Estimated Effort</p>
-                      <p className="font-medium text-gray-900">{controlAssessment.estimatedEffort}</p>
+                    <div className="flex-1 bg-gray-50 dark:bg-white/[0.04] rounded-lg p-4">
+                      <p className="text-xs text-gray-500 dark:text-signal-muted mb-1">Estimated Effort</p>
+                      <p className="font-medium text-gray-900 dark:text-signal-ink">{controlAssessment.estimatedEffort}</p>
                     </div>
                   </div>
 
                   {/* Summary */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-blue-800 mb-2">Assessment Summary</h4>
-                    <div className="prose prose-sm max-w-none text-blue-700">
+                  <div className="bg-blue-50 border border-blue-200 dark:bg-signal-blue/10 dark:border-signal-blue/20 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-800 dark:text-signal-blue mb-2">Assessment Summary</h4>
+                    <div className="prose prose-sm max-w-none text-blue-700 dark:text-signal-body">
                       <ReactMarkdown>{controlAssessment.summary}</ReactMarkdown>
                     </div>
                   </div>
@@ -1314,11 +1328,11 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                   {/* Compliance Gaps */}
                   {controlAssessment.complianceGaps && controlAssessment.complianceGaps.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Compliance Gaps</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-signal-ink mb-2">Compliance Gaps</h4>
                       <ul className="space-y-1">
                         {controlAssessment.complianceGaps.map((gap, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                            <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-signal-body">
+                            <AlertTriangle className="w-4 h-4 text-yellow-500 dark:text-signal-warn mt-0.5 shrink-0" />
                             {gap}
                           </li>
                         ))}
@@ -1329,11 +1343,11 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                   {/* Required Evidence */}
                   {controlAssessment.requiredEvidence && controlAssessment.requiredEvidence.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Required Evidence</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-signal-ink mb-2">Required Evidence</h4>
                       <ul className="space-y-1">
                         {controlAssessment.requiredEvidence.map((ev, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                            <FileText className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-signal-body">
+                            <FileText className="w-4 h-4 text-blue-500 dark:text-signal-blue mt-0.5 shrink-0" />
                             {ev}
                           </li>
                         ))}
@@ -1344,11 +1358,11 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                   {/* Required Actions */}
                   {controlAssessment.requiredActions && controlAssessment.requiredActions.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Required Actions</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-signal-ink mb-2">Required Actions</h4>
                       <ul className="space-y-1">
                         {controlAssessment.requiredActions.map((action, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-signal-body">
+                            <CheckCircle className="w-4 h-4 text-green-500 dark:text-signal-good mt-0.5 shrink-0" />
                             {action}
                           </li>
                         ))}
@@ -1357,7 +1371,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                   )}
                 </div>
               ) : (
-                <p className="text-center text-gray-500 py-8">No assessment data available</p>
+                <p className="text-center text-gray-500 dark:text-signal-sub py-8">No assessment data available</p>
               )}
             </div>
           </div>
@@ -1366,19 +1380,19 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
 
       {/* AI Co-Pilot Modal */}
       {showCoPilotModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-gray-100 dark:border-white/[0.06] flex justify-between items-center sticky top-0 bg-white dark:bg-signal-panel2 z-10">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Sparkles className="w-5 h-5 text-purple-600" />
+                <div className="p-2 bg-purple-100 dark:bg-signal-violet/10 rounded-lg">
+                  <Sparkles className="w-5 h-5 text-purple-600 dark:text-signal-violet" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">AI Compliance Co-Pilot</h3>
-                  <p className="text-sm text-gray-500">{selectedFrameworkForAI?.name || 'Framework'} Recommendations</p>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-signal-ink dark:font-display">AI Compliance Co-Pilot</h3>
+                  <p className="text-sm text-gray-500 dark:text-signal-sub">{selectedFrameworkForAI?.name || 'Framework'} Recommendations</p>
                 </div>
               </div>
-              <button onClick={() => setShowCoPilotModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowCoPilotModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X size={24} />
               </button>
             </div>
@@ -1386,39 +1400,39 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
             <div className="p-6">
               {coPilotLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-purple-600 mr-3" />
-                  <span className="text-gray-600">AI is generating recommendations...</span>
+                  <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-signal-violet mr-3" />
+                  <span className="text-gray-600 dark:text-signal-sub">AI is generating recommendations...</span>
                 </div>
               ) : coPilotRecommendations.length > 0 ? (
                 <div className="space-y-4">
                   {coPilotRecommendations.map((rec, i) => (
-                    <div key={rec.id || i} className="bg-white border rounded-xl p-4 hover:border-purple-200 transition">
+                    <div key={rec.id || i} className="bg-white dark:bg-white/[0.03] border dark:border-white/[0.08] rounded-xl p-4 hover:border-purple-200 dark:hover:border-signal-violet/30 transition">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{rec.type}</span>
+                          <span className="text-xs bg-purple-100 text-purple-700 dark:bg-signal-violet/10 dark:text-signal-violet px-2 py-0.5 rounded">{rec.type}</span>
                           <span className={`text-xs px-2 py-0.5 rounded-full border ${getPriorityColor(rec.priority)}`}>
                             {rec.priority}
                           </span>
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded ${
-                          rec.impact === 'High' ? 'bg-green-100 text-green-700' :
-                          rec.impact === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-gray-100 text-gray-700'
+                          rec.impact === 'High' ? 'bg-green-100 text-green-700 dark:bg-signal-good/10 dark:text-signal-good' :
+                          rec.impact === 'Medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-signal-warn/10 dark:text-signal-warn' :
+                          'bg-gray-100 text-gray-700 dark:bg-white/[0.06] dark:text-signal-sub'
                         }`}>
                           Impact: {rec.impact}
                         </span>
                       </div>
 
-                      <h4 className="font-semibold text-gray-900 mb-1">{rec.title}</h4>
-                      <p className="text-sm text-gray-600 mb-3">{rec.description}</p>
+                      <h4 className="font-semibold text-gray-900 dark:text-signal-ink mb-1">{rec.title}</h4>
+                      <p className="text-sm text-gray-600 dark:text-signal-sub mb-3">{rec.description}</p>
 
                       {rec.suggestedActions && rec.suggestedActions.length > 0 && (
-                        <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="bg-gray-50 dark:bg-white/[0.04] rounded-lg p-3">
                           <p className="text-xs font-medium text-gray-500 mb-2">Suggested Actions:</p>
                           <ul className="space-y-1">
                             {rec.suggestedActions.map((action, j) => (
-                              <li key={j} className="flex items-start gap-2 text-sm text-gray-700">
-                                <TrendingUp className="w-3.5 h-3.5 text-purple-500 mt-0.5 shrink-0" />
+                              <li key={j} className="flex items-start gap-2 text-sm text-gray-700 dark:text-signal-body">
+                                <TrendingUp className="w-3.5 h-3.5 text-purple-500 dark:text-signal-violet mt-0.5 shrink-0" />
                                 {action}
                               </li>
                             ))}
@@ -1430,16 +1444,16 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <Shield className="w-12 h-12 text-gray-300 dark:text-signal-muted mx-auto mb-3" />
                   <p className="text-gray-500">No recommendations available at this time</p>
-                  <p className="text-sm text-gray-400 mt-1">The AI will generate recommendations as you add more controls</p>
+                  <p className="text-sm text-gray-400 dark:text-signal-muted mt-1">The AI will generate recommendations as you add more controls</p>
                 </div>
               )}
 
               <button
                 onClick={() => handleAICoPilot(selectedFrameworkForAI!)}
                 disabled={coPilotLoading || !selectedFrameworkForAI}
-                className="mt-4 w-full flex items-center justify-center gap-2 bg-purple-50 text-purple-700 border border-purple-200 py-2 rounded-lg hover:bg-purple-100 disabled:opacity-50"
+                className="mt-4 w-full flex items-center justify-center gap-2 bg-purple-50 text-purple-700 border border-purple-200 dark:bg-signal-violet/10 dark:text-signal-violet dark:border-signal-violet/30 py-2 rounded-xl hover:bg-purple-100 dark:hover:bg-signal-violet/20 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${coPilotLoading ? 'animate-spin' : ''}`} />
                 Refresh Recommendations

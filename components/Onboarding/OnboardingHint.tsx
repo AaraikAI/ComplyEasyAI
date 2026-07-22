@@ -35,31 +35,31 @@ export const OnboardingHint: React.FC<OnboardingHintProps> = ({
       {/* Pulsing dot indicator above */}
       <div className="flex justify-center mb-1">
         <div className="relative">
-          <div className={`w-2.5 h-2.5 rounded-full bg-brand-500 ${reducedMotion ? '' : 'animate-pulse'}`} />
+          <div className={`w-2.5 h-2.5 rounded-full bg-signal-green ${reducedMotion ? '' : 'animate-pulse'}`} />
           {!reducedMotion && (
-            <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-brand-500 animate-ping opacity-30" />
+            <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-signal-green animate-ping opacity-30" />
           )}
         </div>
       </div>
 
       {/* Hint card */}
-      <div className="w-72 bg-slate-800/95 backdrop-blur border border-slate-600 rounded-xl shadow-xl p-3">
+      <div className="w-72 bg-signal-panel2/95 backdrop-blur border border-white/[0.10] rounded-xl shadow-xl p-3">
         <div className="flex items-start gap-2.5">
-          <div className="flex-shrink-0 mt-0.5 p-1.5 bg-brand-500/10 rounded-lg">
-            <Lightbulb className="w-4 h-4 text-brand-400" />
+          <div className="flex-shrink-0 mt-0.5 p-1.5 bg-signal-green/10 rounded-lg">
+            <Lightbulb className="w-4 h-4 text-signal-green" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-slate-200 leading-relaxed">{message}</p>
+            <p className="text-sm text-signal-body leading-relaxed">{message}</p>
             <div className="flex items-center gap-3 mt-2.5">
               <button
                 onClick={onDismiss}
-                className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors"
+                className="text-xs font-semibold text-signal-green hover:opacity-80 transition-opacity"
               >
                 Got it
               </button>
               <button
                 onClick={onDisableAll}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                className="flex items-center gap-1 text-xs text-signal-muted hover:text-signal-sub transition-colors"
               >
                 <EyeOff className="w-3 h-3" />
                 Don&apos;t show hints
@@ -68,7 +68,7 @@ export const OnboardingHint: React.FC<OnboardingHintProps> = ({
           </div>
           <button
             onClick={onDismiss}
-            className="flex-shrink-0 p-1 text-slate-500 hover:text-slate-300 transition-colors"
+            className="flex-shrink-0 p-1 text-signal-muted hover:text-signal-sub transition-colors"
             aria-label="Dismiss hint"
           >
             <X className="w-3.5 h-3.5" />

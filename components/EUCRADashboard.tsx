@@ -310,48 +310,48 @@ const categoryLabel = (cat: ProductCategory): string => {
 
 const categoryColor = (cat: ProductCategory): string => {
   switch (cat) {
-    case 'default': return 'bg-blue-100 text-blue-800 border-blue-300';
-    case 'class_i': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-    case 'class_ii': return 'bg-orange-100 text-orange-800 border-orange-300';
-    case 'critical': return 'bg-red-100 text-red-800 border-red-300';
+    case 'default': return 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/20';
+    case 'class_i': return 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/20';
+    case 'class_ii': return 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-signal-amber/10 dark:text-signal-amber dark:border-signal-amber/20';
+    case 'critical': return 'bg-red-100 text-red-800 border-red-300 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/20';
   }
 };
 
 const severityColor = (sev: VulnerabilitySeverity): string => {
   switch (sev) {
-    case 'critical': return 'bg-red-100 text-red-800';
-    case 'high': return 'bg-orange-100 text-orange-800';
-    case 'medium': return 'bg-yellow-100 text-yellow-800';
-    case 'low': return 'bg-green-100 text-green-800';
+    case 'critical': return 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad';
+    case 'high': return 'bg-orange-100 text-orange-800 dark:bg-signal-amber/10 dark:text-signal-amber';
+    case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn';
+    case 'low': return 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good';
   }
 };
 
 const vulnStatusColor = (s: VulnerabilityStatus): string => {
   switch (s) {
-    case 'reported': return 'bg-red-100 text-red-800';
-    case 'enisa_notified': return 'bg-orange-100 text-orange-800';
-    case 'investigating': return 'bg-yellow-100 text-yellow-800';
-    case 'patched': return 'bg-blue-100 text-blue-800';
-    case 'disclosed': return 'bg-green-100 text-green-800';
+    case 'reported': return 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad';
+    case 'enisa_notified': return 'bg-orange-100 text-orange-800 dark:bg-signal-amber/10 dark:text-signal-amber';
+    case 'investigating': return 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn';
+    case 'patched': return 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue';
+    case 'disclosed': return 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good';
   }
 };
 
 const updateStatusColor = (s: UpdateStatus): string => {
   switch (s) {
-    case 'planned': return 'bg-gray-100 text-gray-800';
-    case 'in_development': return 'bg-blue-100 text-blue-800';
-    case 'testing': return 'bg-yellow-100 text-yellow-800';
-    case 'released': return 'bg-green-100 text-green-800';
-    case 'end_of_support': return 'bg-red-100 text-red-800';
+    case 'planned': return 'bg-gray-100 text-gray-800 dark:bg-white/[0.06] dark:text-signal-muted';
+    case 'in_development': return 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue';
+    case 'testing': return 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn';
+    case 'released': return 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good';
+    case 'end_of_support': return 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad';
   }
 };
 
 const complianceStatusBadge = (s: ComplianceStatus): string => {
   switch (s) {
-    case 'compliant': return 'bg-green-100 text-green-800';
-    case 'non_compliant': return 'bg-red-100 text-red-800';
-    case 'in_progress': return 'bg-yellow-100 text-yellow-800';
-    case 'not_started': return 'bg-gray-100 text-gray-800';
+    case 'compliant': return 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good';
+    case 'non_compliant': return 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad';
+    case 'in_progress': return 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn';
+    case 'not_started': return 'bg-gray-100 text-gray-800 dark:bg-white/[0.06] dark:text-signal-muted';
   }
 };
 
@@ -619,9 +619,9 @@ export const EUCRADashboard: React.FC = () => {
   // ── Render Helpers ──
 
   const renderScoreBar = (score: number) => (
-    <div className="w-full bg-gray-200 rounded-full h-2.5">
+    <div className="w-full bg-gray-200 dark:bg-white/[0.06] rounded-full h-2.5">
       <div
-        className={`h-2.5 rounded-full ${score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+        className={`h-2.5 rounded-full ${score >= 80 ? 'bg-green-500 dark:bg-signal-good' : score >= 50 ? 'bg-yellow-500 dark:bg-signal-warn' : 'bg-red-500 dark:bg-signal-bad'}`}
         style={{ width: `${score}%` }}
       />
     </div>
@@ -633,67 +633,67 @@ export const EUCRADashboard: React.FC = () => {
     <div className="space-y-6">
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Overall CRA Score</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{overallComplianceScore}%</p>
+              <p className="text-sm text-gray-600 dark:text-[10px] dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-signal-muted">Overall CRA Score</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{overallComplianceScore}%</p>
             </div>
-            <Shield className="w-8 h-8 text-blue-600" />
+            <Shield className="w-8 h-8 text-blue-600 dark:text-signal-green" />
           </div>
           <div className="mt-2">{renderScoreBar(overallComplianceScore)}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Products Tracked</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{products.length}</p>
+              <p className="text-sm text-gray-600 dark:text-[10px] dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-signal-muted">Products Tracked</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{products.length}</p>
             </div>
-            <Package className="w-8 h-8 text-indigo-600" />
+            <Package className="w-8 h-8 text-indigo-600 dark:text-signal-blue" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{products.filter(p => p.ceMarking).length} with CE marking</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{products.filter(p => p.ceMarking).length} with CE marking</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Open Vulnerabilities</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{urgentVulnerabilities.length}</p>
+              <p className="text-sm text-gray-600 dark:text-[10px] dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-signal-muted">Open Vulnerabilities</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{urgentVulnerabilities.length}</p>
             </div>
-            <Bug className="w-8 h-8 text-red-600" />
+            <Bug className="w-8 h-8 text-red-600 dark:text-signal-bad" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{vulnerabilities.filter(v => v.isActivelyExploited && v.status !== 'patched').length} actively exploited</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{vulnerabilities.filter(v => v.isActivelyExploited && v.status !== 'patched').length} actively exploited</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Days Until Full Application</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{daysUntilDeadline}</p>
+              <p className="text-sm text-gray-600 dark:text-[10px] dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-signal-muted">Days Until Full Application</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{daysUntilDeadline}</p>
             </div>
-            <Timer className="w-8 h-8 text-orange-600" />
+            <Timer className="w-8 h-8 text-orange-600 dark:text-signal-amber" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">Sep 11, 2026 deadline</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">Sep 11, 2026 deadline</p>
         </div>
       </div>
 
       {/* ENISA 24hr Alerts */}
       {vulnerabilities.filter(v => v.status === 'reported' && v.isActivelyExploited).length > 0 && (
-        <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+        <div className="bg-red-50 border border-red-300 rounded-lg dark:rounded-2xl dark:bg-signal-bad/[0.06] dark:border-signal-bad/20 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Bell className="w-5 h-5 text-red-600" />
-            <h4 className="font-semibold text-red-800">Urgent: ENISA Notification Required</h4>
+            <Bell className="w-5 h-5 text-red-600 dark:text-signal-bad" />
+            <h4 className="font-semibold text-red-800 dark:text-signal-bad">Urgent: ENISA Notification Required</h4>
           </div>
           {vulnerabilities.filter(v => v.status === 'reported' && v.isActivelyExploited).map(v => (
-            <div key={v.id} className="flex items-center justify-between bg-white rounded p-3 mt-2 border border-red-200">
+            <div key={v.id} className="flex items-center justify-between bg-white rounded p-3 mt-2 border border-red-200 dark:bg-white/[0.03] dark:border-white/[0.06]">
               <div>
-                <p className="font-medium text-gray-900">{v.cveId}: {v.title}</p>
-                <p className="text-sm text-red-700">
+                <p className="font-medium text-gray-900 dark:text-signal-ink">{v.cveId}: {v.title}</p>
+                <p className="text-sm text-red-700 dark:text-signal-bad">
                   <Clock className="w-3 h-3 inline mr-1" />
                   {hoursRemaining(v.enisaDeadline).toFixed(1)}h remaining of 24hr window
                 </p>
               </div>
               <button
                 onClick={() => handleMarkENISANotified(v.id)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm flex items-center gap-1"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg dark:bg-signal-bad dark:text-signal-canvas hover:bg-red-700 text-sm flex items-center gap-1"
               >
                 <ArrowUpRight className="w-4 h-4" /> Mark ENISA Notified
               </button>
@@ -704,8 +704,8 @@ export const EUCRADashboard: React.FC = () => {
 
       {/* Product Category Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Products by Category</h3>
+        <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">Products by Category</h3>
           <div className="space-y-3">
             {(['default', 'class_i', 'class_ii', 'critical'] as ProductCategory[]).map(cat => {
               const count = products.filter(p => p.category === cat).length;
@@ -713,12 +713,12 @@ export const EUCRADashboard: React.FC = () => {
               return (
                 <div key={cat}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium text-gray-700">{categoryLabel(cat)}</span>
-                    <span className="text-gray-500">{count} product{count !== 1 ? 's' : ''}</span>
+                    <span className="font-medium text-gray-700 dark:text-signal-body">{categoryLabel(cat)}</span>
+                    <span className="text-gray-500 dark:text-signal-muted">{count} product{count !== 1 ? 's' : ''}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="w-full bg-gray-200 dark:bg-white/[0.06] rounded-full h-3">
                     <div
-                      className={`h-3 rounded-full ${cat === 'critical' ? 'bg-red-500' : cat === 'class_ii' ? 'bg-orange-500' : cat === 'class_i' ? 'bg-yellow-500' : 'bg-blue-500'}`}
+                      className={`h-3 rounded-full ${cat === 'critical' ? 'bg-red-500 dark:bg-signal-bad' : cat === 'class_ii' ? 'bg-orange-500 dark:bg-signal-amber' : cat === 'class_i' ? 'bg-yellow-500 dark:bg-signal-warn' : 'bg-blue-500 dark:bg-signal-blue'}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -728,14 +728,14 @@ export const EUCRADashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Compliance Overview</h3>
+        <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">Compliance Overview</h3>
           <div className="space-y-3">
             {products.map(p => (
               <div key={p.id} className="flex items-center gap-3">
-                <span className="w-40 text-sm font-medium text-gray-700 truncate">{p.name}</span>
+                <span className="w-40 text-sm font-medium text-gray-700 dark:text-signal-body truncate">{p.name}</span>
                 <div className="flex-1">{renderScoreBar(p.complianceScore)}</div>
-                <span className="text-sm font-bold text-gray-900 w-12 text-right">{p.complianceScore}%</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-signal-ink w-12 text-right">{p.complianceScore}%</span>
               </div>
             ))}
           </div>
@@ -743,16 +743,16 @@ export const EUCRADashboard: React.FC = () => {
       </div>
 
       {/* Recent Vulnerability Activity */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Vulnerability Activity</h3>
-        <div className="divide-y divide-gray-100">
+      <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">Recent Vulnerability Activity</h3>
+        <div className="divide-y divide-gray-100 dark:divide-white/[0.06]">
           {vulnerabilities.slice(0, 5).map(v => (
             <div key={v.id} className="py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${severityColor(v.severity)}`}>{v.severity.toUpperCase()}</span>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{v.cveId}: {v.title}</p>
-                  <p className="text-xs text-gray-500">{v.productName} | Reported {formatDate(v.reportedDate)}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-signal-ink">{v.cveId}: {v.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted">{v.productName} | Reported {formatDate(v.reportedDate)}</p>
                 </div>
               </div>
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${vulnStatusColor(v.status)}`}>
@@ -772,16 +772,16 @@ export const EUCRADashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-3 flex-1">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-signal-muted" />
             <input
               type="text" placeholder="Search products..."
               value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40"
             />
           </div>
           <select
             value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as ProductCategory | 'all')}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40"
           >
             <option value="all">All Categories</option>
             <option value="default">Default</option>
@@ -790,24 +790,24 @@ export const EUCRADashboard: React.FC = () => {
             <option value="critical">Critical</option>
           </select>
         </div>
-        <button onClick={() => setShowProductModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm">
+        <button onClick={() => setShowProductModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:rounded-xl dark:font-medium flex items-center gap-2 text-sm">
           <Plus className="w-4 h-4" /> Add Product
         </button>
       </div>
 
       <div className="space-y-4">
         {filteredProducts.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-500">
-            <Package className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+          <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-8 text-center text-gray-500 dark:text-signal-muted">
+            <Package className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-signal-muted" />
             <p>No products found matching your criteria.</p>
           </div>
         ) : filteredProducts.map(product => (
-          <div key={product.id} className="bg-white rounded-lg border border-gray-200 p-6">
+          <div key={product.id} className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h4 className="text-lg font-semibold text-gray-900">{product.name}</h4>
-                  <span className="text-sm text-gray-500">v{product.version}</span>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display">{product.name}</h4>
+                  <span className="text-sm text-gray-500 dark:text-signal-muted">v{product.version}</span>
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${categoryColor(product.category)}`}>
                     {categoryLabel(product.category)}
                   </span>
@@ -815,24 +815,24 @@ export const EUCRADashboard: React.FC = () => {
                     {product.complianceStatus.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600">{product.description}</p>
+                <p className="text-sm text-gray-600 dark:text-signal-body">{product.description}</p>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { setSelectedProduct(product); setShowDetailModal(true); }}
-                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm flex items-center gap-1">
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10] dark:rounded-xl text-sm flex items-center gap-1">
                   <Eye className="w-4 h-4" /> Details
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-signal-body mb-4">
               <span className="flex items-center gap-1"><Cpu className="w-4 h-4" /> {product.manufacturer}</span>
               <span className="flex items-center gap-1">
-                {product.ceMarking ? <CheckCircle className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-gray-400" />}
+                {product.ceMarking ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" /> : <X className="w-4 h-4 text-gray-400 dark:text-signal-muted" />}
                 {t('euRegulations.ceMarking')}
               </span>
               <span className="flex items-center gap-1">
-                {product.sbomAvailable ? <CheckCircle className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-gray-400" />}
+                {product.sbomAvailable ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" /> : <X className="w-4 h-4 text-gray-400 dark:text-signal-muted" />}
                 SBOM
               </span>
               <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> Support until {formatDate(product.supportEndDate)}</span>
@@ -841,28 +841,28 @@ export const EUCRADashboard: React.FC = () => {
             {/* Compliance Score */}
             <div className="mb-3">
               <div className="flex justify-between text-sm mb-1">
-                <span className="font-medium text-gray-700">Compliance Score</span>
-                <span className="font-bold text-gray-900">{product.complianceScore}%</span>
+                <span className="font-medium text-gray-700 dark:text-signal-body">Compliance Score</span>
+                <span className="font-bold text-gray-900 dark:text-signal-ink">{product.complianceScore}%</span>
               </div>
               {renderScoreBar(product.complianceScore)}
             </div>
 
             {/* Security Requirements Checklist */}
             {product.securityRequirements.length > 0 && (
-              <div className="mt-4 border-t border-gray-100 pt-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Security Requirements ({product.securityRequirements.filter(r => r.met).length}/{product.securityRequirements.length})</p>
+              <div className="mt-4 border-t border-gray-100 dark:border-white/[0.06] pt-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Security Requirements ({product.securityRequirements.filter(r => r.met).length}/{product.securityRequirements.length})</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {product.securityRequirements.map(req => (
-                    <label key={req.id} className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                    <label key={req.id} className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-white/[0.04] cursor-pointer">
                       <input
                         type="checkbox" checked={req.met}
                         onChange={() => handleToggleRequirement(product.id, req.id)}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:accent-signal-green mt-0.5"
                       />
                       <div>
-                        <span className={`text-sm ${req.met ? 'text-gray-900' : 'text-gray-600'}`}>{req.requirement}</span>
-                        <span className="text-xs text-gray-400 ml-1">[{req.category}]</span>
-                        {req.notes && <p className="text-xs text-gray-500 mt-0.5">{req.notes}</p>}
+                        <span className={`text-sm ${req.met ? 'text-gray-900 dark:text-signal-ink' : 'text-gray-600 dark:text-signal-body'}`}>{req.requirement}</span>
+                        <span className="text-xs text-gray-400 dark:text-signal-muted ml-1">[{req.category}]</span>
+                        {req.notes && <p className="text-xs text-gray-500 dark:text-signal-muted mt-0.5">{req.notes}</p>}
                       </div>
                     </label>
                   ))}
@@ -882,15 +882,15 @@ export const EUCRADashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-3 flex-1 flex-wrap">
           <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-signal-muted" />
             <input
               type="text" placeholder="Search CVE, title, product..."
               value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40"
             />
           </div>
           <select value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value as VulnerabilitySeverity | 'all')}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40">
             <option value="all">All Severities</option>
             <option value="critical">Critical</option>
             <option value="high">High</option>
@@ -898,7 +898,7 @@ export const EUCRADashboard: React.FC = () => {
             <option value="low">Low</option>
           </select>
           <select value={vulnStatusFilter} onChange={(e) => setVulnStatusFilter(e.target.value as VulnerabilityStatus | 'all')}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40">
             <option value="all">All Statuses</option>
             <option value="reported">Reported</option>
             <option value="enisa_notified">ENISA Notified</option>
@@ -907,15 +907,15 @@ export const EUCRADashboard: React.FC = () => {
             <option value="disclosed">Disclosed</option>
           </select>
         </div>
-        <button onClick={() => setShowVulnModal(true)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 text-sm whitespace-nowrap">
+        <button onClick={() => setShowVulnModal(true)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:rounded-xl dark:font-medium flex items-center gap-2 text-sm whitespace-nowrap">
           <Plus className="w-4 h-4" /> Report Vulnerability
         </button>
       </div>
 
       {/* 24-hour ENISA Notification Tracker */}
       {vulnerabilities.filter(v => v.status === 'reported' || (v.status === 'enisa_notified' && !v.patchDate)).length > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-          <h4 className="font-semibold text-orange-800 flex items-center gap-2 mb-3">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg dark:rounded-2xl dark:bg-signal-amber/[0.06] dark:border-signal-amber/20 p-4">
+          <h4 className="font-semibold text-orange-800 dark:text-signal-amber flex items-center gap-2 mb-3">
             <Timer className="w-5 h-5" /> 24-Hour ENISA Notification Tracker
           </h4>
           <div className="space-y-2">
@@ -923,24 +923,24 @@ export const EUCRADashboard: React.FC = () => {
               const hrs = hoursRemaining(v.enisaDeadline);
               const overdue = hrs <= 0 && v.status === 'reported';
               return (
-                <div key={v.id} className={`flex items-center justify-between p-3 rounded border ${overdue ? 'bg-red-50 border-red-300' : 'bg-white border-orange-200'}`}>
+                <div key={v.id} className={`flex items-center justify-between p-3 rounded border ${overdue ? 'bg-red-50 border-red-300 dark:bg-signal-bad/[0.08] dark:border-signal-bad/25' : 'bg-white border-orange-200 dark:bg-white/[0.03] dark:border-white/[0.06]'}`}>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">{v.cveId} - {v.title}</p>
-                    <p className="text-xs text-gray-500">{v.productName} | {v.severity.toUpperCase()}</p>
+                    <p className="font-medium text-gray-900 dark:text-signal-ink text-sm">{v.cveId} - {v.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-signal-muted">{v.productName} | {v.severity.toUpperCase()}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     {v.status === 'reported' ? (
                       <>
-                        <span className={`text-sm font-medium ${overdue ? 'text-red-700' : hrs < 6 ? 'text-orange-700' : 'text-gray-700'}`}>
+                        <span className={`text-sm font-medium ${overdue ? 'text-red-700 dark:text-signal-bad' : hrs < 6 ? 'text-orange-700 dark:text-signal-amber' : 'text-gray-700 dark:text-signal-body'}`}>
                           {overdue ? 'OVERDUE' : `${hrs.toFixed(1)}h remaining`}
                         </span>
                         <button onClick={() => handleMarkENISANotified(v.id)}
-                          className="px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-xs flex items-center gap-1">
+                          className="px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 dark:bg-signal-amber dark:text-signal-canvas dark:hover:bg-signal-amber/90 dark:rounded-lg text-xs flex items-center gap-1">
                           <ArrowUpRight className="w-3 h-3" /> Mark ENISA Notified
                         </button>
                       </>
                     ) : (
-                      <span className="text-sm text-green-700 flex items-center gap-1">
+                      <span className="text-sm text-green-700 dark:text-signal-good flex items-center gap-1">
                         <CheckCircle className="w-4 h-4" /> Notified {formatDate(v.enisaNotifiedDate)}
                       </span>
                     )}
@@ -953,45 +953,45 @@ export const EUCRADashboard: React.FC = () => {
       )}
 
       {/* Vulnerability List */}
-      <div className="bg-white rounded-lg border border-gray-200">
+      <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">CVE ID</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Title</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Product</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">{t('common.severity')}</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Reported</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Actions</th>
+              <tr className="border-b border-gray-200 bg-gray-50 dark:bg-white/[0.02] dark:border-white/[0.06]">
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">CVE ID</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Title</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Product</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">{t('common.severity')}</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Status</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Reported</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
               {filteredVulnerabilities.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">No vulnerabilities match your filters.</td>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500 dark:text-signal-muted">No vulnerabilities match your filters.</td>
                 </tr>
               ) : filteredVulnerabilities.map(v => (
-                <tr key={v.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-mono text-blue-700">{v.cveId}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">
+                <tr key={v.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.04]">
+                  <td className="px-4 py-3 text-sm font-mono text-blue-700 dark:text-signal-blue">{v.cveId}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-signal-ink max-w-xs truncate">
                     {v.title}
                     {v.isActivelyExploited && (
-                      <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-800 text-xs rounded font-medium">EXPLOITED</span>
+                      <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad text-xs rounded font-medium">EXPLOITED</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{v.productName}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-signal-body">{v.productName}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${severityColor(v.severity)}`}>{v.severity.toUpperCase()}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${vulnStatusColor(v.status)}`}>{v.status.replace('_', ' ').toUpperCase()}</span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{formatDate(v.reportedDate)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500 dark:text-signal-muted">{formatDate(v.reportedDate)}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => { setSelectedVuln(v); setShowDetailModal(true); }}
-                      className="text-blue-600 hover:text-blue-800 text-sm">View</button>
+                      className="text-blue-600 hover:text-blue-800 dark:text-signal-green dark:hover:text-signal-green/80 text-sm">View</button>
                   </td>
                 </tr>
               ))}
@@ -1007,8 +1007,8 @@ export const EUCRADashboard: React.FC = () => {
   const renderUpdates = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Security Update Pipeline</h3>
-        <button onClick={() => setShowUpdateModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Security Update Pipeline</h3>
+        <button onClick={() => setShowUpdateModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:rounded-xl dark:font-medium flex items-center gap-2 text-sm">
           <Plus className="w-4 h-4" /> Schedule Update
         </button>
       </div>
@@ -1018,26 +1018,26 @@ export const EUCRADashboard: React.FC = () => {
         {(['planned', 'in_development', 'testing', 'released'] as UpdateStatus[]).map(status => {
           const statusUpdates = updates.filter(u => u.status === status);
           return (
-            <div key={status} className="bg-white rounded-lg border border-gray-200 p-4">
+            <div key={status} className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-gray-700 text-sm uppercase">{status.replace('_', ' ')}</h4>
-                <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{statusUpdates.length}</span>
+                <h4 className="font-medium text-gray-700 dark:text-signal-muted dark:font-mono dark:tracking-[0.12em] text-sm uppercase">{status.replace('_', ' ')}</h4>
+                <span className="bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-signal-body px-2 py-0.5 rounded-full text-xs">{statusUpdates.length}</span>
               </div>
               <div className="space-y-3">
                 {statusUpdates.map(upd => (
-                  <div key={upd.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                    <p className="font-medium text-gray-900 text-sm">{upd.productName}</p>
-                    <p className="text-xs text-gray-500">v{upd.version}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                  <div key={upd.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06]">
+                    <p className="font-medium text-gray-900 dark:text-signal-ink text-sm">{upd.productName}</p>
+                    <p className="text-xs text-gray-500 dark:text-signal-muted">v{upd.version}</p>
+                    <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">
                       {upd.releaseDate ? `Released: ${formatDate(upd.releaseDate)}` : `Planned: ${formatDate(upd.plannedDate)}`}
                     </p>
                     {upd.vulnerabilitiesFixed.length > 0 && (
-                      <p className="text-xs text-red-600 mt-1">{upd.vulnerabilitiesFixed.length} vuln{upd.vulnerabilitiesFixed.length > 1 ? 's' : ''} fixed</p>
+                      <p className="text-xs text-red-600 dark:text-signal-bad mt-1">{upd.vulnerabilitiesFixed.length} vuln{upd.vulnerabilitiesFixed.length > 1 ? 's' : ''} fixed</p>
                     )}
                   </div>
                 ))}
                 {statusUpdates.length === 0 && (
-                  <p className="text-xs text-gray-400 text-center py-4">None</p>
+                  <p className="text-xs text-gray-400 dark:text-signal-muted text-center py-4">None</p>
                 )}
               </div>
             </div>
@@ -1046,43 +1046,43 @@ export const EUCRADashboard: React.FC = () => {
       </div>
 
       {/* Update Details Table */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-200">
-          <h4 className="font-semibold text-gray-900">All Security Updates</h4>
+      <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <div className="p-4 border-b border-gray-200 dark:border-white/[0.06]">
+          <h4 className="font-semibold text-gray-900 dark:text-signal-ink">All Security Updates</h4>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Product</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Version</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Planned Date</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Vulns Fixed</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Free</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Auto-Update</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Support</th>
+              <tr className="border-b border-gray-200 bg-gray-50 dark:bg-white/[0.02] dark:border-white/[0.06]">
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Product</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Version</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Status</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Planned Date</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Vulns Fixed</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Free</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Auto-Update</th>
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono uppercase tracking-wider px-4 py-3">Support</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
               {updates.map(upd => (
-                <tr key={upd.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{upd.productName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">v{upd.version}</td>
+                <tr key={upd.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.04]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-signal-ink">{upd.productName}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-signal-body">v{upd.version}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${updateStatusColor(upd.status)}`}>
                       {upd.status.replace('_', ' ').toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{formatDate(upd.plannedDate)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{upd.vulnerabilitiesFixed.length}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-signal-body">{formatDate(upd.plannedDate)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-signal-body">{upd.vulnerabilitiesFixed.length}</td>
                   <td className="px-4 py-3">
-                    {upd.isFreeOfCharge ? <CheckCircle className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-red-600" />}
+                    {upd.isFreeOfCharge ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" /> : <X className="w-4 h-4 text-red-600 dark:text-signal-bad" />}
                   </td>
                   <td className="px-4 py-3">
-                    {upd.autoUpdateEnabled ? <CheckCircle className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-gray-400" />}
+                    {upd.autoUpdateEnabled ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" /> : <X className="w-4 h-4 text-gray-400 dark:text-signal-muted" />}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{upd.supportDuration}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-signal-body">{upd.supportDuration}</td>
                 </tr>
               ))}
             </tbody>
@@ -1091,9 +1091,9 @@ export const EUCRADashboard: React.FC = () => {
       </div>
 
       {/* CRA Update Requirements */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-semibold text-blue-800 mb-2">CRA Security Update Requirements</h4>
-        <ul className="space-y-1 text-sm text-blue-700">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg dark:rounded-2xl dark:bg-signal-blue/[0.06] dark:border-signal-blue/20 p-4">
+        <h4 className="font-semibold text-blue-800 dark:text-signal-blue mb-2">CRA Security Update Requirements</h4>
+        <ul className="space-y-1 text-sm text-blue-700 dark:text-signal-body">
           <li className="flex items-start gap-2"><CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> Security updates must be provided free of charge for the expected product lifetime</li>
           <li className="flex items-start gap-2"><CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> Security updates shall be separated from functionality updates where possible</li>
           <li className="flex items-start gap-2"><CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> Automatic update mechanisms must be enabled by default</li>
@@ -1108,58 +1108,58 @@ export const EUCRADashboard: React.FC = () => {
 
   const renderTimeline = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">CRA Implementation Timeline</h3>
-        <p className="text-sm text-gray-600 mb-6">Key dates and milestones for EU Cyber Resilience Act compliance. The regulation entered into force on 10 December 2024 with a phased implementation.</p>
+      <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-2">CRA Implementation Timeline</h3>
+        <p className="text-sm text-gray-600 dark:text-signal-body mb-6">Key dates and milestones for EU Cyber Resilience Act compliance. The regulation entered into force on 10 December 2024 with a phased implementation.</p>
 
         {/* Countdown Banner */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg p-6 text-white mb-6">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg p-6 text-white dark:bg-none dark:bg-signal-panel2 dark:rounded-2xl dark:border dark:border-white/[0.08] dark:text-signal-ink mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-lg font-semibold">Full Application Deadline</h4>
-              <p className="text-indigo-200">11 September 2026 - All CRA obligations take effect</p>
+              <p className="text-indigo-200 dark:text-signal-body">11 September 2026 - All CRA obligations take effect</p>
             </div>
             <div className="text-right">
-              <p className="text-4xl font-bold">{daysUntilDeadline}</p>
-              <p className="text-indigo-200">days remaining</p>
+              <p className="text-4xl font-bold dark:font-display dark:text-signal-green">{daysUntilDeadline}</p>
+              <p className="text-indigo-200 dark:text-signal-muted">days remaining</p>
             </div>
           </div>
           <div className="mt-4">
-            <div className="w-full bg-indigo-800 rounded-full h-3">
-              <div className="bg-white rounded-full h-3" style={{ width: `${Math.max(0, Math.min(100, ((365 * 2 - daysUntilDeadline) / (365 * 2)) * 100))}%` }} />
+            <div className="w-full bg-indigo-800 dark:bg-white/[0.06] rounded-full h-3">
+              <div className="bg-white dark:bg-signal-green rounded-full h-3" style={{ width: `${Math.max(0, Math.min(100, ((365 * 2 - daysUntilDeadline) / (365 * 2)) * 100))}%` }} />
             </div>
           </div>
         </div>
 
         {/* Timeline Events */}
         <div className="relative">
-          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200" />
+          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-white/[0.08]" />
           {timeline.map((event, idx) => (
             <div key={event.id} className="relative flex gap-4 pb-8 last:pb-0">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center z-10 flex-shrink-0 ${
-                event.status === 'completed' ? 'bg-green-100' :
-                event.status === 'active' ? 'bg-blue-100' :
-                event.status === 'overdue' ? 'bg-red-100' : 'bg-gray-100'
+                event.status === 'completed' ? 'bg-green-100 dark:bg-signal-good/10' :
+                event.status === 'active' ? 'bg-blue-100 dark:bg-signal-blue/10' :
+                event.status === 'overdue' ? 'bg-red-100 dark:bg-signal-bad/10' : 'bg-gray-100 dark:bg-white/[0.06]'
               }`}>
-                {event.status === 'completed' ? <CheckCircle className="w-6 h-6 text-green-600" /> :
-                 event.status === 'active' ? <Clock className="w-6 h-6 text-blue-600" /> :
-                 event.status === 'overdue' ? <AlertTriangle className="w-6 h-6 text-red-600" /> :
-                 <Calendar className="w-6 h-6 text-gray-400" />}
+                {event.status === 'completed' ? <CheckCircle className="w-6 h-6 text-green-600 dark:text-signal-good" /> :
+                 event.status === 'active' ? <Clock className="w-6 h-6 text-blue-600 dark:text-signal-blue" /> :
+                 event.status === 'overdue' ? <AlertTriangle className="w-6 h-6 text-red-600 dark:text-signal-bad" /> :
+                 <Calendar className="w-6 h-6 text-gray-400 dark:text-signal-muted" />}
               </div>
-              <div className={`flex-1 p-4 rounded-lg border ${
-                event.status === 'completed' ? 'bg-green-50 border-green-200' :
-                event.status === 'active' ? 'bg-blue-50 border-blue-200' :
-                event.status === 'overdue' ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
+              <div className={`flex-1 p-4 rounded-lg border dark:rounded-2xl ${
+                event.status === 'completed' ? 'bg-green-50 border-green-200 dark:bg-signal-good/[0.06] dark:border-signal-good/20' :
+                event.status === 'active' ? 'bg-blue-50 border-blue-200 dark:bg-signal-blue/[0.06] dark:border-signal-blue/20' :
+                event.status === 'overdue' ? 'bg-red-50 border-red-200 dark:bg-signal-bad/[0.06] dark:border-signal-bad/20' : 'bg-white border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06]'
               }`}>
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className="font-semibold text-gray-900">{event.title}</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-signal-ink">{event.title}</h4>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    event.type === 'deadline' ? 'bg-red-100 text-red-800' :
-                    event.type === 'obligation' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                    event.type === 'deadline' ? 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad' :
+                    event.type === 'obligation' ? 'bg-purple-100 text-purple-800 dark:bg-signal-violet/10 dark:text-signal-violet' : 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue'
                   }`}>{event.type.toUpperCase()}</span>
                 </div>
-                <p className="text-sm text-gray-600">{event.description}</p>
-                <p className="text-xs text-gray-500 mt-2">{formatDate(event.date)}</p>
+                <p className="text-sm text-gray-600 dark:text-signal-body">{event.description}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{formatDate(event.date)}</p>
               </div>
             </div>
           ))}
@@ -1167,21 +1167,21 @@ export const EUCRADashboard: React.FC = () => {
       </div>
 
       {/* Readiness Checklist */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">CRA Readiness Checklist</h3>
-        <p className="text-xs text-gray-500 mb-3">Derived from your tracked products, security requirements, and vulnerability records.</p>
+      <div className="bg-white rounded-lg dark:rounded-2xl border border-gray-200 dark:bg-white/[0.03] dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display mb-4">CRA Readiness Checklist</h3>
+        <p className="text-xs text-gray-500 dark:text-signal-muted mb-3">Derived from your tracked products, security requirements, and vulnerability records.</p>
         <div className="space-y-3">
           {readinessChecklist.items.map((item, idx) => (
-            <label key={idx} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" checked={item.done} readOnly className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-              <span className={`text-sm ${item.done ? 'text-gray-900 line-through' : 'text-gray-700'}`}>{item.label}</span>
+            <label key={idx} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-white/[0.04] cursor-pointer">
+              <input type="checkbox" checked={item.done} readOnly className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:accent-signal-green" />
+              <span className={`text-sm ${item.done ? 'text-gray-900 dark:text-signal-muted line-through' : 'text-gray-700 dark:text-signal-body'}`}>{item.label}</span>
             </label>
           ))}
         </div>
-        <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/[0.06]">
           <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-gray-700">Overall Readiness</span>
-            <span className="font-bold text-gray-900">{readinessChecklist.pct}%</span>
+            <span className="font-medium text-gray-700 dark:text-signal-body">Overall Readiness</span>
+            <span className="font-bold text-gray-900 dark:text-signal-ink">{readinessChecklist.pct}%</span>
           </div>
           {renderScoreBar(readinessChecklist.pct)}
         </div>
@@ -1196,18 +1196,18 @@ export const EUCRADashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.eucra')}</h2>
-          <p className="text-gray-600 mt-1">Manage product security compliance with Regulation (EU) 2024/2847</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('euRegulations.eucra')}</h2>
+          <p className="text-gray-600 dark:text-signal-body mt-1">Manage product security compliance with Regulation (EU) 2024/2847</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:rounded-xl dark:font-medium flex items-center gap-2">
             <Download className="w-4 h-4" /> {t('common.export')}
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-white/[0.08]">
         <nav className="flex gap-4 -mb-px">
           {tabs.map(tab => (
             <button
@@ -1215,8 +1215,8 @@ export const EUCRADashboard: React.FC = () => {
               onClick={() => { setActiveTab(tab.key); setSearchTerm(''); }}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.key
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-indigo-600 text-indigo-600 dark:border-signal-green dark:text-signal-green'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-signal-muted dark:hover:text-signal-body dark:hover:border-white/[0.12]'
               }`}
             >
               {tab.icon} {tab.label}
@@ -1226,10 +1226,10 @@ export const EUCRADashboard: React.FC = () => {
       </div>
 
       {loadError && (
-        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-          <span className="text-sm text-amber-700 flex-1">{loadError}</span>
-          <button onClick={() => setLoadError(null)} className="text-amber-500 hover:text-amber-700"><X className="w-3 h-3" /></button>
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg dark:rounded-xl dark:bg-signal-warn/[0.08] dark:border-signal-warn/20 px-3 py-2">
+          <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-signal-warn flex-shrink-0" />
+          <span className="text-sm text-amber-700 dark:text-signal-warn flex-1">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="text-amber-500 hover:text-amber-700 dark:text-signal-warn dark:hover:text-signal-warn/80"><X className="w-3 h-3" /></button>
         </div>
       )}
 
@@ -1242,28 +1242,28 @@ export const EUCRADashboard: React.FC = () => {
 
       {/* ── Add Product Modal ── */}
       {showProductModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Add Digital Product</h3>
-              <button onClick={() => setShowProductModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg dark:rounded-2xl dark:bg-signal-panel2 dark:border dark:border-white/[0.08] max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.08] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Add Digital Product</h3>
+              <button onClick={() => setShowProductModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-body"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleAddProduct} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('common.name')} *</label>
                 <input type="text" required value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Version *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Version *</label>
                   <input type="text" required value={productForm.version} onChange={(e) => setProductForm({ ...productForm, version: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Category *</label>
                   <select value={productForm.category} onChange={(e) => setProductForm({ ...productForm, category: e.target.value as ProductCategory })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40">
                     <option value="default">Default</option>
                     <option value="class_i">Class I (Annex III)</option>
                     <option value="class_ii">Class II (Annex IV)</option>
@@ -1272,29 +1272,29 @@ export const EUCRADashboard: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Manufacturer *</label>
                 <input type="text" required value={productForm.manufacturer} onChange={(e) => setProductForm({ ...productForm, manufacturer: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Description</label>
                 <textarea value={productForm.description} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Security Contact</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Security Contact</label>
                 <input type="text" value={productForm.contactInfo} onChange={(e) => setProductForm({ ...productForm, contactInfo: e.target.value })}
                   placeholder="security@company.eu"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
               </div>
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={productForm.hasDigitalElements} onChange={(e) => setProductForm({ ...productForm, hasDigitalElements: e.target.checked })}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                <span className="text-sm text-gray-700">Product with digital elements</span>
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:accent-signal-green" />
+                <span className="text-sm text-gray-700 dark:text-signal-body">Product with digital elements</span>
               </label>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add Product</button>
-                <button type="button" onClick={() => setShowProductModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:rounded-xl dark:font-medium">Add Product</button>
+                <button type="button" onClick={() => setShowProductModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10] dark:rounded-xl">{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -1303,35 +1303,35 @@ export const EUCRADashboard: React.FC = () => {
 
       {/* ── Report Vulnerability Modal ── */}
       {showVulnModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Report Vulnerability</h3>
-              <button onClick={() => setShowVulnModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg dark:rounded-2xl dark:bg-signal-panel2 dark:border dark:border-white/[0.08] max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.08] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Report Vulnerability</h3>
+              <button onClick={() => setShowVulnModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-body"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleReportVulnerability} className="p-6 space-y-4">
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-800">
+              <div className="bg-orange-50 border border-orange-200 rounded-lg dark:rounded-xl dark:bg-signal-amber/[0.08] dark:border-signal-amber/20 p-3 text-sm text-orange-800 dark:text-signal-amber">
                 <strong>CRA Article 14:</strong> Actively exploited vulnerabilities must be notified to ENISA within 24 hours of awareness.
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Affected Product *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Affected Product *</label>
                 <select required value={vulnForm.productId} onChange={(e) => setVulnForm({ ...vulnForm, productId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40">
                   <option value="">Select product...</option>
                   {products.map(p => <option key={p.id} value={p.id}>{p.name} v{p.version}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CVE ID</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">CVE ID</label>
                   <input type="text" value={vulnForm.cveId} onChange={(e) => setVulnForm({ ...vulnForm, cveId: e.target.value })}
                     placeholder="CVE-2026-XXXXX"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.severity')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('common.severity')} *</label>
                   <select required value={vulnForm.severity} onChange={(e) => setVulnForm({ ...vulnForm, severity: e.target.value as VulnerabilitySeverity })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40">
                     <option value="critical">Critical</option>
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
@@ -1340,28 +1340,28 @@ export const EUCRADashboard: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Title *</label>
                 <input type="text" required value={vulnForm.title} onChange={(e) => setVulnForm({ ...vulnForm, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Description *</label>
                 <textarea required value={vulnForm.description} onChange={(e) => setVulnForm({ ...vulnForm, description: e.target.value })} rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reporter</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Reporter</label>
                 <input type="text" value={vulnForm.reporter} onChange={(e) => setVulnForm({ ...vulnForm, reporter: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
               </div>
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={vulnForm.isActivelyExploited} onChange={(e) => setVulnForm({ ...vulnForm, isActivelyExploited: e.target.checked })}
-                  className="rounded border-gray-300 text-red-600 focus:ring-red-500" />
-                <span className="text-sm text-red-700 font-medium">Actively exploited (triggers 24hr ENISA notification)</span>
+                  className="rounded border-gray-300 text-red-600 focus:ring-red-500 dark:accent-signal-bad" />
+                <span className="text-sm text-red-700 dark:text-signal-bad font-medium">Actively exploited (triggers 24hr ENISA notification)</span>
               </label>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Report Vulnerability</button>
-                <button type="button" onClick={() => setShowVulnModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:rounded-xl dark:font-medium">Report Vulnerability</button>
+                <button type="button" onClick={() => setShowVulnModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10] dark:rounded-xl">{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -1370,47 +1370,47 @@ export const EUCRADashboard: React.FC = () => {
 
       {/* ── Product / Vulnerability Detail Modal ── */}
       {showDetailModal && (selectedProduct || selectedVuln) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg dark:rounded-2xl dark:bg-signal-panel2 dark:border dark:border-white/[0.08] max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.08] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">
                 {selectedProduct ? `Product: ${selectedProduct.name}` : `Vulnerability: ${selectedVuln?.cveId}`}
               </h3>
               <button onClick={() => { setShowDetailModal(false); setSelectedProduct(null); setSelectedVuln(null); }}
-                className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+                className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-body"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
               {selectedProduct && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><label className="text-sm font-medium text-gray-700">Category</label><p className="text-gray-900 mt-1">{categoryLabel(selectedProduct.category)}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Compliance Score</label><p className="text-gray-900 mt-1">{selectedProduct.complianceScore}%</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Manufacturer</label><p className="text-gray-900 mt-1">{selectedProduct.manufacturer}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Version</label><p className="text-gray-900 mt-1">{selectedProduct.version}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">{t('euRegulations.ceMarking')}</label><p className="text-gray-900 mt-1">{selectedProduct.ceMarking ? 'Yes' : 'No'}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">SBOM Available</label><p className="text-gray-900 mt-1">{selectedProduct.sbomAvailable ? 'Yes' : 'No'}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Support Until</label><p className="text-gray-900 mt-1">{formatDate(selectedProduct.supportEndDate)}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Security Contact</label><p className="text-gray-900 mt-1">{selectedProduct.contactInfo}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Category</label><p className="text-gray-900 dark:text-signal-ink mt-1">{categoryLabel(selectedProduct.category)}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Compliance Score</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedProduct.complianceScore}%</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Manufacturer</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedProduct.manufacturer}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Version</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedProduct.version}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">{t('euRegulations.ceMarking')}</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedProduct.ceMarking ? 'Yes' : 'No'}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">SBOM Available</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedProduct.sbomAvailable ? 'Yes' : 'No'}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Support Until</label><p className="text-gray-900 dark:text-signal-ink mt-1">{formatDate(selectedProduct.supportEndDate)}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Security Contact</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedProduct.contactInfo}</p></div>
                   </div>
-                  <div><label className="text-sm font-medium text-gray-700">Description</label><p className="text-gray-900 mt-1">{selectedProduct.description}</p></div>
+                  <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Description</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedProduct.description}</p></div>
                 </>
               )}
               {selectedVuln && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><label className="text-sm font-medium text-gray-700">CVE ID</label><p className="text-gray-900 mt-1 font-mono">{selectedVuln.cveId}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Severity</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${severityColor(selectedVuln.severity)}`}>{selectedVuln.severity.toUpperCase()}</span></p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Product</label><p className="text-gray-900 mt-1">{selectedVuln.productName}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Status</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${vulnStatusColor(selectedVuln.status)}`}>{selectedVuln.status.replace('_', ' ').toUpperCase()}</span></p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Reported</label><p className="text-gray-900 mt-1">{formatDate(selectedVuln.reportedDate)}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">ENISA Notified</label><p className="text-gray-900 mt-1">{selectedVuln.enisaNotifiedDate ? formatDate(selectedVuln.enisaNotifiedDate) : 'Pending'}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Patch Date</label><p className="text-gray-900 mt-1">{formatDate(selectedVuln.patchDate)}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">Reporter</label><p className="text-gray-900 mt-1">{selectedVuln.reporter}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">CVE ID</label><p className="text-gray-900 dark:text-signal-ink mt-1 font-mono">{selectedVuln.cveId}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Severity</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${severityColor(selectedVuln.severity)}`}>{selectedVuln.severity.toUpperCase()}</span></p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Product</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedVuln.productName}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Status</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${vulnStatusColor(selectedVuln.status)}`}>{selectedVuln.status.replace('_', ' ').toUpperCase()}</span></p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Reported</label><p className="text-gray-900 dark:text-signal-ink mt-1">{formatDate(selectedVuln.reportedDate)}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">ENISA Notified</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedVuln.enisaNotifiedDate ? formatDate(selectedVuln.enisaNotifiedDate) : 'Pending'}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Patch Date</label><p className="text-gray-900 dark:text-signal-ink mt-1">{formatDate(selectedVuln.patchDate)}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Reporter</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedVuln.reporter}</p></div>
                   </div>
-                  <div><label className="text-sm font-medium text-gray-700">Description</label><p className="text-gray-900 mt-1">{selectedVuln.description}</p></div>
+                  <div><label className="text-sm font-medium text-gray-700 dark:text-signal-muted">Description</label><p className="text-gray-900 dark:text-signal-ink mt-1">{selectedVuln.description}</p></div>
                   {selectedVuln.isActivelyExploited && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <p className="text-sm font-medium text-red-800">This vulnerability is actively exploited in the wild.</p>
+                    <div className="bg-red-50 border border-red-200 rounded-lg dark:rounded-xl dark:bg-signal-bad/[0.08] dark:border-signal-bad/20 p-3">
+                      <p className="text-sm font-medium text-red-800 dark:text-signal-bad">This vulnerability is actively exploited in the wild.</p>
                     </div>
                   )}
                 </>

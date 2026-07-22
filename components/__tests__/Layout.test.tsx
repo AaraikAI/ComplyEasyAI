@@ -170,14 +170,17 @@ describe('Layout Component', () => {
       expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders Encrypted Zero Trust badge', () => {
+    it('renders the plan chip in the sidebar', () => {
       renderLayout();
-      expect(screen.getByText(/Encrypted/)).toBeInTheDocument();
+      // The old "Encrypted Zero Trust" trust badge was removed in the Signal
+      // redesign; the sidebar header now surfaces the org plan chip instead.
+      expect(screen.getByText('Growth')).toBeInTheDocument();
     });
 
-    it('renders Sign Out button', () => {
+    it('renders the Sign Out control', () => {
       renderLayout();
-      expect(screen.getByText('Sign Out')).toBeInTheDocument();
+      // Sign-out is now an icon button labelled via aria-label / title.
+      expect(screen.getByRole('button', { name: 'Sign Out' })).toBeInTheDocument();
     });
 
     it('renders onboarding components', () => {
@@ -257,7 +260,8 @@ describe('Layout Component', () => {
       const dashboardLinks = screen.getAllByText('Dashboard');
       // Find the one that's a nav link (closest 'a' tag)
       const dashboardLink = dashboardLinks.map(el => el.closest('a')).find(a => a?.getAttribute('href') === '/dashboard');
-      expect(dashboardLink?.className).toContain('bg-brand-600');
+      // Signal active state uses the green accent instead of the old brand fill.
+      expect(dashboardLink?.className).toContain('bg-signal-green/10');
       // Restore
       (rrdom.useLocation as any).mockReturnValue({ pathname: '/', search: '', hash: '', state: null });
     });
@@ -265,10 +269,12 @@ describe('Layout Component', () => {
 
   // ===== SIDEBAR VARIANTS =====
   describe('Sidebar Variants', () => {
-    it('renders slim sidebar by default when no localStorage', () => {
+    it('renders classic sidebar by default when no localStorage', () => {
       localStorage.removeItem('complyeasy_sidebar_variant');
       renderLayout();
-      expect(screen.getByTestId('slim-sidebar')).toBeInTheDocument();
+      // Default variant is now 'classic' (Signal redesign), not 'slim'.
+      expect(screen.queryByTestId('slim-sidebar')).not.toBeInTheDocument();
+      expect(screen.getByText('ComplyEasy')).toBeInTheDocument();
     });
 
     it('renders classic sidebar when localStorage says classic', () => {
@@ -290,7 +296,7 @@ describe('Layout Component', () => {
     it('calls logout when Sign Out is clicked', async () => {
       const { useAuth } = await import('../../contexts/AuthContext');
       renderLayout();
-      fireEvent.click(screen.getByText('Sign Out'));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign Out' }));
       const authResult = (useAuth as any)();
       expect(authResult.logout).toHaveBeenCalled();
     });

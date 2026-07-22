@@ -61,10 +61,10 @@ type ViewMode = 'dashboard' | 'list' | 'detail' | 'create' | 'edit'
   | 'templates' | 'ai-generate' | 'ai-nl-generate' | 'ai-review' | 'ai-gap';
 
 const STATUS_COLORS: Record<string, string> = {
-  Draft: 'bg-gray-100 text-gray-700 border-gray-200',
-  In_Review: 'bg-blue-100 text-blue-700 border-blue-200',
-  Approved: 'bg-green-100 text-green-700 border-green-200',
-  Archived: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  Draft: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-signal-muted/10 dark:text-signal-muted dark:border-transparent',
+  In_Review: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-transparent',
+  Approved: 'bg-green-100 text-green-700 border-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-transparent',
+  Archived: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-transparent',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -486,8 +486,8 @@ ${policy.content.substring(0, 3000)}`;
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="animate-spin text-brand-600" size={32} />
-        <span className="ml-3 text-gray-600">{t('common.loading')}</span>
+        <Loader2 className="animate-spin text-brand-600 dark:text-signal-green" size={32} />
+        <span className="ml-3 text-gray-600 dark:text-signal-body">{t('common.loading')}</span>
       </div>
     );
   }
@@ -511,32 +511,32 @@ ${policy.content.substring(0, 3000)}`;
       <div className="space-y-6">
         {/* Stats cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">{t('policies.title')}</div>
-            <div className="text-2xl font-bold mt-1">{metrics.total}</div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <div className="text-sm text-gray-500 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{t('policies.title')}</div>
+            <div className="text-2xl font-bold mt-1 dark:text-signal-ink dark:font-display">{metrics.total}</div>
           </div>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">{t('common.approved')}</div>
-            <div className="text-2xl font-bold mt-1 text-green-600">{metrics.byStatus.approved}</div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <div className="text-sm text-gray-500 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{t('common.approved')}</div>
+            <div className="text-2xl font-bold mt-1 text-green-600 dark:text-signal-good dark:font-display">{metrics.byStatus.approved}</div>
           </div>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">In Review</div>
-            <div className="text-2xl font-bold mt-1 text-blue-600">{metrics.byStatus.review}</div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <div className="text-sm text-gray-500 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">In Review</div>
+            <div className="text-2xl font-bold mt-1 text-blue-600 dark:text-signal-blue dark:font-display">{metrics.byStatus.review}</div>
           </div>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">Reviews Due</div>
-            <div className="text-2xl font-bold mt-1 text-orange-600">{metrics.reviewsDue}</div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <div className="text-sm text-gray-500 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Reviews Due</div>
+            <div className="text-2xl font-bold mt-1 text-orange-600 dark:text-signal-amber dark:font-display">{metrics.reviewsDue}</div>
           </div>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">Overdue</div>
-            <div className="text-2xl font-bold mt-1 text-red-600">{metrics.overdue}</div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <div className="text-sm text-gray-500 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Overdue</div>
+            <div className="text-2xl font-bold mt-1 text-red-600 dark:text-signal-bad dark:font-display">{metrics.overdue}</div>
           </div>
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Policy Status Distribution</h3>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4 dark:text-signal-ink">Policy Status Distribution</h3>
             {statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
@@ -549,11 +549,11 @@ ${policy.content.substring(0, 3000)}`;
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-[220px] text-gray-400">No policy data yet</div>
+              <div className="flex items-center justify-center h-[220px] text-gray-400 dark:text-signal-muted">No policy data yet</div>
             )}
           </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Policies by Category</h3>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4 dark:text-signal-ink">Policies by Category</h3>
             {categoryData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={categoryData}>
@@ -564,33 +564,33 @@ ${policy.content.substring(0, 3000)}`;
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-[220px] text-gray-400">No categories yet</div>
+              <div className="flex items-center justify-center h-[220px] text-gray-400 dark:text-signal-muted">No categories yet</div>
             )}
           </div>
         </div>
 
         {/* AI Actions card */}
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-200">
-          <h3 className="text-sm font-semibold text-purple-800 mb-3 flex items-center gap-2">
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-200 dark:bg-none dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl">
+          <h3 className="text-sm font-semibold text-purple-800 mb-3 flex items-center gap-2 dark:text-signal-violet">
             <Brain size={16} /> AI-Powered Policy Tools
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <button onClick={() => setViewMode('ai-generate')}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors">
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors dark:bg-white/[0.04] dark:border-white/[0.08] dark:text-signal-body dark:hover:bg-white/[0.08]">
               <Sparkles size={16} /> AI Policy Generator
             </button>
             <button onClick={() => setViewMode('ai-nl-generate')}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors">
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors dark:bg-white/[0.04] dark:border-white/[0.08] dark:text-signal-body dark:hover:bg-white/[0.08]">
               <MessageSquare size={16} /> Plain English Policy
             </button>
             <button onClick={handleAIGapAnalysis}
               disabled={aiGapLoading}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors disabled:opacity-50 dark:bg-white/[0.04] dark:border-white/[0.08] dark:text-signal-body dark:hover:bg-white/[0.08]">
               {aiGapLoading ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />}
               Check Policy Coverage
             </button>
             <button onClick={() => setViewMode('templates')}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors">
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors dark:bg-white/[0.04] dark:border-white/[0.08] dark:text-signal-body dark:hover:bg-white/[0.08]">
               <BookOpen size={16} /> Template Library
             </button>
           </div>
@@ -607,13 +607,13 @@ ${policy.content.substring(0, 3000)}`;
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-signal-muted" />
           <input type="text" placeholder={`${t('common.search')}...`}
             value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500" />
+            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted dark:focus:ring-signal-green/40" />
         </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink">
           <option value="All">All Statuses</option>
           {['Draft', 'In_Review', 'Approved', 'Archived'].map(s => (
             <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -621,7 +621,7 @@ ${policy.content.substring(0, 3000)}`;
         </select>
         {categories.length > 0 && (
           <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink">
             <option value="All">All Categories</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -629,10 +629,10 @@ ${policy.content.substring(0, 3000)}`;
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+            <thead className="bg-gray-50 text-gray-600 dark:bg-white/[0.02] dark:text-signal-muted dark:font-mono dark:[&_th]:text-[11px] dark:[&_th]:uppercase dark:[&_th]:tracking-[0.12em] dark:[&_th]:font-normal">
               <tr>
                 <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('title')}>
                   <span className="flex items-center gap-1">Title <SortIcon field="title" /></span>
@@ -651,44 +651,44 @@ ${policy.content.substring(0, 3000)}`;
                 <th className="text-right px-4 py-3">{t('common.actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
               {sortedPolicies.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-gray-400">
+                <tr><td colSpan={7} className="text-center py-12 text-gray-400 dark:text-signal-muted">
                   {policies.length === 0 ? 'No policies yet. Create your first policy or generate one with AI.' : t('common.noResults')}
                 </td></tr>
               ) : sortedPolicies.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={p.id} className="hover:bg-gray-50 transition-colors dark:hover:bg-white/[0.04]">
                   <td className="px-4 py-3">
-                    <button onClick={() => openDetail(p)} className="text-brand-600 hover:underline font-medium text-left">
+                    <button onClick={() => openDetail(p)} className="text-brand-600 hover:underline font-medium text-left dark:text-signal-green">
                       {p.title}
                     </button>
-                    {p.policyNumber && <div className="text-xs text-gray-400">{p.policyNumber}</div>}
+                    {p.policyNumber && <div className="text-xs text-gray-400 dark:text-signal-muted">{p.policyNumber}</div>}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{p.category}</td>
-                  <td className="px-4 py-3 text-gray-600">{p.framework || '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-signal-body">{p.category}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-signal-body">{p.framework || '—'}</td>
                   <td className="px-4 py-3"><Badge text={STATUS_LABELS[p.status] || p.status} className={STATUS_COLORS[p.status] || ''} /></td>
-                  <td className="px-4 py-3 text-gray-500">v{p.version}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{new Date(p.updatedAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-signal-muted">v{p.version}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs dark:text-signal-muted">{new Date(p.updatedAt).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end space-x-1">
                       <button onClick={() => handleAIReview(p)}
-                        className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg" title="AI Review">
+                        className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg dark:text-signal-violet dark:hover:bg-white/[0.06]" title="AI Review">
                         <Brain size={16} />
                       </button>
                       <button onClick={() => openDetail(p)}
-                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title="View">
+                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg dark:text-signal-muted dark:hover:bg-white/[0.06]" title="View">
                         <Eye size={16} />
                       </button>
                       <button onClick={() => openEdit(p)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit">
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg dark:text-signal-blue dark:hover:bg-white/[0.06]" title="Edit">
                         <Edit3 size={16} />
                       </button>
                       <button onClick={() => handleDuplicate(p)}
-                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title="Duplicate">
+                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg dark:text-signal-muted dark:hover:bg-white/[0.06]" title="Duplicate">
                         <Copy size={16} />
                       </button>
                       <button onClick={() => handleArchivePolicy(p)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title="Archive">
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg dark:text-signal-bad dark:hover:bg-white/[0.06]" title="Archive">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -712,8 +712,8 @@ ${policy.content.substring(0, 3000)}`;
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{p.title}</h2>
-            <p className="text-sm text-gray-500">{p.category} &middot; v{p.version}
+            <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{p.title}</h2>
+            <p className="text-sm text-gray-500 dark:text-signal-muted">{p.category} &middot; v{p.version}
               {p.framework && <> &middot; {p.framework}</>}
             </p>
           </div>
@@ -726,67 +726,67 @@ ${policy.content.substring(0, 3000)}`;
         <div className="flex flex-wrap gap-2">
           {p.status === 'Draft' && (
             <button onClick={() => handleSubmitForReview(p)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2">
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2 dark:bg-signal-blue dark:text-signal-canvas dark:hover:bg-signal-blue/90">
               <Send size={14} /> Submit for Review
             </button>
           )}
           {p.status === 'In_Review' && (
             <button onClick={() => handleApprove(p)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2">
+              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90">
               <CheckCircle size={14} /> Approve
             </button>
           )}
           <button onClick={() => openEdit(p)}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2 dark:border-white/[0.10] dark:text-signal-body dark:hover:bg-white/[0.04]">
             <Edit3 size={14} /> {t('common.edit')}
           </button>
           <button onClick={() => handleDuplicate(p)}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2 dark:border-white/[0.10] dark:text-signal-body dark:hover:bg-white/[0.04]">
             <Copy size={14} /> Duplicate
           </button>
           <button onClick={() => handleArchivePolicy(p)}
-            className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50 flex items-center gap-2">
+            className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50 flex items-center gap-2 dark:border-signal-bad/30 dark:text-signal-bad dark:hover:bg-signal-bad/10">
             <Trash2 size={14} /> {t('common.archived')}
           </button>
         </div>
 
         {/* Metadata */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">{t('common.owner')}</div>
-            <div className="text-sm font-medium">{p.owner || 'Unassigned'}</div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <div className="text-xs text-gray-500 mb-1 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.12em]">{t('common.owner')}</div>
+            <div className="text-sm font-medium dark:text-signal-ink">{p.owner || 'Unassigned'}</div>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">Approver</div>
-            <div className="text-sm font-medium">{p.approver || 'None'}</div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <div className="text-xs text-gray-500 mb-1 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.12em]">Approver</div>
+            <div className="text-sm font-medium dark:text-signal-ink">{p.approver || 'None'}</div>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">{t('policies.effectiveDate')}</div>
-            <div className="text-sm font-medium">{p.effectiveDate ? new Date(p.effectiveDate).toLocaleDateString() : 'Not set'}</div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <div className="text-xs text-gray-500 mb-1 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.12em]">{t('policies.effectiveDate')}</div>
+            <div className="text-sm font-medium dark:text-signal-ink">{p.effectiveDate ? new Date(p.effectiveDate).toLocaleDateString() : 'Not set'}</div>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">{t('policies.reviewDate')}</div>
-            <div className="text-sm font-medium">{p.reviewDate ? new Date(p.reviewDate).toLocaleDateString() : 'Not set'}</div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+            <div className="text-xs text-gray-500 mb-1 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.12em]">{t('policies.reviewDate')}</div>
+            <div className="text-sm font-medium dark:text-signal-ink">{p.reviewDate ? new Date(p.reviewDate).toLocaleDateString() : 'Not set'}</div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Policy Content</h3>
-          <div className="prose prose-sm max-w-none">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4 dark:text-signal-ink">Policy Content</h3>
+          <div className="prose prose-sm max-w-none dark:prose-invert">
             <ReactMarkdown>{p.content}</ReactMarkdown>
           </div>
         </div>
 
         {/* AI Review action */}
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-200">
-          <h3 className="text-sm font-semibold text-purple-800 mb-3 flex items-center gap-2">
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-200 dark:bg-none dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl">
+          <h3 className="text-sm font-semibold text-purple-800 mb-3 flex items-center gap-2 dark:text-signal-violet">
             <Brain size={16} /> AI Policy Actions
           </h3>
           <div className="flex flex-wrap gap-3">
             <button onClick={() => handleAIReview(p)}
               disabled={aiReviewLoading}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 disabled:opacity-50 dark:bg-white/[0.04] dark:border-white/[0.08] dark:text-signal-body dark:hover:bg-white/[0.08]">
               {aiReviewLoading ? <Loader2 size={16} className="animate-spin" /> : <Brain size={16} />}
               AI Review Policy
             </button>
@@ -805,17 +805,17 @@ ${policy.content.substring(0, 3000)}`;
 
     return (
       <form onSubmit={isEdit ? handleUpdatePolicy : handleCreatePolicy} className="space-y-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-5">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-5 dark:bg-signal-panel2 dark:border-white/[0.08] dark:rounded-2xl dark:shadow-none">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-700">{isEdit ? t('policies.editPolicy') : t('policies.createPolicy')}</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-ink">{isEdit ? t('policies.editPolicy') : t('policies.createPolicy')}</h3>
             {!isEdit && (
               <div className="flex gap-2">
                 <button type="button" onClick={() => setViewMode('ai-generate')}
-                  className="px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-medium hover:bg-purple-100 flex items-center gap-1">
+                  className="px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-medium hover:bg-purple-100 flex items-center gap-1 dark:bg-white/[0.04] dark:text-signal-violet dark:border-white/[0.08] dark:hover:bg-white/[0.08]">
                   <Sparkles size={12} /> Generate with AI
                 </button>
                 <button type="button" onClick={() => setViewMode('ai-nl-generate')}
-                  className="px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-medium hover:bg-purple-100 flex items-center gap-1">
+                  className="px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-medium hover:bg-purple-100 flex items-center gap-1 dark:bg-white/[0.04] dark:text-signal-violet dark:border-white/[0.08] dark:hover:bg-white/[0.08]">
                   <MessageSquare size={12} /> Plain English
                 </button>
               </div>
@@ -824,62 +824,62 @@ ${policy.content.substring(0, 3000)}`;
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('policies.policyName')} *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">{t('policies.policyName')} *</label>
               <input required value={f.title || ''} onChange={e => setField('title', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:focus:ring-signal-green/40" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.category')} *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">{t('common.category')} *</label>
               <select value={f.category || ''} onChange={e => setField('category', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted">
                 {POLICY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Framework</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Framework</label>
               <input value={f.framework || ''} onChange={e => setField('framework', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted"
                 placeholder="e.g. SOC 2, ISO 27001, GDPR" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('policies.policyVersion')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">{t('policies.policyVersion')}</label>
               <input value={f.version || '1.0'} onChange={e => setField('version', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('policies.policyOwner')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">{t('policies.policyOwner')}</label>
               <input value={f.owner || ''} onChange={e => setField('owner', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('policies.reviewDate')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">{t('policies.reviewDate')}</label>
               <input type="date" value={f.reviewDate ? new Date(f.reviewDate).toISOString().split('T')[0] : ''}
                 onChange={e => setField('reviewDate', e.target.value ? new Date(e.target.value).toISOString() : undefined)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">{t('common.description')}</label>
             <textarea value={f.summary || ''} onChange={e => setField('summary', e.target.value)}
-              rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
+              rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted"
               placeholder="Brief summary of the policy..." />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Policy Content *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Policy Content *</label>
             <textarea required value={f.content || ''} onChange={e => setField('content', e.target.value)}
-              rows={16} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono resize-y"
+              rows={16} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono resize-y dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted"
               placeholder="# Policy Title&#10;&#10;## 1. Purpose&#10;...&#10;&#10;## 2. Scope&#10;..." />
-            <p className="text-xs text-gray-400 mt-1">Supports Markdown formatting. {(f.content || '').length.toLocaleString()} characters</p>
+            <p className="text-xs text-gray-400 mt-1 dark:text-signal-muted">Supports Markdown formatting. {(f.content || '').length.toLocaleString()} characters</p>
           </div>
         </div>
 
         <div className="flex items-center justify-end gap-3">
           <button type="button" onClick={() => setViewMode(isEdit ? 'detail' : 'list')}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">{t('common.cancel')}</button>
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:border-white/[0.10] dark:text-signal-body dark:hover:bg-white/[0.04]">{t('common.cancel')}</button>
           <button type="submit" disabled={isSaving || !f.title || !f.content}
-            className="px-6 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
+            className="px-6 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90">
             {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
             {isEdit ? t('common.save') : t('policies.createPolicy')}
           </button>
@@ -894,26 +894,26 @@ ${policy.content.substring(0, 3000)}`;
   const renderTemplates = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Policy Templates</h2>
-        <p className="text-sm text-gray-500 mt-1">Start from a pre-built template and customize for your organization.</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">Policy Templates</h2>
+        <p className="text-sm text-gray-500 mt-1 dark:text-signal-muted">Start from a pre-built template and customize for your organization.</p>
       </div>
       {Object.keys(templates).length === 0 ? (
-        <div className="text-center py-12 text-gray-400">No templates available.</div>
+        <div className="text-center py-12 text-gray-400 dark:text-signal-muted">No templates available.</div>
       ) : (
         Object.entries(templates).map(([category, tpls]) => (
           <div key={category}>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">{category}</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 dark:text-signal-ink">{category}</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {(tpls as PolicyTemplate[]).map((tpl, i) => (
-                <div key={i} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <div key={i} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-900">{tpl.title}</h4>
-                    <Badge text={tpl.category} className="bg-blue-50 text-blue-700 border-blue-200" />
+                    <h4 className="font-medium text-gray-900 dark:text-signal-ink">{tpl.title}</h4>
+                    <Badge text={tpl.category} className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-transparent" />
                   </div>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-3">{tpl.content.substring(0, 200)}...</p>
+                  <p className="text-sm text-gray-500 mb-4 line-clamp-3 dark:text-signal-body2">{tpl.content.substring(0, 200)}...</p>
                   <button onClick={() => applyTemplate(tpl)}
                     disabled={policyLimitReached}
-                    className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
+                    className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90">
                     <FileText size={14} /> Use Template
                   </button>
                 </div>
@@ -931,54 +931,54 @@ ${policy.content.substring(0, 3000)}`;
   const renderAIGenerate = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">AI Policy Generator</h2>
-        <p className="text-sm text-gray-500 mt-1">Generate a compliance policy using AI. Select type, company, and tone.</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">AI Policy Generator</h2>
+        <p className="text-sm text-gray-500 mt-1 dark:text-signal-muted">Generate a compliance policy using AI. Select type, company, and tone.</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4 h-fit">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4 h-fit dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.type')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">{t('common.type')}</label>
             <select value={aiGenType} onChange={e => setAiGenType(e.target.value)}
-              className="w-full p-2 border rounded-lg text-sm">
+              className="w-full p-2 border rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted">
               {POLICY_TYPES.map(pt => <option key={pt} value={pt}>{pt}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Company Name</label>
             <input value={aiGenCompany} onChange={e => setAiGenCompany(e.target.value)}
-              className="w-full p-2 border rounded-lg text-sm" placeholder="Your Company" />
+              className="w-full p-2 border rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted" placeholder="Your Company" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Tone</label>
             <select value={aiGenTone} onChange={e => setAiGenTone(e.target.value)}
-              className="w-full p-2 border rounded-lg text-sm">
+              className="w-full p-2 border rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted">
               <option>Strict</option>
               <option>Standard</option>
               <option>Employee-Friendly</option>
             </select>
           </div>
           <button onClick={handleAIGenerate} disabled={aiGenLoading}
-            className="w-full bg-brand-600 text-white py-2.5 rounded-lg hover:bg-brand-700 disabled:opacity-50 flex justify-center items-center gap-2 text-sm font-medium">
+            className="w-full bg-brand-600 text-white py-2.5 rounded-lg hover:bg-brand-700 disabled:opacity-50 flex justify-center items-center gap-2 text-sm font-medium dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90">
             {aiGenLoading ? <><Loader2 size={16} className="animate-spin" /> {t('common.loading')}</> : <><Sparkles size={16} /> {t('policies.generatePolicy')}</>}
           </button>
         </div>
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-y-auto max-h-[70vh]">
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-y-auto max-h-[70vh] dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
           {aiGenResult ? (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-gray-700 flex items-center gap-2"><Sparkles size={16} /> AI-Generated Policy</h3>
+                <h3 className="font-medium text-gray-700 flex items-center gap-2 dark:text-signal-ink"><Sparkles size={16} /> AI-Generated Policy</h3>
                 <button onClick={useAIGeneratedPolicy}
                   disabled={policyLimitReached}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 flex items-center gap-2 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90">
                   <FileText size={14} /> Use as New Policy
                 </button>
               </div>
-              <div className="prose prose-sm max-w-none">
+              <div className="prose prose-sm max-w-none dark:prose-invert">
                 <ReactMarkdown>{aiGenResult}</ReactMarkdown>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 py-12">
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 py-12 dark:text-signal-muted">
               <Sparkles size={48} className="mb-2" />
               <p>Configure options and generate to see your AI policy here.</p>
             </div>
@@ -994,30 +994,30 @@ ${policy.content.substring(0, 3000)}`;
   const renderAINLGenerate = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Describe a Policy in Plain English</h2>
-        <p className="text-sm text-gray-500 mt-1">Write a natural language description and AI will create a full structured policy.</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">Describe a Policy in Plain English</h2>
+        <p className="text-sm text-gray-500 mt-1 dark:text-signal-muted">Write a natural language description and AI will create a full structured policy.</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4 dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">{t('common.description')}</label>
               <textarea value={aiNLDescription} onChange={e => setAiNLDescription(e.target.value)}
-                rows={6} className="w-full p-3 border rounded-lg text-sm resize-none"
+                rows={6} className="w-full p-3 border rounded-lg text-sm resize-none dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted"
                 placeholder="e.g. We need a policy that requires all employees to use MFA, change passwords every 90 days, and report lost devices within 2 hours..." />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.category')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">{t('common.category')}</label>
                 <select value={aiNLCategory} onChange={e => setAiNLCategory(e.target.value)}
-                  className="w-full p-2 border rounded-lg text-sm">
+                  className="w-full p-2 border rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted">
                   {POLICY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-signal-body">Industry</label>
                 <select value={aiNLIndustry} onChange={e => setAiNLIndustry(e.target.value)}
-                  className="w-full p-2 border rounded-lg text-sm">
+                  className="w-full p-2 border rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:rounded-xl dark:text-signal-ink dark:placeholder-signal-muted">
                   {['Technology', 'Healthcare', 'Finance', 'Retail', 'Manufacturing', 'Education', 'Government', 'Other'].map(i => (
                     <option key={i} value={i}>{i}</option>
                   ))}
@@ -1025,49 +1025,49 @@ ${policy.content.substring(0, 3000)}`;
               </div>
             </div>
             <button onClick={handleAINLGenerate} disabled={aiNLLoading || !aiNLDescription.trim()}
-              className="w-full bg-brand-600 text-white py-2.5 rounded-lg hover:bg-brand-700 disabled:opacity-50 flex justify-center items-center gap-2 text-sm font-medium">
+              className="w-full bg-brand-600 text-white py-2.5 rounded-lg hover:bg-brand-700 disabled:opacity-50 flex justify-center items-center gap-2 text-sm font-medium dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90">
               {aiNLLoading ? <><Loader2 size={16} className="animate-spin" /> Generating...</> : <><MessageSquare size={16} /> Generate from Description</>}
             </button>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-y-auto max-h-[70vh]">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-y-auto max-h-[70vh] dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
           {aiNLResult ? (
             aiNLResult.error ? (
-              <div className="text-red-600"><AlertTriangle size={20} className="inline mr-2" />{aiNLResult.error}</div>
+              <div className="text-red-600 dark:text-signal-bad"><AlertTriangle size={20} className="inline mr-2" />{aiNLResult.error}</div>
             ) : (
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-medium text-gray-700">{aiNLResult.policy?.title || 'Generated Policy'}</h3>
+                    <h3 className="font-medium text-gray-700 dark:text-signal-ink">{aiNLResult.policy?.title || 'Generated Policy'}</h3>
                     {aiNLResult.confidence !== null && (
-                      <p className="text-xs text-gray-500 mt-1">Confidence: {Math.round(aiNLResult.confidence * 100)}%</p>
+                      <p className="text-xs text-gray-500 mt-1 dark:text-signal-muted">Confidence: {Math.round(aiNLResult.confidence * 100)}%</p>
                     )}
                   </div>
                   <button onClick={useNLGeneratedPolicy}
                     disabled={policyLimitReached || !aiNLResult.policy}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 flex items-center gap-2 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90">
                     <FileText size={14} /> Use as New Policy
                   </button>
                 </div>
                 {aiNLResult.frameworkMappings?.length > 0 && (
                   <div className="mb-4 flex flex-wrap gap-2">
                     {aiNLResult.frameworkMappings.map((m: any, i: number) => (
-                      <span key={i} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{m.framework || m}</span>
+                      <span key={i} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs dark:bg-signal-blue/10 dark:text-signal-blue">{m.framework || m}</span>
                     ))}
                   </div>
                 )}
                 {aiNLResult.suggestedReviewers?.length > 0 && (
-                  <div className="mb-4 text-xs text-gray-500">
+                  <div className="mb-4 text-xs text-gray-500 dark:text-signal-muted">
                     Suggested reviewers: {aiNLResult.suggestedReviewers.join(', ')}
                   </div>
                 )}
-                <div className="prose prose-sm max-w-none">
+                <div className="prose prose-sm max-w-none dark:prose-invert">
                   <ReactMarkdown>{aiNLResult.policy?.content || JSON.stringify(aiNLResult, null, 2)}</ReactMarkdown>
                 </div>
               </div>
             )
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 py-12">
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 py-12 dark:text-signal-muted">
               <MessageSquare size={48} className="mb-2" />
               <p className="text-center">Describe your policy requirements in plain English and AI will structure it for you.</p>
             </div>
@@ -1083,21 +1083,21 @@ ${policy.content.substring(0, 3000)}`;
   const renderAIReview = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">AI Policy Review</h2>
-        {selectedPolicy && <p className="text-sm text-gray-500 mt-1">Policy: {selectedPolicy.title}</p>}
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">AI Policy Review</h2>
+        {selectedPolicy && <p className="text-sm text-gray-500 mt-1 dark:text-signal-muted">Policy: {selectedPolicy.title}</p>}
       </div>
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px] dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
         {aiReviewLoading ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="animate-spin text-brand-600 mb-3" size={32} />
-            <p className="text-gray-500">AI is reviewing policy for completeness and compliance alignment...</p>
+            <Loader2 className="animate-spin text-brand-600 mb-3 dark:text-signal-green" size={32} />
+            <p className="text-gray-500 dark:text-signal-body">AI is reviewing policy for completeness and compliance alignment...</p>
           </div>
         ) : aiReviewResult ? (
-          <div className="prose prose-sm max-w-none">
+          <div className="prose prose-sm max-w-none dark:prose-invert">
             <ReactMarkdown>{aiReviewResult}</ReactMarkdown>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-signal-muted">
             <Brain size={48} className="mb-2" />
             <p>No review generated yet.</p>
           </div>
@@ -1112,21 +1112,21 @@ ${policy.content.substring(0, 3000)}`;
   const renderAIGap = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Policy Coverage Gap Analysis</h2>
-        <p className="text-sm text-gray-500 mt-1">AI compares your existing policy categories against required policy areas.</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">Policy Coverage Gap Analysis</h2>
+        <p className="text-sm text-gray-500 mt-1 dark:text-signal-muted">AI compares your existing policy categories against required policy areas.</p>
       </div>
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px] dark:bg-white/[0.03] dark:border-white/[0.06] dark:rounded-2xl dark:shadow-none">
         {aiGapLoading ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="animate-spin text-brand-600 mb-3" size={32} />
-            <p className="text-gray-500">Analyzing policy coverage gaps...</p>
+            <Loader2 className="animate-spin text-brand-600 mb-3 dark:text-signal-green" size={32} />
+            <p className="text-gray-500 dark:text-signal-body">Analyzing policy coverage gaps...</p>
           </div>
         ) : aiGapResult ? (
-          <div className="prose prose-sm max-w-none">
+          <div className="prose prose-sm max-w-none dark:prose-invert">
             <ReactMarkdown>{aiGapResult}</ReactMarkdown>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-signal-muted">
             <Shield size={48} className="mb-2" />
             <p>No gap analysis generated yet.</p>
           </div>
@@ -1160,10 +1160,10 @@ ${policy.content.substring(0, 3000)}`;
 
       {/* Error banner */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
-          <AlertTriangle className="text-red-600 mr-3 flex-shrink-0 mt-0.5" size={20} />
-          <p className="text-red-800 text-sm flex-1">{error}</p>
-          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800"><X size={18} /></button>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start dark:bg-signal-bad/10 dark:border-signal-bad/30">
+          <AlertTriangle className="text-red-600 mr-3 flex-shrink-0 mt-0.5 dark:text-signal-bad" size={20} />
+          <p className="text-red-800 text-sm flex-1 dark:text-signal-bad">{error}</p>
+          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800 dark:text-signal-bad dark:hover:text-signal-ink"><X size={18} /></button>
         </div>
       )}
 
@@ -1171,36 +1171,36 @@ ${policy.content.substring(0, 3000)}`;
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           {isSubView ? (
-            <button onClick={handleSubBack} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+            <button onClick={handleSubBack} className="p-2 hover:bg-gray-200 rounded-full transition-colors dark:text-signal-body dark:hover:bg-white/[0.06]">
               <ArrowLeft size={20} />
             </button>
           ) : (
-            <button onClick={onBack} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+            <button onClick={onBack} className="p-2 hover:bg-gray-200 rounded-full transition-colors dark:text-signal-body dark:hover:bg-white/[0.06]">
               <ArrowLeft size={20} />
             </button>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('policies.title')}</h1>
-            <p className="text-sm text-gray-500">{policies.length} polic{policies.length !== 1 ? 'ies' : 'y'}</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('policies.title')}</h1>
+            <p className="text-sm text-gray-500 dark:text-signal-muted">{policies.length} polic{policies.length !== 1 ? 'ies' : 'y'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {!isSubView && (
             <>
-              <div className="flex bg-gray-100 rounded-lg p-0.5">
+              <div className="flex bg-gray-100 rounded-lg p-0.5 dark:bg-white/[0.04]">
                 <button onClick={() => setViewMode('dashboard')}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'dashboard' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'dashboard' ? 'bg-white shadow text-gray-900 dark:bg-white/[0.08] dark:shadow-none dark:text-signal-ink' : 'text-gray-500 hover:text-gray-700 dark:text-signal-muted dark:hover:text-signal-body'}`}>
                   Dashboard
                 </button>
                 <button onClick={() => setViewMode('list')}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white shadow text-gray-900 dark:bg-white/[0.08] dark:shadow-none dark:text-signal-ink' : 'text-gray-500 hover:text-gray-700 dark:text-signal-muted dark:hover:text-signal-body'}`}>
                   Policies
                 </button>
               </div>
               <button onClick={openCreate}
                 disabled={policyLimitReached}
                 title={policyLimitReached ? getUpgradeMessage(plan, 'maxPolicies', policies.length) : undefined}
-                className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 shadow-md flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 shadow-md flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:shadow-none">
                 <Plus size={16} /> {t('policies.createPolicy')}
               </button>
             </>

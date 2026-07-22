@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Shield, CheckCircle, ArrowRight, Eye, EyeOff, Loader2, Mail,
-  Building2, Users, Target, Lock, Zap, Globe, Check, X,
+  ArrowRight, CheckCircle, Loader2, Eye, EyeOff, Check,
   Briefcase, GraduationCap, Heart, Landmark, Factory, ShoppingCart,
-  Plane, Building, CreditCard, Star
+  Plane, Building, Building2, CreditCard, Zap,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
-import { useI18n } from '../contexts/I18nContext';
+import { SignalPage, SignalLogo, OutlineCta } from './marketing/signal';
+
+// ---------------------------------------------------------------------------
+// Signal signup: split screen — value panel left, guided registration right.
+// The registration flow (4 steps → api.auth.register → magic-link verification
+// email → "Check your inbox") is unchanged; only the presentation is new.
+// ---------------------------------------------------------------------------
 
 interface FormData {
   email: string;
@@ -56,17 +61,27 @@ const primaryGoals = [
   { value: 'explore', label: 'Just Exploring', frameworks: [] },
 ];
 
-const features = [
-  { icon: Shield, text: 'SOC 2, ISO 27001, HIPAA & 50+ frameworks' },
-  { icon: Zap, text: 'AI-powered evidence collection' },
-  { icon: Users, text: 'Up to 10 users on free trial' },
-  { icon: Lock, text: 'Enterprise-grade security' },
-  { icon: Globe, text: 'No credit card required' },
+// Left value panel — copy from the Signal design handoff.
+const benefits = [
+  { title: 'Free trial, no credit card', desc: 'Connect a system and see controls populate in minutes.' },
+  { title: '14 frameworks, one platform', desc: 'SOC 2, ISO 27001, GDPR, EU AI Act and more.' },
+  { title: 'Audit-ready from day one', desc: 'Continuous evidence, not a final-quarter scramble.' },
 ];
 
+const stepLabels = ['Account', 'Profile', 'Company', 'Confirm'] as const;
+
+const inputClass =
+  'w-full rounded-xl border border-white/[0.12] bg-white/[0.04] px-4 py-3 text-[15px] text-signal-ink placeholder:text-signal-muted outline-none transition-colors focus:border-signal-green/60';
+
+const labelClass = 'mb-2 block text-[13px] font-semibold text-signal-body';
+
+const primaryButtonClass =
+  'flex items-center justify-center gap-2 rounded-xl bg-signal-green px-4 py-3.5 text-[15px] font-bold text-signal-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
+
+const backButtonClass =
+  'flex-1 rounded-xl border border-white/[0.16] px-4 py-3 text-[14px] font-semibold text-signal-sub transition-colors hover:border-white/[0.28] hover:text-signal-ink';
+
 export const SignupPage: React.FC = () => {
-  const { register } = useAuth();
-  const { t } = useI18n();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -74,7 +89,7 @@ export const SignupPage: React.FC = () => {
   const [verificationSent, setVerificationSent] = useState(false);
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [resendMessage, setResendMessage] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -164,10 +179,10 @@ export const SignupPage: React.FC = () => {
       setError('Please accept the terms of service and privacy policy');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       await api.auth.register(
         formData.fullName,
@@ -179,7 +194,7 @@ export const SignupPage: React.FC = () => {
         formData.primaryGoal,
         undefined // howDidYouHear - can be added later if needed
       );
-      
+
       setVerificationSent(true);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -203,567 +218,481 @@ export const SignupPage: React.FC = () => {
     }
   };
 
-  if (verificationSent) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Mail className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Check Your Email!</h1>
-          <p className="text-gray-600 mb-6">
-            We've sent a verification link to <span className="font-semibold text-gray-900">{formData.email}</span>.
-            Click the link in the email to activate your account and start your free trial.
-          </p>
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-left mb-6">
-            <h3 className="font-semibold text-blue-900 mb-2">What's next?</h3>
-            <ul className="text-sm text-blue-800 space-y-2">
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>Click the verification link in your email</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>Complete the onboarding wizard (5 minutes)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>Set up your first compliance framework</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>Connect integrations for automated evidence</span>
-              </li>
-            </ul>
-          </div>
-          <p className="text-sm text-gray-500">
-            Didn't receive the email?{' '}
-            <button
-              type="button"
-              onClick={handleResendVerification}
-              disabled={resendStatus === 'sending'}
-              className="text-brand-600 font-medium hover:underline disabled:opacity-50 disabled:no-underline"
-            >
-              {resendStatus === 'sending' ? 'Resending…' : 'Resend verification email'}
-            </button>
-          </p>
-          {resendMessage && (
-            <p className={`text-sm mt-2 ${resendStatus === 'error' ? 'text-red-600' : 'text-green-600'}`}>
-              {resendMessage}
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
+  const errorBlock = error && (
+    <p className="mb-4 rounded-xl border border-signal-bad/30 bg-signal-bad/10 px-4 py-3 text-[13px] text-signal-bad">
+      {error}
+    </p>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <a href="/" className="flex items-center space-x-2">
-              <div className="bg-brand-600 p-2 rounded-xl">
-                <Shield className="text-white w-6 h-6" />
-              </div>
-              <span className="font-bold text-xl text-white">ComplyEasy AI</span>
-            </a>
-            <div className="flex items-center space-x-4">
-              <span className="text-slate-400 text-sm hidden sm:block">{t('auth.alreadyHaveAccount')}</span>
-              <a 
-                href="/" 
-                className="text-brand-400 font-medium hover:text-brand-300 transition-colors"
-              >
-                {t('auth.login')}
-              </a>
+    <SignalPage>
+      <div className="grid min-h-screen lg:grid-cols-2">
+        {/* ===================== Left — value panel ===================== */}
+        <div className="relative flex flex-col justify-between gap-10 overflow-hidden bg-[radial-gradient(700px_500px_at_30%_20%,rgba(56,232,166,.16),transparent_60%),linear-gradient(160deg,#0A0E15,#07090D)] p-8 md:p-12">
+          <Link to="/" aria-label="ComplyEasyAI home">
+            <SignalLogo />
+          </Link>
+
+          <div>
+            <h2 className="max-w-[420px] font-display text-[30px] font-bold leading-[1.1] tracking-[-0.02em] text-signal-ink md:text-[34px]">
+              Compliance that runs itself starts here.
+            </h2>
+            <div className="mt-8 flex flex-col gap-4">
+              {benefits.map((b) => (
+                <div key={b.title} className="flex items-start gap-3">
+                  <Check size={16} className="mt-0.5 flex-none text-signal-green" aria-hidden="true" />
+                  <div>
+                    <div className="text-[15px] font-semibold text-signal-ink">{b.title}</div>
+                    <div className="text-[13.5px] text-signal-sub">{b.desc}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
+
+          <div className="font-mono text-[11px] tracking-[0.1em] text-signal-muted">
+            SOC 2 · ISO 27001 · GDPR · HIPAA · EU AI Act · DORA
+          </div>
         </div>
-      </header>
 
-      <div className="flex min-h-screen">
-        {/* Left Side - Form */}
-        <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-          <div className="w-full max-w-lg">
-            {/* Progress Indicator */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-2">
-                {[1, 2, 3, 4].map((s) => (
-                  <div key={s} className="flex items-center">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                      s < step ? 'bg-green-500 text-white' :
-                      s === step ? 'bg-brand-600 text-white' :
-                      'bg-slate-700 text-slate-400'
-                    }`}>
-                      {s < step ? <Check className="w-5 h-5" /> : s}
-                    </div>
-                    {s < 4 && (
-                      <div className={`w-12 sm:w-20 h-1 mx-2 rounded transition-all ${
-                        s < step ? 'bg-green-500' : 'bg-slate-700'
-                      }`} />
-                    )}
+        {/* ===================== Right — signup form ===================== */}
+        <div className="flex items-center justify-center p-8 md:p-12">
+          <div className="w-full max-w-[440px]">
+            {verificationSent ? (
+              <div className="text-center">
+                <div className="mx-auto mb-[22px] flex h-16 w-16 items-center justify-center rounded-full bg-signal-green/[0.14]">
+                  <span className="text-[28px] text-signal-green" aria-hidden="true">
+                    ✦
+                  </span>
+                </div>
+                <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-signal-ink">
+                  Check your inbox
+                </h1>
+                <p className="mt-3.5 text-[15px] leading-relaxed text-signal-sub">
+                  We sent a secure sign-in link to{' '}
+                  <strong className="font-semibold text-signal-ink">{formData.email}</strong>. Click it to
+                  finish creating your workspace — no password needed.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerificationSent(false);
+                    setStep(1);
+                    setResendStatus('idle');
+                    setResendMessage(null);
+                  }}
+                  className="mx-auto mt-[26px] inline-flex items-center justify-center rounded-[11px] border border-white/20 px-5 py-3 text-sm font-medium text-signal-ink transition-colors hover:border-white/[0.32] hover:bg-white/[0.04]"
+                >
+                  Use a different email
+                </button>
+                <p className="mt-5 text-[12.5px] text-signal-muted">
+                  Didn&rsquo;t get it? Check spam, or{' '}
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendStatus === 'sending'}
+                    className="text-signal-green hover:opacity-85 disabled:opacity-50"
+                  >
+                    {resendStatus === 'sending' ? 'resending…' : 'resend'}
+                  </button>
+                  .
+                </p>
+                {resendMessage && (
+                  <p
+                    className={`mt-2 text-[12.5px] ${
+                      resendStatus === 'error' ? 'text-signal-bad' : 'text-signal-green'
+                    }`}
+                  >
+                    {resendMessage}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <h1 className="font-display text-[30px] font-bold tracking-[-0.02em] text-signal-ink">
+                  Start free
+                </h1>
+                <p className="mt-2.5 text-[15px] text-signal-sub">
+                  Enter your work email and we&rsquo;ll send a magic link to get you in.
+                </p>
+
+                {/* Step indicator */}
+                <div className="mt-7">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-signal-green">
+                    Step {step} of 4 — {stepLabels[step - 1]}
+                  </span>
+                  <div className="mt-2.5 flex gap-1.5" aria-hidden="true">
+                    {[1, 2, 3, 4].map((s) => (
+                      <div
+                        key={s}
+                        className={`h-1 flex-1 rounded-full ${s <= step ? 'bg-signal-green' : 'bg-white/10'}`}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-between text-xs text-slate-400">
-                <span>Account</span>
-                <span>Profile</span>
-                <span>Company</span>
-                <span>Confirm</span>
-              </div>
-            </div>
+                </div>
 
-            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl p-8">
-              {/* Step 1: Account Credentials */}
-              {step === 1 && (
-                <form onSubmit={handleStep1Submit}>
-                  <h2 className="text-2xl font-bold text-white mb-2">{t('auth.createAccount')}</h2>
-                  <p className="text-slate-400 mb-6">Start your 3-day free trial. No credit card required.</p>
-
-                  {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-center gap-3 text-red-400">
-                      <X className="w-5 h-5 flex-shrink-0" />
-                      <span className="text-sm">{error}</span>
-                    </div>
+                <div className="mt-6">
+                  {/* ---------------- Step 1: Account ---------------- */}
+                  {step === 1 && (
+                    <form onSubmit={handleStep1Submit} noValidate>
+                      {errorBlock}
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="signup-email" className={labelClass}>
+                            Work email
+                          </label>
+                          <input
+                            id="signup-email"
+                            type="email"
+                            autoComplete="email"
+                            value={formData.email}
+                            onChange={(e) => updateField('email', e.target.value)}
+                            placeholder="you@company.com"
+                            className={inputClass}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="signup-password" className={labelClass}>
+                            Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              id="signup-password"
+                              type={showPassword ? 'text' : 'password'}
+                              autoComplete="new-password"
+                              value={formData.password}
+                              onChange={(e) => updateField('password', e.target.value)}
+                              placeholder="Create a strong password"
+                              className={`${inputClass} pr-12`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              aria-label={showPassword ? 'Hide password' : 'Show password'}
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-signal-muted hover:text-signal-sub"
+                            >
+                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            {[
+                              { key: 'length', label: '12+ characters' },
+                              { key: 'uppercase', label: 'Uppercase letter' },
+                              { key: 'lowercase', label: 'Lowercase letter' },
+                              { key: 'number', label: 'Number' },
+                              { key: 'special', label: 'Special character' },
+                            ].map((req) => (
+                              <div
+                                key={req.key}
+                                className={`flex items-center gap-2 text-xs ${
+                                  passwordChecks[req.key as keyof typeof passwordChecks]
+                                    ? 'text-signal-green'
+                                    : 'text-signal-muted'
+                                }`}
+                              >
+                                {passwordChecks[req.key as keyof typeof passwordChecks] ? (
+                                  <CheckCircle size={14} aria-hidden="true" />
+                                ) : (
+                                  <span className="h-3.5 w-3.5 rounded-full border border-white/[0.16]" aria-hidden="true" />
+                                )}
+                                {req.label}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label htmlFor="signup-confirm" className={labelClass}>
+                            Confirm password
+                          </label>
+                          <input
+                            id="signup-confirm"
+                            type="password"
+                            autoComplete="new-password"
+                            value={formData.confirmPassword}
+                            onChange={(e) => updateField('confirmPassword', e.target.value)}
+                            placeholder="Confirm your password"
+                            className={inputClass}
+                          />
+                          {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                            <p className="mt-2 text-xs text-signal-bad">Passwords do not match</p>
+                          )}
+                        </div>
+                      </div>
+                      <button type="submit" className={`mt-6 w-full ${primaryButtonClass}`}>
+                        Continue <ArrowRight size={16} aria-hidden="true" />
+                      </button>
+                    </form>
                   )}
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        {t('auth.email')}
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => updateField('email', e.target.value)}
-                        placeholder="you@company.com"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        {t('auth.password')}
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          value={formData.password}
-                          onChange={(e) => updateField('password', e.target.value)}
-                          placeholder="Create a strong password"
-                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all pr-12"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {/* ---------------- Step 2: Profile ---------------- */}
+                  {step === 2 && (
+                    <form onSubmit={handleStep2Submit} noValidate>
+                      {errorBlock}
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="signup-name" className={labelClass}>
+                            Full name
+                          </label>
+                          <input
+                            id="signup-name"
+                            type="text"
+                            autoComplete="name"
+                            value={formData.fullName}
+                            onChange={(e) => updateField('fullName', e.target.value)}
+                            placeholder="John Smith"
+                            className={inputClass}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="signup-org" className={labelClass}>
+                            Organization name
+                          </label>
+                          <input
+                            id="signup-org"
+                            type="text"
+                            autoComplete="organization"
+                            value={formData.organizationName}
+                            onChange={(e) => updateField('organizationName', e.target.value)}
+                            placeholder="Acme Inc."
+                            className={inputClass}
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-6 flex gap-3">
+                        <button type="button" onClick={() => setStep(1)} className={backButtonClass}>
+                          Back
+                        </button>
+                        <button type="submit" className={`flex-1 ${primaryButtonClass}`}>
+                          Continue <ArrowRight size={16} aria-hidden="true" />
                         </button>
                       </div>
-                      
-                      {/* Password Requirements */}
-                      <div className="mt-3 grid grid-cols-2 gap-2">
+                    </form>
+                  )}
+
+                  {/* ---------------- Step 3: Company ---------------- */}
+                  {step === 3 && (
+                    <form onSubmit={handleStep3Submit} noValidate>
+                      {errorBlock}
+                      <div className="space-y-6">
+                        <div>
+                          <span className={labelClass}>Industry</span>
+                          <div className="grid grid-cols-3 gap-2">
+                            {industries.map((ind) => {
+                              const Icon = ind.icon;
+                              const active = formData.industry === ind.value;
+                              return (
+                                <button
+                                  key={ind.value}
+                                  type="button"
+                                  onClick={() => updateField('industry', ind.value)}
+                                  className={`rounded-xl border p-3 text-center transition-colors ${
+                                    active
+                                      ? 'border-signal-green/60 bg-signal-green/10 text-signal-green'
+                                      : 'border-white/[0.12] text-signal-sub hover:border-white/[0.24]'
+                                  }`}
+                                >
+                                  <Icon size={18} className="mx-auto mb-1" aria-hidden="true" />
+                                  <span className="text-xs">{ind.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div>
+                          <span className={labelClass}>Company size</span>
+                          <div className="grid grid-cols-2 gap-2">
+                            {companySizes.map((size) => {
+                              const active = formData.companySize === size.value;
+                              return (
+                                <button
+                                  key={size.value}
+                                  type="button"
+                                  onClick={() => updateField('companySize', size.value)}
+                                  className={`rounded-xl border p-3 text-left transition-colors ${
+                                    active
+                                      ? 'border-signal-green/60 bg-signal-green/10'
+                                      : 'border-white/[0.12] hover:border-white/[0.24]'
+                                  }`}
+                                >
+                                  <div
+                                    className={`text-sm font-medium ${
+                                      active ? 'text-signal-green' : 'text-signal-ink'
+                                    }`}
+                                  >
+                                    {size.label}
+                                  </div>
+                                  <div className="text-xs text-signal-muted">{size.description}</div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div>
+                          <span className={labelClass}>Primary compliance goal</span>
+                          <div className="space-y-2">
+                            {primaryGoals.map((goal) => {
+                              const active = formData.primaryGoal === goal.value;
+                              return (
+                                <button
+                                  key={goal.value}
+                                  type="button"
+                                  onClick={() => updateField('primaryGoal', goal.value)}
+                                  className={`flex w-full items-center justify-between rounded-xl border p-3.5 text-left transition-colors ${
+                                    active
+                                      ? 'border-signal-green/60 bg-signal-green/10'
+                                      : 'border-white/[0.12] hover:border-white/[0.24]'
+                                  }`}
+                                >
+                                  <div>
+                                    <div
+                                      className={`text-sm font-medium ${
+                                        active ? 'text-signal-green' : 'text-signal-ink'
+                                      }`}
+                                    >
+                                      {goal.label}
+                                    </div>
+                                    {goal.frameworks.length > 0 && (
+                                      <div className="mt-0.5 text-xs text-signal-muted">
+                                        {goal.frameworks.join(', ')}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {active && (
+                                    <CheckCircle size={18} className="flex-none text-signal-green" aria-hidden="true" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-6 flex gap-3">
+                        <button type="button" onClick={() => setStep(2)} className={backButtonClass}>
+                          Back
+                        </button>
+                        <button type="submit" className={`flex-1 ${primaryButtonClass}`}>
+                          Continue <ArrowRight size={16} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* ---------------- Step 4: Confirm ---------------- */}
+                  {step === 4 && (
+                    <form onSubmit={handleFinalSubmit} noValidate>
+                      {errorBlock}
+                      <div className="space-y-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 text-sm">
                         {[
-                          { key: 'length', label: '12+ characters' },
-                          { key: 'uppercase', label: 'Uppercase letter' },
-                          { key: 'lowercase', label: 'Lowercase letter' },
-                          { key: 'number', label: 'Number' },
-                          { key: 'special', label: 'Special character' },
-                        ].map((req) => (
-                          <div 
-                            key={req.key}
-                            className={`flex items-center gap-2 text-xs ${
-                              passwordChecks[req.key as keyof typeof passwordChecks] 
-                                ? 'text-green-400' 
-                                : 'text-slate-500'
-                            }`}
-                          >
-                            {passwordChecks[req.key as keyof typeof passwordChecks] ? (
-                              <CheckCircle className="w-3.5 h-3.5" />
-                            ) : (
-                              <div className="w-3.5 h-3.5 rounded-full border border-slate-600" />
-                            )}
-                            {req.label}
+                          ['Email', formData.email],
+                          ['Name', formData.fullName],
+                          ['Organization', formData.organizationName],
+                          ['Industry', industries.find((i) => i.value === formData.industry)?.label ?? ''],
+                          ['Company size', companySizes.find((s) => s.value === formData.companySize)?.label ?? ''],
+                          ['Primary goal', primaryGoals.find((g) => g.value === formData.primaryGoal)?.label ?? ''],
+                        ].map(([k, v]) => (
+                          <div key={k} className="flex justify-between gap-4">
+                            <span className="text-signal-muted">{k}</span>
+                            <span className="text-right text-signal-ink">{v}</span>
                           </div>
                         ))}
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        {t('auth.confirmPassword')}
-                      </label>
-                      <input
-                        type="password"
-                        value={formData.confirmPassword}
-                        onChange={(e) => updateField('confirmPassword', e.target.value)}
-                        placeholder="Confirm your password"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
-                        required
-                      />
-                      {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                        <p className="mt-2 text-xs text-red-400">Passwords do not match</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full mt-6 bg-brand-600 hover:bg-brand-700 text-white py-3 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all"
-                  >
-                    Continue
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
-
-                  <div className="mt-6 pt-6 border-t border-slate-700">
-                    <p className="text-xs text-slate-400 text-center">
-                      {t('auth.termsAgreement')}
-                    </p>
-                  </div>
-                </form>
-              )}
-
-              {/* Step 2: Personal Info */}
-              {step === 2 && (
-                <form onSubmit={handleStep2Submit}>
-                  <h2 className="text-2xl font-bold text-white mb-2">Tell Us About Yourself</h2>
-                  <p className="text-slate-400 mb-6">Help us personalize your experience.</p>
-
-                  {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-center gap-3 text-red-400">
-                      <X className="w-5 h-5 flex-shrink-0" />
-                      <span className="text-sm">{error}</span>
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        {t('auth.fullName')}
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.fullName}
-                        onChange={(e) => updateField('fullName', e.target.value)}
-                        placeholder="John Smith"
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        {t('auth.organizationName')}
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.organizationName}
-                        onChange={(e) => updateField('organizationName', e.target.value)}
-                        placeholder="Acme Inc."
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="flex-1 border border-slate-600 text-slate-300 py-3 px-6 rounded-xl font-semibold hover:bg-slate-700/50 transition-all"
-                    >
-                      {t('common.back')}
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all"
-                    >
-                      Continue
-                      <ArrowRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Step 3: Company Details */}
-              {step === 3 && (
-                <form onSubmit={handleStep3Submit}>
-                  <h2 className="text-2xl font-bold text-white mb-2">About Your Organization</h2>
-                  <p className="text-slate-400 mb-6">Help us recommend the right frameworks.</p>
-
-                  {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-center gap-3 text-red-400">
-                      <X className="w-5 h-5 flex-shrink-0" />
-                      <span className="text-sm">{error}</span>
-                    </div>
-                  )}
-
-                  <div className="space-y-6">
-                    {/* Industry Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-3">
-                        Industry
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {industries.map((ind) => {
-                          const Icon = ind.icon;
-                          return (
-                            <button
-                              key={ind.value}
-                              type="button"
-                              onClick={() => updateField('industry', ind.value)}
-                              className={`p-3 rounded-xl border transition-all text-center ${
-                                formData.industry === ind.value
-                                  ? 'border-brand-500 bg-brand-500/10 text-brand-400'
-                                  : 'border-slate-600 text-slate-400 hover:border-slate-500'
-                              }`}
-                            >
-                              <Icon className="w-5 h-5 mx-auto mb-1" />
-                              <span className="text-xs">{ind.label}</span>
-                            </button>
-                          );
-                        })}
+                      <div className="mt-4 rounded-2xl border border-signal-green/30 bg-signal-green/[0.06] p-4">
+                        <div className="text-sm font-semibold text-signal-ink">3-day free trial</div>
+                        <ul className="mt-2 space-y-1.5 text-[13px] text-signal-body">
+                          {[
+                            'Full access to Foundation tier features',
+                            'Up to 3 compliance frameworks',
+                            'Up to 10 team members',
+                            'No credit card required',
+                          ].map((line) => (
+                            <li key={line} className="flex items-center gap-2">
+                              <Check size={14} className="flex-none text-signal-green" aria-hidden="true" />
+                              {line}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                    </div>
 
-                    {/* Company Size */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-3">
-                        Company Size
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {companySizes.map((size) => (
-                          <button
-                            key={size.value}
-                            type="button"
-                            onClick={() => updateField('companySize', size.value)}
-                            className={`p-3 rounded-xl border transition-all text-left ${
-                              formData.companySize === size.value
-                                ? 'border-brand-500 bg-brand-500/10'
-                                : 'border-slate-600 hover:border-slate-500'
-                            }`}
-                          >
-                            <div className={`font-medium ${formData.companySize === size.value ? 'text-brand-400' : 'text-white'}`}>
-                              {size.label}
-                            </div>
-                            <div className="text-xs text-slate-500">{size.description}</div>
-                          </button>
-                        ))}
+                      <div className="mt-5 space-y-3">
+                        <label className="flex cursor-pointer items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={formData.acceptTerms}
+                            onChange={(e) => updateField('acceptTerms', e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/[0.04] accent-[#38E8A6]"
+                          />
+                          <span className="text-[13px] text-signal-body">
+                            I agree to the{' '}
+                            <a href="/terms" className="text-signal-green hover:opacity-85">
+                              Terms of Service
+                            </a>{' '}
+                            and{' '}
+                            <a href="/privacy" className="text-signal-green hover:opacity-85">
+                              Privacy Policy
+                            </a>{' '}
+                            *
+                          </span>
+                        </label>
+                        <label className="flex cursor-pointer items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={formData.acceptMarketing}
+                            onChange={(e) => updateField('acceptMarketing', e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/[0.04] accent-[#38E8A6]"
+                          />
+                          <span className="text-[13px] text-signal-body">
+                            Send me product updates, compliance tips, and special offers (optional)
+                          </span>
+                        </label>
                       </div>
-                    </div>
 
-                    {/* Primary Goal */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-3">
-                        Primary Compliance Goal
-                      </label>
-                      <div className="space-y-2">
-                        {primaryGoals.map((goal) => (
-                          <button
-                            key={goal.value}
-                            type="button"
-                            onClick={() => updateField('primaryGoal', goal.value)}
-                            className={`w-full p-4 rounded-xl border transition-all text-left flex items-center justify-between ${
-                              formData.primaryGoal === goal.value
-                                ? 'border-brand-500 bg-brand-500/10'
-                                : 'border-slate-600 hover:border-slate-500'
-                            }`}
-                          >
-                            <div>
-                              <div className={`font-medium ${formData.primaryGoal === goal.value ? 'text-brand-400' : 'text-white'}`}>
-                                {goal.label}
-                              </div>
-                              {goal.frameworks.length > 0 && (
-                                <div className="text-xs text-slate-500 mt-1">
-                                  {goal.frameworks.join(', ')}
-                                </div>
-                              )}
-                            </div>
-                            {formData.primaryGoal === goal.value && (
-                              <CheckCircle className="w-5 h-5 text-brand-400" />
-                            )}
-                          </button>
-                        ))}
+                      <div className="mt-6 flex gap-3">
+                        <button type="button" onClick={() => setStep(3)} className={backButtonClass}>
+                          Back
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading || !formData.acceptTerms}
+                          className={`flex-1 ${primaryButtonClass}`}
+                        >
+                          {loading ? (
+                            <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                          ) : (
+                            <>
+                              Email me a magic link <ArrowRight size={16} aria-hidden="true" />
+                            </>
+                          )}
+                        </button>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setStep(2)}
-                      className="flex-1 border border-slate-600 text-slate-300 py-3 px-6 rounded-xl font-semibold hover:bg-slate-700/50 transition-all"
-                    >
-                      {t('common.back')}
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all"
-                    >
-                      Continue
-                      <ArrowRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Step 4: Review & Confirm */}
-              {step === 4 && (
-                <form onSubmit={handleFinalSubmit}>
-                  <h2 className="text-2xl font-bold text-white mb-2">Review & Start Trial</h2>
-                  <p className="text-slate-400 mb-6">Confirm your details and start your free trial.</p>
-
-                  {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-center gap-3 text-red-400">
-                      <X className="w-5 h-5 flex-shrink-0" />
-                      <span className="text-sm">{error}</span>
-                    </div>
+                    </form>
                   )}
+                </div>
 
-                  {/* Summary */}
-                  <div className="bg-slate-900/50 rounded-xl p-4 mb-6 space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">{t('auth.email')}</span>
-                      <span className="text-white">{formData.email}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">{t('common.name')}</span>
-                      <span className="text-white">{formData.fullName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">{t('auth.organizationName')}</span>
-                      <span className="text-white">{formData.organizationName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Industry</span>
-                      <span className="text-white">{industries.find(i => i.value === formData.industry)?.label}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Company Size</span>
-                      <span className="text-white">{companySizes.find(s => s.value === formData.companySize)?.label}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Primary Goal</span>
-                      <span className="text-white">{primaryGoals.find(g => g.value === formData.primaryGoal)?.label}</span>
-                    </div>
-                  </div>
+                <div className="my-6 flex items-center gap-3.5" aria-hidden="true">
+                  <div className="h-px flex-1 bg-white/10" />
+                  <span className="text-xs text-signal-muted">or</span>
+                  <div className="h-px flex-1 bg-white/10" />
+                </div>
 
-                  {/* Trial Details */}
-                  <div className="bg-gradient-to-r from-brand-600/20 to-purple-600/20 rounded-xl p-4 mb-6 border border-brand-500/30">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Star className="w-6 h-6 text-yellow-400" />
-                      <span className="font-semibold text-white">3-Day Free Trial</span>
-                    </div>
-                    <ul className="text-sm text-slate-300 space-y-2">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                        Full access to Foundation tier features
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                        Up to 3 compliance frameworks
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                        Up to 10 team members
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                        No credit card required
-                      </li>
-                    </ul>
-                  </div>
+                <OutlineCta to="/demo" className="w-full">
+                  Book a guided demo instead
+                </OutlineCta>
 
-                  {/* Agreements */}
-                  <div className="space-y-3 mb-6">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.acceptTerms}
-                        onChange={(e) => updateField('acceptTerms', e.target.checked)}
-                        className="mt-1 w-5 h-5 rounded border-slate-600 bg-slate-900/50 text-brand-600 focus:ring-brand-500"
-                      />
-                      <span className="text-sm text-slate-300">
-                        I agree to the{' '}
-                        <a href="/terms" className="text-brand-400 hover:underline">Terms of Service</a>
-                        {' '}and{' '}
-                        <a href="/privacy" className="text-brand-400 hover:underline">Privacy Policy</a>
-                        {' '}*
-                      </span>
-                    </label>
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.acceptMarketing}
-                        onChange={(e) => updateField('acceptMarketing', e.target.checked)}
-                        className="mt-1 w-5 h-5 rounded border-slate-600 bg-slate-900/50 text-brand-600 focus:ring-brand-500"
-                      />
-                      <span className="text-sm text-slate-300">
-                        Send me product updates, compliance tips, and special offers (optional)
-                      </span>
-                    </label>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setStep(3)}
-                      className="flex-1 border border-slate-600 text-slate-300 py-3 px-6 rounded-xl font-semibold hover:bg-slate-700/50 transition-all"
-                    >
-                      {t('common.back')}
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading || !formData.acceptTerms}
-                      className="flex-1 bg-brand-600 hover:bg-brand-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white py-3 px-6 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all"
-                    >
-                      {loading ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <>
-                          Start Free Trial
-                          <ArrowRight className="w-5 h-5" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side - Features */}
-        <div className="hidden lg:flex flex-1 items-center justify-center bg-gradient-to-br from-brand-600 to-purple-700 p-12">
-          <div className="max-w-md text-white">
-            <h2 className="text-3xl font-bold mb-6">Start Your Compliance Journey</h2>
-            <p className="text-brand-100 mb-8 text-lg">
-              Join 500+ organizations using ComplyEasyAI to achieve compliance faster, 
-              automate evidence collection, and reduce audit preparation time by 95%.
-            </p>
-            
-            <div className="space-y-4">
-              {features.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <div key={index} className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                      <Icon className="w-6 h-6" />
-                    </div>
-                    <span className="text-lg">{feature.text}</span>
-                  </div>
-                );
-              })}
-            </div>
-
+                <p className="mt-[22px] text-center text-[12.5px] leading-relaxed text-signal-muted">
+                  By continuing you agree to our Terms and Privacy Policy.
+                  <br />
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-signal-green hover:opacity-85">
+                    Sign in
+                  </Link>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
+    </SignalPage>
   );
 };
 

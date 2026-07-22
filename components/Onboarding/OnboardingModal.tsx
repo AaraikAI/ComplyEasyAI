@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { OnboardingStepper } from './OnboardingProgress';
 
 export interface OnboardingModalProps {
   title: string;
@@ -11,6 +12,12 @@ export interface OnboardingModalProps {
   showCloseButton?: boolean;
   reducedMotion?: boolean;
   children?: React.ReactNode;
+  /** Mono uppercase label rendered above the title (e.g. the flow name). */
+  kicker?: string;
+  /** Titles of the flow's steps; when provided, a left step rail is rendered. */
+  steps?: string[];
+  /** Index of the active step within `steps`. */
+  stepIndex?: number;
 }
 
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({
@@ -23,8 +30,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   showCloseButton = true,
   reducedMotion = false,
   children,
+  kicker,
+  steps,
+  stepIndex = 0,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const hasStepper = Boolean(steps && steps.length > 0);
 
   useEffect(() => {
     const node = modalRef.current;
@@ -83,7 +94,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className={`relative w-full max-w-lg bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl overflow-hidden max-h-[calc(100vh-6rem)] overflow-y-auto ${
+        className={`relative w-full ${hasStepper ? 'max-w-2xl' : 'max-w-lg'} bg-signal-panel2 border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden max-h-[calc(100vh-6rem)] overflow-y-auto ${
           reducedMotion ? '' : 'animate-onboarding-modal-in'
         }`}
       >
@@ -91,53 +102,69 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         {showCloseButton && onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors z-10"
+            className="absolute top-4 right-4 p-1.5 text-signal-muted hover:text-signal-ink hover:bg-white/[0.06] rounded-lg transition-colors z-10"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
         )}
 
-        {/* Content */}
-        <div className="p-8 text-center">
-          {/* Icon */}
-          {icon && (
-            <div className="mb-6 flex justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
-                {icon}
-              </div>
-            </div>
+        <div className="flex flex-col md:flex-row">
+          {/* Left step rail */}
+          {hasStepper && (
+            <aside className="hidden md:flex w-56 shrink-0 flex-col border-r border-white/[0.08] bg-signal-panel p-5">
+              <OnboardingStepper steps={steps as string[]} currentIndex={stepIndex} reducedMotion={reducedMotion} />
+            </aside>
           )}
 
-          {/* Title */}
-          <h2 className="text-2xl font-bold text-white mb-3">{title}</h2>
-
-          {/* Description */}
-          <p className="text-slate-300 text-base leading-relaxed mb-6 max-w-md mx-auto">
-            {description}
-          </p>
-
-          {/* Custom children */}
-          {children}
-
-          {/* Actions */}
-          <div className="flex items-center justify-center gap-3 mt-6">
-            {secondaryAction && (
-              <button
-                onClick={secondaryAction.onClick}
-                className="px-5 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl transition-colors"
-              >
-                {secondaryAction.label}
-              </button>
+          {/* Content */}
+          <div className="flex-1 p-8 text-center">
+            {/* Icon */}
+            {icon && (
+              <div className="mb-6 flex justify-center">
+                <div className="w-16 h-16 rounded-2xl bg-signal-green/10 border border-signal-green/25 flex items-center justify-center text-signal-green">
+                  {icon}
+                </div>
+              </div>
             )}
-            {primaryAction && (
-              <button
-                onClick={primaryAction.onClick}
-                className="px-6 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-xl transition-colors shadow-lg shadow-brand-600/20"
-              >
-                {primaryAction.label}
-              </button>
+
+            {/* Kicker */}
+            {kicker && (
+              <p className="mb-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-signal-green">
+                {kicker}
+              </p>
             )}
+
+            {/* Title */}
+            <h2 className="font-display text-2xl font-bold tracking-tight text-signal-ink mb-3">{title}</h2>
+
+            {/* Description */}
+            <p className="text-signal-body text-base leading-relaxed mb-6 max-w-md mx-auto">
+              {description}
+            </p>
+
+            {/* Custom children */}
+            {children}
+
+            {/* Actions */}
+            <div className="flex items-center justify-center gap-3 mt-6">
+              {secondaryAction && (
+                <button
+                  onClick={secondaryAction.onClick}
+                  className="px-5 py-2.5 text-sm font-medium text-signal-sub hover:text-signal-ink hover:bg-white/[0.06] border border-white/[0.10] rounded-xl transition-colors"
+                >
+                  {secondaryAction.label}
+                </button>
+              )}
+              {primaryAction && (
+                <button
+                  onClick={primaryAction.onClick}
+                  className="px-6 py-2.5 text-sm font-semibold text-signal-canvas bg-signal-green rounded-xl transition-all shadow-[0_6px_24px_rgba(56,232,166,0.28)] hover:opacity-90"
+                >
+                  {primaryAction.label}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
