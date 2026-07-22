@@ -64,14 +64,14 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.9.2",
+    "@types/node": "^26.1.1",
     "@typescript-eslint/eslint-plugin": "^8.62.0",
     "@typescript-eslint/parser": "^8.18.0",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.9",
     "@vitest/ui": "^4.0.15",
     "autoprefixer": "^10.5.0",
-    "eslint": "^9.17.0",
+    "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "identity-obj-proxy": "^3.0.0",
@@ -85,6 +85,6 @@
     "ts-jest": "^29.4.11",
     "typescript": "~5.9.3",
     "vite": "^8.0.16",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.10"
   }
 }
