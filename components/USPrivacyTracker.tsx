@@ -300,20 +300,20 @@ const STATE_GRID: { code: string; name: string; row: number; col: number }[] = [
 // ── Helper Functions ─────────────────────────────────────────────────────
 
 const complianceColor = (l: ComplianceLevel): string => {
-  switch (l) { case 'compliant': return 'bg-green-100 text-green-800'; case 'partial': return 'bg-yellow-100 text-yellow-800'; case 'non_compliant': return 'bg-red-100 text-red-800'; case 'not_assessed': return 'bg-gray-100 text-gray-600'; case 'not_applicable': return 'bg-blue-50 text-blue-600'; }
+  switch (l) { case 'compliant': return 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good'; case 'partial': return 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn'; case 'non_compliant': return 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad'; case 'not_assessed': return 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-signal-muted'; case 'not_applicable': return 'bg-blue-50 text-blue-600 dark:bg-signal-blue/10 dark:text-signal-blue'; }
 };
 
 const stateMapColor = (stateCode: string, laws: StatePrivacyLaw[]): string => {
   const law = laws.find(l => l.stateCode === stateCode);
-  if (!law) return 'bg-gray-100 text-gray-500 border-gray-200';
-  if (law.status === 'effective') return 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200';
-  if (law.status === 'enacted') return 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200';
-  if (law.status === 'proposed') return 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200';
-  return 'bg-gray-100 text-gray-500 border-gray-200';
+  if (!law) return 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-white/[0.03] dark:text-signal-muted dark:border-white/[0.06]';
+  if (law.status === 'effective') return 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/30 dark:hover:bg-signal-good/20';
+  if (law.status === 'enacted') return 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/30 dark:hover:bg-signal-blue/20';
+  if (law.status === 'proposed') return 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/30 dark:hover:bg-signal-warn/20';
+  return 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-white/[0.03] dark:text-signal-muted dark:border-white/[0.06]';
 };
 
 const gapStatusColor = (s: string): string => {
-  switch (s) { case 'met': return 'bg-green-100 text-green-800'; case 'partial': return 'bg-yellow-100 text-yellow-800'; case 'not_met': return 'bg-red-100 text-red-800'; default: return 'bg-gray-100 text-gray-600'; }
+  switch (s) { case 'met': return 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good'; case 'partial': return 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn'; case 'not_met': return 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad'; default: return 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-signal-muted'; }
 };
 
 const formatDate = (d: string): string => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -429,8 +429,8 @@ export const USPrivacyTracker: React.FC = () => {
   ];
 
   const renderScoreBar = (score: number) => (
-    <div className="w-full bg-gray-200 rounded-full h-2.5">
-      <div className={`h-2.5 rounded-full ${score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${score}%` }} />
+    <div className="w-full bg-gray-200 dark:bg-white/[0.08] rounded-full h-2.5">
+      <div className={`h-2.5 rounded-full ${score >= 80 ? 'bg-green-500 dark:bg-signal-good' : score >= 50 ? 'bg-yellow-500 dark:bg-signal-warn' : 'bg-red-500 dark:bg-signal-bad'}`} style={{ width: `${score}%` }} />
     </div>
   );
 
@@ -439,64 +439,64 @@ export const USPrivacyTracker: React.FC = () => {
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">State Laws Tracked</p><p className="text-2xl font-bold text-gray-900 mt-1">{laws.length}</p></div>
-            <Flag className="w-8 h-8 text-blue-600" />
+            <div><p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">State Laws Tracked</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{laws.length}</p></div>
+            <Flag className="w-8 h-8 text-blue-600 dark:text-signal-blue" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{effectiveLaws.length} currently effective</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{effectiveLaws.length} currently effective</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Compliance Rate</p><p className="text-2xl font-bold text-gray-900 mt-1">{overallComplianceRate}%</p></div>
-            <Shield className="w-8 h-8 text-green-600" />
+            <div><p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Compliance Rate</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{overallComplianceRate}%</p></div>
+            <Shield className="w-8 h-8 text-green-600 dark:text-signal-good" />
           </div>
           <div className="mt-2">{renderScoreBar(overallComplianceRate)}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Open Gaps</p><p className="text-2xl font-bold text-gray-900 mt-1">{gaps.filter(g => g.currentStatus !== 'met').length}</p></div>
-            <AlertCircle className="w-8 h-8 text-orange-600" />
+            <div><p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Open Gaps</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{gaps.filter(g => g.currentStatus !== 'met').length}</p></div>
+            <AlertCircle className="w-8 h-8 text-orange-600 dark:text-signal-amber" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{gaps.filter(g => g.priority === 'high' && g.currentStatus !== 'met').length} high priority</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{gaps.filter(g => g.priority === 'high' && g.currentStatus !== 'met').length} high priority</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Pending Tasks</p><p className="text-2xl font-bold text-gray-900 mt-1">{tasks.filter(tk => !tk.completed).length}</p></div>
-            <Clock className="w-8 h-8 text-purple-600" />
+            <div><p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Pending Tasks</p><p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{tasks.filter(tk => !tk.completed).length}</p></div>
+            <Clock className="w-8 h-8 text-purple-600 dark:text-signal-violet" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{tasks.filter(tk => tk.completed).length}/{tasks.length} completed</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-2">{tasks.filter(tk => tk.completed).length}/{tasks.length} completed</p>
         </div>
       </div>
 
       {/* Private Right of Action Alert */}
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <h4 className="font-semibold text-red-800 flex items-center gap-2 mb-2"><Gavel className="w-5 h-5" /> States with Private Right of Action</h4>
+      <div className="bg-red-50 dark:bg-signal-bad/[0.06] border border-red-200 dark:border-signal-bad/20 rounded-lg dark:rounded-2xl p-4">
+        <h4 className="font-semibold text-red-800 dark:text-signal-bad flex items-center gap-2 mb-2"><Gavel className="w-5 h-5" /> States with Private Right of Action</h4>
         <div className="flex flex-wrap gap-2">
           {laws.filter(l => l.privateRightOfAction).map(l => (
-            <span key={l.id} className="px-3 py-1 bg-white border border-red-200 rounded-full text-sm text-red-800 font-medium">{l.stateCode}: {l.lawAbbreviation}</span>
+            <span key={l.id} className="px-3 py-1 bg-white dark:bg-signal-bad/10 border border-red-200 dark:border-signal-bad/20 rounded-full text-sm text-red-800 dark:text-signal-bad font-medium">{l.stateCode}: {l.lawAbbreviation}</span>
           ))}
         </div>
-        <p className="text-sm text-red-700 mt-2">These states allow consumers to sue directly for violations. Heightened compliance priority recommended.</p>
+        <p className="text-sm text-red-700 dark:text-signal-body mt-2">These states allow consumers to sue directly for violations. Heightened compliance priority recommended.</p>
       </div>
 
       {/* Upcoming Effective Dates */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Effective Date Timeline</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-4">Effective Date Timeline</h3>
         <div className="space-y-2">
           {laws.sort((a, b) => new Date(a.effectiveDate).getTime() - new Date(b.effectiveDate).getTime()).map(law => {
             const isEffective = new Date(law.effectiveDate) <= new Date();
             return (
-              <div key={law.id} className={`flex items-center gap-4 p-3 rounded-lg border ${isEffective ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-                {isEffective ? <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" /> : <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0" />}
+              <div key={law.id} className={`flex items-center gap-4 p-3 rounded-lg border ${isEffective ? 'bg-green-50 border-green-200 dark:bg-signal-good/[0.06] dark:border-signal-good/20' : 'bg-yellow-50 border-yellow-200 dark:bg-signal-warn/[0.06] dark:border-signal-warn/20'}`}>
+                {isEffective ? <CheckCircle className="w-5 h-5 text-green-600 dark:text-signal-good flex-shrink-0" /> : <Clock className="w-5 h-5 text-yellow-600 dark:text-signal-warn flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-gray-900">{law.stateCode}</span>
-                    <span className="text-sm text-gray-700">{law.lawAbbreviation}</span>
+                    <span className="font-bold text-gray-900 dark:text-signal-ink">{law.stateCode}</span>
+                    <span className="text-sm text-gray-700 dark:text-signal-body">{law.lawAbbreviation}</span>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${complianceColor(law.complianceLevel)}`}>{law.complianceLevel.replace('_', ' ').toUpperCase()}</span>
                   </div>
                 </div>
-                <span className="text-sm text-gray-600 whitespace-nowrap">{formatDate(law.effectiveDate)}</span>
+                <span className="text-sm text-gray-600 dark:text-signal-muted whitespace-nowrap">{formatDate(law.effectiveDate)}</span>
               </div>
             );
           })}
@@ -505,31 +505,31 @@ export const USPrivacyTracker: React.FC = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-3">Cure Periods by State</h3>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3">Cure Periods by State</h3>
           <div className="space-y-2">
             {laws.filter(l => l.curePeriod !== null).sort((a, b) => (b.curePeriod || 0) - (a.curePeriod || 0)).map(l => (
-              <div key={l.id} className="flex justify-between text-sm"><span className="text-gray-600">{l.stateCode}</span><span className="font-medium">{l.curePeriod} days</span></div>
+              <div key={l.id} className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-muted">{l.stateCode}</span><span className="font-medium dark:text-signal-body">{l.curePeriod} days</span></div>
             ))}
-            <div className="border-t border-gray-100 pt-2 mt-2"><p className="text-xs text-gray-500">{laws.filter(l => l.curePeriod === null).length} states have no cure period</p></div>
+            <div className="border-t border-gray-100 dark:border-white/[0.06] pt-2 mt-2"><p className="text-xs text-gray-500 dark:text-signal-muted">{laws.filter(l => l.curePeriod === null).length} states have no cure period</p></div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-3">Max Penalties by State</h3>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3">Max Penalties by State</h3>
           <div className="space-y-2">
             {laws.sort((a, b) => b.penalties.maxPerViolation - a.penalties.maxPerViolation).slice(0, 8).map(l => (
-              <div key={l.id} className="flex justify-between text-sm"><span className="text-gray-600">{l.stateCode}</span><span className="font-medium">${l.penalties.maxPerViolation.toLocaleString()}/violation</span></div>
+              <div key={l.id} className="flex justify-between text-sm"><span className="text-gray-600 dark:text-signal-muted">{l.stateCode}</span><span className="font-medium dark:text-signal-body">${l.penalties.maxPerViolation.toLocaleString()}/violation</span></div>
             ))}
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-3">Universal Opt-Out Required</h3>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3">Universal Opt-Out Required</h3>
           <div className="flex flex-wrap gap-1">
             {laws.filter(l => l.optOutMechanisms.some(m => m.toLowerCase().includes('universal') || m.toLowerCase().includes('gpc'))).map(l => (
-              <span key={l.id} className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">{l.stateCode}</span>
+              <span key={l.id} className="px-2 py-1 bg-purple-50 text-purple-700 dark:bg-signal-violet/10 dark:text-signal-violet rounded text-xs font-medium">{l.stateCode}</span>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-3">These states require recognition of Global Privacy Control (GPC) signals or universal opt-out mechanisms.</p>
+          <p className="text-xs text-gray-500 dark:text-signal-muted mt-3">These states require recognition of Global Privacy Control (GPC) signals or universal opt-out mechanisms.</p>
         </div>
       </div>
     </div>
@@ -539,14 +539,14 @@ export const USPrivacyTracker: React.FC = () => {
 
   const renderMap = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">US State Privacy Law Map</h3>
-        <p className="text-sm text-gray-600 mb-4">Click a state to view law details. Color indicates: green = effective, blue = enacted (not yet effective), gray = no comprehensive privacy law.</p>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-2">US State Privacy Law Map</h3>
+        <p className="text-sm text-gray-600 dark:text-signal-body mb-4">Click a state to view law details. Color indicates: green = effective, blue = enacted (not yet effective), gray = no comprehensive privacy law.</p>
 
-        <div className="flex flex-wrap gap-4 mb-4 text-xs">
-          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-green-200 border border-green-400" /> Effective</span>
-          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-blue-200 border border-blue-400" /> Enacted (Not Yet Effective)</span>
-          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-gray-100 border border-gray-300" /> No Comprehensive Law</span>
+        <div className="flex flex-wrap gap-4 mb-4 text-xs dark:text-signal-body">
+          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-green-200 border border-green-400 dark:bg-signal-good/20 dark:border-signal-good/40" /> Effective</span>
+          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-blue-200 border border-blue-400 dark:bg-signal-blue/20 dark:border-signal-blue/40" /> Enacted (Not Yet Effective)</span>
+          <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-gray-100 border border-gray-300 dark:bg-white/[0.06] dark:border-white/[0.10]" /> No Comprehensive Law</span>
         </div>
 
         {/* State Grid */}
@@ -572,52 +572,52 @@ export const USPrivacyTracker: React.FC = () => {
       </div>
 
       {/* State List with Search */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-6">
         <div className="flex gap-3 mb-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-signal-muted" />
             <input type="text" placeholder="Search state or law..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg dark:rounded-xl focus:ring-2 focus:ring-blue-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/40" />
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as LawStatus | 'all')}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            className="px-3 py-2 border border-gray-300 rounded-lg dark:rounded-xl text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink">
             <option value="all">All Statuses</option>
             <option value="effective">Effective</option>
             <option value="enacted">Enacted</option>
           </select>
         </div>
 
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-white/[0.06]">
           {filteredLaws.map(law => (
             <div key={law.id}>
-              <div className="py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 px-2 rounded"
+              <div className="py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.04] px-2 rounded"
                 onClick={() => setExpandedState(expandedState === law.stateCode ? null : law.stateCode)}>
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-gray-900 w-8">{law.stateCode}</span>
+                  <span className="font-bold text-gray-900 dark:text-signal-ink w-8">{law.stateCode}</span>
                   <div>
-                    <p className="font-medium text-gray-900">{law.lawAbbreviation}</p>
-                    <p className="text-xs text-gray-500">{law.stateName}</p>
+                    <p className="font-medium text-gray-900 dark:text-signal-ink">{law.lawAbbreviation}</p>
+                    <p className="text-xs text-gray-500 dark:text-signal-muted">{law.stateName}</p>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${law.status === 'effective' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>{law.status.toUpperCase()}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${law.status === 'effective' ? 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good' : 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue'}`}>{law.status.toUpperCase()}</span>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${complianceColor(law.complianceLevel)}`}>{law.complianceLevel.replace('_', ' ').toUpperCase()}</span>
-                  {law.privateRightOfAction && <span className="px-2 py-0.5 bg-red-50 text-red-700 rounded text-xs"><Gavel className="w-3 h-3 inline" /> PRA</span>}
+                  {law.privateRightOfAction && <span className="px-2 py-0.5 bg-red-50 text-red-700 dark:bg-signal-bad/10 dark:text-signal-bad rounded text-xs"><Gavel className="w-3 h-3 inline" /> PRA</span>}
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500">{formatDate(law.effectiveDate)}</span>
-                  {expandedState === law.stateCode ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  <span className="text-sm text-gray-500 dark:text-signal-muted">{formatDate(law.effectiveDate)}</span>
+                  {expandedState === law.stateCode ? <ChevronUp className="w-4 h-4 text-gray-400 dark:text-signal-muted" /> : <ChevronDown className="w-4 h-4 text-gray-400 dark:text-signal-muted" />}
                 </div>
               </div>
               {expandedState === law.stateCode && (
                 <div className="pl-11 pb-4 pr-2">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
-                    <div><span className="text-gray-500 text-xs">Enforcement</span><p className="text-gray-900 text-xs">{law.enforcementAgency}</p></div>
-                    <div><span className="text-gray-500 text-xs">Cure Period</span><p className="text-gray-900">{law.curePeriod ? `${law.curePeriod} days` : 'None'}</p></div>
-                    <div><span className="text-gray-500 text-xs">Max Penalty</span><p className="text-gray-900">${law.penalties.maxPerViolation.toLocaleString()}/violation</p></div>
-                    <div><span className="text-gray-500 text-xs">Private Action</span><p className="text-gray-900">{law.privateRightOfAction ? 'Yes' : 'No'}</p></div>
+                    <div><span className="text-gray-500 dark:text-signal-muted text-xs">Enforcement</span><p className="text-gray-900 dark:text-signal-body text-xs">{law.enforcementAgency}</p></div>
+                    <div><span className="text-gray-500 dark:text-signal-muted text-xs">Cure Period</span><p className="text-gray-900 dark:text-signal-body">{law.curePeriod ? `${law.curePeriod} days` : 'None'}</p></div>
+                    <div><span className="text-gray-500 dark:text-signal-muted text-xs">Max Penalty</span><p className="text-gray-900 dark:text-signal-body">${law.penalties.maxPerViolation.toLocaleString()}/violation</p></div>
+                    <div><span className="text-gray-500 dark:text-signal-muted text-xs">Private Action</span><p className="text-gray-900 dark:text-signal-body">{law.privateRightOfAction ? 'Yes' : 'No'}</p></div>
                   </div>
-                  <div className="mb-2"><span className="text-xs text-gray-500">Consumer Rights:</span><div className="flex flex-wrap gap-1 mt-1">{law.consumerRights.filter(r => r.available).map(r => <span key={r.name} className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs">{r.name}</span>)}</div></div>
-                  <div><span className="text-xs text-gray-500">Key Provisions:</span><div className="flex flex-wrap gap-1 mt-1">{law.keyProvisions.map((p, i) => <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">{p}</span>)}</div></div>
-                  <button onClick={() => { setSelectedLaw(law); setShowDetailModal(true); }} className="mt-2 text-blue-600 hover:text-blue-800 text-xs font-medium">View full details</button>
+                  <div className="mb-2"><span className="text-xs text-gray-500 dark:text-signal-muted">Consumer Rights:</span><div className="flex flex-wrap gap-1 mt-1">{law.consumerRights.filter(r => r.available).map(r => <span key={r.name} className="px-2 py-0.5 bg-green-50 text-green-700 dark:bg-signal-good/10 dark:text-signal-good rounded text-xs">{r.name}</span>)}</div></div>
+                  <div><span className="text-xs text-gray-500 dark:text-signal-muted">Key Provisions:</span><div className="flex flex-wrap gap-1 mt-1">{law.keyProvisions.map((p, i) => <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-700 dark:bg-white/[0.06] dark:text-signal-body rounded text-xs">{p}</span>)}</div></div>
+                  <button onClick={() => { setSelectedLaw(law); setShowDetailModal(true); }} className="mt-2 text-blue-600 hover:text-blue-800 dark:text-signal-green dark:hover:text-signal-green/80 text-xs font-medium">View full details</button>
                 </div>
               )}
             </div>
@@ -631,13 +631,13 @@ export const USPrivacyTracker: React.FC = () => {
 
   const renderComparison = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Side-by-Side Comparison</h3>
-        <p className="text-sm text-gray-600 mb-4">Select up to 5 states to compare their privacy laws.</p>
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink mb-2">Side-by-Side Comparison</h3>
+        <p className="text-sm text-gray-600 dark:text-signal-body mb-4">Select up to 5 states to compare their privacy laws.</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {laws.map(l => (
             <button key={l.id} onClick={() => handleToggleCompare(l.stateCode)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${compareStates.includes(l.stateCode) ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${compareStates.includes(l.stateCode) ? 'bg-indigo-600 text-white dark:bg-signal-green dark:text-signal-canvas' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]'}`}>
               {l.stateCode}
             </button>
           ))}
@@ -645,29 +645,29 @@ export const USPrivacyTracker: React.FC = () => {
       </div>
 
       {comparedLaws.length >= 2 && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 sticky left-0 bg-gray-50 min-w-[180px]">Feature</th>
-                {comparedLaws.map(l => <th key={l.id} className="text-center text-xs font-medium text-gray-900 px-4 py-3 min-w-[150px]">{l.stateCode}<br /><span className="text-gray-500 font-normal">{l.lawAbbreviation}</span></th>)}
+              <tr className="border-b border-gray-200 dark:border-white/[0.06] bg-gray-50 dark:bg-white/[0.02]">
+                <th className="text-left text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.12em] px-4 py-3 sticky left-0 bg-gray-50 dark:bg-signal-panel2 min-w-[180px]">Feature</th>
+                {comparedLaws.map(l => <th key={l.id} className="text-center text-xs font-medium text-gray-900 dark:text-signal-ink px-4 py-3 min-w-[150px]">{l.stateCode}<br /><span className="text-gray-500 dark:text-signal-muted font-normal">{l.lawAbbreviation}</span></th>)}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-white">Effective Date</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-sm text-center">{formatDate(l.effectiveDate)}</td>)}</tr>
-              <tr className="bg-gray-50"><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-gray-50">Enforcement</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-xs text-center">{l.enforcementAgency}</td>)}</tr>
-              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-white">Private Right of Action</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.privateRightOfAction ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-red-400 mx-auto" />}</td>)}</tr>
-              <tr className="bg-gray-50"><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-gray-50">Cure Period</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-sm text-center">{l.curePeriod ? `${l.curePeriod} days` : 'None'}</td>)}</tr>
-              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-white">Max Penalty</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-sm text-center font-medium">${l.penalties.maxPerViolation.toLocaleString()}</td>)}</tr>
-              <tr className="bg-gray-50"><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-gray-50">Consumer Threshold</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-xs text-center">{l.thresholds.consumers || 'None'}</td>)}</tr>
-              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-white">Revenue Threshold</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-xs text-center">{l.thresholds.revenue || 'None'}</td>)}</tr>
-              <tr className="bg-gray-50"><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-gray-50">Right to Know/Access</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Access') || r.name.includes('Know'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-red-400 mx-auto" />}</td>)}</tr>
-              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-white">Right to Delete</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Delete'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-red-400 mx-auto" />}</td>)}</tr>
-              <tr className="bg-gray-50"><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-gray-50">Right to Correct</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Correct'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-red-400 mx-auto" />}</td>)}</tr>
-              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-white">Right to Opt-Out</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Opt-Out'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-red-400 mx-auto" />}</td>)}</tr>
-              <tr className="bg-gray-50"><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-gray-50">Data Portability</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Portability'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-red-400 mx-auto" />}</td>)}</tr>
-              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-white">Universal Opt-Out (GPC)</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.optOutMechanisms.some(m => m.toLowerCase().includes('universal') || m.toLowerCase().includes('gpc')) ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-gray-400 mx-auto" />}</td>)}</tr>
-              <tr className="bg-gray-50"><td className="px-4 py-2 text-sm font-medium text-gray-700 sticky left-0 bg-gray-50">Compliance Status</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center"><span className={`px-2 py-0.5 rounded text-xs font-medium ${complianceColor(l.complianceLevel)}`}>{l.complianceLevel.replace('_', ' ').toUpperCase()}</span></td>)}</tr>
+            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
+              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-white dark:bg-signal-panel2">Effective Date</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-sm text-center dark:text-signal-body">{formatDate(l.effectiveDate)}</td>)}</tr>
+              <tr className="bg-gray-50 dark:bg-white/[0.02]"><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-gray-50 dark:bg-signal-panel2">Enforcement</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-xs text-center dark:text-signal-body">{l.enforcementAgency}</td>)}</tr>
+              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-white dark:bg-signal-panel2">Private Right of Action</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.privateRightOfAction ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-red-400 dark:text-signal-bad mx-auto" />}</td>)}</tr>
+              <tr className="bg-gray-50 dark:bg-white/[0.02]"><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-gray-50 dark:bg-signal-panel2">Cure Period</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-sm text-center dark:text-signal-body">{l.curePeriod ? `${l.curePeriod} days` : 'None'}</td>)}</tr>
+              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-white dark:bg-signal-panel2">Max Penalty</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-sm text-center font-medium dark:text-signal-ink">${l.penalties.maxPerViolation.toLocaleString()}</td>)}</tr>
+              <tr className="bg-gray-50 dark:bg-white/[0.02]"><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-gray-50 dark:bg-signal-panel2">Consumer Threshold</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-xs text-center dark:text-signal-body">{l.thresholds.consumers || 'None'}</td>)}</tr>
+              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-white dark:bg-signal-panel2">Revenue Threshold</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-xs text-center dark:text-signal-body">{l.thresholds.revenue || 'None'}</td>)}</tr>
+              <tr className="bg-gray-50 dark:bg-white/[0.02]"><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-gray-50 dark:bg-signal-panel2">Right to Know/Access</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Access') || r.name.includes('Know'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-red-400 dark:text-signal-bad mx-auto" />}</td>)}</tr>
+              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-white dark:bg-signal-panel2">Right to Delete</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Delete'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-red-400 dark:text-signal-bad mx-auto" />}</td>)}</tr>
+              <tr className="bg-gray-50 dark:bg-white/[0.02]"><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-gray-50 dark:bg-signal-panel2">Right to Correct</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Correct'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-red-400 dark:text-signal-bad mx-auto" />}</td>)}</tr>
+              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-white dark:bg-signal-panel2">Right to Opt-Out</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Opt-Out'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-red-400 dark:text-signal-bad mx-auto" />}</td>)}</tr>
+              <tr className="bg-gray-50 dark:bg-white/[0.02]"><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-gray-50 dark:bg-signal-panel2">Data Portability</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.consumerRights.find(r => r.name.includes('Portability'))?.available ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-red-400 dark:text-signal-bad mx-auto" />}</td>)}</tr>
+              <tr><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-white dark:bg-signal-panel2">Universal Opt-Out (GPC)</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center">{l.optOutMechanisms.some(m => m.toLowerCase().includes('universal') || m.toLowerCase().includes('gpc')) ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mx-auto" /> : <X className="w-4 h-4 text-gray-400 dark:text-signal-muted mx-auto" />}</td>)}</tr>
+              <tr className="bg-gray-50 dark:bg-white/[0.02]"><td className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body sticky left-0 bg-gray-50 dark:bg-signal-panel2">Compliance Status</td>{comparedLaws.map(l => <td key={l.id} className="px-4 py-2 text-center"><span className={`px-2 py-0.5 rounded text-xs font-medium ${complianceColor(l.complianceLevel)}`}>{l.complianceLevel.replace('_', ' ').toUpperCase()}</span></td>)}</tr>
             </tbody>
           </table>
         </div>
@@ -680,34 +680,34 @@ export const USPrivacyTracker: React.FC = () => {
   const renderGapAnalysis = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-green-700">{gaps.filter(g => g.currentStatus === 'met').length}</p><p className="text-sm text-gray-500">Requirements Met</p>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4 text-center">
+          <p className="text-2xl font-bold text-green-700 dark:text-signal-good dark:font-display">{gaps.filter(g => g.currentStatus === 'met').length}</p><p className="text-sm text-gray-500 dark:text-signal-muted">Requirements Met</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-yellow-700">{gaps.filter(g => g.currentStatus === 'partial').length}</p><p className="text-sm text-gray-500">Partially Met</p>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4 text-center">
+          <p className="text-2xl font-bold text-yellow-700 dark:text-signal-warn dark:font-display">{gaps.filter(g => g.currentStatus === 'partial').length}</p><p className="text-sm text-gray-500 dark:text-signal-muted">Partially Met</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-red-700">{gaps.filter(g => g.currentStatus === 'not_met').length}</p><p className="text-sm text-gray-500">Not Met</p>
+        <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4 text-center">
+          <p className="text-2xl font-bold text-red-700 dark:text-signal-bad dark:font-display">{gaps.filter(g => g.currentStatus === 'not_met').length}</p><p className="text-sm text-gray-500 dark:text-signal-muted">Not Met</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b border-gray-200"><h4 className="font-semibold text-gray-900">Multi-State Compliance Gap Analysis</h4></div>
-        <div className="divide-y divide-gray-100">
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06]">
+        <div className="p-4 border-b border-gray-200 dark:border-white/[0.06]"><h4 className="font-semibold text-gray-900 dark:text-signal-ink">Multi-State Compliance Gap Analysis</h4></div>
+        <div className="divide-y divide-gray-100 dark:divide-white/[0.06]">
           {gaps.sort((a, b) => (a.currentStatus === 'not_met' ? -1 : 0) - (b.currentStatus === 'not_met' ? -1 : 0)).map((gap, idx) => (
-            <div key={idx} className="p-4 hover:bg-gray-50">
+            <div key={idx} className="p-4 hover:bg-gray-50 dark:hover:bg-white/[0.04]">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${gapStatusColor(gap.currentStatus)}`}>{gap.currentStatus.replace('_', ' ').toUpperCase()}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${gap.priority === 'high' ? 'bg-red-100 text-red-800' : gap.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>{gap.priority.toUpperCase()}</span>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{gap.category}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${gap.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad' : gap.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-signal-muted'}`}>{gap.priority.toUpperCase()}</span>
+                  <span className="text-xs text-gray-500 bg-gray-100 dark:text-signal-muted dark:bg-white/[0.06] px-2 py-0.5 rounded">{gap.category}</span>
                 </div>
               </div>
-              <p className="font-medium text-gray-900 text-sm">{gap.requirement}</p>
-              <p className="text-xs text-gray-600 mt-1">{gap.effort}</p>
+              <p className="font-medium text-gray-900 dark:text-signal-ink text-sm">{gap.requirement}</p>
+              <p className="text-xs text-gray-600 dark:text-signal-muted mt-1">{gap.effort}</p>
               <div className="flex flex-wrap gap-1 mt-2">
-                <span className="text-xs text-gray-500 mr-1">Required by:</span>
-                {gap.statesRequiring.map(s => <span key={s} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">{s}</span>)}
+                <span className="text-xs text-gray-500 dark:text-signal-muted mr-1">Required by:</span>
+                {gap.statesRequiring.map(s => <span key={s} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-signal-blue/10 dark:text-signal-blue rounded text-xs">{s}</span>)}
               </div>
             </div>
           ))}
@@ -721,35 +721,35 @@ export const USPrivacyTracker: React.FC = () => {
   const renderTracker = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Multi-State Compliance Checklist</h3>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">Multi-State Compliance Checklist</h3>
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-signal-muted">
           <span>{tasks.filter(tk => tk.completed).length}/{tasks.length} completed</span>
           <div className="w-32">{renderScoreBar(Math.round((tasks.filter(tk => tk.completed).length / tasks.length) * 100))}</div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="divide-y divide-gray-100">
+      <div className="bg-white dark:bg-white/[0.03] rounded-lg dark:rounded-2xl border border-gray-200 dark:border-white/[0.06]">
+        <div className="divide-y divide-gray-100 dark:divide-white/[0.06]">
           {tasks.sort((a, b) => {
             if (a.completed !== b.completed) return a.completed ? 1 : -1;
             const pOrder = { high: 0, medium: 1, low: 2 };
             return pOrder[a.priority] - pOrder[b.priority];
           }).map(task => (
-            <div key={task.id} className="p-4 hover:bg-gray-50">
+            <div key={task.id} className="p-4 hover:bg-gray-50 dark:hover:bg-white/[0.04]">
               <div className="flex items-start gap-3">
                 <input type="checkbox" checked={task.completed} onChange={() => handleToggleTask(task.id)}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mt-1" />
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-white/[0.20] dark:bg-white/[0.04] dark:text-signal-green dark:focus:ring-signal-green/40 mt-1" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className={`font-medium text-sm ${task.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>{task.task}</p>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${task.priority === 'high' ? 'bg-red-100 text-red-800' : task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>{task.priority.toUpperCase()}</span>
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{task.category}</span>
+                    <p className={`font-medium text-sm ${task.completed ? 'text-gray-500 line-through dark:text-signal-muted' : 'text-gray-900 dark:text-signal-ink'}`}>{task.task}</p>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${task.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad' : task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-signal-muted'}`}>{task.priority.toUpperCase()}</span>
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-signal-muted rounded text-xs">{task.category}</span>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    <span className="text-xs text-gray-500 mr-1">States:</span>
-                    {task.applicableStates.map(s => <span key={s} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">{s}</span>)}
+                    <span className="text-xs text-gray-500 dark:text-signal-muted mr-1">States:</span>
+                    {task.applicableStates.map(s => <span key={s} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-signal-blue/10 dark:text-signal-blue rounded text-xs">{s}</span>)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Due: {formatDate(task.dueDate)}</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted mt-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Due: {formatDate(task.dueDate)}</p>
                 </div>
               </div>
             </div>
@@ -765,19 +765,19 @@ export const USPrivacyTracker: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('privacy.title')}</h2>
-          <p className="text-gray-600 mt-1">Comprehensive tracking of all US state privacy laws and multi-state compliance</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('privacy.title')}</h2>
+          <p className="text-gray-600 dark:text-signal-body mt-1">Comprehensive tracking of all US state privacy laws and multi-state compliance</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"><Download className="w-4 h-4" /> Export Report</button>
+          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg dark:rounded-xl hover:bg-blue-700 dark:hover:bg-signal-green/90 flex items-center gap-2"><Download className="w-4 h-4" /> Export Report</button>
         </div>
       </div>
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-white/[0.06]">
         <nav className="flex gap-4 -mb-px overflow-x-auto">
           {tabs.map(tab => (
             <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchTerm(''); setStatusFilter('all'); }}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-indigo-600 text-indigo-600 dark:border-signal-green dark:text-signal-green' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-signal-muted dark:hover:text-signal-body dark:hover:border-white/[0.12]'}`}>
               {tab.icon} {tab.label}
             </button>
           ))}
@@ -785,10 +785,10 @@ export const USPrivacyTracker: React.FC = () => {
       </div>
 
       {loadError && (
-        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-          <span className="text-sm text-amber-700 flex-1">{loadError}</span>
-          <button onClick={() => setLoadError(null)} className="text-amber-500 hover:text-amber-700"><X className="w-3 h-3" /></button>
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 dark:bg-signal-amber/[0.06] dark:border-signal-amber/20 rounded-lg dark:rounded-xl px-3 py-2">
+          <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-signal-amber flex-shrink-0" />
+          <span className="text-sm text-amber-700 dark:text-signal-body flex-1">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="text-amber-500 hover:text-amber-700 dark:text-signal-amber dark:hover:text-signal-warn"><X className="w-3 h-3" /></button>
         </div>
       )}
 
@@ -800,53 +800,53 @@ export const USPrivacyTracker: React.FC = () => {
 
       {/* ── State Detail Modal ── */}
       {showDetailModal && selectedLaw && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg dark:rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.08] flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">{selectedLaw.stateName} - {selectedLaw.lawAbbreviation}</h3>
-                <p className="text-sm text-gray-600">{selectedLaw.lawName}</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">{selectedLaw.stateName} - {selectedLaw.lawAbbreviation}</h3>
+                <p className="text-sm text-gray-600 dark:text-signal-body">{selectedLaw.lawName}</p>
               </div>
-              <button onClick={() => { setShowDetailModal(false); setSelectedLaw(null); }} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowDetailModal(false); setSelectedLaw(null); }} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-ink"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div><label className="font-medium text-gray-500">Status</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${selectedLaw.status === 'effective' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>{selectedLaw.status.toUpperCase()}</span></p></div>
-                <div><label className="font-medium text-gray-500">Effective Date</label><p className="mt-1">{formatDate(selectedLaw.effectiveDate)}</p></div>
-                <div><label className="font-medium text-gray-500">Enforcement</label><p className="mt-1 text-xs">{selectedLaw.enforcementAgency}</p></div>
-                <div><label className="font-medium text-gray-500">Private Right of Action</label><p className="mt-1">{selectedLaw.privateRightOfAction ? 'Yes' : 'No'}</p></div>
-                <div><label className="font-medium text-gray-500">Cure Period</label><p className="mt-1">{selectedLaw.curePeriod ? `${selectedLaw.curePeriod} days` : 'None'}</p></div>
-                <div><label className="font-medium text-gray-500">Max Penalty</label><p className="mt-1">${selectedLaw.penalties.maxPerViolation.toLocaleString()}/violation</p></div>
+                <div><label className="font-medium text-gray-500 dark:text-signal-muted">Status</label><p className="mt-1"><span className={`px-2 py-0.5 rounded text-xs font-medium ${selectedLaw.status === 'effective' ? 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good' : 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue'}`}>{selectedLaw.status.toUpperCase()}</span></p></div>
+                <div><label className="font-medium text-gray-500 dark:text-signal-muted">Effective Date</label><p className="mt-1 dark:text-signal-body">{formatDate(selectedLaw.effectiveDate)}</p></div>
+                <div><label className="font-medium text-gray-500 dark:text-signal-muted">Enforcement</label><p className="mt-1 text-xs dark:text-signal-body">{selectedLaw.enforcementAgency}</p></div>
+                <div><label className="font-medium text-gray-500 dark:text-signal-muted">Private Right of Action</label><p className="mt-1 dark:text-signal-body">{selectedLaw.privateRightOfAction ? 'Yes' : 'No'}</p></div>
+                <div><label className="font-medium text-gray-500 dark:text-signal-muted">Cure Period</label><p className="mt-1 dark:text-signal-body">{selectedLaw.curePeriod ? `${selectedLaw.curePeriod} days` : 'None'}</p></div>
+                <div><label className="font-medium text-gray-500 dark:text-signal-muted">Max Penalty</label><p className="mt-1 dark:text-signal-body">${selectedLaw.penalties.maxPerViolation.toLocaleString()}/violation</p></div>
               </div>
 
-              <div><label className="font-medium text-gray-500 text-sm">Thresholds</label>
+              <div><label className="font-medium text-gray-500 dark:text-signal-muted text-sm">Thresholds</label>
                 <div className="mt-1 space-y-1 text-sm">
-                  {selectedLaw.thresholds.revenue && <p className="text-gray-700">Revenue: {selectedLaw.thresholds.revenue}</p>}
-                  {selectedLaw.thresholds.consumers && <p className="text-gray-700">Consumers: {selectedLaw.thresholds.consumers}</p>}
-                  {selectedLaw.thresholds.dataRevenue && <p className="text-gray-700">Data Revenue: {selectedLaw.thresholds.dataRevenue}</p>}
-                  {selectedLaw.thresholds.other && <p className="text-gray-700">Other: {selectedLaw.thresholds.other}</p>}
+                  {selectedLaw.thresholds.revenue && <p className="text-gray-700 dark:text-signal-body">Revenue: {selectedLaw.thresholds.revenue}</p>}
+                  {selectedLaw.thresholds.consumers && <p className="text-gray-700 dark:text-signal-body">Consumers: {selectedLaw.thresholds.consumers}</p>}
+                  {selectedLaw.thresholds.dataRevenue && <p className="text-gray-700 dark:text-signal-body">Data Revenue: {selectedLaw.thresholds.dataRevenue}</p>}
+                  {selectedLaw.thresholds.other && <p className="text-gray-700 dark:text-signal-body">Other: {selectedLaw.thresholds.other}</p>}
                 </div>
               </div>
 
-              <div><label className="font-medium text-gray-500 text-sm">Consumer Rights</label>
+              <div><label className="font-medium text-gray-500 dark:text-signal-muted text-sm">Consumer Rights</label>
                 <div className="mt-1 space-y-1">{selectedLaw.consumerRights.map(r => (
                   <div key={r.name} className="flex items-start gap-2 text-sm">
-                    {r.available ? <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" /> : <X className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />}
-                    <div><span className="font-medium">{r.name}</span><span className="text-gray-500 ml-1">- {r.details}</span></div>
+                    {r.available ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good mt-0.5 flex-shrink-0" /> : <X className="w-4 h-4 text-red-400 dark:text-signal-bad mt-0.5 flex-shrink-0" />}
+                    <div><span className="font-medium dark:text-signal-body">{r.name}</span><span className="text-gray-500 dark:text-signal-muted ml-1">- {r.details}</span></div>
                   </div>
                 ))}</div>
               </div>
 
-              <div><label className="font-medium text-gray-500 text-sm">Opt-Out Mechanisms</label>
-                <ul className="list-disc list-inside text-sm mt-1 text-gray-700">{selectedLaw.optOutMechanisms.map((m, i) => <li key={i}>{m}</li>)}</ul>
+              <div><label className="font-medium text-gray-500 dark:text-signal-muted text-sm">Opt-Out Mechanisms</label>
+                <ul className="list-disc list-inside text-sm mt-1 text-gray-700 dark:text-signal-body">{selectedLaw.optOutMechanisms.map((m, i) => <li key={i}>{m}</li>)}</ul>
               </div>
 
-              <div><label className="font-medium text-gray-500 text-sm">Key Provisions</label>
-                <div className="flex flex-wrap gap-1 mt-1">{selectedLaw.keyProvisions.map((p, i) => <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">{p}</span>)}</div>
+              <div><label className="font-medium text-gray-500 dark:text-signal-muted text-sm">Key Provisions</label>
+                <div className="flex flex-wrap gap-1 mt-1">{selectedLaw.keyProvisions.map((p, i) => <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-700 dark:bg-white/[0.06] dark:text-signal-body rounded text-xs">{p}</span>)}</div>
               </div>
 
-              <div><label className="font-medium text-gray-500 text-sm">Penalties</label>
-                <p className="text-sm text-gray-700 mt-1">{selectedLaw.penalties.additionalPenalties}</p>
+              <div><label className="font-medium text-gray-500 dark:text-signal-muted text-sm">Penalties</label>
+                <p className="text-sm text-gray-700 dark:text-signal-body mt-1">{selectedLaw.penalties.additionalPenalties}</p>
               </div>
             </div>
           </div>

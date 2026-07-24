@@ -22,7 +22,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         return saved;
       }
     }
-    return 'system';
+    // The "Signal" design system is dark-first; default new sessions to dark so
+    // the intended look renders out of the box. Users can still switch via the
+    // theme toggle, and an explicit saved preference always wins.
+    return 'dark';
   });
 
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => {

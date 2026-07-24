@@ -402,7 +402,7 @@ const MaturityAssessment: React.FC = () => {
       <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Target className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <Target className="w-6 h-6 text-purple-600 dark:text-signal-green" />
             <div>
               <h1 className="text-xl font-bold text-surface-900 dark:text-surface-100">{t('maturity.title')}</h1>
               <p className="text-sm text-surface-500 dark:text-surface-400">GRC maturity evaluation across Governance, Risk, Compliance, Technology, and People</p>
@@ -413,7 +413,7 @@ const MaturityAssessment: React.FC = () => {
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button onClick={saveAssessment} disabled={saving || totalAnswered === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed rounded-lg">
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed rounded-lg dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:disabled:bg-signal-green/40 dark:disabled:text-signal-canvas/60">
               <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Assessment'}
             </button>
           </div>
@@ -423,9 +423,9 @@ const MaturityAssessment: React.FC = () => {
         <div className="bg-surface-50 dark:bg-surface-700/50 rounded-lg p-4 mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-sm text-surface-500 dark:text-surface-400">{t('maturity.maturityScore')}</span>
+              <span className="text-sm text-surface-500 dark:text-surface-400 dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[11px] dark:text-signal-muted">{t('maturity.maturityScore')}</span>
               <div className="flex items-center gap-3 mt-1">
-                <span className="text-4xl font-bold text-surface-900 dark:text-surface-100">{overallScore.toFixed(1)}</span>
+                <span className="text-4xl font-bold text-surface-900 dark:text-surface-100 dark:font-display dark:text-signal-ink">{overallScore.toFixed(1)}</span>
                 <span className="text-lg text-surface-400">/ 5</span>
                 {overallScore > 0 && (
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium text-white ${MATURITY_LEVELS[Math.round(overallScore) as MaturityLevel || 1].bgClass}`}>
@@ -446,7 +446,7 @@ const MaturityAssessment: React.FC = () => {
           </div>
           {/* Progress bar */}
           <div className="mt-3 w-full bg-surface-200 dark:bg-surface-600 rounded-full h-1.5">
-            <div className="bg-purple-600 h-1.5 rounded-full transition-all" style={{ width: `${completionPct}%` }} />
+            <div className="bg-purple-600 dark:bg-signal-green h-1.5 rounded-full transition-all" style={{ width: `${completionPct}%` }} />
           </div>
         </div>
 
@@ -471,7 +471,7 @@ const MaturityAssessment: React.FC = () => {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <RefreshCw className="w-6 h-6 text-purple-600 animate-spin" />
+          <RefreshCw className="w-6 h-6 text-purple-600 dark:text-signal-green animate-spin" />
           <span className="ml-3 text-sm text-surface-500 dark:text-surface-400">{t('common.loading')}</span>
         </div>
       ) : (
@@ -506,8 +506,8 @@ const MaturityAssessment: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-bold text-surface-900 dark:text-surface-100">{ds.currentScore.toFixed(1)}</span>
                               <span className="text-xs text-surface-500">/ {ds.targetScore} target</span>
-                              {diff > 0 && <ArrowUp className="w-3 h-3 text-green-500" />}
-                              {diff < 0 && <ArrowDown className="w-3 h-3 text-red-500" />}
+                              {diff > 0 && <ArrowUp className="w-3 h-3 text-green-500 dark:text-signal-good" />}
+                              {diff < 0 && <ArrowDown className="w-3 h-3 text-red-500 dark:text-signal-bad" />}
                               {diff === 0 && ds.previousScore > 0 && <Minus className="w-3 h-3 text-surface-400" />}
                             </div>
                           </div>
@@ -559,7 +559,7 @@ const MaturityAssessment: React.FC = () => {
                   const answered = dqs.filter(q => q.answer !== null).length;
                   return (
                     <button key={domain} onClick={() => { setWizardDomain(domain); setWizardStep(0); }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${wizardDomain === domain ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300' : 'bg-white dark:bg-surface-700 border-surface-200 dark:border-surface-600 text-surface-600 dark:text-surface-400 hover:border-surface-300'}`}>
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${wizardDomain === domain ? 'bg-purple-50 dark:bg-signal-green/10 border-purple-300 dark:border-signal-green/40 text-purple-700 dark:text-signal-green' : 'bg-white dark:bg-surface-700 border-surface-200 dark:border-surface-600 text-surface-600 dark:text-surface-400 hover:border-surface-300'}`}>
                       {DOMAIN_CONFIG[domain].icon}
                       {domain}
                       <span className={`text-xs px-1.5 py-0.5 rounded-full ${answered === dqs.length ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-surface-100 dark:bg-surface-600 text-surface-500 dark:text-surface-400'}`}>{answered}/{dqs.length}</span>
@@ -589,7 +589,7 @@ const MaturityAssessment: React.FC = () => {
                 <div className="bg-surface-50 dark:bg-surface-700/30 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <span className="text-xs text-surface-500 dark:text-surface-400">Question {wizardStep + 1} of {wizardQuestions.length}</span>
+                      <span className="text-xs text-surface-500 dark:text-surface-400 dark:font-mono dark:uppercase dark:tracking-[0.12em] dark:text-signal-muted">Question {wizardStep + 1} of {wizardQuestions.length}</span>
                       <span className="text-xs text-surface-400 ml-2">| {wizardQuestions[wizardStep].category} | Level {wizardQuestions[wizardStep].level}</span>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-xs ${wizardQuestions[wizardStep].answer !== null ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-surface-100 dark:bg-surface-600 text-surface-500 dark:text-surface-400'}`}>
@@ -602,14 +602,14 @@ const MaturityAssessment: React.FC = () => {
                   <div className="space-y-2 mb-6">
                     {([1, 2, 3, 4, 5] as MaturityLevel[]).map(lv => (
                       <button key={lv} onClick={() => answerQuestion(wizardQuestions[wizardStep].id, lv)}
-                        className={`w-full text-left p-3 rounded-lg border transition-colors ${wizardQuestions[wizardStep].answer === lv ? 'border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20' : 'border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-700 hover:border-surface-300 dark:hover:border-surface-500'}`}>
+                        className={`w-full text-left p-3 rounded-lg border transition-colors ${wizardQuestions[wizardStep].answer === lv ? 'border-purple-400 dark:border-signal-green/50 bg-purple-50 dark:bg-signal-green/10' : 'border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-700 hover:border-surface-300 dark:hover:border-surface-500'}`}>
                         <div className="flex items-center gap-3">
                           <div className={`w-3 h-3 rounded-full ${MATURITY_LEVELS[lv].bgClass}`} />
                           <div className="flex-1">
                             <span className="text-sm font-medium text-surface-900 dark:text-surface-100">Level {lv} - {MATURITY_LEVELS[lv].label}</span>
                             <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">{MATURITY_LEVELS[lv].description}</p>
                           </div>
-                          {wizardQuestions[wizardStep].answer === lv && <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />}
+                          {wizardQuestions[wizardStep].answer === lv && <CheckCircle className="w-4 h-4 text-purple-600 dark:text-signal-green" />}
                         </div>
                       </button>
                     ))}
@@ -623,11 +623,11 @@ const MaturityAssessment: React.FC = () => {
                     <div className="flex gap-1">
                       {wizardQuestions.map((q, idx) => (
                         <button key={q.id} onClick={() => setWizardStep(idx)}
-                          className={`w-2 h-2 rounded-full transition-colors ${idx === wizardStep ? 'bg-purple-500' : q.answer !== null ? 'bg-green-500' : 'bg-surface-300 dark:bg-surface-600'}`} />
+                          className={`w-2 h-2 rounded-full transition-colors ${idx === wizardStep ? 'bg-purple-500 dark:bg-signal-green' : q.answer !== null ? 'bg-green-500 dark:bg-signal-good' : 'bg-surface-300 dark:bg-surface-600'}`} />
                       ))}
                     </div>
                     <button onClick={() => setWizardStep(Math.min(wizardQuestions.length - 1, wizardStep + 1))} disabled={wizardStep >= wizardQuestions.length - 1}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg">
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90">
                       Next <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -655,7 +655,7 @@ const MaturityAssessment: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <div className="flex-1 bg-surface-200 dark:bg-surface-600 rounded-full h-3 relative">
-                              <div className="bg-blue-500 h-3 rounded-full transition-all" style={{ width: `${(ds.currentScore / 5) * 100}%` }} />
+                              <div className="bg-blue-500 dark:bg-signal-green h-3 rounded-full transition-all" style={{ width: `${(ds.currentScore / 5) * 100}%` }} />
                               <div className="absolute top-0 h-3 border-r-2 border-dashed border-surface-900 dark:border-surface-100" style={{ left: `${(ds.targetScore / 5) * 100}%` }} />
                             </div>
                           </div>
@@ -663,8 +663,8 @@ const MaturityAssessment: React.FC = () => {
                         <div className="w-36 text-right">
                           <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{ds.currentScore.toFixed(1)}</span>
                           <span className="text-xs text-surface-500"> / {ds.targetScore}</span>
-                          {gap > 0 && <span className="text-xs text-red-600 dark:text-red-400 ml-2">-{gap.toFixed(1)} gap</span>}
-                          {gap <= 0 && ds.currentScore > 0 && <span className="text-xs text-green-600 dark:text-green-400 ml-2">On target</span>}
+                          {gap > 0 && <span className="text-xs text-red-600 dark:text-signal-bad ml-2">-{gap.toFixed(1)} gap</span>}
+                          {gap <= 0 && ds.currentScore > 0 && <span className="text-xs text-green-600 dark:text-signal-good ml-2">On target</span>}
                         </div>
                       </div>
                     );
@@ -676,10 +676,10 @@ const MaturityAssessment: React.FC = () => {
               <div className="bg-surface-50 dark:bg-surface-700/30 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-purple-500" /> AI-Generated Recommendations
+                    <Sparkles className="w-4 h-4 text-purple-500 dark:text-signal-green" /> AI-Generated Recommendations
                   </h3>
                   <button onClick={fetchRecommendations} disabled={loadingRecs}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-purple-600 dark:text-signal-green border border-purple-300 dark:border-signal-green/40 rounded-lg hover:bg-purple-50 dark:hover:bg-signal-green/10">
                     {loadingRecs ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                     {loadingRecs ? 'Generating...' : t('maturity.recommendations')}
                   </button>
@@ -699,7 +699,7 @@ const MaturityAssessment: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{rec.title}</span>
-                              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${rec.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : rec.priority === 'medium' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'}`}>{rec.priority}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${rec.priority === 'high' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-700 dark:text-signal-bad' : rec.priority === 'medium' ? 'bg-amber-100 dark:bg-signal-warn/10 text-amber-700 dark:text-signal-warn' : 'bg-green-100 dark:bg-signal-good/10 text-green-700 dark:text-signal-good'}`}>{rec.priority}</span>
                             </div>
                             <p className="text-xs text-surface-600 dark:text-surface-400 mb-2">{rec.description}</p>
                             <div className="flex items-center gap-4 text-xs text-surface-500">
@@ -730,12 +730,12 @@ const MaturityAssessment: React.FC = () => {
                   <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">Assessment History</h3>
                   <div className="space-y-4">
                     {assessments.map((assessment, idx) => (
-                      <div key={assessment.id} className={`p-4 rounded-xl border ${idx === assessments.length - 1 ? 'border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-900/10' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'}`}>
+                      <div key={assessment.id} className={`p-4 rounded-xl border ${idx === assessments.length - 1 ? 'border-purple-300 dark:border-signal-green/40 bg-purple-50/50 dark:bg-signal-green/[0.06]' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800'}`}>
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{assessment.name || `Assessment ${idx + 1}`}</span>
                             <span className="text-xs text-surface-500 ml-2">{new Date(assessment.date).toLocaleDateString()}</span>
-                            {idx === assessments.length - 1 && <span className="text-xs text-purple-600 dark:text-purple-400 ml-2 font-medium">Latest</span>}
+                            {idx === assessments.length - 1 && <span className="text-xs text-purple-600 dark:text-signal-green ml-2 font-medium">Latest</span>}
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-lg font-bold text-surface-900 dark:text-surface-100">{typeof assessment.overallScore === 'number' ? assessment.overallScore.toFixed(1) : assessment.overallScore}</span>
@@ -746,7 +746,7 @@ const MaturityAssessment: React.FC = () => {
                           <div className="flex gap-1">
                             {assessment.domainScores.map((ds: DomainScore) => (
                               <div key={ds.domain} className="flex-1">
-                                <div className="text-[10px] text-surface-500 text-center mb-1">{ds.domain}</div>
+                                <div className="text-[10px] text-surface-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.1em] text-center mb-1">{ds.domain}</div>
                                 <div className="h-2 bg-surface-200 dark:bg-surface-600 rounded-full overflow-hidden">
                                   <div className={`h-full rounded-full ${MATURITY_LEVELS[Math.round(ds.currentScore) as MaturityLevel || 1].bgClass}`} style={{ width: `${(ds.currentScore / 5) * 100}%` }} />
                                 </div>

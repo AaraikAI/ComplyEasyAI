@@ -122,17 +122,17 @@ interface NoticeFormData {
 // ── Constants ───────────────────────────────────────────────────────────────
 
 const noticeTypeConfig: Record<NoticeType, { color: string; icon: React.ReactNode; label: string }> = {
-  Website: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: <Globe className="w-3.5 h-3.5" />, label: 'Website' },
-  App: { color: 'bg-purple-500/20 text-purple-400 border-purple-500/30', icon: <Smartphone className="w-3.5 h-3.5" />, label: 'Application' },
-  Email: { color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', icon: <Mail className="w-3.5 h-3.5" />, label: 'Email' },
-  Cookie: { color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', icon: <Cookie className="w-3.5 h-3.5" />, label: 'Cookie' },
+  Website: { color: 'bg-signal-blue/10 text-signal-blue border-signal-blue/25', icon: <Globe className="w-3.5 h-3.5" />, label: 'Website' },
+  App: { color: 'bg-signal-violet/10 text-signal-violet border-signal-violet/25', icon: <Smartphone className="w-3.5 h-3.5" />, label: 'Application' },
+  Email: { color: 'bg-signal-good/10 text-signal-good border-signal-good/25', icon: <Mail className="w-3.5 h-3.5" />, label: 'Email' },
+  Cookie: { color: 'bg-signal-amber/10 text-signal-amber border-signal-amber/25', icon: <Cookie className="w-3.5 h-3.5" />, label: 'Cookie' },
 };
 
 const noticeStatusConfig: Record<NoticeStatus, { color: string; icon: React.ReactNode; label: string }> = {
-  Draft: { color: 'bg-slate-500/20 text-slate-400 border-slate-500/30', icon: <Edit className="w-3.5 h-3.5" />, label: 'Draft' },
-  Published: { color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: <CheckCircle className="w-3.5 h-3.5" />, label: 'Published' },
-  Archived: { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', icon: <Archive className="w-3.5 h-3.5" />, label: 'Archived' },
-  PendingReview: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: <Clock className="w-3.5 h-3.5" />, label: 'Pending Review' },
+  Draft: { color: 'bg-white/[0.06] text-signal-muted border-white/[0.10]', icon: <Edit className="w-3.5 h-3.5" />, label: 'Draft' },
+  Published: { color: 'bg-signal-good/10 text-signal-good border-signal-good/25', icon: <CheckCircle className="w-3.5 h-3.5" />, label: 'Published' },
+  Archived: { color: 'bg-signal-warn/10 text-signal-warn border-signal-warn/25', icon: <Archive className="w-3.5 h-3.5" />, label: 'Archived' },
+  PendingReview: { color: 'bg-signal-blue/10 text-signal-blue border-signal-blue/25', icon: <Clock className="w-3.5 h-3.5" />, label: 'Pending Review' },
 };
 
 const JURISDICTIONS = [
@@ -397,13 +397,13 @@ const Badge: React.FC<{ text: string; className: string; icon?: React.ReactNode 
 );
 
 const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode; color: string; subtitle?: string }> = ({ label, value, icon, color, subtitle }) => (
-  <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 hover:border-slate-600/50 transition-colors">
+  <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl border border-white/[0.06] p-4 hover:border-white/[0.10] transition-colors">
     <div className="flex items-center justify-between mb-2">
-      <span className="text-slate-400 text-sm">{label}</span>
+      <span className="text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">{label}</span>
       <div className={`p-1.5 rounded-lg ${color}`}>{icon}</div>
     </div>
-    <div className="text-2xl font-bold">{value}</div>
-    {subtitle && <p className="text-slate-500 text-xs mt-1">{subtitle}</p>}
+    <div className="text-2xl font-display font-bold text-signal-ink">{value}</div>
+    {subtitle && <p className="text-signal-muted text-xs mt-1">{subtitle}</p>}
   </div>
 );
 
@@ -744,8 +744,8 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const isEditing = editingNotice !== null;
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={closeCreateModal}>
-        <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between p-6 border-b border-slate-700 sticky top-0 bg-slate-800 rounded-t-2xl z-10">
+        <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-6 border-b border-white/[0.08] sticky top-0 bg-signal-panel2 rounded-t-2xl z-10">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-teal-500/20 rounded-lg">
                 {isEditing ? <Edit className="w-5 h-5 text-teal-400" /> : <Plus className="w-5 h-5 text-teal-400" />}
@@ -758,7 +758,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
           <div className="p-6 space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Title <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Title <span className="text-signal-bad">*</span></label>
               <input
                 type="text"
                 value={formData.title}
@@ -827,7 +827,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Content <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Content <span className="text-signal-bad">*</span></label>
               <textarea
                 value={formData.content}
                 onChange={e => setFormData(prev => ({ ...prev, content: e.target.value }))}
@@ -847,14 +847,14 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               />
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-700 sticky bottom-0 bg-slate-800 rounded-b-2xl">
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-white/[0.08] sticky bottom-0 bg-signal-panel2 rounded-b-2xl">
             <button onClick={closeCreateModal} className="px-4 py-2.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors text-sm font-medium">
               {t('common.cancel')}
             </button>
             <button
               onClick={isEditing ? handleUpdateNotice : handleCreateNotice}
               disabled={!formData.title.trim() || !formData.content.trim()}
-              className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2"
+              className="px-6 py-2.5 bg-signal-green hover:bg-signal-green/90 disabled:bg-white/[0.06] disabled:text-signal-muted text-signal-canvas rounded-xl transition-colors text-sm font-medium flex items-center gap-2"
             >
               <CheckCircle className="w-4 h-4" />
               {isEditing ? t('common.save') : t('common.create')}
@@ -873,11 +873,11 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const statusConf = noticeStatusConfig[viewingNotice.status];
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowViewModal(false)}>
-        <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between p-6 border-b border-slate-700 sticky top-0 bg-slate-800 rounded-t-2xl z-10">
+        <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-6 border-b border-white/[0.08] sticky top-0 bg-signal-panel2 rounded-t-2xl z-10">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/20 rounded-lg">
-                <Eye className="w-5 h-5 text-blue-400" />
+              <div className="p-2 bg-signal-blue/10 rounded-lg">
+                <Eye className="w-5 h-5 text-signal-blue" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold">{viewingNotice.title}</h2>
@@ -892,8 +892,8 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="flex flex-wrap gap-3 mb-6">
               <Badge text={typeConf.label} className={typeConf.color} icon={typeConf.icon} />
               <Badge text={statusConf.label} className={statusConf.color} icon={statusConf.icon} />
-              <Badge text={viewingNotice.language} className="bg-slate-500/20 text-slate-400 border-slate-500/30" />
-              <Badge text={viewingNotice.jurisdiction} className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30" icon={<Globe className="w-3 h-3" />} />
+              <Badge text={viewingNotice.language} className="bg-white/[0.06] text-signal-muted border-white/[0.10]" />
+              <Badge text={viewingNotice.jurisdiction} className="bg-signal-violet/10 text-signal-violet border-signal-violet/25" icon={<Globe className="w-3 h-3" />} />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-slate-900/50 rounded-lg p-3">
@@ -935,7 +935,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between p-6 border-t border-slate-700 sticky bottom-0 bg-slate-800 rounded-b-2xl">
+          <div className="flex items-center justify-between p-6 border-t border-white/[0.08] sticky bottom-0 bg-signal-panel2 rounded-b-2xl">
             <div className="text-sm text-slate-500">
               Created by {viewingNotice.createdBy} on {viewingNotice.createdAt}
             </div>
@@ -968,11 +968,11 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!notice) return null;
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowDeleteConfirm(null)}>
-        <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-md" onClick={e => e.stopPropagation()}>
           <div className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-500/20 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
+              <div className="p-2 bg-signal-bad/10 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-signal-bad" />
               </div>
               <h3 className="text-lg font-semibold">{t('common.delete')} Privacy Notice</h3>
             </div>
@@ -989,7 +989,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </button>
             <button
               onClick={() => handleDeleteNotice(showDeleteConfirm)}
-              className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2"
+              className="px-4 py-2.5 bg-signal-bad hover:bg-signal-bad/90 text-signal-canvas rounded-xl transition-colors text-sm font-medium flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
               {t('common.delete')}
@@ -1010,28 +1010,28 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           label="Total Notices"
           value={stats.total}
           icon={<FileText className="w-4 h-4" />}
-          color="bg-slate-500/20"
+          color="bg-white/[0.06]"
           subtitle={`${stats.drafts} drafts`}
         />
         <StatCard
           label="Published"
           value={stats.published}
-          icon={<CheckCircle className="w-4 h-4 text-green-400" />}
-          color="bg-green-500/20"
+          icon={<CheckCircle className="w-4 h-4 text-signal-good" />}
+          color="bg-signal-good/10"
           subtitle="Currently live"
         />
         <StatCard
           label="Pending Review"
           value={stats.pendingReview}
-          icon={<Clock className="w-4 h-4 text-blue-400" />}
-          color="bg-blue-500/20"
+          icon={<Clock className="w-4 h-4 text-signal-blue" />}
+          color="bg-signal-blue/10"
           subtitle="Awaiting approval"
         />
         <StatCard
           label="Avg Update Cycle"
           value={`${stats.avgUpdateFrequencyDays}d`}
-          icon={<RefreshCw className="w-4 h-4 text-purple-400" />}
-          color="bg-purple-500/20"
+          icon={<RefreshCw className="w-4 h-4 text-signal-violet" />}
+          color="bg-signal-violet/10"
           subtitle="Per version"
         />
       </div>
@@ -1083,7 +1083,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               setFormData(emptyFormData());
               setShowCreateModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2.5 bg-signal-green hover:bg-signal-green/90 text-signal-canvas rounded-xl transition-colors text-sm font-medium whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             {t('common.create')}
@@ -1104,13 +1104,13 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-700/50">
-                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-4 py-3">Title</th>
-                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-4 py-3">Type</th>
-                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-4 py-3">{t('common.status')}</th>
-                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-4 py-3">Version</th>
-                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-4 py-3">Last Updated</th>
-                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-4 py-3">Jurisdiction</th>
-                  <th className="text-right text-xs font-medium text-slate-400 uppercase tracking-wider px-4 py-3">{t('common.actions')}</th>
+                  <th className="text-left text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-4 py-3">Title</th>
+                  <th className="text-left text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-4 py-3">Type</th>
+                  <th className="text-left text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-4 py-3">{t('common.status')}</th>
+                  <th className="text-left text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-4 py-3">Version</th>
+                  <th className="text-left text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-4 py-3">Last Updated</th>
+                  <th className="text-left text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-4 py-3">Jurisdiction</th>
+                  <th className="text-right text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-4 py-3">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
@@ -1145,26 +1145,26 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => handleViewClick(notice)} className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors" title="View">
-                            <Eye className="w-4 h-4 text-slate-400 hover:text-blue-400" />
+                            <Eye className="w-4 h-4 text-slate-400 hover:text-signal-blue" />
                           </button>
                           <button onClick={() => handleEditClick(notice)} className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors" title={t('common.edit')}>
                             <Edit className="w-4 h-4 text-slate-400 hover:text-teal-400" />
                           </button>
                           <button onClick={() => handleDuplicateNotice(notice)} className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors" title="Duplicate">
-                            <Copy className="w-4 h-4 text-slate-400 hover:text-purple-400" />
+                            <Copy className="w-4 h-4 text-slate-400 hover:text-signal-violet" />
                           </button>
                           {notice.status === 'Draft' && (
                             <button onClick={() => handlePublishNotice(notice.id)} className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors" title="Publish">
-                              <Send className="w-4 h-4 text-slate-400 hover:text-green-400" />
+                              <Send className="w-4 h-4 text-slate-400 hover:text-signal-good" />
                             </button>
                           )}
                           {notice.status === 'Published' && (
                             <button onClick={() => handleArchiveNotice(notice.id)} className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors" title="Archive">
-                              <Archive className="w-4 h-4 text-slate-400 hover:text-yellow-400" />
+                              <Archive className="w-4 h-4 text-slate-400 hover:text-signal-warn" />
                             </button>
                           )}
                           <button onClick={() => setShowDeleteConfirm(notice.id)} className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors" title={t('common.delete')}>
-                            <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-400" />
+                            <Trash2 className="w-4 h-4 text-slate-400 hover:text-signal-bad" />
                           </button>
                         </div>
                       </td>
@@ -1234,7 +1234,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <div className="flex items-center justify-between">
                       <Badge
                         text={template.jurisdiction}
-                        className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30"
+                        className="bg-signal-violet/10 text-signal-violet border-signal-violet/25"
                         icon={<Globe className="w-3 h-3" />}
                       />
                       <button
@@ -1284,15 +1284,15 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <StatCard
             label="Total Views"
             value={totalViews.toLocaleString()}
-            icon={<Eye className="w-4 h-4 text-blue-400" />}
-            color="bg-blue-500/20"
+            icon={<Eye className="w-4 h-4 text-signal-blue" />}
+            color="bg-signal-blue/10"
             subtitle="All notice types"
           />
           <StatCard
             label="Total Acceptances"
             value={totalAcceptances.toLocaleString()}
-            icon={<CheckCircle className="w-4 h-4 text-green-400" />}
-            color="bg-green-500/20"
+            icon={<CheckCircle className="w-4 h-4 text-signal-good" />}
+            color="bg-signal-good/10"
             subtitle="Consent granted"
           />
           <StatCard
@@ -1305,8 +1305,8 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <StatCard
             label="Avg Decline Rate"
             value={`${avgDeclineRate}%`}
-            icon={<AlertTriangle className="w-4 h-4 text-orange-400" />}
-            color="bg-orange-500/20"
+            icon={<AlertTriangle className="w-4 h-4 text-signal-amber" />}
+            color="bg-signal-amber/10"
             subtitle="Explicit declines"
           />
         </div>
@@ -1328,19 +1328,19 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       <span className="text-sm text-slate-300">{analytics.totalViews.toLocaleString()} views</span>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
-                      <span className="text-green-400 font-medium">{analytics.consentRate}% consent</span>
-                      <span className="text-red-400">{analytics.declineRate}% decline</span>
+                      <span className="text-signal-good font-medium">{analytics.consentRate}% consent</span>
+                      <span className="text-signal-bad">{analytics.declineRate}% decline</span>
                       <span className="text-slate-500">Avg time: {analytics.averageTimeToAccept}</span>
                     </div>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
                     <div className="flex h-full">
                       <div
-                        className="bg-green-500 h-full transition-all duration-500"
+                        className="bg-signal-good h-full transition-all duration-500"
                         style={{ width: `${analytics.consentRate}%` }}
                       />
                       <div
-                        className="bg-red-500 h-full transition-all duration-500"
+                        className="bg-signal-bad h-full transition-all duration-500"
                         style={{ width: `${analytics.declineRate}%` }}
                       />
                     </div>
@@ -1359,18 +1359,18 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {/* Notice Performance Breakdown */}
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 mb-6">
           <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-            <Users className="w-4 h-4 text-blue-400" />
+            <Users className="w-4 h-4 text-signal-blue" />
             Individual Notice Performance
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-700/50">
-                  <th className="text-left text-xs font-medium text-slate-400 uppercase tracking-wider px-3 py-2">Notice</th>
-                  <th className="text-right text-xs font-medium text-slate-400 uppercase tracking-wider px-3 py-2">Views</th>
-                  <th className="text-right text-xs font-medium text-slate-400 uppercase tracking-wider px-3 py-2">Acceptances</th>
-                  <th className="text-right text-xs font-medium text-slate-400 uppercase tracking-wider px-3 py-2">Rate</th>
-                  <th className="text-center text-xs font-medium text-slate-400 uppercase tracking-wider px-3 py-2">{t('common.status')}</th>
+                  <th className="text-left text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-3 py-2">Notice</th>
+                  <th className="text-right text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-3 py-2">Views</th>
+                  <th className="text-right text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-3 py-2">Acceptances</th>
+                  <th className="text-right text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-3 py-2">Rate</th>
+                  <th className="text-center text-[10px] font-mono font-medium text-signal-muted uppercase tracking-[0.14em] px-3 py-2">{t('common.status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
@@ -1392,7 +1392,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           {notice.acceptanceCount.toLocaleString()}
                         </td>
                         <td className="px-3 py-2.5 text-right">
-                          <span className={`text-sm font-medium ${notice.acceptanceRate >= 90 ? 'text-green-400' : notice.acceptanceRate >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          <span className={`text-sm font-medium ${notice.acceptanceRate >= 90 ? 'text-signal-good' : notice.acceptanceRate >= 80 ? 'text-signal-warn' : 'text-signal-bad'}`}>
                             {notice.acceptanceRate}%
                           </span>
                         </td>
@@ -1410,7 +1410,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {/* Version History Timeline */}
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
           <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-            <History className="w-4 h-4 text-purple-400" />
+            <History className="w-4 h-4 text-signal-violet" />
             Version History Timeline
           </h3>
           <div className="relative">
@@ -1422,16 +1422,16 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <div key={entry.id} className="relative flex items-start gap-4 pl-2">
                     <div className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
                       index === 0 ? 'bg-teal-500/30 border-2 border-teal-400' :
-                      entry.status === 'Published' ? 'bg-green-500/20 border border-green-500/40' :
-                      entry.status === 'Archived' ? 'bg-yellow-500/20 border border-yellow-500/40' :
+                      entry.status === 'Published' ? 'bg-signal-good/10 border border-signal-good/40' :
+                      entry.status === 'Archived' ? 'bg-signal-warn/10 border border-signal-warn/40' :
                       'bg-slate-600/30 border border-slate-600/50'
                     }`}>
                       {entry.status === 'Published' ? (
-                        <CheckCircle className="w-3 h-3 text-green-400" />
+                        <CheckCircle className="w-3 h-3 text-signal-good" />
                       ) : entry.status === 'Archived' ? (
-                        <Archive className="w-3 h-3 text-yellow-400" />
+                        <Archive className="w-3 h-3 text-signal-warn" />
                       ) : entry.status === 'PendingReview' ? (
-                        <Clock className="w-3 h-3 text-blue-400" />
+                        <Clock className="w-3 h-3 text-signal-blue" />
                       ) : (
                         <Edit className="w-3 h-3 text-slate-400" />
                       )}
@@ -1461,7 +1461,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // ── Main Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-900 dark:bg-slate-950 text-white p-6">
+    <div className="min-h-screen bg-signal-canvas text-signal-ink p-6 font-plex">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
@@ -1476,7 +1476,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <Shield className="w-6 h-6 text-teal-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">{t('privacy.title')}</h1>
+            <h1 className="text-2xl font-bold font-display text-signal-ink">{t('privacy.title')}</h1>
             <p className="text-slate-400 text-sm">Manage, publish, and monitor privacy notices across all channels and jurisdictions</p>
           </div>
         </div>
@@ -1492,9 +1492,9 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {/* Sample Data Banner — shown whenever bundled fixtures stand in for real records */}
       {usingSampleData && !isLoading && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-blue-900/30 border border-blue-700/50 rounded-lg">
-          <AlertTriangle className="w-4 h-4 text-blue-400 flex-shrink-0" />
-          <span className="text-sm text-blue-300">
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-signal-blue/10 border border-signal-blue/25 rounded-lg">
+          <AlertTriangle className="w-4 h-4 text-signal-blue flex-shrink-0" />
+          <span className="text-sm text-signal-blue">
             Sample data shown for demonstration. These notices and consent metrics are illustrative
             examples, not your organization&apos;s live data. Create a notice to get started.
           </span>
@@ -1503,7 +1503,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {/* Error Banner */}
       {loadError && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-amber-900/30 border border-amber-700/50 rounded-lg">
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-signal-warn/10 border border-signal-warn/25 rounded-lg">
           <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
           <span className="text-sm text-amber-300">{loadError}</span>
           <button onClick={() => setLoadError(null)} className="ml-auto text-amber-400 hover:text-amber-200">
@@ -1520,7 +1520,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               activeTab === tab.id
-                ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20'
+                ? 'bg-signal-green text-signal-canvas shadow-lg shadow-signal-green/20'
                 : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
             }`}
           >

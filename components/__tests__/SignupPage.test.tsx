@@ -6,11 +6,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 const mockRegister = vi.fn();
 const mockAuthRegister = vi.fn().mockResolvedValue({});
+const mockRequestMagicLink = vi.fn().mockResolvedValue({});
 
 vi.mock('../../services/api', () => ({
   api: {
     auth: {
       register: (...args: any[]) => mockAuthRegister(...args),
+      requestMagicLink: (...args: any[]) => mockRequestMagicLink(...args),
     },
   },
 }));
@@ -53,8 +55,8 @@ describe('SignupPage', () => {
   describe('Step 1: Account Credentials', () => {
     it('renders step 1 by default', () => {
       render(<SignupPage />);
-      expect(screen.getByText('Create Account')).toBeInTheDocument();
-      expect(screen.getByText(/Start your 3-day free trial/)).toBeInTheDocument();
+      expect(screen.getByText('Start free')).toBeInTheDocument();
+      expect(screen.getByText(/Enter your work email/)).toBeInTheDocument();
     });
 
     it('renders email input', () => {
@@ -136,31 +138,30 @@ describe('SignupPage', () => {
       render(<SignupPage />);
       fillStep1();
       submitForm();
-      expect(screen.getByText('Tell Us About Yourself')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('John Smith')).toBeInTheDocument();
     });
 
-    it('renders progress step labels', () => {
+    it('renders the step indicator with the current step label', () => {
       render(<SignupPage />);
-      expect(screen.getByText('Account')).toBeInTheDocument();
-      expect(screen.getByText('Profile')).toBeInTheDocument();
-      expect(screen.getByText('Company')).toBeInTheDocument();
-      expect(screen.getByText('Confirm')).toBeInTheDocument();
+      expect(screen.getByText(/Step 1 of 4/)).toBeInTheDocument();
+      expect(screen.getByText(/Account/)).toBeInTheDocument();
     });
 
     it('renders Sign In link', () => {
       render(<SignupPage />);
-      expect(screen.getByText('Log In')).toBeInTheDocument();
+      expect(screen.getByText('Sign in')).toBeInTheDocument();
     });
 
-    it('renders ComplyEasy AI header', () => {
+    it('renders the ComplyEasyAI wordmark', () => {
       render(<SignupPage />);
-      expect(screen.getByText('ComplyEasy AI')).toBeInTheDocument();
+      const wordmark = screen.getByText('ComplyEasy', { exact: false });
+      expect(wordmark).toBeInTheDocument();
+      expect(wordmark).toHaveTextContent('ComplyEasyAI');
     });
 
-    it('renders Terms of Service and Privacy Policy links', () => {
+    it('renders the legal notice referencing Terms and Privacy Policy', () => {
       render(<SignupPage />);
-      expect(screen.getAllByText(/Terms of Service/).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/Privacy Policy/).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Terms and Privacy Policy/)).toBeInTheDocument();
     });
 
     it('allows typing into email field', () => {
@@ -190,7 +191,7 @@ describe('SignupPage', () => {
 
     it('renders step 2 fields', () => {
       goToStep2();
-      expect(screen.getByText('Tell Us About Yourself')).toBeInTheDocument();
+      expect(screen.getByText('Full name')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('John Smith')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Acme Inc.')).toBeInTheDocument();
     });
@@ -211,7 +212,7 @@ describe('SignupPage', () => {
     it('goes back to step 1 when Back button is clicked', () => {
       goToStep2();
       fireEvent.click(screen.getByText('Back'));
-      expect(screen.getByText('Create Account')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('you@company.com')).toBeInTheDocument();
     });
 
     it('moves to step 3 on valid submission', () => {
@@ -219,12 +220,7 @@ describe('SignupPage', () => {
       fireEvent.change(screen.getByPlaceholderText('John Smith'), { target: { value: 'John Smith' } });
       fireEvent.change(screen.getByPlaceholderText('Acme Inc.'), { target: { value: 'Acme Inc' } });
       submitForm();
-      expect(screen.getByText('About Your Organization')).toBeInTheDocument();
-    });
-
-    it('shows help text', () => {
-      goToStep2();
-      expect(screen.getByText('Help us personalize your experience.')).toBeInTheDocument();
+      expect(screen.getByText('Industry')).toBeInTheDocument();
     });
   });
 
@@ -241,8 +237,8 @@ describe('SignupPage', () => {
 
     it('renders step 3 with industry selection', () => {
       goToStep3();
-      expect(screen.getByText('About Your Organization')).toBeInTheDocument();
       expect(screen.getByText('Industry')).toBeInTheDocument();
+      expect(screen.getByText('Company size')).toBeInTheDocument();
     });
 
     it('renders all industry options', () => {
@@ -296,13 +292,13 @@ describe('SignupPage', () => {
       fireEvent.click(screen.getByText('1-10 employees'));
       fireEvent.click(screen.getByText('SOC 2 Certification'));
       submitForm();
-      expect(screen.getByText('Review & Start Trial')).toBeInTheDocument();
+      expect(screen.getByText('3-day free trial')).toBeInTheDocument();
     });
 
     it('goes back to step 2 when Back is clicked', () => {
       goToStep3();
       fireEvent.click(screen.getByText('Back'));
-      expect(screen.getByText('Tell Us About Yourself')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('John Smith')).toBeInTheDocument();
     });
 
     it('shows framework details for selected goal', () => {
@@ -329,7 +325,7 @@ describe('SignupPage', () => {
 
     it('renders step 4 with review details', () => {
       goToStep4();
-      expect(screen.getByText('Review & Start Trial')).toBeInTheDocument();
+      expect(screen.getByText('3-day free trial')).toBeInTheDocument();
     });
 
     it('displays entered email in review', () => {
@@ -354,15 +350,17 @@ describe('SignupPage', () => {
 
     it('shows trial details section', () => {
       goToStep4();
-      expect(screen.getByText('3-Day Free Trial')).toBeInTheDocument();
-      // "No credit card required" may appear in both features sidebar and trial details
+      expect(screen.getByText('3-day free trial')).toBeInTheDocument();
+      // "No credit card required" may appear in more than one place
       const matches = screen.getAllByText('No credit card required');
       expect(matches.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows Terms of Service checkbox', () => {
+    it('shows Terms of Service and Privacy Policy links', () => {
       goToStep4();
       expect(screen.getByText(/I agree to the/)).toBeInTheDocument();
+      expect(screen.getByText('Terms of Service')).toBeInTheDocument();
+      expect(screen.getByText('Privacy Policy')).toBeInTheDocument();
     });
 
     it('shows marketing checkbox', () => {
@@ -372,7 +370,7 @@ describe('SignupPage', () => {
 
     it('disables Submit button when terms not accepted', () => {
       goToStep4();
-      const submitBtn = screen.getByText('Start Free Trial');
+      const submitBtn = screen.getByText('Email me a magic link');
       expect(submitBtn.closest('button')).toBeDisabled();
     });
 
@@ -380,13 +378,13 @@ describe('SignupPage', () => {
       goToStep4();
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
-      const submitBtn = screen.getByText('Start Free Trial');
+      const submitBtn = screen.getByText('Email me a magic link');
       expect(submitBtn.closest('button')).toBeEnabled();
     });
 
     it('shows error if form submitted without accepting terms', () => {
       goToStep4();
-      const form = screen.getByText('Review & Start Trial').closest('form')!;
+      const form = screen.getByText('Email me a magic link').closest('form')!;
       fireEvent.submit(form);
       expect(screen.getByText('Please accept the terms of service and privacy policy')).toBeInTheDocument();
     });
@@ -394,7 +392,7 @@ describe('SignupPage', () => {
     it('goes back to step 3 when Back is clicked', () => {
       goToStep4();
       fireEvent.click(screen.getByText('Back'));
-      expect(screen.getByText('About Your Organization')).toBeInTheDocument();
+      expect(screen.getByText('Industry')).toBeInTheDocument();
     });
 
     it('calls API on form submission with all fields', async () => {
@@ -402,7 +400,7 @@ describe('SignupPage', () => {
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
 
-      fireEvent.click(screen.getByText('Start Free Trial'));
+      fireEvent.click(screen.getByText('Email me a magic link'));
 
       await waitFor(() => {
         expect(mockAuthRegister).toHaveBeenCalledWith(
@@ -423,10 +421,10 @@ describe('SignupPage', () => {
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
 
-      fireEvent.click(screen.getByText('Start Free Trial'));
+      fireEvent.click(screen.getByText('Email me a magic link'));
 
       await waitFor(() => {
-        expect(screen.getByText('Check Your Email!')).toBeInTheDocument();
+        expect(screen.getByText('Check your inbox')).toBeInTheDocument();
       });
     });
 
@@ -436,7 +434,7 @@ describe('SignupPage', () => {
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
 
-      fireEvent.click(screen.getByText('Start Free Trial'));
+      fireEvent.click(screen.getByText('Email me a magic link'));
 
       await waitFor(() => {
         expect(screen.getByText('Email already exists')).toBeInTheDocument();
@@ -459,9 +457,9 @@ describe('SignupPage', () => {
       submitForm();
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
-      fireEvent.click(screen.getByText('Start Free Trial'));
+      fireEvent.click(screen.getByText('Email me a magic link'));
       await waitFor(() => {
-        expect(screen.getByText('Check Your Email!')).toBeInTheDocument();
+        expect(screen.getByText('Check your inbox')).toBeInTheDocument();
       });
     };
 
@@ -470,15 +468,25 @@ describe('SignupPage', () => {
       expect(screen.getByText('test@company.com')).toBeInTheDocument();
     });
 
-    it('shows what-is-next steps', async () => {
+    it('shows sign-in link instructions', async () => {
       await goToVerification();
-      expect(screen.getByText("What's next?")).toBeInTheDocument();
-      expect(screen.getByText('Click the verification link in your email')).toBeInTheDocument();
+      expect(screen.getByText(/We sent a secure sign-in link/)).toBeInTheDocument();
+      expect(screen.getByText('Use a different email')).toBeInTheDocument();
     });
 
-    it('shows resend verification button', async () => {
+    it('shows a resend link', async () => {
       await goToVerification();
-      expect(screen.getByText('Resend verification email')).toBeInTheDocument();
+      expect(screen.getByText('resend')).toBeInTheDocument();
+    });
+
+    it('resends the verification email when resend is clicked', async () => {
+      await goToVerification();
+      fireEvent.click(screen.getByText('resend'));
+
+      await waitFor(() => {
+        expect(mockRequestMagicLink).toHaveBeenCalledWith('test@company.com');
+      });
+      expect(await screen.findByText(/Verification email resent/)).toBeInTheDocument();
     });
   });
 
@@ -488,35 +496,35 @@ describe('SignupPage', () => {
       render(<SignupPage />);
       fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'Short1!' } });
       const lengthCheck = screen.getByText('12+ characters');
-      expect(lengthCheck.closest('div')).toHaveClass('text-slate-500');
+      expect(lengthCheck.closest('div')).toHaveClass('text-signal-muted');
     });
 
     it('shows met requirement in green for strong password', () => {
       render(<SignupPage />);
       fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: VALID_PASSWORD } });
       const lengthCheck = screen.getByText('12+ characters');
-      expect(lengthCheck.closest('div')).toHaveClass('text-green-400');
+      expect(lengthCheck.closest('div')).toHaveClass('text-signal-green');
     });
 
     it('validates uppercase requirement', () => {
       render(<SignupPage />);
       fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'alllowercase1!' } });
       const uppercaseCheck = screen.getByText('Uppercase letter');
-      expect(uppercaseCheck.closest('div')).toHaveClass('text-slate-500');
+      expect(uppercaseCheck.closest('div')).toHaveClass('text-signal-muted');
     });
 
     it('validates number requirement', () => {
       render(<SignupPage />);
       fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'NoNumbersHere!' } });
       const numberCheck = screen.getByText('Number');
-      expect(numberCheck.closest('div')).toHaveClass('text-slate-500');
+      expect(numberCheck.closest('div')).toHaveClass('text-signal-muted');
     });
 
     it('validates special character requirement', () => {
       render(<SignupPage />);
       fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'NoSpecialChar1A' } });
       const specialCheck = screen.getByText('Special character');
-      expect(specialCheck.closest('div')).toHaveClass('text-slate-500');
+      expect(specialCheck.closest('div')).toHaveClass('text-signal-muted');
     });
   });
 });

@@ -101,17 +101,17 @@ type ViewMode = 'dashboard' | 'list' | 'detail' | 'create' | 'edit' | 'results'
   | 'ai-suggest' | 'ai-triage' | 'ai-analyze';
 
 const STATUS_COLORS: Record<string, string> = {
-  Passing: 'bg-green-100 text-green-800 border-green-200',
-  Warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  Failing: 'bg-red-100 text-red-800 border-red-200',
-  Unknown: 'bg-gray-100 text-gray-600 border-gray-200',
+  Passing: 'bg-green-100 text-green-800 border-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
+  Warning: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/20',
+  Failing: 'bg-red-100 text-red-800 border-red-200 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/20',
+  Unknown: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-white/[0.06] dark:text-signal-muted dark:border-white/[0.08]',
 };
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
-  Passing: <CheckCircle className="w-4 h-4 text-green-600" />,
-  Warning: <AlertTriangle className="w-4 h-4 text-yellow-600" />,
-  Failing: <XCircle className="w-4 h-4 text-red-600" />,
-  Unknown: <Clock className="w-4 h-4 text-gray-500" />,
+  Passing: <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" />,
+  Warning: <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-signal-warn" />,
+  Failing: <XCircle className="w-4 h-4 text-red-600 dark:text-signal-bad" />,
+  Unknown: <Clock className="w-4 h-4 text-gray-500 dark:text-signal-muted" />,
 };
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -447,22 +447,22 @@ export default function MonitoringDashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Continuous Monitoring</h1>
-            <p className="text-gray-500 mt-1">AI-powered infrastructure, cloud, identity, device &amp; code monitoring</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-signal-ink font-display">Continuous Monitoring</h1>
+            <p className="text-gray-500 mt-1 dark:text-signal-muted">AI-powered infrastructure, cloud, identity, device &amp; code monitoring</p>
           </div>
           <div className="flex gap-2">
             <button onClick={handleAISuggest} disabled={aiLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:bg-signal-violet dark:hover:bg-signal-violet/90 disabled:opacity-50">
               <Brain className="w-4 h-4" /> AI Suggest Monitors
             </button>
             {(failingCount > 0 || warningCount > 0) && (
               <button onClick={handleAITriage} disabled={aiLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50">
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 dark:bg-signal-amber dark:text-signal-canvas dark:hover:bg-signal-amber/90 disabled:opacity-50">
                 <Zap className="w-4 h-4" /> AI Triage Alerts
               </button>
             )}
             <button onClick={() => { resetForm(); setViewMode('create'); }} disabled={monitorLimitReached}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 disabled:opacity-50">
               <Plus className="w-4 h-4" /> Add Monitor
             </button>
           </div>
@@ -473,18 +473,18 @@ export default function MonitoringDashboard() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[
-            { label: 'Total Monitors', value: d?.totalMonitors ?? 0, icon: <Activity className="w-5 h-5 text-blue-600" /> },
-            { label: t('common.active'), value: d?.activeMonitors ?? 0, icon: <Power className="w-5 h-5 text-green-600" /> },
-            { label: 'Passing', value: d?.statusDistribution.passing ?? 0, icon: <CheckCircle className="w-5 h-5 text-green-600" /> },
-            { label: t('common.warning'), value: d?.statusDistribution.warning ?? 0, icon: <AlertTriangle className="w-5 h-5 text-yellow-600" /> },
-            { label: 'Failing', value: d?.statusDistribution.failing ?? 0, icon: <XCircle className="w-5 h-5 text-red-600" /> },
-            { label: 'Auto-Remediated', value: d?.autoRemediatedCount ?? 0, icon: <Zap className="w-5 h-5 text-purple-600" /> },
+            { label: 'Total Monitors', value: d?.totalMonitors ?? 0, icon: <Activity className="w-5 h-5 text-blue-600 dark:text-signal-blue" /> },
+            { label: t('common.active'), value: d?.activeMonitors ?? 0, icon: <Power className="w-5 h-5 text-green-600 dark:text-signal-good" /> },
+            { label: 'Passing', value: d?.statusDistribution.passing ?? 0, icon: <CheckCircle className="w-5 h-5 text-green-600 dark:text-signal-good" /> },
+            { label: t('common.warning'), value: d?.statusDistribution.warning ?? 0, icon: <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-signal-warn" /> },
+            { label: 'Failing', value: d?.statusDistribution.failing ?? 0, icon: <XCircle className="w-5 h-5 text-red-600 dark:text-signal-bad" /> },
+            { label: 'Auto-Remediated', value: d?.autoRemediatedCount ?? 0, icon: <Zap className="w-5 h-5 text-purple-600 dark:text-signal-violet" /> },
           ].map(s => (
-            <div key={s.label} className="bg-white rounded-xl border p-4 flex items-center gap-3">
+            <div key={s.label} className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-4 flex items-center gap-3">
               {s.icon}
               <div>
-                <p className="text-2xl font-bold text-gray-900">{s.value}</p>
-                <p className="text-xs text-gray-500">{s.label}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink font-display">{s.value}</p>
+                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">{s.label}</p>
               </div>
             </div>
           ))}
@@ -493,8 +493,8 @@ export default function MonitoringDashboard() {
         {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {statusData.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">{t('common.status')} Distribution</h3>
+            <div className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-4">{t('common.status')} Distribution</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
@@ -506,8 +506,8 @@ export default function MonitoringDashboard() {
             </div>
           )}
           {typeData.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Type Distribution</h3>
+            <div className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-4">Type Distribution</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={typeData}>
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -524,28 +524,28 @@ export default function MonitoringDashboard() {
 
         {/* Failing monitors quick view */}
         {d && d.failingMonitors.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="bg-red-50 border border-red-200 dark:bg-signal-bad/[0.06] dark:border-signal-bad/20 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-red-800 flex items-center gap-2">
+              <h3 className="font-semibold text-red-800 dark:text-signal-bad flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5" /> Failing Monitors ({d.failingMonitors.length})
               </h3>
               <button onClick={handleAITriage} disabled={aiLoading}
-                className="text-sm px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-1">
+                className="text-sm px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 dark:bg-signal-bad dark:text-signal-canvas dark:hover:bg-signal-bad/90 disabled:opacity-50 flex items-center gap-1">
                 <Brain className="w-3 h-3" /> AI Triage
               </button>
             </div>
             <div className="space-y-2">
               {d.failingMonitors.map(fm => (
-                <div key={fm.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-red-100">
+                <div key={fm.id} className="flex items-center justify-between bg-white dark:bg-white/[0.03] rounded-lg p-3 border border-red-100 dark:border-white/[0.06]">
                   <div className="flex items-center gap-3">
                     {TYPE_ICONS[fm.monitorType] || <Server className="w-4 h-4" />}
-                    <span className="font-medium text-gray-900">{fm.name}</span>
-                    <span className="text-xs text-gray-500">{fm.monitorType}</span>
+                    <span className="font-medium text-gray-900 dark:text-signal-ink">{fm.name}</span>
+                    <span className="text-xs text-gray-500 dark:text-signal-muted">{fm.monitorType}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-red-600">{(fm.alerts as any)?.count || 0} alerts</span>
+                    <span className="text-xs text-red-600 dark:text-signal-bad">{(fm.alerts as any)?.count || 0} alerts</span>
                     <button onClick={() => { const m = monitors.find(x => x.id === fm.id); if (m) handleViewDetail(m); }}
-                      className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">View</button>
+                      className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]">View</button>
                   </div>
                 </div>
               ))}
@@ -554,7 +554,7 @@ export default function MonitoringDashboard() {
         )}
 
         {/* Navigate to full list */}
-        <button onClick={() => setViewMode('list')} className="w-full py-3 text-center text-blue-600 hover:text-blue-800 bg-white rounded-xl border hover:border-blue-200 transition">
+        <button onClick={() => setViewMode('list')} className="w-full py-3 text-center text-blue-600 hover:text-blue-800 dark:text-signal-green dark:hover:text-signal-green bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] hover:border-blue-200 dark:hover:border-white/[0.12] transition">
           View All Monitors ({monitors.length})
         </button>
       </div>
@@ -567,16 +567,16 @@ export default function MonitoringDashboard() {
   const renderList = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
         <div className="flex gap-2">
           <button onClick={handleAISuggest} disabled={aiLoading}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50">
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 dark:bg-signal-violet/15 dark:text-signal-violet dark:hover:bg-signal-violet/25 disabled:opacity-50">
             <Brain className="w-3.5 h-3.5" /> AI Suggest
           </button>
           <button onClick={() => { resetForm(); setViewMode('create'); }} disabled={monitorLimitReached}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 disabled:opacity-50">
             <Plus className="w-3.5 h-3.5" /> Add Monitor
           </button>
         </div>
@@ -589,16 +589,16 @@ export default function MonitoringDashboard() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input type="text" placeholder={`${t('common.search')} monitors...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm" />
+            className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted" />
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border rounded-lg px-3 py-2 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted">
           <option value="All">{t('common.all')} {t('common.status')}</option>
           <option value="Passing">Passing</option>
           <option value="Warning">Warning</option>
           <option value="Failing">Failing</option>
           <option value="Unknown">Unknown</option>
         </select>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="border rounded-lg px-3 py-2 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted">
           <option value="All">All Types</option>
           {MONITOR_TYPES.map(mt => <option key={mt} value={mt}>{mt}</option>)}
         </select>
@@ -607,13 +607,13 @@ export default function MonitoringDashboard() {
       {/* Monitor list */}
       <div className="space-y-2">
         {filteredMonitors.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl border">
-            <Activity className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No monitors found</p>
+          <div className="text-center py-12 bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06]">
+            <Activity className="w-10 h-10 text-gray-300 dark:text-signal-muted mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-signal-muted">No monitors found</p>
           </div>
         )}
         {filteredMonitors.map(m => (
-          <div key={m.id} className="bg-white rounded-xl border p-4 hover:border-blue-200 transition">
+          <div key={m.id} className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-4 hover:border-blue-200 dark:hover:border-white/[0.12] transition">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => handleViewDetail(m)}>
                 <div className="flex items-center gap-2">
@@ -621,8 +621,8 @@ export default function MonitoringDashboard() {
                   {TYPE_ICONS[m.monitorType] || <Server className="w-4 h-4 text-gray-400" />}
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-900">{m.name}</h4>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <h4 className="font-medium text-gray-900 dark:text-signal-ink">{m.name}</h4>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-signal-muted">
                     <span>{m.monitorType}</span>
                     <span>·</span>
                     <span>{m.frequency}</span>
@@ -637,23 +637,23 @@ export default function MonitoringDashboard() {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-xs px-2 py-0.5 rounded-full border ${STATUS_COLORS[m.status]}`}>{m.status}</span>
-                {!m.active && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Paused</span>}
+                {!m.active && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-signal-muted">Paused</span>}
                 <button onClick={() => handleExecute(m.id)} disabled={executingId === m.id}
-                  className="p-1.5 rounded hover:bg-blue-50 text-blue-600 disabled:opacity-50" title="Execute">
+                  className="p-1.5 rounded hover:bg-blue-50 dark:hover:bg-signal-green/10 text-blue-600 dark:text-signal-green disabled:opacity-50" title="Execute">
                   {executingId === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 </button>
                 <button onClick={() => handleToggle(m.id, !m.active)}
-                  className={`p-1.5 rounded hover:bg-gray-100 ${m.active ? 'text-green-600' : 'text-gray-400'}`} title={m.active ? 'Deactivate' : 'Activate'}>
+                  className={`p-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/[0.06] ${m.active ? 'text-green-600 dark:text-signal-good' : 'text-gray-400 dark:text-signal-muted'}`} title={m.active ? 'Deactivate' : 'Activate'}>
                   {m.active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
                 </button>
                 <button onClick={() => handleAIAnalyze(m)} disabled={aiLoading}
-                  className="p-1.5 rounded hover:bg-purple-50 text-purple-600 disabled:opacity-50" title="AI Analyze">
+                  className="p-1.5 rounded hover:bg-purple-50 dark:hover:bg-signal-violet/10 text-purple-600 dark:text-signal-violet disabled:opacity-50" title="AI Analyze">
                   <Brain className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleEditMonitor(m)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Edit">
+                <button onClick={() => handleEditMonitor(m)} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/[0.06] text-gray-600 dark:text-signal-body" title="Edit">
                   <Edit3 className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleDeleteMonitor(m.id)} className="p-1.5 rounded hover:bg-red-50 text-red-600" title="Delete">
+                <button onClick={() => handleDeleteMonitor(m.id)} className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-signal-bad/10 text-red-600 dark:text-signal-bad" title="Delete">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -683,35 +683,35 @@ export default function MonitoringDashboard() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <button onClick={() => setViewMode('list')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+          <button onClick={() => setViewMode('list')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
             <ArrowLeft className="w-4 h-4" /> {t('common.back')} to List
           </button>
           <div className="flex gap-2">
             <button onClick={() => handleAIAnalyze(m)} disabled={aiLoading}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50">
+              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 dark:bg-signal-violet/15 dark:text-signal-violet dark:hover:bg-signal-violet/25 disabled:opacity-50">
               <Brain className="w-3.5 h-3.5" /> AI Analyze Trends
             </button>
             <button onClick={() => handleExecute(m.id)} disabled={executingId === m.id}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 disabled:opacity-50">
               {executingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />} Execute
             </button>
-            <button onClick={() => handleEditMonitor(m)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+            <button onClick={() => handleEditMonitor(m)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]">
               <Edit3 className="w-3.5 h-3.5" /> Edit
             </button>
           </div>
         </div>
 
         {/* Monitor header */}
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-6">
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 {TYPE_ICONS[m.monitorType] || <Server className="w-5 h-5" />}
-                <h2 className="text-xl font-bold text-gray-900">{m.name}</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink font-display">{m.name}</h2>
                 <span className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_COLORS[m.status]}`}>{m.status}</span>
-                {!m.active && <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">Paused</span>}
+                {!m.active && <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-signal-muted">Paused</span>}
               </div>
-              <div className="flex items-center gap-4 text-sm text-gray-500">
+              <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-signal-muted">
                 <span>Type: {m.monitorType}</span>
                 <span>Frequency: {m.frequency}</span>
                 {m.lastRun && <span>Last Run: {new Date(m.lastRun).toLocaleString()}</span>}
@@ -719,7 +719,7 @@ export default function MonitoringDashboard() {
               </div>
             </div>
             <button onClick={() => handleToggle(m.id, !m.active)}
-              className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg ${m.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+              className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg ${m.active ? 'bg-green-100 text-green-700 dark:bg-signal-good/10 dark:text-signal-good' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-signal-body'}`}>
               {m.active ? <Power className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
               {m.active ? 'Active' : 'Paused'}
             </button>
@@ -728,25 +728,25 @@ export default function MonitoringDashboard() {
           {/* Alerts summary */}
           {m.alerts && (m.alerts.count > 0) && (
             <div className="mt-4 flex gap-4">
-              <div className="flex items-center gap-1 text-sm"><AlertTriangle className="w-4 h-4 text-yellow-500" /> {m.alerts.count} Total Alerts</div>
-              {m.alerts.critical > 0 && <div className="flex items-center gap-1 text-sm text-red-600"><XCircle className="w-4 h-4" /> {m.alerts.critical} Critical</div>}
-              {m.alerts.warnings > 0 && <div className="flex items-center gap-1 text-sm text-yellow-600"><AlertTriangle className="w-4 h-4" /> {m.alerts.warnings} Warnings</div>}
+              <div className="flex items-center gap-1 text-sm dark:text-signal-body"><AlertTriangle className="w-4 h-4 text-yellow-500 dark:text-signal-warn" /> {m.alerts.count} Total Alerts</div>
+              {m.alerts.critical > 0 && <div className="flex items-center gap-1 text-sm text-red-600 dark:text-signal-bad"><XCircle className="w-4 h-4" /> {m.alerts.critical} Critical</div>}
+              {m.alerts.warnings > 0 && <div className="flex items-center gap-1 text-sm text-yellow-600 dark:text-signal-warn"><AlertTriangle className="w-4 h-4" /> {m.alerts.warnings} Warnings</div>}
             </div>
           )}
         </div>
 
         {/* Findings */}
         {findings.length > 0 && (
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-3">Latest Findings</h3>
+          <div className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3">Latest Findings</h3>
             <div className="space-y-2">
               {findings.map((f: any, i: number) => (
-                <div key={i} className={`flex items-center justify-between p-3 rounded-lg ${f.passed ? 'bg-green-50' : 'bg-red-50'}`}>
+                <div key={i} className={`flex items-center justify-between p-3 rounded-lg ${f.passed ? 'bg-green-50 dark:bg-signal-good/[0.08]' : 'bg-red-50 dark:bg-signal-bad/[0.08]'}`}>
                   <div className="flex items-center gap-2">
-                    {f.passed ? <CheckCircle className="w-4 h-4 text-green-600" /> : <XCircle className="w-4 h-4 text-red-600" />}
-                    <span className="text-sm font-medium">{f.test}</span>
+                    {f.passed ? <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" /> : <XCircle className="w-4 h-4 text-red-600 dark:text-signal-bad" />}
+                    <span className="text-sm font-medium dark:text-signal-ink">{f.test}</span>
                   </div>
-                  {f.severity && <span className={`text-xs px-2 py-0.5 rounded ${f.severity === 'High' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{f.severity}</span>}
+                  {f.severity && <span className={`text-xs px-2 py-0.5 rounded ${f.severity === 'High' ? 'bg-red-100 text-red-700 dark:bg-signal-bad/10 dark:text-signal-bad' : 'bg-yellow-100 text-yellow-700 dark:bg-signal-warn/10 dark:text-signal-warn'}`}>{f.severity}</span>}
                 </div>
               ))}
             </div>
@@ -758,8 +758,8 @@ export default function MonitoringDashboard() {
 
         {/* Execution history chart */}
         {chartData.length > 0 && (
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Execution History</h3>
+          <div className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-4">Execution History</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -776,12 +776,12 @@ export default function MonitoringDashboard() {
 
         {/* Results table */}
         {monitorResults.length > 0 && (
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Recent Results</h3>
+          <div className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-4">Recent Results</h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm dark:text-signal-body">
                 <thead>
-                  <tr className="border-b">
+                  <tr className="border-b dark:border-white/[0.06] text-[10px] font-mono uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">
                     <th className="text-left py-2 px-3">{t('common.date')}</th>
                     <th className="text-left py-2 px-3">{t('common.status')}</th>
                     <th className="text-left py-2 px-3">Passed</th>
@@ -791,14 +791,14 @@ export default function MonitoringDashboard() {
                 </thead>
                 <tbody>
                   {monitorResults.map(r => (
-                    <tr key={r.id} className="border-b hover:bg-gray-50">
+                    <tr key={r.id} className="border-b dark:border-white/[0.06] hover:bg-gray-50 dark:hover:bg-white/[0.04]">
                       <td className="py-2 px-3">{new Date(r.runDate).toLocaleString()}</td>
                       <td className="py-2 px-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full border ${STATUS_COLORS[r.status] || STATUS_COLORS.Unknown}`}>{r.status}</span>
                       </td>
-                      <td className="py-2 px-3 text-green-700">{r.passedTests}</td>
-                      <td className="py-2 px-3 text-red-700">{r.failedTests}</td>
-                      <td className="py-2 px-3">{r.autoRemediated ? <CheckCircle className="w-4 h-4 text-purple-600" /> : <Minus className="w-4 h-4 text-gray-300" />}</td>
+                      <td className="py-2 px-3 text-green-700 dark:text-signal-good">{r.passedTests}</td>
+                      <td className="py-2 px-3 text-red-700 dark:text-signal-bad">{r.failedTests}</td>
+                      <td className="py-2 px-3">{r.autoRemediated ? <CheckCircle className="w-4 h-4 text-purple-600 dark:text-signal-violet" /> : <Minus className="w-4 h-4 text-gray-300 dark:text-signal-muted" />}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -816,54 +816,54 @@ export default function MonitoringDashboard() {
   const renderAITrendCard = () => {
     if (!aiTrend) return null;
     const trendIcon = aiTrend.trendDirection === 'improving'
-      ? <TrendingUp className="w-5 h-5 text-green-600" />
+      ? <TrendingUp className="w-5 h-5 text-green-600 dark:text-signal-good" />
       : aiTrend.trendDirection === 'degrading'
-      ? <TrendingDown className="w-5 h-5 text-red-600" />
-      : <Minus className="w-5 h-5 text-gray-500" />;
+      ? <TrendingDown className="w-5 h-5 text-red-600 dark:text-signal-bad" />
+      : <Minus className="w-5 h-5 text-gray-500 dark:text-signal-muted" />;
 
-    const trendColor = aiTrend.trendDirection === 'improving' ? 'border-green-200 bg-green-50'
-      : aiTrend.trendDirection === 'degrading' ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-gray-50';
+    const trendColor = aiTrend.trendDirection === 'improving' ? 'border-green-200 bg-green-50 dark:border-signal-good/20 dark:bg-signal-good/[0.06]'
+      : aiTrend.trendDirection === 'degrading' ? 'border-red-200 bg-red-50 dark:border-signal-bad/20 dark:bg-signal-bad/[0.06]' : 'border-gray-200 bg-gray-50 dark:border-white/[0.08] dark:bg-white/[0.03]';
 
     return (
       <div className={`rounded-xl border p-6 ${trendColor}`}>
         <div className="flex items-center gap-2 mb-4">
-          <Brain className="w-5 h-5 text-purple-600" />
-          <h3 className="font-semibold text-gray-900">AI Trend Analysis</h3>
+          <Brain className="w-5 h-5 text-purple-600 dark:text-signal-violet" />
+          <h3 className="font-semibold text-gray-900 dark:text-signal-ink">AI Trend Analysis</h3>
           {trendIcon}
-          <span className="text-sm capitalize font-medium">{aiTrend.trendDirection}</span>
+          <span className="text-sm capitalize font-medium dark:text-signal-body">{aiTrend.trendDirection}</span>
         </div>
 
-        <p className="text-sm text-gray-700 mb-4">{aiTrend.trendSummary}</p>
+        <p className="text-sm text-gray-700 dark:text-signal-body mb-4">{aiTrend.trendSummary}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="bg-white/70 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">Health Score</p>
+          <div className="bg-white/70 dark:bg-white/[0.04] rounded-lg p-3 dark:border dark:border-white/[0.06]">
+            <p className="text-xs text-gray-500 dark:text-signal-muted mb-1">Health Score</p>
             <div className="flex items-center gap-2">
-              <div className="flex-1 bg-gray-200 rounded-full h-2">
+              <div className="flex-1 bg-gray-200 dark:bg-white/[0.08] rounded-full h-2">
                 <div className="h-2 rounded-full" style={{ width: `${aiTrend.healthScore}%`, backgroundColor: aiTrend.healthScore > 70 ? '#22c55e' : aiTrend.healthScore > 40 ? '#eab308' : '#ef4444' }} />
               </div>
-              <span className="text-sm font-bold">{aiTrend.healthScore}%</span>
+              <span className="text-sm font-bold dark:text-signal-ink">{aiTrend.healthScore}%</span>
             </div>
           </div>
-          <div className="bg-white/70 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">Failure Risk</p>
+          <div className="bg-white/70 dark:bg-white/[0.04] rounded-lg p-3 dark:border dark:border-white/[0.06]">
+            <p className="text-xs text-gray-500 dark:text-signal-muted mb-1">Failure Risk</p>
             <div className="flex items-center gap-2">
-              <div className="flex-1 bg-gray-200 rounded-full h-2">
+              <div className="flex-1 bg-gray-200 dark:bg-white/[0.08] rounded-full h-2">
                 <div className="h-2 rounded-full bg-red-500" style={{ width: `${aiTrend.failureRiskScore}%` }} />
               </div>
-              <span className="text-sm font-bold">{aiTrend.failureRiskScore}%</span>
+              <span className="text-sm font-bold dark:text-signal-ink">{aiTrend.failureRiskScore}%</span>
             </div>
           </div>
-          <div className="bg-white/70 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">Next Predicted Failure</p>
-            <p className="text-sm font-medium">{aiTrend.predictedNextFailureWindow}</p>
+          <div className="bg-white/70 dark:bg-white/[0.04] rounded-lg p-3 dark:border dark:border-white/[0.06]">
+            <p className="text-xs text-gray-500 dark:text-signal-muted mb-1">Next Predicted Failure</p>
+            <p className="text-sm font-medium dark:text-signal-ink">{aiTrend.predictedNextFailureWindow}</p>
           </div>
         </div>
 
         {aiTrend.rootCauseAnalysis.length > 0 && (
           <div className="mb-3">
-            <p className="text-xs font-semibold text-gray-600 mb-1">Root Causes</p>
-            <ul className="text-sm text-gray-700 space-y-1">
+            <p className="text-xs font-semibold text-gray-600 dark:text-signal-muted mb-1">Root Causes</p>
+            <ul className="text-sm text-gray-700 dark:text-signal-body space-y-1">
               {aiTrend.rootCauseAnalysis.map((c, i) => <li key={i} className="flex items-start gap-1"><span className="text-red-500 mt-0.5">·</span> {c}</li>)}
             </ul>
           </div>
@@ -871,8 +871,8 @@ export default function MonitoringDashboard() {
 
         {aiTrend.recommendedActions.length > 0 && (
           <div className="mb-3">
-            <p className="text-xs font-semibold text-gray-600 mb-1">Recommended Actions</p>
-            <ul className="text-sm text-gray-700 space-y-1">
+            <p className="text-xs font-semibold text-gray-600 dark:text-signal-muted mb-1">Recommended Actions</p>
+            <ul className="text-sm text-gray-700 dark:text-signal-body space-y-1">
               {aiTrend.recommendedActions.map((a, i) => <li key={i} className="flex items-start gap-1"><CheckCircle className="w-3 h-3 text-green-500 mt-0.5 shrink-0" /> {a}</li>)}
             </ul>
           </div>
@@ -880,8 +880,8 @@ export default function MonitoringDashboard() {
 
         {aiTrend.anomalies.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-gray-600 mb-1">Anomalies Detected</p>
-            <ul className="text-sm text-gray-700 space-y-1">
+            <p className="text-xs font-semibold text-gray-600 dark:text-signal-muted mb-1">Anomalies Detected</p>
+            <ul className="text-sm text-gray-700 dark:text-signal-body space-y-1">
               {aiTrend.anomalies.map((a, i) => <li key={i} className="flex items-start gap-1"><AlertTriangle className="w-3 h-3 text-yellow-500 mt-0.5 shrink-0" /> {a}</li>)}
             </ul>
           </div>
@@ -896,45 +896,45 @@ export default function MonitoringDashboard() {
   const renderForm = (isEdit: boolean) => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => { setViewMode(isEdit ? 'detail' : 'list'); resetForm(); }} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+        <button onClick={() => { setViewMode(isEdit ? 'detail' : 'list'); resetForm(); }} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> {t('common.back')}
         </button>
-        <h2 className="text-xl font-bold text-gray-900">{isEdit ? `${t('common.edit')} Monitor` : `${t('common.create')} Monitor`}</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink font-display">{isEdit ? `${t('common.edit')} Monitor` : `${t('common.create')} Monitor`}</h2>
       </div>
 
-      <form onSubmit={isEdit ? handleUpdateMonitor : handleCreateMonitor} className="bg-white rounded-xl border p-6 space-y-4 max-w-2xl">
+      <form onSubmit={isEdit ? handleUpdateMonitor : handleCreateMonitor} className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-6 space-y-4 max-w-2xl">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Monitor {t('common.name')}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Monitor {t('common.name')}</label>
           <input type="text" required value={monitorForm.name} onChange={e => setMonitorForm(f => ({ ...f, name: e.target.value }))}
-            className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="e.g., SSL Certificate Monitoring" />
+            className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted" placeholder="e.g., SSL Certificate Monitoring" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Type</label>
             <select value={monitorForm.monitorType} onChange={e => setMonitorForm(f => ({ ...f, monitorType: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2 text-sm">
+              className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted">
               {MONITOR_TYPES.map(mt => <option key={mt} value={mt}>{mt}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Frequency</label>
             <select value={monitorForm.frequency} onChange={e => setMonitorForm(f => ({ ...f, frequency: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2 text-sm">
+              className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted">
               {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('common.description')}</label>
           <textarea value={monitorForm.configuration.description}
             onChange={e => setMonitorForm(f => ({ ...f, configuration: { ...f.configuration, description: e.target.value } }))}
-            className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} placeholder="What does this monitor check?" />
+            className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted" rows={3} placeholder="What does this monitor check?" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tests</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Tests</label>
           {monitorForm.configuration.tests.map((test: string, i: number) => (
             <div key={i} className="flex gap-2 mb-2">
               <input type="text" value={test}
@@ -943,33 +943,33 @@ export default function MonitoringDashboard() {
                   tests[i] = e.target.value;
                   setMonitorForm(f => ({ ...f, configuration: { ...f.configuration, tests } }));
                 }}
-                className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder={`Test ${i + 1}`} />
+                className="flex-1 border rounded-lg px-3 py-2 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted" placeholder={`Test ${i + 1}`} />
               {monitorForm.configuration.tests.length > 1 && (
                 <button type="button" onClick={() => {
                   const tests = monitorForm.configuration.tests.filter((_: any, j: number) => j !== i);
                   setMonitorForm(f => ({ ...f, configuration: { ...f.configuration, tests } }));
-                }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><X className="w-4 h-4" /></button>
+                }} className="p-2 text-red-500 dark:text-signal-bad hover:bg-red-50 dark:hover:bg-signal-bad/10 rounded-lg"><X className="w-4 h-4" /></button>
               )}
             </div>
           ))}
           <button type="button" onClick={() => setMonitorForm(f => ({ ...f, configuration: { ...f.configuration, tests: [...f.configuration.tests, ''] } }))}
-            className="text-sm text-blue-600 hover:text-blue-800">+ Add Test</button>
+            className="text-sm text-blue-600 hover:text-blue-800 dark:text-signal-green dark:hover:text-signal-green">+ Add Test</button>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Custom Test Script (optional)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Custom Test Script (optional)</label>
           <textarea value={monitorForm.testScript} onChange={e => setMonitorForm(f => ({ ...f, testScript: e.target.value }))}
-            className="w-full border rounded-lg px-3 py-2 text-sm font-mono" rows={4} placeholder="// Custom test script..." />
+            className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder-signal-muted font-mono" rows={4} placeholder="// Custom test script..." />
         </div>
 
         <div className="flex gap-3 pt-2">
           <button type="submit" disabled={isSaving}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 disabled:opacity-50 flex items-center gap-2">
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             {isEdit ? 'Update Monitor' : 'Create Monitor'}
           </button>
           <button type="button" onClick={() => { setViewMode(isEdit ? 'detail' : 'list'); resetForm(); }}
-            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
+            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]">{t('common.cancel')}</button>
         </div>
       </form>
     </div>
@@ -981,25 +981,25 @@ export default function MonitoringDashboard() {
   const renderAISuggest = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> {t('common.back')}
         </button>
-        <Brain className="w-5 h-5 text-purple-600" />
-        <h2 className="text-xl font-bold text-gray-900">AI Monitor Suggestions</h2>
+        <Brain className="w-5 h-5 text-purple-600 dark:text-signal-violet" />
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink font-display">AI Monitor Suggestions</h2>
       </div>
 
       {aiLoading && (
-        <div className="flex items-center justify-center py-16 bg-white rounded-xl border">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mr-3" />
-          <span className="text-gray-600">AI is analyzing your compliance profile...</span>
+        <div className="flex items-center justify-center py-16 bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06]">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-signal-violet mr-3" />
+          <span className="text-gray-600 dark:text-signal-body">AI is analyzing your compliance profile...</span>
         </div>
       )}
 
       {aiSuggestions && (
         <>
           {aiSuggestions.summary && (
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-              <p className="text-sm text-purple-800">{aiSuggestions.summary}</p>
+            <div className="bg-purple-50 border border-purple-200 dark:bg-signal-violet/[0.08] dark:border-signal-violet/20 rounded-xl p-4">
+              <p className="text-sm text-purple-800 dark:text-signal-violet">{aiSuggestions.summary}</p>
             </div>
           )}
 
@@ -1007,32 +1007,32 @@ export default function MonitoringDashboard() {
             {(aiSuggestions.suggestions || []).map((s, i) => {
               const alreadyExists = monitors.some(m => m.name.toLowerCase() === s.name.toLowerCase());
               return (
-                <div key={i} className="bg-white rounded-xl border p-5 hover:border-purple-200 transition">
+                <div key={i} className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-5 hover:border-purple-200 dark:hover:border-white/[0.12] transition">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         {TYPE_ICONS[s.monitorType] || <Server className="w-4 h-4" />}
-                        <h4 className="font-semibold text-gray-900">{s.name}</h4>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${s.priority === 'Critical' ? 'bg-red-100 text-red-700' : s.priority === 'High' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                        <h4 className="font-semibold text-gray-900 dark:text-signal-ink">{s.name}</h4>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${s.priority === 'Critical' ? 'bg-red-100 text-red-700 dark:bg-signal-bad/10 dark:text-signal-bad' : s.priority === 'High' ? 'bg-orange-100 text-orange-700 dark:bg-signal-amber/10 dark:text-signal-amber' : 'bg-blue-100 text-blue-700 dark:bg-signal-blue/10 dark:text-signal-blue'}`}>
                           {s.priority}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
+                      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-signal-muted mb-2">
                         <span>{s.monitorType}</span>
                         <span>·</span>
                         <span>{s.frequency}</span>
                       </div>
-                      <p className="text-sm text-gray-700 mb-2">{s.reason}</p>
+                      <p className="text-sm text-gray-700 dark:text-signal-body mb-2">{s.reason}</p>
                       {s.configuration?.tests?.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {s.configuration.tests.map((t: string, j: number) => (
-                            <span key={j} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{t}</span>
+                            <span key={j} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded dark:bg-white/[0.06] dark:text-signal-body">{t}</span>
                           ))}
                         </div>
                       )}
                     </div>
                     <button onClick={() => handleAddSuggestedMonitor(s)} disabled={monitorLimitReached || alreadyExists}
-                      className="ml-4 flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 shrink-0">
+                      className="ml-4 flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:bg-signal-violet dark:hover:bg-signal-violet/90 disabled:opacity-50 shrink-0">
                       <Plus className="w-3.5 h-3.5" /> {alreadyExists ? 'Added' : 'Add'}
                     </button>
                   </div>
@@ -1042,9 +1042,9 @@ export default function MonitoringDashboard() {
           </div>
 
           {(aiSuggestions.suggestions || []).length === 0 && !aiLoading && (
-            <div className="text-center py-12 bg-white rounded-xl border">
-              <Lightbulb className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No suggestions available at this time.</p>
+            <div className="text-center py-12 bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06]">
+              <Lightbulb className="w-10 h-10 text-gray-300 dark:text-signal-muted mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-signal-muted">No suggestions available at this time.</p>
             </div>
           )}
         </>
@@ -1059,27 +1059,27 @@ export default function MonitoringDashboard() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <button onClick={() => { if (selectedMonitor) handleViewDetail(selectedMonitor); else setViewMode('list'); }}
-          className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+          className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> {t('common.back')} to {selectedMonitor?.name || 'List'}
         </button>
-        <Brain className="w-5 h-5 text-purple-600" />
-        <h2 className="text-xl font-bold text-gray-900">AI Trend Analysis</h2>
+        <Brain className="w-5 h-5 text-purple-600 dark:text-signal-violet" />
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink font-display">AI Trend Analysis</h2>
       </div>
 
       {selectedMonitor && (
-        <div className="bg-white rounded-xl border p-4 flex items-center gap-3">
+        <div className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-4 flex items-center gap-3">
           {TYPE_ICONS[selectedMonitor.monitorType] || <Server className="w-5 h-5" />}
           <div>
-            <h3 className="font-semibold text-gray-900">{selectedMonitor.name}</h3>
-            <p className="text-xs text-gray-500">{selectedMonitor.monitorType} · {selectedMonitor.frequency} · {selectedMonitor.status}</p>
+            <h3 className="font-semibold text-gray-900 dark:text-signal-ink">{selectedMonitor.name}</h3>
+            <p className="text-xs text-gray-500 dark:text-signal-muted">{selectedMonitor.monitorType} · {selectedMonitor.frequency} · {selectedMonitor.status}</p>
           </div>
         </div>
       )}
 
       {aiLoading && (
-        <div className="flex items-center justify-center py-16 bg-white rounded-xl border">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mr-3" />
-          <span className="text-gray-600">AI is analyzing monitor trends...</span>
+        <div className="flex items-center justify-center py-16 bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06]">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-signal-violet mr-3" />
+          <span className="text-gray-600 dark:text-signal-body">AI is analyzing monitor trends...</span>
         </div>
       )}
 
@@ -1093,41 +1093,41 @@ export default function MonitoringDashboard() {
   const renderAITriage = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> {t('common.back')}
         </button>
-        <Zap className="w-5 h-5 text-orange-600" />
-        <h2 className="text-xl font-bold text-gray-900">AI Alert Triage</h2>
+        <Zap className="w-5 h-5 text-orange-600 dark:text-signal-amber" />
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink font-display">AI Alert Triage</h2>
       </div>
 
       {aiLoading && (
-        <div className="flex items-center justify-center py-16 bg-white rounded-xl border">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-600 mr-3" />
-          <span className="text-gray-600">AI is triaging alerts...</span>
+        <div className="flex items-center justify-center py-16 bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06]">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-600 dark:text-signal-amber mr-3" />
+          <span className="text-gray-600 dark:text-signal-body">AI is triaging alerts...</span>
         </div>
       )}
 
       {aiTriage && !aiLoading && (
         <>
           {/* Summary */}
-          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+          <div className="bg-orange-50 border border-orange-200 dark:bg-signal-amber/[0.08] dark:border-signal-amber/20 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-4 h-4 text-orange-600" />
-              <span className="font-semibold text-orange-800">{aiTriage.totalAlerts} Alert(s) Triaged</span>
+              <Zap className="w-4 h-4 text-orange-600 dark:text-signal-amber" />
+              <span className="font-semibold text-orange-800 dark:text-signal-amber">{aiTriage.totalAlerts} Alert(s) Triaged</span>
             </div>
-            <p className="text-sm text-orange-700">{aiTriage.summary}</p>
+            <p className="text-sm text-orange-700 dark:text-signal-body">{aiTriage.summary}</p>
           </div>
 
           {/* Remediation order */}
           {aiTriage.remediationOrder && aiTriage.remediationOrder.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-signal-ink mb-3 flex items-center gap-2">
                 <ListChecks className="w-4 h-4" /> Recommended Remediation Order
               </h3>
               <ol className="space-y-2">
                 {aiTriage.remediationOrder.map((name, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm">
-                    <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                  <li key={i} className="flex items-center gap-3 text-sm dark:text-signal-body">
+                    <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 dark:bg-signal-blue/10 dark:text-signal-blue flex items-center justify-center text-xs font-bold">{i + 1}</span>
                     <span>{name}</span>
                   </li>
                 ))}
@@ -1139,10 +1139,10 @@ export default function MonitoringDashboard() {
           {aiTriage.groupedAlerts && Object.keys(aiTriage.groupedAlerts).length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {Object.entries(aiTriage.groupedAlerts).map(([category, names]) => (
-                <div key={category} className="bg-white rounded-xl border p-4">
-                  <h4 className="font-semibold text-gray-800 mb-2">{category}</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    {(names as string[]).map((n, i) => <li key={i} className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{n}</li>)}
+                <div key={category} className="bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06] p-4">
+                  <h4 className="font-semibold text-gray-800 dark:text-signal-ink mb-2">{category}</h4>
+                  <ul className="text-sm text-gray-600 dark:text-signal-body space-y-1">
+                    {(names as string[]).map((n, i) => <li key={i} className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-signal-muted" />{n}</li>)}
                   </ul>
                 </div>
               ))}
@@ -1152,28 +1152,28 @@ export default function MonitoringDashboard() {
           {/* Triage items */}
           <div className="space-y-3">
             {(aiTriage.triageResult || []).map((item, i) => (
-              <div key={i} className={`bg-white rounded-xl border-l-4 p-5 ${
-                item.severity === 'Critical' ? 'border-l-red-500' : item.severity === 'High' ? 'border-l-orange-500' : item.severity === 'Medium' ? 'border-l-yellow-500' : 'border-l-gray-300'
-              } border border-gray-200`}>
+              <div key={i} className={`bg-white dark:bg-white/[0.03] rounded-xl border-l-4 p-5 ${
+                item.severity === 'Critical' ? 'border-l-red-500 dark:border-l-signal-bad' : item.severity === 'High' ? 'border-l-orange-500 dark:border-l-signal-amber' : item.severity === 'Medium' ? 'border-l-yellow-500 dark:border-l-signal-warn' : 'border-l-gray-300 dark:border-l-white/[0.15]'
+              } border border-gray-200 dark:border-white/[0.06]`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold bg-gray-100 px-2 py-0.5 rounded">#{item.priority}</span>
-                      <h4 className="font-semibold text-gray-900">{item.monitorName}</h4>
+                      <span className="text-xs font-bold bg-gray-100 px-2 py-0.5 rounded dark:bg-white/[0.06] dark:text-signal-body">#{item.priority}</span>
+                      <h4 className="font-semibold text-gray-900 dark:text-signal-ink">{item.monitorName}</h4>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        item.severity === 'Critical' ? 'bg-red-100 text-red-700' : item.severity === 'High' ? 'bg-orange-100 text-orange-700' : item.severity === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'
+                        item.severity === 'Critical' ? 'bg-red-100 text-red-700 dark:bg-signal-bad/10 dark:text-signal-bad' : item.severity === 'High' ? 'bg-orange-100 text-orange-700 dark:bg-signal-amber/10 dark:text-signal-amber' : item.severity === 'Medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-gray-100 text-gray-700 dark:bg-white/[0.06] dark:text-signal-body'
                       }`}>{item.severity}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{item.category}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-signal-blue/10 dark:text-signal-blue">{item.category}</span>
                     </div>
                   </div>
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{item.estimatedEffort}</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded dark:bg-white/[0.06] dark:text-signal-body">{item.estimatedEffort}</span>
                 </div>
-                <p className="text-sm text-gray-700 mb-2"><strong>Impact:</strong> {item.businessImpact}</p>
-                <p className="text-sm text-gray-700"><strong>Remediation:</strong> {item.suggestedRemediation}</p>
+                <p className="text-sm text-gray-700 dark:text-signal-body mb-2"><strong>Impact:</strong> {item.businessImpact}</p>
+                <p className="text-sm text-gray-700 dark:text-signal-body"><strong>Remediation:</strong> {item.suggestedRemediation}</p>
                 {item.relatedMonitors && item.relatedMonitors.length > 0 && (
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Related:</span>
-                    {item.relatedMonitors.map((r, j) => <span key={j} className="text-xs bg-gray-50 px-2 py-0.5 rounded">{r}</span>)}
+                    <span className="text-xs text-gray-500 dark:text-signal-muted">Related:</span>
+                    {item.relatedMonitors.map((r, j) => <span key={j} className="text-xs bg-gray-50 px-2 py-0.5 rounded dark:bg-white/[0.04] dark:text-signal-body">{r}</span>)}
                   </div>
                 )}
               </div>
@@ -1181,9 +1181,9 @@ export default function MonitoringDashboard() {
           </div>
 
           {(aiTriage.triageResult || []).length === 0 && (
-            <div className="text-center py-12 bg-white rounded-xl border">
-              <ShieldCheck className="w-10 h-10 text-green-300 mx-auto mb-3" />
-              <p className="text-gray-500">No alerts to triage. All monitors are healthy.</p>
+            <div className="text-center py-12 bg-white dark:bg-white/[0.03] rounded-xl border dark:border-white/[0.06]">
+              <ShieldCheck className="w-10 h-10 text-green-300 dark:text-signal-good mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-signal-muted">No alerts to triage. All monitors are healthy.</p>
             </div>
           )}
         </>
@@ -1197,7 +1197,7 @@ export default function MonitoringDashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-signal-green" />
       </div>
     );
   }
@@ -1205,7 +1205,7 @@ export default function MonitoringDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center justify-between">
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 dark:bg-signal-bad/10 dark:border-signal-bad/20 dark:text-signal-bad px-4 py-3 rounded-lg flex items-center justify-between">
           <span className="text-sm">{error}</span>
           <button onClick={() => setError('')}><X className="w-4 h-4" /></button>
         </div>

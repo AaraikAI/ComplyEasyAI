@@ -130,6 +130,7 @@ export const OnboardingOverlay: React.FC = () => {
         showHints={progress?.showHints ?? true}
         onToggleHints={(show) => updatePreferences({ showHints: show })}
         reducedMotion={reducedMotion}
+        stepTitles={currentFlow?.steps.map((s) => s.title)}
       />
     );
   }
@@ -158,7 +159,7 @@ export const OnboardingOverlay: React.FC = () => {
       )}
 
       {/* Progress bar — compact, top-right, with solid background for readability */}
-      <div className="fixed top-4 right-4 z-[10001] w-64 max-w-[calc(100vw-2rem)] bg-slate-800/95 backdrop-blur border border-slate-600 rounded-xl shadow-xl px-3 py-2">
+      <div className="fixed top-4 right-4 z-[10001] w-64 max-w-[calc(100vw-2rem)] bg-signal-panel2/95 backdrop-blur border border-white/[0.08] rounded-xl shadow-xl px-3 py-2">
         <OnboardingProgressBar
           currentStep={currentStep}
           totalSteps={currentFlow.steps.length}
@@ -173,6 +174,9 @@ export const OnboardingOverlay: React.FC = () => {
           title={step.title}
           description={step.description}
           icon={flowIcons[currentFlow.id] || <Sparkles className="w-8 h-8" />}
+          kicker={currentFlow.name}
+          steps={currentFlow.id === 'welcome' ? currentFlow.steps.map((s) => s.title) : undefined}
+          stepIndex={currentStep}
           primaryAction={{
             label: currentStep === currentFlow.steps.length - 1 ? 'Complete' : 'Next',
             onClick: nextStep,

@@ -12,8 +12,29 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        display: ['"Space Grotesk"', 'Inter', 'sans-serif'],
+        plex: ['"IBM Plex Sans"', 'Inter', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       colors: {
+        signal: {
+          canvas: '#07090D',
+          panel: '#0A0E15',
+          panel2: '#0C1017',
+          panel3: '#0C1420',
+          green: '#38E8A6',
+          blue: '#3AA0FF',
+          violet: '#B98CFF',
+          amber: '#E8B93A',
+          good: '#34C88A',
+          warn: '#E8B93A',
+          bad: '#F87171',
+          ink: '#E9EDF4',
+          body: '#c7cedb',
+          body2: '#b7bfcc',
+          sub: '#9aa4b5',
+          muted: '#5B6577',
+        },
         brand: {
           50: '#f0fdfa',
           100: '#ccfbf1',
@@ -39,6 +60,8 @@ export default {
           800: '#065f46',
           900: '#064e3b',
         },
+        // Dark end (700-950) remapped to the Signal canvas/panel hues so the
+        // app's existing dark: classes land on the Signal palette globally.
         surface: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -47,10 +70,10 @@ export default {
           400: '#94a3b8',
           500: '#64748b',
           600: '#475569',
-          700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
-          950: '#020617',
+          700: '#1A2130',
+          800: '#0C1017',
+          900: '#0A0E15',
+          950: '#07090D',
         },
       },
       animation: {
@@ -72,6 +95,9 @@ export default {
         gradient: 'gradient 8s ease infinite',
         'spin-slow': 'spin 3s linear infinite',
         'count-up': 'countUp 1s ease-out',
+        'pulse-ring': 'pulseRing 3.2s ease-out infinite',
+        'pulse-ring-delay': 'pulseRing 3.2s ease-out 1.6s infinite',
+        'blink-dot': 'blinkDot 1.6s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -134,6 +160,18 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        pulseRing: {
+          '0%': { transform: 'scale(0.55)', opacity: '0.8' },
+          '100%': { transform: 'scale(2.3)', opacity: '0' },
+        },
+        blinkDot: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.25' },
+        },
+      },
+      backgroundImage: {
+        'signal-glow': 'radial-gradient(1000px 520px at 50% -10%, rgba(56,232,166,0.2), #07090D)',
+        'signal-glow-tight': 'radial-gradient(760px 420px at 50% -10%, rgba(56,232,166,0.2), #07090D)',
       },
       backgroundSize: {
         '300%': '300%',

@@ -431,14 +431,14 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }, [incidents, searchQuery]);
 
   // ── Helper Functions ─────────────────────────────────────────────────
-  const riskLevelBg = (level: RiskLevel) => level === 'Critical' ? 'bg-red-500/20 text-red-400' : level === 'High' ? 'bg-orange-500/20 text-orange-400' : level === 'Medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400';
-  const severityBg = (s: IncidentSeverity) => s === 'Critical' ? 'bg-red-500/20 text-red-400' : s === 'High' ? 'bg-orange-500/20 text-orange-400' : s === 'Medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400';
-  const statusBg = (s: IncidentStatus) => s === 'Reported to Authority' ? 'bg-blue-500/20 text-blue-400' : s === 'Resolved' ? 'bg-emerald-500/20 text-emerald-400' : s === 'Investigating' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400';
-  const mitigationBg = (s: MitigationStatus) => s === 'Verified' ? 'bg-emerald-500/20 text-emerald-400' : s === 'Implemented' ? 'bg-blue-500/20 text-blue-400' : s === 'In Progress' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-500/20 text-slate-400';
-  const criticalityBg = (c: Criticality) => c === 'Critical' ? 'bg-red-500/20 text-red-400' : c === 'Important' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-500/20 text-slate-400';
-  const testResultBg = (r: TestResult) => r === 'Pass' ? 'bg-emerald-500/20 text-emerald-400' : r === 'Fail' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400';
-  const contractBg = (s: ContractStatus) => s === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : s === 'Renewal Pending' ? 'bg-amber-500/20 text-amber-400' : s === 'Under Review' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400';
-  const concentrationBg = (c: ConcentrationRisk) => c === 'High' ? 'bg-red-500/20 text-red-400' : c === 'Medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400';
+  const riskLevelBg = (level: RiskLevel) => level === 'Critical' ? 'bg-signal-bad/10 text-signal-bad' : level === 'High' ? 'bg-signal-warn/10 text-signal-warn' : level === 'Medium' ? 'bg-signal-amber/10 text-signal-amber' : 'bg-signal-good/10 text-signal-good';
+  const severityBg = (s: IncidentSeverity) => s === 'Critical' ? 'bg-signal-bad/10 text-signal-bad' : s === 'High' ? 'bg-signal-warn/10 text-signal-warn' : s === 'Medium' ? 'bg-signal-amber/10 text-signal-amber' : 'bg-signal-good/10 text-signal-good';
+  const statusBg = (s: IncidentStatus) => s === 'Reported to Authority' ? 'bg-signal-blue/10 text-signal-blue' : s === 'Resolved' ? 'bg-signal-good/10 text-signal-good' : s === 'Investigating' ? 'bg-signal-amber/10 text-signal-amber' : 'bg-signal-bad/10 text-signal-bad';
+  const mitigationBg = (s: MitigationStatus) => s === 'Verified' ? 'bg-signal-good/10 text-signal-good' : s === 'Implemented' ? 'bg-signal-blue/10 text-signal-blue' : s === 'In Progress' ? 'bg-signal-amber/10 text-signal-amber' : 'bg-white/[0.06] text-signal-muted';
+  const criticalityBg = (c: Criticality) => c === 'Critical' ? 'bg-signal-bad/10 text-signal-bad' : c === 'Important' ? 'bg-signal-amber/10 text-signal-amber' : 'bg-white/[0.06] text-signal-muted';
+  const testResultBg = (r: TestResult) => r === 'Pass' ? 'bg-signal-good/10 text-signal-good' : r === 'Fail' ? 'bg-signal-bad/10 text-signal-bad' : 'bg-signal-amber/10 text-signal-amber';
+  const contractBg = (s: ContractStatus) => s === 'Active' ? 'bg-signal-good/10 text-signal-good' : s === 'Renewal Pending' ? 'bg-signal-amber/10 text-signal-amber' : s === 'Under Review' ? 'bg-signal-blue/10 text-signal-blue' : 'bg-signal-bad/10 text-signal-bad';
+  const concentrationBg = (c: ConcentrationRisk) => c === 'High' ? 'bg-signal-bad/10 text-signal-bad' : c === 'Medium' ? 'bg-signal-amber/10 text-signal-amber' : 'bg-signal-good/10 text-signal-good';
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: 'overview', label: t('common.overview'), icon: <BarChart3 size={15} /> },
@@ -453,38 +453,38 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="space-y-6">
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
+        <div className="bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-slate-400">Compliance Score</span>
-            <Shield size={18} className="text-blue-400" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted">Compliance Score</span>
+            <Shield size={18} className="text-signal-blue" />
           </div>
           <div className="flex items-center gap-3">
             <div className="relative w-14 h-14">
               <svg viewBox="0 0 36 36" className="w-14 h-14 transform -rotate-90">
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" strokeWidth="3" />
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke={complianceScore >= 80 ? '#10b981' : complianceScore >= 60 ? '#f59e0b' : '#ef4444'} strokeWidth="3" strokeDasharray={`${complianceScore} ${100 - complianceScore}`} strokeLinecap="round" />
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="3" />
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke={complianceScore >= 80 ? '#34C88A' : complianceScore >= 60 ? '#E8B93A' : '#F87171'} strokeWidth="3" strokeDasharray={`${complianceScore} ${100 - complianceScore}`} strokeLinecap="round" />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">{complianceScore}%</span>
+              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-signal-ink">{complianceScore}%</span>
             </div>
             <div>
-              <div className="text-2xl font-bold text-white">{complianceScore}%</div>
-              <div className="text-xs text-slate-400">DORA Readiness</div>
+              <div className="text-2xl font-bold font-display text-signal-ink">{complianceScore}%</div>
+              <div className="text-xs text-signal-muted">DORA Readiness</div>
             </div>
           </div>
         </div>
         {[
-          { label: 'ICT Risk Events', value: risks.length, sub: `${criticalRisks} critical`, icon: AlertCircle, color: 'text-red-400' },
-          { label: 'Third-Party Providers', value: providers.length, sub: `${criticalProviders} critical`, icon: Building2, color: 'text-purple-400' },
-          { label: 'Incidents Filed', value: reportedIncidents, sub: `${openIncidents} open`, icon: FileText, color: 'text-amber-400' },
-          { label: 'Resilience Tests', value: testsCompleted, sub: `${testsPassed} passed`, icon: Activity, color: 'text-emerald-400' },
+          { label: 'ICT Risk Events', value: risks.length, sub: `${criticalRisks} critical`, icon: AlertCircle, color: 'text-signal-bad' },
+          { label: 'Third-Party Providers', value: providers.length, sub: `${criticalProviders} critical`, icon: Building2, color: 'text-signal-violet' },
+          { label: 'Incidents Filed', value: reportedIncidents, sub: `${openIncidents} open`, icon: FileText, color: 'text-signal-warn' },
+          { label: 'Resilience Tests', value: testsCompleted, sub: `${testsPassed} passed`, icon: Activity, color: 'text-signal-good' },
         ].map(m => (
-          <div key={m.label} className="bg-slate-800 rounded-lg p-5 border border-slate-700">
+          <div key={m.label} className="bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-slate-400">{m.label}</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted">{m.label}</span>
               <m.icon size={18} className={m.color} />
             </div>
-            <div className="text-2xl font-bold text-white">{m.value}</div>
-            <div className="text-xs text-slate-400 mt-1">{m.sub}</div>
+            <div className="text-2xl font-bold font-display text-signal-ink">{m.value}</div>
+            <div className="text-xs text-signal-muted mt-1">{m.sub}</div>
           </div>
         ))}
       </div>
@@ -492,21 +492,21 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Risk Distribution */}
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">ICT Risk Level Distribution</h3>
+        <div className="bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink mb-4">ICT Risk Level Distribution</h3>
           <div className="space-y-3">
             {[
-              { label: 'Critical', count: criticalRisks, pct: Math.round((criticalRisks / risks.length) * 100), color: 'bg-red-500' },
-              { label: 'High', count: highRisks, pct: Math.round((highRisks / risks.length) * 100), color: 'bg-orange-500' },
-              { label: 'Medium', count: risks.filter(r => r.riskLevel === 'Medium').length, pct: Math.round((risks.filter(r => r.riskLevel === 'Medium').length / risks.length) * 100), color: 'bg-amber-500' },
-              { label: 'Low', count: risks.filter(r => r.riskLevel === 'Low').length, pct: Math.round((risks.filter(r => r.riskLevel === 'Low').length / risks.length) * 100), color: 'bg-emerald-500' },
+              { label: 'Critical', count: criticalRisks, pct: Math.round((criticalRisks / risks.length) * 100), color: 'bg-signal-bad' },
+              { label: 'High', count: highRisks, pct: Math.round((highRisks / risks.length) * 100), color: 'bg-signal-warn' },
+              { label: 'Medium', count: risks.filter(r => r.riskLevel === 'Medium').length, pct: Math.round((risks.filter(r => r.riskLevel === 'Medium').length / risks.length) * 100), color: 'bg-signal-amber' },
+              { label: 'Low', count: risks.filter(r => r.riskLevel === 'Low').length, pct: Math.round((risks.filter(r => r.riskLevel === 'Low').length / risks.length) * 100), color: 'bg-signal-good' },
             ].map(item => (
               <div key={item.label}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-300">{item.label}</span>
-                  <span className="text-white font-medium">{item.count} ({item.pct}%)</span>
+                  <span className="text-signal-body">{item.label}</span>
+                  <span className="text-signal-ink font-medium">{item.count} ({item.pct}%)</span>
                 </div>
-                <div className="h-2 bg-slate-700 rounded-full">
+                <div className="h-2 bg-white/[0.08] rounded-full">
                   <div className={`h-2 ${item.color} rounded-full transition-all`} style={{ width: `${item.pct}%` }} />
                 </div>
               </div>
@@ -515,17 +515,17 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         {/* Recent Incidents */}
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Recent ICT Incidents</h3>
+        <div className="bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink mb-4">Recent ICT Incidents</h3>
           <div className="space-y-3">
             {incidents.slice(0, 4).map(inc => (
-              <div key={inc.id} className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
+              <div key={inc.id} className="flex items-center justify-between p-3 bg-signal-canvas rounded-lg">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 font-mono">{inc.incidentId}</span>
+                    <span className="text-xs text-signal-muted font-mono">{inc.incidentId}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${severityBg(inc.severity)}`}>{inc.severity}</span>
                   </div>
-                  <p className="text-sm text-white truncate mt-1">{inc.title}</p>
+                  <p className="text-sm text-signal-ink truncate mt-1">{inc.title}</p>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full ml-3 whitespace-nowrap ${statusBg(inc.status)}`}>{inc.status}</span>
               </div>
@@ -534,24 +534,24 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         {/* Third-Party Concentration */}
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Third-Party Provider Overview</h3>
+        <div className="bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink mb-4">Third-Party Provider Overview</h3>
           <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-slate-900 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-red-400">{criticalProviders}</div>
-              <div className="text-xs text-slate-400">Critical Providers</div>
+            <div className="bg-signal-canvas rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-signal-bad">{criticalProviders}</div>
+              <div className="text-xs text-signal-muted">Critical Providers</div>
             </div>
-            <div className="bg-slate-900 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-amber-400">{providersWithoutExit}</div>
-              <div className="text-xs text-slate-400">Missing Exit Strategy</div>
+            <div className="bg-signal-canvas rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-signal-warn">{providersWithoutExit}</div>
+              <div className="text-xs text-signal-muted">Missing Exit Strategy</div>
             </div>
           </div>
           <div className="space-y-2">
             {providers.filter(p => p.criticality === 'Critical').map(p => (
-              <div key={p.id} className="flex items-center justify-between p-2 bg-slate-900 rounded">
+              <div key={p.id} className="flex items-center justify-between p-2 bg-signal-canvas rounded">
                 <div>
-                  <span className="text-sm text-white">{p.providerName}</span>
-                  <span className="text-xs text-slate-400 ml-2">{p.serviceType.split('(')[0].trim()}</span>
+                  <span className="text-sm text-signal-ink">{p.providerName}</span>
+                  <span className="text-xs text-signal-muted ml-2">{p.serviceType.split('(')[0].trim()}</span>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${concentrationBg(p.concentrationRisk)}`}>{p.concentrationRisk} risk</span>
               </div>
@@ -560,32 +560,32 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         {/* Resilience Testing Summary */}
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Resilience Testing Summary</h3>
+        <div className="bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink mb-4">Resilience Testing Summary</h3>
           <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-slate-900 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-emerald-400">{testsPassed}</div>
-              <div className="text-xs text-slate-400">Passed</div>
+            <div className="bg-signal-canvas rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-signal-good">{testsPassed}</div>
+              <div className="text-xs text-signal-muted">Passed</div>
             </div>
-            <div className="bg-slate-900 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-amber-400">{tests.filter(tst => tst.result === 'Partial').length}</div>
-              <div className="text-xs text-slate-400">Partial</div>
+            <div className="bg-signal-canvas rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-signal-warn">{tests.filter(tst => tst.result === 'Partial').length}</div>
+              <div className="text-xs text-signal-muted">Partial</div>
             </div>
-            <div className="bg-slate-900 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-red-400">{testsFailed}</div>
-              <div className="text-xs text-slate-400">Failed</div>
+            <div className="bg-signal-canvas rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-signal-bad">{testsFailed}</div>
+              <div className="text-xs text-signal-muted">Failed</div>
             </div>
           </div>
-          <div className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
-            <span className="text-sm text-slate-300">Total Open Findings</span>
-            <span className="text-lg font-bold text-amber-400">{totalFindings}</span>
+          <div className="flex items-center justify-between p-3 bg-signal-canvas rounded-lg">
+            <span className="text-sm text-signal-body">Total Open Findings</span>
+            <span className="text-lg font-bold text-signal-warn">{totalFindings}</span>
           </div>
           <div className="mt-3 space-y-2">
             {tests.filter(tst => tst.result === 'Fail').map(tst => (
-              <div key={tst.id} className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded">
-                <XCircle size={14} className="text-red-400 flex-shrink-0" />
-                <span className="text-sm text-red-300">{tst.testName}</span>
-                <span className="text-xs text-red-400 ml-auto">{tst.findingsCount} findings</span>
+              <div key={tst.id} className="flex items-center gap-2 p-2 bg-signal-bad/10 border border-signal-bad/20 rounded">
+                <XCircle size={14} className="text-signal-bad flex-shrink-0" />
+                <span className="text-sm text-signal-bad">{tst.testName}</span>
+                <span className="text-xs text-signal-bad ml-auto">{tst.findingsCount} findings</span>
               </div>
             ))}
           </div>
@@ -600,19 +600,19 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
           <div className="relative flex-1 sm:max-w-xs">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-signal-muted" />
             <input
               type="text"
               placeholder="Search risks..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500"
+              className="w-full pl-9 pr-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm placeholder-signal-muted"
             />
           </div>
           <select
             value={categoryFilter}
             onChange={e => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm"
+            className="px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm"
           >
             <option value="all">All Categories</option>
             {(['Cyber', 'Infrastructure', 'Software', 'Cloud', 'Data'] as RiskCategory[]).map(c => (
@@ -620,45 +620,45 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             ))}
           </select>
         </div>
-        <button onClick={() => setShowAddRisk(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+        <button onClick={() => setShowAddRisk(true)} className="flex items-center gap-2 px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90">
           <Plus size={16} />Add Risk
         </button>
       </div>
 
-      <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+      <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left p-3 text-slate-400 font-medium">Risk ID</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Title</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Category</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Likelihood</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Impact</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Risk Level</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Mitigation</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Owner</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Review Date</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Actions</th>
+              <tr className="border-b border-white/[0.06]">
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Risk ID</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Title</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Category</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Likelihood</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Impact</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Risk Level</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Mitigation</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Owner</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Review Date</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredRisks.map(risk => (
-                <tr key={risk.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                  <td className="p-3 font-mono text-xs text-slate-300">{risk.riskId}</td>
-                  <td className="p-3 text-white max-w-[200px] truncate">{risk.title}</td>
-                  <td className="p-3"><span className="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300">{risk.category}</span></td>
-                  <td className="p-3 text-slate-300">{risk.likelihood}</td>
-                  <td className="p-3 text-slate-300">{risk.impact}</td>
+                <tr key={risk.id} className="border-b border-white/[0.06] hover:bg-white/[0.04]">
+                  <td className="p-3 font-mono text-xs text-signal-body">{risk.riskId}</td>
+                  <td className="p-3 text-signal-ink max-w-[200px] truncate">{risk.title}</td>
+                  <td className="p-3"><span className="text-xs px-2 py-1 rounded bg-white/[0.06] text-signal-body">{risk.category}</span></td>
+                  <td className="p-3 text-signal-body">{risk.likelihood}</td>
+                  <td className="p-3 text-signal-body">{risk.impact}</td>
                   <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${riskLevelBg(risk.riskLevel)}`}>{risk.riskLevel}</span></td>
                   <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${mitigationBg(risk.mitigationStatus)}`}>{risk.mitigationStatus}</span></td>
-                  <td className="p-3 text-slate-300 whitespace-nowrap">{risk.owner}</td>
-                  <td className="p-3 text-slate-400 whitespace-nowrap">{risk.reviewDate}</td>
+                  <td className="p-3 text-signal-body whitespace-nowrap">{risk.owner}</td>
+                  <td className="p-3 text-signal-muted whitespace-nowrap">{risk.reviewDate}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => setSelectedRisk(risk)} className="p-1.5 hover:bg-slate-600 rounded" title="View"><Eye size={14} className="text-slate-400" /></button>
-                      <button onClick={() => setEditingRisk(risk)} className="p-1.5 hover:bg-slate-600 rounded" title="Edit"><Edit3 size={14} className="text-slate-400" /></button>
-                      <button onClick={() => { if (window.confirm(`Delete risk "${risk.title}"? This cannot be undone.`)) handleDeleteRisk(risk.id); }} className="p-1.5 hover:bg-slate-600 rounded" title="Delete"><Trash2 size={14} className="text-red-400" /></button>
+                      <button onClick={() => setSelectedRisk(risk)} className="p-1.5 hover:bg-white/[0.06] rounded" title="View"><Eye size={14} className="text-signal-muted" /></button>
+                      <button onClick={() => setEditingRisk(risk)} className="p-1.5 hover:bg-white/[0.06] rounded" title="Edit"><Edit3 size={14} className="text-signal-muted" /></button>
+                      <button onClick={() => { if (window.confirm(`Delete risk "${risk.title}"? This cannot be undone.`)) handleDeleteRisk(risk.id); }} className="p-1.5 hover:bg-white/[0.06] rounded" title="Delete"><Trash2 size={14} className="text-signal-bad" /></button>
                     </div>
                   </td>
                 </tr>
@@ -675,30 +675,30 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="relative flex-1 sm:max-w-xs w-full">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-signal-muted" />
           <input
             type="text"
             placeholder="Search incidents..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500"
+            className="w-full pl-9 pr-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm placeholder-signal-muted"
           />
         </div>
-        <button onClick={() => setShowAddIncident(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+        <button onClick={() => setShowAddIncident(true)} className="flex items-center gap-2 px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90">
           <Plus size={16} />Report Incident
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
         {[
-          { label: 'Open Incidents', value: incidents.filter(i => i.status === 'Open').length, color: 'text-red-400', icon: AlertCircle },
-          { label: 'Under Investigation', value: incidents.filter(i => i.status === 'Investigating').length, color: 'text-amber-400', icon: Search },
-          { label: 'Resolved', value: incidents.filter(i => i.status === 'Resolved').length, color: 'text-emerald-400', icon: CheckCircle },
-          { label: 'Reported to Authority', value: incidents.filter(i => i.status === 'Reported to Authority').length, color: 'text-blue-400', icon: FileText },
+          { label: 'Open Incidents', value: incidents.filter(i => i.status === 'Open').length, color: 'text-signal-bad', icon: AlertCircle },
+          { label: 'Under Investigation', value: incidents.filter(i => i.status === 'Investigating').length, color: 'text-signal-warn', icon: Search },
+          { label: 'Resolved', value: incidents.filter(i => i.status === 'Resolved').length, color: 'text-signal-good', icon: CheckCircle },
+          { label: 'Reported to Authority', value: incidents.filter(i => i.status === 'Reported to Authority').length, color: 'text-signal-blue', icon: FileText },
         ].map(m => (
-          <div key={m.label} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+          <div key={m.label} className="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.06]">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-slate-400">{m.label}</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted">{m.label}</span>
               <m.icon size={16} className={m.color} />
             </div>
             <div className={`text-xl font-bold ${m.color}`}>{m.value}</div>
@@ -706,51 +706,51 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ))}
       </div>
 
-      <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+      <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left p-3 text-slate-400 font-medium">Incident ID</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Title</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Type</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Severity</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Affected Services</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Detection</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Resolution</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Status</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Notification</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Actions</th>
+              <tr className="border-b border-white/[0.06]">
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Incident ID</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Title</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Type</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Severity</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Affected Services</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Detection</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Resolution</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Status</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Notification</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredIncidents.map(inc => (
-                <tr key={inc.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                  <td className="p-3 font-mono text-xs text-slate-300">{inc.incidentId}</td>
-                  <td className="p-3 text-white max-w-[180px] truncate">{inc.title}</td>
-                  <td className="p-3"><span className="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300 whitespace-nowrap">{inc.type}</span></td>
+                <tr key={inc.id} className="border-b border-white/[0.06] hover:bg-white/[0.04]">
+                  <td className="p-3 font-mono text-xs text-signal-body">{inc.incidentId}</td>
+                  <td className="p-3 text-signal-ink max-w-[180px] truncate">{inc.title}</td>
+                  <td className="p-3"><span className="text-xs px-2 py-1 rounded bg-white/[0.06] text-signal-body whitespace-nowrap">{inc.type}</span></td>
                   <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${severityBg(inc.severity)}`}>{inc.severity}</span></td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1 max-w-[160px]">
-                      {inc.affectedServices.slice(0, 2).map(s => <span key={s} className="text-xs bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{s}</span>)}
-                      {inc.affectedServices.length > 2 && <span className="text-xs text-slate-500">+{inc.affectedServices.length - 2}</span>}
+                      {inc.affectedServices.slice(0, 2).map(s => <span key={s} className="text-xs bg-white/[0.06] text-signal-body px-1.5 py-0.5 rounded">{s}</span>)}
+                      {inc.affectedServices.length > 2 && <span className="text-xs text-signal-muted">+{inc.affectedServices.length - 2}</span>}
                     </div>
                   </td>
-                  <td className="p-3 text-slate-400 text-xs whitespace-nowrap">{new Date(inc.detectionTime).toLocaleDateString()}</td>
-                  <td className="p-3 text-slate-400 text-xs whitespace-nowrap">{inc.resolutionTime ? new Date(inc.resolutionTime).toLocaleDateString() : <span className="text-amber-400">Ongoing</span>}</td>
+                  <td className="p-3 text-signal-muted text-xs whitespace-nowrap">{new Date(inc.detectionTime).toLocaleDateString()}</td>
+                  <td className="p-3 text-signal-muted text-xs whitespace-nowrap">{inc.resolutionTime ? new Date(inc.resolutionTime).toLocaleDateString() : <span className="text-signal-warn">Ongoing</span>}</td>
                   <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${statusBg(inc.status)}`}>{inc.status}</span></td>
                   <td className="p-3">
                     <span className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
-                      inc.notificationStatus === 'Final Sent' ? 'bg-emerald-500/20 text-emerald-400' :
-                      inc.notificationStatus === 'Not Required' ? 'bg-slate-500/20 text-slate-400' :
-                      inc.notificationStatus === 'Pending' ? 'bg-red-500/20 text-red-400' :
-                      'bg-blue-500/20 text-blue-400'
+                      inc.notificationStatus === 'Final Sent' ? 'bg-signal-good/10 text-signal-good' :
+                      inc.notificationStatus === 'Not Required' ? 'bg-white/[0.06] text-signal-muted' :
+                      inc.notificationStatus === 'Pending' ? 'bg-signal-bad/10 text-signal-bad' :
+                      'bg-signal-blue/10 text-signal-blue'
                     }`}>{inc.notificationStatus}</span>
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => setSelectedIncident(inc)} className="p-1.5 hover:bg-slate-600 rounded" title="View"><Eye size={14} className="text-slate-400" /></button>
-                      <button onClick={() => setEditingIncident(inc)} className="p-1.5 hover:bg-slate-600 rounded" title="Edit"><Edit3 size={14} className="text-slate-400" /></button>
+                      <button onClick={() => setSelectedIncident(inc)} className="p-1.5 hover:bg-white/[0.06] rounded" title="View"><Eye size={14} className="text-signal-muted" /></button>
+                      <button onClick={() => setEditingIncident(inc)} className="p-1.5 hover:bg-white/[0.06] rounded" title="Edit"><Edit3 size={14} className="text-signal-muted" /></button>
                     </div>
                   </td>
                 </tr>
@@ -766,22 +766,22 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const renderThirdParty = () => (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-white">ICT Third-Party Service Provider Register</h3>
-        <button onClick={() => setShowAddProvider(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+        <h3 className="text-lg font-semibold font-display text-signal-ink">ICT Third-Party Service Provider Register</h3>
+        <button onClick={() => setShowAddProvider(true)} className="flex items-center gap-2 px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90">
           <Plus size={16} />Add Provider
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
         {[
-          { label: 'Total Providers', value: providers.length, color: 'text-blue-400', icon: Building2 },
-          { label: 'Critical Providers', value: criticalProviders, color: 'text-red-400', icon: AlertCircle },
-          { label: 'No Exit Strategy', value: providersWithoutExit, color: 'text-amber-400', icon: AlertTriangle },
-          { label: 'High Concentration', value: providers.filter(p => p.concentrationRisk === 'High').length, color: 'text-orange-400', icon: Zap },
+          { label: 'Total Providers', value: providers.length, color: 'text-signal-blue', icon: Building2 },
+          { label: 'Critical Providers', value: criticalProviders, color: 'text-signal-bad', icon: AlertCircle },
+          { label: 'No Exit Strategy', value: providersWithoutExit, color: 'text-signal-warn', icon: AlertTriangle },
+          { label: 'High Concentration', value: providers.filter(p => p.concentrationRisk === 'High').length, color: 'text-signal-warn', icon: Zap },
         ].map(m => (
-          <div key={m.label} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+          <div key={m.label} className="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.06]">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-slate-400">{m.label}</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted">{m.label}</span>
               <m.icon size={16} className={m.color} />
             </div>
             <div className={`text-xl font-bold ${m.color}`}>{m.value}</div>
@@ -789,46 +789,46 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ))}
       </div>
 
-      <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+      <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left p-3 text-slate-400 font-medium">Provider Name</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Service Type</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Criticality</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Contract</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Exit Strategy</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Concentration Risk</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Country</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Last Assessment</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Next Review</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Actions</th>
+              <tr className="border-b border-white/[0.06]">
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Provider Name</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Service Type</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Criticality</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Contract</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Exit Strategy</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Concentration Risk</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Country</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Last Assessment</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Next Review</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {providers.map(p => (
-                <tr key={p.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                  <td className="p-3 text-white font-medium whitespace-nowrap">{p.providerName}</td>
-                  <td className="p-3 text-slate-300 max-w-[180px] truncate">{p.serviceType}</td>
+                <tr key={p.id} className="border-b border-white/[0.06] hover:bg-white/[0.04]">
+                  <td className="p-3 text-signal-ink font-medium whitespace-nowrap">{p.providerName}</td>
+                  <td className="p-3 text-signal-body max-w-[180px] truncate">{p.serviceType}</td>
                   <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${criticalityBg(p.criticality)}`}>{p.criticality}</span></td>
                   <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${contractBg(p.contractStatus)}`}>{p.contractStatus}</span></td>
                   <td className="p-3 text-center">
                     {p.exitStrategyExists
-                      ? <CheckCircle size={16} className="text-emerald-400 inline" />
-                      : <XCircle size={16} className="text-red-400 inline" />
+                      ? <CheckCircle size={16} className="text-signal-good inline" />
+                      : <XCircle size={16} className="text-signal-bad inline" />
                     }
                   </td>
                   <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${concentrationBg(p.concentrationRisk)}`}>{p.concentrationRisk}</span></td>
-                  <td className="p-3 text-slate-300 whitespace-nowrap">{p.country}</td>
-                  <td className="p-3 text-slate-400 whitespace-nowrap">{p.lastAssessmentDate}</td>
-                  <td className="p-3 text-slate-400 whitespace-nowrap">{p.nextReview}</td>
+                  <td className="p-3 text-signal-body whitespace-nowrap">{p.country}</td>
+                  <td className="p-3 text-signal-muted whitespace-nowrap">{p.lastAssessmentDate}</td>
+                  <td className="p-3 text-signal-muted whitespace-nowrap">{p.nextReview}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => { setProviderForm({ providerName: p.providerName, serviceType: p.serviceType, criticality: p.criticality, country: p.country, exitStrategyExists: p.exitStrategyExists }); setEditingProviderId(p.id); setShowAddProvider(true); }}
-                        className="p-1.5 hover:bg-slate-600 rounded" title="Edit"><Edit3 size={14} className="text-slate-400" /></button>
-                      <button onClick={() => { if (window.confirm(`Delete provider "${p.providerName}"? This cannot be undone.`)) handleDeleteProvider(p.id); }} className="p-1.5 hover:bg-slate-600 rounded" title="Delete"><Trash2 size={14} className="text-red-400" /></button>
+                        className="p-1.5 hover:bg-white/[0.06] rounded" title="Edit"><Edit3 size={14} className="text-signal-muted" /></button>
+                      <button onClick={() => { if (window.confirm(`Delete provider "${p.providerName}"? This cannot be undone.`)) handleDeleteProvider(p.id); }} className="p-1.5 hover:bg-white/[0.06] rounded" title="Delete"><Trash2 size={14} className="text-signal-bad" /></button>
                     </div>
                   </td>
                 </tr>
@@ -840,17 +840,17 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {/* Concentration Risk Warning */}
       {providers.filter(p => p.concentrationRisk === 'High').length > 0 && (
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+        <div className="bg-signal-warn/10 border border-signal-warn/30 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle size={20} className="text-orange-400 flex-shrink-0 mt-0.5" />
+            <AlertTriangle size={20} className="text-signal-warn flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-sm font-semibold text-orange-300">Concentration Risk Alert</h4>
-              <p className="text-sm text-orange-200/80 mt-1">
+              <h4 className="text-sm font-semibold text-signal-warn">Concentration Risk Alert</h4>
+              <p className="text-sm text-signal-body mt-1">
                 {providers.filter(p => p.concentrationRisk === 'High').length} providers have high concentration risk. DORA Article 29 requires financial entities to identify and assess concentration risk at entity and group level. Consider alternative providers or mitigation measures.
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 {providers.filter(p => p.concentrationRisk === 'High').map(p => (
-                  <span key={p.id} className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded">{p.providerName}</span>
+                  <span key={p.id} className="text-xs bg-signal-warn/10 text-signal-warn px-2 py-1 rounded">{p.providerName}</span>
                 ))}
               </div>
             </div>
@@ -864,12 +864,12 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const renderResilienceTesting = () => (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-white">Digital Operational Resilience Testing Programme</h3>
+        <h3 className="text-lg font-semibold font-display text-signal-ink">Digital Operational Resilience Testing Programme</h3>
         <div className="flex items-center gap-2">
-          <button onClick={handleExportTests} disabled={tests.length === 0} className="flex items-center gap-2 px-3 py-2 bg-slate-700 text-white rounded-lg text-sm hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button onClick={handleExportTests} disabled={tests.length === 0} className="flex items-center gap-2 px-3 py-2 bg-white/[0.06] text-signal-ink rounded-lg text-sm hover:bg-white/[0.10] disabled:opacity-50 disabled:cursor-not-allowed">
             <Download size={16} />Export Report
           </button>
-          <button onClick={() => { setEditingTestId(null); setTestForm({ testName: '', type: 'Vulnerability Scan', scope: '', nextScheduled: '' }); setShowAddTest(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+          <button onClick={() => { setEditingTestId(null); setTestForm({ testName: '', type: 'Vulnerability Scan', scope: '', nextScheduled: '' }); setShowAddTest(true); }} className="flex items-center gap-2 px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90">
             <Plus size={16} />Schedule Test
           </button>
         </div>
@@ -877,14 +877,14 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
         {[
-          { label: 'Tests Conducted', value: tests.length, color: 'text-blue-400', icon: Activity },
-          { label: 'Pass Rate', value: `${Math.round((testsPassed / tests.length) * 100)}%`, color: 'text-emerald-400', icon: CheckCircle },
-          { label: 'Open Findings', value: totalFindings, color: 'text-amber-400', icon: Bug },
-          { label: 'TLPT Completed', value: tests.filter(tst => tst.type === 'TLPT').length, color: 'text-purple-400', icon: Shield },
+          { label: 'Tests Conducted', value: tests.length, color: 'text-signal-blue', icon: Activity },
+          { label: 'Pass Rate', value: `${Math.round((testsPassed / tests.length) * 100)}%`, color: 'text-signal-good', icon: CheckCircle },
+          { label: 'Open Findings', value: totalFindings, color: 'text-signal-warn', icon: Bug },
+          { label: 'TLPT Completed', value: tests.filter(tst => tst.type === 'TLPT').length, color: 'text-signal-violet', icon: Shield },
         ].map(m => (
-          <div key={m.label} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+          <div key={m.label} className="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.06]">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-slate-400">{m.label}</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal-muted">{m.label}</span>
               <m.icon size={16} className={m.color} />
             </div>
             <div className={`text-xl font-bold ${m.color}`}>{m.value}</div>
@@ -892,50 +892,50 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ))}
       </div>
 
-      <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+      <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left p-3 text-slate-400 font-medium">Test Name</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Type</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Scope</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Last Executed</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Result</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Findings</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Next Scheduled</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Tested By</th>
-                <th className="text-left p-3 text-slate-400 font-medium">Actions</th>
+              <tr className="border-b border-white/[0.06]">
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Test Name</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Type</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Scope</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Last Executed</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Result</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Findings</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Next Scheduled</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Tested By</th>
+                <th className="text-left p-3 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {tests.map(tst => (
-                <tr key={tst.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                  <td className="p-3 text-white font-medium max-w-[200px] truncate">{tst.testName}</td>
+                <tr key={tst.id} className="border-b border-white/[0.06] hover:bg-white/[0.04]">
+                  <td className="p-3 text-signal-ink font-medium max-w-[200px] truncate">{tst.testName}</td>
                   <td className="p-3">
                     <span className={`text-xs px-2 py-1 rounded ${
-                      tst.type === 'TLPT' ? 'bg-purple-500/20 text-purple-400' :
-                      tst.type === 'Penetration Test' ? 'bg-blue-500/20 text-blue-400' :
-                      tst.type === 'Vulnerability Scan' ? 'bg-cyan-500/20 text-cyan-400' :
-                      'bg-slate-600 text-slate-300'
+                      tst.type === 'TLPT' ? 'bg-signal-violet/10 text-signal-violet' :
+                      tst.type === 'Penetration Test' ? 'bg-signal-blue/10 text-signal-blue' :
+                      tst.type === 'Vulnerability Scan' ? 'bg-signal-blue/10 text-signal-blue' :
+                      'bg-white/[0.06] text-signal-body'
                     }`}>{tst.type}</span>
                   </td>
-                  <td className="p-3 text-slate-300 max-w-[200px] truncate">{tst.scope}</td>
-                  <td className="p-3 text-slate-400 whitespace-nowrap">{tst.lastExecuted}</td>
+                  <td className="p-3 text-signal-body max-w-[200px] truncate">{tst.scope}</td>
+                  <td className="p-3 text-signal-muted whitespace-nowrap">{tst.lastExecuted}</td>
                   <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${testResultBg(tst.result)}`}>{tst.result}</span></td>
                   <td className="p-3">
-                    <span className={`text-sm font-medium ${tst.findingsCount > 5 ? 'text-amber-400' : tst.findingsCount > 0 ? 'text-slate-300' : 'text-emerald-400'}`}>
+                    <span className={`text-sm font-medium ${tst.findingsCount > 5 ? 'text-signal-warn' : tst.findingsCount > 0 ? 'text-signal-body' : 'text-signal-good'}`}>
                       {tst.findingsCount}
                     </span>
                   </td>
-                  <td className="p-3 text-slate-400 whitespace-nowrap">{tst.nextScheduled}</td>
-                  <td className="p-3 text-slate-300 max-w-[150px] truncate">{tst.testedBy}</td>
+                  <td className="p-3 text-signal-muted whitespace-nowrap">{tst.nextScheduled}</td>
+                  <td className="p-3 text-signal-body max-w-[150px] truncate">{tst.testedBy}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => { setTestForm({ testName: tst.testName, type: tst.type, scope: tst.scope, nextScheduled: '' }); setEditingTestId(tst.id); setShowAddTest(true); }}
-                        className="p-1.5 hover:bg-slate-600 rounded" title="View / Edit"><Eye size={14} className="text-slate-400" /></button>
-                      <button onClick={handleExportTests} className="p-1.5 hover:bg-slate-600 rounded" title="Export"><Download size={14} className="text-slate-400" /></button>
+                        className="p-1.5 hover:bg-white/[0.06] rounded" title="View / Edit"><Eye size={14} className="text-signal-muted" /></button>
+                      <button onClick={handleExportTests} className="p-1.5 hover:bg-white/[0.06] rounded" title="Export"><Download size={14} className="text-signal-muted" /></button>
                     </div>
                   </td>
                 </tr>
@@ -946,12 +946,12 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       {/* TLPT Notice */}
-      <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+      <div className="bg-signal-violet/10 border border-signal-violet/30 rounded-xl p-4">
         <div className="flex items-start gap-3">
-          <Shield size={20} className="text-purple-400 flex-shrink-0 mt-0.5" />
+          <Shield size={20} className="text-signal-violet flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-sm font-semibold text-purple-300">Threat-Led Penetration Testing (TLPT)</h4>
-            <p className="text-sm text-purple-200/80 mt-1">
+            <h4 className="text-sm font-semibold text-signal-violet">Threat-Led Penetration Testing (TLPT)</h4>
+            <p className="text-sm text-signal-body mt-1">
               Under DORA Article 26, financial entities identified by competent authorities must conduct TLPT at least every 3 years. TLPT must be carried out in accordance with the TIBER-EU framework and cover critical or important functions on live production systems.
             </p>
           </div>
@@ -964,52 +964,52 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderRiskDetailModal = () => selectedRisk && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedRisk(null)}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
+      <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-slate-400">{selectedRisk.riskId}</span>
+              <span className="text-xs font-mono text-signal-muted">{selectedRisk.riskId}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full ${riskLevelBg(selectedRisk.riskLevel)}`}>{selectedRisk.riskLevel}</span>
             </div>
-            <h3 className="text-lg font-semibold text-white mt-1">{selectedRisk.title}</h3>
+            <h3 className="text-lg font-semibold font-display text-signal-ink mt-1">{selectedRisk.title}</h3>
           </div>
-          <button onClick={() => setSelectedRisk(null)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+          <button onClick={() => setSelectedRisk(null)} className="p-1 hover:bg-white/[0.06] rounded"><X size={18} className="text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Description</label>
-            <p className="text-sm text-white">{selectedRisk.description}</p>
+            <label className="block text-sm text-signal-muted mb-1">Description</label>
+            <p className="text-sm text-signal-ink">{selectedRisk.description}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Category</label>
-              <span className="text-sm text-white">{selectedRisk.category}</span>
+              <label className="block text-sm text-signal-muted mb-1">Category</label>
+              <span className="text-sm text-signal-ink">{selectedRisk.category}</span>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Owner</label>
-              <span className="text-sm text-white">{selectedRisk.owner}</span>
+              <label className="block text-sm text-signal-muted mb-1">Owner</label>
+              <span className="text-sm text-signal-ink">{selectedRisk.owner}</span>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Likelihood</label>
-              <span className="text-sm text-white">{selectedRisk.likelihood}</span>
+              <label className="block text-sm text-signal-muted mb-1">Likelihood</label>
+              <span className="text-sm text-signal-ink">{selectedRisk.likelihood}</span>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Impact</label>
-              <span className="text-sm text-white">{selectedRisk.impact}</span>
+              <label className="block text-sm text-signal-muted mb-1">Impact</label>
+              <span className="text-sm text-signal-ink">{selectedRisk.impact}</span>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Mitigation Status</label>
+              <label className="block text-sm text-signal-muted mb-1">Mitigation Status</label>
               <span className={`text-xs px-2 py-1 rounded-full ${mitigationBg(selectedRisk.mitigationStatus)}`}>{selectedRisk.mitigationStatus}</span>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Next Review</label>
-              <span className="text-sm text-white">{selectedRisk.reviewDate}</span>
+              <label className="block text-sm text-signal-muted mb-1">Next Review</label>
+              <span className="text-sm text-signal-ink">{selectedRisk.reviewDate}</span>
             </div>
           </div>
         </div>
-        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => setSelectedRisk(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Close</button>
-          <button onClick={() => { setEditingRisk(selectedRisk); setSelectedRisk(null); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Edit Risk</button>
+        <div className="flex justify-end gap-3 p-5 border-t border-white/[0.06]">
+          <button onClick={() => setSelectedRisk(null)} className="px-4 py-2 text-sm text-signal-muted hover:text-signal-ink">Close</button>
+          <button onClick={() => { setEditingRisk(selectedRisk); setSelectedRisk(null); }} className="px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90">Edit Risk</button>
         </div>
       </div>
     </div>
@@ -1017,57 +1017,57 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderIncidentDetailModal = () => selectedIncident && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedIncident(null)}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
+      <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-slate-400">{selectedIncident.incidentId}</span>
+              <span className="text-xs font-mono text-signal-muted">{selectedIncident.incidentId}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full ${severityBg(selectedIncident.severity)}`}>{selectedIncident.severity}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full ${statusBg(selectedIncident.status)}`}>{selectedIncident.status}</span>
             </div>
-            <h3 className="text-lg font-semibold text-white mt-1">{selectedIncident.title}</h3>
+            <h3 className="text-lg font-semibold font-display text-signal-ink mt-1">{selectedIncident.title}</h3>
           </div>
-          <button onClick={() => setSelectedIncident(null)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+          <button onClick={() => setSelectedIncident(null)} className="p-1 hover:bg-white/[0.06] rounded"><X size={18} className="text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Description</label>
-            <p className="text-sm text-white">{selectedIncident.description}</p>
+            <label className="block text-sm text-signal-muted mb-1">Description</label>
+            <p className="text-sm text-signal-ink">{selectedIncident.description}</p>
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Root Cause</label>
-            <p className="text-sm text-white">{selectedIncident.rootCause}</p>
+            <label className="block text-sm text-signal-muted mb-1">Root Cause</label>
+            <p className="text-sm text-signal-ink">{selectedIncident.rootCause}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Type</label>
-              <span className="text-sm text-white">{selectedIncident.type}</span>
+              <label className="block text-sm text-signal-muted mb-1">Type</label>
+              <span className="text-sm text-signal-ink">{selectedIncident.type}</span>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Notification Status</label>
-              <span className="text-sm text-white">{selectedIncident.notificationStatus}</span>
+              <label className="block text-sm text-signal-muted mb-1">Notification Status</label>
+              <span className="text-sm text-signal-ink">{selectedIncident.notificationStatus}</span>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Detection Time</label>
-              <span className="text-sm text-white">{new Date(selectedIncident.detectionTime).toLocaleString()}</span>
+              <label className="block text-sm text-signal-muted mb-1">Detection Time</label>
+              <span className="text-sm text-signal-ink">{new Date(selectedIncident.detectionTime).toLocaleString()}</span>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Resolution Time</label>
-              <span className="text-sm text-white">{selectedIncident.resolutionTime ? new Date(selectedIncident.resolutionTime).toLocaleString() : 'Ongoing'}</span>
+              <label className="block text-sm text-signal-muted mb-1">Resolution Time</label>
+              <span className="text-sm text-signal-ink">{selectedIncident.resolutionTime ? new Date(selectedIncident.resolutionTime).toLocaleString() : 'Ongoing'}</span>
             </div>
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Affected Services</label>
+            <label className="block text-sm text-signal-muted mb-1">Affected Services</label>
             <div className="flex flex-wrap gap-2">
               {selectedIncident.affectedServices.map(s => (
-                <span key={s} className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">{s}</span>
+                <span key={s} className="text-xs bg-white/[0.06] text-signal-body px-2 py-1 rounded">{s}</span>
               ))}
             </div>
           </div>
         </div>
-        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => setSelectedIncident(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Close</button>
-          <button onClick={() => { setEditingIncident(selectedIncident); setSelectedIncident(null); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Update Status</button>
+        <div className="flex justify-end gap-3 p-5 border-t border-white/[0.06]">
+          <button onClick={() => setSelectedIncident(null)} className="px-4 py-2 text-sm text-signal-muted hover:text-signal-ink">Close</button>
+          <button onClick={() => { setEditingIncident(selectedIncident); setSelectedIncident(null); }} className="px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90">Update Status</button>
         </div>
       </div>
     </div>
@@ -1075,48 +1075,48 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderAddRiskModal = () => showAddRisk && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowAddRisk(false)}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">Add ICT Risk</h3>
-          <button onClick={() => setShowAddRisk(false)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+      <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink">Add ICT Risk</h3>
+          <button onClick={() => setShowAddRisk(false)} className="p-1 hover:bg-white/[0.06] rounded"><X size={18} className="text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Risk Title</label>
-            <input type="text" value={riskForm.title} onChange={e => setRiskForm(f => ({ ...f, title: e.target.value }))} placeholder="Enter risk title..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Risk Title</label>
+            <input type="text" value={riskForm.title} onChange={e => setRiskForm(f => ({ ...f, title: e.target.value }))} placeholder="Enter risk title..." className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Category</label>
-            <select value={riskForm.category} onChange={e => setRiskForm(f => ({ ...f, category: e.target.value as RiskCategory }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+            <label className="block text-sm text-signal-muted mb-1">Category</label>
+            <select value={riskForm.category} onChange={e => setRiskForm(f => ({ ...f, category: e.target.value as RiskCategory }))} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
               {(['Cyber', 'Infrastructure', 'Software', 'Cloud', 'Data'] as RiskCategory[]).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Likelihood</label>
-              <select value={riskForm.likelihood} onChange={e => setRiskForm(f => ({ ...f, likelihood: e.target.value as Likelihood }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Likelihood</label>
+              <select value={riskForm.likelihood} onChange={e => setRiskForm(f => ({ ...f, likelihood: e.target.value as Likelihood }))} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['Very Low', 'Low', 'Medium', 'High', 'Very High'] as Likelihood[]).map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Impact</label>
-              <select value={riskForm.impact} onChange={e => setRiskForm(f => ({ ...f, impact: e.target.value as Impact }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Impact</label>
+              <select value={riskForm.impact} onChange={e => setRiskForm(f => ({ ...f, impact: e.target.value as Impact }))} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['Negligible', 'Minor', 'Moderate', 'Major', 'Severe'] as Impact[]).map(i => <option key={i} value={i}>{i}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Owner</label>
-            <input type="text" value={riskForm.owner} onChange={e => setRiskForm(f => ({ ...f, owner: e.target.value }))} placeholder="Risk owner..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Owner</label>
+            <input type="text" value={riskForm.owner} onChange={e => setRiskForm(f => ({ ...f, owner: e.target.value }))} placeholder="Risk owner..." className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Description</label>
-            <textarea value={riskForm.description} onChange={e => setRiskForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the risk..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
+            <label className="block text-sm text-signal-muted mb-1">Description</label>
+            <textarea value={riskForm.description} onChange={e => setRiskForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the risk..." className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm h-20 resize-none" />
           </div>
         </div>
-        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => setShowAddRisk(false)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
-          <button onClick={handleCreateRisk} disabled={submitting || !riskForm.title.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : 'Add Risk'}</button>
+        <div className="flex justify-end gap-3 p-5 border-t border-white/[0.06]">
+          <button onClick={() => setShowAddRisk(false)} className="px-4 py-2 text-sm text-signal-muted">Cancel</button>
+          <button onClick={handleCreateRisk} disabled={submitting || !riskForm.title.trim()} className="px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : 'Add Risk'}</button>
         </div>
       </div>
     </div>
@@ -1124,42 +1124,42 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderAddIncidentModal = () => showAddIncident && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowAddIncident(false)}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">Report ICT Incident</h3>
-          <button onClick={() => setShowAddIncident(false)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+      <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink">Report ICT Incident</h3>
+          <button onClick={() => setShowAddIncident(false)} className="p-1 hover:bg-white/[0.06] rounded"><X size={18} className="text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Incident Title</label>
-            <input type="text" value={incidentForm.title} onChange={e => setIncidentForm(f => ({ ...f, title: e.target.value }))} placeholder="Enter incident title..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Incident Title</label>
+            <input type="text" value={incidentForm.title} onChange={e => setIncidentForm(f => ({ ...f, title: e.target.value }))} placeholder="Enter incident title..." className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Type</label>
-              <select value={incidentForm.type} onChange={e => setIncidentForm(f => ({ ...f, type: e.target.value as IncidentType }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Type</label>
+              <select value={incidentForm.type} onChange={e => setIncidentForm(f => ({ ...f, type: e.target.value as IncidentType }))} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['Cyber Attack', 'System Failure', 'Data Breach', 'Third-Party Outage'] as IncidentType[]).map(it => <option key={it} value={it}>{it}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Severity</label>
-              <select value={incidentForm.severity} onChange={e => setIncidentForm(f => ({ ...f, severity: e.target.value as IncidentSeverity }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Severity</label>
+              <select value={incidentForm.severity} onChange={e => setIncidentForm(f => ({ ...f, severity: e.target.value as IncidentSeverity }))} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['Low', 'Medium', 'High', 'Critical'] as IncidentSeverity[]).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Affected Services</label>
-            <input type="text" value={incidentForm.affectedServices} onChange={e => setIncidentForm(f => ({ ...f, affectedServices: e.target.value }))} placeholder="Comma-separated services..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Affected Services</label>
+            <input type="text" value={incidentForm.affectedServices} onChange={e => setIncidentForm(f => ({ ...f, affectedServices: e.target.value }))} placeholder="Comma-separated services..." className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Description</label>
-            <textarea value={incidentForm.description} onChange={e => setIncidentForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the incident..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
+            <label className="block text-sm text-signal-muted mb-1">Description</label>
+            <textarea value={incidentForm.description} onChange={e => setIncidentForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the incident..." className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm h-20 resize-none" />
           </div>
         </div>
-        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => setShowAddIncident(false)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
-          <button onClick={handleCreateIncident} disabled={submitting || !incidentForm.title.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : 'Report Incident'}</button>
+        <div className="flex justify-end gap-3 p-5 border-t border-white/[0.06]">
+          <button onClick={() => setShowAddIncident(false)} className="px-4 py-2 text-sm text-signal-muted">Cancel</button>
+          <button onClick={handleCreateIncident} disabled={submitting || !incidentForm.title.trim()} className="px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : 'Report Incident'}</button>
         </div>
       </div>
     </div>
@@ -1167,38 +1167,38 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderEditRiskModal = () => editingRisk && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setEditingRisk(null)}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">Edit ICT Risk</h3>
-          <button onClick={() => setEditingRisk(null)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+      <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink">Edit ICT Risk</h3>
+          <button onClick={() => setEditingRisk(null)} className="p-1 hover:bg-white/[0.06] rounded"><X size={18} className="text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Risk Title</label>
-            <input type="text" value={editingRisk.title} onChange={e => setEditingRisk(r => r ? { ...r, title: e.target.value } : r)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Risk Title</label>
+            <input type="text" value={editingRisk.title} onChange={e => setEditingRisk(r => r ? { ...r, title: e.target.value } : r)} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Risk Level</label>
-              <select value={editingRisk.riskLevel} onChange={e => setEditingRisk(r => r ? { ...r, riskLevel: e.target.value as RiskLevel } : r)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Risk Level</label>
+              <select value={editingRisk.riskLevel} onChange={e => setEditingRisk(r => r ? { ...r, riskLevel: e.target.value as RiskLevel } : r)} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['Low', 'Medium', 'High', 'Critical'] as RiskLevel[]).map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Mitigation Status</label>
-              <select value={editingRisk.mitigationStatus} onChange={e => setEditingRisk(r => r ? { ...r, mitigationStatus: e.target.value as MitigationStatus } : r)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Mitigation Status</label>
+              <select value={editingRisk.mitigationStatus} onChange={e => setEditingRisk(r => r ? { ...r, mitigationStatus: e.target.value as MitigationStatus } : r)} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['Not Started', 'In Progress', 'Implemented', 'Verified'] as MitigationStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Owner</label>
-            <input type="text" value={editingRisk.owner} onChange={e => setEditingRisk(r => r ? { ...r, owner: e.target.value } : r)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Owner</label>
+            <input type="text" value={editingRisk.owner} onChange={e => setEditingRisk(r => r ? { ...r, owner: e.target.value } : r)} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
         </div>
-        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => setEditingRisk(null)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
-          <button onClick={() => editingRisk && handleUpdateRisk(editingRisk.id, { title: editingRisk.title, riskLevel: editingRisk.riskLevel, mitigationStatus: editingRisk.mitigationStatus, owner: editingRisk.owner })} disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">{submitting ? 'Saving...' : 'Save Changes'}</button>
+        <div className="flex justify-end gap-3 p-5 border-t border-white/[0.06]">
+          <button onClick={() => setEditingRisk(null)} className="px-4 py-2 text-sm text-signal-muted">Cancel</button>
+          <button onClick={() => editingRisk && handleUpdateRisk(editingRisk.id, { title: editingRisk.title, riskLevel: editingRisk.riskLevel, mitigationStatus: editingRisk.mitigationStatus, owner: editingRisk.owner })} disabled={submitting} className="px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90 disabled:opacity-50">{submitting ? 'Saving...' : 'Save Changes'}</button>
         </div>
       </div>
     </div>
@@ -1206,38 +1206,38 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderEditIncidentModal = () => editingIncident && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setEditingIncident(null)}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">Update ICT Incident</h3>
-          <button onClick={() => setEditingIncident(null)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+      <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink">Update ICT Incident</h3>
+          <button onClick={() => setEditingIncident(null)} className="p-1 hover:bg-white/[0.06] rounded"><X size={18} className="text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Incident Title</label>
-            <input type="text" value={editingIncident.title} onChange={e => setEditingIncident(i => i ? { ...i, title: e.target.value } : i)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Incident Title</label>
+            <input type="text" value={editingIncident.title} onChange={e => setEditingIncident(i => i ? { ...i, title: e.target.value } : i)} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Status</label>
-              <select value={editingIncident.status} onChange={e => setEditingIncident(i => i ? { ...i, status: e.target.value as IncidentStatus } : i)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Status</label>
+              <select value={editingIncident.status} onChange={e => setEditingIncident(i => i ? { ...i, status: e.target.value as IncidentStatus } : i)} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['Open', 'Investigating', 'Resolved', 'Reported to Authority'] as IncidentStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Notification Status</label>
-              <select value={editingIncident.notificationStatus} onChange={e => setEditingIncident(i => i ? { ...i, notificationStatus: e.target.value as NotificationStatus } : i)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Notification Status</label>
+              <select value={editingIncident.notificationStatus} onChange={e => setEditingIncident(i => i ? { ...i, notificationStatus: e.target.value as NotificationStatus } : i)} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['Not Required', 'Pending', 'Initial Sent', 'Intermediate Sent', 'Final Sent'] as NotificationStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Root Cause</label>
-            <textarea value={editingIncident.rootCause} onChange={e => setEditingIncident(i => i ? { ...i, rootCause: e.target.value } : i)} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
+            <label className="block text-sm text-signal-muted mb-1">Root Cause</label>
+            <textarea value={editingIncident.rootCause} onChange={e => setEditingIncident(i => i ? { ...i, rootCause: e.target.value } : i)} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm h-20 resize-none" />
           </div>
         </div>
-        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => setEditingIncident(null)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
-          <button onClick={() => editingIncident && handleUpdateIncident(editingIncident.id, { title: editingIncident.title, status: editingIncident.status, notificationStatus: editingIncident.notificationStatus, rootCause: editingIncident.rootCause })} disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">{submitting ? 'Saving...' : 'Save Changes'}</button>
+        <div className="flex justify-end gap-3 p-5 border-t border-white/[0.06]">
+          <button onClick={() => setEditingIncident(null)} className="px-4 py-2 text-sm text-signal-muted">Cancel</button>
+          <button onClick={() => editingIncident && handleUpdateIncident(editingIncident.id, { title: editingIncident.title, status: editingIncident.status, notificationStatus: editingIncident.notificationStatus, rootCause: editingIncident.rootCause })} disabled={submitting} className="px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90 disabled:opacity-50">{submitting ? 'Saving...' : 'Save Changes'}</button>
         </div>
       </div>
     </div>
@@ -1245,40 +1245,40 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderProviderModal = () => showAddProvider && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => { setShowAddProvider(false); setEditingProviderId(null); }}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">{editingProviderId ? 'Edit' : 'Add'} ICT Third-Party Provider</h3>
-          <button onClick={() => { setShowAddProvider(false); setEditingProviderId(null); }} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+      <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink">{editingProviderId ? 'Edit' : 'Add'} ICT Third-Party Provider</h3>
+          <button onClick={() => { setShowAddProvider(false); setEditingProviderId(null); }} className="p-1 hover:bg-white/[0.06] rounded"><X size={18} className="text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Provider Name</label>
-            <input type="text" value={providerForm.providerName} onChange={e => setProviderForm(f => ({ ...f, providerName: e.target.value }))} placeholder="Provider name..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Provider Name</label>
+            <input type="text" value={providerForm.providerName} onChange={e => setProviderForm(f => ({ ...f, providerName: e.target.value }))} placeholder="Provider name..." className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Service Type</label>
-            <input type="text" value={providerForm.serviceType} onChange={e => setProviderForm(f => ({ ...f, serviceType: e.target.value }))} placeholder="e.g., Cloud Hosting (IaaS)" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Service Type</label>
+            <input type="text" value={providerForm.serviceType} onChange={e => setProviderForm(f => ({ ...f, serviceType: e.target.value }))} placeholder="e.g., Cloud Hosting (IaaS)" className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Criticality</label>
-              <select value={providerForm.criticality} onChange={e => setProviderForm(f => ({ ...f, criticality: e.target.value as Criticality }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Criticality</label>
+              <select value={providerForm.criticality} onChange={e => setProviderForm(f => ({ ...f, criticality: e.target.value as Criticality }))} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['Critical', 'Important', 'Standard'] as Criticality[]).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Country</label>
-              <input type="text" value={providerForm.country} onChange={e => setProviderForm(f => ({ ...f, country: e.target.value }))} placeholder="Country" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+              <label className="block text-sm text-signal-muted mb-1">Country</label>
+              <input type="text" value={providerForm.country} onChange={e => setProviderForm(f => ({ ...f, country: e.target.value }))} placeholder="Country" className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" checked={providerForm.exitStrategyExists} onChange={e => setProviderForm(f => ({ ...f, exitStrategyExists: e.target.checked }))} className="w-4 h-4 rounded border-slate-600 bg-slate-700" />
+          <label className="flex items-center gap-2 text-sm text-signal-body">
+            <input type="checkbox" checked={providerForm.exitStrategyExists} onChange={e => setProviderForm(f => ({ ...f, exitStrategyExists: e.target.checked }))} className="w-4 h-4 rounded border-white/[0.10] bg-white/[0.06] accent-signal-green" />
             Exit strategy documented (DORA Article 28)
           </label>
         </div>
-        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => { setShowAddProvider(false); setEditingProviderId(null); }} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
-          <button onClick={handleSaveProvider} disabled={submitting || !providerForm.providerName.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : editingProviderId ? 'Save Changes' : 'Add Provider'}</button>
+        <div className="flex justify-end gap-3 p-5 border-t border-white/[0.06]">
+          <button onClick={() => { setShowAddProvider(false); setEditingProviderId(null); }} className="px-4 py-2 text-sm text-signal-muted">Cancel</button>
+          <button onClick={handleSaveProvider} disabled={submitting || !providerForm.providerName.trim()} className="px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : editingProviderId ? 'Save Changes' : 'Add Provider'}</button>
         </div>
       </div>
     </div>
@@ -1286,36 +1286,36 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const renderTestModal = () => showAddTest && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => { setShowAddTest(false); setEditingTestId(null); }}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">{editingTestId ? 'Edit' : 'Schedule'} Resilience Test</h3>
-          <button onClick={() => { setShowAddTest(false); setEditingTestId(null); }} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+      <div className="bg-signal-panel2 rounded-2xl border border-white/[0.08] w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+          <h3 className="text-lg font-semibold font-display text-signal-ink">{editingTestId ? 'Edit' : 'Schedule'} Resilience Test</h3>
+          <button onClick={() => { setShowAddTest(false); setEditingTestId(null); }} className="p-1 hover:bg-white/[0.06] rounded"><X size={18} className="text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Test Name</label>
-            <input type="text" value={testForm.testName} onChange={e => setTestForm(f => ({ ...f, testName: e.target.value }))} placeholder="Test name..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+            <label className="block text-sm text-signal-muted mb-1">Test Name</label>
+            <input type="text" value={testForm.testName} onChange={e => setTestForm(f => ({ ...f, testName: e.target.value }))} placeholder="Test name..." className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Type</label>
-              <select value={testForm.type} onChange={e => setTestForm(f => ({ ...f, type: e.target.value as TestType }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+              <label className="block text-sm text-signal-muted mb-1">Type</label>
+              <select value={testForm.type} onChange={e => setTestForm(f => ({ ...f, type: e.target.value as TestType }))} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm">
                 {(['TLPT', 'Scenario', 'Vulnerability Scan', 'Penetration Test'] as TestType[]).map(t2 => <option key={t2} value={t2}>{t2}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Next Scheduled</label>
-              <input type="date" value={testForm.nextScheduled} onChange={e => setTestForm(f => ({ ...f, nextScheduled: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+              <label className="block text-sm text-signal-muted mb-1">Next Scheduled</label>
+              <input type="date" value={testForm.nextScheduled} onChange={e => setTestForm(f => ({ ...f, nextScheduled: e.target.value }))} className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm" />
             </div>
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Scope</label>
-            <textarea value={testForm.scope} onChange={e => setTestForm(f => ({ ...f, scope: e.target.value }))} placeholder="Scope of the test..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" />
+            <label className="block text-sm text-signal-muted mb-1">Scope</label>
+            <textarea value={testForm.scope} onChange={e => setTestForm(f => ({ ...f, scope: e.target.value }))} placeholder="Scope of the test..." className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.10] rounded-xl text-signal-ink text-sm h-20 resize-none" />
           </div>
         </div>
-        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => { setShowAddTest(false); setEditingTestId(null); }} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
-          <button onClick={handleSaveTest} disabled={submitting || !testForm.testName.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : editingTestId ? 'Save Changes' : 'Schedule Test'}</button>
+        <div className="flex justify-end gap-3 p-5 border-t border-white/[0.06]">
+          <button onClick={() => { setShowAddTest(false); setEditingTestId(null); }} className="px-4 py-2 text-sm text-signal-muted">Cancel</button>
+          <button onClick={handleSaveTest} disabled={submitting || !testForm.testName.trim()} className="px-4 py-2 bg-signal-green text-signal-canvas font-medium rounded-lg text-sm hover:bg-signal-green/90 disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : editingTestId ? 'Save Changes' : 'Schedule Test'}</button>
         </div>
       </div>
     </div>
@@ -1323,26 +1323,26 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   // ── Main Render ──────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-signal-canvas text-signal-ink">
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
-          <button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-lg"><ArrowLeft size={20} /></button>
+          <button onClick={onBack} className="p-2 hover:bg-white/[0.06] rounded-lg"><ArrowLeft size={20} /></button>
           <div>
-            <h1 className="text-2xl font-bold">DORA Compliance</h1>
-            <p className="text-sm text-slate-400">Digital Operational Resilience Act (EU) 2022/2554</p>
+            <h1 className="text-2xl font-bold font-display">DORA Compliance</h1>
+            <p className="text-sm text-signal-muted">Digital Operational Resilience Act (EU) 2022/2554</p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded-lg flex items-center justify-between text-sm text-red-300">
+          <div className="mb-4 p-3 bg-signal-bad/10 border border-signal-bad/30 rounded-xl flex items-center justify-between text-sm text-signal-bad">
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="ml-4 text-red-400 hover:text-red-200">Dismiss</button>
+            <button onClick={() => setError(null)} className="ml-4 text-signal-bad hover:text-signal-ink">Dismiss</button>
           </div>
         )}
 
-        <div className="flex gap-1 mb-6 border-b border-slate-700 overflow-x-auto">
+        <div className="flex gap-1 mb-6 border-b border-white/[0.06] overflow-x-auto">
           {tabs.map(tab => (
-            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchQuery(''); setCategoryFilter('all'); }} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
+            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchQuery(''); setCategoryFilter('all'); }} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-signal-green text-signal-green' : 'border-transparent text-signal-muted hover:text-signal-ink hover:border-white/[0.10]'}`}>
               {tab.icon}{tab.label}
             </button>
           ))}

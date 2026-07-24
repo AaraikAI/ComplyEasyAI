@@ -724,21 +724,21 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
   return (
     <div className="p-6 space-y-6 animate-fadeIn" data-onboarding="integrations-page">
       {integrationLimitReached && (
-        <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3 rounded-lg">
+        <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 dark:text-signal-amber dark:bg-signal-amber/10 dark:border-signal-amber/30 px-4 py-3 rounded-lg">
           {getUpgradeMessage(user?.organization?.plan, 'maxIntegrations', connectedCount)} <a href="/settings?tab=billing" className="font-medium underline">Upgrade</a>
         </div>
       )}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('integrations.title')}</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('integrations.title')}</h1>
+          <p className="text-gray-500 dark:text-signal-sub mt-1">
             Connect your tools to automate compliance collection. {connectedCount} of {totalCount} connected.
           </p>
         </div>
         {onBack && (
           <button
             onClick={onBack}
-            className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-signal-body hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
           >
             <X size={18} />
             <span>Close</span>
@@ -749,13 +749,13 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
       {/* Search and Filter */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-signal-muted" size={20} />
           <input
             type="text"
             placeholder={t('common.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-transparent outline-none"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -765,8 +765,8 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
               onClick={() => setSelectedCategory(cat === 'All' ? null : cat)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 (cat === 'All' && !selectedCategory) || selectedCategory === cat
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ? 'bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-body dark:hover:bg-white/[0.08]'
               }`}
             >
               {cat}
@@ -780,14 +780,14 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
         {filteredIntegrations.map(int => (
           <div
             key={int.id}
-            className={`p-5 border rounded-xl bg-white hover:shadow-md transition-all ${
-              int.connected ? 'border-brand-200 bg-brand-50' : 'border-gray-200 hover:border-brand-200'
+            className={`p-5 border rounded-2xl bg-white dark:bg-white/[0.03] hover:shadow-md dark:hover:shadow-none transition-all ${
+              int.connected ? 'border-brand-200 bg-brand-50 dark:border-signal-green/30' : 'border-gray-200 hover:border-brand-200 dark:border-white/[0.06] dark:hover:border-white/[0.12]'
             }`}
           >
             <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center text-gray-500 border border-gray-100 flex-shrink-0">
+              <div className="w-12 h-12 bg-gray-50 dark:bg-white/[0.05] rounded-xl flex items-center justify-center text-gray-500 dark:text-signal-body border border-gray-100 dark:border-white/[0.06] flex-shrink-0">
                 {/* Icon placeholder - in production, use actual icons */}
-                <div className="font-bold text-sm">
+                <div className="font-bold dark:font-display text-sm">
                   {int.name.substring(0, 2).toUpperCase()}
                 </div>
               </div>
@@ -798,7 +798,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
                       e.stopPropagation();
                       handleSync(int);
                     }}
-                    className="px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center"
+                    className="px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-signal-blue/10 dark:text-signal-blue dark:hover:bg-signal-blue/20 flex items-center"
                     title="Sync Integration"
                   >
                     <RefreshCw size={14} className="mr-1" />
@@ -811,10 +811,10 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
                   title={!int.connected && integrationLimitReached ? getUpgradeMessage(user?.organization?.plan, 'maxIntegrations', connectedCount) : undefined}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     int.connected
-                      ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                      ? 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-transparent dark:border dark:border-white/[0.10] dark:text-signal-body2 dark:hover:bg-white/[0.05]'
                       : integrationLimitReached
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-brand-600 text-white hover:bg-brand-700'
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-white/[0.06] dark:text-signal-muted'
+                        : 'bg-brand-600 text-white hover:bg-brand-700 dark:bg-signal-green/10 dark:text-signal-green dark:border dark:border-signal-green/30 dark:hover:bg-signal-green/20 dark:font-semibold'
                   }`}
                 >
                   {int.connected ? t('integrations.configure') : t('integrations.connect')}
@@ -823,21 +823,23 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
             </div>
             
             <div>
-              <h3 className="font-bold text-gray-900 mb-1">{int.name}</h3>
+              <h3 className="font-bold text-gray-900 dark:text-signal-ink dark:font-display mb-1">{int.name}</h3>
               <div className="flex items-center space-x-2 text-sm mb-2">
-                <span className="text-gray-500">{int.category}</span>
-                {int.connected && (
-                  <>
-                    <span className="text-gray-300">•</span>
-                    <span className="flex items-center text-green-600">
-                      <CheckCircle size={12} className="mr-1" />
-                      {t('integrations.connected')}
-                    </span>
-                  </>
+                <span className="text-gray-500 dark:text-signal-sub">{int.category}</span>
+                <span className="text-gray-300 dark:text-signal-muted">•</span>
+                {int.connected ? (
+                  <span className="flex items-center text-green-600 dark:text-signal-green font-mono text-[10px] uppercase tracking-[0.14em]">
+                    <CheckCircle size={12} className="mr-1" />
+                    {t('integrations.connected')}
+                  </span>
+                ) : (
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-400 dark:text-signal-muted">
+                    Not connected
+                  </span>
                 )}
               </div>
               {int.connected && (
-                <p className="text-xs text-gray-500">{t('integrations.lastSync')}: {int.lastSync}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">{t('integrations.lastSync')}: {int.lastSync}</p>
               )}
             </div>
           </div>
@@ -846,13 +848,13 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
 
       {filteredIntegrations.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">{t('common.noResults')}</p>
+          <p className="text-gray-500 dark:text-signal-sub text-lg">{t('common.noResults')}</p>
           <button
             onClick={() => {
               setSearchQuery('');
               setSelectedCategory(null);
             }}
-            className="mt-4 text-brand-600 hover:text-brand-700 font-medium"
+            className="mt-4 text-brand-600 hover:text-brand-700 dark:text-signal-green dark:hover:text-signal-green/80 font-medium"
           >
             Clear filters
           </button>

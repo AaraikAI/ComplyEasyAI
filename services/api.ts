@@ -105,8 +105,14 @@ async function fetchAPI<T>(
         csrfTokenCache = null;
       }
       if (response.status === 401) {
+        // A 401 from an auth-bootstrap endpoint (login / register / magic-link
+        // request or verify) means bad credentials or an invalid/expired link —
+        // NOT an expired session. Surface the error body to the caller so the
+        // login form can show it, instead of clearing state and redirecting to
+        // '/' (which would bounce a mistyped-password user off the login page).
+        const isAuthBootstrap = /^\/auth\/(login|register|verify|magic-link|forgot-password|reset-password|2fa)/.test(endpoint);
         // Try to refresh token via httpOnly cookie (sent automatically)
-        if (isAuthenticatedFlag) {
+        if (isAuthenticatedFlag && !isAuthBootstrap) {
           try {
             const refreshController = new AbortController();
             const refreshTimeoutId = setTimeout(() => refreshController.abort(), 10000);
@@ -153,10 +159,15 @@ async function fetchAPI<T>(
           }
         }
 
-        // If refresh failed or not authenticated, clear auth state and redirect
-        clearAuthToken();
-        window.location.href = '/';
-        throw new Error('Session expired. Please log in again.');
+        // If refresh failed or not authenticated, clear auth state and redirect —
+        // but never for an auth-bootstrap 401 (bad credentials/invalid link),
+        // which falls through to the generic error throw below so the caller can
+        // display it on the login/verify form.
+        if (!isAuthBootstrap) {
+          clearAuthToken();
+          window.location.href = '/';
+          throw new Error('Session expired. Please log in again.');
+        }
       }
 
       const error = await response.json().catch(() => ({}));

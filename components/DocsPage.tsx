@@ -1,703 +1,639 @@
-import React, { useState } from 'react';
-import { useI18n } from '../contexts/I18nContext';
-import {
-  Shield, BookOpen, Code, Search, ChevronRight, ChevronDown,
-  Zap, Lock, Globe, Server, Database, Users, Settings, FileText,
-  Play, Terminal, ExternalLink, Copy, Check, ArrowRight, Star,
-  GitBranch, Webhook, Key, Cloud, Cpu, BarChart, Bell, Layers,
-  Brain, RefreshCw, Target, ShieldCheck, Eye, Award, Folder
-} from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
+import { MarketingLayout } from './marketing/MarketingLayout';
+import { SignalPage } from './marketing/signal';
+import { Seo } from './seo/Seo';
+import { JsonLd } from './seo/JsonLd';
+import { breadcrumbSchema } from './seo/siteSchema';
 
-interface DocSection {
-  id: string;
-  title: string;
-  icon: React.ComponentType<any>;
-  items: {
-    id: string;
-    title: string;
-    description?: string;
-    badge?: string;
-  }[];
+const SITE_ORIGIN = 'https://complyeasyai.com';
+
+/** One content block inside a docs section. */
+type DocBlock =
+  | { t: 'p'; v: string }
+  | { t: 'ul'; v: string[] }
+  | { t: 'code'; v: string }
+  | { t: 'note'; v: string };
+
+interface DocSectionData {
+  h: string;
+  blocks: DocBlock[];
 }
 
-interface QuickLink {
+interface DocArticle {
+  category: string;
   title: string;
-  description: string;
-  icon: React.ComponentType<any>;
-  href: string;
-  color: string;
+  summary: string;
+  sections: DocSectionData[];
 }
 
-const docSections: DocSection[] = [
-  {
-    id: 'getting-started',
-    title: 'Getting Started',
-    icon: Play,
-    items: [
-      { id: 'introduction', title: 'Introduction to ComplyEasyAI' },
-      { id: 'quickstart', title: 'Quick Start Guide', badge: 'Popular' },
-      { id: 'account-setup', title: 'Account Setup' },
-      { id: 'organization-config', title: 'Organization Configuration' },
-      { id: 'first-framework', title: 'Your First Framework' },
+/** Seed docs from the Signal design handoff, keyed by URL slug. */
+const DOCS: Record<string, DocArticle> = {
+  quickstart: {
+    category: 'Get started',
+    title: 'Quickstart',
+    summary: 'Get from sign-up to your first monitored control in under 15 minutes.',
+    sections: [
+      {
+        h: 'Create your workspace',
+        blocks: [
+          {
+            t: 'p',
+            v: 'After signing in, create a workspace for your organization. A workspace holds your frameworks, controls, evidence and team — separate business units or subsidiaries can each have their own.',
+          },
+          {
+            t: 'ul',
+            v: [
+              'Name your workspace and set your primary region.',
+              'Choose the frameworks you intend to pursue first.',
+              'Invite teammates by email with a role (Admin, Editor or Viewer).',
+            ],
+          },
+        ],
+      },
+      {
+        h: 'Connect your first integration',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Integrations feed evidence automatically. Connect one to see controls populate immediately.',
+          },
+          {
+            t: 'note',
+            v: 'All integrations are read-only. ComplyEasyAI never makes changes to your infrastructure without an explicit, approved remediation action.',
+          },
+        ],
+      },
+      {
+        h: 'Add a framework',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Adding a framework maps its requirements to controls in your workspace. Shared controls are reused across frameworks you already run, so the second framework is far faster than the first.',
+          },
+        ],
+      },
     ],
   },
-  {
-    id: 'core-concepts',
-    title: 'Core Concepts',
-    icon: BookOpen,
-    items: [
-      { id: 'frameworks', title: 'Compliance Frameworks' },
-      { id: 'controls', title: 'Controls & Requirements' },
-      { id: 'evidence', title: 'Evidence Management' },
-      { id: 'risks', title: 'Risk Assessment' },
-      { id: 'tasks', title: 'Task Management' },
-      { id: 'audit-trail', title: 'Audit Trail' },
+  concepts: {
+    category: 'Get started',
+    title: 'Core concepts',
+    summary: 'The four objects the whole platform is built around.',
+    sections: [
+      {
+        h: 'Controls',
+        blocks: [
+          {
+            t: 'p',
+            v: 'A control is a safeguard you implement — MFA enforced, encryption at rest, access reviews. Controls are the atomic unit that evidence attaches to and that frameworks map onto.',
+          },
+        ],
+      },
+      {
+        h: 'Evidence',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Evidence proves a control is operating. ComplyEasyAI collects it automatically from integrations on a recurring schedule and keeps a versioned, timestamped trail.',
+          },
+        ],
+      },
+      {
+        h: 'Frameworks',
+        blocks: [
+          {
+            t: 'p',
+            v: 'A framework (SOC 2, ISO 27001, GDPR…) is a set of requirements. Each requirement maps to one or more controls, so satisfying a control can satisfy many frameworks at once.',
+          },
+          {
+            t: 'ul',
+            v: ['Map once, reuse everywhere.', 'Coverage is calculated continuously as evidence flows in.'],
+          },
+        ],
+      },
+      {
+        h: 'Risks',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Risks capture what could go wrong. They are scored by likelihood and impact, linked to controls that mitigate them, and tracked to closure.',
+          },
+        ],
+      },
     ],
   },
-  {
-    id: 'ai-features',
-    title: 'AI Features',
-    icon: Brain,
-    items: [
-      { id: 'ai-overview', title: 'AI Capabilities Overview' },
-      { id: 'policy-generator', title: 'AI Policy Generator' },
-      { id: 'gap-analysis', title: 'AI Gap Analysis' },
-      { id: 'contract-analyzer', title: 'Contract Analyzer' },
-      { id: 'risk-predictor', title: 'Predictive Risk Modeling', badge: 'New' },
-      { id: 'ai-chatbot', title: 'Compliance Chatbot' },
+  integrations: {
+    category: 'Platform',
+    title: 'Connect integrations',
+    summary: 'Feed evidence continuously from your cloud, code, identity and ticketing systems.',
+    sections: [
+      {
+        h: 'How connections work',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Connect a system once using read-only OAuth, an API key, or a personal access token. ComplyEasyAI discovers the relevant controls and maps incoming configuration and activity data to the requirements it satisfies.',
+          },
+          {
+            t: 'ul',
+            v: [
+              'Cloud — AWS, Azure, GCP',
+              'Code — GitHub, GitLab',
+              'Identity — Okta, Google Workspace, Entra ID',
+              'Ticketing — Jira, Linear',
+            ],
+          },
+        ],
+      },
+      {
+        h: 'Sync schedule',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Evidence is collected on a recurring schedule so your posture reflects current, continuously verified data rather than a point-in-time snapshot.',
+          },
+          {
+            t: 'note',
+            v: 'Over 30 integrations are available. Missing one? Evidence can also be uploaded manually or via the API.',
+          },
+        ],
+      },
     ],
   },
-  {
-    id: 'acos',
-    title: 'aCOS (Autonomous Compliance)',
-    icon: Zap,
-    items: [
-      { id: 'acos-overview', title: 'What is aCOS?' },
-      { id: 'ai-agents', title: 'AI Agents Configuration' },
-      { id: 'self-healing', title: 'Self-Healing Compliance' },
-      { id: 'drift-detection', title: 'Compliance Drift Detection' },
-      { id: 'automation-rules', title: 'Automation Rules' },
+  frameworks: {
+    category: 'Frameworks',
+    title: 'Add & manage frameworks',
+    summary: 'Map requirements to controls and track coverage in real time.',
+    sections: [
+      {
+        h: 'Adding a framework',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Select a framework to add it to your workspace. Its requirements are mapped to controls automatically, and any control you already satisfy for another framework carries over.',
+          },
+        ],
+      },
+      {
+        h: 'Statement of Applicability',
+        blocks: [
+          {
+            t: 'p',
+            v: 'For frameworks like ISO 27001, the platform maintains a Statement of Applicability — which controls apply and the justification for any exclusions — and keeps it current as your environment changes.',
+          },
+        ],
+      },
+      {
+        h: 'Coverage & gaps',
+        blocks: [
+          {
+            t: 'p',
+            v: 'A readiness view shows coverage per framework and highlights failing or unmapped controls, each with an owner and remediation steps attached.',
+          },
+        ],
+      },
     ],
   },
-  {
-    id: 'integrations',
-    title: 'Integrations',
-    icon: GitBranch,
-    items: [
-      { id: 'integrations-overview', title: 'Integrations Overview' },
-      { id: 'aws', title: 'AWS Integration' },
-      { id: 'azure', title: 'Azure Integration' },
-      { id: 'gcp', title: 'Google Cloud Integration' },
-      { id: 'github', title: 'GitHub Integration' },
-      { id: 'slack', title: 'Slack Integration' },
-      { id: 'jira', title: 'Jira Integration' },
-      { id: 'okta', title: 'Okta / SSO' },
-      { id: 'custom', title: 'Custom Integrations' },
+  evidence: {
+    category: 'Automation',
+    title: 'Evidence collection',
+    summary: 'A versioned, auditor-ready trail built without screenshots.',
+    sections: [
+      {
+        h: 'Automated collection',
+        blocks: [
+          {
+            t: 'p',
+            v: 'AI agents gather configuration and activity evidence from connected systems on a schedule, mapping each item to the controls it supports.',
+          },
+        ],
+      },
+      {
+        h: 'Versioning',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Every piece of evidence is timestamped and versioned, so you can show an auditor exactly what a control looked like at any point in your observation window.',
+          },
+        ],
+      },
+      {
+        h: 'Manual & API evidence',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Where a control cannot be verified through an integration, evidence can be uploaded manually or pushed via the API and held to the same versioning.',
+          },
+        ],
+      },
     ],
   },
-  {
-    id: 'security',
-    title: 'Security',
-    icon: ShieldCheck,
-    items: [
-      { id: 'security-overview', title: 'Security Overview' },
-      { id: 'zero-trust', title: 'Zero Trust Architecture' },
-      { id: 'encryption', title: 'Encryption & BYOK' },
-      { id: 'sso-mfa', title: 'SSO & MFA Setup' },
-      { id: 'rbac', title: 'Role-Based Access Control' },
-      { id: 'audit-logs', title: 'Security Audit Logs' },
+  monitoring: {
+    category: 'Automation',
+    title: 'Continuous monitoring',
+    summary: 'Catch control drift the moment it happens — not during fieldwork.',
+    sections: [
+      {
+        h: 'Drift detection',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Controls are checked continuously. When one drifts — a disabled MFA policy, a public storage bucket, an over-privileged role — it surfaces immediately as a finding.',
+          },
+        ],
+      },
+      {
+        h: 'Alerts & ownership',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Findings are routed to an owner with severity and remediation guidance, so issues are closed well before an audit rather than discovered in it.',
+          },
+        ],
+      },
     ],
   },
-  {
-    id: 'api',
-    title: 'API Reference',
-    icon: Code,
-    items: [
-      { id: 'api-overview', title: 'API Overview' },
-      { id: 'authentication', title: 'Authentication' },
-      { id: 'frameworks-api', title: 'Frameworks API' },
-      { id: 'controls-api', title: 'Controls API' },
-      { id: 'evidence-api', title: 'Evidence API' },
-      { id: 'risks-api', title: 'Risks API' },
-      { id: 'webhooks', title: 'Webhooks' },
-      { id: 'rate-limits', title: 'Rate Limits' },
-      { id: 'sdks', title: 'SDKs & Libraries' },
+  acos: {
+    category: 'Automation',
+    title: 'aCOS & the Digital Twin',
+    summary: 'Set a goal; the system works toward it with autonomous control loops.',
+    sections: [
+      {
+        h: 'Goals & control loops',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Define a compliance goal — reach a score, add a framework, reduce risk. aCOS creates control loops that observe, act and verify continuously to move you toward it.',
+          },
+        ],
+      },
+      {
+        h: 'The Compliance Digital Twin',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Model "what if we add ISO 27001?" or "what if this control fails?" against a virtual replica of your environment, and see the projected impact before you touch production.',
+          },
+          {
+            t: 'note',
+            v: 'The Digital Twin is available on Growth and Visionary tiers.',
+          },
+        ],
+      },
+      {
+        h: 'Autonomous remediation',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Where it is safe, aCOS closes gaps automatically with blast-radius estimation and automatic rollback, escalating anything high-impact for human approval.',
+          },
+        ],
+      },
     ],
   },
-  {
-    id: 'compliance-guides',
-    title: 'Compliance Guides',
-    icon: Award,
-    items: [
-      { id: 'soc2-guide', title: 'SOC 2 Implementation', badge: 'Popular' },
-      { id: 'iso27001-guide', title: 'ISO 27001 Guide' },
-      { id: 'hipaa-guide', title: 'HIPAA Compliance' },
-      { id: 'gdpr-guide', title: 'GDPR Guide' },
-      { id: 'eu-ai-act-guide', title: 'EU AI Act Guide', badge: 'New' },
-      { id: 'pci-dss-guide', title: 'PCI DSS Guide' },
+  reports: {
+    category: 'Platform',
+    title: 'Reports & audit center',
+    summary: 'Package organized, current evidence for auditors and stakeholders.',
+    sections: [
+      {
+        h: 'Audit-ready exports',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Generate evidence packages on demand — the same artifacts auditors pull from production, organized by control and framework.',
+          },
+        ],
+      },
+      {
+        h: 'Executive & board views',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Executive dashboards summarize posture across frameworks for leadership and the board, with trend and forecast lines.',
+          },
+        ],
+      },
     ],
   },
-  {
-    id: 'administration',
-    title: 'Administration',
-    icon: Settings,
-    items: [
-      { id: 'user-management', title: 'User Management' },
-      { id: 'team-setup', title: 'Team Setup' },
-      { id: 'billing', title: 'Billing & Subscriptions' },
-      { id: 'notifications', title: 'Notification Settings' },
-      { id: 'data-export', title: 'Data Export' },
+  roles: {
+    category: 'Admin',
+    title: 'Roles & permissions',
+    summary: 'Control who can see and change what, with enterprise SSO and SCIM.',
+    sections: [
+      {
+        h: 'Built-in roles',
+        blocks: [
+          {
+            t: 'ul',
+            v: [
+              'Admin — full access to features and settings.',
+              'Editor — manage frameworks, controls and evidence.',
+              'Viewer — read-only access to dashboards and reports.',
+            ],
+          },
+        ],
+      },
+      {
+        h: 'SSO & SCIM',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Enterprise tiers support SAML SSO and SCIM provisioning, so access follows your identity provider and de-provisions automatically when someone leaves.',
+          },
+        ],
+      },
     ],
   },
-];
-
-const quickLinks: QuickLink[] = [
-  {
-    title: 'Quick Start Guide',
-    description: 'Get up and running in 30 minutes',
-    icon: Play,
-    href: '/docs/getting-started/quickstart',
-    color: 'from-green-500 to-emerald-500',
+  api: {
+    category: 'Developers',
+    title: 'API & webhooks',
+    summary: 'Push evidence, read posture, and subscribe to events programmatically.',
+    sections: [
+      {
+        h: 'Authentication',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Generate an API key in Settings → Developers. Pass it as a bearer token on every request.',
+          },
+          {
+            t: 'code',
+            v: 'curl https://api.complyeasyai.com/v1/frameworks \\\n  -H "Authorization: Bearer $CEAI_API_KEY"',
+          },
+        ],
+      },
+      {
+        h: 'Webhooks',
+        blocks: [
+          {
+            t: 'p',
+            v: 'Subscribe to events to react to compliance changes in your own systems — for example, opening a ticket when a control drifts.',
+          },
+          {
+            t: 'code',
+            v: 'POST /v1/webhooks\n{\n  "url": "https://example.com/hooks/ceai",\n  "events": ["control.drifted", "evidence.collected"]\n}',
+          },
+        ],
+      },
+    ],
   },
-  {
-    title: 'API Reference',
-    description: 'Complete REST API documentation',
-    icon: Code,
-    href: '/docs/api/api-overview',
-    color: 'from-blue-500 to-cyan-500',
-  },
-  {
-    title: 'SOC 2 Guide',
-    description: 'Complete SOC 2 implementation guide',
-    icon: ShieldCheck,
-    href: '/docs/compliance-guides/soc2-guide',
-    color: 'from-purple-500 to-pink-500',
-  },
-  {
-    title: 'Integrations',
-    description: 'Connect AWS, Azure, GitHub & more',
-    icon: GitBranch,
-    href: '/docs/integrations/integrations-overview',
-    color: 'from-orange-500 to-amber-500',
-  },
-];
-
-const codeExamples = {
-  authentication: `// Authenticate with API Key
-const response = await fetch('https://api.complyeasyai.com/v1/frameworks', {
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const frameworks = await response.json();
-console.log(frameworks);`,
-  createFramework: `// Create a new compliance framework
-const framework = await fetch('https://api.complyeasyai.com/v1/frameworks', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    name: 'SOC 2 Type II',
-    type: 'soc2',
-    trustServiceCategories: ['security', 'availability'],
-    targetDate: '2026-06-01'
-  })
-});`,
-  webhook: `// Configure webhook endpoint
-POST /api/v1/webhooks
-{
-  "url": "https://your-app.com/webhook",
-  "events": [
-    "control.status_changed",
-    "evidence.uploaded",
-    "risk.created"
-  ],
-  "secret": "whsec_..."
-}`,
 };
 
-export const DocsPage: React.FC = () => {
-  const { t } = useI18n();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [expandedSection, setExpandedSection] = useState<string>('getting-started');
-  const [selectedDoc, setSelectedDoc] = useState<string>('quickstart');
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+/** Reading order driving the prev/next footer links. */
+const DOC_ORDER: string[] = [
+  'quickstart',
+  'concepts',
+  'integrations',
+  'frameworks',
+  'evidence',
+  'monitoring',
+  'acos',
+  'reports',
+  'roles',
+  'api',
+];
 
-  const handleCopyCode = (code: string, id: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(id);
-    setTimeout(() => setCopiedCode(null), 2000);
+/** Left-nav category groups. */
+const NAV_GROUPS: { name: string; ids: string[] }[] = [
+  { name: 'Get started', ids: ['quickstart', 'concepts'] },
+  { name: 'Platform', ids: ['integrations', 'frameworks', 'reports'] },
+  { name: 'Automation', ids: ['evidence', 'monitoring', 'acos'] },
+  { name: 'Admin', ids: ['roles'] },
+  { name: 'Developers', ids: ['api'] },
+];
+
+const DEFAULT_DOC = 'quickstart';
+
+const sectionAnchor = (heading: string): string =>
+  'sec-' +
+  heading
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+/** Renders a single article content block by type. */
+const DocBlockView: React.FC<{ block: DocBlock }> = ({ block }) => {
+  if (block.t === 'ul') {
+    return (
+      <ul className="flex list-disc flex-col gap-2 pl-5 marker:text-signal-muted">
+        {block.v.map((item) => (
+          <li key={item} className="text-[15.5px] leading-relaxed text-signal-body2">
+            {item}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (block.t === 'code') {
+    return (
+      <pre className="overflow-x-auto rounded-xl border border-white/[0.08] bg-signal-panel2 px-[18px] py-4">
+        <code className="whitespace-pre font-mono text-[13px] leading-relaxed text-signal-body">
+          {block.v}
+        </code>
+      </pre>
+    );
+  }
+  if (block.t === 'note') {
+    return (
+      <div className="flex gap-2.5 rounded-xl border border-signal-green/25 bg-signal-green/[0.06] px-[18px] py-3.5 text-[14.5px] leading-relaxed text-signal-body">
+        <span aria-hidden="true" className="shrink-0 text-signal-green">
+          ◆
+        </span>
+        <span>{block.v}</span>
+      </div>
+    );
+  }
+  return <p className="text-[15.5px] leading-[1.7] text-signal-body2">{block.v}</p>;
+};
+
+/**
+ * Documentation page in the Signal design: sticky left category nav, center
+ * article, right "On this page" TOC. The active article is derived from the
+ * /docs/:slug URL, so deep links land directly on the right article.
+ */
+export const DocsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const params = useParams();
+
+  // The route is mounted at both /docs and /docs/*; the splat carries the slug.
+  const slug = (params['*'] ?? '').split('/')[0];
+  const activeId = slug && Object.prototype.hasOwnProperty.call(DOCS, slug) ? slug : DEFAULT_DOC;
+  const article = DOCS[activeId];
+
+  const orderIndex = DOC_ORDER.indexOf(activeId);
+  const prevId = orderIndex > 0 ? DOC_ORDER[orderIndex - 1] : null;
+  const nextId = orderIndex < DOC_ORDER.length - 1 ? DOC_ORDER[orderIndex + 1] : null;
+
+  const hasRendered = useRef(false);
+  useEffect(() => {
+    if (hasRendered.current) {
+      window.scrollTo({ top: 0 });
+    } else {
+      hasRendered.current = true;
+    }
+  }, [activeId]);
+
+  const openArticle = (id: string) => {
+    if (id !== activeId) {
+      navigate(`/docs/${id}`);
+    }
   };
 
-  const filteredSections = docSections.map(section => ({
-    ...section,
-    items: section.items.filter(item =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-  })).filter(section => section.items.length > 0 || searchQuery === '');
+  const breadcrumbs = breadcrumbSchema([
+    { name: 'Home', url: SITE_ORIGIN },
+    { name: 'Docs', url: `${SITE_ORIGIN}/docs` },
+    { name: article.title, url: `${SITE_ORIGIN}/docs/${activeId}` },
+  ]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <a href="/" className="flex items-center space-x-2">
-                <div className="bg-brand-600 p-2 rounded-xl">
-                  <Shield className="text-white w-5 h-5" />
-                </div>
-                <span className="font-bold text-xl text-white">ComplyEasy AI</span>
-              </a>
-              <span className="text-slate-400 text-sm hidden sm:block">| Documentation</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder={t('common.search')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all text-sm"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 border border-slate-600 rounded px-1.5 py-0.5">
-                  ⌘K
-                </span>
-              </div>
-              <a href="/learn" className="text-slate-400 hover:text-white transition-colors text-sm">
-                Learn
-              </a>
-              <a href="https://github.com/complyeasyai" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">
-                <GitBranch className="w-5 h-5" />
-              </a>
-              <a href="/signup" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
-                Get Started
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+    <MarketingLayout>
+      <Seo
+        title={`${article.title} — ComplyEasy AI Docs`}
+        description={article.summary}
+        canonicalPath={activeId === DEFAULT_DOC ? '/docs' : `/docs/${activeId}`}
+        ogType="article"
+      />
+      <JsonLd data={breadcrumbs} />
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-72 border-r border-slate-700 bg-slate-900/50 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto hidden lg:block">
-          <nav className="p-4">
-            {filteredSections.map((section) => {
-              const Icon = section.icon;
-              const isExpanded = expandedSection === section.id;
-              
-              return (
-                <div key={section.id} className="mb-2">
-                  <button
-                    onClick={() => setExpandedSection(isExpanded ? '' : section.id)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left hover:bg-slate-800/50 transition-all group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 text-brand-400" />
-                      <span className="text-sm font-medium text-white">{section.title}</span>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-slate-400" />
-                    )}
-                  </button>
-                  {isExpanded && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {section.items.map((item) => (
+      <SignalPage className="!min-h-[calc(100vh-4rem)]">
+        <div className="mx-auto grid max-w-[1400px] items-start lg:grid-cols-[262px_minmax(0,1fr)] xl:grid-cols-[262px_minmax(0,1fr)_210px]">
+          {/* Mobile article picker (replaces the sidebar below lg) */}
+          <div className="border-b border-white/[0.06] px-6 py-4 lg:hidden">
+            <label className="relative block">
+              <span className="sr-only">Select a docs article</span>
+              <select
+                value={activeId}
+                onChange={(event) => openArticle(event.target.value)}
+                className="w-full appearance-none rounded-xl border border-white/[0.1] bg-signal-panel2 px-4 py-3 pr-10 text-sm font-medium text-signal-ink outline-none focus:border-signal-green/50"
+              >
+                {NAV_GROUPS.map((group) => (
+                  <optgroup key={group.name} label={group.name}>
+                    {group.ids.map((id) => (
+                      <option key={id} value={id}>
+                        {DOCS[id].title}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <ChevronDown
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-signal-muted"
+              />
+            </label>
+          </div>
+
+          {/* Left category nav */}
+          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] self-start overflow-y-auto border-r border-white/[0.06] px-5 py-7 lg:block">
+            <nav aria-label="Docs">
+              {NAV_GROUPS.map((group) => (
+                <div key={group.name} className="mb-[22px]">
+                  <div className="mb-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-signal-muted">
+                    {group.name}
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    {group.ids.map((id) => {
+                      const isActive = id === activeId;
+                      return (
                         <button
-                          key={item.id}
-                          onClick={() => setSelectedDoc(item.id)}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm transition-all ${
-                            selectedDoc === item.id
-                              ? 'bg-brand-600/20 text-brand-400'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                          key={id}
+                          type="button"
+                          onClick={() => openArticle(id)}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`rounded-[9px] px-3 py-2 text-left text-sm transition-colors ${
+                            isActive
+                              ? 'bg-signal-green/10 font-semibold text-signal-green'
+                              : 'font-medium text-signal-sub hover:bg-white/[0.04] hover:text-signal-ink'
                           }`}
                         >
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              item.badge === 'New' 
-                                ? 'bg-green-500/10 text-green-400' 
-                                : 'bg-brand-500/10 text-brand-400'
-                            }`}>
-                              {item.badge}
-                            </span>
-                          )}
+                          {DOCS[id].title}
                         </button>
-                      ))}
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })}
-          </nav>
-        </aside>
+              ))}
+            </nav>
+          </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 min-w-0">
-          {/* Quick Links */}
-          {selectedDoc === 'quickstart' && (
-            <div className="max-w-4xl mx-auto px-6 py-12">
-              <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold text-white mb-4">ComplyEasyAI Documentation</h1>
-                <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-                  Everything you need to build, deploy, and maintain compliance automation with ComplyEasyAI.
-                </p>
-              </div>
+          {/* Article */}
+          <main className="min-w-0 max-w-[820px] px-6 py-10 md:px-12">
+            <div className="mb-3 font-mono text-xs uppercase tracking-[0.1em] text-signal-green">
+              {article.category}
+            </div>
+            <h1 className="font-display text-[32px] font-bold leading-tight tracking-[-0.02em] text-signal-ink md:text-[38px]">
+              {article.title}
+            </h1>
+            <p className="mt-3.5 text-[17px] leading-relaxed text-signal-sub">{article.summary}</p>
+            <div aria-hidden="true" className="my-[30px] h-px bg-white/[0.08]" />
 
-              {/* Quick Links Grid */}
-              <div className="grid md:grid-cols-2 gap-4 mb-12">
-                {quickLinks.map((link) => {
-                  const Icon = link.icon;
-                  return (
-                    <a
-                      key={link.title}
-                      href={link.href}
-                      className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 hover:border-brand-500/50 transition-all group"
-                    >
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${link.color} flex items-center justify-center mb-4`}>
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-brand-400 transition-colors">
-                        {link.title}
-                      </h3>
-                      <p className="text-slate-400 text-sm">{link.description}</p>
-                    </a>
-                  );
-                })}
-              </div>
-
-              {/* Quick Start Content */}
-              <div className="prose prose-invert max-w-none">
-                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                  <Play className="w-6 h-6 text-green-400" />
-                  Quick Start Guide
+            {article.sections.map((section) => (
+              <section key={section.h} id={sectionAnchor(section.h)} className="mb-[34px] scroll-mt-20">
+                <h2 className="mb-3.5 font-display text-[22px] font-semibold tracking-[-0.01em] text-signal-ink">
+                  {section.h}
                 </h2>
-
-                <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-8">
-                  <h3 className="text-lg font-semibold text-white mb-4">Prerequisites</h3>
-                  <ul className="list-disc list-inside text-slate-400 space-y-2">
-                    <li>A ComplyEasyAI account (<a href="/signup" className="text-brand-400 hover:underline">Sign up free</a>)</li>
-                    <li>API key from your dashboard</li>
-                    <li>Basic understanding of REST APIs</li>
-                  </ul>
+                <div className="flex flex-col gap-3.5">
+                  {section.blocks.map((block, index) => (
+                    <DocBlockView key={index} block={block} />
+                  ))}
                 </div>
+              </section>
+            ))}
 
-                <h3 className="text-xl font-semibold text-white mt-8 mb-4">Step 1: Authentication</h3>
-                <p className="text-slate-400 mb-4">
-                  All API requests require authentication using an API key. Include your key in the Authorization header:
-                </p>
-                
-                <div className="relative bg-slate-900 border border-slate-700 rounded-xl overflow-hidden mb-8">
-                  <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700 bg-slate-800/50">
-                    <span className="text-sm text-slate-400">JavaScript</span>
-                    <button
-                      onClick={() => handleCopyCode(codeExamples.authentication, 'auth')}
-                      className="text-slate-400 hover:text-white transition-colors"
-                    >
-                      {copiedCode === 'auth' ? (
-                        <Check className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  <pre className="p-4 overflow-x-auto">
-                    <code className="text-sm text-slate-300">{codeExamples.authentication}</code>
-                  </pre>
-                </div>
-
-                <h3 className="text-xl font-semibold text-white mt-8 mb-4">Step 2: Create Your First Framework</h3>
-                <p className="text-slate-400 mb-4">
-                  Create a compliance framework to start tracking your compliance journey:
-                </p>
-
-                <div className="relative bg-slate-900 border border-slate-700 rounded-xl overflow-hidden mb-8">
-                  <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700 bg-slate-800/50">
-                    <span className="text-sm text-slate-400">JavaScript</span>
-                    <button
-                      onClick={() => handleCopyCode(codeExamples.createFramework, 'framework')}
-                      className="text-slate-400 hover:text-white transition-colors"
-                    >
-                      {copiedCode === 'framework' ? (
-                        <Check className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  <pre className="p-4 overflow-x-auto">
-                    <code className="text-sm text-slate-300">{codeExamples.createFramework}</code>
-                  </pre>
-                </div>
-
-                <h3 className="text-xl font-semibold text-white mt-8 mb-4">Step 3: Configure Webhooks</h3>
-                <p className="text-slate-400 mb-4">
-                  Set up webhooks to receive real-time notifications about compliance events:
-                </p>
-
-                <div className="relative bg-slate-900 border border-slate-700 rounded-xl overflow-hidden mb-8">
-                  <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700 bg-slate-800/50">
-                    <span className="text-sm text-slate-400">HTTP</span>
-                    <button
-                      onClick={() => handleCopyCode(codeExamples.webhook, 'webhook')}
-                      className="text-slate-400 hover:text-white transition-colors"
-                    >
-                      {copiedCode === 'webhook' ? (
-                        <Check className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  <pre className="p-4 overflow-x-auto">
-                    <code className="text-sm text-slate-300">{codeExamples.webhook}</code>
-                  </pre>
-                </div>
-
-                {/* Next Steps */}
-                <div className="bg-gradient-to-r from-brand-600/20 to-purple-600/20 border border-brand-500/30 rounded-2xl p-6 mt-8">
-                  <h3 className="text-lg font-semibold text-white mb-4">Next Steps</h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {[
-                      { title: 'Connect Integrations', description: 'Set up AWS, Azure, or GitHub', href: '/docs/integrations' },
-                      { title: 'Configure aCOS', description: 'Enable autonomous compliance', href: '/docs/acos' },
-                      { title: 'Explore AI Features', description: 'Use AI policy generator', href: '/docs/ai-features' },
-                      { title: 'API Reference', description: 'Full endpoint documentation', href: '/docs/api' },
-                    ].map((item) => (
-                      <a
-                        key={item.title}
-                        href={item.href}
-                        className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl hover:bg-slate-700/50 transition-all"
-                      >
-                        <div>
-                          <div className="font-medium text-white">{item.title}</div>
-                          <div className="text-sm text-slate-400">{item.description}</div>
-                        </div>
-                        <ArrowRight className="w-5 h-5 text-brand-400" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* API Reference Content */}
-          {selectedDoc === 'api-overview' && (
-            <div className="max-w-4xl mx-auto px-6 py-12">
-              <h1 className="text-3xl font-bold text-white mb-4">API Reference</h1>
-              <p className="text-slate-400 mb-8">
-                The ComplyEasyAI REST API provides programmatic access to all platform features.
-              </p>
-
-              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-8">
-                <h3 className="text-lg font-semibold text-white mb-4">Base URL</h3>
-                <code className="bg-slate-900 px-4 py-2 rounded-lg text-brand-400">
-                  https://api.complyeasyai.com/v1
-                </code>
-              </div>
-
-              <div className="space-y-6">
-                <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-3">
-                    <span className="bg-green-500/10 text-green-400 text-xs font-bold px-2 py-1 rounded">GET</span>
-                    <code className="text-white">/frameworks</code>
-                    <span className="text-slate-500 text-sm ml-auto">List all frameworks</span>
-                  </div>
-                  <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-3">
-                    <span className="bg-blue-500/10 text-blue-400 text-xs font-bold px-2 py-1 rounded">POST</span>
-                    <code className="text-white">/frameworks</code>
-                    <span className="text-slate-500 text-sm ml-auto">Create framework</span>
-                  </div>
-                  <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-3">
-                    <span className="bg-green-500/10 text-green-400 text-xs font-bold px-2 py-1 rounded">GET</span>
-                    <code className="text-white">/frameworks/:id</code>
-                    <span className="text-slate-500 text-sm ml-auto">Get framework</span>
-                  </div>
-                  <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-3">
-                    <span className="bg-yellow-500/10 text-yellow-400 text-xs font-bold px-2 py-1 rounded">PUT</span>
-                    <code className="text-white">/frameworks/:id</code>
-                    <span className="text-slate-500 text-sm ml-auto">Update framework</span>
-                  </div>
-                  <div className="px-6 py-4 flex items-center gap-3">
-                    <span className="bg-red-500/10 text-red-400 text-xs font-bold px-2 py-1 rounded">DELETE</span>
-                    <code className="text-white">/frameworks/:id</code>
-                    <span className="text-slate-500 text-sm ml-auto">Delete framework</span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-slate-700">
-                    <h4 className="font-semibold text-white">Controls API</h4>
-                  </div>
-                  <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-3">
-                    <span className="bg-green-500/10 text-green-400 text-xs font-bold px-2 py-1 rounded">GET</span>
-                    <code className="text-white">/controls</code>
-                    <span className="text-slate-500 text-sm ml-auto">List controls</span>
-                  </div>
-                  <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-3">
-                    <span className="bg-blue-500/10 text-blue-400 text-xs font-bold px-2 py-1 rounded">POST</span>
-                    <code className="text-white">/controls/:id/evidence</code>
-                    <span className="text-slate-500 text-sm ml-auto">Upload evidence</span>
-                  </div>
-                  <div className="px-6 py-4 flex items-center gap-3">
-                    <span className="bg-yellow-500/10 text-yellow-400 text-xs font-bold px-2 py-1 rounded">PATCH</span>
-                    <code className="text-white">/controls/:id/status</code>
-                    <span className="text-slate-500 text-sm ml-auto">Update status</span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-                  <div className="px-6 py-4 border-b border-slate-700">
-                    <h4 className="font-semibold text-white">Risks API</h4>
-                  </div>
-                  <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-3">
-                    <span className="bg-green-500/10 text-green-400 text-xs font-bold px-2 py-1 rounded">GET</span>
-                    <code className="text-white">/risks</code>
-                    <span className="text-slate-500 text-sm ml-auto">List risks</span>
-                  </div>
-                  <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-3">
-                    <span className="bg-blue-500/10 text-blue-400 text-xs font-bold px-2 py-1 rounded">POST</span>
-                    <code className="text-white">/risks</code>
-                    <span className="text-slate-500 text-sm ml-auto">Create risk</span>
-                  </div>
-                  <div className="px-6 py-4 flex items-center gap-3">
-                    <span className="bg-blue-500/10 text-blue-400 text-xs font-bold px-2 py-1 rounded">POST</span>
-                    <code className="text-white">/risks/analyze</code>
-                    <span className="text-slate-500 text-sm ml-auto">AI risk analysis</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Generic Documentation Page */}
-          {selectedDoc !== 'quickstart' && selectedDoc !== 'api-overview' && (
-            <div className="max-w-4xl mx-auto px-6 py-12">
-              <nav className="flex items-center gap-2 text-sm text-slate-400 mb-6">
-                <a href="/docs" className="hover:text-white">Docs</a>
-                <ChevronRight className="w-4 h-4" />
-                <span className="text-white capitalize">
-                  {docSections.find(s => s.items.some(i => i.id === selectedDoc))?.title}
-                </span>
-                <ChevronRight className="w-4 h-4" />
-                <span className="text-brand-400">
-                  {docSections.flatMap(s => s.items).find(i => i.id === selectedDoc)?.title}
-                </span>
-              </nav>
-
-              <h1 className="text-3xl font-bold text-white mb-6">
-                {docSections.flatMap(s => s.items).find(i => i.id === selectedDoc)?.title}
-              </h1>
-
-              <div className="prose prose-invert max-w-none">
-                <p className="text-slate-400 text-lg">
-                  This documentation page provides detailed information about this feature.
-                  For complete documentation, explore the sidebar navigation.
-                </p>
-
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-6 mt-8">
-                  <div className="flex items-start gap-3">
-                    <BookOpen className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-semibold text-white mb-2">Looking for tutorials?</h4>
-                      <p className="text-slate-400 text-sm mb-4">
-                        Visit our Learning Center for step-by-step tutorials, video guides, and certification courses.
-                      </p>
-                      <a 
-                        href="/learn" 
-                        className="text-brand-400 text-sm font-medium hover:text-brand-300 flex items-center gap-1"
-                      >
-                        Go to Learning Center
-                        <ArrowRight className="w-4 h-4" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4 mt-8">
-                  <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-                    <h4 className="font-semibold text-white mb-2">Related Topics</h4>
-                    <ul className="space-y-2 text-slate-400 text-sm">
-                      <li><a href="#" className="hover:text-brand-400">Getting Started Guide</a></li>
-                      <li><a href="#" className="hover:text-brand-400">API Reference</a></li>
-                      <li><a href="#" className="hover:text-brand-400">Best Practices</a></li>
-                    </ul>
-                  </div>
-                  <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-                    <h4 className="font-semibold text-white mb-2">Need Help?</h4>
-                    <ul className="space-y-2 text-slate-400 text-sm">
-                      <li><a href="/community" className="hover:text-brand-400">Ask the Community</a></li>
-                      <li><a href="mailto:support@complyeasyai.com" className="hover:text-brand-400">Contact Support</a></li>
-                      <li><a href="/status" className="hover:text-brand-400">System Status</a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-
-        {/* Right Sidebar - Table of Contents */}
-        <aside className="w-56 border-l border-slate-700 bg-slate-900/50 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto hidden xl:block">
-          <div className="p-4">
-            <h4 className="text-sm font-semibold text-white mb-4">On this page</h4>
-            <nav className="space-y-2">
-              {['Overview', 'Prerequisites', 'Step 1: Authentication', 'Step 2: Create Framework', 'Step 3: Webhooks', 'Next Steps'].map((item) => (
-                <a
-                  key={item}
-                  href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
-                  className="block text-sm text-slate-400 hover:text-white transition-colors"
+            {/* Prev / next */}
+            <div className="mt-11 flex gap-4 border-t border-white/[0.08] pt-6">
+              {prevId && (
+                <button
+                  type="button"
+                  onClick={() => openArticle(prevId)}
+                  className="flex-1 rounded-[14px] border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-left transition-colors hover:border-white/[0.2]"
                 >
-                  {item}
+                  <div className="mb-1 text-xs text-signal-muted">← Previous</div>
+                  <div className="font-display text-[15px] font-semibold text-signal-ink">
+                    {DOCS[prevId].title}
+                  </div>
+                </button>
+              )}
+              {nextId && (
+                <button
+                  type="button"
+                  onClick={() => openArticle(nextId)}
+                  className="flex-1 rounded-[14px] border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-right transition-colors hover:border-white/[0.2]"
+                >
+                  <div className="mb-1 text-xs text-signal-muted">Next →</div>
+                  <div className="font-display text-[15px] font-semibold text-signal-ink">
+                    {DOCS[nextId].title}
+                  </div>
+                </button>
+              )}
+            </div>
+          </main>
+
+          {/* On this page */}
+          <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] self-start overflow-y-auto px-6 py-10 xl:block">
+            <div className="mb-3.5 font-mono text-[11px] uppercase tracking-[0.14em] text-signal-muted">
+              On this page
+            </div>
+            <nav
+              aria-label="On this page"
+              className="flex flex-col gap-2.5 border-l border-white/[0.08] pl-3.5"
+            >
+              {article.sections.map((section) => (
+                <a
+                  key={section.h}
+                  href={`#${sectionAnchor(section.h)}`}
+                  className="text-[13px] leading-snug text-signal-sub transition-colors hover:text-signal-ink"
+                >
+                  {section.h}
                 </a>
               ))}
             </nav>
-
-            <div className="mt-8 pt-4 border-t border-slate-700">
-              <a
-                href="https://github.com/complyeasyai/docs/edit/main/quickstart.md"
-                className="text-sm text-slate-400 hover:text-white flex items-center gap-2"
-              >
-                <GitBranch className="w-4 h-4" />
-                Edit this page
-              </a>
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-700 bg-slate-900 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <div className="bg-brand-600 p-1.5 rounded-lg">
-                <Shield className="text-white w-4 h-4" />
-              </div>
-              <span className="font-bold text-white">ComplyEasy AI</span>
-              <span className="text-slate-500 text-sm">Documentation</span>
-            </div>
-            <div className="flex space-x-6 text-sm text-slate-400">
-              <a href="/" className="hover:text-white transition-colors">Home</a>
-              <a href="/learn" className="hover:text-white transition-colors">Learn</a>
-              <a href="/community" className="hover:text-white transition-colors">Community</a>
-              <a href="/status" className="hover:text-white transition-colors">Status</a>
-            </div>
-            <div className="text-sm text-slate-500">
-              © 2026 ComplyEasy AI Inc.
-            </div>
-          </div>
+          </aside>
         </div>
-      </footer>
-    </div>
+      </SignalPage>
+    </MarketingLayout>
   );
 };
 

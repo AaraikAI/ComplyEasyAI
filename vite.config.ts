@@ -8,6 +8,15 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        // Same-origin dev: run with VITE_API_URL=/api to have the dev server
+        // proxy API calls to the local backend, so httpOnly session cookies
+        // (sameSite 'strict') flow exactly as in production.
+        proxy: {
+          '/api': {
+            target: process.env.DEV_API_PROXY_TARGET || 'http://localhost:3001',
+            changeOrigin: true,
+          },
+        },
       },
       // SAME-ORIGIN E2E: `vite preview` serves the built SPA and reverse-proxies
       // /api to the backend, mirroring production (CloudFront serves the SPA and

@@ -63,7 +63,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [sidebarVariant, setSidebarVariant] = useState<'slim' | 'classic'>(() => {
-    return (localStorage.getItem('complyeasy_sidebar_variant') as 'slim' | 'classic') || 'slim';
+    return (localStorage.getItem('complyeasy_sidebar_variant') as 'slim' | 'classic') || 'classic';
   });
 
   const toggleSidebarVariant = () => {
@@ -88,36 +88,38 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // ── Consolidated nav items (reduced from ~55 to ~33) ──
+  // ── Nav items, ordered per the Signal IA (design handoff) ──
   const navItems: NavItem[] = [
-    // Platform (6 items)
+    // Platform (7 items — Integrations joins per the Signal IA)
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard, path: ROUTES.DASHBOARD, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'frameworks', label: t('nav.frameworks'), icon: ShieldCheck, path: ROUTES.FRAMEWORKS, roles: ['admin', 'editor'], relatedPaths: ['/frameworks/'] },
     { id: 'risks', label: t('nav.risks'), icon: ShieldAlert, path: ROUTES.RISKS, roles: ['admin', 'editor', 'viewer'] },
     { id: 'issues', label: t('nav.issuesIncidents'), icon: AlertTriangle, path: ROUTES.ISSUES, roles: ['admin', 'editor', 'viewer'] },
     { id: 'vendors', label: t('nav.vendors'), icon: Users, path: ROUTES.VENDORS, roles: ['admin', 'editor', 'viewer'] },
     { id: 'policies', label: t('nav.policies'), icon: FileCheck, path: ROUTES.POLICIES, roles: ['admin', 'editor'] },
-    { id: 'frameworks', label: t('nav.frameworks'), icon: ShieldCheck, path: ROUTES.FRAMEWORKS, roles: ['admin', 'editor'], relatedPaths: ['/frameworks/'] },
-    // Regulatory (10 items - unchanged)
-    { id: 'ai-rmf', label: t('nav.nistAiRmf'), icon: Brain, path: ROUTES.AI_RMF, roles: ['admin', 'editor', 'viewer'], relatedPaths: ['/ai-rmf/'] },
+    { id: 'integrations', label: t('nav.integrations'), icon: Layers, path: ROUTES.INTEGRATIONS, roles: ['admin', 'editor', 'viewer'] },
+    // Regulatory (11 items, Signal order; Ecodesign retained)
     { id: 'eu-ai-act', label: t('nav.euAiAct'), icon: ShieldCheck, path: ROUTES.EU_AI_ACT, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'eu-cra', label: t('nav.euCra'), icon: Shield, path: ROUTES.EU_CRA, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'csrd', label: t('nav.csrdEsg'), icon: Leaf, path: ROUTES.CSRD, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'ecodesign', label: t('nav.ecodesign'), icon: Recycle, path: ROUTES.ECODESIGN, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'ai-rmf', label: t('nav.nistAiRmf'), icon: Brain, path: ROUTES.AI_RMF, roles: ['admin', 'editor', 'viewer'], relatedPaths: ['/ai-rmf/'] },
+    { id: 'dora', label: t('nav.dora'), icon: Shield, path: ROUTES.DORA, roles: ['admin', 'editor', 'viewer'] },
     { id: 'nis2', label: t('nav.nis2'), icon: Network, path: ROUTES.NIS2, roles: ['admin', 'editor', 'viewer'] },
     { id: 'dma', label: t('nav.dma'), icon: ShieldCheck, path: ROUTES.DMA, roles: ['admin', 'editor', 'viewer'] },
     { id: 'dsa', label: t('nav.dsa'), icon: ShieldCheck, path: ROUTES.DSA, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'eu-cra', label: t('nav.euCra'), icon: Shield, path: ROUTES.EU_CRA, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'csrd', label: t('nav.csrdEsg'), icon: Leaf, path: ROUTES.CSRD, roles: ['admin', 'editor', 'viewer'] },
     { id: 'us-privacy', label: t('nav.usPrivacy'), icon: MapPin, path: ROUTES.US_PRIVACY, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'dora', label: t('nav.dora'), icon: Shield, path: ROUTES.DORA, roles: ['admin', 'editor', 'viewer'] },
     { id: 'regulatory-changes', label: t('nav.regChanges'), icon: Globe, path: ROUTES.REGULATORY_CHANGES, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'ecodesign', label: t('nav.ecodesign'), icon: Recycle, path: ROUTES.ECODESIGN, roles: ['admin', 'editor', 'viewer'] },
     // Governance (3 items, down from 7)
     { id: 'governance', label: t('nav.governance'), icon: UserCheck, path: ROUTES.GOVERNANCE, roles: ['admin', 'editor'], relatedPaths: ['/governance/'] },
     { id: 'sox', label: t('nav.soxCompliance'), icon: Landmark, path: ROUTES.SOX, roles: ['admin', 'editor', 'viewer'] },
     { id: 'evidence-hub', label: t('nav.evidenceExceptions'), icon: ScanSearch, path: ROUTES.EVIDENCE_HUB, roles: ['admin', 'editor'] },
-    // Products & Lifecycle (1 item, down from 7)
+    // Products (2 items — Post-Market Surveillance joins per the Signal IA)
     { id: 'products', label: t('nav.productsCompliance'), icon: Package, path: ROUTES.PRODUCTS, roles: ['admin', 'editor'] },
-    // Monitoring & Surveillance (2 items, down from 8)
     { id: 'post-market-surveillance', label: t('nav.surveillance'), icon: ScanSearch, path: ROUTES.POST_MARKET_SURVEILLANCE, roles: ['admin', 'editor'] },
+    // Monitoring (2 items — Maturity joins per the Signal IA)
     { id: 'monitoring', label: t('nav.analyticsMonitoring'), icon: Monitor, path: ROUTES.MONITORING, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'maturity', label: t('nav.maturity'), icon: Gauge, path: ROUTES.MATURITY, roles: ['admin', 'editor'] },
     // Reports & Audit (3 items, down from 9)
     { id: 'reports', label: t('nav.reports'), icon: FileText, path: ROUTES.REPORTS, roles: ['admin', 'editor', 'viewer'] },
     { id: 'audit', label: t('nav.auditCenter'), icon: Activity, path: ROUTES.AUDIT_TRAIL, roles: ['admin', 'editor'] },
@@ -128,14 +130,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { id: 'ropa', label: t('nav.ropa'), icon: ClipboardList, path: ROUTES.ROPA, roles: ['admin', 'editor'] },
     { id: 'privacy-notices', label: t('nav.privacyNotices'), icon: FileText, path: ROUTES.PRIVACY_NOTICES, roles: ['admin', 'editor'] },
     { id: 'account-deletion', label: t('nav.dataDeletion'), icon: UserX, path: ROUTES.ACCOUNT_DELETION, roles: ['admin', 'editor'] },
-    // Enterprise (7 items, down from 12)
+    // Enterprise (5 items; AI tools render directly below this section)
     { id: 'workspaces', label: t('nav.workspaces'), icon: Building2, path: ROUTES.WORKSPACES, roles: ['admin', 'editor'] },
     { id: 'enterprise-ops', label: t('nav.itSecurityOps'), icon: Lock, path: ROUTES.ENTERPRISE_OPS, roles: ['admin', 'editor'] },
     { id: 'questionnaires', label: t('nav.questionnaires'), icon: ClipboardList, path: ROUTES.QUESTIONNAIRES, roles: ['admin', 'editor', 'viewer'] },
     { id: 'acos', label: t('nav.acos'), icon: Brain, path: ROUTES.ACOS, roles: ['admin', 'editor'] },
     { id: 'calendar', label: t('nav.calendar'), icon: Calendar, path: ROUTES.CALENDAR, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'maturity', label: t('nav.maturity'), icon: Gauge, path: ROUTES.MATURITY, roles: ['admin', 'editor'] },
-    { id: 'integrations', label: t('nav.integrations'), icon: Layers, path: ROUTES.INTEGRATIONS, roles: ['admin', 'editor', 'viewer'] },
   ];
 
   // ── Consolidated AI Tools (2 items, down from 15) ──
@@ -156,15 +156,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     [userPlan, t]
   );
 
-  // ── Consolidated section groupings ──
-  const platformIds = ['dashboard', 'risks', 'issues', 'vendors', 'policies', 'frameworks'];
-  const regulatoryIds = ['ai-rmf', 'eu-ai-act', 'eu-cra', 'csrd', 'ecodesign', 'nis2', 'dma', 'dsa', 'us-privacy', 'dora', 'regulatory-changes'];
+  // ── Section groupings (Signal IA: 8 sections + Settings) ──
+  const platformIds = ['dashboard', 'frameworks', 'risks', 'issues', 'vendors', 'policies', 'integrations'];
+  const regulatoryIds = ['eu-ai-act', 'ai-rmf', 'dora', 'nis2', 'dma', 'dsa', 'eu-cra', 'csrd', 'us-privacy', 'regulatory-changes', 'ecodesign'];
   const governanceIds = ['governance', 'sox', 'evidence-hub'];
-  const certProductIds = ['products'];
-  const monitoringSurveillanceIds = ['post-market-surveillance', 'monitoring'];
+  const certProductIds = ['products', 'post-market-surveillance'];
+  const monitoringSurveillanceIds = ['monitoring', 'maturity'];
   const reportsAuditIds = ['reports', 'audit', 'executive'];
   const privacyIds = ['privacy', 'dpia', 'ropa', 'privacy-notices', 'account-deletion'];
-  const enterpriseIds = ['workspaces', 'enterprise-ops', 'questionnaires', 'acos', 'calendar', 'maturity', 'integrations'];
+  const enterpriseIds = ['workspaces', 'enterprise-ops', 'questionnaires', 'acos', 'calendar'];
 
   const navSections: NavSection[] = useMemo(() => {
     const roleFiltered = navItemsFiltered.filter(item => user && item.roles.includes(user.role));
@@ -199,10 +199,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const breadcrumbs = getBreadcrumbs(currentPath);
   const pageTitle = breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 1].label : 'Dashboard';
 
+  // Section chip next to the page title (Signal top bar)
+  const activeSectionLabel = useMemo(() => {
+    const section = navSections.find((s) => s.items.some((item) => isNavActive(item)));
+    if (section) return section.label;
+    if (currentPath.startsWith('/settings')) return t('nav.sectionAdmin');
+    return null;
+  }, [navSections, currentPath, t]);
+
   if (!user) return null;
 
   return (
-    <div className="flex h-screen bg-surface-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-surface-50 dark:bg-signal-canvas overflow-hidden font-plex">
       {/* Slim Sidebar (new default) */}
       {sidebarVariant === 'slim' && (
         <SlimSidebar onSwitchToClassic={toggleSidebarVariant} />
@@ -216,25 +224,31 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         />
       )}
 
-      {/* Classic Sidebar */}
+      {/* Classic Sidebar (Signal) */}
       {sidebarVariant === 'classic' && <aside className={`
-        fixed inset-y-0 left-0 z-30 w-64 bg-surface-900 text-white transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-30 w-64 bg-signal-panel text-signal-ink border-r border-white/[0.06] transform transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         flex flex-col
       `}>
-        {/* Logo */}
-        <div className="flex items-center justify-between p-6 border-b border-surface-700/50">
-          <Link to={ROUTES.DASHBOARD} className="flex items-center space-x-3">
-            <div className="relative w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-600/30">
-              <ShieldCheck className="w-5 h-5 text-white" />
-              <div className="absolute inset-0 rounded-xl bg-brand-400/20 blur-sm" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-gradient">ComplyEasy</span>
+        {/* Logo + plan chip */}
+        <div className="flex items-center justify-between px-5 py-5 border-b border-white/[0.06]">
+          <Link to={ROUTES.DASHBOARD} className="flex items-center gap-2.5">
+            <span aria-hidden="true" className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-gradient-to-br from-signal-green to-signal-blue">
+              <span className="h-[11px] w-[11px] rounded-[3px] border-[2.5px] border-signal-canvas" />
+            </span>
+            <span className="font-display text-[17px] font-bold tracking-tight text-signal-ink">
+              ComplyEasy<span className="text-signal-green">AI</span>
+            </span>
           </Link>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-surface-400 hover:text-white transition-colors">
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-signal-green/40 bg-signal-green/10 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-signal-green">
+              {userPlan}
+            </span>
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-signal-sub hover:text-signal-ink transition-colors">
+              <X size={22} />
+            </button>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -246,13 +260,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {section.collapsible ? (
                   <button
                     onClick={() => toggleSection(section.key)}
-                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-surface-500 uppercase tracking-wider hover:text-surface-300 transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-2 font-mono text-[10px] font-medium text-signal-muted uppercase tracking-[0.16em] hover:text-signal-sub transition-colors cursor-pointer"
                   >
                     <span>{section.label}</span>
-                    {isCollapsed ? <ChevronRight size={14} className="text-surface-600" /> : <ChevronDown size={14} className="text-surface-600" />}
+                    {isCollapsed ? <ChevronRight size={13} className="text-signal-muted" /> : <ChevronDown size={13} className="text-signal-muted" />}
                   </button>
                 ) : (
-                  <p className="px-3 py-2 text-xs font-semibold text-surface-500 uppercase tracking-wider">{section.label}</p>
+                  <p className="px-3 py-2 font-mono text-[10px] font-medium text-signal-muted uppercase tracking-[0.16em]">{section.label}</p>
                 )}
 
                 {!isCollapsed && (
@@ -267,14 +281,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                           onClick={() => setSidebarOpen(false)}
                           data-onboarding={`${item.id}-nav`}
                           className={`
-                            w-full flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-150 group
+                            relative w-full flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-150 group
                             ${active
-                              ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25'
-                              : 'text-surface-400 hover:bg-surface-800 hover:text-white'
+                              ? 'bg-signal-green/10 text-signal-green'
+                              : 'text-signal-sub hover:bg-white/[0.05] hover:text-signal-ink'
                             }
                           `}
                         >
-                          <Icon size={18} className={active ? 'text-white' : 'text-surface-500 group-hover:text-surface-300'} />
+                          {active && <span aria-hidden="true" className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-signal-green" />}
+                          <Icon size={17} className={active ? 'text-signal-green' : 'text-signal-muted group-hover:text-signal-sub'} />
                           <span className="font-medium text-sm">{item.label}</span>
                         </Link>
                       );
@@ -288,7 +303,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* AI Tools Section */}
           {aiToolsFiltered.length > 0 && (
             <div className="mb-2">
-              <p className="px-3 py-2 text-xs font-semibold text-brand-400 uppercase tracking-wider flex items-center">
+              <p className="px-3 py-2 font-mono text-[10px] font-medium text-signal-green/80 uppercase tracking-[0.16em] flex items-center">
                 <Sparkles size={10} className="mr-1.5" /> {t('nav.aiTools')}
               </p>
               <div className="space-y-0.5">
@@ -302,14 +317,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                       onClick={() => setSidebarOpen(false)}
                       data-onboarding={`${item.id}-nav`}
                       className={`
-                        w-full flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-150 group
+                        relative w-full flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-150 group
                         ${active
-                          ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25'
-                          : 'text-surface-400 hover:bg-surface-800 hover:text-white'
+                          ? 'bg-signal-green/10 text-signal-green'
+                          : 'text-signal-sub hover:bg-white/[0.05] hover:text-signal-ink'
                         }
                       `}
                     >
-                      <Icon size={18} className={active ? 'text-white' : 'text-surface-500 group-hover:text-surface-300'} />
+                      {active && <span aria-hidden="true" className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-signal-green" />}
+                      <Icon size={17} className={active ? 'text-signal-green' : 'text-signal-muted group-hover:text-signal-sub'} />
                       <span className="font-medium text-sm">{item.label}</span>
                     </Link>
                   );
@@ -321,76 +337,91 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Admin Section */}
           {user.role === 'admin' && (
             <div className="mb-2">
-              <p className="px-3 py-2 text-xs font-semibold text-surface-500 uppercase tracking-wider">{t('nav.sectionAdmin')}</p>
+              <p className="px-3 py-2 font-mono text-[10px] font-medium text-signal-muted uppercase tracking-[0.16em]">{t('nav.sectionAdmin')}</p>
               <Link
                 to={ROUTES.SETTINGS}
                 onClick={() => setSidebarOpen(false)}
                 data-onboarding="settings-nav"
                 className={`
-                  w-full flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-150 group
+                  relative w-full flex items-center space-x-3 px-3 py-2 rounded-xl transition-all duration-150 group
                   ${currentPath.startsWith('/settings')
-                    ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25'
-                    : 'text-surface-400 hover:bg-surface-800 hover:text-white'
+                    ? 'bg-signal-green/10 text-signal-green'
+                    : 'text-signal-sub hover:bg-white/[0.05] hover:text-signal-ink'
                   }
                 `}
               >
-                <Settings size={18} className={currentPath.startsWith('/settings') ? 'text-white' : 'text-surface-500 group-hover:text-surface-300'} />
+                {currentPath.startsWith('/settings') && <span aria-hidden="true" className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-signal-green" />}
+                <Settings size={17} className={currentPath.startsWith('/settings') ? 'text-signal-green' : 'text-signal-muted group-hover:text-signal-sub'} />
                 <span className="font-medium text-sm">{t('nav.settings')}</span>
               </Link>
             </div>
           )}
         </nav>
 
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-surface-700/50">
-          <div className="mb-3 px-3 flex items-center space-x-2 text-xs text-emerald-400">
-            <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-            <Lock size={12} />
-            <span>{t('nav.encryptedZeroTrust')}</span>
-          </div>
+        {/* Sidebar Footer — pinned user card */}
+        <div className="p-3 border-t border-white/[0.06]">
           <button
             onClick={toggleSidebarVariant}
-            className="w-full flex items-center space-x-3 px-3 py-2.5 text-surface-400 hover:bg-surface-800 hover:text-white rounded-xl transition-all duration-150 cursor-pointer group mb-1"
+            className="w-full flex items-center space-x-3 px-3 py-2 text-signal-sub hover:bg-white/[0.05] hover:text-signal-ink rounded-xl transition-all duration-150 cursor-pointer group mb-1"
           >
-            <LayoutGrid size={18} className="text-surface-500 group-hover:text-surface-300" />
-            <span className="font-medium text-sm">HomeOS view</span>
+            <LayoutGrid size={16} className="text-signal-muted group-hover:text-signal-sub" />
+            <span className="font-medium text-[13px]">HomeOS view</span>
           </button>
-          <button
-            onClick={logout}
-            className="w-full flex items-center space-x-3 px-3 py-2.5 text-surface-400 hover:bg-surface-800 hover:text-white rounded-xl transition-all duration-150 cursor-pointer group"
-          >
-            <LogOut size={18} className="text-surface-500 group-hover:text-surface-300" />
-            <span className="font-medium text-sm">{t('nav.signOut')}</span>
-          </button>
+          <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-signal-green text-[12px] font-bold text-signal-canvas">
+              {user.avatar && user.avatar.startsWith('http') ? (
+                <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+              ) : (
+                user.name.substring(0, 1).toUpperCase()
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-semibold text-signal-ink">{user.name}</p>
+              <p className="truncate text-[11px] text-signal-muted">{user.organization?.name || user.role}</p>
+            </div>
+            <button
+              onClick={logout}
+              aria-label={t('nav.signOut')}
+              title={t('nav.signOut')}
+              className="rounded-lg p-1.5 text-signal-muted transition-colors hover:bg-white/[0.06] hover:text-signal-bad"
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
         </div>
       </aside>}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Top Header Bar */}
-        <header className="bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between px-6 py-3 sticky top-0 z-10 transition-colors duration-300">
-          <div className="flex items-center">
+        <header className="bg-white dark:bg-signal-panel border-b border-surface-200 dark:border-white/[0.06] flex items-center justify-between px-6 py-3 sticky top-0 z-10 transition-colors duration-300">
+          <div className="flex items-center gap-3">
             {sidebarVariant === 'classic' && (
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden mr-4 text-surface-400 hover:text-surface-700 transition-colors"
+                className="lg:hidden mr-1 text-surface-400 hover:text-surface-700 dark:text-signal-sub dark:hover:text-signal-ink transition-colors"
               >
                 <Menu size={24} />
               </button>
             )}
-            <h1 className="text-xl font-semibold text-surface-800 dark:text-surface-100 capitalize" data-onboarding="dashboard-header">
+            <h1 className="text-xl font-semibold font-display tracking-tight text-surface-800 dark:text-signal-ink capitalize" data-onboarding="dashboard-header">
               {pageTitle}
             </h1>
+            {activeSectionLabel && (
+              <span className="hidden sm:inline-flex rounded-md border border-surface-200 dark:border-white/[0.10] px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-surface-500 dark:text-signal-muted">
+                {activeSectionLabel}
+              </span>
+            )}
           </div>
 
           {/* Center: Global Search Trigger */}
           <button
             onClick={() => setGlobalSearchOpen(true)}
-            className="hidden md:flex items-center space-x-3 bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 rounded-xl px-4 py-2 transition-colors cursor-pointer group max-w-md w-full mx-8"
+            className="hidden md:flex items-center space-x-3 bg-surface-100 dark:bg-white/[0.05] hover:bg-surface-200 dark:hover:bg-white/[0.08] border border-transparent dark:border-white/[0.08] rounded-xl px-4 py-2 transition-colors cursor-pointer group max-w-md w-full mx-8"
           >
-            <Search size={16} className="text-surface-400 group-hover:text-surface-500 dark:group-hover:text-surface-300 flex-shrink-0" />
-            <span className="text-sm text-surface-400 group-hover:text-surface-500 dark:group-hover:text-surface-300 flex-1 text-left">{t('nav.searchPlaceholder')}</span>
-            <kbd className="hidden lg:flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium text-surface-400 bg-white dark:bg-surface-700 rounded-md border border-surface-200 dark:border-surface-600 shadow-sm">
+            <Search size={16} className="text-surface-400 dark:text-signal-muted group-hover:text-surface-500 dark:group-hover:text-signal-sub flex-shrink-0" />
+            <span className="text-sm text-surface-400 dark:text-signal-muted group-hover:text-surface-500 dark:group-hover:text-signal-sub flex-1 text-left">{t('nav.searchPlaceholder')}</span>
+            <kbd className="hidden lg:flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium text-surface-400 dark:text-signal-muted bg-white dark:bg-white/[0.06] rounded-md border border-surface-200 dark:border-white/[0.08] shadow-sm">
               <Command size={10} />K
             </kbd>
           </button>
@@ -408,12 +439,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <LanguageSwitcher compact />
 
             {/* User Avatar + Name */}
-            <div className="flex items-center space-x-3 border-l border-surface-200 pl-3">
+            <div className="flex items-center space-x-3 border-l border-surface-200 dark:border-white/[0.08] pl-3">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-surface-900">{user.name}</p>
-                <p className="text-xs text-surface-500 capitalize">{user.role}</p>
+                <p className="text-sm font-medium text-surface-900 dark:text-signal-ink">{user.name}</p>
+                <p className="text-xs text-surface-500 dark:text-signal-muted capitalize">{user.role}</p>
               </div>
-              <div className="w-9 h-9 bg-brand-100 rounded-xl flex items-center justify-center border border-brand-200 text-brand-700 font-bold text-sm shadow-sm overflow-hidden">
+              <div className="w-9 h-9 bg-brand-100 dark:bg-signal-green/15 rounded-xl flex items-center justify-center border border-brand-200 dark:border-signal-green/30 text-brand-700 dark:text-signal-green font-bold text-sm shadow-sm overflow-hidden">
                 {user.avatar && user.avatar.startsWith('http') ? (
                   <img
                     src={user.avatar}
@@ -434,7 +465,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-surface-50 dark:bg-surface-900 relative transition-colors duration-300">
+        <main className="flex-1 overflow-y-auto p-6 bg-surface-50 dark:bg-signal-canvas relative transition-colors duration-300">
           <div className="max-w-7xl mx-auto animate-fadeIn pb-20" data-onboarding="dashboard-content">
             <Breadcrumbs />
             {children}

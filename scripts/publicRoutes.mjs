@@ -9,6 +9,12 @@ export const STATIC_ROUTES = [
   '/community',
   '/status',
   '/docs',
+  // Signal marketing pages
+  '/platform',
+  '/pricing',
+  '/frameworks',
+  '/demo',
+  '/login',
   // Pillar pages
   '/platform/ai-compliance',
   '/soc2-compliance',
@@ -18,6 +24,14 @@ export const STATIC_ROUTES = [
   '/hipaa',
   '/nist-ai-rmf',
   '/grc',
+  '/nist-csf',
+  '/pci-dss',
+  '/ccpa',
+  '/iso-42001',
+  '/dora-compliance',
+  '/dma-compliance',
+  '/dsa-compliance',
+  '/csrd-compliance',
   // Competitor comparison pages
   '/compare/vanta-alternative',
   '/compare/drata-alternative',

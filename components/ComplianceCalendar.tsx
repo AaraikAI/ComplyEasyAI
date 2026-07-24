@@ -442,7 +442,7 @@ const ComplianceCalendar: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{d.title}</span>
-                      {d.status === 'overdue' && <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-medium">OVERDUE</span>}
+                      {d.status === 'overdue' && <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-signal-bad/10 text-red-700 dark:text-signal-bad font-medium">OVERDUE</span>}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-surface-500 dark:text-surface-400">
                       <span className={TYPE_TEXT[d.type]}>{TYPE_LABELS[d.type]}</span>
@@ -450,7 +450,7 @@ const ComplianceCalendar: React.FC = () => {
                       {d.assignee && <span>Assigned: {d.assignee}</span>}
                     </div>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded font-medium flex-shrink-0 ${d.priority === 'critical' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : d.priority === 'high' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' : d.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'}`}>
+                  <span className={`text-xs px-2 py-1 rounded font-medium flex-shrink-0 ${d.priority === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-700 dark:text-signal-bad' : d.priority === 'high' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-700 dark:text-signal-warn' : d.priority === 'medium' ? 'bg-yellow-100 dark:bg-signal-amber/10 text-yellow-700 dark:text-signal-amber' : 'bg-green-100 dark:bg-signal-good/10 text-green-700 dark:text-signal-good'}`}>
                     {PRIORITY_LABELS[d.priority]}
                   </span>
                 </div>
@@ -461,7 +461,7 @@ const ComplianceCalendar: React.FC = () => {
           <div className="text-center py-16">
             <CalendarIcon className="w-10 h-10 text-surface-300 dark:text-surface-600 mx-auto mb-3" />
             <p className="text-sm text-surface-500 dark:text-surface-400">No deadlines for this day</p>
-            <button onClick={() => openCreate(currentDate)} className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline">Add a deadline</button>
+            <button onClick={() => openCreate(currentDate)} className="mt-3 text-sm text-blue-600 dark:text-signal-green hover:underline">Add a deadline</button>
           </div>
         )}
       </div>
@@ -539,7 +539,7 @@ const ComplianceCalendar: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium text-surface-700 dark:text-surface-300">Reminders</label>
-                <button onClick={addReminder} className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Add</button>
+                <button onClick={addReminder} className="text-xs text-blue-600 dark:text-signal-green hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Add</button>
               </div>
               {form.reminders.map((r, i) => (
                 <div key={i} className="flex items-center gap-2 mb-2 p-2 bg-surface-50 dark:bg-surface-700/50 rounded-lg">
@@ -569,7 +569,7 @@ const ComplianceCalendar: React.FC = () => {
           <div className="px-6 py-4 border-t border-surface-200 dark:border-surface-700 flex items-center justify-end gap-3">
             <button onClick={() => { setShowModal(false); setEditingDeadline(null); setForm(emptyForm); }} className="px-4 py-2 text-sm text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">{t('common.cancel')}</button>
             <button onClick={saveDeadline} disabled={saving || !form.title.trim() || !form.dueDate}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-lg">
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:disabled:bg-signal-green/40 disabled:cursor-not-allowed rounded-lg">
               {saving ? t('common.loading') : editingDeadline ? t('common.save') : t('common.create')}
             </button>
           </div>
@@ -596,9 +596,9 @@ const ComplianceCalendar: React.FC = () => {
           </div>
           <div className="px-6 py-4 space-y-4">
             {od && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                <span className="text-sm font-medium text-red-700 dark:text-red-300">This deadline is overdue</span>
+              <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-signal-bad/10 border border-red-200 dark:border-signal-bad/20 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-red-600 dark:text-signal-bad" />
+                <span className="text-sm font-medium text-red-700 dark:text-signal-bad">This deadline is overdue</span>
               </div>
             )}
             {dl.description && <p className="text-sm text-surface-600 dark:text-surface-400">{dl.description}</p>}
@@ -617,7 +617,7 @@ const ComplianceCalendar: React.FC = () => {
               </div>
               <div className="bg-surface-50 dark:bg-surface-700/50 rounded-lg p-3">
                 <span className="text-xs text-surface-500 dark:text-surface-400">Priority</span>
-                <p className={`text-sm font-medium ${dl.priority === 'critical' ? 'text-red-600 dark:text-red-400' : dl.priority === 'high' ? 'text-orange-600 dark:text-orange-400' : dl.priority === 'medium' ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`}>{PRIORITY_LABELS[dl.priority]}</p>
+                <p className={`text-sm font-medium ${dl.priority === 'critical' ? 'text-red-600 dark:text-signal-bad' : dl.priority === 'high' ? 'text-orange-600 dark:text-signal-warn' : dl.priority === 'medium' ? 'text-yellow-600 dark:text-signal-amber' : 'text-green-600 dark:text-signal-good'}`}>{PRIORITY_LABELS[dl.priority]}</p>
               </div>
               <div className="bg-surface-50 dark:bg-surface-700/50 rounded-lg p-3">
                 <span className="text-xs text-surface-500 dark:text-surface-400">{t('common.status')}</span>
@@ -641,8 +641,8 @@ const ComplianceCalendar: React.FC = () => {
                   {dl.reminders.map((r, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs text-surface-600 dark:text-surface-400">
                       <Bell className="w-3 h-3" /> {r.amount} {r.unit} before
-                      {r.notifyEmail && <span className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">Email</span>}
-                      {r.notifyInApp && <span className="px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">In-App</span>}
+                      {r.notifyEmail && <span className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-signal-blue/10 text-blue-700 dark:text-signal-blue">Email</span>}
+                      {r.notifyInApp && <span className="px-1.5 py-0.5 rounded bg-green-100 dark:bg-signal-good/10 text-green-700 dark:text-signal-good">In-App</span>}
                     </div>
                   ))}
                 </div>
@@ -654,9 +654,9 @@ const ComplianceCalendar: React.FC = () => {
             <button onClick={() => deleteDeadline(dl.id)} className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 flex items-center gap-1"><Trash2 className="w-3.5 h-3.5" /> {t('common.delete')}</button>
             <div className="flex items-center gap-2">
               {dl.status !== 'completed' && (
-                <button onClick={() => markComplete(dl.id)} className="px-3 py-1.5 text-sm font-medium text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 rounded-lg flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> {t('calendar.completed')}</button>
+                <button onClick={() => markComplete(dl.id)} className="px-3 py-1.5 text-sm font-medium text-green-700 dark:text-signal-good bg-green-50 dark:bg-signal-good/10 hover:bg-green-100 dark:hover:bg-signal-good/20 rounded-lg flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> {t('calendar.completed')}</button>
               )}
-              <button onClick={() => openEdit(dl)} className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1"><Edit className="w-3.5 h-3.5" /> {t('common.edit')}</button>
+              <button onClick={() => openEdit(dl)} className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 rounded-lg flex items-center gap-1"><Edit className="w-3.5 h-3.5" /> {t('common.edit')}</button>
             </div>
           </div>
         </div>
@@ -671,31 +671,31 @@ const ComplianceCalendar: React.FC = () => {
       <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <CalendarIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <CalendarIcon className="w-6 h-6 text-blue-600 dark:text-signal-green" />
             <div>
-              <h1 className="text-xl font-bold text-surface-900 dark:text-surface-100">{t('calendar.title')}</h1>
+              <h1 className="text-xl font-bold dark:font-display text-surface-900 dark:text-surface-100">{t('calendar.title')}</h1>
               <p className="text-sm text-surface-500 dark:text-surface-400">Track and manage compliance deadlines across all frameworks</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowFilters(!showFilters)} className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700'}`}><Filter className="w-4 h-4" /></button>
+            <button onClick={() => setShowFilters(!showFilters)} className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-blue-100 dark:bg-signal-green/10 text-blue-600 dark:text-signal-green' : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700'}`}><Filter className="w-4 h-4" /></button>
             <button onClick={fetchDeadlines} disabled={loading} className="p-2 rounded-lg text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
-            <button onClick={() => openCreate()} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"><Plus className="w-4 h-4" /> {t('calendar.addEvent')}</button>
+            <button onClick={() => openCreate()} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 rounded-lg"><Plus className="w-4 h-4" /> {t('calendar.addEvent')}</button>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" /><span className="text-xs font-medium text-red-700 dark:text-red-300">{t('calendar.overdue')}</span></div>
-            <span className="text-2xl font-bold text-red-700 dark:text-red-300">{overdueCount}</span>
+          <div className="bg-red-50 dark:bg-signal-bad/[0.08] border border-red-200 dark:border-signal-bad/20 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-red-600 dark:text-signal-bad" /><span className="text-xs font-medium text-red-700 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{t('calendar.overdue')}</span></div>
+            <span className="text-2xl font-bold dark:font-display text-red-700 dark:text-signal-bad">{overdueCount}</span>
           </div>
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1"><Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" /><span className="text-xs font-medium text-amber-700 dark:text-amber-300">Next 30 Days</span></div>
-            <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">{upcomingCount}</span>
+          <div className="bg-amber-50 dark:bg-signal-warn/[0.08] border border-amber-200 dark:border-signal-warn/20 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1"><Clock className="w-4 h-4 text-amber-600 dark:text-signal-warn" /><span className="text-xs font-medium text-amber-700 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Next 30 Days</span></div>
+            <span className="text-2xl font-bold dark:font-display text-amber-700 dark:text-signal-warn">{upcomingCount}</span>
           </div>
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1"><CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" /><span className="text-xs font-medium text-green-700 dark:text-green-300">{t('calendar.completed')}</span></div>
-            <span className="text-2xl font-bold text-green-700 dark:text-green-300">{completedCount}</span>
+          <div className="bg-green-50 dark:bg-signal-good/[0.08] border border-green-200 dark:border-signal-good/20 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1"><CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" /><span className="text-xs font-medium text-green-700 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{t('calendar.completed')}</span></div>
+            <span className="text-2xl font-bold dark:font-display text-green-700 dark:text-signal-good">{completedCount}</span>
           </div>
         </div>
 
@@ -739,9 +739,9 @@ const ComplianceCalendar: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button onClick={navigatePrev} className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700 text-surface-600 dark:text-surface-400"><ChevronLeft className="w-5 h-5" /></button>
-            <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100 min-w-[260px] text-center">{navLabel}</h2>
+            <h2 className="text-lg font-semibold dark:font-display text-surface-900 dark:text-surface-100 min-w-[260px] text-center">{navLabel}</h2>
             <button onClick={navigateNext} className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700 text-surface-600 dark:text-surface-400"><ChevronRight className="w-5 h-5" /></button>
-            <button onClick={goToToday} className="ml-2 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20">{t('calendar.today')}</button>
+            <button onClick={goToToday} className="ml-2 px-3 py-1 text-xs font-medium text-blue-600 dark:text-signal-green border border-blue-300 dark:border-signal-green/30 rounded hover:bg-blue-50 dark:hover:bg-signal-green/10">{t('calendar.today')}</button>
           </div>
           <div className="flex items-center bg-surface-100 dark:bg-surface-700 rounded-lg p-0.5">
             {(['month', 'week', 'day'] as ViewMode[]).map(mode => (
@@ -755,16 +755,16 @@ const ComplianceCalendar: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mx-6 mt-4 flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-          <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+        <div className="mx-6 mt-4 flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-signal-bad/10 border border-red-200 dark:border-signal-bad/20 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-red-600 dark:text-signal-bad flex-shrink-0" />
+          <span className="text-sm text-red-700 dark:text-signal-bad">{error}</span>
           <button onClick={() => setError(null)} className="ml-auto p-1 text-red-500 hover:text-red-700"><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <RefreshCw className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" />
+          <RefreshCw className="w-6 h-6 text-blue-600 dark:text-signal-green animate-spin" />
           <span className="ml-3 text-sm text-surface-500 dark:text-surface-400">{t('common.loading')}</span>
         </div>
       ) : (
@@ -777,7 +777,7 @@ const ComplianceCalendar: React.FC = () => {
 
       <div className="px-6 py-3 border-t border-surface-200 dark:border-surface-700">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-medium text-surface-500 dark:text-surface-400">Legend:</span>
+          <span className="text-xs font-medium text-surface-500 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">Legend:</span>
           {Object.entries(TYPE_LABELS).map(([k, v]) => (
             <div key={k} className="flex items-center gap-1.5">
               <div className={`w-2.5 h-2.5 rounded-full ${TYPE_COLORS[k as DeadlineType]}`} />

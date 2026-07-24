@@ -182,9 +182,9 @@ test.describe('Sidebar Navigation (SlimSidebar pillars)', () => {
   test('Active pillar reflects the current route', async ({ page }) => {
     const sidebar = new SidebarPage(page);
     await sidebar.navigateToRisks();
-    // Active pillar uses the brand-600 background class in SlimSidebar.
+    // Active pillar uses the Signal green tint in the restyled SlimSidebar.
     const active = page.locator('a[data-onboarding="risk-nav"]');
-    await expect(active).toHaveClass(/bg-brand-600/);
+    await expect(active).toHaveClass(/bg-signal-green/);
   });
 });
 

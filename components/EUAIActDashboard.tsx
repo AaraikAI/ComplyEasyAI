@@ -315,50 +315,50 @@ export const EUAIActDashboard: React.FC = () => {
   const getRiskLevelColor = (riskLevel: string) => {
     switch (riskLevel) {
       case 'unacceptable':
-        return 'bg-red-100 text-red-800 border-red-300';
+        return 'bg-red-100 text-red-800 border-red-300 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/30';
       case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-300';
+        return 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-signal-amber/10 dark:text-signal-amber dark:border-signal-amber/30';
       case 'limited':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/30';
       case 'minimal':
-        return 'bg-green-100 text-green-800 border-green-300';
+        return 'bg-green-100 text-green-800 border-green-300 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/30';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-white/[0.06] dark:text-signal-sub dark:border-white/[0.10]';
     }
   };
 
   const getComplianceStatusColor = (status: string) => {
     switch (status) {
       case 'compliant':
-        return 'text-green-600';
+        return 'text-green-600 dark:text-signal-good';
       case 'non_compliant':
-        return 'text-red-600';
+        return 'text-red-600 dark:text-signal-bad';
       case 'at_risk':
-        return 'text-orange-600';
+        return 'text-orange-600 dark:text-signal-warn';
       default:
-        return 'text-gray-600';
+        return 'text-gray-600 dark:text-signal-sub';
     }
   };
 
   const getRiskLevelIcon = (riskLevel: string) => {
     switch (riskLevel) {
       case 'unacceptable':
-        return <X className="w-5 h-5 text-red-600" />;
+        return <X className="w-5 h-5 text-red-600 dark:text-signal-bad" />;
       case 'high':
-        return <AlertTriangle className="w-5 h-5 text-orange-600" />;
+        return <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-signal-amber" />;
       case 'limited':
-        return <AlertCircle className="w-5 h-5 text-yellow-600" />;
+        return <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-signal-warn" />;
       case 'minimal':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
+        return <CheckCircle className="w-5 h-5 text-green-600 dark:text-signal-good" />;
       default:
-        return <Clock className="w-5 h-5 text-gray-600" />;
+        return <Clock className="w-5 h-5 text-gray-600 dark:text-signal-sub" />;
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-signal-green"></div>
       </div>
     );
   }
@@ -368,20 +368,20 @@ export const EUAIActDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.euAiAct')}</h2>
-          <p className="text-gray-600 mt-1">Manage AI systems and ensure compliance with Regulation (EU) 2024/1689</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('euRegulations.euAiAct')}</h2>
+          <p className="text-gray-600 dark:text-signal-sub mt-1">Manage AI systems and ensure compliance with Regulation (EU) 2024/1689</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => setShowReportModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-blue dark:text-signal-canvas dark:hover:bg-signal-blue/90 flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />
             Generate Report
           </button>
           <button
             onClick={() => setShowRegisterModal(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:font-semibold flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Register AI System
@@ -390,85 +390,85 @@ export const EUAIActDashboard: React.FC = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-600" />
-          <span className="text-red-800">{error}</span>
+        <div className="bg-red-50 border border-red-200 dark:bg-signal-bad/10 dark:border-signal-bad/30 rounded-lg p-4 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-signal-bad" />
+          <span className="text-red-800 dark:text-signal-bad">{error}</span>
           <button onClick={() => setError(null)} className="ml-auto">
-            <X className="w-4 h-4 text-red-600" />
+            <X className="w-4 h-4 text-red-600 dark:text-signal-bad" />
           </button>
         </div>
       )}
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">{t('common.total')} Systems</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{systems.length}</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">{t('common.total')} Systems</p>
+              <p className="text-2xl font-bold font-display text-gray-900 dark:text-signal-ink mt-1">{systems.length}</p>
             </div>
-            <Database className="w-8 h-8 text-blue-600" />
+            <Database className="w-8 h-8 text-blue-600 dark:text-signal-blue" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">{t('euRegulations.highRisk')}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">{t('euRegulations.highRisk')}</p>
+              <p className="text-2xl font-bold font-display text-gray-900 dark:text-signal-ink mt-1">
                 {systems.filter(s => s.riskLevel === 'high').length}
               </p>
             </div>
-            <Shield className="w-8 h-8 text-orange-600" />
+            <Shield className="w-8 h-8 text-orange-600 dark:text-signal-amber" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Compliant Systems</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Compliant Systems</p>
+              <p className="text-2xl font-bold font-display text-gray-900 dark:text-signal-ink mt-1">
                 {systems.filter(s => s.complianceStatus === 'compliant').length}
               </p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-600" />
+            <CheckCircle className="w-8 h-8 text-green-600 dark:text-signal-good" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Generative AI</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Generative AI</p>
+              <p className="text-2xl font-bold font-display text-gray-900 dark:text-signal-ink mt-1">
                 {systems.filter(s => s.isGenerative).length}
               </p>
             </div>
-            <Eye className="w-8 h-8 text-purple-600" />
+            <Eye className="w-8 h-8 text-purple-600 dark:text-signal-violet" />
           </div>
         </div>
       </div>
 
       {/* Systems List */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Registered AI Systems</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-white/[0.06]">
+        <div className="p-6 border-b border-gray-200 dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">Registered AI Systems</h3>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-white/[0.06]">
           {systems.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Database className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+            <div className="p-8 text-center text-gray-500 dark:text-signal-sub">
+              <Database className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-signal-muted" />
               <p>No AI systems registered yet</p>
               <button
                 onClick={() => setShowRegisterModal(true)}
-                className="mt-4 text-indigo-600 hover:text-indigo-700 font-medium"
+                className="mt-4 text-indigo-600 hover:text-indigo-700 dark:text-signal-green dark:hover:text-signal-green/80 font-medium"
               >
                 Register your first AI system
               </button>
             </div>
           ) : (
             systems.map((system) => (
-              <div key={system.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={system.id} className="p-6 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h4 className="text-lg font-semibold text-gray-900">{system.name}</h4>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-signal-ink dark:font-display">{system.name}</h4>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(system.riskLevel)}`}>
                         {system.riskLevel.toUpperCase()}
                       </span>
@@ -477,9 +477,9 @@ export const EUAIActDashboard: React.FC = () => {
                       </span>
                     </div>
                     {system.description && (
-                      <p className="text-gray-600 text-sm mb-3">{system.description}</p>
+                      <p className="text-gray-600 dark:text-signal-sub text-sm mb-3">{system.description}</p>
                     )}
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-signal-sub">
                       {system.highRiskCategory && (
                         <span className="flex items-center gap-1">
                           <Shield className="w-4 h-4" />
@@ -506,9 +506,9 @@ export const EUAIActDashboard: React.FC = () => {
                       )}
                     </div>
                     {system.prohibitedPractices.length > 0 && (
-                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm font-medium text-red-800 mb-1">⚠️ Prohibited Practices Detected:</p>
-                        <ul className="text-sm text-red-700 list-disc list-inside">
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 dark:bg-signal-bad/10 dark:border-signal-bad/30 rounded-lg">
+                        <p className="text-sm font-medium text-red-800 dark:text-signal-bad mb-1">⚠️ Prohibited Practices Detected:</p>
+                        <ul className="text-sm text-red-700 dark:text-signal-bad/80 list-disc list-inside">
                           {system.prohibitedPractices.map((practice, idx) => (
                             <li key={idx}>{practice.replace('_', ' ')}</li>
                           ))}
@@ -558,7 +558,7 @@ export const EUAIActDashboard: React.FC = () => {
                           }
                           setShowAssessmentModal(true);
                         }}
-                        className="px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm"
+                        className="px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 dark:bg-signal-amber dark:text-signal-canvas dark:hover:bg-signal-amber/90 text-sm"
                       >
                         Assess Risk
                       </button>
@@ -568,7 +568,7 @@ export const EUAIActDashboard: React.FC = () => {
                         setSelectedSystem(system);
                         setShowDetailsModal(true);
                       }}
-                      className="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                      className="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 dark:bg-white/[0.08] dark:text-signal-body dark:hover:bg-white/[0.12] text-sm"
                     >
                       View Details
                     </button>
@@ -577,7 +577,7 @@ export const EUAIActDashboard: React.FC = () => {
                         setSelectedSystem(system);
                         setShowStatusUpdateModal(true);
                       }}
-                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 text-sm"
                     >
                       Update Status
                     </button>
@@ -592,66 +592,66 @@ export const EUAIActDashboard: React.FC = () => {
       {/* Register System Modal */}
       {showRegisterModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Register AI System</h3>
-              <button onClick={() => setShowRegisterModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Register AI System</h3>
+              <button onClick={() => setShowRegisterModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleRegisterSystem} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('common.name')} *</label>
                 <input
                   type="text"
                   required
                   value={registrationForm.name}
                   onChange={(e) => setRegistrationForm({ ...registrationForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('common.description')}</label>
                 <textarea
                   value={registrationForm.description}
                   onChange={(e) => setRegistrationForm({ ...registrationForm, description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Use Case *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Use Case *</label>
                 <input
                   type="text"
                   required
                   value={registrationForm.useCase}
                   onChange={(e) => setRegistrationForm({ ...registrationForm, useCase: e.target.value })}
                   placeholder="e.g., Healthcare diagnostics, Recruitment screening"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Users</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Target Users</label>
                   <textarea
                     value={registrationForm.targetUsers.join('\n')}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, targetUsers: e.target.value.split('\n').filter(s => s.trim()) })}
                     placeholder="Enter one per line, e.g.:&#10;Healthcare professionals&#10;HR teams"
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Enter one user type per line</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">Enter one user type per line</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Data Types</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Data Types</label>
                   <textarea
                     value={registrationForm.dataTypes.join('\n')}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, dataTypes: e.target.value.split('\n').filter(s => s.trim()) })}
                     placeholder="Enter one per line, e.g.:&#10;Medical records&#10;Personal data"
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Enter one data type per line</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">Enter one data type per line</p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -660,67 +660,67 @@ export const EUAIActDashboard: React.FC = () => {
                     type="checkbox"
                     checked={registrationForm.decisionMaking}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, decisionMaking: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.2] dark:text-signal-green dark:focus:ring-signal-green"
                   />
-                  <span className="text-sm text-gray-700">Makes automated decisions</span>
+                  <span className="text-sm text-gray-700 dark:text-signal-body">Makes automated decisions</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={registrationForm.biometricProcessing}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, biometricProcessing: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.2] dark:text-signal-green dark:focus:ring-signal-green"
                   />
-                  <span className="text-sm text-gray-700">Processes biometric data</span>
+                  <span className="text-sm text-gray-700 dark:text-signal-body">Processes biometric data</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={registrationForm.realTimeProcessing}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, realTimeProcessing: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.2] dark:text-signal-green dark:focus:ring-signal-green"
                   />
-                  <span className="text-sm text-gray-700">Real-time processing</span>
+                  <span className="text-sm text-gray-700 dark:text-signal-body">Real-time processing</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={registrationForm.affectsFundamentalRights}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, affectsFundamentalRights: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.2] dark:text-signal-green dark:focus:ring-signal-green"
                   />
-                  <span className="text-sm text-gray-700">Affects fundamental rights</span>
+                  <span className="text-sm text-gray-700 dark:text-signal-body">Affects fundamental rights</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={registrationForm.isGeneralPurpose}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, isGeneralPurpose: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.2] dark:text-signal-green dark:focus:ring-signal-green"
                   />
-                  <span className="text-sm text-gray-700">General-purpose AI model</span>
+                  <span className="text-sm text-gray-700 dark:text-signal-body">General-purpose AI model</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={registrationForm.isGenerative}
                     onChange={(e) => setRegistrationForm({ ...registrationForm, isGenerative: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.2] dark:text-signal-green dark:focus:ring-signal-green"
                   />
-                  <span className="text-sm text-gray-700">Generative AI (e.g., ChatGPT, image generators)</span>
+                  <span className="text-sm text-gray-700 dark:text-signal-body">Generative AI (e.g., ChatGPT, image generators)</span>
                 </label>
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:font-semibold"
                 >
                   Register System
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowRegisterModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -733,85 +733,85 @@ export const EUAIActDashboard: React.FC = () => {
       {/* Risk Assessment Modal */}
       {showAssessmentModal && selectedSystem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Conduct Risk Assessment: {selectedSystem.name}</h3>
-              <button onClick={() => setShowAssessmentModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Conduct Risk Assessment: {selectedSystem.name}</h3>
+              <button onClick={() => setShowAssessmentModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleConductAssessment} className="p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Safety Risks</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Safety Risks</label>
                 <textarea
                   value={assessmentForm.safetyRisks.join('\n')}
                   onChange={(e) => setAssessmentForm({ ...assessmentForm, safetyRisks: e.target.value.split('\n').filter(s => s.trim()) })}
                   rows={3}
                   placeholder="List any safety risks identified..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Fundamental Rights Risks</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Fundamental Rights Risks</label>
                 <textarea
                   value={assessmentForm.fundamentalRightsRisks.join('\n')}
                   onChange={(e) => setAssessmentForm({ ...assessmentForm, fundamentalRightsRisks: e.target.value.split('\n').filter(s => s.trim()) })}
                   rows={3}
                   placeholder="List any fundamental rights risks..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Discrimination Risks</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Discrimination Risks</label>
                 <textarea
                   value={assessmentForm.discriminationRisks.join('\n')}
                   onChange={(e) => setAssessmentForm({ ...assessmentForm, discriminationRisks: e.target.value.split('\n').filter(s => s.trim()) })}
                   rows={3}
                   placeholder="List any discrimination risks..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Privacy Risks</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Privacy Risks</label>
                 <textarea
                   value={assessmentForm.privacyRisks.join('\n')}
                   onChange={(e) => setAssessmentForm({ ...assessmentForm, privacyRisks: e.target.value.split('\n').filter(s => s.trim()) })}
                   rows={3}
                   placeholder="List any privacy risks..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Mitigation Measures</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Mitigation Measures</label>
                 <textarea
                   value={assessmentForm.mitigationMeasures.join('\n')}
                   onChange={(e) => setAssessmentForm({ ...assessmentForm, mitigationMeasures: e.target.value.split('\n').filter(s => s.trim()) })}
                   rows={3}
                   placeholder="List mitigation measures implemented..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Recommendations</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Recommendations</label>
                 <textarea
                   value={assessmentForm.recommendations.join('\n')}
                   onChange={(e) => setAssessmentForm({ ...assessmentForm, recommendations: e.target.value.split('\n').filter(s => s.trim()) })}
                   rows={3}
                   placeholder="List recommendations for improvement..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 dark:bg-signal-amber dark:text-signal-canvas dark:hover:bg-signal-amber/90"
                 >
                   Submit Assessment
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAssessmentModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -824,47 +824,47 @@ export const EUAIActDashboard: React.FC = () => {
       {/* View Details Modal */}
       {showDetailsModal && selectedSystem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">{t('common.details')}: {selectedSystem.name}</h3>
-              <button onClick={() => setShowDetailsModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">{t('common.details')}: {selectedSystem.name}</h3>
+              <button onClick={() => setShowDetailsModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">{t('common.description')}</label>
-                <p className="text-gray-900 mt-1">{selectedSystem.description || 'No description provided'}</p>
+                <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">{t('common.description')}</label>
+                <p className="text-gray-900 dark:text-signal-ink mt-1">{selectedSystem.description || 'No description provided'}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">{t('risks.riskLevel')}</label>
-                  <p className="text-gray-900 mt-1 capitalize">{selectedSystem.riskLevel}</p>
+                  <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">{t('risks.riskLevel')}</label>
+                  <p className="text-gray-900 dark:text-signal-ink mt-1 capitalize">{selectedSystem.riskLevel}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">{t('common.status')}</label>
-                  <p className="text-gray-900 mt-1 capitalize">{selectedSystem.complianceStatus.replace('_', ' ')}</p>
+                  <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">{t('common.status')}</label>
+                  <p className="text-gray-900 dark:text-signal-ink mt-1 capitalize">{selectedSystem.complianceStatus.replace('_', ' ')}</p>
                 </div>
               </div>
               {selectedSystem.highRiskCategory && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700">High-Risk Category</label>
-                  <p className="text-gray-900 mt-1 capitalize">{selectedSystem.highRiskCategory.replace('_', ' ')}</p>
+                  <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">High-Risk Category</label>
+                  <p className="text-gray-900 dark:text-signal-ink mt-1 capitalize">{selectedSystem.highRiskCategory.replace('_', ' ')}</p>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">General Purpose AI</label>
-                  <p className="text-gray-900 mt-1">{selectedSystem.isGeneralPurpose ? 'Yes' : 'No'}</p>
+                  <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">General Purpose AI</label>
+                  <p className="text-gray-900 dark:text-signal-ink mt-1">{selectedSystem.isGeneralPurpose ? 'Yes' : 'No'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Generative AI</label>
-                  <p className="text-gray-900 mt-1">{selectedSystem.isGenerative ? 'Yes' : 'No'}</p>
+                  <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Generative AI</label>
+                  <p className="text-gray-900 dark:text-signal-ink mt-1">{selectedSystem.isGenerative ? 'Yes' : 'No'}</p>
                 </div>
               </div>
               {selectedSystem.prohibitedPractices.length > 0 && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Prohibited Practices</label>
+                  <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Prohibited Practices</label>
                   <ul className="list-disc list-inside text-gray-900 mt-1">
                     {selectedSystem.prohibitedPractices.map((practice, idx) => (
                       <li key={idx} className="capitalize">{practice.replace('_', ' ')}</li>
@@ -874,16 +874,16 @@ export const EUAIActDashboard: React.FC = () => {
               )}
               {selectedSystem.registeredInEUDatabase && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700">EU Database Registration</label>
-                  <p className="text-gray-900 mt-1">
+                  <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">EU Database Registration</label>
+                  <p className="text-gray-900 dark:text-signal-ink mt-1">
                     {selectedSystem.euDatabaseRegistrationId || 'Registered (ID pending)'}
                   </p>
                 </div>
               )}
               {selectedSystem.lastAssessmentDate && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Last Assessment</label>
-                  <p className="text-gray-900 mt-1">{new Date(selectedSystem.lastAssessmentDate).toLocaleDateString()}</p>
+                  <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Last Assessment</label>
+                  <p className="text-gray-900 dark:text-signal-ink mt-1">{new Date(selectedSystem.lastAssessmentDate).toLocaleDateString()}</p>
                 </div>
               )}
             </div>
@@ -894,10 +894,10 @@ export const EUAIActDashboard: React.FC = () => {
       {/* Status Update Modal */}
       {showStatusUpdateModal && selectedSystem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">{t('common.status')}</h3>
-              <button onClick={() => setShowStatusUpdateModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">{t('common.status')}</h3>
+              <button onClick={() => setShowStatusUpdateModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -913,11 +913,11 @@ export const EUAIActDashboard: React.FC = () => {
               }
             }} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Compliance Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Compliance Status</label>
                 <select
                   name="status"
                   defaultValue={selectedSystem.complianceStatus}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green/60 dark:focus:border-signal-green/60"
                 >
                   <option value="compliant">Compliant</option>
                   <option value="non_compliant">Non-Compliant</option>
@@ -928,14 +928,14 @@ export const EUAIActDashboard: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90"
                 >
                   Update Status
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowStatusUpdateModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -948,27 +948,27 @@ export const EUAIActDashboard: React.FC = () => {
       {/* Generate Report Modal */}
       {showReportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Generate Transparency Report</h3>
-              <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Generate Transparency Report</h3>
+              <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6">
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 dark:text-signal-sub mb-4">
                 Generate a transparency report for all generative AI systems. The report will cover the last 12 months.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={handleGenerateReport}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-blue dark:text-signal-canvas dark:hover:bg-signal-blue/90"
                 >
                   Generate Report
                 </button>
                 <button
                   onClick={() => setShowReportModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -981,35 +981,35 @@ export const EUAIActDashboard: React.FC = () => {
       {/* Report View Modal */}
       {showReportViewModal && generatedReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Transparency Report (Past 12 Months)</h3>
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink dark:font-display">Transparency Report (Past 12 Months)</h3>
               <div className="flex gap-2">
                 <button
                   onClick={handleDownloadReport}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-blue dark:text-signal-canvas dark:hover:bg-signal-blue/90 flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
                   {t('common.download')}
                 </button>
-                <button onClick={() => setShowReportViewModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowReportViewModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink">
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
             <div className="p-6 space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <p className="text-sm text-blue-800">
+              <div className="bg-blue-50 border border-blue-200 dark:bg-signal-blue/10 dark:border-signal-blue/30 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-800 dark:text-signal-blue">
                   <strong>Note:</strong> This report aggregates all transparency reports from the past 12 months, providing a comprehensive view of your AI systems' compliance status.
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Reporting Period</label>
-                <p className="text-gray-900 mt-1">
+                <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Reporting Period</label>
+                <p className="text-gray-900 dark:text-signal-ink mt-1">
                   {new Date(generatedReport.reportingPeriod.start).toLocaleDateString()} - {new Date(generatedReport.reportingPeriod.end).toLocaleDateString()}
                 </p>
                 {allReports.length > 1 && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">
                     Aggregated from {allReports.length} individual reports
                   </p>
                 )}
@@ -1017,33 +1017,33 @@ export const EUAIActDashboard: React.FC = () => {
 
               {/* System Counts Summary */}
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm text-gray-600">Total Registered Systems</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{systems.length}</p>
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 dark:bg-white/[0.04] dark:border-white/[0.06]">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Total Registered Systems</p>
+                  <p className="text-3xl font-bold font-display text-gray-900 dark:text-signal-ink mt-1">{systems.length}</p>
                 </div>
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-gray-600">Generative AI Systems</p>
-                  <p className="text-3xl font-bold text-blue-900 mt-1">{systems.filter(s => s.isGenerative).length}</p>
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 dark:bg-signal-blue/10 dark:border-signal-blue/30">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Generative AI Systems</p>
+                  <p className="text-3xl font-bold font-display text-blue-900 dark:text-signal-blue mt-1">{systems.filter(s => s.isGenerative).length}</p>
                 </div>
-                <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-sm text-gray-600">{t('euRegulations.highRisk')}</p>
-                  <p className="text-3xl font-bold text-orange-900 mt-1">{systems.filter(s => s.riskLevel === 'high').length}</p>
+                <div className="p-4 bg-orange-50 rounded-lg border border-orange-200 dark:bg-signal-amber/10 dark:border-signal-amber/30">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">{t('euRegulations.highRisk')}</p>
+                  <p className="text-3xl font-bold font-display text-orange-900 dark:text-signal-amber mt-1">{systems.filter(s => s.riskLevel === 'high').length}</p>
                 </div>
               </div>
 
               {/* Generative AI Systems */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2">
+                <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted mb-2">
                   Generative AI Systems ({generatedReport.generativeAISystems?.length || 0})
                 </label>
                 {generatedReport.generativeAISystems && generatedReport.generativeAISystems.length > 0 ? (
                   <div className="mt-2 space-y-2">
                     {generatedReport.generativeAISystems.map((system: any, idx: number) => (
-                      <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200 dark:bg-white/[0.04] dark:border-white/[0.06]">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium text-gray-900">{system.systemName}</p>
-                            <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-gray-600">
+                            <p className="font-medium text-gray-900 dark:text-signal-ink">{system.systemName}</p>
+                            <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-gray-600 dark:text-signal-sub">
                               <div>
                                 <span className="font-medium">AI Labeling Compliance:</span> {system.aiLabelingCompliance}%
                               </div>
@@ -1063,23 +1063,23 @@ export const EUAIActDashboard: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 mt-2">No generative AI systems found in the reporting period.</p>
+                  <p className="text-sm text-gray-500 dark:text-signal-sub mt-2">No generative AI systems found in the reporting period.</p>
                 )}
               </div>
 
               {/* {t('euRegulations.highRisk')} */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2">
+                <label className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted mb-2">
                   High-Risk AI Systems ({generatedReport.highRiskSystems?.length || 0})
                 </label>
                 {generatedReport.highRiskSystems && generatedReport.highRiskSystems.length > 0 ? (
                   <div className="mt-2 space-y-2">
                     {generatedReport.highRiskSystems.map((system: any, idx: number) => (
-                      <div key={idx} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                      <div key={idx} className="p-3 bg-orange-50 rounded-lg border border-orange-200 dark:bg-signal-amber/10 dark:border-signal-amber/30">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium text-gray-900">{system.systemName}</p>
-                            <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-gray-600">
+                            <p className="font-medium text-gray-900 dark:text-signal-ink">{system.systemName}</p>
+                            <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-gray-600 dark:text-signal-sub">
                               <div>
                                 <span className="font-medium">Assessments Completed:</span> {system.assessmentsCompleted}
                               </div>
@@ -1089,9 +1089,9 @@ export const EUAIActDashboard: React.FC = () => {
                               <div>
                                 <span className="font-medium">Compliance Status:</span> 
                                 <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                                  system.complianceStatus === 'compliant' ? 'bg-green-100 text-green-800' :
-                                  system.complianceStatus === 'non_compliant' ? 'bg-red-100 text-red-800' :
-                                  'bg-yellow-100 text-yellow-800'
+                                  system.complianceStatus === 'compliant' ? 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good' :
+                                  system.complianceStatus === 'non_compliant' ? 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad' :
+                                  'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn'
                                 }`}>
                                   {system.complianceStatus.replace('_', ' ').toUpperCase()}
                                 </span>
@@ -1103,27 +1103,27 @@ export const EUAIActDashboard: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 mt-2">No high-risk AI systems found in the reporting period.</p>
+                  <p className="text-sm text-gray-500 dark:text-signal-sub mt-2">No high-risk AI systems found in the reporting period.</p>
                 )}
               </div>
 
               {/* Summary Statistics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-white/[0.06]">
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600">Prohibited Practices</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{generatedReport.prohibitedPracticesDetected || 0}</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Prohibited Practices</p>
+                  <p className="text-2xl font-bold font-display text-gray-900 dark:text-signal-ink mt-1">{generatedReport.prohibitedPracticesDetected || 0}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600">Complaints Received</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{generatedReport.complaintsReceived || 0}</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Complaints Received</p>
+                  <p className="text-2xl font-bold font-display text-gray-900 dark:text-signal-ink mt-1">{generatedReport.complaintsReceived || 0}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600">Complaints Resolved</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{generatedReport.complaintsResolved || 0}</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Complaints Resolved</p>
+                  <p className="text-2xl font-bold font-display text-gray-900 dark:text-signal-ink mt-1">{generatedReport.complaintsResolved || 0}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600">Resolution Rate</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500 dark:text-signal-muted">Resolution Rate</p>
+                  <p className="text-2xl font-bold font-display text-gray-900 dark:text-signal-ink mt-1">
                     {generatedReport.complaintsReceived > 0 
                       ? Math.round((generatedReport.complaintsResolved / generatedReport.complaintsReceived) * 100)
                       : 0}%
@@ -1134,7 +1134,7 @@ export const EUAIActDashboard: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowReportViewModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                 >
                   {t('common.close')}
                 </button>

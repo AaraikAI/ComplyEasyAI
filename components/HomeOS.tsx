@@ -33,32 +33,32 @@ const HomeOS: React.FC = () => {
       label: 'Open Risks',
       value: openRisks,
       icon: Shield,
-      color: 'text-brand-600 dark:text-brand-400',
-      bg: 'bg-brand-50 dark:bg-brand-950/30',
+      color: 'text-brand-600 dark:text-signal-green',
+      bg: 'bg-brand-50 dark:bg-signal-green/10',
       path: '/risks',
     },
     {
       label: 'Open Incidents',
       value: openIncidents,
       icon: AlertTriangle,
-      color: 'text-amber-600 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-950/30',
+      color: 'text-amber-600 dark:text-signal-warn',
+      bg: 'bg-amber-50 dark:bg-signal-warn/10',
       path: '/issues?tab=incidents',
     },
     {
       label: 'Vendors at Risk',
       value: vendorsAtRisk,
       icon: Users,
-      color: 'text-red-600 dark:text-red-400',
-      bg: 'bg-red-50 dark:bg-red-950/30',
+      color: 'text-red-600 dark:text-signal-bad',
+      bg: 'bg-red-50 dark:bg-signal-bad/10',
       path: '/vendors?tab=risk-assessment',
     },
     {
       label: 'Audit Readiness',
       value: `${auditReadiness}%`,
       icon: Activity,
-      color: 'text-blue-600 dark:text-blue-400',
-      bg: 'bg-blue-50 dark:bg-blue-950/30',
+      color: 'text-blue-600 dark:text-signal-blue',
+      bg: 'bg-blue-50 dark:bg-signal-blue/10',
       path: '/audit',
     },
   ];
@@ -111,24 +111,27 @@ const HomeOS: React.FC = () => {
   const complianceScore = dashboard?.overallCompliance ?? dashboard?.complianceScore ?? 0;
 
   return (
-    <div className="min-h-full" style={{ background: 'var(--warm-bg, #f5f4f0)' }}>
+    <div className="min-h-full bg-[var(--warm-bg,#f5f4f0)] dark:bg-signal-canvas">
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
           {/* ── Left Panel ─────────────────────────────────── */}
           <div className="lg:col-span-5 space-y-8">
             {/* Greeting */}
-            <div>
-              <h1 className="text-3xl font-bold text-surface-900 dark:text-surface-100">
+            <div className="rounded-2xl dark:border dark:border-white/[0.06] dark:bg-[linear-gradient(120deg,rgba(56,232,166,0.14),rgba(56,232,166,0.04)_45%,#0A0E15_90%)] dark:p-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-surface-400 dark:text-signal-green mb-1.5">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </p>
+              <h1 className="text-3xl font-bold text-surface-900 dark:font-display dark:text-signal-ink">
                 {greeting()}, {firstName}
               </h1>
-              <p className="text-surface-500 dark:text-surface-400 mt-1">
+              <p className="text-surface-500 dark:text-signal-sub mt-1">
                 Here&apos;s your compliance overview for today.
               </p>
             </div>
 
             {/* Compliance Gauge */}
-            <div data-onboarding="compliance-gauge" className="bg-white dark:bg-surface-800 rounded-2xl p-6 shadow-sm border border-surface-200/60 dark:border-surface-700/60">
+            <div data-onboarding="compliance-gauge" className="bg-white dark:bg-white/[0.03] rounded-2xl p-6 shadow-sm border border-surface-200/60 dark:border-white/[0.06]">
               <ComplianceGauge score={complianceScore} label="Overall Compliance" size={220} />
             </div>
 
@@ -140,13 +143,13 @@ const HomeOS: React.FC = () => {
                   <div
                     key={stat.label}
                     onClick={() => navigate(stat.path)}
-                    className="bg-white dark:bg-surface-800 rounded-xl p-4 shadow-sm border border-surface-200/60 dark:border-surface-700/60 cursor-pointer hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
+                    className="bg-white dark:bg-white/[0.03] rounded-xl p-4 shadow-sm border border-surface-200/60 dark:border-white/[0.06] cursor-pointer hover:border-brand-300 dark:hover:border-signal-green/40 transition-colors"
                   >
                     <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
                       <Icon className={`w-4.5 h-4.5 ${stat.color}`} />
                     </div>
-                    <p className="text-2xl font-bold text-surface-900 dark:text-surface-100">{stat.value}</p>
-                    <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">{stat.label}</p>
+                    <p className="text-2xl font-bold text-surface-900 dark:font-display dark:text-signal-ink">{stat.value}</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-surface-500 dark:text-signal-muted mt-1">{stat.label}</p>
                   </div>
                 );
               })}
@@ -155,10 +158,10 @@ const HomeOS: React.FC = () => {
             {/* Browse Features CTA */}
             <button
               onClick={() => navigate('/feature-library')}
-              className="w-full flex items-center justify-between px-5 py-4 bg-white dark:bg-surface-800 rounded-xl shadow-sm border border-surface-200/60 dark:border-surface-700/60 hover:border-brand-300 dark:hover:border-brand-700 transition-colors group"
+              className="w-full flex items-center justify-between px-5 py-4 bg-white dark:bg-white/[0.03] rounded-xl shadow-sm border border-surface-200/60 dark:border-white/[0.06] hover:border-brand-300 dark:hover:border-signal-green/40 transition-colors group"
             >
-              <span className="text-sm font-medium text-surface-700 dark:text-surface-300">Browse all features</span>
-              <ArrowRight className="w-4 h-4 text-surface-400 group-hover:text-brand-500 transition-colors" />
+              <span className="text-sm font-medium text-surface-700 dark:text-signal-body">Browse all features</span>
+              <ArrowRight className="w-4 h-4 text-surface-400 dark:text-signal-muted group-hover:text-brand-500 dark:group-hover:text-signal-green transition-colors" />
             </button>
           </div>
 
@@ -166,16 +169,16 @@ const HomeOS: React.FC = () => {
           <div className="lg:col-span-7 space-y-6">
             {/* Rising Signals Header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider">
+              <h2 className="font-mono text-[10px] font-semibold text-surface-500 dark:text-signal-sub uppercase tracking-[0.14em]">
                 Rising Signals &middot; Today
               </h2>
-              <span className="text-xs text-surface-400 dark:text-surface-500">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-surface-400 dark:text-signal-muted">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
               </span>
             </div>
 
             {/* Rising Signals Feed */}
-            <div className="bg-white dark:bg-surface-800 rounded-2xl p-5 shadow-sm border border-surface-200/60 dark:border-surface-700/60">
+            <div className="bg-white dark:bg-white/[0.03] rounded-2xl p-5 shadow-sm border border-surface-200/60 dark:border-white/[0.06]">
               <RisingSignals
                 maxVisible={5}
                 risks={risks.map(r => ({
@@ -190,19 +193,19 @@ const HomeOS: React.FC = () => {
 
             {/* AI Suggestion Card */}
             {aiSuggestion && (
-              <div data-onboarding="ai-suggestion" className="bg-brand-50 dark:bg-brand-950/20 border border-brand-200 dark:border-brand-800 rounded-2xl p-5">
+              <div data-onboarding="ai-suggestion" className="bg-brand-50 dark:bg-signal-green/[0.06] border border-brand-200 dark:border-signal-green/20 rounded-2xl p-5">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                  <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-signal-green/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-brand-600 dark:text-signal-green" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-semibold text-brand-600 dark:text-brand-400 uppercase tracking-wider mb-1">
+                    <p className="font-mono text-[10px] font-semibold text-brand-600 dark:text-signal-green uppercase tracking-[0.14em] mb-1">
                       AI Suggestion
                     </p>
-                    <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-1">
+                    <h3 className="text-sm font-semibold text-surface-900 dark:text-signal-ink mb-1">
                       {aiSuggestion.title}
                     </h3>
-                    <p className="text-xs text-surface-600 dark:text-surface-400 mb-4">
+                    <p className="text-xs text-surface-600 dark:text-signal-sub mb-4">
                       {aiSuggestion.description}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -212,8 +215,8 @@ const HomeOS: React.FC = () => {
                           onClick={() => navigate(action.path)}
                           className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
                             i === 0
-                              ? 'bg-brand-600 text-white hover:bg-brand-700'
-                              : 'bg-white dark:bg-surface-800 text-surface-700 dark:text-surface-300 border border-surface-200 dark:border-surface-700 hover:border-brand-300'
+                              ? 'bg-brand-600 text-white hover:bg-brand-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90'
+                              : 'bg-white dark:bg-white/[0.04] text-surface-700 dark:text-signal-body border border-surface-200 dark:border-white/[0.08] hover:border-brand-300 dark:hover:border-signal-green/40'
                           }`}
                         >
                           {action.label}

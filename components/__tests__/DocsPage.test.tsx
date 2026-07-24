@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 
 vi.mock('recharts', () => ({
@@ -85,33 +86,64 @@ vi.mock('@/contexts/OnboardingContext', () => ({
 
 import { DocsPage } from '@/components/DocsPage';
 
+// The Docs sidebar nav, scoped so category/article queries never collide with the
+// marketing chrome (which also has "Platform", "Documentation", etc.).
+const getDocsNav = () => screen.getByRole('navigation', { name: 'Docs' });
+
 describe('DocsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default route (no slug) resolves to the Quickstart article.
+    vi.mocked(useParams).mockReturnValue({});
   });
 
-  it('renders without crashing', () => {
+  it('renders the default Quickstart article', () => {
     render(<DocsPage />);
-    expect(screen.getAllByText(/Documentation|Docs/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { level: 1, name: 'Quickstart' })).toBeInTheDocument();
+    // The article's category eyebrow is shown above the title.
+    expect(screen.getAllByText('Get started').length).toBeGreaterThan(0);
   });
 
-  it('displays doc sections like Getting Started', () => {
+  it('lists the Get started category and its articles in the sidebar nav', () => {
     render(<DocsPage />);
-    expect(screen.getByText('Getting Started')).toBeInTheDocument();
+    const nav = getDocsNav();
+    expect(within(nav).getByText('Get started')).toBeInTheDocument();
+    expect(within(nav).getByRole('button', { name: 'Quickstart' })).toBeInTheDocument();
+    expect(within(nav).getByRole('button', { name: 'Core concepts' })).toBeInTheDocument();
   });
 
-  it('shows Core Concepts section', () => {
+  it('shows the Core concepts article link in the sidebar nav', () => {
     render(<DocsPage />);
-    expect(screen.getByText('Core Concepts')).toBeInTheDocument();
+    expect(within(getDocsNav()).getByRole('button', { name: 'Core concepts' })).toBeInTheDocument();
   });
 
-  it('displays search functionality', () => {
+  it('groups the Automation category with its articles in the sidebar nav', () => {
     render(<DocsPage />);
-    expect(screen.getByPlaceholderText(/Search/i)).toBeInTheDocument();
+    const nav = getDocsNav();
+    expect(within(nav).getByText('Automation')).toBeInTheDocument();
+    expect(within(nav).getByRole('button', { name: 'Continuous monitoring' })).toBeInTheDocument();
+    expect(within(nav).getByRole('button', { name: 'aCOS & the Digital Twin' })).toBeInTheDocument();
   });
 
-  it('shows AI Features documentation section', () => {
+  it('renders an "On this page" table of contents for the active article', () => {
     render(<DocsPage />);
-    expect(screen.getByText('AI Features')).toBeInTheDocument();
+    const toc = screen.getByRole('navigation', { name: 'On this page' });
+    // Quickstart's section headings become TOC anchors.
+    expect(within(toc).getByRole('link', { name: 'Create your workspace' })).toBeInTheDocument();
+    expect(within(toc).getByRole('link', { name: 'Add a framework' })).toBeInTheDocument();
+  });
+
+  it('navigates to an article route when a sidebar nav item is clicked', () => {
+    render(<DocsPage />);
+    const navigate = useNavigate();
+    fireEvent.click(within(getDocsNav()).getByRole('button', { name: 'Core concepts' }));
+    expect(navigate).toHaveBeenCalledWith('/docs/concepts');
+  });
+
+  it('deep-links directly to an article via the /docs/:slug route', () => {
+    // The route mounts at /docs/* and passes the slug on the splat param.
+    vi.mocked(useParams).mockReturnValue({ '*': 'api' });
+    render(<DocsPage />);
+    expect(screen.getByRole('heading', { level: 1, name: 'API & webhooks' })).toBeInTheDocument();
   });
 });

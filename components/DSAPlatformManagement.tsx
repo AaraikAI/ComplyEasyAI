@@ -391,25 +391,25 @@ export const DSAPlatformManagement: React.FC = () => {
   };
 
   const getPlatformTypeColor = (type: string) => {
-    if (type.includes('very_large')) return 'bg-orange-100 text-orange-800 border-orange-300';
-    return 'bg-blue-100 text-blue-800 border-blue-300';
+    if (type.includes('very_large')) return 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn border-orange-300 dark:border-signal-warn/30';
+    return 'bg-blue-100 dark:bg-signal-blue/10 text-blue-800 dark:text-signal-blue border-blue-300 dark:border-signal-blue/30';
   };
 
   const getComplianceStatusColor = (status: string) => {
     switch (status) {
       case 'compliant':
-        return 'text-green-600';
+        return 'text-green-600 dark:text-signal-good';
       case 'non_compliant':
-        return 'text-red-600';
+        return 'text-red-600 dark:text-signal-bad';
       default:
-        return 'text-gray-600';
+        return 'text-gray-600 dark:text-signal-muted';
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-signal-green"></div>
       </div>
     );
   }
@@ -419,12 +419,12 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.dsa')}</h2>
-          <p className="text-gray-600 mt-1">Manage online platforms and ensure DSA compliance (Regulation EU 2022/2065)</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('euRegulations.dsa')}</h2>
+          <p className="text-gray-600 dark:text-signal-muted mt-1">Manage online platforms and ensure DSA compliance (Regulation EU 2022/2065)</p>
         </div>
         <button
           onClick={() => setShowRegisterModal(true)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+          className="px-4 py-2 bg-indigo-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-indigo-700 dark:hover:bg-signal-green/90 flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
           Register Platform
@@ -432,39 +432,39 @@ export const DSAPlatformManagement: React.FC = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-600" />
-          <span className="text-red-800">{error}</span>
+        <div className="bg-red-50 dark:bg-signal-bad/10 border border-red-200 dark:border-signal-bad/20 rounded-lg p-4 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-signal-bad" />
+          <span className="text-red-800 dark:text-signal-bad">{error}</span>
           <button onClick={() => setError(null)} className="ml-auto">
-            <X className="w-4 h-4 text-red-600" />
+            <X className="w-4 h-4 text-red-600 dark:text-signal-bad" />
           </button>
         </div>
       )}
 
       {/* Transparency Reports List (lightweight UI) */}
       {selectedPlatform && (selectedPlatform.isVLOP || selectedPlatform.isVLOSE) && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mt-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">
+        <div className="bg-white dark:bg-white/[0.03] dark:rounded-2xl rounded-lg border border-gray-200 dark:border-white/[0.06] p-4 mt-6">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-2">
             Transparency Reports for {selectedPlatform.platformName}
           </h3>
           {transparencyReports.length === 0 ? (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-signal-muted">
               No transparency reports generated yet for this platform.
             </p>
           ) : (
             <div className="space-y-2 max-h-56 overflow-y-auto">
               {transparencyReports.map((report: any) => (
-                <div key={report.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs">
+                <div key={report.id} className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] text-xs">
                   <div className="flex justify-between">
                     <span className="font-medium">
                       {new Date(report.reportingPeriod.start).toLocaleDateString()} –{' '}
                       {new Date(report.reportingPeriod.end).toLocaleDateString()}
                     </span>
-                    <span className="text-gray-500">
+                    <span className="text-gray-500 dark:text-signal-muted">
                       Created: {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A'}
                     </span>
                   </div>
-                  <div className="mt-1 text-gray-700">
+                  <div className="mt-1 text-gray-700 dark:text-signal-body">
                     <span className="font-medium">Removals:</span>{' '}
                     {report.contentModerationStats?.totalRemovals ?? 0}
                     {' • '}
@@ -474,7 +474,7 @@ export const DSAPlatformManagement: React.FC = () => {
                     <span className="font-medium">Appeals:</span>{' '}
                     {report.contentModerationStats?.appealsReceived ?? 0}
                   </div>
-                  <div className="mt-1 text-gray-700">
+                  <div className="mt-1 text-gray-700 dark:text-signal-body">
                     <span className="font-medium">User reports:</span>{' '}
                     {report.userReports?.totalReports ?? 0}
                   </div>
@@ -487,84 +487,84 @@ export const DSAPlatformManagement: React.FC = () => {
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] dark:rounded-2xl rounded-lg border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Platforms</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{platforms.length}</p>
+              <p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Total Platforms</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">{platforms.length}</p>
             </div>
-            <Globe className="w-8 h-8 text-blue-600" />
+            <Globe className="w-8 h-8 text-blue-600 dark:text-signal-blue" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] dark:rounded-2xl rounded-lg border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">VLOPs</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">VLOPs</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">
                 {platforms.filter(p => p.isVLOP).length}
               </p>
             </div>
-            <Shield className="w-8 h-8 text-orange-600" />
+            <Shield className="w-8 h-8 text-orange-600 dark:text-signal-warn" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] dark:rounded-2xl rounded-lg border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">VLOSE</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">VLOSE</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">
                 {platforms.filter(p => p.isVLOSE).length}
               </p>
             </div>
-            <Eye className="w-8 h-8 text-purple-600" />
+            <Eye className="w-8 h-8 text-purple-600 dark:text-signal-violet" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white dark:bg-white/[0.03] dark:rounded-2xl rounded-lg border border-gray-200 dark:border-white/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Compliant</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Compliant</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display mt-1">
                 {platforms.filter(p => p.complianceStatus === 'compliant').length}
               </p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-600" />
+            <CheckCircle className="w-8 h-8 text-green-600 dark:text-signal-good" />
           </div>
         </div>
       </div>
 
       {/* Platforms List */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Registered Platforms</h3>
+      <div className="bg-white dark:bg-white/[0.03] dark:rounded-2xl rounded-lg border border-gray-200 dark:border-white/[0.06]">
+        <div className="p-6 border-b border-gray-200 dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">Registered Platforms</h3>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-white/[0.06]">
           {platforms.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Globe className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+            <div className="p-8 text-center text-gray-500 dark:text-signal-muted">
+              <Globe className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-signal-muted" />
               <p>No platforms registered yet</p>
               <button
                 onClick={() => setShowRegisterModal(true)}
-                className="mt-4 text-indigo-600 hover:text-indigo-700 font-medium"
+                className="mt-4 text-indigo-600 dark:text-signal-green hover:text-indigo-700 font-medium"
               >
                 Register your first platform
               </button>
             </div>
           ) : (
             platforms.map((platform) => (
-              <div key={platform.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={platform.id} className="p-6 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h4 className="text-lg font-semibold text-gray-900">{platform.platformName}</h4>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">{platform.platformName}</h4>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPlatformTypeColor(platform.platformType)}`}>
                         {platform.platformType.replace(/_/g, ' ').toUpperCase()}
                       </span>
                       {platform.isVLOP && (
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn border border-orange-300 dark:border-signal-warn/30">
                           VLOP
                         </span>
                       )}
                       {platform.isVLOSE && (
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-300">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-signal-violet/10 text-purple-800 dark:text-signal-violet border border-purple-300 dark:border-signal-violet/30">
                           VLOSE
                         </span>
                       )}
@@ -577,11 +577,11 @@ export const DSAPlatformManagement: React.FC = () => {
                         setSelectedPlatform(platform);
                         setShowEditPlatformModal(true);
                       }}
-                      className="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                      className="px-3 py-1.5 bg-gray-600 dark:bg-white/[0.06] text-white dark:text-signal-body rounded-lg hover:bg-gray-700 dark:hover:bg-white/[0.10] text-sm"
                     >
                       Edit
                     </button>
-                    <div className="flex gap-4 text-sm text-gray-600 mt-3">
+                    <div className="flex gap-4 text-sm text-gray-600 dark:text-signal-muted mt-3">
                       {platform.monthlyActiveUsers && (
                         <span className="flex items-center gap-1">
                           <Users className="w-4 h-4" />
@@ -596,9 +596,9 @@ export const DSAPlatformManagement: React.FC = () => {
                       )}
                     </div>
                     {platform.isVLOP && (
-                      <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                        <p className="text-sm font-medium text-orange-800 mb-1">VLOP Requirements:</p>
-                        <ul className="text-sm text-orange-700 list-disc list-inside space-y-1">
+                      <div className="mt-3 p-3 bg-orange-50 dark:bg-signal-warn/10 border border-orange-200 dark:border-signal-warn/20 rounded-lg">
+                        <p className="text-sm font-medium text-orange-800 dark:text-signal-warn mb-1">VLOP Requirements:</p>
+                        <ul className="text-sm text-orange-700 dark:text-signal-warn list-disc list-inside space-y-1">
                           <li>Ad repository maintenance</li>
                           <li>Annual transparency reporting</li>
                           <li>Risk assessment and mitigation</li>
@@ -614,7 +614,7 @@ export const DSAPlatformManagement: React.FC = () => {
                         await loadModerationHistory(platform.id);
                         setShowModerationModal(true);
                       }}
-                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                      className="px-3 py-1.5 bg-blue-600 dark:bg-signal-blue text-white dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-blue/90 text-sm"
                     >
                       Record Moderation
                     </button>
@@ -623,7 +623,7 @@ export const DSAPlatformManagement: React.FC = () => {
                         setSelectedPlatform(platform);
                         setShowReportModal(true);
                       }}
-                      className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                      className="px-3 py-1.5 bg-red-600 dark:bg-signal-bad text-white dark:text-signal-canvas rounded-lg hover:bg-red-700 dark:hover:bg-signal-bad/90 text-sm"
                     >
                       Report Illegal Content
                     </button>
@@ -634,7 +634,7 @@ export const DSAPlatformManagement: React.FC = () => {
                           await loadAdHistory(platform.id);
                           setShowAdModal(true);
                         }}
-                        className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                        className="px-3 py-1.5 bg-purple-600 dark:bg-signal-violet text-white dark:text-signal-canvas rounded-lg hover:bg-purple-700 dark:hover:bg-signal-violet/90 text-sm"
                       >
                         Add Ad to Repository
                       </button>
@@ -647,7 +647,7 @@ export const DSAPlatformManagement: React.FC = () => {
                             await loadRiskAssessments(platform.id);
                             setShowRiskAssessmentModal(true);
                           }}
-                          className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+                          className="px-3 py-1.5 bg-indigo-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-indigo-700 dark:hover:bg-signal-green/90 text-sm"
                         >
                           Conduct Risk Assessment
                         </button>
@@ -657,7 +657,7 @@ export const DSAPlatformManagement: React.FC = () => {
                             await loadTransparencyReports(platform.id);
                             handleGenerateReport();
                           }}
-                          className="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                          className="px-3 py-1.5 bg-gray-600 dark:bg-white/[0.06] text-white dark:text-signal-body rounded-lg hover:bg-gray-700 dark:hover:bg-white/[0.10] text-sm"
                         >
                           Generate Report
                         </button>
@@ -670,7 +670,7 @@ export const DSAPlatformManagement: React.FC = () => {
                           await loadFeedConfig(platform.id);
                           setShowFeedConfigModal(true);
                         }}
-                        className="px-3 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm"
+                        className="px-3 py-1.5 bg-teal-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-teal-700 dark:hover:bg-signal-green/90 text-sm"
                       >
                         Configure Non-Personalized Feed
                       </button>
@@ -686,31 +686,31 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Register Platform Modal */}
       {showRegisterModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Register Platform</h3>
-              <button onClick={() => setShowRegisterModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Register Platform</h3>
+              <button onClick={() => setShowRegisterModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:text-signal-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleRegisterPlatform} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Platform Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Platform Name *</label>
                 <input
                   type="text"
                   required
                   value={registrationForm.platformName}
                   onChange={(e) => setRegistrationForm({ ...registrationForm, platformName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Platform Type *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Platform Type *</label>
                 <select
                   required
                   value={registrationForm.platformType}
                   onChange={(e) => setRegistrationForm({ ...registrationForm, platformType: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 >
                   <option value="online_platform">Online Platform</option>
                   <option value="very_large_online_platform">Very Large Online Platform (VLOP)</option>
@@ -719,27 +719,27 @@ export const DSAPlatformManagement: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Active Users (EU)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Monthly Active Users (EU)</label>
                 <input
                   type="number"
                   value={registrationForm.monthlyActiveUsers}
                   onChange={(e) => setRegistrationForm({ ...registrationForm, monthlyActiveUsers: e.target.value })}
                   placeholder="e.g., 45000000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
-                <p className="text-xs text-gray-500 mt-1">Threshold: 45M users for VLOP/VLOSE designation</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">Threshold: 45M users for VLOP/VLOSE designation</p>
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className="flex-1 px-4 py-2 bg-indigo-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-indigo-700 dark:hover:bg-signal-green/90"
                 >
                   Register Platform
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowRegisterModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -752,21 +752,21 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Content Moderation Modal */}
       {showModerationModal && selectedPlatform && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Record Content Moderation: {selectedPlatform.platformName}</h3>
-              <button onClick={() => setShowModerationModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Record Content Moderation: {selectedPlatform.platformName}</h3>
+              <button onClick={() => setShowModerationModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:text-signal-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleRecordModeration} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Action Type *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Action Type *</label>
                 <select
                   required
                   value={moderationForm.actionType}
                   onChange={(e) => setModerationForm({ ...moderationForm, actionType: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 >
                   <option value="removal">Removal</option>
                   <option value="suspension">Suspension</option>
@@ -774,25 +774,25 @@ export const DSAPlatformManagement: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content Type *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Content Type *</label>
                 <input
                   type="text"
                   required
                   value={moderationForm.contentType}
                   onChange={(e) => setModerationForm({ ...moderationForm, contentType: e.target.value })}
                   placeholder="e.g., post, comment, video, image"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Reason *</label>
                 <textarea
                   required
                   value={moderationForm.reason}
                   onChange={(e) => setModerationForm({ ...moderationForm, reason: e.target.value })}
                   rows={4}
                   placeholder="Explain the reason for this moderation action..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
               </div>
               <div>
@@ -801,49 +801,49 @@ export const DSAPlatformManagement: React.FC = () => {
                     type="checkbox"
                     checked={moderationForm.automatedDecision}
                     onChange={(e) => setModerationForm({ ...moderationForm, automatedDecision: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 dark:border-white/[0.10] text-indigo-600 dark:text-signal-green focus:ring-indigo-500"
                   />
-                  <span className="text-sm text-gray-700">Automated decision</span>
+                  <span className="text-sm text-gray-700 dark:text-signal-body">Automated decision</span>
                 </label>
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-blue-600 dark:bg-signal-blue text-white dark:text-signal-canvas rounded-lg hover:bg-blue-700 dark:hover:bg-signal-blue/90"
                 >
                   Record Moderation
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowModerationModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
               </div>
-              <div className="mt-6 border-t border-gray-200 pt-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Recent Moderation History</h4>
+              <div className="mt-6 border-t border-gray-200 dark:border-white/[0.06] pt-4">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-2">Recent Moderation History</h4>
                 {moderationHistory.length > 0 ? (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {moderationHistory.map((record) => (
-                      <div key={record.id} className="p-2 bg-gray-50 rounded border border-gray-200 text-xs">
+                      <div key={record.id} className="p-2 bg-gray-50 dark:bg-white/[0.03] rounded border border-gray-200 dark:border-white/[0.06] text-xs">
                         <div className="flex justify-between">
                           <span className="font-medium">{record.actionType.toUpperCase()}</span>
-                          <span className="text-gray-500">
+                          <span className="text-gray-500 dark:text-signal-muted">
                             {new Date(record.createdAt).toLocaleString()}
                           </span>
                         </div>
-                        <div className="mt-1 text-gray-700">
+                        <div className="mt-1 text-gray-700 dark:text-signal-body">
                           <span className="font-medium">Content:</span> {record.contentType}
                         </div>
-                        <div className="mt-1 text-gray-700">
+                        <div className="mt-1 text-gray-700 dark:text-signal-body">
                           <span className="font-medium">Reason:</span> {record.reason}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 italic">No moderation history recorded yet.</p>
+                  <p className="text-sm text-gray-500 dark:text-signal-muted italic">No moderation history recorded yet.</p>
                 )}
               </div>
             </form>
@@ -854,23 +854,23 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Illegal Content Report Modal */}
       {showReportModal && selectedPlatform && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Report Illegal Content: {selectedPlatform.platformName}</h3>
-              <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Report Illegal Content: {selectedPlatform.platformName}</h3>
+              <button onClick={() => setShowReportModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:text-signal-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleReportIllegalContent} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reported By *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Reported By *</label>
                 <input
                   type="text"
                   required
                   value={illegalContentForm.reportedBy}
                   onChange={(e) => setIllegalContentForm({ ...illegalContentForm, reportedBy: e.target.value })}
                   placeholder="User ID or name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
               </div>
               <div>
@@ -879,54 +879,54 @@ export const DSAPlatformManagement: React.FC = () => {
                     type="checkbox"
                     checked={illegalContentForm.isTrustedFlagger}
                     onChange={(e) => setIllegalContentForm({ ...illegalContentForm, isTrustedFlagger: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 dark:border-white/[0.10] text-indigo-600 dark:text-signal-green focus:ring-indigo-500"
                   />
-                  <span className="text-sm text-gray-700">Trusted Flagger (priority processing)</span>
+                  <span className="text-sm text-gray-700 dark:text-signal-body">Trusted Flagger (priority processing)</span>
                 </label>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content Type *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Content Type *</label>
                 <input
                   type="text"
                   required
                   value={illegalContentForm.contentType}
                   onChange={(e) => setIllegalContentForm({ ...illegalContentForm, contentType: e.target.value })}
                   placeholder="e.g., post, video, image"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content URL</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Content URL</label>
                 <input
                   type="url"
                   value={illegalContentForm.contentUrl}
                   onChange={(e) => setIllegalContentForm({ ...illegalContentForm, contentUrl: e.target.value })}
                   placeholder="https://..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Reason *</label>
                 <textarea
                   required
                   value={illegalContentForm.reason}
                   onChange={(e) => setIllegalContentForm({ ...illegalContentForm, reason: e.target.value })}
                   rows={4}
                   placeholder="Explain why this content is illegal..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  className="flex-1 px-4 py-2 bg-red-600 dark:bg-signal-bad text-white dark:text-signal-canvas rounded-lg hover:bg-red-700 dark:hover:bg-signal-bad/90"
                 >
                   Report Illegal Content
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowReportModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -939,64 +939,64 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Add Ad to Repository Modal (VLOP only) */}
       {showAdModal && selectedPlatform && selectedPlatform.isVLOP && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Add Ad to Repository: {selectedPlatform.platformName}</h3>
-              <button onClick={() => setShowAdModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Add Ad to Repository: {selectedPlatform.platformName}</h3>
+              <button onClick={() => setShowAdModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:text-signal-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleAddAd} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ad ID *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Ad ID *</label>
                   <input
                     type="text"
                     required
                     value={adForm.adId}
                     onChange={(e) => setAdForm({ ...adForm, adId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Advertiser Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Advertiser Name *</label>
                   <input
                     type="text"
                     required
                     value={adForm.advertiserName}
                     onChange={(e) => setAdForm({ ...adForm, advertiserName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ad Content (Text)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Ad Content (Text)</label>
                 <textarea
                   value={adForm.adContent.text}
                   onChange={(e) => setAdForm({ ...adForm, adContent: { ...adForm.adContent, text: e.target.value } })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Display Start Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Display Start Date *</label>
                   <input
                     type="date"
                     required
                     value={adForm.displayPeriod.start}
                     onChange={(e) => setAdForm({ ...adForm, displayPeriod: { ...adForm.displayPeriod, start: e.target.value } })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Display End Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Display End Date *</label>
                   <input
                     type="date"
                     required
                     value={adForm.displayPeriod.end}
                     onChange={(e) => setAdForm({ ...adForm, displayPeriod: { ...adForm.displayPeriod, end: e.target.value } })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                   />
                 </div>
               </div>
@@ -1006,13 +1006,13 @@ export const DSAPlatformManagement: React.FC = () => {
                     type="checkbox"
                     checked={adForm.isPoliticalAd}
                     onChange={(e) => setAdForm({ ...adForm, isPoliticalAd: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 dark:border-white/[0.10] text-indigo-600 dark:text-signal-green focus:ring-indigo-500"
                   />
-                  <span className="text-sm text-gray-700">Political Advertisement</span>
+                  <span className="text-sm text-gray-700 dark:text-signal-body">Political Advertisement</span>
                 </label>
               </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-sm text-yellow-800">
+              <div className="bg-yellow-50 dark:bg-signal-warn/10 border border-yellow-200 dark:border-signal-warn/20 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 dark:text-signal-warn">
                   <Ban className="w-4 h-4 inline mr-1" />
                   <strong>Note:</strong> Targeted advertising to minors is automatically prohibited under the DSA.
                 </p>
@@ -1020,14 +1020,14 @@ export const DSAPlatformManagement: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  className="flex-1 px-4 py-2 bg-purple-600 dark:bg-signal-violet text-white dark:text-signal-canvas rounded-lg hover:bg-purple-700 dark:hover:bg-signal-violet/90"
                 >
                   Add to Repository
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAdModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -1035,30 +1035,30 @@ export const DSAPlatformManagement: React.FC = () => {
             </form>
 
             {/* Ad History */}
-            <div className="p-6 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Ad Repository History ({adHistory.length})</h4>
+            <div className="p-6 border-t border-gray-200 dark:border-white/[0.06]">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-3">Ad Repository History ({adHistory.length})</h4>
               {adHistory.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {adHistory.map((ad: any) => (
-                    <div key={ad.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs">
+                    <div key={ad.id} className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] text-xs">
                       <div className="flex justify-between mb-1">
                         <span className="font-medium">{ad.advertiserName}</span>
-                        <span className="text-gray-500">Ad ID: {ad.adId}</span>
+                        <span className="text-gray-500 dark:text-signal-muted">Ad ID: {ad.adId}</span>
                       </div>
-                      <div className="text-gray-600">
+                      <div className="text-gray-600 dark:text-signal-muted">
                         Period: {new Date(ad.displayPeriod.start).toLocaleDateString()} - {new Date(ad.displayPeriod.end).toLocaleDateString()}
                       </div>
                       {ad.isPoliticalAd && (
-                        <span className="inline-block mt-1 px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">Political Ad</span>
+                        <span className="inline-block mt-1 px-2 py-1 bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn rounded text-xs">Political Ad</span>
                       )}
-                      <div className="text-gray-500 mt-1">
+                      <div className="text-gray-500 dark:text-signal-muted mt-1">
                         Added: {new Date(ad.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No ads added to repository yet.</p>
+                <p className="text-sm text-gray-500 dark:text-signal-muted">No ads added to repository yet.</p>
               )}
             </div>
           </div>
@@ -1068,10 +1068,10 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Edit Platform Modal */}
       {showEditPlatformModal && selectedPlatform && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Edit Platform: {selectedPlatform.platformName}</h3>
-              <button onClick={() => setShowEditPlatformModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Edit Platform: {selectedPlatform.platformName}</h3>
+              <button onClick={() => setShowEditPlatformModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:text-signal-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1089,21 +1089,21 @@ export const DSAPlatformManagement: React.FC = () => {
               }
             }} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Compliance Status *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Compliance Status *</label>
                 <select
                   name="complianceStatus"
                   defaultValue={selectedPlatform.complianceStatus}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 >
                   <option value="compliant">Compliant</option>
                   <option value="non_compliant">Non-Compliant</option>
                   <option value="in_review">In Review</option>
                 </select>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Platform Details</h4>
-                <div className="space-y-1 text-xs text-gray-600">
+              <div className="bg-gray-50 dark:bg-white/[0.03] p-4 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-2">Platform Details</h4>
+                <div className="space-y-1 text-xs text-gray-600 dark:text-signal-muted">
                   <p><strong>Platform Name:</strong> {selectedPlatform.platformName}</p>
                   <p><strong>Platform Type:</strong> {selectedPlatform.platformType.replace(/_/g, ' ')}</p>
                   {selectedPlatform.monthlyActiveUsers && (
@@ -1116,14 +1116,14 @@ export const DSAPlatformManagement: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className="flex-1 px-4 py-2 bg-indigo-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-indigo-700 dark:hover:bg-signal-green/90"
                 >
                   Update Platform
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowEditPlatformModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -1136,21 +1136,21 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Risk Assessment Modal */}
       {showRiskAssessmentModal && selectedPlatform && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Conduct Risk Assessment: {selectedPlatform.platformName}</h3>
-              <button onClick={() => setShowRiskAssessmentModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Conduct Risk Assessment: {selectedPlatform.platformName}</h3>
+              <button onClick={() => setShowRiskAssessmentModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:text-signal-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleConductRiskAssessment} className="p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Risk Category *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Risk Category *</label>
                 <select
                   required
                   value={riskAssessmentForm.riskCategory}
                   onChange={(e) => setRiskAssessmentForm({ ...riskAssessmentForm, riskCategory: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 >
                   <option value="illegal_content">Illegal Content</option>
                   <option value="fundamental_rights">Fundamental Rights</option>
@@ -1164,18 +1164,18 @@ export const DSAPlatformManagement: React.FC = () => {
                 const key = category as keyof typeof riskAssessmentForm;
                 const riskData = (riskAssessmentForm[key] as { risks: string[]; severity: string; description: string }) || { risks: [], severity: 'low', description: '' };
                 return (
-                  <div key={category} className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3 capitalize">{category.replace(/_/g, ' ')}</h4>
+                  <div key={category} className="border border-gray-200 dark:border-white/[0.06] rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-3 capitalize">{category.replace(/_/g, ' ')}</h4>
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Severity</label>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-signal-body mb-1">Severity</label>
                         <select
                           value={riskData.severity || 'low'}
                           onChange={(e) => setRiskAssessmentForm({
                             ...riskAssessmentForm,
                             [key]: { ...riskData, severity: e.target.value as any }
                           })}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                          className="w-full px-2 py-1 border border-gray-300 dark:border-white/[0.10] rounded text-sm"
                         >
                           <option value="low">Low</option>
                           <option value="medium">Medium</option>
@@ -1184,8 +1184,8 @@ export const DSAPlatformManagement: React.FC = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Description {(riskData.severity === 'high' || riskData.severity === 'critical') && <span className="text-red-500">*</span>}
+                        <label className="block text-xs font-medium text-gray-700 dark:text-signal-body mb-1">
+                          Description {(riskData.severity === 'high' || riskData.severity === 'critical') && <span className="text-red-500 dark:text-signal-bad">*</span>}
                         </label>
                         <textarea
                           required={riskData.severity === 'high' || riskData.severity === 'critical'}
@@ -1197,15 +1197,15 @@ export const DSAPlatformManagement: React.FC = () => {
                           rows={3}
                           className={`w-full px-2 py-1 border rounded text-sm ${
                             (riskData.severity === 'high' || riskData.severity === 'critical') && !riskData.description
-                              ? 'border-red-300 focus:ring-red-500'
-                              : 'border-gray-300'
+                              ? 'border-red-300 dark:border-signal-bad/30 focus:ring-red-500'
+                              : 'border-gray-300 dark:border-white/[0.10]'
                           }`}
                           placeholder="Describe the risks..."
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Specific Risks (one per line) {(riskData.severity === 'high' || riskData.severity === 'critical') && <span className="text-red-500">*</span>}
+                        <label className="block text-xs font-medium text-gray-700 dark:text-signal-body mb-1">
+                          Specific Risks (one per line) {(riskData.severity === 'high' || riskData.severity === 'critical') && <span className="text-red-500 dark:text-signal-bad">*</span>}
                         </label>
                         <textarea
                           required={riskData.severity === 'high' || riskData.severity === 'critical'}
@@ -1217,8 +1217,8 @@ export const DSAPlatformManagement: React.FC = () => {
                           rows={3}
                           className={`w-full px-2 py-1 border rounded text-sm ${
                             (riskData.severity === 'high' || riskData.severity === 'critical') && (!riskData.risks || riskData.risks.length === 0)
-                              ? 'border-red-300 focus:ring-red-500'
-                              : 'border-gray-300'
+                              ? 'border-red-300 dark:border-signal-bad/30 focus:ring-red-500'
+                              : 'border-gray-300 dark:border-white/[0.10]'
                           }`}
                           placeholder="Enter risks, one per line..."
                         />
@@ -1230,10 +1230,10 @@ export const DSAPlatformManagement: React.FC = () => {
 
               {/* Mitigation Measures */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Mitigation Measures</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Mitigation Measures</label>
                 <div className="space-y-2">
                   {riskAssessmentForm.mitigationMeasures.map((measure, idx) => (
-                    <div key={idx} className="flex gap-2 items-start p-2 bg-gray-50 rounded">
+                    <div key={idx} className="flex gap-2 items-start p-2 bg-gray-50 dark:bg-white/[0.03] rounded">
                       <input
                         type="text"
                         value={measure.measure}
@@ -1243,7 +1243,7 @@ export const DSAPlatformManagement: React.FC = () => {
                           setRiskAssessmentForm({ ...riskAssessmentForm, mitigationMeasures: updated });
                         }}
                         placeholder="Mitigation measure"
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                        className="flex-1 px-2 py-1 border border-gray-300 dark:border-white/[0.10] rounded text-sm"
                       />
                       <select
                         value={measure.status}
@@ -1252,7 +1252,7 @@ export const DSAPlatformManagement: React.FC = () => {
                           updated[idx].status = e.target.value as any;
                           setRiskAssessmentForm({ ...riskAssessmentForm, mitigationMeasures: updated });
                         }}
-                        className="px-2 py-1 border border-gray-300 rounded text-sm"
+                        className="px-2 py-1 border border-gray-300 dark:border-white/[0.10] rounded text-sm"
                       >
                         <option value="planned">Planned</option>
                         <option value="in_progress">In Progress</option>
@@ -1265,7 +1265,7 @@ export const DSAPlatformManagement: React.FC = () => {
                           const updated = riskAssessmentForm.mitigationMeasures.filter((_, i) => i !== idx);
                           setRiskAssessmentForm({ ...riskAssessmentForm, mitigationMeasures: updated });
                         }}
-                        className="px-2 py-1 text-red-600 hover:text-red-800 text-sm"
+                        className="px-2 py-1 text-red-600 dark:text-signal-bad hover:text-red-800 dark:text-signal-bad text-sm"
                       >
                         Remove
                       </button>
@@ -1277,7 +1277,7 @@ export const DSAPlatformManagement: React.FC = () => {
                       ...riskAssessmentForm,
                       mitigationMeasures: [...riskAssessmentForm.mitigationMeasures, { measure: '', status: 'planned' }]
                     })}
-                    className="text-sm text-indigo-600 hover:text-indigo-700"
+                    className="text-sm text-indigo-600 dark:text-signal-green hover:text-indigo-700"
                   >
                     + Add Mitigation Measure
                   </button>
@@ -1285,26 +1285,26 @@ export const DSAPlatformManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Next Review Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Next Review Date</label>
                 <input
                   type="date"
                   value={riskAssessmentForm.nextReviewDate}
                   onChange={(e) => setRiskAssessmentForm({ ...riskAssessmentForm, nextReviewDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 />
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className="flex-1 px-4 py-2 bg-indigo-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-indigo-700 dark:hover:bg-signal-green/90"
                 >
                   Conduct Assessment
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowRiskAssessmentModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -1313,49 +1313,49 @@ export const DSAPlatformManagement: React.FC = () => {
 
             {/* Display Assessment Results */}
             {latestAssessment && (
-              <div className="p-6 border-t border-gray-200 bg-blue-50">
-                <h4 className="text-sm font-semibold text-gray-900 mb-4">Assessment Results</h4>
+              <div className="p-6 border-t border-gray-200 dark:border-white/[0.06] bg-blue-50 dark:bg-signal-blue/10">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-4">Assessment Results</h4>
                 
                 {/* Overall Risk Level */}
-                <div className="mb-4 p-4 bg-white rounded-lg border-2 border-gray-300">
+                <div className="mb-4 p-4 bg-white dark:bg-white/[0.04] rounded-lg border-2 border-gray-300 dark:border-white/[0.10]">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Overall Risk Level:</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-signal-body">Overall Risk Level:</span>
                     <span className={`px-4 py-2 rounded-lg text-sm font-bold ${
-                      latestAssessment.overallRiskLevel === 'critical' ? 'bg-red-100 text-red-800 border-2 border-red-300' :
-                      latestAssessment.overallRiskLevel === 'high' ? 'bg-orange-100 text-orange-800 border-2 border-orange-300' :
-                      latestAssessment.overallRiskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' :
-                      'bg-green-100 text-green-800 border-2 border-green-300'
+                      latestAssessment.overallRiskLevel === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad border-2 border-red-300 dark:border-signal-bad/30' :
+                      latestAssessment.overallRiskLevel === 'high' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn border-2 border-orange-300 dark:border-signal-warn/30' :
+                      latestAssessment.overallRiskLevel === 'medium' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn border-2 border-yellow-300 dark:border-signal-warn/30' :
+                      'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good border-2 border-green-300 dark:border-signal-good/30'
                     }`}>
                       {latestAssessment.overallRiskLevel.toUpperCase()}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-600 mt-2">
+                  <p className="text-xs text-gray-600 dark:text-signal-muted mt-2">
                     Assessed on {new Date(latestAssessment.assessmentDate).toLocaleDateString()} • Status: {latestAssessment.status.replace('_', ' ')}
                   </p>
                 </div>
 
                 {/* Risk Findings Breakdown */}
                 <div className="mb-4">
-                  <h5 className="text-xs font-semibold text-gray-900 mb-2">Risk Findings by Category</h5>
+                  <h5 className="text-xs font-semibold text-gray-900 dark:text-signal-ink mb-2">Risk Findings by Category</h5>
                   <div className="space-y-2">
                     {latestAssessment.illegalContentRisks && latestAssessment.illegalContentRisks !== null && (
-                      <div className="p-2 bg-white rounded border border-gray-200">
+                      <div className="p-2 bg-white dark:bg-white/[0.04] rounded border border-gray-200 dark:border-white/[0.06]">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-700">Illegal Content</span>
+                          <span className="text-xs font-medium text-gray-700 dark:text-signal-body">Illegal Content</span>
                           <span className={`px-2 py-1 rounded text-xs ${
-                            (latestAssessment.illegalContentRisks.severity || 'low') === 'critical' ? 'bg-red-100 text-red-800' :
-                            (latestAssessment.illegalContentRisks.severity || 'low') === 'high' ? 'bg-orange-100 text-orange-800' :
-                            (latestAssessment.illegalContentRisks.severity || 'low') === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
+                            (latestAssessment.illegalContentRisks.severity || 'low') === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' :
+                            (latestAssessment.illegalContentRisks.severity || 'low') === 'high' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn' :
+                            (latestAssessment.illegalContentRisks.severity || 'low') === 'medium' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                            'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good'
                           }`}>
                             {(latestAssessment.illegalContentRisks.severity || 'low').toUpperCase()}
                           </span>
                         </div>
                         {latestAssessment.illegalContentRisks.description && (
-                          <p className="mt-1 text-xs text-gray-600">{latestAssessment.illegalContentRisks.description}</p>
+                          <p className="mt-1 text-xs text-gray-600 dark:text-signal-muted">{latestAssessment.illegalContentRisks.description}</p>
                         )}
                         {latestAssessment.illegalContentRisks.risks && Array.isArray(latestAssessment.illegalContentRisks.risks) && latestAssessment.illegalContentRisks.risks.length > 0 && (
-                          <ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
+                          <ul className="mt-1 text-xs text-gray-600 dark:text-signal-muted list-disc list-inside">
                             {latestAssessment.illegalContentRisks.risks.map((risk: string, idx: number) => (
                               <li key={idx}>{risk}</li>
                             ))}
@@ -1364,23 +1364,23 @@ export const DSAPlatformManagement: React.FC = () => {
                       </div>
                     )}
                     {latestAssessment.fundamentalRightsRisks && latestAssessment.fundamentalRightsRisks !== null && (
-                      <div className="p-2 bg-white rounded border border-gray-200">
+                      <div className="p-2 bg-white dark:bg-white/[0.04] rounded border border-gray-200 dark:border-white/[0.06]">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-700">Fundamental Rights</span>
+                          <span className="text-xs font-medium text-gray-700 dark:text-signal-body">Fundamental Rights</span>
                           <span className={`px-2 py-1 rounded text-xs ${
-                            (latestAssessment.fundamentalRightsRisks.severity || 'low') === 'critical' ? 'bg-red-100 text-red-800' :
-                            (latestAssessment.fundamentalRightsRisks.severity || 'low') === 'high' ? 'bg-orange-100 text-orange-800' :
-                            (latestAssessment.fundamentalRightsRisks.severity || 'low') === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
+                            (latestAssessment.fundamentalRightsRisks.severity || 'low') === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' :
+                            (latestAssessment.fundamentalRightsRisks.severity || 'low') === 'high' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn' :
+                            (latestAssessment.fundamentalRightsRisks.severity || 'low') === 'medium' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                            'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good'
                           }`}>
                             {(latestAssessment.fundamentalRightsRisks.severity || 'low').toUpperCase()}
                           </span>
                         </div>
                         {latestAssessment.fundamentalRightsRisks.description && (
-                          <p className="mt-1 text-xs text-gray-600">{latestAssessment.fundamentalRightsRisks.description}</p>
+                          <p className="mt-1 text-xs text-gray-600 dark:text-signal-muted">{latestAssessment.fundamentalRightsRisks.description}</p>
                         )}
                         {latestAssessment.fundamentalRightsRisks.risks && Array.isArray(latestAssessment.fundamentalRightsRisks.risks) && latestAssessment.fundamentalRightsRisks.risks.length > 0 && (
-                          <ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
+                          <ul className="mt-1 text-xs text-gray-600 dark:text-signal-muted list-disc list-inside">
                             {latestAssessment.fundamentalRightsRisks.risks.map((risk: string, idx: number) => (
                               <li key={idx}>{risk}</li>
                             ))}
@@ -1389,23 +1389,23 @@ export const DSAPlatformManagement: React.FC = () => {
                       </div>
                     )}
                     {latestAssessment.publicSecurityRisks && latestAssessment.publicSecurityRisks !== null && (
-                      <div className="p-2 bg-white rounded border border-gray-200">
+                      <div className="p-2 bg-white dark:bg-white/[0.04] rounded border border-gray-200 dark:border-white/[0.06]">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-700">Public Security</span>
+                          <span className="text-xs font-medium text-gray-700 dark:text-signal-body">Public Security</span>
                           <span className={`px-2 py-1 rounded text-xs ${
-                            (latestAssessment.publicSecurityRisks.severity || 'low') === 'critical' ? 'bg-red-100 text-red-800' :
-                            (latestAssessment.publicSecurityRisks.severity || 'low') === 'high' ? 'bg-orange-100 text-orange-800' :
-                            (latestAssessment.publicSecurityRisks.severity || 'low') === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
+                            (latestAssessment.publicSecurityRisks.severity || 'low') === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' :
+                            (latestAssessment.publicSecurityRisks.severity || 'low') === 'high' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn' :
+                            (latestAssessment.publicSecurityRisks.severity || 'low') === 'medium' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                            'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good'
                           }`}>
                             {(latestAssessment.publicSecurityRisks.severity || 'low').toUpperCase()}
                           </span>
                         </div>
                         {latestAssessment.publicSecurityRisks.description && (
-                          <p className="mt-1 text-xs text-gray-600">{latestAssessment.publicSecurityRisks.description}</p>
+                          <p className="mt-1 text-xs text-gray-600 dark:text-signal-muted">{latestAssessment.publicSecurityRisks.description}</p>
                         )}
                         {latestAssessment.publicSecurityRisks.risks && Array.isArray(latestAssessment.publicSecurityRisks.risks) && latestAssessment.publicSecurityRisks.risks.length > 0 && (
-                          <ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
+                          <ul className="mt-1 text-xs text-gray-600 dark:text-signal-muted list-disc list-inside">
                             {latestAssessment.publicSecurityRisks.risks.map((risk: string, idx: number) => (
                               <li key={idx}>{risk}</li>
                             ))}
@@ -1414,23 +1414,23 @@ export const DSAPlatformManagement: React.FC = () => {
                       </div>
                     )}
                     {latestAssessment.protectionOfMinorsRisks && latestAssessment.protectionOfMinorsRisks !== null && (
-                      <div className="p-2 bg-white rounded border border-gray-200">
+                      <div className="p-2 bg-white dark:bg-white/[0.04] rounded border border-gray-200 dark:border-white/[0.06]">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-700">Protection of Minors</span>
+                          <span className="text-xs font-medium text-gray-700 dark:text-signal-body">Protection of Minors</span>
                           <span className={`px-2 py-1 rounded text-xs ${
-                            (latestAssessment.protectionOfMinorsRisks.severity || 'low') === 'critical' ? 'bg-red-100 text-red-800' :
-                            (latestAssessment.protectionOfMinorsRisks.severity || 'low') === 'high' ? 'bg-orange-100 text-orange-800' :
-                            (latestAssessment.protectionOfMinorsRisks.severity || 'low') === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
+                            (latestAssessment.protectionOfMinorsRisks.severity || 'low') === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' :
+                            (latestAssessment.protectionOfMinorsRisks.severity || 'low') === 'high' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn' :
+                            (latestAssessment.protectionOfMinorsRisks.severity || 'low') === 'medium' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                            'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good'
                           }`}>
                             {(latestAssessment.protectionOfMinorsRisks.severity || 'low').toUpperCase()}
                           </span>
                         </div>
                         {latestAssessment.protectionOfMinorsRisks.description && (
-                          <p className="mt-1 text-xs text-gray-600">{latestAssessment.protectionOfMinorsRisks.description}</p>
+                          <p className="mt-1 text-xs text-gray-600 dark:text-signal-muted">{latestAssessment.protectionOfMinorsRisks.description}</p>
                         )}
                         {latestAssessment.protectionOfMinorsRisks.risks && Array.isArray(latestAssessment.protectionOfMinorsRisks.risks) && latestAssessment.protectionOfMinorsRisks.risks.length > 0 && (
-                          <ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
+                          <ul className="mt-1 text-xs text-gray-600 dark:text-signal-muted list-disc list-inside">
                             {latestAssessment.protectionOfMinorsRisks.risks.map((risk: string, idx: number) => (
                               <li key={idx}>{risk}</li>
                             ))}
@@ -1444,17 +1444,17 @@ export const DSAPlatformManagement: React.FC = () => {
                 {/* Mitigation Measures Summary */}
                 {latestAssessment.mitigationMeasures && latestAssessment.mitigationMeasures.length > 0 && (
                   <div className="mb-4">
-                    <h5 className="text-xs font-semibold text-gray-900 mb-2">Mitigation Measures ({latestAssessment.mitigationMeasures.length})</h5>
+                    <h5 className="text-xs font-semibold text-gray-900 dark:text-signal-ink mb-2">Mitigation Measures ({latestAssessment.mitigationMeasures.length})</h5>
                     <div className="space-y-1">
                       {latestAssessment.mitigationMeasures.map((measure: any, idx: number) => (
-                        <div key={idx} className="p-2 bg-white rounded border border-gray-200 text-xs">
+                        <div key={idx} className="p-2 bg-white dark:bg-white/[0.04] rounded border border-gray-200 dark:border-white/[0.06] text-xs">
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-700">{measure.measure}</span>
+                            <span className="text-gray-700 dark:text-signal-body">{measure.measure}</span>
                             <span className={`px-2 py-1 rounded ${
-                              measure.status === 'verified' ? 'bg-green-100 text-green-800' :
-                              measure.status === 'implemented' ? 'bg-blue-100 text-blue-800' :
-                              measure.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
+                              measure.status === 'verified' ? 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good' :
+                              measure.status === 'implemented' ? 'bg-blue-100 dark:bg-signal-blue/10 text-blue-800 dark:text-signal-blue' :
+                              measure.status === 'in_progress' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                              'bg-gray-100 dark:bg-white/[0.06] text-gray-800 dark:text-signal-body'
                             }`}>
                               {measure.status.replace('_', ' ')}
                             </span>
@@ -1467,9 +1467,9 @@ export const DSAPlatformManagement: React.FC = () => {
 
                 {/* Next Review Date */}
                 {latestAssessment.nextReviewDate && (
-                  <div className="mb-4 p-2 bg-white rounded border border-gray-200">
-                    <span className="text-xs font-medium text-gray-700">Next Review Date: </span>
-                    <span className="text-xs text-gray-900">{new Date(latestAssessment.nextReviewDate).toLocaleDateString()}</span>
+                  <div className="mb-4 p-2 bg-white dark:bg-white/[0.04] rounded border border-gray-200 dark:border-white/[0.06]">
+                    <span className="text-xs font-medium text-gray-700 dark:text-signal-body">Next Review Date: </span>
+                    <span className="text-xs text-gray-900 dark:text-signal-ink">{new Date(latestAssessment.nextReviewDate).toLocaleDateString()}</span>
                   </div>
                 )}
 
@@ -1487,7 +1487,7 @@ export const DSAPlatformManagement: React.FC = () => {
                         nextReviewDate: '',
                       });
                     }}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
+                    className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10] text-sm"
                   >
                     Create New Assessment
                   </button>
@@ -1496,7 +1496,7 @@ export const DSAPlatformManagement: React.FC = () => {
                       setLatestAssessment(null);
                       setShowRiskAssessmentModal(false);
                     }}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+                    className="px-4 py-2 bg-indigo-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-indigo-700 dark:hover:bg-signal-green/90 text-sm"
                   >
                     {t('common.close')}
                   </button>
@@ -1506,33 +1506,33 @@ export const DSAPlatformManagement: React.FC = () => {
 
             {/* Display existing assessments */}
             {riskAssessments.length > 0 && !latestAssessment && (
-              <div className="p-6 border-t border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Previous Risk Assessments</h4>
+              <div className="p-6 border-t border-gray-200 dark:border-white/[0.06]">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-3">Previous Risk Assessments</h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {riskAssessments.map((assessment) => (
-                    <div key={assessment.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs">
+                    <div key={assessment.id} className="p-3 bg-gray-50 dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06] text-xs">
                       <div className="flex justify-between mb-2">
                         <span className="font-medium capitalize">{assessment.riskCategory.replace(/_/g, ' ')}</span>
                         <span className={`px-2 py-1 rounded text-xs ${
-                          assessment.overallRiskLevel === 'critical' ? 'bg-red-100 text-red-800' :
-                          assessment.overallRiskLevel === 'high' ? 'bg-orange-100 text-orange-800' :
-                          assessment.overallRiskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
+                          assessment.overallRiskLevel === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10 text-red-800 dark:text-signal-bad' :
+                          assessment.overallRiskLevel === 'high' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn' :
+                          assessment.overallRiskLevel === 'medium' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                          'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good'
                         }`}>
                           {assessment.overallRiskLevel.toUpperCase()}
                         </span>
                       </div>
-                      <div className="text-gray-600 mb-2">
+                      <div className="text-gray-600 dark:text-signal-muted mb-2">
                         Assessed: {new Date(assessment.assessmentDate).toLocaleDateString()}
                       </div>
-                      <div className="text-gray-600 flex items-center gap-2 mb-2">
+                      <div className="text-gray-600 dark:text-signal-muted flex items-center gap-2 mb-2">
                         <span>Status:</span>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          assessment.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          assessment.status === 'in_review' ? 'bg-yellow-100 text-yellow-800' :
-                          assessment.status === 'requires_action' ? 'bg-orange-100 text-orange-800' :
-                          assessment.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                          'bg-blue-100 text-blue-800'
+                          assessment.status === 'approved' ? 'bg-green-100 dark:bg-signal-good/10 text-green-800 dark:text-signal-good' :
+                          assessment.status === 'in_review' ? 'bg-yellow-100 dark:bg-signal-warn/10 text-yellow-800 dark:text-signal-warn' :
+                          assessment.status === 'requires_action' ? 'bg-orange-100 dark:bg-signal-warn/10 text-orange-800 dark:text-signal-warn' :
+                          assessment.status === 'draft' ? 'bg-gray-100 dark:bg-white/[0.06] text-gray-800 dark:text-signal-body' :
+                          'bg-blue-100 dark:bg-signal-blue/10 text-blue-800 dark:text-signal-blue'
                         }`}>
                           {assessment.status.replace('_', ' ').toUpperCase()}
                         </span>
@@ -1549,7 +1549,7 @@ export const DSAPlatformManagement: React.FC = () => {
                                 setError(err instanceof Error ? err.message : 'Failed to approve assessment');
                               }
                             }}
-                            className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                            className="px-2 py-1 bg-green-600 dark:bg-signal-good text-white dark:text-signal-canvas rounded text-xs hover:bg-green-700 dark:hover:bg-signal-good/90"
                           >
                             Approve
                           </button>
@@ -1559,7 +1559,7 @@ export const DSAPlatformManagement: React.FC = () => {
                             setSelectedAssessment(assessment);
                             setShowEditAssessmentModal(true);
                           }}
-                          className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                          className="px-2 py-1 bg-blue-600 dark:bg-signal-blue text-white dark:text-signal-canvas rounded text-xs hover:bg-blue-700 dark:hover:bg-signal-blue/90"
                         >
                           Edit
                         </button>
@@ -1576,10 +1576,10 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Non-Personalized Feed Configuration Modal */}
       {showFeedConfigModal && selectedPlatform && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Configure Non-Personalized Feed: {selectedPlatform.platformName}</h3>
-              <button onClick={() => setShowFeedConfigModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Configure Non-Personalized Feed: {selectedPlatform.platformName}</h3>
+              <button onClick={() => setShowFeedConfigModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:text-signal-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1590,22 +1590,22 @@ export const DSAPlatformManagement: React.FC = () => {
                     type="checkbox"
                     checked={feedConfigForm.isEnabled}
                     onChange={(e) => setFeedConfigForm({ ...feedConfigForm, isEnabled: e.target.checked })}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-gray-300 dark:border-white/[0.10] text-indigo-600 dark:text-signal-green focus:ring-indigo-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Enable Non-Personalized Feed Option</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-signal-body">Enable Non-Personalized Feed Option</span>
                 </label>
-                <p className="text-xs text-gray-500 mt-1 ml-6">Required for VLOP platforms under Article 27</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted mt-1 ml-6">Required for VLOP platforms under Article 27</p>
               </div>
 
               {feedConfigForm.isEnabled && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">User Opt-In Method *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">User Opt-In Method *</label>
                     <select
                       required
                       value={feedConfigForm.userOptInMethod}
                       onChange={(e) => setFeedConfigForm({ ...feedConfigForm, userOptInMethod: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                     >
                       <option value="toggle">Toggle Switch</option>
                       <option value="settings_page">Settings Page</option>
@@ -1614,12 +1614,12 @@ export const DSAPlatformManagement: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Feed Algorithm Type *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Feed Algorithm Type *</label>
                     <select
                       required
                       value={feedConfigForm.feedAlgorithmType}
                       onChange={(e) => setFeedConfigForm({ ...feedConfigForm, feedAlgorithmType: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                     >
                       <option value="chronological">Chronological</option>
                       <option value="popularity">Popularity-Based</option>
@@ -1628,63 +1628,63 @@ export const DSAPlatformManagement: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Description</label>
                     <textarea
                       value={feedConfigForm.description}
                       onChange={(e) => setFeedConfigForm({ ...feedConfigForm, description: e.target.value })}
                       rows={3}
                       placeholder="Describe the non-personalized feed implementation..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">User Documentation URL</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">User Documentation URL</label>
                     <input
                       type="url"
                       value={feedConfigForm.userDocumentationUrl}
                       onChange={(e) => setFeedConfigForm({ ...feedConfigForm, userDocumentationUrl: e.target.value })}
                       placeholder="https://..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Implementation Date</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Implementation Date</label>
                     <input
                       type="date"
                       value={feedConfigForm.implementationDate}
                       onChange={(e) => setFeedConfigForm({ ...feedConfigForm, implementationDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Notes</label>
                     <textarea
                       value={feedConfigForm.notes}
                       onChange={(e) => setFeedConfigForm({ ...feedConfigForm, notes: e.target.value })}
                       rows={2}
                       placeholder="Additional notes..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                     />
                   </div>
                 </>
               )}
 
               {feedConfig && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-4">
-                  <p className="text-sm font-medium text-blue-900 mb-1">Current Status</p>
-                  <p className="text-xs text-blue-700">
+                <div className="p-3 bg-blue-50 dark:bg-signal-blue/10 border border-blue-200 dark:border-signal-blue/20 rounded-lg mb-4">
+                  <p className="text-sm font-medium text-blue-900 dark:text-signal-blue mb-1">Current Status</p>
+                  <p className="text-xs text-blue-700 dark:text-signal-blue">
                     Compliance Status: <span className="font-medium">{feedConfig.complianceStatus?.replace('_', ' ') || 'Not Set'}</span>
                   </p>
                   {feedConfig.lastAuditDate && (
-                    <p className="text-xs text-blue-700 mt-1">
+                    <p className="text-xs text-blue-700 dark:text-signal-blue mt-1">
                       Last Audit: {new Date(feedConfig.lastAuditDate).toLocaleDateString()}
                     </p>
                   )}
                   {feedConfig.implementationDate && (
-                    <p className="text-xs text-blue-700 mt-1">
+                    <p className="text-xs text-blue-700 dark:text-signal-blue mt-1">
                       Implemented: {new Date(feedConfig.implementationDate).toLocaleDateString()}
                     </p>
                   )}
@@ -1693,30 +1693,30 @@ export const DSAPlatformManagement: React.FC = () => {
 
               {/* Feed Configuration History */}
               {feedConfig && (
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Configuration History</h4>
+                <div className="p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-lg">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-3">Configuration History</h4>
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Enabled:</span>
+                      <span className="text-gray-600 dark:text-signal-muted">Enabled:</span>
                       <span className="font-medium">{feedConfig.isEnabled ? 'Yes' : 'No'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Opt-In Method:</span>
+                      <span className="text-gray-600 dark:text-signal-muted">Opt-In Method:</span>
                       <span className="font-medium">{feedConfig.userOptInMethod?.replace('_', ' ') || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Algorithm Type:</span>
+                      <span className="text-gray-600 dark:text-signal-muted">Algorithm Type:</span>
                       <span className="font-medium">{feedConfig.feedAlgorithmType?.replace('_', ' ') || 'N/A'}</span>
                     </div>
                     {feedConfig.createdAt && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Created:</span>
+                        <span className="text-gray-600 dark:text-signal-muted">Created:</span>
                         <span className="font-medium">{new Date(feedConfig.createdAt).toLocaleDateString()}</span>
                       </div>
                     )}
                     {feedConfig.updatedAt && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Last Updated:</span>
+                        <span className="text-gray-600 dark:text-signal-muted">Last Updated:</span>
                         <span className="font-medium">{new Date(feedConfig.updatedAt).toLocaleDateString()}</span>
                       </div>
                     )}
@@ -1727,14 +1727,14 @@ export const DSAPlatformManagement: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                  className="flex-1 px-4 py-2 bg-teal-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-teal-700 dark:hover:bg-signal-green/90"
                 >
                   Save Configuration
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowFeedConfigModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>
@@ -1747,10 +1747,10 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Edit Risk Assessment Modal */}
       {showEditAssessmentModal && selectedAssessment && selectedPlatform && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Edit Risk Assessment</h3>
-              <button onClick={() => setShowEditAssessmentModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-signal-ink">Edit Risk Assessment</h3>
+              <button onClick={() => setShowEditAssessmentModal(false)} className="text-gray-400 dark:text-signal-muted hover:text-gray-600 dark:text-signal-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1774,12 +1774,12 @@ export const DSAPlatformManagement: React.FC = () => {
               }
             }} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Status *</label>
                 <select
                   name="status"
                   defaultValue={selectedAssessment.status}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                 >
                   <option value="draft">Draft</option>
                   <option value="in_review">In Review</option>
@@ -1789,18 +1789,18 @@ export const DSAPlatformManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Notes</label>
                 <textarea
                   name="notes"
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted dark:focus:ring-signal-green dark:focus:border-signal-green"
                   placeholder="Add notes about this assessment..."
                 />
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Assessment Details</h4>
-                <div className="space-y-1 text-xs text-gray-600">
+              <div className="bg-gray-50 dark:bg-white/[0.03] p-4 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-signal-ink mb-2">Assessment Details</h4>
+                <div className="space-y-1 text-xs text-gray-600 dark:text-signal-muted">
                   <p><strong>Risk Category:</strong> {selectedAssessment.riskCategory.replace(/_/g, ' ')}</p>
                   <p><strong>Overall Risk Level:</strong> {selectedAssessment.overallRiskLevel.toUpperCase()}</p>
                   <p><strong>Assessed:</strong> {new Date(selectedAssessment.assessmentDate).toLocaleDateString()}</p>
@@ -1813,7 +1813,7 @@ export const DSAPlatformManagement: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className="flex-1 px-4 py-2 bg-indigo-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg hover:bg-indigo-700 dark:hover:bg-signal-green/90"
                 >
                   Update Assessment
                 </button>
@@ -1823,7 +1823,7 @@ export const DSAPlatformManagement: React.FC = () => {
                     setShowEditAssessmentModal(false);
                     setSelectedAssessment(null);
                   }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-300 dark:hover:bg-white/[0.10]"
                 >
                   {t('common.cancel')}
                 </button>

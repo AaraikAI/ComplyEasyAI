@@ -254,11 +254,15 @@ test.describe('Browser Authentication Flow', () => {
       }
     });
 
+    // NOTE: '/frameworks' is intentionally a dual-purpose route — unauthenticated
+    // visitors get the PUBLIC marketing frameworks index (FrameworksGate), and
+    // only authenticated users get the in-app frameworks view. It is therefore
+    // not a redirect-on-unauthenticated route and is excluded here; the app data
+    // behind it remains protected (the authed view renders via ProtectedRoute).
     const protectedRoutes = [
       '/dashboard',
       '/risks',
       '/vendors',
-      '/frameworks',
       '/settings',
     ];
 

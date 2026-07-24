@@ -31,6 +31,8 @@ import {
 
 // ── Lazy-loaded public pages ──────────────────────────────────────────
 const SignupPage = lazy(() => import('./components/SignupPage'));
+const LoginPage = lazy(() => import('./components/LoginPage'));
+const DemoPage = lazy(() => import('./components/marketing/pages/DemoPage'));
 const LearnPage = lazy(() => import('./components/LearnPage'));
 const CommunityPage = lazy(() => import('./components/CommunityPage'));
 const StatusPage = lazy(() => import('./components/StatusPage'));
@@ -45,6 +47,17 @@ const EUAIActPillar = lazy(() => import('./components/marketing/pages/EUAIActPil
 const HIPAAPillar = lazy(() => import('./components/marketing/pages/HIPAAPillar'));
 const NISTAIRMFPillar = lazy(() => import('./components/marketing/pages/NISTAIRMFPillar'));
 const GRCPillar = lazy(() => import('./components/marketing/pages/GRCPillar'));
+const PlatformPage = lazy(() => import('./components/marketing/pages/PlatformPage'));
+const FrameworksIndexPage = lazy(() => import('./components/marketing/pages/FrameworksIndexPage'));
+const PricingPage = lazy(() => import('./components/marketing/pages/PricingPage'));
+const NISTCSFPillar = lazy(() => import('./components/marketing/pages/NISTCSFPillar'));
+const PCIDSSPillar = lazy(() => import('./components/marketing/pages/PCIDSSPillar'));
+const CCPAPillar = lazy(() => import('./components/marketing/pages/CCPAPillar'));
+const ISO42001Pillar = lazy(() => import('./components/marketing/pages/ISO42001Pillar'));
+const DORAPillar = lazy(() => import('./components/marketing/pages/DORAPillar'));
+const DMAPillar = lazy(() => import('./components/marketing/pages/DMAPillar'));
+const DSAPillar = lazy(() => import('./components/marketing/pages/DSAPillar'));
+const CSRDPillar = lazy(() => import('./components/marketing/pages/CSRDPillar'));
 const VantaAlternative = lazy(() => import('./components/marketing/pages/VantaAlternative'));
 const DrataAlternative = lazy(() => import('./components/marketing/pages/DrataAlternative'));
 const SecureframeAlternative = lazy(() => import('./components/marketing/pages/SecureframeAlternative'));
@@ -490,11 +503,20 @@ const App: React.FC = () => {
           <Routes>
             {/* Public Routes */}
             <Route path="/signup" element={<PublicPageWrapper><SignupPage /></PublicPageWrapper>} />
+            <Route path="/login" element={<PublicPageWrapper><LoginPage /></PublicPageWrapper>} />
+            <Route path="/demo" element={<PublicPageWrapper><DemoPage /></PublicPageWrapper>} />
             <Route path="/learn" element={<PublicPageWrapper><LearnPage /></PublicPageWrapper>} />
             <Route path="/community" element={<PublicPageWrapper><CommunityPage /></PublicPageWrapper>} />
             <Route path="/status" element={<PublicPageWrapper><StatusPage /></PublicPageWrapper>} />
             <Route path="/docs" element={<PublicPageWrapper><DocsPage /></PublicPageWrapper>} />
             <Route path="/docs/*" element={<PublicPageWrapper><DocsPage /></PublicPageWrapper>} />
+
+            {/* ── Marketing pages (Signal redesign, public) ─────────── */}
+            <Route path="/platform" element={<PublicPageWrapper><PlatformPage /></PublicPageWrapper>} />
+            <Route path="/pricing" element={<PublicPageWrapper><PricingPage /></PublicPageWrapper>} />
+            {/* /frameworks is dual-purpose (marketing index for visitors, app view
+                for signed-in users) — handled inside the root gate below so MainApp
+                keeps its root splat mount and its nested routes resolve. */}
 
             {/* ── Marketing / SEO pillar pages (public, crawlable) ──── */}
             <Route path="/platform/ai-compliance" element={<PublicPageWrapper><AICompliancePillar /></PublicPageWrapper>} />
@@ -505,6 +527,14 @@ const App: React.FC = () => {
             <Route path="/hipaa" element={<PublicPageWrapper><HIPAAPillar /></PublicPageWrapper>} />
             <Route path="/nist-ai-rmf" element={<PublicPageWrapper><NISTAIRMFPillar /></PublicPageWrapper>} />
             <Route path="/grc" element={<PublicPageWrapper><GRCPillar /></PublicPageWrapper>} />
+            <Route path="/nist-csf" element={<PublicPageWrapper><NISTCSFPillar /></PublicPageWrapper>} />
+            <Route path="/pci-dss" element={<PublicPageWrapper><PCIDSSPillar /></PublicPageWrapper>} />
+            <Route path="/ccpa" element={<PublicPageWrapper><CCPAPillar /></PublicPageWrapper>} />
+            <Route path="/iso-42001" element={<PublicPageWrapper><ISO42001Pillar /></PublicPageWrapper>} />
+            <Route path="/dora-compliance" element={<PublicPageWrapper><DORAPillar /></PublicPageWrapper>} />
+            <Route path="/dma-compliance" element={<PublicPageWrapper><DMAPillar /></PublicPageWrapper>} />
+            <Route path="/dsa-compliance" element={<PublicPageWrapper><DSAPillar /></PublicPageWrapper>} />
+            <Route path="/csrd-compliance" element={<PublicPageWrapper><CSRDPillar /></PublicPageWrapper>} />
 
             {/* ── Competitor comparison pages (public) ──────────────── */}
             <Route path="/compare/vanta-alternative" element={<PublicPageWrapper><VantaAlternative /></PublicPageWrapper>} />
@@ -523,12 +553,10 @@ const App: React.FC = () => {
             {/* Landing page at root for unauthenticated users */}
             <Route path="/" element={<AuthGate />} />
 
-            {/* Authenticated App Routes */}
-            <Route path="/*" element={
-              <ProtectedRoute>
-                <MainApp />
-              </ProtectedRoute>
-            } />
+            {/* Authenticated App Routes (root gate: keeps MainApp at the /* mount
+                so its nested routes resolve; serves the public frameworks index
+                to unauthenticated visitors at /frameworks). */}
+            <Route path="/*" element={<RootAppGate />} />
           </Routes>
         </WebSocketProvider>
         </AuthProvider>
@@ -552,6 +580,40 @@ const AuthGate: React.FC = () => {
   }
 
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
+};
+
+/**
+ * Root gate for the app splat route. Authenticated users get MainApp (mounted at
+ * the "/*" root so its nested <Routes> resolve correctly). Unauthenticated
+ * visitors to /frameworks get the public marketing frameworks index — the one
+ * app path that doubles as a public SEO page — while every other protected path
+ * still redirects to the landing page via ProtectedRoute.
+ */
+const RootAppGate: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-signal-canvas">
+        <div className="w-8 h-8 border-4 border-signal-green border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated && location.pathname === '/frameworks') {
+    return (
+      <PublicPageWrapper>
+        <FrameworksIndexPage />
+      </PublicPageWrapper>
+    );
+  }
+
+  return (
+    <ProtectedRoute>
+      <MainApp />
+    </ProtectedRoute>
+  );
 };
 
 export default App;

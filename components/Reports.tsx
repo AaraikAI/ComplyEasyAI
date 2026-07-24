@@ -74,10 +74,10 @@ interface VendorRiskReport {
 
 const CHART_COLORS = ['#22c55e', '#eab308', '#f97316', '#ef4444', '#0d9488'];
 const SEVERITY_COLORS: Record<string, string> = {
-  Critical: 'bg-red-100 text-red-800 border-red-200',
-  High: 'bg-orange-100 text-orange-800 border-orange-200',
-  Medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  Low: 'bg-blue-100 text-blue-800 border-blue-200',
+  Critical: 'bg-red-100 text-red-800 border-red-200 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/20',
+  High: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-signal-amber/10 dark:text-signal-amber dark:border-signal-amber/20',
+  Medium: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/20',
+  Low: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/20',
 };
 
 export const Reports: React.FC = () => {
@@ -473,8 +473,8 @@ export const Reports: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
-          <p className="text-gray-500 mt-1">AI-powered compliance reporting and analytics</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('reports.title')}</h1>
+          <p className="text-gray-500 mt-1 dark:text-signal-muted">AI-powered compliance reporting and analytics</p>
         </div>
       </div>
 
@@ -483,16 +483,16 @@ export const Reports: React.FC = () => {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Frameworks', value: dashboardMetrics.totalFrameworks, icon: <Target className="w-5 h-5 text-blue-600" /> },
-          { label: 'Avg. Progress', value: `${dashboardMetrics.avgProgress}%`, icon: <TrendingUp className="w-5 h-5 text-green-600" /> },
-          { label: 'Compliant', value: dashboardMetrics.compliantFrameworks, icon: <ShieldCheck className="w-5 h-5 text-green-600" /> },
-          { label: 'At Risk', value: dashboardMetrics.atRiskFrameworks, icon: <AlertTriangle className="w-5 h-5 text-yellow-600" /> },
+          { label: 'Total Frameworks', value: dashboardMetrics.totalFrameworks, icon: <Target className="w-5 h-5 text-blue-600 dark:text-signal-blue" /> },
+          { label: 'Avg. Progress', value: `${dashboardMetrics.avgProgress}%`, icon: <TrendingUp className="w-5 h-5 text-green-600 dark:text-signal-good" /> },
+          { label: 'Compliant', value: dashboardMetrics.compliantFrameworks, icon: <ShieldCheck className="w-5 h-5 text-green-600 dark:text-signal-good" /> },
+          { label: 'At Risk', value: dashboardMetrics.atRiskFrameworks, icon: <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-signal-warn" /> },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl border p-4 flex items-center gap-3">
+          <div key={s.label} className="bg-white rounded-xl border p-4 flex items-center gap-3 dark:bg-white/[0.03] dark:border-white/[0.06]">
             {s.icon}
             <div>
-              <p className="text-2xl font-bold text-gray-900">{s.value}</p>
-              <p className="text-xs text-gray-500">{s.label}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{s.value}</p>
+              <p className="text-xs text-gray-500 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{s.label}</p>
             </div>
           </div>
         ))}
@@ -502,95 +502,95 @@ export const Reports: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <button
           onClick={() => setViewMode('generate')}
-          className="bg-white rounded-xl border p-6 hover:border-blue-200 transition text-left"
+          className="bg-white rounded-xl border p-6 hover:border-blue-200 transition text-left dark:bg-white/[0.03] dark:border-white/[0.06] dark:hover:border-signal-blue/40"
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FileText className="w-5 h-5 text-blue-600" />
+            <div className="p-2 bg-blue-100 rounded-lg dark:bg-signal-blue/10">
+              <FileText className="w-5 h-5 text-blue-600 dark:text-signal-blue" />
             </div>
-            <h3 className="font-semibold text-gray-900">{t('reports.generateReport')}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-signal-ink">{t('reports.generateReport')}</h3>
           </div>
-          <p className="text-sm text-gray-500">Create customizable compliance reports with AI-powered insights</p>
+          <p className="text-sm text-gray-500 dark:text-signal-muted">Create customizable compliance reports with AI-powered insights</p>
         </button>
 
         <button
           onClick={handleGenerateExecutiveSummary}
           disabled={aiLoading}
-          className="bg-white rounded-xl border p-6 hover:border-purple-200 transition text-left disabled:opacity-50"
+          className="bg-white rounded-xl border p-6 hover:border-purple-200 transition text-left disabled:opacity-50 dark:bg-white/[0.03] dark:border-white/[0.06] dark:hover:border-signal-violet/40"
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Brain className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-purple-100 rounded-lg dark:bg-signal-violet/10">
+              <Brain className="w-5 h-5 text-purple-600 dark:text-signal-violet" />
             </div>
-            <h3 className="font-semibold text-gray-900">{t('reports.executiveReport')}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-signal-ink">{t('reports.executiveReport')}</h3>
           </div>
-          <p className="text-sm text-gray-500">Generate board-ready executive summary with AI analysis</p>
+          <p className="text-sm text-gray-500 dark:text-signal-muted">Generate board-ready executive summary with AI analysis</p>
         </button>
 
         <button
           onClick={handleRunAutopilot}
           disabled={aiLoading}
-          className="bg-white rounded-xl border p-6 hover:border-orange-200 transition text-left disabled:opacity-50"
+          className="bg-white rounded-xl border p-6 hover:border-orange-200 transition text-left disabled:opacity-50 dark:bg-white/[0.03] dark:border-white/[0.06] dark:hover:border-signal-amber/40"
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Zap className="w-5 h-5 text-orange-600" />
+            <div className="p-2 bg-orange-100 rounded-lg dark:bg-signal-amber/10">
+              <Zap className="w-5 h-5 text-orange-600 dark:text-signal-amber" />
             </div>
-            <h3 className="font-semibold text-gray-900">Compliance Autopilot</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-signal-ink">Compliance Autopilot</h3>
           </div>
-          <p className="text-sm text-gray-500">AI identifies gaps, proposes actions, and executes fixes</p>
+          <p className="text-sm text-gray-500 dark:text-signal-muted">AI identifies gaps, proposes actions, and executes fixes</p>
         </button>
 
         <button
           onClick={handleGenerateRiskReport}
           disabled={aiLoading}
-          className="bg-white rounded-xl border p-6 hover:border-red-200 transition text-left disabled:opacity-50"
+          className="bg-white rounded-xl border p-6 hover:border-red-200 transition text-left disabled:opacity-50 dark:bg-white/[0.03] dark:border-white/[0.06] dark:hover:border-signal-bad/40"
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-600" />
+            <div className="p-2 bg-red-100 rounded-lg dark:bg-signal-bad/10">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-signal-bad" />
             </div>
-            <h3 className="font-semibold text-gray-900">{t('reports.riskReport')}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-signal-ink">{t('reports.riskReport')}</h3>
           </div>
-          <p className="text-sm text-gray-500">AI-powered risk analysis with predictive insights</p>
+          <p className="text-sm text-gray-500 dark:text-signal-muted">AI-powered risk analysis with predictive insights</p>
         </button>
       </div>
 
       {/* Additional Report Types */}
-      <div className="bg-white rounded-xl border p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Additional Reports</h3>
+      <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">Additional Reports</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
             onClick={handleGenerateVendorReport}
             disabled={aiLoading}
-            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-left disabled:opacity-50"
+            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-left disabled:opacity-50 dark:bg-white/[0.04] dark:hover:bg-white/[0.06]"
           >
-            <Building2 className="w-5 h-5 text-indigo-600" />
+            <Building2 className="w-5 h-5 text-indigo-600 dark:text-signal-violet" />
             <div>
-              <h4 className="font-medium text-gray-900">Vendor Risk Report</h4>
-              <p className="text-xs text-gray-500">Aggregated vendor risk scores</p>
+              <h4 className="font-medium text-gray-900 dark:text-signal-ink">Vendor Risk Report</h4>
+              <p className="text-xs text-gray-500 dark:text-signal-muted">Aggregated vendor risk scores</p>
             </div>
           </button>
 
           <button
             onClick={() => setViewMode('generate')}
-            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-left"
+            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-left dark:bg-white/[0.04] dark:hover:bg-white/[0.06]"
           >
-            <ClipboardList className="w-5 h-5 text-green-600" />
+            <ClipboardList className="w-5 h-5 text-green-600 dark:text-signal-good" />
             <div>
-              <h4 className="font-medium text-gray-900">Control Status Report</h4>
-              <p className="text-xs text-gray-500">Detailed control implementation status</p>
+              <h4 className="font-medium text-gray-900 dark:text-signal-ink">Control Status Report</h4>
+              <p className="text-xs text-gray-500 dark:text-signal-muted">Detailed control implementation status</p>
             </div>
           </button>
 
           <button
             onClick={() => setViewMode('generate')}
-            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-left"
+            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition text-left dark:bg-white/[0.04] dark:hover:bg-white/[0.06]"
           >
-            <Calendar className="w-5 h-5 text-blue-600" />
+            <Calendar className="w-5 h-5 text-blue-600 dark:text-signal-blue" />
             <div>
-              <h4 className="font-medium text-gray-900">{t('reports.auditReport')}</h4>
-              <p className="text-xs text-gray-500">Complete audit history and timeline</p>
+              <h4 className="font-medium text-gray-900 dark:text-signal-ink">{t('reports.auditReport')}</h4>
+              <p className="text-xs text-gray-500 dark:text-signal-muted">Complete audit history and timeline</p>
             </div>
           </button>
         </div>
@@ -598,8 +598,8 @@ export const Reports: React.FC = () => {
 
       {/* Framework Progress Chart */}
       {frameworks.length > 0 && (
-        <div className="bg-white rounded-xl border p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Framework Progress</h3>
+        <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">Framework Progress</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={frameworks.slice(0, 8).map(f => ({ name: f.name.slice(0, 15), progress: f.progress }))}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -622,36 +622,36 @@ export const Reports: React.FC = () => {
   const renderGenerate = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
-        <h2 className="text-xl font-bold text-gray-900">{t('reports.generateReport')}</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink">{t('reports.generateReport')}</h2>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configuration Panel */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
-            <FileText className="mr-2 text-brand-600" size={20} />
+        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center dark:text-signal-ink">
+            <FileText className="mr-2 text-brand-600 dark:text-signal-green" size={20} />
             Report Configuration
           </h3>
 
           <div className="space-y-6">
             {/* Framework Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Frameworks <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-signal-body">
+                Select Frameworks <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               {loadingFrameworks ? (
                 <div className="flex items-center justify-center p-4">
-                  <Loader2 className="animate-spin text-brand-600" size={20} />
+                  <Loader2 className="animate-spin text-brand-600 dark:text-signal-green" size={20} />
                 </div>
               ) : frameworks.length === 0 ? (
-                <p className="text-sm text-gray-500 p-4 bg-gray-50 rounded">No frameworks available.</p>
+                <p className="text-sm text-gray-500 p-4 bg-gray-50 rounded dark:text-signal-muted dark:bg-white/[0.04]">No frameworks available.</p>
               ) : (
-                <div className="border border-gray-300 rounded-lg p-3 max-h-64 overflow-y-auto">
+                <div className="border border-gray-300 rounded-lg p-3 max-h-64 overflow-y-auto dark:border-white/[0.10]">
                   {frameworks.map(fw => (
-                    <label key={fw.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <label key={fw.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer dark:hover:bg-white/[0.04]">
                       <input
                         type="checkbox"
                         checked={selectedFrameworks.includes(fw.id)}
@@ -659,22 +659,22 @@ export const Reports: React.FC = () => {
                         className="mr-2"
                       />
                       <div className="flex-1">
-                        <span className="text-sm font-medium">{fw.name}</span>
-                        <span className="text-xs text-gray-500 ml-2">({fw.progress}%)</span>
+                        <span className="text-sm font-medium dark:text-signal-ink">{fw.name}</span>
+                        <span className="text-xs text-gray-500 ml-2 dark:text-signal-muted">({fw.progress}%)</span>
                       </div>
                     </label>
                   ))}
                 </div>
               )}
               {selectedFrameworks.length > 0 && (
-                <p className="text-xs text-gray-500 mt-2">{selectedFrameworks.length} framework(s) selected</p>
+                <p className="text-xs text-gray-500 mt-2 dark:text-signal-muted">{selectedFrameworks.length} framework(s) selected</p>
               )}
             </div>
 
             {/* Customization Options */}
             <button
               onClick={() => setShowCustomization(!showCustomization)}
-              className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+              className="flex items-center text-sm text-blue-600 hover:text-blue-800 dark:text-signal-blue dark:hover:text-signal-blue"
             >
               <Settings size={16} className="mr-1" />
               {showCustomization ? 'Hide' : 'Show'} Customization
@@ -684,7 +684,7 @@ export const Reports: React.FC = () => {
             {showCustomization && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Report Sections</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-signal-body">Report Sections</label>
                   <div className="space-y-2">
                     {[
                       { key: 'executive_summary', label: 'Executive Summary' },
@@ -694,51 +694,51 @@ export const Reports: React.FC = () => {
                       { key: 'evidence', label: 'Evidence Summary' },
                       { key: 'recommendations', label: 'Recommendations' },
                     ].map(section => (
-                      <label key={section.key} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                      <label key={section.key} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer dark:hover:bg-white/[0.04]">
                         <input
                           type="checkbox"
                           checked={reportOptions.sections.includes(section.key as ReportSection)}
                           onChange={() => handleSectionToggle(section.key as ReportSection)}
                           className="mr-2"
                         />
-                        <span className="text-sm">{section.label}</span>
+                        <span className="text-sm dark:text-signal-body">{section.label}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('reports.dateRange')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-signal-body">{t('reports.dateRange')}</label>
                   <div className="space-y-2">
                     <div>
-                      <label className="text-xs text-gray-500">Start Date</label>
+                      <label className="text-xs text-gray-500 dark:text-signal-muted">Start Date</label>
                       <input
                         type="date"
                         value={reportOptions.startDate}
                         onChange={(e) => setReportOptions(prev => ({ ...prev, startDate: e.target.value }))}
-                        className="w-full p-2 border rounded-lg text-sm"
+                        className="w-full p-2 border rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-500">End Date</label>
+                      <label className="text-xs text-gray-500 dark:text-signal-muted">End Date</label>
                       <input
                         type="date"
                         value={reportOptions.endDate}
                         onChange={(e) => setReportOptions(prev => ({ ...prev, endDate: e.target.value }))}
-                        className="w-full p-2 border rounded-lg text-sm"
+                        className="w-full p-2 border rounded-lg text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink"
                       />
                     </div>
                   </div>
                 </div>
 
-                <label className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                <label className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer dark:hover:bg-white/[0.04]">
                   <input
                     type="checkbox"
                     checked={reportOptions.includeEvidence}
                     onChange={(e) => setReportOptions(prev => ({ ...prev, includeEvidence: e.target.checked }))}
                     className="mr-2"
                   />
-                  <span className="text-sm">Include Evidence Details</span>
+                  <span className="text-sm dark:text-signal-body">Include Evidence Details</span>
                 </label>
               </>
             )}
@@ -746,7 +746,7 @@ export const Reports: React.FC = () => {
             <button
               onClick={handleGenerateReport}
               disabled={loading || selectedFrameworks.length === 0 || loadingFrameworks}
-              className="w-full bg-brand-600 text-white py-3 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+              className="w-full bg-brand-600 text-white py-3 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 dark:font-medium"
             >
               {loading ? (
                 <>
@@ -762,19 +762,19 @@ export const Reports: React.FC = () => {
             </button>
 
             {report && (
-              <div className="space-y-2 pt-4 border-t">
-                <p className="text-sm font-medium text-gray-700">Export Report</p>
+              <div className="space-y-2 pt-4 border-t dark:border-white/[0.06]">
+                <p className="text-sm font-medium text-gray-700 dark:text-signal-body">Export Report</p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleExport('JSON')}
-                    className="flex-1 flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
+                    className="flex-1 flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                   >
                     <Download size={16} className="mr-2" />
                     JSON
                   </button>
                   <button
                     onClick={() => handleExport('PDF')}
-                    className="flex-1 flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
+                    className="flex-1 flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm dark:bg-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.10]"
                   >
                     <Download size={16} className="mr-2" />
                     {t('reports.pdf')}
@@ -786,11 +786,11 @@ export const Reports: React.FC = () => {
         </div>
 
         {/* Report Preview */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-200px)]">
-          <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-            <h3 className="font-semibold text-gray-700">Report Preview</h3>
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-200px)] dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 dark:border-white/[0.06] dark:bg-white/[0.02]">
+            <h3 className="font-semibold text-gray-700 dark:text-signal-body">Report Preview</h3>
             {report && (
-              <div className="flex items-center text-xs text-gray-500">
+              <div className="flex items-center text-xs text-gray-500 dark:text-signal-muted">
                 <Calendar size={14} className="mr-1" />
                 Generated: {new Date().toLocaleString()}
               </div>
@@ -799,11 +799,11 @@ export const Reports: React.FC = () => {
 
           <div className="flex-1 p-8 overflow-y-auto">
             {report ? (
-              <div className="prose prose-sm max-w-none">
+              <div className="prose prose-sm max-w-none dark:prose-invert">
                 <ReactMarkdown>{report}</ReactMarkdown>
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400">
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-signal-muted">
                 <FileText size={64} className="mb-4 opacity-50" />
                 <p className="text-lg font-medium">No report generated yet</p>
                 <p className="text-sm">Select frameworks and click generate to create a report</p>
@@ -819,17 +819,17 @@ export const Reports: React.FC = () => {
   const renderExecutiveSummary = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
-        <Brain className="w-5 h-5 text-purple-600" />
-        <h2 className="text-xl font-bold text-gray-900">{t('reports.executiveReport')}</h2>
+        <Brain className="w-5 h-5 text-purple-600 dark:text-signal-violet" />
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink">{t('reports.executiveReport')}</h2>
       </div>
 
       {aiLoading && (
-        <div className="flex items-center justify-center py-16 bg-white rounded-xl border">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mr-3" />
-          <span className="text-gray-600">AI is generating executive summary...</span>
+        <div className="flex items-center justify-center py-16 bg-white rounded-xl border dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mr-3 dark:text-signal-violet" />
+          <span className="text-gray-600 dark:text-signal-body">AI is generating executive summary...</span>
         </div>
       )}
 
@@ -849,47 +849,47 @@ export const Reports: React.FC = () => {
           {/* Key Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Total Controls', value: executiveSummary.keyMetrics?.totalControls || 0, icon: <ClipboardList className="w-5 h-5 text-blue-600" /> },
-              { label: 'Compliant', value: executiveSummary.keyMetrics?.compliantControls || 0, icon: <CheckCircle className="w-5 h-5 text-green-600" /> },
-              { label: 'Open Issues', value: executiveSummary.keyMetrics?.openIssues || 0, icon: <AlertCircle className="w-5 h-5 text-yellow-600" /> },
-              { label: 'Overdue Tasks', value: executiveSummary.keyMetrics?.overdueTasks || 0, icon: <Clock className="w-5 h-5 text-red-600" /> },
+              { label: 'Total Controls', value: executiveSummary.keyMetrics?.totalControls || 0, icon: <ClipboardList className="w-5 h-5 text-blue-600 dark:text-signal-blue" /> },
+              { label: 'Compliant', value: executiveSummary.keyMetrics?.compliantControls || 0, icon: <CheckCircle className="w-5 h-5 text-green-600 dark:text-signal-good" /> },
+              { label: 'Open Issues', value: executiveSummary.keyMetrics?.openIssues || 0, icon: <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-signal-warn" /> },
+              { label: 'Overdue Tasks', value: executiveSummary.keyMetrics?.overdueTasks || 0, icon: <Clock className="w-5 h-5 text-red-600 dark:text-signal-bad" /> },
             ].map(s => (
-              <div key={s.label} className="bg-white rounded-xl border p-4 flex items-center gap-3">
+              <div key={s.label} className="bg-white rounded-xl border p-4 flex items-center gap-3 dark:bg-white/[0.03] dark:border-white/[0.06]">
                 {s.icon}
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{s.value}</p>
-                  <p className="text-xs text-gray-500">{s.label}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{s.value}</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{s.label}</p>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Narrative */}
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Executive Narrative</h3>
-            <div className="prose prose-sm max-w-none text-gray-700">
+          <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+            <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">Executive Narrative</h3>
+            <div className="prose prose-sm max-w-none text-gray-700 dark:prose-invert dark:text-signal-body">
               <ReactMarkdown>{executiveSummary.narrative || 'No narrative available.'}</ReactMarkdown>
             </div>
           </div>
 
           {/* Framework Summaries */}
           {executiveSummary.frameworkSummaries && executiveSummary.frameworkSummaries.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Framework Status</h3>
+            <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">Framework Status</h3>
               <div className="space-y-3">
                 {executiveSummary.frameworkSummaries.map((fw, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg dark:bg-white/[0.04]">
                     <div className="flex items-center gap-3">
-                      {fw.trend === 'up' ? <TrendingUp className="w-4 h-4 text-green-600" /> :
-                       fw.trend === 'down' ? <TrendingDown className="w-4 h-4 text-red-600" /> :
-                       <Minus className="w-4 h-4 text-gray-400" />}
-                      <span className="font-medium text-gray-900">{fw.name}</span>
+                      {fw.trend === 'up' ? <TrendingUp className="w-4 h-4 text-green-600 dark:text-signal-good" /> :
+                       fw.trend === 'down' ? <TrendingDown className="w-4 h-4 text-red-600 dark:text-signal-bad" /> :
+                       <Minus className="w-4 h-4 text-gray-400 dark:text-signal-muted" />}
+                      <span className="font-medium text-gray-900 dark:text-signal-ink">{fw.name}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div className="h-2 rounded-full bg-blue-600" style={{ width: `${fw.score}%` }} />
+                      <div className="w-32 bg-gray-200 rounded-full h-2 dark:bg-white/[0.08]">
+                        <div className="h-2 rounded-full bg-blue-600 dark:bg-signal-green" style={{ width: `${fw.score}%` }} />
                       </div>
-                      <span className="text-sm font-bold text-gray-700 w-12 text-right">{fw.score}%</span>
+                      <span className="text-sm font-bold text-gray-700 w-12 text-right dark:text-signal-body">{fw.score}%</span>
                     </div>
                   </div>
                 ))}
@@ -899,12 +899,12 @@ export const Reports: React.FC = () => {
 
           {/* Recommendations */}
           {executiveSummary.recommendations && executiveSummary.recommendations.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Key Recommendations</h3>
+            <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">Key Recommendations</h3>
               <ul className="space-y-2">
                 {executiveSummary.recommendations.map((rec, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-signal-body">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0 dark:text-signal-good" />
                     {rec}
                   </li>
                 ))}
@@ -925,7 +925,7 @@ export const Reports: React.FC = () => {
                 a.click();
                 URL.revokeObjectURL(url);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 dark:bg-white/[0.03] dark:border-white/[0.06] dark:text-signal-body dark:hover:bg-white/[0.06]"
             >
               <Download className="w-4 h-4" /> {t('common.export')} JSON
             </button>
@@ -939,65 +939,65 @@ export const Reports: React.FC = () => {
   const renderAutopilot = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
-        <Zap className="w-5 h-5 text-orange-600" />
-        <h2 className="text-xl font-bold text-gray-900">Compliance Autopilot Report</h2>
+        <Zap className="w-5 h-5 text-orange-600 dark:text-signal-amber" />
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink">Compliance Autopilot Report</h2>
       </div>
 
       {aiLoading && (
-        <div className="flex items-center justify-center py-16 bg-white rounded-xl border">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-600 mr-3" />
-          <span className="text-gray-600">AI Autopilot is running...</span>
+        <div className="flex items-center justify-center py-16 bg-white rounded-xl border dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-600 mr-3 dark:text-signal-amber" />
+          <span className="text-gray-600 dark:text-signal-body">AI Autopilot is running...</span>
         </div>
       )}
 
       {autopilotResult && !aiLoading && (
         <>
           {/* Summary */}
-          <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 dark:bg-signal-amber/10 dark:border-signal-amber/20">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-orange-600" />
-                <h3 className="font-semibold text-orange-800">Autopilot Summary</h3>
+                <Zap className="w-5 h-5 text-orange-600 dark:text-signal-amber" />
+                <h3 className="font-semibold text-orange-800 dark:text-signal-amber">Autopilot Summary</h3>
               </div>
-              <div className="text-2xl font-bold text-orange-700">Score: {autopilotResult.overallScore || 0}%</div>
+              <div className="text-2xl font-bold text-orange-700 dark:text-signal-amber dark:font-display">Score: {autopilotResult.overallScore || 0}%</div>
             </div>
-            <p className="text-sm text-orange-700">{autopilotResult.summary || 'Autopilot analysis complete.'}</p>
+            <p className="text-sm text-orange-700 dark:text-signal-body">{autopilotResult.summary || 'Autopilot analysis complete.'}</p>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Gaps Identified', value: autopilotResult.gapsIdentified?.length || 0, color: 'text-red-600' },
-              { label: 'Actions Proposed', value: autopilotResult.actionsProposed?.length || 0, color: 'text-yellow-600' },
-              { label: 'Actions Executed', value: autopilotResult.actionsExecuted?.length || 0, color: 'text-green-600' },
-              { label: 'Requiring Approval', value: autopilotResult.itemsRequiringApproval?.length || 0, color: 'text-purple-600' },
+              { label: 'Gaps Identified', value: autopilotResult.gapsIdentified?.length || 0, color: 'text-red-600 dark:text-signal-bad' },
+              { label: 'Actions Proposed', value: autopilotResult.actionsProposed?.length || 0, color: 'text-yellow-600 dark:text-signal-warn' },
+              { label: 'Actions Executed', value: autopilotResult.actionsExecuted?.length || 0, color: 'text-green-600 dark:text-signal-good' },
+              { label: 'Requiring Approval', value: autopilotResult.itemsRequiringApproval?.length || 0, color: 'text-purple-600 dark:text-signal-violet' },
             ].map(s => (
-              <div key={s.label} className="bg-white rounded-xl border p-4 text-center">
-                <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+              <div key={s.label} className="bg-white rounded-xl border p-4 text-center dark:bg-white/[0.03] dark:border-white/[0.06]">
+                <p className={`text-3xl font-bold dark:font-display ${s.color}`}>{s.value}</p>
+                <p className="text-xs text-gray-500 mt-1 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{s.label}</p>
               </div>
             ))}
           </div>
 
           {/* Gaps Identified */}
           {autopilotResult.gapsIdentified && autopilotResult.gapsIdentified.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-500" /> Gaps Identified
+            <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 dark:text-signal-ink">
+                <AlertCircle className="w-4 h-4 text-red-500 dark:text-signal-bad" /> Gaps Identified
               </h3>
               <div className="space-y-3">
                 {autopilotResult.gapsIdentified.map((gap, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${SEVERITY_COLORS[gap.severity] || 'bg-gray-100 text-gray-700'}`}>
+                  <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg dark:bg-white/[0.04]">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${SEVERITY_COLORS[gap.severity] || 'bg-gray-100 text-gray-700 dark:bg-white/[0.06] dark:text-signal-body'}`}>
                       {gap.severity}
                     </span>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{gap.gap}</p>
-                      <p className="text-xs text-gray-500 mt-1">Framework: {gap.framework}</p>
-                      <p className="text-sm text-gray-600 mt-1">{gap.recommendation}</p>
+                      <p className="font-medium text-gray-900 dark:text-signal-ink">{gap.gap}</p>
+                      <p className="text-xs text-gray-500 mt-1 dark:text-signal-muted">Framework: {gap.framework}</p>
+                      <p className="text-sm text-gray-600 mt-1 dark:text-signal-body">{gap.recommendation}</p>
                     </div>
                   </div>
                 ))}
@@ -1007,18 +1007,18 @@ export const Reports: React.FC = () => {
 
           {/* Actions Proposed */}
           {autopilotResult.actionsProposed && autopilotResult.actionsProposed.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Play className="w-4 h-4 text-yellow-500" /> Actions Proposed
+            <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 dark:text-signal-ink">
+                <Play className="w-4 h-4 text-yellow-500 dark:text-signal-warn" /> Actions Proposed
               </h3>
               <div className="space-y-2">
                 {autopilotResult.actionsProposed.map((action, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                  <div key={i} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg dark:bg-signal-warn/10">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded">{action.priority}</span>
-                      <span className="text-sm text-gray-900">{action.action}</span>
+                      <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded dark:bg-signal-warn/20 dark:text-signal-warn">{action.priority}</span>
+                      <span className="text-sm text-gray-900 dark:text-signal-ink">{action.action}</span>
                     </div>
-                    <span className="text-xs text-gray-500">{action.estimatedEffort}</span>
+                    <span className="text-xs text-gray-500 dark:text-signal-muted">{action.estimatedEffort}</span>
                   </div>
                 ))}
               </div>
@@ -1027,18 +1027,18 @@ export const Reports: React.FC = () => {
 
           {/* Actions Executed */}
           {autopilotResult.actionsExecuted && autopilotResult.actionsExecuted.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" /> Actions Executed
+            <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 dark:text-signal-ink">
+                <CheckCircle className="w-4 h-4 text-green-500 dark:text-signal-good" /> Actions Executed
               </h3>
               <div className="space-y-2">
                 {autopilotResult.actionsExecuted.map((action, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div key={i} className="flex items-center justify-between p-3 bg-green-50 rounded-lg dark:bg-signal-good/10">
                     <div className="flex items-center gap-3">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span className="text-sm text-gray-900">{action.action}</span>
+                      <CheckCircle className="w-4 h-4 text-green-600 dark:text-signal-good" />
+                      <span className="text-sm text-gray-900 dark:text-signal-ink">{action.action}</span>
                     </div>
-                    <span className="text-xs text-gray-500">{new Date(action.timestamp).toLocaleString()}</span>
+                    <span className="text-xs text-gray-500 dark:text-signal-muted">{new Date(action.timestamp).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -1047,16 +1047,16 @@ export const Reports: React.FC = () => {
 
           {/* Items Requiring Approval */}
           {autopilotResult.itemsRequiringApproval && autopilotResult.itemsRequiringApproval.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-purple-500" /> Requiring Approval
+            <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 dark:text-signal-ink">
+                <Eye className="w-4 h-4 text-purple-500 dark:text-signal-violet" /> Requiring Approval
               </h3>
               <div className="space-y-2">
                 {autopilotResult.itemsRequiringApproval.map((item, i) => (
-                  <div key={i} className="p-3 bg-purple-50 rounded-lg">
-                    <p className="font-medium text-gray-900">{item.item}</p>
-                    <p className="text-sm text-gray-600 mt-1">Reason: {item.reason}</p>
-                    <p className="text-sm text-purple-600 mt-1">Suggested: {item.suggestedAction}</p>
+                  <div key={i} className="p-3 bg-purple-50 rounded-lg dark:bg-signal-violet/10">
+                    <p className="font-medium text-gray-900 dark:text-signal-ink">{item.item}</p>
+                    <p className="text-sm text-gray-600 mt-1 dark:text-signal-body">Reason: {item.reason}</p>
+                    <p className="text-sm text-purple-600 mt-1 dark:text-signal-violet">Suggested: {item.suggestedAction}</p>
                   </div>
                 ))}
               </div>
@@ -1071,17 +1071,17 @@ export const Reports: React.FC = () => {
   const renderRiskReport = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
-        <AlertCircle className="w-5 h-5 text-red-600" />
-        <h2 className="text-xl font-bold text-gray-900">{t('reports.riskReport')}</h2>
+        <AlertCircle className="w-5 h-5 text-red-600 dark:text-signal-bad" />
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink">{t('reports.riskReport')}</h2>
       </div>
 
       {aiLoading && (
-        <div className="flex items-center justify-center py-16 bg-white rounded-xl border">
-          <Loader2 className="w-8 h-8 animate-spin text-red-600 mr-3" />
-          <span className="text-gray-600">AI is analyzing risks...</span>
+        <div className="flex items-center justify-center py-16 bg-white rounded-xl border dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <Loader2 className="w-8 h-8 animate-spin text-red-600 mr-3 dark:text-signal-bad" />
+          <span className="text-gray-600 dark:text-signal-body">AI is analyzing risks...</span>
         </div>
       )}
 
@@ -1090,32 +1090,32 @@ export const Reports: React.FC = () => {
           {/* Risk Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: 'Total Risks', value: riskReport.totalRisks || 0, color: 'text-gray-900' },
-              { label: 'Critical', value: riskReport.criticalRisks || 0, color: 'text-red-600' },
-              { label: 'High', value: riskReport.highRisks || 0, color: 'text-orange-600' },
-              { label: 'Medium', value: riskReport.mediumRisks || 0, color: 'text-yellow-600' },
-              { label: 'Low', value: riskReport.lowRisks || 0, color: 'text-blue-600' },
+              { label: 'Total Risks', value: riskReport.totalRisks || 0, color: 'text-gray-900 dark:text-signal-ink' },
+              { label: 'Critical', value: riskReport.criticalRisks || 0, color: 'text-red-600 dark:text-signal-bad' },
+              { label: 'High', value: riskReport.highRisks || 0, color: 'text-orange-600 dark:text-signal-amber' },
+              { label: 'Medium', value: riskReport.mediumRisks || 0, color: 'text-yellow-600 dark:text-signal-warn' },
+              { label: 'Low', value: riskReport.lowRisks || 0, color: 'text-blue-600 dark:text-signal-blue' },
             ].map(s => (
-              <div key={s.label} className="bg-white rounded-xl border p-4 text-center">
-                <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+              <div key={s.label} className="bg-white rounded-xl border p-4 text-center dark:bg-white/[0.03] dark:border-white/[0.06]">
+                <p className={`text-3xl font-bold dark:font-display ${s.color}`}>{s.value}</p>
+                <p className="text-xs text-gray-500 mt-1 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{s.label}</p>
               </div>
             ))}
           </div>
 
           {/* Summary */}
           {riskReport.summary && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-              <h3 className="font-semibold text-red-800 mb-2">AI Risk Analysis</h3>
-              <p className="text-sm text-red-700">{riskReport.summary}</p>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6 dark:bg-signal-bad/10 dark:border-signal-bad/20">
+              <h3 className="font-semibold text-red-800 mb-2 dark:text-signal-bad">AI Risk Analysis</h3>
+              <p className="text-sm text-red-700 dark:text-signal-body">{riskReport.summary}</p>
             </div>
           )}
 
           {/* Charts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {riskReport.risksByCategory && riskReport.risksByCategory.length > 0 && (
-              <div className="bg-white rounded-xl border p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Risks by Category</h3>
+              <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+                <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">Risks by Category</h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie data={riskReport.risksByCategory} dataKey="count" nameKey="category" cx="50%" cy="50%" outerRadius={80} label>
@@ -1129,8 +1129,8 @@ export const Reports: React.FC = () => {
             )}
 
             {riskReport.trends && riskReport.trends.length > 0 && (
-              <div className="bg-white rounded-xl border p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Risk Trends</h3>
+              <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+                <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">Risk Trends</h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={riskReport.trends}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1146,19 +1146,19 @@ export const Reports: React.FC = () => {
 
           {/* Top Risks */}
           {riskReport.topRisks && riskReport.topRisks.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Top Risks</h3>
+            <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">Top Risks</h3>
               <div className="space-y-2">
                 {riskReport.topRisks.map((risk, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg dark:bg-white/[0.04]">
                     <div className="flex items-center gap-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${SEVERITY_COLORS[risk.severity] || 'bg-gray-100'}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${SEVERITY_COLORS[risk.severity] || 'bg-gray-100 dark:bg-white/[0.06] dark:text-signal-body dark:border-white/[0.06]'}`}>
                         {risk.severity}
                       </span>
-                      <span className="font-medium text-gray-900">{risk.title}</span>
-                      {risk.framework && <span className="text-xs text-gray-500">({risk.framework})</span>}
+                      <span className="font-medium text-gray-900 dark:text-signal-ink">{risk.title}</span>
+                      {risk.framework && <span className="text-xs text-gray-500 dark:text-signal-muted">({risk.framework})</span>}
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${risk.status === 'Open' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${risk.status === 'Open' ? 'bg-red-100 text-red-700 dark:bg-signal-bad/10 dark:text-signal-bad' : 'bg-gray-100 text-gray-700 dark:bg-white/[0.06] dark:text-signal-body'}`}>
                       {risk.status}
                     </span>
                   </div>
@@ -1175,17 +1175,17 @@ export const Reports: React.FC = () => {
   const renderVendorReport = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+        <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-signal-body dark:hover:text-signal-ink">
           <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
-        <Building2 className="w-5 h-5 text-indigo-600" />
-        <h2 className="text-xl font-bold text-gray-900">Vendor Risk Report</h2>
+        <Building2 className="w-5 h-5 text-indigo-600 dark:text-signal-violet" />
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink">Vendor Risk Report</h2>
       </div>
 
       {aiLoading && (
-        <div className="flex items-center justify-center py-16 bg-white rounded-xl border">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mr-3" />
-          <span className="text-gray-600">AI is analyzing vendor risks...</span>
+        <div className="flex items-center justify-center py-16 bg-white rounded-xl border dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mr-3 dark:text-signal-violet" />
+          <span className="text-gray-600 dark:text-signal-body">AI is analyzing vendor risks...</span>
         </div>
       )}
 
@@ -1195,28 +1195,28 @@ export const Reports: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
               { label: 'Total Vendors', value: vendorReport.totalVendors || 0 },
-              { label: 'High Risk Vendors', value: vendorReport.highRiskVendors || 0, color: 'text-red-600' },
+              { label: 'High Risk Vendors', value: vendorReport.highRiskVendors || 0, color: 'text-red-600 dark:text-signal-bad' },
               { label: 'Average Score', value: `${vendorReport.averageScore || 0}%` },
             ].map(s => (
-              <div key={s.label} className="bg-white rounded-xl border p-4 text-center">
-                <p className={`text-3xl font-bold ${s.color || 'text-gray-900'}`}>{s.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+              <div key={s.label} className="bg-white rounded-xl border p-4 text-center dark:bg-white/[0.03] dark:border-white/[0.06]">
+                <p className={`text-3xl font-bold dark:font-display ${s.color || 'text-gray-900 dark:text-signal-ink'}`}>{s.value}</p>
+                <p className="text-xs text-gray-500 mt-1 dark:text-signal-muted dark:font-mono dark:text-[10px] dark:uppercase dark:tracking-[0.14em]">{s.label}</p>
               </div>
             ))}
           </div>
 
           {/* Summary */}
           {vendorReport.summary && (
-            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6">
-              <h3 className="font-semibold text-indigo-800 mb-2">AI Vendor Analysis</h3>
-              <p className="text-sm text-indigo-700">{vendorReport.summary}</p>
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 dark:bg-signal-violet/10 dark:border-signal-violet/20">
+              <h3 className="font-semibold text-indigo-800 mb-2 dark:text-signal-violet">AI Vendor Analysis</h3>
+              <p className="text-sm text-indigo-700 dark:text-signal-body">{vendorReport.summary}</p>
             </div>
           )}
 
           {/* By Risk Level */}
           {vendorReport.vendorsByRiskLevel && vendorReport.vendorsByRiskLevel.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Vendors by Risk Level</h3>
+            <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">Vendors by Risk Level</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={vendorReport.vendorsByRiskLevel}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1235,23 +1235,23 @@ export const Reports: React.FC = () => {
 
           {/* Top Risky Vendors */}
           {vendorReport.topRiskyVendors && vendorReport.topRiskyVendors.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">High Risk Vendors</h3>
+            <div className="bg-white rounded-xl border p-6 dark:bg-white/[0.03] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-gray-900 mb-4 dark:text-signal-ink">High Risk Vendors</h3>
               <div className="space-y-2">
                 {vendorReport.topRiskyVendors.map((vendor, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg dark:bg-white/[0.04]">
                     <div className="flex items-center gap-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        vendor.riskLevel === 'High' ? 'bg-red-100 text-red-700' :
-                        vendor.riskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-green-100 text-green-700'
+                        vendor.riskLevel === 'High' ? 'bg-red-100 text-red-700 dark:bg-signal-bad/10 dark:text-signal-bad' :
+                        vendor.riskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-signal-warn/10 dark:text-signal-warn' :
+                        'bg-green-100 text-green-700 dark:bg-signal-good/10 dark:text-signal-good'
                       }`}>
                         {vendor.riskLevel}
                       </span>
-                      <span className="font-medium text-gray-900">{vendor.name}</span>
-                      <span className="text-xs text-gray-500">Data Access: {vendor.dataAccess}</span>
+                      <span className="font-medium text-gray-900 dark:text-signal-ink">{vendor.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-signal-muted">Data Access: {vendor.dataAccess}</span>
                     </div>
-                    <span className="font-bold text-gray-700">{vendor.score}%</span>
+                    <span className="font-bold text-gray-700 dark:text-signal-body">{vendor.score}%</span>
                   </div>
                 ))}
               </div>
@@ -1266,12 +1266,12 @@ export const Reports: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
-          <AlertTriangle className="text-red-600 mr-3 flex-shrink-0 mt-0.5" size={20} />
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start dark:bg-signal-bad/10 dark:border-signal-bad/20">
+          <AlertTriangle className="text-red-600 mr-3 flex-shrink-0 mt-0.5 dark:text-signal-bad" size={20} />
           <div className="flex-1">
-            <p className="text-red-800 font-medium">{error}</p>
+            <p className="text-red-800 font-medium dark:text-signal-bad">{error}</p>
           </div>
-          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">
+          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800 dark:text-signal-bad dark:hover:text-signal-bad">
             <X size={18} />
           </button>
         </div>

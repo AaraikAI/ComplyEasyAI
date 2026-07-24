@@ -8,11 +8,11 @@ export interface OnboardingCelebrationProps {
   reducedMotion?: boolean;
 }
 
-// Generate confetti pieces with randomized properties
+// Generate confetti pieces with randomized properties (Signal greens/blues)
 const generateConfetti = (count: number) => {
   const colors = [
-    '#0d9488', '#06b6d4', '#ec4899', '#f59e0b', '#10b981',
-    '#3b82f6', '#ef4444', '#f97316', '#14b8a6', '#22d3ee',
+    '#38E8A6', '#3AA0FF', '#34C88A', '#22D3EE', '#5EEAD4',
+    '#60A5FA', '#38E8A6', '#3AA0FF', '#2DD4BF', '#93C5FD',
   ];
 
   return Array.from({ length: count }, (_, i) => ({
@@ -93,16 +93,16 @@ export const OnboardingCelebration: React.FC<OnboardingCelebrationProps> = ({
 
       {/* Achievement card */}
       <div
-        className={`relative bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center ${
+        className={`relative bg-signal-panel2 border border-white/[0.08] rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center ${
           reducedMotion ? '' : `transition-transform duration-500 ${isVisible ? 'scale-100' : 'scale-90'}`
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Animated checkmark */}
         <div className="mb-5 flex justify-center">
-          <div className="w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full bg-signal-green/10 border-2 border-signal-green/30 flex items-center justify-center">
             <svg
-              className={`w-10 h-10 text-emerald-400 ${
+              className={`w-10 h-10 text-signal-green ${
                 reducedMotion ? '' : checkmarkDone ? 'animate-none' : ''
               }`}
               viewBox="0 0 24 24"
@@ -125,14 +125,14 @@ export const OnboardingCelebration: React.FC<OnboardingCelebrationProps> = ({
         </div>
 
         {/* Achievement badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full mb-4">
-          <Trophy className="w-4 h-4 text-amber-400" />
-          <span className="text-xs font-semibold text-amber-400">Achievement Unlocked</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-signal-amber/10 border border-signal-amber/20 rounded-full mb-4">
+          <Trophy className="w-4 h-4 text-signal-amber" />
+          <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-signal-amber">Achievement Unlocked</span>
         </div>
 
         {/* Message */}
-        <h3 className="text-xl font-bold text-white mb-2">{message}</h3>
-        <p className="text-sm text-slate-400 mb-6">
+        <h3 className="font-display text-xl font-bold tracking-tight text-signal-ink mb-2">{message}</h3>
+        <p className="text-sm text-signal-sub mb-6">
           Keep up the great momentum on your compliance journey.
         </p>
 
@@ -145,7 +145,7 @@ export const OnboardingCelebration: React.FC<OnboardingCelebrationProps> = ({
                 onNextSteps();
                 handleDismiss();
               }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-signal-canvas bg-signal-green hover:opacity-90 rounded-xl transition-all"
             >
               Next Steps
               <ArrowRight className="w-4 h-4" />
@@ -153,7 +153,7 @@ export const OnboardingCelebration: React.FC<OnboardingCelebrationProps> = ({
           )}
           <button
             onClick={handleDismiss}
-            className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-sm font-medium text-signal-sub hover:text-signal-ink transition-colors"
           >
             Continue
           </button>

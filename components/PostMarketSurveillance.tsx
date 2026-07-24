@@ -286,65 +286,65 @@ const Badge: React.FC<{ text: string; className: string }> = ({ text, className 
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const config: Record<string, string> = {
-    active: 'bg-green-100 text-green-700 border-green-200',
-    draft: 'bg-gray-100 text-gray-700 border-gray-200',
-    under_review: 'bg-blue-100 text-blue-700 border-blue-200',
-    expired: 'bg-red-100 text-red-700 border-red-200',
-    open: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    investigating: 'bg-blue-100 text-blue-700 border-blue-200',
-    resolved: 'bg-green-100 text-green-700 border-green-200',
-    closed: 'bg-gray-100 text-gray-600 border-gray-200',
-    escalated: 'bg-red-100 text-red-700 border-red-200',
-    in_progress: 'bg-blue-100 text-blue-700 border-blue-200',
-    verification: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    overdue: 'bg-red-100 text-red-700 border-red-200',
-    pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    completed: 'bg-green-100 text-green-700 border-green-200',
-    initiated: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    notified: 'bg-blue-100 text-blue-700 border-blue-200',
-    review: 'bg-blue-100 text-blue-700 border-blue-200',
-    approved: 'bg-green-100 text-green-700 border-green-200',
-    submitted: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    published: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    under_investigation: 'bg-blue-100 text-blue-700 border-blue-200',
-    corrective_action: 'bg-purple-100 text-purple-700 border-purple-200',
+    active: 'bg-green-100 text-green-700 border-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
+    draft: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/[0.06] dark:text-signal-muted dark:border-white/[0.08]',
+    under_review: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/20',
+    expired: 'bg-red-100 text-red-700 border-red-200 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/20',
+    open: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/20',
+    investigating: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/20',
+    resolved: 'bg-green-100 text-green-700 border-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
+    closed: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-white/[0.06] dark:text-signal-muted dark:border-white/[0.08]',
+    escalated: 'bg-red-100 text-red-700 border-red-200 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/20',
+    in_progress: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/20',
+    verification: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-signal-violet/10 dark:text-signal-violet dark:border-signal-violet/20',
+    overdue: 'bg-red-100 text-red-700 border-red-200 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/20',
+    pending: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/20',
+    completed: 'bg-green-100 text-green-700 border-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
+    initiated: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/20',
+    notified: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/20',
+    review: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/20',
+    approved: 'bg-green-100 text-green-700 border-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
+    submitted: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
+    published: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
+    under_investigation: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-signal-blue/10 dark:text-signal-blue dark:border-signal-blue/20',
+    corrective_action: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-signal-violet/10 dark:text-signal-violet dark:border-signal-violet/20',
   };
   const label = status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  return <Badge text={label} className={config[status] || 'bg-gray-100 text-gray-700 border-gray-200'} />;
+  return <Badge text={label} className={config[status] || 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/[0.06] dark:text-signal-muted dark:border-white/[0.08]'} />;
 };
 
 const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
   const config: Record<string, string> = {
-    minor: 'bg-green-100 text-green-700 border-green-200',
-    moderate: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    serious: 'bg-orange-100 text-orange-700 border-orange-200',
-    major: 'bg-orange-100 text-orange-700 border-orange-200',
-    critical: 'bg-red-100 text-red-700 border-red-200',
-    low: 'bg-green-100 text-green-700 border-green-200',
-    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    high: 'bg-orange-100 text-orange-700 border-orange-200',
+    minor: 'bg-green-100 text-green-700 border-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
+    moderate: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/20',
+    serious: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-signal-amber/10 dark:text-signal-amber dark:border-signal-amber/20',
+    major: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-signal-amber/10 dark:text-signal-amber dark:border-signal-amber/20',
+    critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/20',
+    low: 'bg-green-100 text-green-700 border-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
+    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/20',
+    high: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-signal-amber/10 dark:text-signal-amber dark:border-signal-amber/20',
   };
-  return <Badge text={severity.charAt(0).toUpperCase() + severity.slice(1)} className={config[severity] || 'bg-gray-100 text-gray-700 border-gray-200'} />;
+  return <Badge text={severity.charAt(0).toUpperCase() + severity.slice(1)} className={config[severity] || 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/[0.06] dark:text-signal-muted dark:border-white/[0.08]'} />;
 };
 
 const ProgressBar: React.FC<{ value: number; max?: number; color?: string }> = ({ value, max = 100, color = 'bg-blue-500' }) => {
   const pct = max > 0 ? (value / max) * 100 : 0;
   return (
-    <div className="w-full bg-gray-200 rounded-full h-2">
+    <div className="w-full bg-gray-200 dark:bg-white/[0.08] rounded-full h-2">
       <div className={`${color} h-2 rounded-full transition-all duration-500`} style={{ width: `${Math.min(100, pct)}%` }} />
     </div>
   );
 };
 
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; subLabel?: string; color: string; alert?: boolean; onClick?: () => void }> = ({ icon, label, value, subLabel, color, alert, onClick }) => (
-  <div onClick={onClick} className={`bg-white rounded-xl border ${alert ? 'border-red-300 ring-1 ring-red-200' : 'border-gray-200'} p-5 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}>
+  <div onClick={onClick} className={`bg-white dark:bg-white/[0.03] rounded-xl border ${alert ? 'border-red-300 ring-1 ring-red-200 dark:border-signal-bad/40 dark:ring-signal-bad/20' : 'border-gray-200 dark:border-white/[0.06]'} p-5 hover:shadow-md dark:hover:border-white/[0.10] transition-shadow ${onClick ? 'cursor-pointer' : ''}`}>
     <div className="flex items-center justify-between mb-3">
-      <div className={`p-2.5 rounded-lg ${color}`}>{icon}</div>
-      {alert && <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />}
+      <div className={`p-2.5 rounded-lg ${color} dark:bg-white/[0.06]`}>{icon}</div>
+      {alert && <span className="w-2.5 h-2.5 rounded-full bg-red-500 dark:bg-signal-bad animate-pulse" />}
     </div>
-    <p className="text-2xl font-bold text-gray-900">{value}</p>
-    <p className="text-sm text-gray-600 mt-1">{label}</p>
-    {subLabel && <p className="text-xs text-gray-400 mt-0.5">{subLabel}</p>}
+    <p className="text-2xl font-bold font-display text-gray-900 dark:text-signal-ink">{value}</p>
+    <p className="text-sm text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[11px] mt-1">{label}</p>
+    {subLabel && <p className="text-xs text-gray-400 dark:text-signal-sub mt-0.5">{subLabel}</p>}
   </div>
 );
 
@@ -508,15 +508,15 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
     <div className="space-y-6">
       {/* Alert Banner */}
       {overviewStats.pendingNotifications > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between dark:bg-signal-bad/10 dark:border-signal-bad/20">
           <div className="flex items-center gap-3">
-            <Bell size={20} className="text-red-600" />
+            <Bell size={20} className="text-red-600 dark:text-signal-bad" />
             <div>
-              <p className="text-sm font-semibold text-red-800">{overviewStats.pendingNotifications} Regulatory Notification{overviewStats.pendingNotifications > 1 ? 's' : ''} Pending</p>
-              <p className="text-xs text-red-600 mt-0.5">Safety incidents require notification to the competent authority within the required timeframe.</p>
+              <p className="text-sm font-semibold text-red-800 dark:text-signal-bad">{overviewStats.pendingNotifications} Regulatory Notification{overviewStats.pendingNotifications > 1 ? 's' : ''} Pending</p>
+              <p className="text-xs text-red-600 dark:text-signal-bad/80 mt-0.5">Safety incidents require notification to the competent authority within the required timeframe.</p>
             </div>
           </div>
-          <button onClick={() => setActiveTab('incidents')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+          <button onClick={() => setActiveTab('incidents')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors dark:bg-signal-bad dark:text-signal-canvas dark:hover:bg-signal-bad/90">
             Review Now
           </button>
         </div>
@@ -540,17 +540,17 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       {/* Incident Trend & Severity Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Incidents */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Incidents</h3>
+        <div className="bg-white dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.06] p-6">
+          <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-signal-ink mb-4">Recent Incidents</h3>
           <div className="space-y-3">
             {incidents.slice(0, 5).map(inc => (
-              <div key={inc.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => { setSelectedIncident(inc); setActiveTab('incidents'); }}>
-                <div className={`p-1.5 rounded-full flex-shrink-0 mt-0.5 ${inc.severity === 'critical' ? 'bg-red-100' : inc.severity === 'serious' ? 'bg-orange-100' : inc.severity === 'moderate' ? 'bg-yellow-100' : 'bg-green-100'}`}>
+              <div key={inc.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 dark:border-white/[0.06] hover:bg-gray-50 dark:bg-transparent dark:hover:bg-white/[0.04] cursor-pointer" onClick={() => { setSelectedIncident(inc); setActiveTab('incidents'); }}>
+                <div className={`p-1.5 rounded-full flex-shrink-0 mt-0.5 ${inc.severity === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10' : inc.severity === 'serious' ? 'bg-orange-100 dark:bg-signal-amber/10' : inc.severity === 'moderate' ? 'bg-yellow-100 dark:bg-signal-warn/10' : 'bg-green-100 dark:bg-signal-good/10'}`}>
                   <AlertTriangle size={14} className={inc.severity === 'critical' ? 'text-red-600' : inc.severity === 'serious' ? 'text-orange-600' : inc.severity === 'moderate' ? 'text-yellow-600' : 'text-green-600'} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{inc.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{inc.productName} | {inc.reportedDate}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-signal-ink truncate">{inc.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted mt-0.5">{inc.productName} | {inc.reportedDate}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <SeverityBadge severity={inc.severity} />
@@ -562,17 +562,17 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
         </div>
 
         {/* Non-Conformity Tracker */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Non-Conformity Tracker</h3>
+        <div className="bg-white dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.06] p-6">
+          <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-signal-ink mb-4">Non-Conformity Tracker</h3>
           <div className="space-y-3">
             {nonConformities.map(nc => (
-              <div key={nc.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                <div className={`p-1.5 rounded-full flex-shrink-0 mt-0.5 ${nc.severity === 'critical' ? 'bg-red-100' : nc.severity === 'major' ? 'bg-orange-100' : 'bg-yellow-100'}`}>
+              <div key={nc.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 dark:border-white/[0.06] hover:bg-gray-50 dark:bg-transparent dark:hover:bg-white/[0.04]">
+                <div className={`p-1.5 rounded-full flex-shrink-0 mt-0.5 ${nc.severity === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10' : nc.severity === 'major' ? 'bg-orange-100 dark:bg-signal-amber/10' : 'bg-yellow-100 dark:bg-signal-warn/10'}`}>
                   <Flag size={14} className={nc.severity === 'critical' ? 'text-red-600' : nc.severity === 'major' ? 'text-orange-600' : 'text-yellow-600'} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{nc.description}</p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                  <p className="text-sm font-medium text-gray-900 dark:text-signal-ink">{nc.description}</p>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-signal-muted">
                     <span>{nc.productName}</span>
                     <span>|</span>
                     <span className="capitalize">{nc.ncType.replace(/_/g, ' ')}</span>
@@ -591,42 +591,42 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       </div>
 
       {/* Surveillance Plan Status */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Surveillance Plan Overview</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-signal-ink mb-4">Surveillance Plan Overview</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Product</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Risk</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Frequency</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Next Review</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Progress</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Status</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Links</th>
+              <tr className="border-b border-gray-200 dark:border-white/[0.06]">
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Product</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Risk</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Frequency</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Next Review</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Progress</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Status</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Links</th>
               </tr>
             </thead>
             <tbody>
               {plans.map(plan => (
-                <tr key={plan.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-2.5 px-3 font-medium text-gray-900">{plan.productName}</td>
+                <tr key={plan.id} className="border-b border-gray-50 dark:border-white/[0.06] hover:bg-gray-50 dark:bg-transparent dark:hover:bg-white/[0.04]">
+                  <td className="py-2.5 px-3 font-medium text-gray-900 dark:text-signal-ink">{plan.productName}</td>
                   <td className="py-2.5 px-3"><SeverityBadge severity={plan.riskCategory} /></td>
-                  <td className="py-2.5 px-3 text-gray-600 capitalize">{plan.frequency.replace(/_/g, '-')}</td>
-                  <td className="py-2.5 px-3 text-gray-600">{plan.nextReviewDate}</td>
+                  <td className="py-2.5 px-3 text-gray-600 dark:text-signal-body capitalize">{plan.frequency.replace(/_/g, '-')}</td>
+                  <td className="py-2.5 px-3 text-gray-600 dark:text-signal-body">{plan.nextReviewDate}</td>
                   <td className="py-2.5 px-3 w-40">
                     <div className="flex items-center gap-2">
                       <ProgressBar value={plan.activitiesCompleted} max={plan.activitiesPlanned} color={plan.activitiesCompleted === plan.activitiesPlanned ? 'bg-green-500' : 'bg-blue-500'} />
-                      <span className="text-xs text-gray-500 w-12 text-right">{plan.activitiesCompleted}/{plan.activitiesPlanned}</span>
+                      <span className="text-xs text-gray-500 dark:text-signal-muted w-12 text-right">{plan.activitiesCompleted}/{plan.activitiesPlanned}</span>
                     </div>
                   </td>
                   <td className="py-2.5 px-3"><StatusBadge status={plan.status} /></td>
                   <td className="py-2.5 px-3">
                     <div className="flex items-center gap-1">
                       {plan.relatedCEMarking && (
-                        <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-xs rounded cursor-pointer hover:bg-blue-100" title={`CE Marking: ${plan.relatedCEMarking}`}>CE</span>
+                        <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 dark:bg-signal-blue/10 dark:text-signal-blue text-xs rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-signal-blue/20" title={`CE Marking: ${plan.relatedCEMarking}`}>CE</span>
                       )}
                       {plan.relatedCRA && (
-                        <span className="px-1.5 py-0.5 bg-purple-50 text-purple-600 text-xs rounded cursor-pointer hover:bg-purple-100" title={`CRA: ${plan.relatedCRA}`}>CRA</span>
+                        <span className="px-1.5 py-0.5 bg-purple-50 text-purple-600 dark:bg-signal-violet/10 dark:text-signal-violet text-xs rounded cursor-pointer hover:bg-purple-100 dark:hover:bg-signal-violet/20" title={`CRA: ${plan.relatedCRA}`}>CRA</span>
                       )}
                     </div>
                   </td>
@@ -657,59 +657,59 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
         const progressPct = plan.activitiesPlanned > 0 ? Math.round((plan.activitiesCompleted / plan.activitiesPlanned) * 100) : 0;
         const daysUntilReview = Math.ceil((new Date(plan.nextReviewDate).getTime() - Date.now()) / 86400000);
         return (
-          <div key={plan.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div key={plan.id} className="bg-white dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.06] p-6 hover:shadow-md dark:hover:border-white/[0.10] transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="text-lg font-semibold text-gray-900">{plan.productName}</h4>
+                  <h4 className="text-lg font-semibold font-display text-gray-900 dark:text-signal-ink">{plan.productName}</h4>
                   <StatusBadge status={plan.status} />
                   <SeverityBadge severity={plan.riskCategory} />
                 </div>
-                <p className="text-sm text-gray-500 mt-1">Owner: {plan.owner} | Frequency: <span className="capitalize">{plan.frequency.replace(/_/g, '-')}</span></p>
+                <p className="text-sm text-gray-500 dark:text-signal-muted mt-1">Owner: {plan.owner} | Frequency: <span className="capitalize">{plan.frequency.replace(/_/g, '-')}</span></p>
               </div>
               <div className="text-right">
-                <div className={`text-sm font-medium ${daysUntilReview <= 30 ? 'text-orange-600' : 'text-gray-600'}`}>
+                <div className={`text-sm font-medium ${daysUntilReview <= 30 ? 'text-orange-600 dark:text-signal-amber' : 'text-gray-600 dark:text-signal-body'}`}>
                   <Calendar size={14} className="inline mr-1" />
                   Next review: {plan.nextReviewDate}
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">{daysUntilReview > 0 ? `${daysUntilReview} days remaining` : 'Review overdue'}</p>
+                <p className="text-xs text-gray-400 dark:text-signal-sub mt-0.5">{daysUntilReview > 0 ? `${daysUntilReview} days remaining` : 'Review overdue'}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div>
-                <p className="text-xs text-gray-500">Data Sources</p>
-                <p className="text-sm font-semibold text-gray-900">{plan.dataSourceCount}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Data Sources</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-signal-ink">{plan.dataSourceCount}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Activities Progress</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Activities Progress</p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1"><ProgressBar value={progressPct} color={progressPct === 100 ? 'bg-green-500' : 'bg-blue-500'} /></div>
-                  <span className="text-xs font-medium text-gray-600">{progressPct}%</span>
+                  <span className="text-xs font-medium text-gray-600 dark:text-signal-body">{progressPct}%</span>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Last Review</p>
-                <p className="text-sm text-gray-700">{plan.lastReviewDate}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Last Review</p>
+                <p className="text-sm text-gray-700 dark:text-signal-body">{plan.lastReviewDate}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Integration</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Integration</p>
                 <div className="flex items-center gap-1.5">
-                  {plan.relatedCEMarking && <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full">CE: {plan.relatedCEMarking}</span>}
-                  {plan.relatedCRA && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 text-xs rounded-full">CRA: {plan.relatedCRA}</span>}
-                  {!plan.relatedCEMarking && !plan.relatedCRA && <span className="text-xs text-gray-400">None</span>}
+                  {plan.relatedCEMarking && <span className="px-2 py-0.5 bg-blue-50 text-blue-600 dark:bg-signal-blue/10 dark:text-signal-blue text-xs rounded-full">CE: {plan.relatedCEMarking}</span>}
+                  {plan.relatedCRA && <span className="px-2 py-0.5 bg-purple-50 text-purple-600 dark:bg-signal-violet/10 dark:text-signal-violet text-xs rounded-full">CRA: {plan.relatedCRA}</span>}
+                  {!plan.relatedCEMarking && !plan.relatedCRA && <span className="text-xs text-gray-400 dark:text-signal-sub">None</span>}
                 </div>
               </div>
             </div>
 
             {/* Surveillance Data Sources */}
-            <div className="border-t border-gray-100 pt-3">
-              <p className="text-xs font-medium text-gray-500 mb-2">SURVEILLANCE DATA SOURCES</p>
+            <div className="border-t border-gray-100 dark:border-white/[0.06] pt-3">
+              <p className="text-xs font-medium text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px] mb-2">SURVEILLANCE DATA SOURCES</p>
               <div className="flex flex-wrap gap-2">
                 {['Customer Complaints', 'Field Failure Data', 'Distributor Feedback', 'Regulatory Alerts', 'Standards Updates'].slice(0, plan.dataSourceCount).map(source => (
-                  <span key={source} className="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-lg border border-gray-200">{source}</span>
+                  <span key={source} className="px-2 py-1 bg-gray-50 text-gray-600 dark:bg-white/[0.04] dark:text-signal-body text-xs rounded-lg border border-gray-200 dark:border-white/[0.08]">{source}</span>
                 ))}
-                {plan.dataSourceCount > 5 && <span className="px-2 py-1 text-gray-400 text-xs">+{plan.dataSourceCount - 5} more</span>}
+                {plan.dataSourceCount > 5 && <span className="px-2 py-1 text-gray-400 dark:text-signal-sub text-xs">+{plan.dataSourceCount - 5} more</span>}
               </div>
             </div>
           </div>
@@ -717,17 +717,17 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       })}
 
       {/* Risk-Based Frequency Guide */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk-Based Surveillance Frequency</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-signal-ink mb-4">Risk-Based Surveillance Frequency</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Risk Category</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Recommended Frequency</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Min. Data Sources</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Regulatory Reporting</th>
-                <th className="text-left py-3 px-3 font-medium text-gray-600">Example Products</th>
+              <tr className="border-b border-gray-200 dark:border-white/[0.06]">
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Risk Category</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Recommended Frequency</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Min. Data Sources</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Regulatory Reporting</th>
+                <th className="text-left py-3 px-3 font-medium text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:tracking-[0.14em] dark:text-[10px]">Example Products</th>
               </tr>
             </thead>
             <tbody>
@@ -737,12 +737,12 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
                 { risk: 'medium', freq: 'Semi-annual', sources: '4-6', reporting: 'Annual', example: 'PPE (Cat II), Radio equipment' },
                 { risk: 'low', freq: 'Annual', sources: '3-5', reporting: 'Annual (simplified)', example: 'Consumer electronics, Toys' },
               ].map(row => (
-                <tr key={row.risk} className="border-b border-gray-50 hover:bg-gray-50">
+                <tr key={row.risk} className="border-b border-gray-50 dark:border-white/[0.06] hover:bg-gray-50 dark:bg-transparent dark:hover:bg-white/[0.04]">
                   <td className="py-2.5 px-3"><SeverityBadge severity={row.risk} /></td>
-                  <td className="py-2.5 px-3 text-gray-700">{row.freq}</td>
-                  <td className="py-2.5 px-3 text-gray-700">{row.sources}</td>
-                  <td className="py-2.5 px-3 text-gray-700">{row.reporting}</td>
-                  <td className="py-2.5 px-3 text-gray-500">{row.example}</td>
+                  <td className="py-2.5 px-3 text-gray-700 dark:text-signal-body">{row.freq}</td>
+                  <td className="py-2.5 px-3 text-gray-700 dark:text-signal-body">{row.sources}</td>
+                  <td className="py-2.5 px-3 text-gray-700 dark:text-signal-body">{row.reporting}</td>
+                  <td className="py-2.5 px-3 text-gray-500 dark:text-signal-muted">{row.example}</td>
                 </tr>
               ))}
             </tbody>
@@ -761,17 +761,17 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-3 items-center flex-wrap">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder="Search incidents..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-signal-sub" />
+            <input type="text" placeholder="Search incidents..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 pr-4 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40 focus:border-blue-500 w-64" />
           </div>
-          <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+          <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)} className="px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40">
             <option value="all">All Severities</option>
             <option value="minor">Minor</option>
             <option value="moderate">Moderate</option>
             <option value="serious">Serious</option>
             <option value="critical">Critical</option>
           </select>
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40">
             <option value="all">All Statuses</option>
             <option value="open">Open</option>
             <option value="investigating">Investigating</option>
@@ -780,7 +780,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
             <option value="escalated">Escalated</option>
           </select>
         </div>
-        <button onClick={() => setShowIncidentModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
+        <button onClick={() => setShowIncidentModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 text-sm font-medium transition-colors">
           <Plus size={16} /> Report Incident
         </button>
       </div>
@@ -788,14 +788,14 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       {/* Incident Cards */}
       <div className="space-y-3">
         {filteredIncidents.map(inc => (
-          <div key={inc.id} className={`bg-white rounded-xl border p-5 hover:shadow-md transition-shadow ${inc.severity === 'critical' ? 'border-red-200' : 'border-gray-200'}`}>
+          <div key={inc.id} className={`bg-white dark:bg-white/[0.03] rounded-xl border p-5 hover:shadow-md transition-shadow ${inc.severity === 'critical' ? 'border-red-200 dark:border-signal-bad/30' : 'border-gray-200 dark:border-white/[0.06]'}`}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="font-semibold text-gray-900">{inc.title}</h4>
-                  <span className="text-xs text-gray-400 font-mono">{inc.id.toUpperCase()}</span>
+                  <h4 className="font-semibold text-gray-900 dark:text-signal-ink">{inc.title}</h4>
+                  <span className="text-xs text-gray-400 dark:text-signal-sub font-mono">{inc.id.toUpperCase()}</span>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{inc.description}</p>
+                <p className="text-sm text-gray-600 dark:text-signal-body mt-1">{inc.description}</p>
               </div>
               <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                 <SeverityBadge severity={inc.severity} />
@@ -804,32 +804,32 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
               <div>
-                <p className="text-xs text-gray-500">Product</p>
-                <p className="text-gray-700 font-medium">{inc.productName}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Product</p>
+                <p className="text-gray-700 dark:text-signal-body font-medium">{inc.productName}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Type</p>
-                <p className="text-gray-700 capitalize">{inc.type.replace(/_/g, ' ')}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Type</p>
+                <p className="text-gray-700 dark:text-signal-body capitalize">{inc.type.replace(/_/g, ' ')}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Reported</p>
-                <p className="text-gray-700">{inc.reportedDate} by {inc.reportedBy}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Reported</p>
+                <p className="text-gray-700 dark:text-signal-body">{inc.reportedDate} by {inc.reportedBy}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Affected Units</p>
-                <p className="text-gray-700">{inc.affectedUnits || '-'}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Affected Units</p>
+                <p className="text-gray-700 dark:text-signal-body">{inc.affectedUnits || '-'}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Regulatory Notification</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Regulatory Notification</p>
                 <div className="flex items-center gap-1.5">
                   {inc.regulatoryNotificationRequired ? (
                     inc.regulatoryNotificationSent ? (
-                      <><CheckCircle size={14} className="text-green-500" /><span className="text-green-700 text-xs">Sent</span></>
+                      <><CheckCircle size={14} className="text-green-500" /><span className="text-green-700 dark:text-signal-good text-xs">Sent</span></>
                     ) : (
-                      <><AlertCircle size={14} className="text-red-500" /><span className="text-red-700 text-xs font-medium">Required - Pending</span></>
+                      <><AlertCircle size={14} className="text-red-500" /><span className="text-red-700 dark:text-signal-bad text-xs font-medium">Required - Pending</span></>
                     )
                   ) : (
-                    <span className="text-gray-400 text-xs">Not required</span>
+                    <span className="text-gray-400 dark:text-signal-sub text-xs">Not required</span>
                   )}
                 </div>
               </div>
@@ -837,7 +837,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
             {inc.capaId && (
               <div className="mt-3 flex items-center gap-2">
                 <Link size={14} className="text-blue-500" />
-                <button onClick={() => { setExpandedCapa(inc.capaId!); setActiveTab('capa'); }} className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                <button onClick={() => { setExpandedCapa(inc.capaId!); setActiveTab('capa'); }} className="text-xs text-blue-600 dark:text-signal-blue hover:text-blue-700 dark:hover:text-signal-blue/80 font-medium">
                   Linked CAPA: {inc.capaId.toUpperCase()}
                 </button>
               </div>
@@ -848,8 +848,8 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
 
       {filteredIncidents.length === 0 && (
         <div className="text-center py-12">
-          <AlertTriangle size={48} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">No incidents match your criteria</p>
+          <AlertTriangle size={48} className="mx-auto text-gray-300 dark:text-signal-sub mb-3" />
+          <p className="text-gray-500 dark:text-signal-muted">No incidents match your criteria</p>
         </div>
       )}
     </div>
@@ -875,64 +875,64 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
         const isExpanded = expandedCapa === capa.id;
 
         return (
-          <div key={capa.id} className={`bg-white rounded-xl border p-5 transition-shadow ${capa.priority === 'critical' ? 'border-red-200' : 'border-gray-200'} ${isExpanded ? 'shadow-md' : 'hover:shadow-md'}`}>
+          <div key={capa.id} className={`bg-white dark:bg-white/[0.03] rounded-xl border p-5 transition-shadow ${capa.priority === 'critical' ? 'border-red-200 dark:border-signal-bad/30' : 'border-gray-200 dark:border-white/[0.06]'} ${isExpanded ? 'shadow-md' : 'hover:shadow-md'}`}>
             <div className="flex items-start justify-between mb-3 cursor-pointer" onClick={() => setExpandedCapa(isExpanded ? null : capa.id)}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${capa.type === 'corrective' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${capa.type === 'corrective' ? 'bg-orange-100 text-orange-700 dark:bg-signal-amber/10 dark:text-signal-amber' : 'bg-blue-100 text-blue-700 dark:bg-signal-blue/10 dark:text-signal-blue'}`}>
                     {capa.type === 'corrective' ? 'CA' : 'PA'}
                   </span>
-                  <h4 className="font-semibold text-gray-900">{capa.title}</h4>
-                  <span className="text-xs text-gray-400 font-mono">{capa.id.toUpperCase()}</span>
+                  <h4 className="font-semibold text-gray-900 dark:text-signal-ink">{capa.title}</h4>
+                  <span className="text-xs text-gray-400 dark:text-signal-sub font-mono">{capa.id.toUpperCase()}</span>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{capa.description}</p>
+                <p className="text-sm text-gray-600 dark:text-signal-body mt-1">{capa.description}</p>
               </div>
               <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                 <SeverityBadge severity={capa.priority} />
                 <StatusBadge status={capa.status} />
-                {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+                {isExpanded ? <ChevronDown size={16} className="text-gray-400 dark:text-signal-sub" /> : <ChevronRight size={16} className="text-gray-400 dark:text-signal-sub" />}
               </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
-              <div><p className="text-xs text-gray-500">Product</p><p className="text-gray-700">{capa.productName}</p></div>
-              <div><p className="text-xs text-gray-500">Owner</p><p className="text-gray-700">{capa.owner}</p></div>
-              <div><p className="text-xs text-gray-500">Target Date</p><p className={`${new Date(capa.targetDate) < new Date() && capa.status !== 'closed' ? 'text-red-600 font-medium' : 'text-gray-700'}`}>{capa.targetDate}</p></div>
+              <div><p className="text-xs text-gray-500 dark:text-signal-muted">Product</p><p className="text-gray-700 dark:text-signal-body">{capa.productName}</p></div>
+              <div><p className="text-xs text-gray-500 dark:text-signal-muted">Owner</p><p className="text-gray-700 dark:text-signal-body">{capa.owner}</p></div>
+              <div><p className="text-xs text-gray-500 dark:text-signal-muted">Target Date</p><p className={`${new Date(capa.targetDate) < new Date() && capa.status !== 'closed' ? 'text-red-600 font-medium dark:text-signal-bad' : 'text-gray-700 dark:text-signal-body'}`}>{capa.targetDate}</p></div>
               <div>
-                <p className="text-xs text-gray-500">Actions Progress</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Actions Progress</p>
                 <div className="flex items-center gap-2">
                   <ProgressBar value={actionProgress} color={actionProgress === 100 ? 'bg-green-500' : 'bg-blue-500'} />
-                  <span className="text-xs text-gray-600">{completedActions}/{capa.actions.length}</span>
+                  <span className="text-xs text-gray-600 dark:text-signal-body">{completedActions}/{capa.actions.length}</span>
                 </div>
               </div>
             </div>
 
             {capa.rootCause && (
-              <div className="mb-3 p-2.5 bg-yellow-50 rounded-lg border border-yellow-100">
-                <p className="text-xs font-medium text-yellow-800">Root Cause:</p>
-                <p className="text-xs text-yellow-700 mt-0.5">{capa.rootCause}</p>
+              <div className="mb-3 p-2.5 bg-yellow-50 dark:bg-signal-warn/10 rounded-lg border border-yellow-100 dark:border-signal-warn/20">
+                <p className="text-xs font-medium text-yellow-800 dark:text-signal-warn">Root Cause:</p>
+                <p className="text-xs text-yellow-700 dark:text-signal-warn mt-0.5">{capa.rootCause}</p>
               </div>
             )}
 
             {isExpanded && (
-              <div className="border-t border-gray-100 pt-4 mt-3 space-y-3">
-                <p className="text-sm font-medium text-gray-700">Action Items</p>
+              <div className="border-t border-gray-100 dark:border-white/[0.06] pt-4 mt-3 space-y-3">
+                <p className="text-sm font-medium text-gray-700 dark:text-signal-body">Action Items</p>
                 {capa.actions.map(action => (
-                  <div key={action.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                  <div key={action.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-white/[0.06] hover:bg-gray-50 dark:bg-transparent dark:hover:bg-white/[0.04]">
                     <div className="flex items-start gap-3">
                       {action.status === 'completed' && <CheckCircle size={16} className="text-green-500 mt-0.5" />}
                       {action.status === 'in_progress' && <Clock size={16} className="text-blue-500 mt-0.5" />}
-                      {action.status === 'pending' && <Clock size={16} className="text-gray-400 mt-0.5" />}
+                      {action.status === 'pending' && <Clock size={16} className="text-gray-400 dark:text-signal-sub mt-0.5" />}
                       {action.status === 'overdue' && <AlertCircle size={16} className="text-red-500 mt-0.5" />}
                       <div>
-                        <p className="text-sm text-gray-800">{action.description}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Assignee: {action.assignee} | Due: {action.dueDate}</p>
+                        <p className="text-sm text-gray-800 dark:text-signal-body">{action.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-signal-muted mt-0.5">Assignee: {action.assignee} | Due: {action.dueDate}</p>
                       </div>
                     </div>
                     <StatusBadge status={action.status} />
                   </div>
                 ))}
-                <div className="flex items-center gap-2 text-xs text-gray-500 pt-2">
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-signal-muted pt-2">
                   <span>Related incidents: {capa.relatedIncidents.map(id => id.toUpperCase()).join(', ')}</span>
                   <span>|</span>
                   <span>Effectiveness verified: {capa.effectivenessVerified ? 'Yes' : 'Pending'}</span>
@@ -962,83 +962,83 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       {recalls.length > 0 ? recalls.map(recall => {
         const recoveryRate = recall.affectedUnits > 0 ? Math.round((recall.unitsRecovered / recall.affectedUnits) * 100) : 0;
         return (
-          <div key={recall.id} className={`bg-white rounded-xl border p-6 ${recall.riskLevel === 'critical' || recall.riskLevel === 'high' ? 'border-red-200' : 'border-gray-200'}`}>
+          <div key={recall.id} className={`bg-white dark:bg-white/[0.03] rounded-xl border p-6 ${recall.riskLevel === 'critical' || recall.riskLevel === 'high' ? 'border-red-200 dark:border-signal-bad/30' : 'border-gray-200 dark:border-white/[0.06]'}`}>
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-lg font-semibold text-gray-900">{recall.productName}</h4>
-                  <span className="text-sm text-gray-400 font-mono">{recall.recallNumber}</span>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">{recall.productName}</h4>
+                  <span className="text-sm text-gray-400 dark:text-signal-sub font-mono">{recall.recallNumber}</span>
                   <SeverityBadge severity={recall.riskLevel} />
                   <StatusBadge status={recall.status} />
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{recall.reason}</p>
+                <p className="text-sm text-gray-600 dark:text-signal-body mt-1">{recall.reason}</p>
               </div>
-              <span className={`px-3 py-1 rounded-lg text-xs font-bold ${recall.recallType === 'mandatory' ? 'bg-red-100 text-red-700' : recall.recallType === 'voluntary' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
+              <span className={`px-3 py-1 rounded-lg text-xs font-bold ${recall.recallType === 'mandatory' ? 'bg-red-100 text-red-700 dark:bg-signal-bad/10 dark:text-signal-bad' : recall.recallType === 'voluntary' ? 'bg-yellow-100 text-yellow-700 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-gray-100 text-gray-700 dark:bg-white/[0.06] dark:text-signal-body'}`}>
                 {recall.recallType.replace(/_/g, ' ').toUpperCase()}
               </span>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div>
-                <p className="text-xs text-gray-500">Affected Units</p>
-                <p className="text-lg font-bold text-gray-900">{recall.affectedUnits.toLocaleString()}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Affected Units</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-signal-ink">{recall.affectedUnits.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Recovery Rate</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Recovery Rate</p>
                 <div className="flex items-center gap-2">
                   <ProgressBar value={recoveryRate} color={recoveryRate >= 80 ? 'bg-green-500' : recoveryRate >= 50 ? 'bg-yellow-500' : 'bg-red-500'} />
-                  <span className="text-sm font-medium text-gray-700">{recoveryRate}%</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-signal-body">{recoveryRate}%</span>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Initiated</p>
-                <p className="text-sm text-gray-700">{recall.initiatedDate}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Initiated</p>
+                <p className="text-sm text-gray-700 dark:text-signal-body">{recall.initiatedDate}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Completion Target</p>
-                <p className="text-sm text-gray-700">{recall.completionTarget}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Completion Target</p>
+                <p className="text-sm text-gray-700 dark:text-signal-body">{recall.completionTarget}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <p className="text-xs text-gray-500">Affected Countries</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Affected Countries</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {recall.affectedCountries.map(c => <span key={c} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">{c}</span>)}
+                  {recall.affectedCountries.map(c => <span key={c} className="px-2 py-0.5 bg-gray-100 dark:bg-white/[0.06] text-gray-600 dark:text-signal-body text-xs rounded-full">{c}</span>)}
                 </div>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Regulatory Authority</p>
-                <p className="text-gray-700">{recall.regulatoryAuthority}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Regulatory Authority</p>
+                <p className="text-gray-700 dark:text-signal-body">{recall.regulatoryAuthority}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Contact Person</p>
-                <p className="text-gray-700">{recall.contactPerson}</p>
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Contact Person</p>
+                <p className="text-gray-700 dark:text-signal-body">{recall.contactPerson}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Public Notice</p>
-                {recall.publicNotice ? <span className="flex items-center gap-1 text-green-700"><CheckCircle size={14} /> Published</span> : <span className="text-gray-400">Not published</span>}
+                <p className="text-xs text-gray-500 dark:text-signal-muted">Public Notice</p>
+                {recall.publicNotice ? <span className="flex items-center gap-1 text-green-700 dark:text-signal-good"><CheckCircle size={14} /> Published</span> : <span className="text-gray-400 dark:text-signal-sub">Not published</span>}
               </div>
             </div>
 
             {/* Impact Assessment */}
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Impact Assessment</p>
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-white/[0.03] rounded-lg border border-gray-100 dark:border-white/[0.06]">
+              <p className="text-sm font-semibold text-gray-700 dark:text-signal-body mb-2">Impact Assessment</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <p className="text-xs text-gray-500">Safety Impact</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted">Safety Impact</p>
                   <SeverityBadge severity={recall.riskLevel} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Financial Impact</p>
-                  <p className="text-gray-700 font-medium">Est. EUR {(recall.affectedUnits * 45).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted">Financial Impact</p>
+                  <p className="text-gray-700 dark:text-signal-body font-medium">Est. EUR {(recall.affectedUnits * 45).toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Reputational Risk</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted">Reputational Risk</p>
                   <SeverityBadge severity={recall.publicNotice ? 'high' : 'medium'} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Regulatory Risk</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted">Regulatory Risk</p>
                   <SeverityBadge severity={recall.recallType === 'mandatory' ? 'critical' : 'medium'} />
                 </div>
               </div>
@@ -1046,20 +1046,20 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           </div>
         );
       }) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <RotateCcw size={48} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500 text-lg font-medium">No Active Recalls</p>
-          <p className="text-gray-400 text-sm mt-1">Product recalls will appear here when initiated.</p>
+        <div className="bg-white dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.06] p-12 text-center">
+          <RotateCcw size={48} className="mx-auto text-gray-300 dark:text-signal-sub mb-3" />
+          <p className="text-gray-500 dark:text-signal-muted text-lg font-medium">No Active Recalls</p>
+          <p className="text-gray-400 dark:text-signal-sub text-sm mt-1">Product recalls will appear here when initiated.</p>
         </div>
       )}
 
       {/* Recall Readiness Checklist (illustrative template) */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.06] p-6">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-lg font-semibold text-gray-900">Recall Readiness Checklist</h3>
-          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full font-medium">Template</span>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">Recall Readiness Checklist</h3>
+          <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/[0.06] text-gray-500 dark:text-signal-muted text-xs rounded-full font-medium">Template</span>
         </div>
-        <p className="text-xs text-gray-400 mb-4">Reference checklist of recommended recall-preparedness items. Statuses shown are illustrative and not derived from your organization&apos;s live data.</p>
+        <p className="text-xs text-gray-400 dark:text-signal-sub mb-4">Reference checklist of recommended recall-preparedness items. Statuses shown are illustrative and not derived from your organization&apos;s live data.</p>
         <div className="space-y-2">
           {[
             { item: 'Recall procedure documented and approved', status: true },
@@ -1071,10 +1071,10 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
             { item: 'Reverse logistics arrangement in place', status: true },
             { item: 'Financial provision for recall costs', status: true },
           ].map((check, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+            <div key={idx} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:bg-transparent dark:hover:bg-white/[0.04]">
               {check.status ? <CheckCircle size={16} className="text-green-500 flex-shrink-0" /> : <Clock size={16} className="text-yellow-500 flex-shrink-0" />}
-              <span className="text-sm text-gray-700">{check.item}</span>
-              {check.note && <span className="text-xs text-gray-400 ml-auto">{check.note}</span>}
+              <span className="text-sm text-gray-700 dark:text-signal-body">{check.item}</span>
+              {check.note && <span className="text-xs text-gray-400 dark:text-signal-sub ml-auto">{check.note}</span>}
             </div>
           ))}
         </div>
@@ -1124,27 +1124,27 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       </div>
 
       {/* Report List */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Surveillance Reports</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-xl border border-gray-200 dark:border-white/[0.06] p-6">
+        <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-signal-ink mb-4">Surveillance Reports</h3>
         <div className="space-y-3">
           {reports.map(report => {
             const typeConfig: Record<string, { color: string; icon: React.ElementType }> = {
-              annual: { color: 'bg-blue-50 text-blue-600', icon: Calendar },
-              periodic: { color: 'bg-indigo-50 text-indigo-600', icon: Clock },
-              incident: { color: 'bg-red-50 text-red-600', icon: AlertTriangle },
-              trend_analysis: { color: 'bg-purple-50 text-purple-600', icon: TrendingUp },
+              annual: { color: 'bg-blue-50 text-blue-600 dark:bg-signal-blue/10 dark:text-signal-blue', icon: Calendar },
+              periodic: { color: 'bg-indigo-50 text-indigo-600 dark:bg-signal-violet/10 dark:text-signal-violet', icon: Clock },
+              incident: { color: 'bg-red-50 text-red-600 dark:bg-signal-bad/10 dark:text-signal-bad', icon: AlertTriangle },
+              trend_analysis: { color: 'bg-purple-50 text-purple-600 dark:bg-signal-violet/10 dark:text-signal-violet', icon: TrendingUp },
             };
             const cfg = typeConfig[report.reportType] || typeConfig.annual;
             const Icon = cfg.icon;
             return (
-              <div key={report.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
+              <div key={report.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100 dark:border-white/[0.06] hover:bg-gray-50 dark:bg-transparent dark:hover:bg-white/[0.04] transition-colors">
                 <div className="flex items-center gap-4">
                   <div className={`p-3 rounded-lg ${cfg.color}`}>
                     <Icon size={20} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{report.title}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-signal-ink">{report.title}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-signal-muted">
                       <span>Period: {report.period}</span>
                       <span>by {report.author}</span>
                       {report.pages && <span>{report.pages} pages</span>}
@@ -1154,7 +1154,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
                 </div>
                 <div className="flex items-center gap-3">
                   {report.submittedTo && (
-                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs rounded-full font-medium flex items-center gap-1">
+                    <span className="px-2 py-0.5 bg-emerald-50 dark:bg-signal-good/10 text-emerald-700 dark:text-signal-good text-xs rounded-full font-medium flex items-center gap-1">
                       <Building2 size={12} /> {report.submittedTo}
                     </span>
                   )}
@@ -1164,17 +1164,17 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
                       type="button"
                       title="View report"
                       onClick={() => setSelectedReport(report)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-gray-100 dark:bg-transparent dark:hover:bg-white/[0.06] rounded-lg transition-colors"
                     >
-                      <Eye size={14} className="text-gray-500" />
+                      <Eye size={14} className="text-gray-500 dark:text-signal-muted" />
                     </button>
                     <button
                       type="button"
                       title="Download report"
                       onClick={() => handleDownloadReport(report)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-gray-100 dark:bg-transparent dark:hover:bg-white/[0.06] rounded-lg transition-colors"
                     >
-                      <Download size={14} className="text-gray-500" />
+                      <Download size={14} className="text-gray-500 dark:text-signal-muted" />
                     </button>
                   </div>
                 </div>
@@ -1244,26 +1244,26 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
 
   const renderIncidentModal = () => showIncidentModal && (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Report New Incident</h3>
-          <button onClick={() => setShowIncidentModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} className="text-gray-500" /></button>
+      <div className="bg-white dark:bg-signal-panel rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">Report New Incident</h3>
+          <button onClick={() => setShowIncidentModal(false)} className="p-2 hover:bg-gray-100 dark:bg-transparent dark:hover:bg-white/[0.06] rounded-lg"><X size={20} className="text-gray-500 dark:text-signal-muted" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Incident Title *</label>
-            <input type="text" value={incidentForm.title} onChange={e => setIncidentForm(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Brief description of the incident" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Incident Title *</label>
+            <input type="text" value={incidentForm.title} onChange={e => setIncidentForm(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40" placeholder="Brief description of the incident" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product *</label>
-              <select value={incidentForm.productId || plans[0]?.productId} onChange={e => setIncidentForm(f => ({ ...f, productId: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Product *</label>
+              <select value={incidentForm.productId || plans[0]?.productId} onChange={e => setIncidentForm(f => ({ ...f, productId: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40">
                 {plans.map(p => <option key={p.id} value={p.productId}>{p.productName}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Incident Type *</label>
-              <select value={incidentForm.type} onChange={e => setIncidentForm(f => ({ ...f, type: e.target.value as Incident['type'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Incident Type *</label>
+              <select value={incidentForm.type} onChange={e => setIncidentForm(f => ({ ...f, type: e.target.value as Incident['type'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40">
                 <option value="complaint">Complaint</option>
                 <option value="safety_incident">Safety Incident</option>
                 <option value="near_miss">Near Miss</option>
@@ -1275,8 +1275,8 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Severity *</label>
-              <select value={incidentForm.severity} onChange={e => setIncidentForm(f => ({ ...f, severity: e.target.value as Incident['severity'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Severity *</label>
+              <select value={incidentForm.severity} onChange={e => setIncidentForm(f => ({ ...f, severity: e.target.value as Incident['severity'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40">
                 <option value="minor">Minor</option>
                 <option value="moderate">Moderate</option>
                 <option value="serious">Serious</option>
@@ -1284,35 +1284,35 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <input type="text" value={incidentForm.location} onChange={e => setIncidentForm(f => ({ ...f, location: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Country or site" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Location</label>
+              <input type="text" value={incidentForm.location} onChange={e => setIncidentForm(f => ({ ...f, location: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40" placeholder="Country or site" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-            <textarea rows={4} value={incidentForm.description} onChange={e => setIncidentForm(f => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Detailed description of the incident..." />
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Description *</label>
+            <textarea rows={4} value={incidentForm.description} onChange={e => setIncidentForm(f => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40" placeholder="Detailed description of the incident..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Reported By</label>
-              <input type="text" value={incidentForm.reportedBy} onChange={e => setIncidentForm(f => ({ ...f, reportedBy: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Name or identifier" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Reported By</label>
+              <input type="text" value={incidentForm.reportedBy} onChange={e => setIncidentForm(f => ({ ...f, reportedBy: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40" placeholder="Name or identifier" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Affected Units</label>
-              <input type="number" value={incidentForm.affectedUnits} onChange={e => setIncidentForm(f => ({ ...f, affectedUnits: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Number of units" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Affected Units</label>
+              <input type="number" value={incidentForm.affectedUnits} onChange={e => setIncidentForm(f => ({ ...f, affectedUnits: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40" placeholder="Number of units" />
             </div>
           </div>
-          <div className="bg-yellow-50 rounded-lg p-3 flex items-start gap-2">
+          <div className="bg-yellow-50 dark:bg-signal-warn/10 rounded-lg p-3 flex items-start gap-2">
             <Info size={16} className="text-yellow-500 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-yellow-700">Serious safety incidents require notification to the national market surveillance authority. The system will flag if regulatory notification is required based on severity and incident type.</p>
+            <p className="text-xs text-yellow-700 dark:text-signal-warn">Serious safety incidents require notification to the national market surveillance authority. The system will flag if regulatory notification is required based on severity and incident type.</p>
           </div>
         </div>
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button onClick={() => setShowIncidentModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-white/[0.06]">
+          <button onClick={() => setShowIncidentModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body bg-gray-100 dark:bg-white/[0.06] rounded-lg hover:bg-gray-200 dark:hover:bg-white/[0.10]">{t('common.cancel')}</button>
           <button
             onClick={handleSubmitIncident}
             disabled={isSubmittingIncident || !incidentForm.title || !incidentForm.description}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 disabled:opacity-50 flex items-center gap-2"
           >
             {isSubmittingIncident && <Loader2 size={14} className="animate-spin" />}
             {isSubmittingIncident ? `${t('common.submit')}...` : `${t('common.submit')} Incident`}
@@ -1387,15 +1387,15 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
 
   const renderReportModal = () => showReportModal && (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Generate Surveillance Report</h3>
-          <button onClick={() => setShowReportModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} className="text-gray-500" /></button>
+      <div className="bg-white dark:bg-signal-panel rounded-2xl shadow-xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">Generate Surveillance Report</h3>
+          <button onClick={() => setShowReportModal(false)} className="p-2 hover:bg-gray-100 dark:bg-transparent dark:hover:bg-white/[0.06] rounded-lg"><X size={20} className="text-gray-500 dark:text-signal-muted" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
-            <select value={reportForm.reportType} onChange={e => setReportForm(f => ({ ...f, reportType: e.target.value as SurveillanceReport['reportType'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Report Type</label>
+            <select value={reportForm.reportType} onChange={e => setReportForm(f => ({ ...f, reportType: e.target.value as SurveillanceReport['reportType'] }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40">
               <option value="annual">Annual PMS Report</option>
               <option value="periodic">Periodic Update Report</option>
               <option value="incident">Incident Report</option>
@@ -1403,24 +1403,24 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
-            <select value={reportForm.productId} onChange={e => setReportForm(f => ({ ...f, productId: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Product</label>
+            <select value={reportForm.productId} onChange={e => setReportForm(f => ({ ...f, productId: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40">
               <option value="all">All Products</option>
               {plans.map(p => <option key={p.id} value={p.productId}>{p.productName}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Reporting Period</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Reporting Period</label>
             <div className="grid grid-cols-2 gap-3">
-              <input type="date" value={reportForm.periodStart} onChange={e => setReportForm(f => ({ ...f, periodStart: e.target.value }))} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
-              <input type="date" value={reportForm.periodEnd} onChange={e => setReportForm(f => ({ ...f, periodEnd: e.target.value }))} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+              <input type="date" value={reportForm.periodStart} onChange={e => setReportForm(f => ({ ...f, periodStart: e.target.value }))} className="px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40" />
+              <input type="date" value={reportForm.periodEnd} onChange={e => setReportForm(f => ({ ...f, periodEnd: e.target.value }))} className="px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-signal-green/40" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Include Sections</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Include Sections</label>
             <div className="space-y-2">
               {allSections.map(section => (
-                <label key={section} className="flex items-center gap-2 text-sm text-gray-700">
+                <label key={section} className="flex items-center gap-2 text-sm text-gray-700 dark:text-signal-body">
                   <input
                     type="checkbox"
                     checked={reportForm.sections.includes(section)}
@@ -1438,12 +1438,12 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
             </div>
           </div>
         </div>
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-white/[0.06]">
+          <button onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body bg-gray-100 dark:bg-white/[0.06] rounded-lg hover:bg-gray-200 dark:hover:bg-white/[0.10]">Cancel</button>
           <button
             onClick={handleGenerateReport}
             disabled={isGeneratingReport}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 disabled:opacity-50 flex items-center gap-2"
           >
             {isGeneratingReport && <Loader2 size={14} className="animate-spin" />}
             {isGeneratingReport ? 'Generating...' : 'Generate Report'}
@@ -1461,19 +1461,19 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-            <ArrowLeft size={20} className="text-gray-600" />
+          <button onClick={onBack} className="p-2 hover:bg-gray-200 dark:bg-transparent dark:hover:bg-white/[0.10] rounded-lg transition-colors">
+            <ArrowLeft size={20} className="text-gray-600 dark:text-signal-body" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Post-Market Surveillance</h1>
-            <p className="text-gray-600 mt-1">Incident tracking, CAPA management, recalls, and surveillance reporting</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-signal-ink">Post-Market Surveillance</h1>
+            <p className="text-gray-600 dark:text-signal-body mt-1">Incident tracking, CAPA management, recalls, and surveillance reporting</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => loadData({ silent: true })}
             disabled={isSyncing}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-signal-body rounded-lg hover:bg-gray-200 dark:hover:bg-white/[0.10] text-sm font-medium transition-colors disabled:opacity-50"
           >
             <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} /> {isSyncing ? 'Syncing...' : 'Sync'}
           </button>
@@ -1484,7 +1484,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-white/[0.06]">
         <nav className="flex gap-1 -mb-px">
           {tabs.map(tab => {
             const Icon = tab.icon;
@@ -1494,8 +1494,8 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
-                    ? 'text-blue-600 border-blue-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                    ? 'text-blue-600 border-blue-600 dark:text-signal-green dark:border-signal-green'
+                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300 dark:text-signal-muted dark:hover:text-signal-ink dark:hover:border-white/[0.20]'
                 }`}
               >
                 <Icon size={16} />
@@ -1513,14 +1513,14 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-500">{t('common.loading')}...</span>
+          <span className="ml-3 text-gray-500 dark:text-signal-muted">{t('common.loading')}...</span>
         </div>
       )}
       {loadError && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 mb-4">
+        <div className="bg-amber-50 dark:bg-signal-warn/10 border border-amber-200 dark:border-signal-warn/20 rounded-lg p-3 flex items-center gap-2 mb-4">
           <AlertTriangle size={16} className="text-amber-500 shrink-0" />
-          <span className="text-sm text-amber-700">{loadError}</span>
-          <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+          <span className="text-sm text-amber-700 dark:text-signal-warn">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 dark:text-signal-warn hover:text-amber-700 dark:hover:text-signal-warn/80"><X size={14} /></button>
         </div>
       )}
 
@@ -1539,25 +1539,25 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       {/* Report Detail Modal */}
       {selectedReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setSelectedReport(null)}>
-          <div className="bg-white rounded-xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-signal-panel rounded-xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">{selectedReport.title}</h3>
-              <button type="button" onClick={() => setSelectedReport(null)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-signal-ink">{selectedReport.title}</h3>
+              <button type="button" onClick={() => setSelectedReport(null)} className="text-gray-400 dark:text-signal-sub hover:text-gray-600 dark:hover:text-signal-body"><X size={18} /></button>
             </div>
             <dl className="space-y-2 text-sm">
-              <div className="flex justify-between"><dt className="text-gray-500">Type</dt><dd className="text-gray-900 font-medium capitalize">{selectedReport.reportType.replace('_', ' ')}</dd></div>
-              <div className="flex justify-between"><dt className="text-gray-500">Period</dt><dd className="text-gray-900 font-medium">{selectedReport.period}</dd></div>
-              <div className="flex justify-between items-center"><dt className="text-gray-500">Status</dt><dd><StatusBadge status={selectedReport.status} /></dd></div>
-              <div className="flex justify-between"><dt className="text-gray-500">Author</dt><dd className="text-gray-900 font-medium">{selectedReport.author}</dd></div>
-              <div className="flex justify-between"><dt className="text-gray-500">Created</dt><dd className="text-gray-900 font-medium">{selectedReport.createdDate}</dd></div>
-              {selectedReport.pages !== null && selectedReport.pages !== undefined && <div className="flex justify-between"><dt className="text-gray-500">Pages</dt><dd className="text-gray-900 font-medium">{selectedReport.pages}</dd></div>}
-              {selectedReport.submittedTo && <div className="flex justify-between"><dt className="text-gray-500">Submitted To</dt><dd className="text-gray-900 font-medium">{selectedReport.submittedTo}</dd></div>}
+              <div className="flex justify-between"><dt className="text-gray-500 dark:text-signal-muted">Type</dt><dd className="text-gray-900 dark:text-signal-ink font-medium capitalize">{selectedReport.reportType.replace('_', ' ')}</dd></div>
+              <div className="flex justify-between"><dt className="text-gray-500 dark:text-signal-muted">Period</dt><dd className="text-gray-900 dark:text-signal-ink font-medium">{selectedReport.period}</dd></div>
+              <div className="flex justify-between items-center"><dt className="text-gray-500 dark:text-signal-muted">Status</dt><dd><StatusBadge status={selectedReport.status} /></dd></div>
+              <div className="flex justify-between"><dt className="text-gray-500 dark:text-signal-muted">Author</dt><dd className="text-gray-900 dark:text-signal-ink font-medium">{selectedReport.author}</dd></div>
+              <div className="flex justify-between"><dt className="text-gray-500 dark:text-signal-muted">Created</dt><dd className="text-gray-900 dark:text-signal-ink font-medium">{selectedReport.createdDate}</dd></div>
+              {selectedReport.pages !== null && selectedReport.pages !== undefined && <div className="flex justify-between"><dt className="text-gray-500 dark:text-signal-muted">Pages</dt><dd className="text-gray-900 dark:text-signal-ink font-medium">{selectedReport.pages}</dd></div>}
+              {selectedReport.submittedTo && <div className="flex justify-between"><dt className="text-gray-500 dark:text-signal-muted">Submitted To</dt><dd className="text-gray-900 dark:text-signal-ink font-medium">{selectedReport.submittedTo}</dd></div>}
             </dl>
             <div className="flex justify-end gap-2 mt-6">
-              <button type="button" onClick={() => handleDownloadReport(selectedReport)} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700">
+              <button type="button" onClick={() => handleDownloadReport(selectedReport)} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-teal-600 dark:bg-signal-green dark:text-signal-canvas rounded-lg hover:bg-teal-700 dark:hover:bg-signal-green/90">
                 <Download size={14} /> Download
               </button>
-              <button type="button" onClick={() => setSelectedReport(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Close</button>
+              <button type="button" onClick={() => setSelectedReport(null)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-signal-body bg-gray-100 dark:bg-white/[0.06] rounded-lg hover:bg-gray-200 dark:hover:bg-white/[0.10]">Close</button>
             </div>
           </div>
         </div>

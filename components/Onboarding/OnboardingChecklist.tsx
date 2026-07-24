@@ -58,24 +58,24 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
       {/* Expanded checklist */}
       {isExpanded && (
         <div
-          className={`mb-3 w-80 bg-slate-800/95 backdrop-blur border border-slate-700 rounded-2xl shadow-2xl overflow-hidden ${
+          className={`mb-3 w-80 bg-signal-panel2/95 backdrop-blur border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden ${
             reducedMotion ? '' : 'animate-onboarding-slide-up'
           }`}
         >
           {/* Header */}
-          <div className="p-4 border-b border-slate-700">
+          <div className="p-4 border-b border-white/[0.08]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <ListChecks className="w-5 h-5 text-brand-400" />
-                <h3 className="text-sm font-bold text-white">Setup Checklist</h3>
+                <ListChecks className="w-5 h-5 text-signal-green" />
+                <h3 className="font-display text-sm font-bold text-signal-ink">Setup Checklist</h3>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-slate-400">
+                <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-signal-muted">
                   {completedCount}/{totalCount}
                 </span>
                 <button
                   onClick={handleDismiss}
-                  className="p-0.5 rounded hover:bg-slate-600 text-slate-400 hover:text-white transition-colors"
+                  className="p-0.5 rounded hover:bg-white/[0.08] text-signal-muted hover:text-signal-ink transition-colors"
                   aria-label="Dismiss setup checklist"
                 >
                   <X className="w-4 h-4" />
@@ -83,9 +83,9 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
               </div>
             </div>
             {/* Progress bar */}
-            <div className="mt-3 w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+            <div className="mt-3 w-full h-1 bg-white/[0.08] rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 ${
+                className={`h-full rounded-full bg-signal-green ${
                   reducedMotion ? '' : 'transition-all duration-500 ease-out'
                 }`}
                 style={{ width: `${percentage}%` }}
@@ -107,17 +107,17 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
                   item.done
                     ? 'opacity-60 cursor-default'
-                    : 'hover:bg-slate-700/50 cursor-pointer'
+                    : 'hover:bg-white/[0.05] cursor-pointer'
                 }`}
               >
                 {item.done ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-signal-good flex-shrink-0" />
                 ) : (
-                  <Circle className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                  <Circle className="w-5 h-5 text-signal-muted flex-shrink-0" />
                 )}
                 <span
                   className={`text-sm ${
-                    item.done ? 'text-slate-500 line-through' : 'text-slate-200'
+                    item.done ? 'text-signal-muted line-through' : 'text-signal-body'
                   }`}
                 >
                   {item.label}
@@ -127,9 +127,9 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
           </div>
 
           {/* Footer */}
-          <div className="p-3 border-t border-slate-700">
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+          <div className="p-3 border-t border-white/[0.08]">
+            <div className="flex items-center gap-2 text-xs text-signal-muted">
+              <Sparkles className="w-3.5 h-3.5 text-signal-green" />
               <span>Click any item to start a guided walkthrough</span>
             </div>
           </div>
@@ -142,7 +142,7 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
         tabIndex={0}
         onClick={() => setIsExpanded(!isExpanded)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); } }}
-        className={`relative flex items-center gap-3 px-4 py-3 pr-16 bg-slate-800/95 backdrop-blur border border-slate-700 rounded-2xl shadow-2xl hover:border-brand-500/30 transition-all cursor-pointer ${
+        className={`relative flex items-center gap-3 px-4 py-3 pr-16 bg-signal-panel2/95 backdrop-blur border border-white/[0.08] rounded-2xl shadow-2xl hover:border-signal-green/30 transition-all cursor-pointer ${
           reducedMotion ? '' : hasNewItems ? 'animate-pulse' : ''
         }`}
         aria-expanded={isExpanded}
@@ -157,7 +157,7 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
             fill="none"
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-slate-700"
+            className="text-white/[0.08]"
           />
           <circle
             cx={ringSize / 2}
@@ -169,30 +169,30 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
-            className={`text-brand-500 ${reducedMotion ? '' : 'transition-all duration-700 ease-out'}`}
+            className={`text-signal-green ${reducedMotion ? '' : 'transition-all duration-700 ease-out'}`}
           />
         </svg>
         <span className="absolute top-1/2 -translate-y-1/2" style={{ left: '16px', width: `${ringSize}px`, textAlign: 'center' }}>
-          <span className="text-xs font-bold text-white">{percentage}%</span>
+          <span className="font-mono text-[10px] font-bold text-signal-ink">{percentage}%</span>
         </span>
 
         <div className="text-left">
-          <p className="text-sm font-semibold text-white">Setup Progress</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-sm font-semibold text-signal-ink">Setup Progress</p>
+          <p className="text-xs text-signal-sub">
             {completedCount} of {totalCount} tasks
           </p>
         </div>
 
         {/* Expand/collapse icon */}
         {isExpanded ? (
-          <ChevronDown className="w-4 h-4 text-slate-400" />
+          <ChevronDown className="w-4 h-4 text-signal-sub" />
         ) : (
-          <ChevronUp className="w-4 h-4 text-slate-400" />
+          <ChevronUp className="w-4 h-4 text-signal-sub" />
         )}
 
         {/* Incomplete badge */}
         {!isExpanded && totalCount - completedCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center text-[10px] font-bold text-white bg-brand-600 rounded-full">
+          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center text-[10px] font-bold text-signal-canvas bg-signal-green rounded-full">
             {totalCount - completedCount}
           </span>
         )}
@@ -200,7 +200,7 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
         {/* Dismiss button */}
         <button
           onClick={handleDismiss}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-slate-600 text-slate-400 hover:text-white transition-colors z-10"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-white/[0.08] text-signal-muted hover:text-signal-ink transition-colors z-10"
           aria-label="Dismiss setup progress"
         >
           <X className="w-3.5 h-3.5" />

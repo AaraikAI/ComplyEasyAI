@@ -670,8 +670,8 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
     if (status === 'success') {
       return (
         <div className="text-center py-8">
-          <CheckCircle className="text-green-600 mx-auto mb-4" size={48} />
-          <p className="text-green-800 font-medium text-lg">Successfully connected!</p>
+          <CheckCircle className="text-green-600 dark:text-signal-green mx-auto mb-4" size={48} />
+          <p className="text-green-800 dark:text-signal-green font-medium text-lg">Successfully connected!</p>
         </div>
       );
     }
@@ -679,17 +679,17 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
     if (integration.connected) {
       return (
         <div className="space-y-4">
-          <div className="flex items-center space-x-2 text-green-600">
+          <div className="flex items-center space-x-2 text-green-600 dark:text-signal-green">
             <CheckCircle size={18} />
             <span className="font-medium">{t('integrations.connected')}</span>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-signal-sub">
             {t('integrations.lastSync')}: {integration.lastSync}
           </p>
           <button
             onClick={handleDisconnect}
             disabled={isConnecting}
-            className="w-full py-2.5 px-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 px-4 bg-red-50 text-red-600 dark:bg-transparent dark:border dark:border-signal-bad/30 dark:text-signal-bad rounded-xl hover:bg-red-100 dark:hover:bg-signal-bad/10 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isConnecting ? t('common.loading') : t('integrations.disconnect')}
           </button>
@@ -701,13 +701,13 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
       case 'oauth':
         return (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-signal-sub">
               Connect your {integration.name} account using OAuth 2.0. You'll be redirected to authorize access.
             </p>
             <button
               onClick={handleOAuthConnect}
               disabled={isConnecting || status === 'connecting'}
-              className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full py-2.5 px-4 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold rounded-xl hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isConnecting || status === 'connecting' ? (
                 <>
@@ -789,53 +789,53 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
           <form onSubmit={handleApiKeyConnect} className="space-y-4">
             {apiKeyConfig.urlRequired && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {apiKeyConfig.urlLabel} <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                  {apiKeyConfig.urlLabel} <span className="text-red-500 dark:text-signal-bad">*</span>
                 </label>
                 <input
                   type="text"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder={apiKeyConfig.urlPlaceholder}
                   required
                 />
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {apiKeyConfig.keyLabel} <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                {apiKeyConfig.keyLabel} <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                 placeholder={apiKeyConfig.keyPlaceholder}
                 required
               />
             </div>
             {!apiKeyConfig.urlRequired && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   {apiKeyConfig.urlLabel}
                 </label>
                 <input
                   type="url"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder={apiKeyConfig.urlPlaceholder}
                 />
               </div>
             )}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-signal-muted">
               {apiKeyConfig.instructions}
             </p>
             <button
               type="submit"
               disabled={isConnecting}
-              className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full py-2.5 px-4 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold rounded-xl hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isConnecting ? (
                 <>
@@ -976,53 +976,53 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         return (
           <form onSubmit={handleApiKeySecretConnect} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {secretConfig.keyLabel} <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                {secretConfig.keyLabel} <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               <input
                 type="text"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                 placeholder={secretConfig.keyPlaceholder}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {secretConfig.secretLabel} {!secretConfig.secretLabel.includes('optional') && <span className="text-red-500">*</span>}
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                {secretConfig.secretLabel} {!secretConfig.secretLabel.includes('optional') && <span className="text-red-500 dark:text-signal-bad">*</span>}
               </label>
               <input
                 type="password"
                 value={apiSecret}
                 onChange={(e) => setApiSecret(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                 placeholder={secretConfig.secretPlaceholder}
                 required={!secretConfig.secretLabel.includes('optional')}
               />
             </div>
             {secretConfig.urlLabel && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {secretConfig.urlLabel} {secretConfig.urlLabel.includes('optional') ? '' : <span className="text-red-500">*</span>}
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                  {secretConfig.urlLabel} {secretConfig.urlLabel.includes('optional') ? '' : <span className="text-red-500 dark:text-signal-bad">*</span>}
                 </label>
                 <input
                   type="text"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder={secretConfig.urlPlaceholder || 'https://api.example.com'}
                   required={!secretConfig.urlLabel?.includes('optional')}
                 />
               </div>
             )}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-signal-muted">
               {secretConfig.instructions}
             </p>
             <button
               type="submit"
               disabled={isConnecting}
-              className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full py-2.5 px-4 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold rounded-xl hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isConnecting ? (
                 <>
@@ -1044,54 +1044,54 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         return (
           <form onSubmit={handleUsernamePasswordConnect} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Base URL <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                Base URL <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               <input
                 type="url"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                 placeholder="https://your-instance.com"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Username <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                Username <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                 placeholder="Enter your username"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password / API Token <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                Password / API Token <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                 placeholder="Enter your password or API token"
                 required
               />
             </div>
             {getProviderId() === 'jenkins' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   API Token (optional)
                 </label>
                 <input
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder="Jenkins API token (optional)"
                 />
               </div>
@@ -1099,7 +1099,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
             <button
               type="submit"
               disabled={isConnecting}
-              className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full py-2.5 px-4 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold rounded-xl hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isConnecting ? (
                 <>
@@ -1122,40 +1122,40 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
           return (
             <form onSubmit={handleIamConnect} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  AWS Access Key ID <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                  AWS Access Key ID <span className="text-red-500 dark:text-signal-bad">*</span>
                 </label>
                 <input
                   type="text"
                   value={accessKeyId}
                   onChange={(e) => setAccessKeyId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder="AKIAIOSFODNN7EXAMPLE"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  AWS Secret Access Key <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                  AWS Secret Access Key <span className="text-red-500 dark:text-signal-bad">*</span>
                 </label>
                 <input
                   type="password"
                   value={secretAccessKey}
                   onChange={(e) => setSecretAccessKey(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  AWS Region <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                  AWS Region <span className="text-red-500 dark:text-signal-bad">*</span>
                 </label>
                 <input
                   type="text"
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder="us-east-1"
                   required
                 />
@@ -1163,7 +1163,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
               <button
                 type="submit"
                 disabled={isConnecting}
-                className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full py-2.5 px-4 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold rounded-xl hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isConnecting ? (
                   <>
@@ -1183,53 +1183,53 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
           return (
             <form onSubmit={handleIamConnect} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tenant ID <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                  Tenant ID <span className="text-red-500 dark:text-signal-bad">*</span>
                 </label>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder="Enter your Azure Tenant ID"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client ID <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                  Client ID <span className="text-red-500 dark:text-signal-bad">*</span>
                 </label>
                 <input
                   type="text"
                   value={accessKeyId}
                   onChange={(e) => setAccessKeyId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder="Enter your Azure Client ID"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Secret <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                  Client Secret <span className="text-red-500 dark:text-signal-bad">*</span>
                 </label>
                 <input
                   type="password"
                   value={secretAccessKey}
                   onChange={(e) => setSecretAccessKey(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder="Enter your Azure Client Secret"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Subscription ID <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                  Subscription ID <span className="text-red-500 dark:text-signal-bad">*</span>
                 </label>
                 <input
                   type="text"
                   value={subscriptionId}
                   onChange={(e) => setSubscriptionId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder="Enter your Azure Subscription ID"
                   required
                 />
@@ -1237,7 +1237,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
               <button
                 type="submit"
                 disabled={isConnecting}
-                className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full py-2.5 px-4 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold rounded-xl hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isConnecting ? (
                   <>
@@ -1261,25 +1261,25 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         return (
           <form onSubmit={handleServiceAccountConnect} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Service Account JSON <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                Service Account JSON <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               <textarea
                 value={serviceAccountJson}
                 onChange={(e) => setServiceAccountJson(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none font-mono text-sm"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none font-mono text-sm"
                 placeholder="Paste your service account JSON key here"
                 rows={8}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">
                 Paste your Google Cloud service account JSON key file
               </p>
             </div>
             <button
               type="submit"
               disabled={isConnecting}
-              className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full py-2.5 px-4 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold rounded-xl hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isConnecting ? (
                 <>
@@ -1389,38 +1389,38 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
           <form onSubmit={handlePatConnect} className="space-y-4">
             {patConfig.urlLabel && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
                   {patConfig.urlLabel}
                 </label>
                 <input
                   type="url"
                   value={patUrl}
                   onChange={(e) => setPatUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                   placeholder={patConfig.urlPlaceholder}
                 />
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {patConfig.tokenLabel} <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                {patConfig.tokenLabel} <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               <input
                 type="password"
                 value={pat}
                 onChange={(e) => setPat(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                 placeholder={patConfig.tokenPlaceholder}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">
                 {patConfig.instructions}
               </p>
             </div>
             <button
               type="submit"
               disabled={isConnecting}
-              className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full py-2.5 px-4 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold rounded-xl hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isConnecting ? (
                 <>
@@ -1442,27 +1442,27 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         return (
           <form onSubmit={handleApiKeyConnect} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                API Key <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                API Key <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                 placeholder="Enter your API key"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Base URL / Connection String <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">
+                Base URL / Connection String <span className="text-red-500 dark:text-signal-bad">*</span>
               </label>
               <input
                 type="text"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder-signal-muted rounded-xl focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green/40 focus:border-brand-500 dark:focus:border-signal-green/40 outline-none"
                 placeholder="mongodb://... or https://api.example.com"
                 required
               />
@@ -1470,7 +1470,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
             <button
               type="submit"
               disabled={isConnecting}
-              className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full py-2.5 px-4 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas dark:font-semibold rounded-xl hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isConnecting ? (
                 <>
@@ -1490,12 +1490,12 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
       default:
         return (
           <div className="text-center py-4">
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-signal-sub mb-4">
               {integration.name} integration is coming soon.
             </p>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-white/[0.06] dark:text-signal-body rounded-xl hover:bg-gray-300 dark:hover:bg-white/[0.10] transition-colors"
             >
               Close
             </button>
@@ -1505,13 +1505,13 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-scaleIn max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-bold text-gray-900">{integration.name}</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.10] rounded-2xl shadow-xl max-w-md w-full animate-scaleIn max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-white/[0.06] sticky top-0 bg-white dark:bg-signal-panel2 z-10">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{integration.name}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:text-signal-sub dark:hover:text-signal-ink transition-colors"
           >
             <X size={24} />
           </button>
@@ -1519,18 +1519,18 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
 
         <div className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-              <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
-              <p className="text-red-800 text-sm">{error}</p>
+            <div className="bg-red-50 border border-red-200 dark:bg-signal-bad/10 dark:border-signal-bad/30 rounded-lg p-4 flex items-start space-x-3">
+              <AlertCircle className="text-red-600 dark:text-signal-bad flex-shrink-0 mt-0.5" size={20} />
+              <p className="text-red-800 dark:text-signal-bad text-sm">{error}</p>
             </div>
           )}
 
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-signal-sub">
               <span className="font-medium">Category:</span> {integration.category}
             </p>
             {integration.connected && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-signal-sub">
                 <span className="font-medium">Last Sync:</span> {integration.lastSync}
               </p>
             )}

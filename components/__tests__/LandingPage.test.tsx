@@ -1,580 +1,183 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: vi.fn().mockReturnValue({
-    user: null,
-    isAuthenticated: false,
-    logout: vi.fn(),
-    verifyMagicLink: vi.fn().mockResolvedValue({}),
-    register: vi.fn().mockResolvedValue({}),
-    loginWithMagicLink: vi.fn().mockResolvedValue({ devToken: 'test-token-123' }),
-  }),
-}));
-
-vi.mock('@/services/api', () => ({
-  api: {
-    auth: {
-      requestMagicLink: vi.fn().mockResolvedValue({}),
-      register: vi.fn().mockResolvedValue({ devToken: 'reg-token-123' }),
-      login: vi.fn().mockResolvedValue({}),
-    },
-    demo: { submit: vi.fn().mockResolvedValue({}) },
-  },
-  getAuthToken: vi.fn().mockReturnValue(null),
-  clearAuthToken: vi.fn(),
-}));
-
-vi.mock('../PricingSection', () => ({ default: ({ onSelectTier }: any) => <div data-testid="pricing-section"><button onClick={() => onSelectTier('Growth')}>Select Growth</button></div> }));
-vi.mock('../DemoBookingForm', () => ({ default: ({ isOpen, onClose }: any) => isOpen ? <div data-testid="demo-form"><button onClick={onClose}>Close Demo</button></div> : null }));
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 import { LandingPage } from '../LandingPage';
 
-const renderWithRouter = (ui: React.ReactElement) => render(<BrowserRouter>{ui}</BrowserRouter>);
+// react-router-dom, lucide-react and the marketing contexts are mocked globally
+// in setupTests.ts (Link -> <a href>, useLocation -> '/'). MemoryRouter is a
+// passthrough there, matching the other marketing-page tests.
+const renderPage = () => render(<MemoryRouter><LandingPage /></MemoryRouter>);
 
 describe('LandingPage', () => {
   beforeEach(() => {
+    // Reset Element.prototype.scrollIntoView (a vi.fn from setupTests) between tests.
     vi.clearAllMocks();
-    // Prevent signup modal from auto-showing
-    sessionStorage.setItem('hasSeenSignupModal', 'true');
-    // Mock window.location
-    Object.defineProperty(window, 'location', {
-      value: { ...window.location, href: '/', reload: vi.fn() },
-      writable: true,
+  });
+
+  // ---- Hero ----
+
+  describe('hero', () => {
+    it('renders the mono eyebrow pill', () => {
+      renderPage();
+      expect(screen.getByText('Autonomous Compliance OS')).toBeInTheDocument();
+    });
+
+    it('renders the split headline', () => {
+      renderPage();
+      const h1 = screen.getByRole('heading', { level: 1 });
+      expect(h1).toHaveTextContent('Compliance that');
+      expect(h1).toHaveTextContent('runs itself.');
+    });
+
+    it('renders the aCOS status card', () => {
+      renderPage();
+      expect(screen.getByText('aCOS · operating')).toBeInTheDocument();
+      expect(screen.getByText('LIVE')).toBeInTheDocument();
+    });
+
+    it('renders the framework chips', () => {
+      renderPage();
+      for (const name of ['SOC 2', 'ISO 27001', 'GDPR', 'HIPAA', 'EU AI Act', 'DORA']) {
+        expect(screen.getAllByText(name).length).toBeGreaterThanOrEqual(1);
+      }
+    });
+
+    it('points the "Book a demo" CTA at /demo', () => {
+      renderPage();
+      const demoLinks = screen.getAllByText('Book a demo');
+      expect(demoLinks.length).toBeGreaterThanOrEqual(1);
+      demoLinks.forEach((link) => {
+        expect(link.closest('a')).toHaveAttribute('href', '/demo');
+      });
+    });
+
+    it('scrolls to the comparison matrix when "See it in motion" is clicked', () => {
+      renderPage();
+      fireEvent.click(screen.getByText('See it in motion'));
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
     });
   });
 
-  // ---- Navbar ----
+  // ---- "Three jobs" cards ----
 
-  it('renders the navbar with brand name', () => {
-    renderWithRouter(<LandingPage />);
-    // Brand appears in both navbar and footer
-    expect(screen.getAllByText('ComplyEasy AI').length).toBeGreaterThanOrEqual(1);
+  it('renders the "three jobs" section', () => {
+    renderPage();
+    expect(screen.getByText('Three jobs it takes off your plate')).toBeInTheDocument();
+    expect(screen.getByText('Audit-ready, continuously')).toBeInTheDocument();
+    expect(screen.getByText('It runs itself')).toBeInTheDocument();
   });
 
-  it('renders navigation links', () => {
-    renderWithRouter(<LandingPage />);
-    expect(screen.getAllByText('Features').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Pricing').length).toBeGreaterThan(0);
+  // ---- ROI calculator ----
+
+  describe('ROI calculator', () => {
+    it('renders the three sliders and the reclaimed-hours output', () => {
+      renderPage();
+      expect(screen.getByText('What could you reclaim?')).toBeInTheDocument();
+      expect(screen.getAllByRole('slider')).toHaveLength(3);
+      expect(screen.getByLabelText('Team size')).toBeInTheDocument();
+      expect(screen.getByLabelText('Frameworks pursued')).toBeInTheDocument();
+      expect(screen.getByLabelText('Point tools today')).toBeInTheDocument();
+      expect(screen.getByText('hours / year reclaimed')).toBeInTheDocument();
+    });
+
+    it('updates the reclaimed-hours output when a slider moves', () => {
+      renderPage();
+      // Defaults (team 60, frameworks 3, tools 5, automation 80%) -> 660 hrs/year.
+      expect(screen.getByText('660')).toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('Team size'), { target: { value: '500' } });
+
+      // team 500 -> round(0.8 * (18 + 200 + 27)) * 12 = 2,352 hrs/year.
+      expect(screen.getByText('2,352')).toBeInTheDocument();
+      expect(screen.queryByText('660')).not.toBeInTheDocument();
+    });
   });
 
-  it('renders "Sign In / SSO" button', () => {
-    renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Log In')).toBeInTheDocument();
+  // ---- Comparison matrix ----
+
+  describe('comparison matrix', () => {
+    it('renders the matrix with the ComplyEasyAI column and competitors', () => {
+      renderPage();
+      expect(
+        screen.getByRole('table', { name: /Capability comparison/i }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Vanta')).toBeInTheDocument();
+      expect(screen.getByText('OneTrust')).toBeInTheDocument();
+    });
+
+    it('renders the category chips with "All" active by default', () => {
+      renderPage();
+      for (const cat of ['All', 'EU & Regulatory', 'Autonomy', 'Economics']) {
+        expect(screen.getByRole('button', { name: cat })).toBeInTheDocument();
+      }
+      expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('filters the matrix rows by category chip', () => {
+      renderPage();
+      // "All" shows rows from every category.
+      expect(screen.getByText('DMA + DSA')).toBeInTheDocument(); // EU & Regulatory
+      expect(screen.getByText('Predictive gap detection')).toBeInTheDocument(); // Autonomy
+      expect(screen.getByText('Transparent pricing')).toBeInTheDocument(); // Economics
+
+      // Filter to Economics.
+      fireEvent.click(screen.getByRole('button', { name: 'Economics' }));
+      expect(screen.getByRole('button', { name: 'Economics' })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('Transparent pricing')).toBeInTheDocument();
+      expect(screen.getByText('Cross-framework evidence reuse')).toBeInTheDocument();
+      expect(screen.queryByText('Predictive gap detection')).not.toBeInTheDocument();
+      expect(screen.queryByText('DMA + DSA')).not.toBeInTheDocument();
+
+      // Filter to EU & Regulatory.
+      fireEvent.click(screen.getByRole('button', { name: 'EU & Regulatory' }));
+      expect(screen.getByText('DMA + DSA')).toBeInTheDocument();
+      expect(screen.queryByText('Transparent pricing')).not.toBeInTheDocument();
+
+      // Back to All.
+      fireEvent.click(screen.getByRole('button', { name: 'All' }));
+      expect(screen.getByText('Predictive gap detection')).toBeInTheDocument();
+      expect(screen.getByText('Transparent pricing')).toBeInTheDocument();
+    });
   });
 
-  it('scrolls to top when brand logo is clicked', () => {
-    const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-    renderWithRouter(<LandingPage />);
-    // Brand appears in both navbar and footer
-    const brands = screen.getAllByText('ComplyEasy AI');
-    fireEvent.click(brands[0]);
-    expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
-    scrollToSpy.mockRestore();
+  // ---- Pricing teaser (no numbers) ----
+
+  describe('pricing teaser', () => {
+    it('renders the outcomes-based headline with no dollar figures', () => {
+      renderPage();
+      expect(screen.getByText('Priced for outcomes, not seats.')).toBeInTheDocument();
+    });
+
+    it('links "Talk to us about pricing" at /pricing', () => {
+      renderPage();
+      const link = screen.getByText(/Talk to us about pricing/);
+      expect(link.closest('a')).toHaveAttribute('href', '/pricing');
+    });
   });
 
-  it('scrolls to features section on nav link click', () => {
-    renderWithRouter(<LandingPage />);
-    const featuresLink = screen.getAllByText('Features')[0];
-    // scrollIntoView is mocked in setupTests
-    fireEvent.click(featuresLink);
-    // Should have been called (Element.prototype.scrollIntoView is mocked)
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+  // ---- Closing CTA ----
+
+  describe('closing CTA', () => {
+    it('renders the closing headline and CTAs', () => {
+      renderPage();
+      expect(screen.getByRole('heading', { name: /See compliance/i })).toBeInTheDocument();
+      expect(screen.getByText('Talk to sales').closest('a')).toHaveAttribute('href', '/demo');
+    });
   });
 
-  // ---- Hero Section ----
+  // ---- Legacy UI intentionally removed ----
 
-  it('renders the hero headline', () => {
-    renderWithRouter(<LandingPage />);
-    // New SEO headline: "AI Compliance Automation for SOC 2, ISO 27001, GDPR & the EU AI Act".
-    // The H1 is split across nodes; the highlighted span text is unique to the headline.
-    expect(screen.getByText(/AI Compliance Automation for/)).toBeInTheDocument();
-    expect(screen.getByText('SOC 2, ISO 27001, GDPR & the EU AI Act')).toBeInTheDocument();
-  });
-
-  it('renders the hero subtext', () => {
-    renderWithRouter(<LandingPage />);
-    // New sub-headline copy
-    expect(screen.getByText(/ComplyEasy AI uses autonomous agents to collect evidence/)).toBeInTheDocument();
-  });
-
-  it('renders the aCOS badge', () => {
-    renderWithRouter(<LandingPage />);
-    // Badge now uses an em-dash and reads "aCOS — the Autonomous Compliance Operating System"
-    expect(screen.getByText(/aCOS — the Autonomous Compliance Operating System/)).toBeInTheDocument();
-  });
-
-  it('renders "Start Free Trial" button', () => {
-    renderWithRouter(<LandingPage />);
-    // "Start Free Trial" now appears in the hero, the final CTA, and the footer link
-    expect(screen.getAllByText('Start Free Trial').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('renders "Book a Demo" button', () => {
-    renderWithRouter(<LandingPage />);
-    // "Book a Demo" appears in both the hero and the final CTA
-    expect(screen.getAllByText('Book a Demo').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('opens demo modal when "Book a Demo" is clicked', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getAllByText('Book a Demo')[0]);
-    expect(screen.getByTestId('demo-form')).toBeInTheDocument();
-  });
-
-  it('closes demo modal via close button', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getAllByText('Book a Demo')[0]);
-    expect(screen.getByTestId('demo-form')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Close Demo'));
-    expect(screen.queryByTestId('demo-form')).not.toBeInTheDocument();
-  });
-
-  // ---- Features Section ----
-
-  it('renders the features section heading', () => {
-    renderWithRouter(<LandingPage />);
-    // Eyebrow heading is now "Platform Capabilities"
-    expect(screen.getByText('Platform Capabilities')).toBeInTheDocument();
-    expect(screen.getByText('Everything you need to stay compliant')).toBeInTheDocument();
-  });
-
-  it('renders feature cards with titles', () => {
-    renderWithRouter(<LandingPage />);
-    // Default active tab is 'core'
-    expect(screen.getByText('AI Automation')).toBeInTheDocument();
-    expect(screen.getByText('Global Frameworks')).toBeInTheDocument();
-    expect(screen.getByText('Real-time Analytics')).toBeInTheDocument();
-    expect(screen.getByText('Vendor Management')).toBeInTheDocument();
-    // Integrations card is now "80+ Integrations"
-    expect(screen.getByText('80+ Integrations')).toBeInTheDocument();
-  });
-
-  it('renders aCOS feature cards on AI tab', () => {
-    renderWithRouter(<LandingPage />);
-    // Switch to AI & Automation tab
-    fireEvent.click(screen.getByText('AI & Automation'));
-    expect(screen.getByText('Agentic AI with Rollback')).toBeInTheDocument();
-    // The temporal-graph capability is now titled "Predictive Risk Modeling"
-    // (temporal graph networks live in its description)
-    expect(screen.getByText('Predictive Risk Modeling')).toBeInTheDocument();
-  });
-
-  it('renders security features on security tab', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Enterprise Security'));
-    expect(screen.getByText('Zero-Knowledge Proofs')).toBeInTheDocument();
-    expect(screen.getByText('BYOK Encryption')).toBeInTheDocument();
-    expect(screen.getByText('Homomorphic AI')).toBeInTheDocument();
-  });
-
-  it('renders EU regulation features on regulatory tab', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Regulatory'));
-    expect(screen.getByText('EU AI Act Compliance')).toBeInTheDocument();
-    expect(screen.getByText('Digital Markets Act (DMA)')).toBeInTheDocument();
-    expect(screen.getByText('Digital Services Act (DSA)')).toBeInTheDocument();
-  });
-
-  // ---- Pricing Section ----
-
-  it('renders the pricing section', () => {
-    renderWithRouter(<LandingPage />);
-    expect(screen.getByTestId('pricing-section')).toBeInTheDocument();
-  });
-
-  it('opens registration modal when a pricing tier is selected', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Select Growth'));
-    // Auth modal should be open with Create Account form
-    expect(screen.getAllByText('Create Account').length).toBeGreaterThanOrEqual(1);
-  });
-
-  // ---- About Section ----
-
-  it('renders the about section', () => {
-    renderWithRouter(<LandingPage />);
-    // The "Our Mission" block was replaced by the "Why ComplyEasy AI" differentiators section.
-    expect(screen.getByText('Why ComplyEasy AI')).toBeInTheDocument();
-    expect(screen.getByText('Compliance that operates itself')).toBeInTheDocument();
-  });
-
-  it('renders the about/credibility trust block', () => {
-    renderWithRouter(<LandingPage />);
-    // The numeric stat tiles were removed; the closest equivalent is the
-    // "Built by security and AI engineers" trust block and its capability bullets.
-    expect(screen.getByText('Built by security and AI engineers')).toBeInTheDocument();
-    expect(screen.getByText('Role-based access control (RBAC)')).toBeInTheDocument();
-    expect(screen.getByText('Full, versioned audit trail')).toBeInTheDocument();
-  });
-
-  it('renders the security architecture card', () => {
-    renderWithRouter(<LandingPage />);
-    // The "Security Score 98/100" card was replaced by a "Security architecture" card.
-    expect(screen.getByText('Security architecture')).toBeInTheDocument();
-    expect(screen.getByText('Defense in depth')).toBeInTheDocument();
-  });
-
-  // ---- Footer ----
-
-  it('renders footer with brand', () => {
-    renderWithRouter(<LandingPage />);
-    // New footer tagline copy
-    expect(screen.getByText('Autonomous AI compliance automation for SOC 2, ISO 27001, GDPR, HIPAA, and the EU AI Act.')).toBeInTheDocument();
-  });
-
-  it('renders footer section headings', () => {
-    renderWithRouter(<LandingPage />);
-    // Footer nav columns were restructured to Frameworks / Platform / Compare / Resources.
-    // "Frameworks" also appears as a navbar link, so allow multiple matches.
-    expect(screen.getAllByText('Frameworks').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Platform')).toBeInTheDocument();
-    expect(screen.getByText('Compare')).toBeInTheDocument();
-    expect(screen.getByText('Resources')).toBeInTheDocument();
-  });
-
-  it('renders compliance badges', () => {
-    renderWithRouter(<LandingPage />);
-    // Trust badges now read as bare framework names (no "Compliant"/"Ready" suffix)
-    expect(screen.getAllByText('SOC 2 Type II').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('ISO 27001').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('GDPR').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('HIPAA').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('renders copyright notice', () => {
-    renderWithRouter(<LandingPage />);
-    expect(screen.getByText(/2026 ComplyEasy AI Inc/)).toBeInTheDocument();
-  });
-
-  it('renders the footer Documentation/help link', () => {
-    renderWithRouter(<LandingPage />);
-    // The footer support-email line was removed in the SEO overhaul. The closest
-    // equivalent help/support affordance the new footer renders is the
-    // "Documentation" link under the Resources column.
-    expect(screen.getByText('Documentation')).toBeInTheDocument();
-  });
-
-  // ---- Auth Modal - Email / Magic Link ----
-
-  it('opens auth modal when "Sign In / SSO" is clicked', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    expect(screen.getByText('Welcome Back')).toBeInTheDocument();
-  });
-
-  it('shows email input in magic link mode by default', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    expect(screen.getByPlaceholderText('name@company.com')).toBeInTheDocument();
-    // Tab + submit button both show "Send Magic Link"
-    expect(screen.getAllByText('Send Magic Link').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('closes auth modal when X is clicked', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    expect(screen.getByText('Welcome Back')).toBeInTheDocument();
-    // Click the close button (X icon)
-    const closeButtons = screen.getAllByTestId('icon-X');
-    const closeButton = closeButtons[0].closest('button');
-    if (closeButton) fireEvent.click(closeButton);
+  it('no longer renders the auth modal, embedded pricing, or embedded demo form', () => {
+    // The redesign made this a pure marketing page wrapped in MarketingLayout:
+    // the login/signup modal, embedded PricingSection, and embedded
+    // DemoBookingForm were all removed in favor of /demo and /pricing routes.
+    renderPage();
     expect(screen.queryByText('Welcome Back')).not.toBeInTheDocument();
-  });
-
-  it('sends magic link when form is submitted', async () => {
-    const { useAuth } = await import('@/contexts/AuthContext');
-    const loginWithMagicLink = vi.fn().mockResolvedValue({ devToken: 'test-token' });
-    (useAuth as any).mockReturnValue({
-      user: null,
-      isAuthenticated: false,
-      verifyMagicLink: vi.fn(),
-      register: vi.fn(),
-      loginWithMagicLink,
-      logout: vi.fn(),
-    });
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'test@example.com' } });
-    await act(async () => {
-      { const btns = screen.getAllByText('Send Magic Link'); fireEvent.click(btns[btns.length - 1]); }
-    });
-    await waitFor(() => {
-      expect(loginWithMagicLink).toHaveBeenCalledWith('test@example.com');
-    });
-  });
-
-  it('shows "Check your email" after magic link is sent', async () => {
-    const { useAuth } = await import('@/contexts/AuthContext');
-    (useAuth as any).mockReturnValue({
-      user: null,
-      isAuthenticated: false,
-      verifyMagicLink: vi.fn(),
-      register: vi.fn(),
-      loginWithMagicLink: vi.fn().mockResolvedValue({ devToken: 'test-token' }),
-      logout: vi.fn(),
-    });
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'user@example.com' } });
-    await act(async () => {
-      { const btns = screen.getAllByText('Send Magic Link'); fireEvent.click(btns[btns.length - 1]); }
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Check your email')).toBeInTheDocument();
-      expect(screen.getByText('user@example.com')).toBeInTheDocument();
-    });
-  });
-
-  it('shows simulate link button after magic link sent', async () => {
-    const { useAuth } = await import('@/contexts/AuthContext');
-    (useAuth as any).mockReturnValue({
-      user: null,
-      isAuthenticated: false,
-      verifyMagicLink: vi.fn(),
-      register: vi.fn(),
-      loginWithMagicLink: vi.fn().mockResolvedValue({ devToken: 'mock-token' }),
-      logout: vi.fn(),
-    });
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'user@example.com' } });
-    await act(async () => {
-      { const btns = screen.getAllByText('Send Magic Link'); fireEvent.click(btns[btns.length - 1]); }
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Sign In Now (Dev Mode)')).toBeInTheDocument();
-    });
-  });
-
-  it('verifies magic link when simulate button is clicked', async () => {
-    const { useAuth } = await import('@/contexts/AuthContext');
-    const verifyMagicLink = vi.fn().mockResolvedValue({});
-    (useAuth as any).mockReturnValue({
-      user: null,
-      isAuthenticated: false,
-      verifyMagicLink,
-      register: vi.fn(),
-      loginWithMagicLink: vi.fn().mockResolvedValue({ devToken: 'mock-token' }),
-      logout: vi.fn(),
-    });
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'user@example.com' } });
-    await act(async () => {
-      { const btns = screen.getAllByText('Send Magic Link'); fireEvent.click(btns[btns.length - 1]); }
-    });
-    await waitFor(() => screen.getByText('Sign In Now (Dev Mode)'));
-    await act(async () => {
-      fireEvent.click(screen.getByText('Sign In Now (Dev Mode)'));
-    });
-    await waitFor(() => {
-      expect(verifyMagicLink).toHaveBeenCalledWith('mock-token');
-    });
-  });
-
-  // ---- Auth Modal - Password Login ----
-
-  it('switches to password login mode', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    fireEvent.click(screen.getByText('Password'));
-    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
-    // Password mode submit button also uses t('auth.login') = "Log In"
-    expect(screen.getAllByText('Log In').length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('shows Forgot password link in password mode', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    fireEvent.click(screen.getByText('Password'));
-    expect(screen.getByText('Forgot Password?')).toBeInTheDocument();
-  });
-
-  it('switches between magic link and password modes', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    // Magic link mode: tab + submit button both say "Send Magic Link"
-    expect(screen.getAllByText('Send Magic Link').length).toBeGreaterThanOrEqual(1);
-    fireEvent.click(screen.getByText('Password'));
-    // Password mode: submit button uses t('auth.login') = "Log In"
-    expect(screen.getAllByText('Log In').length).toBeGreaterThanOrEqual(2);
-    // Switch back to magic link mode via the tab
-    const sendMagicLinks = screen.getAllByText('Send Magic Link');
-    fireEvent.click(sendMagicLinks[0]); // the tab
-    // Now both tab + submit show "Send Magic Link"
-    expect(screen.getAllByText('Send Magic Link').length).toBeGreaterThanOrEqual(2);
-  });
-
-  // ---- Auth Modal - Registration ----
-
-  it('shows registration form when pricing tier is selected', () => {
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Select Growth'));
-    expect(screen.getAllByText('Create Account').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByPlaceholderText('Full Name')).toBeInTheDocument();
-  });
-
-  it('submits registration form', async () => {
-    const { api } = await import('@/services/api');
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Select Growth'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Full Name'), { target: { value: 'New User' } });
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
-    });
-    await waitFor(() => {
-      expect(api.auth.register).toHaveBeenCalledWith('New User', 'new@example.com', undefined, undefined);
-    });
-  });
-
-  it('shows magic link sent after successful registration', async () => {
-    const { api } = await import('@/services/api');
-    (api.auth.register as any).mockResolvedValue({ devToken: 'new-token' });
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Select Growth'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Full Name'), { target: { value: 'New User' } });
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Check your email')).toBeInTheDocument();
-    });
-  });
-
-  it('handles existing user during registration', async () => {
-    const { api } = await import('@/services/api');
-    (api.auth.register as any).mockResolvedValueOnce({ existingUser: true, devToken: 'existing-token' });
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Select Growth'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'existing@example.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Full Name'), { target: { value: 'Existing User' } });
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Check your email')).toBeInTheDocument();
-    });
-  });
-
-  it('shows error toast on registration network failure', async () => {
-    const { toast } = await import('sonner');
-    const { api } = await import('@/services/api');
-    (api.auth.register as any).mockRejectedValueOnce(new Error('Network error: Failed to fetch'));
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Select Growth'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'fail@example.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Full Name'), { target: { value: 'Fail User' } });
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
-    });
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Cannot connect to server'));
-    });
-  });
-
-  // ---- Signup Modal (auto-show) ----
-
-  it('shows signup modal on first visit', () => {
-    sessionStorage.removeItem('hasSeenSignupModal');
-    renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Start Your Free Trial')).toBeInTheDocument();
-    expect(screen.getByText('Get full access to ComplyEasy AI. No credit card required.')).toBeInTheDocument();
-  });
-
-  it('does not show signup modal on repeat visits', () => {
-    sessionStorage.setItem('hasSeenSignupModal', 'true');
-    renderWithRouter(<LandingPage />);
+    expect(screen.queryByPlaceholderText('name@company.com')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('pricing-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('demo-form')).not.toBeInTheDocument();
     expect(screen.queryByText('Start Your Free Trial')).not.toBeInTheDocument();
-  });
-
-  it('closes signup modal when X is clicked', () => {
-    sessionStorage.removeItem('hasSeenSignupModal');
-    renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Start Your Free Trial')).toBeInTheDocument();
-    const closeButton = screen.getByLabelText('Close signup modal');
-    fireEvent.click(closeButton);
-    expect(screen.queryByText('Start Your Free Trial')).not.toBeInTheDocument();
-  });
-
-  it('shows signup modal feature list', () => {
-    sessionStorage.removeItem('hasSeenSignupModal');
-    renderWithRouter(<LandingPage />);
-    expect(screen.getByText('AI-powered compliance automation')).toBeInTheDocument();
-    expect(screen.getByText('Up to 3 compliance frameworks')).toBeInTheDocument();
-    expect(screen.getByText('Up to 10 team members')).toBeInTheDocument();
-    // Feature bullet is now "Automated evidence collection" (no "24/7" prefix)
-    expect(screen.getByText('Automated evidence collection')).toBeInTheDocument();
-  });
-
-  it('opens auth modal when "Sign In" is clicked from signup modal', () => {
-    sessionStorage.removeItem('hasSeenSignupModal');
-    renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Start Your Free Trial')).toBeInTheDocument();
-    // The signup modal's sign-in link uses t('auth.login') = "Log In"
-    const logInButtons = screen.getAllByText('Log In');
-    // Click the one in the signup modal (not the navbar one)
-    fireEvent.click(logInButtons[logInButtons.length - 1]);
-    expect(screen.getByText('Welcome Back')).toBeInTheDocument();
-    // Signup modal should be closed
-    expect(screen.queryByText('Start Your Free Trial')).not.toBeInTheDocument();
-  });
-
-  it('renders "Get Started Free" button in signup modal', () => {
-    sessionStorage.removeItem('hasSeenSignupModal');
-    renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Get Started Free')).toBeInTheDocument();
-  });
-
-  // ---- Login Error Handling ----
-
-  it('shows network error toast on login failure', async () => {
-    const { toast } = await import('sonner');
-    const { useAuth } = await import('@/contexts/AuthContext');
-    (useAuth as any).mockReturnValue({
-      user: null,
-      isAuthenticated: false,
-      verifyMagicLink: vi.fn(),
-      register: vi.fn(),
-      loginWithMagicLink: vi.fn().mockRejectedValue(new Error('Network error')),
-      logout: vi.fn(),
-    });
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'test@test.com' } });
-    await act(async () => {
-      const sendBtns = screen.getAllByText('Send Magic Link');
-      fireEvent.click(sendBtns[sendBtns.length - 1]);
-    });
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Cannot connect to server'));
-    });
-  });
-
-  it('shows generic error toast on login failure', async () => {
-    const { toast } = await import('sonner');
-    const { useAuth } = await import('@/contexts/AuthContext');
-    (useAuth as any).mockReturnValue({
-      user: null,
-      isAuthenticated: false,
-      verifyMagicLink: vi.fn(),
-      register: vi.fn(),
-      loginWithMagicLink: vi.fn().mockRejectedValue(new Error('Server error')),
-      logout: vi.fn(),
-    });
-    renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Log In'));
-    fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'test@test.com' } });
-    await act(async () => {
-      const sendBtns = screen.getAllByText('Send Magic Link');
-      fireEvent.click(sendBtns[sendBtns.length - 1]);
-    });
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Failed to send magic link'));
-    });
   });
 });

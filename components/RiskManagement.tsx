@@ -108,8 +108,8 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
     return [...filteredRisks].sort((a, b) => {
       let comparison = 0;
       if (sortField === 'severity') {
-        const severityMap = { 'High': 3, 'Medium': 2, 'Low': 1 };
-        comparison = severityMap[a.severity] - severityMap[b.severity];
+        const severityMap: Record<string, number> = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1 };
+        comparison = (severityMap[a.severity] || 0) - (severityMap[b.severity] || 0);
       } else if (sortField === 'detectedAt') {
         comparison = a.detectedAt.localeCompare(b.detectedAt);
       } else if (sortField === 'aiScore') {
@@ -323,7 +323,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
     }
   };
 
-  if (isLoadingData) return <div className="p-8 text-center text-gray-500">{t('common.loading')}</div>;
+  if (isLoadingData) return <div className="p-8 text-center text-gray-500 dark:text-signal-sub">{t('common.loading')}</div>;
 
   const issuesLimitReached = isAtLimit(user?.organization?.plan, 'maxIssues', risks.length);
 
@@ -335,13 +335,13 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       {/* Assessment Overlay */}
       {isScanning && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
-            <Loader2 className="animate-spin text-brand-600 w-16 h-16 mx-auto mb-6" />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Running Risk Assessment</h3>
-            <p className="text-gray-500 mb-6">{scanStep}</p>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
+            <Loader2 className="animate-spin text-brand-600 dark:text-signal-green w-16 h-16 mx-auto mb-6" />
+            <h3 className="text-xl font-bold text-gray-900 dark:text-signal-ink mb-2">Running Risk Assessment</h3>
+            <p className="text-gray-500 dark:text-signal-sub mb-6">{scanStep}</p>
+            <div className="w-full bg-gray-200 dark:bg-white/[0.08] rounded-full h-2 mb-2">
               <div 
-                className="bg-brand-600 h-2 rounded-full transition-all duration-300" 
+                className="bg-brand-600 dark:bg-signal-green h-2 rounded-full transition-all duration-300" 
                 style={{ width: `${scanProgress}%` }}
               ></div>
             </div>
@@ -352,25 +352,25 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       {/* Remediation / Task Modal */}
       {selectedRisk && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col animate-scaleIn">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                <CheckSquare className="mr-2 text-brand-600" />
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col animate-scaleIn">
+            <div className="p-6 border-b border-gray-100 dark:border-white/[0.08] flex justify-between items-center bg-gray-50 dark:bg-white/[0.02] rounded-t-xl">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-signal-ink flex items-center">
+                <CheckSquare className="mr-2 text-brand-600 dark:text-signal-green" />
                 {t('risks.treatmentPlan')}
               </h3>
-              <button onClick={() => setSelectedRisk(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSelectedRisk(null)} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-ink">
                 <X size={24} />
               </button>
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              <div className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 dark:bg-white/[0.03] rounded-lg border border-gray-200 dark:border-white/[0.06]">
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t('common.status')}</label>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-signal-muted uppercase tracking-wider mb-1">{t('common.status')}</label>
                   <select 
                     value={newStatus} 
                     onChange={(e) => setNewStatus(e.target.value as any)}
-                    className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                    className="w-full p-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink text-sm"
                   >
                     <option value="Open">Open</option>
                     <option value="In Progress">In Progress</option>
@@ -379,11 +379,11 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t('risks.riskOwner')}</label>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-signal-muted uppercase tracking-wider mb-1">{t('risks.riskOwner')}</label>
                   <select 
                     value={assigneeId} 
                     onChange={(e) => setAssigneeId(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                    className="w-full p-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink text-sm"
                   >
                     <option value="">Unassigned</option>
                     {teamMembers.map(u => (
@@ -393,24 +393,24 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 </div>
               </div>
 
-              <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
+              <div className="p-4 bg-red-50 dark:bg-signal-bad/10 border border-red-100 dark:border-signal-bad/20 rounded-lg">
                 <div className="flex justify-between items-start mb-2">
-                   <span className="text-xs font-bold text-red-600 uppercase tracking-wide">Target Risk</span>
+                   <span className="text-xs font-bold text-red-600 dark:text-signal-bad uppercase tracking-wide">Target Risk</span>
                    {selectedRisk.aiPriorityScore && (
-                     <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">AI Priority: {selectedRisk.aiPriorityScore}</span>
+                     <span className="text-xs bg-purple-100 text-purple-700 dark:bg-signal-violet/10 dark:text-signal-violet px-2 py-1 rounded font-bold">AI Priority: {selectedRisk.aiPriorityScore}</span>
                    )}
                 </div>
-                <p className="font-medium text-gray-900">{selectedRisk.description}</p>
-                {selectedRisk.aiRationale && <p className="text-xs text-gray-500 mt-2 italic">"AI Analysis: {selectedRisk.aiRationale}"</p>}
+                <p className="font-medium text-gray-900 dark:text-signal-ink">{selectedRisk.description}</p>
+                {selectedRisk.aiRationale && <p className="text-xs text-gray-500 dark:text-signal-muted mt-2 italic">"AI Analysis: {selectedRisk.aiRationale}"</p>}
               </div>
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-bold text-gray-900">{t('risks.mitigationPlan')}</h4>
+                  <h4 className="font-bold text-gray-900 dark:text-signal-ink">{t('risks.mitigationPlan')}</h4>
                   {selectedRisk.targetDate && (
                     <div className="text-sm">
-                      <span className="text-gray-600">Due Date: </span>
-                      <span className={`font-semibold ${new Date(selectedRisk.targetDate) < new Date() ? 'text-red-600' : 'text-gray-900'}`}>
+                      <span className="text-gray-600 dark:text-signal-sub">Due Date: </span>
+                      <span className={`font-semibold ${new Date(selectedRisk.targetDate) < new Date() ? 'text-red-600 dark:text-signal-bad' : 'text-gray-900 dark:text-signal-ink'}`}>
                         {new Date(selectedRisk.targetDate).toLocaleDateString()}
                         {new Date(selectedRisk.targetDate) < new Date() && ' ⚠️ Overdue'}
                       </span>
@@ -418,27 +418,27 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                   )}
                 </div>
                 {loadingRemediation ? (
-                  <div className="flex flex-col items-center justify-center py-8 bg-gray-50 rounded-lg">
-                     <Loader2 className="animate-spin text-brand-500 mb-4" size={24} />
-                     <p className="text-sm text-gray-500">AI is generating step-by-step fix...</p>
+                  <div className="flex flex-col items-center justify-center py-8 bg-gray-50 dark:bg-white/[0.03] rounded-lg">
+                     <Loader2 className="animate-spin text-brand-500 dark:text-signal-green mb-4" size={24} />
+                     <p className="text-sm text-gray-500 dark:text-signal-sub">AI is generating step-by-step fix...</p>
                   </div>
                 ) : (
                   <div>
                     <textarea
                       value={remediationPlan || ''}
                       onChange={(e) => setRemediationPlan(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                       rows={6}
                       placeholder="Enter remediation steps... (AI-generated plan can be edited)"
                     />
-                    <p className="text-xs text-gray-500 mt-1">You can edit the AI-generated plan or enter your own remediation steps.</p>
+                    <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">You can edit the AI-generated plan or enter your own remediation steps.</p>
                   </div>
                 )}
               </div>
 
               {selectedRisk.targetDate && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.reviewDate')}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('risks.reviewDate')}</label>
                   <input
                     type="date"
                     value={selectedRisk.targetDate ? new Date(selectedRisk.targetDate).toISOString().split('T')[0] : ''}
@@ -447,15 +447,15 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                         setSelectedRisk({ ...selectedRisk, targetDate: e.target.value });
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                   />
                 </div>
               )}
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
-              <button onClick={() => setSelectedRisk(null)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors">{t('common.cancel')}</button>
-              <button onClick={saveRiskChanges} className="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors shadow-lg">{t('common.save')}</button>
+            <div className="p-6 border-t border-gray-100 dark:border-white/[0.08] bg-gray-50 dark:bg-white/[0.02] rounded-b-xl flex justify-end space-x-3">
+              <button onClick={() => setSelectedRisk(null)} className="px-4 py-2 text-gray-600 dark:text-signal-sub hover:bg-gray-100 dark:hover:bg-white/[0.05] rounded-lg font-medium transition-colors">{t('common.cancel')}</button>
+              <button onClick={saveRiskChanges} className="px-6 py-2 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg font-medium hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors shadow-lg">{t('common.save')}</button>
             </div>
           </div>
         </div>
@@ -465,10 +465,10 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center space-x-4">
-            <button onClick={onBack} className="p-2 hover:bg-gray-200 rounded-lg transition-colors"><ArrowLeft size={20} className="text-gray-600" /></button>
+            <button onClick={onBack} className="p-2 hover:bg-gray-200 dark:hover:bg-white/[0.06] rounded-lg transition-colors"><ArrowLeft size={20} className="text-gray-600 dark:text-signal-sub" /></button>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{t('risks.title')}</h2>
-              <p className="text-sm text-gray-500">{t('risks.riskIndicators')}</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('risks.title')}</h2>
+              <p className="text-sm text-gray-500 dark:text-signal-sub">{t('risks.riskIndicators')}</p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -477,17 +477,17 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 onClick={() => !issuesLimitReached && setShowAddRiskModal(true)} 
                 disabled={issuesLimitReached}
                 title={issuesLimitReached ? getUpgradeMessage(user?.organization?.plan, 'maxIssues', risks.length) : undefined}
-                className="bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 shadow-md flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-green-600 text-white dark:bg-signal-green dark:text-signal-canvas px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-signal-green/90 shadow-md dark:shadow-none flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="mr-2" size={16} />
                 {t('risks.createRisk')}
               </button>
             )}
-             <button onClick={handleAIPrioritization} disabled={isPrioritizing} className="bg-purple-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 shadow-md flex items-center transition-colors">
+             <button onClick={handleAIPrioritization} disabled={isPrioritizing} className="bg-purple-600 text-white dark:bg-signal-violet/10 dark:text-signal-violet px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 dark:hover:bg-signal-violet/20 shadow-md dark:shadow-none flex items-center transition-colors">
               {isPrioritizing ? <Loader2 className="animate-spin mr-2" size={16} /> : <BrainCircuit className="mr-2" size={16} />}
               AI Prioritize
             </button>
-            <button onClick={runRiskAssessment} disabled={isScanning} className="bg-brand-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-700 shadow-md flex items-center transition-colors">
+            <button onClick={runRiskAssessment} disabled={isScanning} className="bg-brand-600 text-white dark:bg-signal-green/10 dark:text-signal-green px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-700 dark:hover:bg-signal-green/20 shadow-md dark:shadow-none flex items-center transition-colors">
               {isScanning ? <Loader2 className="animate-spin mr-2" size={16} /> : <Play className="mr-2" size={16} />}
               Run Scan
             </button>
@@ -497,10 +497,10 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       
       {/* Table implementation */}
       {(
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-white/[0.03] rounded-xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/[0.06] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+            <thead className="font-mono text-[10px] tracking-[0.14em] text-gray-500 dark:text-signal-muted uppercase bg-gray-50 dark:bg-transparent border-b border-gray-100 dark:border-white/[0.06]">
               <tr>
                 <th className="px-6 py-4 font-medium cursor-pointer whitespace-nowrap" onClick={() => handleSort('severity')}>
                    <div className="flex items-center gap-1">
@@ -520,21 +520,21 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 <th className="px-6 py-4 font-medium text-right whitespace-nowrap">{t('common.actions').toUpperCase()}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
                {sortedRisks.map((risk) => (
-                  <tr key={risk.id} className="hover:bg-gray-50 group">
+                  <tr key={risk.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.04] group">
                     <td className="px-6 py-4 align-middle">
-                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${risk.severity === 'High' ? 'bg-red-100 text-red-800' : risk.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${risk.severity === 'Critical' ? 'bg-red-200 text-red-900 dark:bg-signal-bad/20 dark:text-signal-bad' : risk.severity === 'High' ? 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad' : risk.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-blue-100 text-blue-800 dark:bg-signal-good/10 dark:text-signal-good'}`}>
                         {risk.severity}
                       </span>
                     </td>
                     <td className="px-6 py-4 align-middle">
-                      <p className="font-medium text-gray-900 line-clamp-2">{risk.title || risk.description}</p>
+                      <p className="font-medium text-gray-900 dark:text-signal-ink line-clamp-2">{risk.title || risk.description}</p>
                       {risk.targetDate && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">
                           Due: {new Date(risk.targetDate).toLocaleDateString()}
                           {new Date(risk.targetDate) < new Date() && (
-                            <span className="ml-2 text-red-600 font-semibold">⚠️ Overdue</span>
+                            <span className="ml-2 text-red-600 dark:text-signal-bad font-semibold">⚠️ Overdue</span>
                           )}
                         </p>
                       )}
@@ -546,16 +546,16 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                           ? ((risk as any).assignedTo?.name || (risk as any).assignedTo)
                           : risk.assignedTo;
                         return assignedUser ? (
-                          <span className="text-gray-600">{assignedUser}</span>
+                          <span className="text-gray-600 dark:text-signal-sub">{assignedUser}</span>
                         ) : (
-                          <span className="text-gray-400 italic">Unassigned</span>
+                          <span className="text-gray-400 dark:text-signal-muted italic">Unassigned</span>
                         );
                       })()}
                     </td>
                     <td className="px-6 py-4 align-middle">
-                      <span className="font-semibold text-gray-900">{risk.riskScore || (risk.likelihood && risk.impact ? risk.likelihood * risk.impact : '-')}</span>
+                      <span className={`font-semibold text-gray-900 dark:font-mono dark:text-xs dark:px-2.5 dark:py-1 dark:rounded-lg ${risk.severity === 'Critical' ? 'dark:bg-signal-bad/20 dark:text-signal-bad' : risk.severity === 'High' ? 'dark:bg-signal-bad/10 dark:text-signal-bad' : risk.severity === 'Medium' ? 'dark:bg-signal-warn/10 dark:text-signal-warn' : 'dark:bg-signal-good/10 dark:text-signal-good'}`}>{risk.riskScore || (risk.likelihood && risk.impact ? risk.likelihood * risk.impact : '-')}</span>
                       {risk.likelihood && risk.impact && (
-                        <span className="text-xs text-gray-500 ml-1">({risk.likelihood}×{risk.impact})</span>
+                        <span className="text-xs text-gray-500 dark:text-signal-muted ml-1">({risk.likelihood}×{risk.impact})</span>
                       )}
                     </td>
                     <td className="px-6 py-4 align-middle">
@@ -567,22 +567,22 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                           if (!assignedUser) {
                             return (
                               <>
-                                <span className="text-gray-400 text-xs">{new Date(risk.detectedAt).toLocaleDateString()}</span>
-                                <span className="text-gray-400 text-xs mt-1">Unassigned</span>
+                                <span className="text-gray-400 dark:text-signal-muted text-xs">{new Date(risk.detectedAt).toLocaleDateString()}</span>
+                                <span className="text-gray-400 dark:text-signal-muted text-xs mt-1">Unassigned</span>
                               </>
                             );
                           }
                           return (
-                            <span className="text-gray-400 text-xs">{new Date(risk.detectedAt).toLocaleDateString()}</span>
+                            <span className="text-gray-400 dark:text-signal-muted text-xs">{new Date(risk.detectedAt).toLocaleDateString()}</span>
                           );
                         })()}
-                        <span className={`font-medium mt-1 ${risk.status === 'Open' ? 'text-gray-900' : risk.status === 'Resolved' ? 'text-green-600' : 'text-gray-600'}`}>
+                        <span className={`font-medium mt-1 ${risk.status === 'Open' ? 'text-gray-900 dark:text-signal-ink' : risk.status === 'Resolved' ? 'text-green-600 dark:text-signal-good' : 'text-gray-600 dark:text-signal-sub'}`}>
                           {risk.status}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right align-middle">
-                       <button onClick={() => handleOpenRemediation(risk)} className="text-brand-600 font-medium hover:text-brand-800 px-3 py-1.5 border border-brand-200 rounded-lg whitespace-nowrap">
+                       <button onClick={() => handleOpenRemediation(risk)} className="text-brand-600 dark:text-signal-green font-medium hover:text-brand-800 dark:hover:text-signal-green/80 px-3 py-1.5 border border-brand-200 dark:border-signal-green/30 rounded-lg whitespace-nowrap">
                          {t('common.edit')}
                        </button>
                     </td>
@@ -597,35 +597,35 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       {/* Add Risk Modal */}
       {showAddRiskModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full animate-scaleIn">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                <Plus className="mr-2 text-brand-600" size={20} />
+          <div className="bg-white dark:bg-signal-panel2 dark:border dark:border-white/[0.08] rounded-xl shadow-2xl max-w-2xl w-full animate-scaleIn">
+            <div className="p-6 border-b border-gray-100 dark:border-white/[0.08] flex justify-between items-center bg-gray-50 dark:bg-white/[0.02] rounded-t-xl">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-signal-ink flex items-center">
+                <Plus className="mr-2 text-brand-600 dark:text-signal-green" size={20} />
                 {t('risks.createRisk')}
               </h3>
-              <button onClick={() => setShowAddRiskModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowAddRiskModal(false)} className="text-gray-400 hover:text-gray-600 dark:text-signal-muted dark:hover:text-signal-ink">
                 <X size={24} />
               </button>
             </div>
             
             <form onSubmit={handleCreateRisk} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.title')} ({t('common.optional')})</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('risks.title')} ({t('common.optional')})</label>
                 <input
                   type="text"
                   value={newRisk.title}
                   onChange={(e) => setNewRisk({ ...newRisk, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                   placeholder="Risk title (auto-generated from description if empty)"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')} *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('common.description')} *</label>
                 <textarea
                   value={newRisk.description}
                   onChange={(e) => setNewRisk({ ...newRisk, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                   rows={3}
                   required
                   placeholder="Describe the risk..."
@@ -634,23 +634,23 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.riskCategory')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('risks.riskCategory')} *</label>
                   <input
                     type="text"
                     value={newRisk.category}
                     onChange={(e) => setNewRisk({ ...newRisk, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                     required
                     placeholder="e.g., Infrastructure, Personnel, Data Breach"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.severity')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('common.severity')} *</label>
                   <select
                     value={newRisk.severity}
                     onChange={(e) => setNewRisk({ ...newRisk, severity: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                     required
                   >
                     <option value="High">{t('risks.high')}</option>
@@ -662,7 +662,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.likelihood')} (1-5) *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('risks.likelihood')} (1-5) *</label>
                   <input
                     type="number"
                     min="1"
@@ -672,14 +672,14 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                       const val = parseInt(e.target.value) || 1;
                       setNewRisk({ ...newRisk, likelihood: Math.min(5, Math.max(1, val)) });
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-1">1 = Very Unlikely, 5 = Very Likely</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">1 = Very Unlikely, 5 = Very Likely</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.impact')} (1-5) *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('risks.impact')} (1-5) *</label>
                   <input
                     type="number"
                     min="1"
@@ -689,26 +689,26 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                       const val = parseInt(e.target.value) || 1;
                       setNewRisk({ ...newRisk, impact: Math.min(5, Math.max(1, val)) });
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-1">1 = Low Impact, 5 = Critical Impact</p>
+                  <p className="text-xs text-gray-500 dark:text-signal-muted mt-1">1 = Low Impact, 5 = Critical Impact</p>
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm font-medium text-blue-900">
+              <div className="bg-blue-50 dark:bg-signal-green/10 border border-blue-200 dark:border-signal-green/20 rounded-lg p-3">
+                <p className="text-sm font-medium text-blue-900 dark:text-signal-green">
                   {t('risks.riskScore')}: <span className="text-lg font-bold">{newRisk.likelihood * newRisk.impact}</span>
-                  <span className="text-xs text-blue-700 ml-2">({newRisk.likelihood} × {newRisk.impact})</span>
+                  <span className="text-xs text-blue-700 dark:text-signal-green/70 ml-2">({newRisk.likelihood} × {newRisk.impact})</span>
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.mitigationPlan')} ({t('common.optional')})</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('risks.mitigationPlan')} ({t('common.optional')})</label>
                 <textarea
                   value={newRisk.mitigationPlan}
                   onChange={(e) => setNewRisk({ ...newRisk, mitigationPlan: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                   rows={3}
                   placeholder="Enter remediation steps..."
                 />
@@ -716,21 +716,21 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.reviewDate')} ({t('common.optional')})</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('risks.reviewDate')} ({t('common.optional')})</label>
                   <input
                     type="date"
                     value={newRisk.targetDate}
                     onChange={(e) => setNewRisk({ ...newRisk, targetDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.riskOwner')} ({t('common.optional')})</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-signal-body2 mb-1">{t('risks.riskOwner')} ({t('common.optional')})</label>
                   <select
                     value={newRisk.assignedToId}
                     onChange={(e) => setNewRisk({ ...newRisk, assignedToId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:focus:ring-signal-green/40 dark:focus:border-signal-green/40 outline-none"
                   >
                     <option value="">Unassigned</option>
                     {teamMembers.map(u => (
@@ -757,13 +757,13 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                       targetDate: '',
                     });
                   }}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 text-gray-600 dark:text-signal-sub hover:bg-gray-100 dark:hover:bg-white/[0.05] rounded-lg font-medium transition-colors"
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors shadow-lg"
+                  className="px-6 py-2 bg-brand-600 text-white dark:bg-signal-green dark:text-signal-canvas rounded-lg font-medium hover:bg-brand-700 dark:hover:bg-signal-green/90 transition-colors shadow-lg"
                 >
                   {t('risks.createRisk')}
                 </button>

@@ -81,14 +81,14 @@ interface AuditEntry {
 const STATUS_FLOW: RequestStatus[] = ['Submitted', 'Verified', 'Located', 'Review', 'Approved', 'Executing', 'Completed'];
 
 const statusColors: Record<RequestStatus, string> = {
-  Submitted: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  Verified: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  Located: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
-  Review: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  Approved: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  Executing: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  Completed: 'bg-green-500/20 text-green-400 border-green-500/30',
-  Denied: 'bg-red-500/20 text-red-400 border-red-500/30',
+  Submitted: 'bg-signal-blue/20 text-signal-blue border-signal-blue/30',
+  Verified: 'bg-signal-blue/20 text-signal-blue border-signal-blue/30',
+  Located: 'bg-signal-violet/20 text-signal-violet border-signal-violet/30',
+  Review: 'bg-signal-warn/20 text-signal-warn border-signal-warn/30',
+  Approved: 'bg-signal-good/20 text-signal-good border-signal-good/30',
+  Executing: 'bg-signal-warn/20 text-signal-warn border-signal-warn/30',
+  Completed: 'bg-signal-good/20 text-signal-good border-signal-good/30',
+  Denied: 'bg-signal-bad/20 text-signal-bad border-signal-bad/30',
 };
 
 // Component initializes with empty state and populates from the privacy API with full error handling.
@@ -156,10 +156,10 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   // Derive a system icon from the system/datastore name.
   const iconForSystem = useCallback((name: string): React.ReactNode => {
     const n = name.toLowerCase();
-    if (n.includes('db') || n.includes('database') || n.includes('postgres') || n.includes('sql')) return <Database className="w-4 h-4 text-blue-400" />;
-    if (n.includes('s3') || n.includes('storage') || n.includes('blob') || n.includes('disk')) return <HardDrive className="w-4 h-4 text-purple-400" />;
-    if (n.includes('cdn') || n.includes('web') || n.includes('http') || n.includes('api')) return <Globe className="w-4 h-4 text-cyan-400" />;
-    return <Server className="w-4 h-4 text-slate-400" />;
+    if (n.includes('db') || n.includes('database') || n.includes('postgres') || n.includes('sql')) return <Database className="w-4 h-4 text-signal-blue" />;
+    if (n.includes('s3') || n.includes('storage') || n.includes('blob') || n.includes('disk')) return <HardDrive className="w-4 h-4 text-signal-violet" />;
+    if (n.includes('cdn') || n.includes('web') || n.includes('http') || n.includes('api')) return <Globe className="w-4 h-4 text-signal-blue" />;
+    return <Server className="w-4 h-4 text-signal-muted" />;
   }, []);
 
   // Map the backend deletion record's systemsAffected + deletionLog into per-system rows.
@@ -278,10 +278,10 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
     const completedCount = requests.filter(r => r.status === 'Completed').length;
     const dataMappingCount = auditEntries.filter(a => a.category === 'system' || a.category === 'verification').length;
     return [
-      { label: 'GDPR Art. 17 Compliance', count: reasonMatches('gdpr') || reasonMatches('erasure'), color: 'text-blue-400' },
-      { label: 'CCPA Deletion Records', count: reasonMatches('ccpa'), color: 'text-purple-400' },
-      { label: 'Data Mapping Reports', count: dataMappingCount, color: 'text-cyan-400' },
-      { label: 'Erasure Confirmation Letters', count: completedCount, color: 'text-green-400' },
+      { label: 'GDPR Art. 17 Compliance', count: reasonMatches('gdpr') || reasonMatches('erasure'), color: 'text-signal-blue' },
+      { label: 'CCPA Deletion Records', count: reasonMatches('ccpa'), color: 'text-signal-violet' },
+      { label: 'Data Mapping Reports', count: dataMappingCount, color: 'text-signal-blue' },
+      { label: 'Erasure Confirmation Letters', count: completedCount, color: 'text-signal-good' },
     ];
   }, [requests, auditEntries]);
 
@@ -345,23 +345,23 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
 
   const systemStatusColor = (status: string) => {
     switch (status) {
-      case 'Completed': return 'text-green-400';
-      case 'Verified': return 'text-emerald-400';
-      case 'In Progress': return 'text-yellow-400';
-      case 'Pending': return 'text-slate-400';
-      case 'Failed': return 'text-red-400';
-      default: return 'text-slate-400';
+      case 'Completed': return 'text-signal-good';
+      case 'Verified': return 'text-signal-good';
+      case 'In Progress': return 'text-signal-warn';
+      case 'Pending': return 'text-signal-muted';
+      case 'Failed': return 'text-signal-bad';
+      default: return 'text-signal-muted';
     }
   };
 
   const auditCategoryColor = (cat: string) => {
     switch (cat) {
-      case 'status_change': return 'bg-blue-500/20 text-blue-400';
-      case 'verification': return 'bg-emerald-500/20 text-emerald-400';
-      case 'deletion': return 'bg-red-500/20 text-red-400';
-      case 'review': return 'bg-yellow-500/20 text-yellow-400';
-      case 'system': return 'bg-slate-500/20 text-slate-400';
-      default: return 'bg-slate-500/20 text-slate-400';
+      case 'status_change': return 'bg-signal-blue/20 text-signal-blue';
+      case 'verification': return 'bg-signal-good/20 text-signal-good';
+      case 'deletion': return 'bg-signal-bad/20 text-signal-bad';
+      case 'review': return 'bg-signal-warn/20 text-signal-warn';
+      case 'system': return 'bg-white/[0.06] text-signal-muted';
+      default: return 'bg-white/[0.06] text-signal-muted';
     }
   };
 
@@ -377,14 +377,14 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         <div className="flex items-center gap-1 mt-2">
           {STATUS_FLOW.slice(0, 4).map((step, idx) => (
             <React.Fragment key={step}>
-              <div className={`text-xs px-2 py-0.5 rounded ${idx < 4 ? 'bg-slate-700 text-slate-500' : ''}`}>
+              <div className={`text-xs px-2 py-0.5 rounded ${idx < 4 ? 'bg-white/[0.06] text-signal-muted' : ''}`}>
                 {step}
               </div>
-              {idx < 3 && <ChevronRight className="w-3 h-3 text-slate-600" />}
+              {idx < 3 && <ChevronRight className="w-3 h-3 text-signal-muted" />}
             </React.Fragment>
           ))}
-          <ChevronRight className="w-3 h-3 text-slate-600" />
-          <div className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">Denied</div>
+          <ChevronRight className="w-3 h-3 text-signal-muted" />
+          <div className="text-xs px-2 py-0.5 rounded bg-signal-bad/20 text-signal-bad font-medium">Denied</div>
         </div>
       );
     }
@@ -393,13 +393,13 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         {STATUS_FLOW.map((step, idx) => (
           <React.Fragment key={step}>
             <div className={`text-xs px-2 py-0.5 rounded ${
-              idx < currentIdx ? 'bg-green-500/20 text-green-400' :
-              idx === currentIdx ? 'bg-blue-500/20 text-blue-400 font-medium ring-1 ring-blue-500/50' :
-              'bg-slate-700 text-slate-500'
+              idx < currentIdx ? 'bg-signal-good/20 text-signal-good' :
+              idx === currentIdx ? 'bg-signal-blue/20 text-signal-blue font-medium ring-1 ring-signal-blue/40' :
+              'bg-white/[0.06] text-signal-muted'
             }`}>
               {step}
             </div>
-            {idx < STATUS_FLOW.length - 1 && <ChevronRight className="w-3 h-3 text-slate-600" />}
+            {idx < STATUS_FLOW.length - 1 && <ChevronRight className="w-3 h-3 text-signal-muted" />}
           </React.Fragment>
         ))}
       </div>
@@ -409,91 +409,91 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-slate-400 text-sm mb-1">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+          <div className="flex items-center gap-2 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em] mb-2">
             <FileText className="w-4 h-4" /> Total Requests
           </div>
-          <div className="text-3xl font-bold text-white">{stats.total}</div>
+          <div className="text-3xl font-display font-bold text-signal-ink">{stats.total}</div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-yellow-400 text-sm mb-1">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+          <div className="flex items-center gap-2 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em] mb-2">
             <Clock className="w-4 h-4" /> Pending
           </div>
-          <div className="text-3xl font-bold text-yellow-400">{stats.pending}</div>
+          <div className="text-3xl font-display font-bold text-signal-warn">{stats.pending}</div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-blue-400 text-sm mb-1">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+          <div className="flex items-center gap-2 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em] mb-2">
             <RefreshCw className="w-4 h-4" /> In Progress
           </div>
-          <div className="text-3xl font-bold text-blue-400">{stats.inProgress}</div>
+          <div className="text-3xl font-display font-bold text-signal-blue">{stats.inProgress}</div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-green-400 text-sm mb-1">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+          <div className="flex items-center gap-2 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em] mb-2">
             <CheckCircle className="w-4 h-4" /> Completed
           </div>
-          <div className="text-3xl font-bold text-green-400">{stats.completed}</div>
+          <div className="text-3xl font-display font-bold text-signal-good">{stats.completed}</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-red-400 text-sm mb-1">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+          <div className="flex items-center gap-2 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em] mb-2">
             <XCircle className="w-4 h-4" /> Denied
           </div>
-          <div className="text-2xl font-bold text-red-400">{stats.denied}</div>
-          <div className="text-xs text-slate-500 mt-1">Due to legal holds or conflicts</div>
+          <div className="text-2xl font-display font-bold text-signal-bad">{stats.denied}</div>
+          <div className="text-xs text-signal-muted mt-1">Due to legal holds or conflicts</div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-cyan-400 text-sm mb-1">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+          <div className="flex items-center gap-2 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em] mb-2">
             <Clock className="w-4 h-4" /> Avg Processing Time
           </div>
-          <div className="text-2xl font-bold text-cyan-400">{stats.avgProcessingDays !== null ? `${stats.avgProcessingDays} days` : '—'}</div>
-          <div className="text-xs text-slate-500 mt-1">From submission to completion</div>
+          <div className="text-2xl font-display font-bold text-signal-blue">{stats.avgProcessingDays !== null ? `${stats.avgProcessingDays} days` : '—'}</div>
+          <div className="text-xs text-signal-muted mt-1">From submission to completion</div>
         </div>
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-orange-400 text-sm mb-1">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+          <div className="flex items-center gap-2 text-signal-muted font-mono text-[10px] uppercase tracking-[0.14em] mb-2">
             <AlertTriangle className="w-4 h-4" /> Retention Hold Conflicts
           </div>
-          <div className="text-2xl font-bold text-orange-400">{stats.withConflicts}</div>
-          <div className="text-xs text-slate-500 mt-1">Requests with active conflicts</div>
+          <div className="text-2xl font-display font-bold text-signal-warn">{stats.withConflicts}</div>
+          <div className="text-xs text-signal-muted mt-1">Requests with active conflicts</div>
         </div>
       </div>
 
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-white mb-3">Status Distribution</h3>
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+        <h3 className="text-sm font-medium text-signal-ink mb-3">Status Distribution</h3>
         <div className="space-y-2">
           {(['Submitted', 'Verified', 'Located', 'Review', 'Approved', 'Executing', 'Completed', 'Denied'] as RequestStatus[]).map(status => {
             const count = requests.filter(r => r.status === status).length;
             const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
             return (
               <div key={status} className="flex items-center gap-3">
-                <div className="w-24 text-xs text-slate-400">{status}</div>
-                <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
+                <div className="w-24 text-xs text-signal-muted">{status}</div>
+                <div className="flex-1 bg-white/[0.06] rounded-full h-2 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      status === 'Completed' ? 'bg-green-500' :
-                      status === 'Denied' ? 'bg-red-500' :
-                      status === 'Executing' ? 'bg-orange-500' :
-                      status === 'Submitted' ? 'bg-blue-500' :
-                      'bg-cyan-500'
+                      status === 'Completed' ? 'bg-signal-good' :
+                      status === 'Denied' ? 'bg-signal-bad' :
+                      status === 'Executing' ? 'bg-signal-warn' :
+                      status === 'Submitted' ? 'bg-signal-blue' :
+                      'bg-signal-blue'
                     }`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <div className="w-8 text-xs text-slate-400 text-right">{count}</div>
+                <div className="w-8 text-xs text-signal-muted text-right">{count}</div>
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-white mb-3">Recent Activity</h3>
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+        <h3 className="text-sm font-medium text-signal-ink mb-3">Recent Activity</h3>
         <div className="space-y-2">
           {auditEntries.slice(0, 5).map(entry => (
             <div key={entry.id} className="flex items-start gap-3 text-sm">
-              <div className="text-xs text-slate-500 whitespace-nowrap mt-0.5">{entry.timestamp}</div>
-              <div className="text-slate-300">{entry.action}</div>
+              <div className="text-xs text-signal-muted whitespace-nowrap mt-0.5">{entry.timestamp}</div>
+              <div className="text-signal-body">{entry.action}</div>
             </div>
           ))}
         </div>
@@ -505,30 +505,30 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
     if (!showCreateModal) return null;
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-lg mx-4">
+        <div className="bg-signal-panel2 border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg mx-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">{t('privacy.accountDeletion')}</h3>
-            <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-white">
+            <h3 className="text-lg font-medium text-signal-ink">{t('privacy.accountDeletion')}</h3>
+            <button onClick={() => setShowCreateModal(false)} className="text-signal-muted hover:text-signal-ink">
               <X className="w-5 h-5" />
             </button>
           </div>
           <div className="space-y-4">
             {createError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-300 flex items-center gap-2">
+              <div className="p-3 bg-signal-bad/10 border border-signal-bad/30 rounded text-sm text-signal-bad flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {createError}
               </div>
             )}
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Account Name</label>
-              <input type="text" value={createForm.accountName} onChange={(e) => setCreateForm(f => ({ ...f, accountName: e.target.value }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" placeholder="Full name" />
+              <label className="block text-sm text-signal-muted mb-1">Account Name</label>
+              <input type="text" value={createForm.accountName} onChange={(e) => setCreateForm(f => ({ ...f, accountName: e.target.value }))} className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-signal-ink text-sm focus:outline-none focus:border-signal-green/60" placeholder="Full name" />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Email Address</label>
-              <input type="email" value={createForm.email} onChange={(e) => setCreateForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" placeholder="user@example.com" />
+              <label className="block text-sm text-signal-muted mb-1">Email Address</label>
+              <input type="email" value={createForm.email} onChange={(e) => setCreateForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-signal-ink text-sm focus:outline-none focus:border-signal-green/60" placeholder="user@example.com" />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Reason</label>
-              <select value={createForm.reason} onChange={(e) => setCreateForm(f => ({ ...f, reason: e.target.value }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+              <label className="block text-sm text-signal-muted mb-1">Reason</label>
+              <select value={createForm.reason} onChange={(e) => setCreateForm(f => ({ ...f, reason: e.target.value }))} className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-signal-ink text-sm focus:outline-none focus:border-signal-green/60">
                 <option>GDPR Right to Erasure</option>
                 <option>CCPA deletion request</option>
                 <option>Account closure request</option>
@@ -536,20 +536,20 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Priority</label>
-              <select value={createForm.priority} onChange={(e) => setCreateForm(f => ({ ...f, priority: e.target.value as 'High' | 'Medium' | 'Low' }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+              <label className="block text-sm text-signal-muted mb-1">Priority</label>
+              <select value={createForm.priority} onChange={(e) => setCreateForm(f => ({ ...f, priority: e.target.value as 'High' | 'Medium' | 'Low' }))} className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-signal-ink text-sm focus:outline-none focus:border-signal-green/60">
                 <option>High</option>
                 <option>Medium</option>
                 <option>Low</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Additional Notes</label>
-              <textarea value={createForm.notes} onChange={(e) => setCreateForm(f => ({ ...f, notes: e.target.value }))} className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 h-20 resize-none" placeholder="Any additional context..." />
+              <label className="block text-sm text-signal-muted mb-1">Additional Notes</label>
+              <textarea value={createForm.notes} onChange={(e) => setCreateForm(f => ({ ...f, notes: e.target.value }))} className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-signal-ink text-sm focus:outline-none focus:border-signal-green/60 h-20 resize-none" placeholder="Any additional context..." />
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => { setShowCreateModal(false); setCreateError(null); }} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
+            <button onClick={() => { setShowCreateModal(false); setCreateError(null); }} className="px-4 py-2 text-sm text-signal-muted hover:text-signal-ink transition-colors">
               {t('common.cancel')}
             </button>
             <button
@@ -576,7 +576,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
                   setCreateSubmitting(false);
                 }
               }}
-              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm bg-signal-green hover:bg-signal-green/90 text-signal-canvas font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createSubmitting ? `${t('common.loading')}...` : t('common.submit')}
             </button>
@@ -590,67 +590,67 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
     if (!selectedRequest) return null;
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+        <div className="bg-signal-panel2 border border-white/[0.08] rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">{selectedRequest.id} - {selectedRequest.accountName}</h3>
-            <button onClick={() => setSelectedRequest(null)} className="text-slate-400 hover:text-white">
+            <h3 className="text-lg font-medium text-signal-ink">{selectedRequest.id} - {selectedRequest.accountName}</h3>
+            <button onClick={() => setSelectedRequest(null)} className="text-signal-muted hover:text-signal-ink">
               <X className="w-5 h-5" />
             </button>
           </div>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs text-slate-500">Email</div>
-                <div className="text-sm text-white">{selectedRequest.email}</div>
+                <div className="text-xs text-signal-muted">Email</div>
+                <div className="text-sm text-signal-ink">{selectedRequest.email}</div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">Submitted</div>
-                <div className="text-sm text-white">{selectedRequest.submittedDate}</div>
+                <div className="text-xs text-signal-muted">Submitted</div>
+                <div className="text-sm text-signal-ink">{selectedRequest.submittedDate}</div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">Reason</div>
-                <div className="text-sm text-white">{selectedRequest.reason}</div>
+                <div className="text-xs text-signal-muted">Reason</div>
+                <div className="text-sm text-signal-ink">{selectedRequest.reason}</div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">Assigned To</div>
-                <div className="text-sm text-white">{selectedRequest.assignedTo}</div>
+                <div className="text-xs text-signal-muted">Assigned To</div>
+                <div className="text-sm text-signal-ink">{selectedRequest.assignedTo}</div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">{t('common.priority')}</div>
-                <div className={`text-sm ${selectedRequest.priority === 'High' ? 'text-red-400' : selectedRequest.priority === 'Medium' ? 'text-yellow-400' : 'text-slate-400'}`}>
+                <div className="text-xs text-signal-muted">{t('common.priority')}</div>
+                <div className={`text-sm ${selectedRequest.priority === 'High' ? 'text-signal-bad' : selectedRequest.priority === 'Medium' ? 'text-signal-warn' : 'text-signal-muted'}`}>
                   {selectedRequest.priority}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">Est. Completion</div>
-                <div className="text-sm text-white">{selectedRequest.estimatedCompletion}</div>
+                <div className="text-xs text-signal-muted">Est. Completion</div>
+                <div className="text-sm text-signal-ink">{selectedRequest.estimatedCompletion}</div>
               </div>
             </div>
 
             <div>
-              <div className="text-xs text-slate-500 mb-2">{t('common.status')}</div>
+              <div className="text-xs text-signal-muted mb-2">{t('common.status')}</div>
               {renderStatusFlow(selectedRequest.status)}
             </div>
 
             <div>
-              <div className="text-xs text-slate-500 mb-2">{t('privacy.dataInventory')}</div>
+              <div className="text-xs text-signal-muted mb-2">{t('privacy.dataInventory')}</div>
               {selectedRequest.dataLocations.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {selectedRequest.dataLocations.map(loc => (
-                    <span key={loc} className="text-xs px-2 py-1 bg-slate-700 text-slate-300 rounded">{loc}</span>
+                    <span key={loc} className="text-xs px-2 py-1 bg-white/[0.06] text-signal-body rounded">{loc}</span>
                   ))}
                 </div>
               ) : (
-                <div className="text-xs text-slate-500 italic">Not yet located</div>
+                <div className="text-xs text-signal-muted italic">Not yet located</div>
               )}
             </div>
 
             {selectedRequest.conflicts.length > 0 && (
               <div>
-                <div className="text-xs text-slate-500 mb-2">Conflicts Detected</div>
+                <div className="text-xs text-signal-muted mb-2">Conflicts Detected</div>
                 <div className="space-y-1">
                   {selectedRequest.conflicts.map((c, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-orange-400">
+                    <div key={i} className="flex items-center gap-2 text-sm text-signal-warn">
                       <AlertTriangle className="w-3 h-3" /> {c}
                     </div>
                   ))}
@@ -659,7 +659,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             )}
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setSelectedRequest(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
+            <button onClick={() => setSelectedRequest(null)} className="px-4 py-2 text-sm text-signal-muted hover:text-signal-ink transition-colors">
               {t('common.close')}
             </button>
           </div>
@@ -673,21 +673,21 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
           <div className="relative flex-1 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-signal-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white/[0.03] border border-white/[0.06] rounded-lg pl-9 pr-3 py-2 text-sm text-signal-ink placeholder-signal-muted focus:outline-none focus:border-signal-green/60"
               placeholder={`${t('common.search')}...`}
             />
           </div>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-signal-muted" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as RequestStatus | 'All')}
-              className="bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+              className="bg-white/[0.03] border border-white/[0.06] rounded-lg pl-9 pr-3 py-2 text-sm text-signal-ink focus:outline-none focus:border-signal-green/60 appearance-none cursor-pointer"
             >
               <option value="All">All Statuses</option>
               {[...STATUS_FLOW, 'Denied' as RequestStatus].map(s => (
@@ -698,17 +698,17 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-signal-green hover:bg-signal-green/90 text-signal-canvas font-semibold text-sm rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" /> {t('common.create')}
         </button>
       </div>
 
       {filteredRequests.length === 0 ? (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
-          <FileText className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-          <div className="text-slate-400 text-sm">No requests match your criteria</div>
-          <div className="text-slate-500 text-xs mt-1">Try adjusting your search or filter</div>
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-12 text-center">
+          <FileText className="w-10 h-10 text-signal-muted mx-auto mb-3" />
+          <div className="text-signal-muted text-sm">No requests match your criteria</div>
+          <div className="text-signal-muted text-xs mt-1">Try adjusting your search or filter</div>
         </div>
       ) : (
         <div className="space-y-3">
@@ -716,37 +716,37 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             <div
               key={req.id}
               onClick={() => setSelectedRequest(req)}
-              className="bg-slate-800 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors cursor-pointer"
+              className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4 hover:border-white/[0.10] transition-colors cursor-pointer"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-mono text-slate-400">{req.id}</span>
+                    <span className="text-sm font-mono text-signal-muted">{req.id}</span>
                     <span className={`text-xs px-2 py-0.5 rounded border ${statusColors[req.status]}`}>
                       {req.status}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded ${
-                      req.priority === 'High' ? 'bg-red-500/20 text-red-400' :
-                      req.priority === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-slate-700 text-slate-400'
+                      req.priority === 'High' ? 'bg-signal-bad/20 text-signal-bad' :
+                      req.priority === 'Medium' ? 'bg-signal-warn/20 text-signal-warn' :
+                      'bg-white/[0.06] text-signal-muted'
                     }`}>
                       {req.priority}
                     </span>
                     {req.conflicts.length > 0 && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 flex items-center gap-1">
+                      <span className="text-xs px-2 py-0.5 rounded bg-signal-warn/20 text-signal-warn flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" /> Conflict
                       </span>
                     )}
                   </div>
-                  <div className="text-white text-sm font-medium">{req.accountName}</div>
-                  <div className="text-slate-400 text-xs">{req.email}</div>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
+                  <div className="text-signal-ink text-sm font-medium">{req.accountName}</div>
+                  <div className="text-signal-muted text-xs">{req.email}</div>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-signal-muted">
                     <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {req.submittedDate}</span>
                     <span>{req.reason}</span>
                     <span>Assigned: {req.assignedTo}</span>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-500 mt-1 flex-shrink-0" />
+                <ChevronRight className="w-4 h-4 text-signal-muted mt-1 flex-shrink-0" />
               </div>
               {renderStatusFlow(req.status)}
             </div>
@@ -767,10 +767,10 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
 
     if (eligibleRequests.length === 0) {
       return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
-          <Server className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-          <div className="text-slate-400 text-sm">No deletion requests are in execution</div>
-          <div className="text-slate-500 text-xs mt-1">Approve or execute a request to track its system-by-system progress here</div>
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-12 text-center">
+          <Server className="w-10 h-10 text-signal-muted mx-auto mb-3" />
+          <div className="text-signal-muted text-sm">No deletion requests are in execution</div>
+          <div className="text-signal-muted text-xs mt-1">Approve or execute a request to track its system-by-system progress here</div>
         </div>
       );
     }
@@ -778,11 +778,11 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <label className="text-sm text-slate-400">Tracking request:</label>
+          <label className="text-sm text-signal-muted">Tracking request:</label>
           <select
             value={selectedExecRequest}
             onChange={(e) => setSelectedExecRequest(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-signal-ink focus:outline-none focus:border-signal-green/60"
           >
             <option value="">Select a request...</option>
             {eligibleRequests.map(r => (
@@ -793,48 +793,48 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
 
         {execLoading && (
           <div className="flex items-center justify-center py-10">
-            <RefreshCw className="w-5 h-5 text-blue-400 animate-spin" />
-            <span className="ml-3 text-slate-400 text-sm">{t('common.loading')}...</span>
+            <RefreshCw className="w-5 h-5 text-signal-blue animate-spin" />
+            <span className="ml-3 text-signal-muted text-sm">{t('common.loading')}...</span>
           </div>
         )}
 
         {!execLoading && selectedExecRequest && systemDeletions.length === 0 && (
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-8 text-center text-sm text-slate-400">
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-8 text-center text-sm text-signal-muted">
             No system-level deletion records have been logged for this request yet.
           </div>
         )}
 
         {execRequest && (
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <div className="text-white font-medium">{execRequest.accountName}</div>
-                <div className="text-xs text-slate-400">{execRequest.email}</div>
+                <div className="text-signal-ink font-medium">{execRequest.accountName}</div>
+                <div className="text-xs text-signal-muted">{execRequest.email}</div>
               </div>
               <span className={`text-xs px-2 py-0.5 rounded border ${statusColors[execRequest.status]}`}>
                 {execRequest.status}
               </span>
             </div>
             <div className="flex items-center gap-3 mb-1">
-              <div className="flex-1 bg-slate-700 rounded-full h-3 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all" style={{ width: `${progressPct}%` }} />
+              <div className="flex-1 bg-white/[0.06] rounded-full h-3 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-signal-blue to-signal-good rounded-full transition-all" style={{ width: `${progressPct}%` }} />
               </div>
-              <span className="text-sm font-mono text-white">{progressPct}%</span>
+              <span className="text-sm font-mono text-signal-ink">{progressPct}%</span>
             </div>
-            <div className="text-xs text-slate-500">{completedSystems} of {totalSystems} systems processed</div>
+            <div className="text-xs text-signal-muted">{completedSystems} of {totalSystems} systems processed</div>
           </div>
         )}
 
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-white">System-by-System Deletion Status</h3>
+          <h3 className="text-sm font-medium text-signal-ink">System-by-System Deletion Status</h3>
           {systemDeletions.map((sys, idx) => (
-            <div key={idx} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+            <div key={idx} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-700 rounded-lg">{sys.icon}</div>
+                  <div className="p-2 bg-white/[0.06] rounded-lg">{sys.icon}</div>
                   <div>
-                    <div className="text-sm text-white font-medium">{sys.system}</div>
-                    <div className="text-xs text-slate-500">{sys.records.toLocaleString()} records</div>
+                    <div className="text-sm text-signal-ink font-medium">{sys.system}</div>
+                    <div className="text-xs text-signal-muted">{sys.records.toLocaleString()} records</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -846,7 +846,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
                     {sys.status}
                   </span>
                   {sys.rollbackAvailable && (
-                    <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-orange-400 transition-colors" title="Rollback available">
+                    <button className="flex items-center gap-1 text-xs text-signal-muted hover:text-signal-warn transition-colors" title="Rollback available">
                       <RotateCcw className="w-3 h-3" /> Rollback
                     </button>
                   )}
@@ -854,43 +854,43 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
               </div>
 
               {sys.deletedAt && (
-                <div className="mt-2 pt-2 border-t border-slate-700 grid grid-cols-3 gap-2 text-xs">
+                <div className="mt-2 pt-2 border-t border-white/[0.06] grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <span className="text-slate-500">Deleted at:</span>
-                    <span className="text-slate-300 ml-1">{sys.deletedAt}</span>
+                    <span className="text-signal-muted">Deleted at:</span>
+                    <span className="text-signal-body ml-1">{sys.deletedAt}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">Verified by:</span>
-                    <span className="text-slate-300 ml-1">{sys.verifiedBy}</span>
+                    <span className="text-signal-muted">Verified by:</span>
+                    <span className="text-signal-body ml-1">{sys.verifiedBy}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">Evidence:</span>
-                    <span className="text-cyan-400 ml-1">{sys.evidence}</span>
+                    <span className="text-signal-muted">Evidence:</span>
+                    <span className="text-signal-blue ml-1">{sys.evidence}</span>
                   </div>
                 </div>
               )}
 
               {sys.status === 'Failed' && (
-                <div className="mt-2 pt-2 border-t border-slate-700">
-                  <div className="flex items-center gap-2 text-xs text-red-400">
+                <div className="mt-2 pt-2 border-t border-white/[0.06]">
+                  <div className="flex items-center gap-2 text-xs text-signal-bad">
                     <AlertTriangle className="w-3 h-3" />
                     Deletion failed - API timeout. Retry available.
                   </div>
-                  <button className="mt-2 px-3 py-1 text-xs bg-red-600/20 text-red-400 border border-red-500/30 rounded hover:bg-red-600/30 transition-colors">
+                  <button className="mt-2 px-3 py-1 text-xs bg-signal-bad/20 text-signal-bad border border-signal-bad/30 rounded hover:bg-signal-bad/30 transition-colors">
                     Retry Deletion
                   </button>
                 </div>
               )}
 
               {sys.status === 'In Progress' && (
-                <div className="mt-2 pt-2 border-t border-slate-700">
+                <div className="mt-2 pt-2 border-t border-white/[0.06]">
                   {/* No per-system numeric progress is reported by the backend, so an
                       indeterminate indicator is shown instead of a fixed percentage. */}
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                      <div className="h-full bg-yellow-500 rounded-full animate-pulse w-1/3" />
+                    <div className="flex-1 bg-white/[0.06] rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full bg-signal-warn rounded-full animate-pulse w-1/3" />
                     </div>
-                    <span className="text-xs text-yellow-400 flex items-center gap-1">
+                    <span className="text-xs text-signal-warn flex items-center gap-1">
                       <RefreshCw className="w-3 h-3 animate-spin" /> Deleting
                     </span>
                   </div>
@@ -900,15 +900,15 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
           ))}
         </div>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
-            <Info className="w-4 h-4 text-blue-400" /> Grace Period Status
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+          <h3 className="text-sm font-medium text-signal-ink mb-3 flex items-center gap-2">
+            <Info className="w-4 h-4 text-signal-blue" /> Grace Period Status
           </h3>
-          <div className="text-sm text-slate-300">
-            Grace period: <span className="text-white font-medium">{gracePeriodDays} days</span> from execution start.
+          <div className="text-sm text-signal-body">
+            Grace period: <span className="text-signal-ink font-medium">{gracePeriodDays} days</span> from execution start.
             Rollback is available for systems that have not been verified.
           </div>
-          <div className="mt-2 text-xs text-slate-500">
+          <div className="mt-2 text-xs text-signal-muted">
             After verification, deletion is permanent and cannot be reversed.
           </div>
         </div>
@@ -923,7 +923,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
           <select
             value={auditCategoryFilter}
             onChange={(e) => setAuditCategoryFilter(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-signal-ink focus:outline-none focus:border-signal-green/60"
           >
             <option value="all">All Categories</option>
             <option value="status_change">Status Changes</option>
@@ -936,38 +936,38 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         <button
           onClick={handleExportAudit}
           disabled={filteredAudit.length === 0}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 border border-slate-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-signal-muted hover:text-signal-ink bg-white/[0.03] border border-white/[0.06] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="w-4 h-4" /> {t('common.export')}
         </button>
       </div>
 
       {filteredAudit.length === 0 ? (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
-          <Shield className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-          <div className="text-slate-400 text-sm">No audit entries match this filter</div>
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-12 text-center">
+          <Shield className="w-10 h-10 text-signal-muted mx-auto mb-3" />
+          <div className="text-signal-muted text-sm">No audit entries match this filter</div>
         </div>
       ) : (
         <div className="space-y-2">
           {filteredAudit.map(entry => (
-            <div key={entry.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+            <div key={entry.id} className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`text-xs px-2 py-0.5 rounded ${auditCategoryColor(entry.category)}`}>
                       {entry.category.replace('_', ' ')}
                     </span>
-                    <span className="text-xs font-mono text-slate-500">{entry.id}</span>
+                    <span className="text-xs font-mono text-signal-muted">{entry.id}</span>
                     {entry.requestId !== 'N/A' && (
-                      <span className="text-xs text-blue-400">{entry.requestId}</span>
+                      <span className="text-xs text-signal-blue">{entry.requestId}</span>
                     )}
                   </div>
-                  <div className="text-sm text-white">{entry.action}</div>
-                  <div className="text-xs text-slate-400 mt-1">{entry.details}</div>
+                  <div className="text-sm text-signal-ink">{entry.action}</div>
+                  <div className="text-xs text-signal-muted mt-1">{entry.details}</div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="text-xs text-slate-500">{entry.timestamp}</div>
-                  <div className="text-xs text-slate-400 mt-1">{entry.user}</div>
+                  <div className="text-xs text-signal-muted">{entry.timestamp}</div>
+                  <div className="text-xs text-signal-muted mt-1">{entry.user}</div>
                 </div>
               </div>
             </div>
@@ -975,29 +975,29 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         </div>
       )}
 
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
-          <Shield className="w-4 h-4 text-green-400" /> Verification Certificates
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+        <h3 className="text-sm font-medium text-signal-ink mb-3 flex items-center gap-2">
+          <Shield className="w-4 h-4 text-signal-good" /> Verification Certificates
         </h3>
         {verificationCertificates.length === 0 ? (
-          <div className="text-xs text-slate-500 italic py-2">
+          <div className="text-xs text-signal-muted italic py-2">
             No verification certificates yet. Certificates are issued once a deletion request reaches a terminal state.
           </div>
         ) : (
           <div className="space-y-2">
             {verificationCertificates.map(cert => (
-              <div key={cert.id} className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0">
+              <div key={cert.id} className="flex items-center justify-between py-2 border-b border-white/[0.06] last:border-0">
                 <div>
-                  <div className="text-sm text-cyan-400 font-mono">{cert.id}</div>
-                  <div className="text-xs text-slate-500">Request: {cert.request} | Issued: {cert.date}</div>
+                  <div className="text-sm text-signal-blue font-mono">{cert.id}</div>
+                  <div className="text-xs text-signal-muted">Request: {cert.request} | Issued: {cert.date}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-0.5 rounded ${cert.status === 'Issued' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded ${cert.status === 'Issued' ? 'bg-signal-good/20 text-signal-good' : 'bg-signal-bad/20 text-signal-bad'}`}>
                     {cert.status}
                   </span>
                   <button
                     onClick={() => handleDownloadCertificate(cert)}
-                    className="text-slate-400 hover:text-white"
+                    className="text-signal-muted hover:text-signal-ink"
                     title="Download certificate"
                   >
                     <Download className="w-4 h-4" />
@@ -1009,15 +1009,15 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         )}
       </div>
 
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-blue-400" /> Compliance Evidence
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+        <h3 className="text-sm font-medium text-signal-ink mb-3 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-signal-blue" /> Compliance Evidence
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {complianceEvidence.map(item => (
-            <div key={item.label} className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
+            <div key={item.label} className="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
               <span className={`text-sm ${item.color}`}>{item.label}</span>
-              <span className="text-sm text-white font-medium">{item.count}</span>
+              <span className="text-sm text-signal-ink font-medium">{item.count}</span>
             </div>
           ))}
         </div>
@@ -1027,13 +1027,13 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
 
   const renderSettings = () => (
     <div className="space-y-6">
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-blue-400" /> Grace Period Configuration
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+        <h3 className="text-sm font-medium text-signal-ink mb-4 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-signal-blue" /> Grace Period Configuration
         </h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Grace period after execution (days)</label>
+            <label className="block text-sm text-signal-muted mb-2">Grace period after execution (days)</label>
             <div className="flex items-center gap-3">
               <input
                 type="range"
@@ -1041,48 +1041,48 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
                 max={30}
                 value={gracePeriodDays}
                 onChange={(e) => setGracePeriodDays(Number(e.target.value))}
-                className="flex-1 accent-blue-500"
+                className="flex-1 accent-signal-green"
               />
-              <span className="text-white font-mono text-sm w-12 text-center bg-slate-900 rounded px-2 py-1">{gracePeriodDays}d</span>
+              <span className="text-signal-ink font-mono text-sm w-12 text-center bg-white/[0.06] rounded px-2 py-1">{gracePeriodDays}d</span>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-signal-muted mt-1">
               Users can request rollback within this period. Set to 0 to disable.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
-          <Trash2 className="w-4 h-4 text-red-400" /> Deletion Method
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+        <h3 className="text-sm font-medium text-signal-ink mb-4 flex items-center gap-2">
+          <Trash2 className="w-4 h-4 text-signal-bad" /> Deletion Method
         </h3>
         <div className="space-y-3">
-          <label className="flex items-start gap-3 p-3 bg-slate-900 rounded-lg cursor-pointer border border-slate-700 hover:border-slate-600 transition-colors">
+          <label className="flex items-start gap-3 p-3 bg-white/[0.04] rounded-lg cursor-pointer border border-white/[0.06] hover:border-white/[0.10] transition-colors">
             <input
               type="radio"
               name="deletionMethod"
               checked={deletionMethod === 'deletion'}
               onChange={() => setDeletionMethod('deletion')}
-              className="mt-1 accent-blue-500"
+              className="mt-1 accent-signal-green"
             />
             <div>
-              <div className="text-sm text-white font-medium">Full Deletion</div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-sm text-signal-ink font-medium">Full Deletion</div>
+              <div className="text-xs text-signal-muted mt-1">
                 Permanently removes all personal data from systems. This is irreversible after the grace period.
               </div>
             </div>
           </label>
-          <label className="flex items-start gap-3 p-3 bg-slate-900 rounded-lg cursor-pointer border border-slate-700 hover:border-slate-600 transition-colors">
+          <label className="flex items-start gap-3 p-3 bg-white/[0.04] rounded-lg cursor-pointer border border-white/[0.06] hover:border-white/[0.10] transition-colors">
             <input
               type="radio"
               name="deletionMethod"
               checked={deletionMethod === 'anonymization'}
               onChange={() => setDeletionMethod('anonymization')}
-              className="mt-1 accent-blue-500"
+              className="mt-1 accent-signal-green"
             />
             <div>
-              <div className="text-sm text-white font-medium">Anonymization</div>
-              <div className="text-xs text-slate-400 mt-1">
+              <div className="text-sm text-signal-ink font-medium">Anonymization</div>
+              <div className="text-xs text-signal-muted mt-1">
                 Replaces personal identifiers with anonymous tokens. Preserves aggregate data for analytics while removing PII.
               </div>
             </div>
@@ -1090,31 +1090,31 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         </div>
       </div>
 
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
-          <Activity className="w-4 h-4 text-green-400" /> Automation Settings
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+        <h3 className="text-sm font-medium text-signal-ink mb-4 flex items-center gap-2">
+          <Activity className="w-4 h-4 text-signal-good" /> Automation Settings
         </h3>
         <div className="space-y-4">
           <label className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-white">Auto-verify identity</div>
-              <div className="text-xs text-slate-400">Automatically verify user identity via email confirmation</div>
+              <div className="text-sm text-signal-ink">Auto-verify identity</div>
+              <div className="text-xs text-signal-muted">Automatically verify user identity via email confirmation</div>
             </div>
             <button
               onClick={() => setAutoVerify(!autoVerify)}
-              className={`w-11 h-6 rounded-full transition-colors relative ${autoVerify ? 'bg-blue-600' : 'bg-slate-600'}`}
+              className={`w-11 h-6 rounded-full transition-colors relative ${autoVerify ? 'bg-signal-green' : 'bg-white/[0.12]'}`}
             >
               <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${autoVerify ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
           </label>
           <label className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-white">Retention policy override</div>
-              <div className="text-xs text-slate-400">Allow deletion even when retention policies are active</div>
+              <div className="text-sm text-signal-ink">Retention policy override</div>
+              <div className="text-xs text-signal-muted">Allow deletion even when retention policies are active</div>
             </div>
             <button
               onClick={() => setRetentionOverride(!retentionOverride)}
-              className={`w-11 h-6 rounded-full transition-colors relative ${retentionOverride ? 'bg-blue-600' : 'bg-slate-600'}`}
+              className={`w-11 h-6 rounded-full transition-colors relative ${retentionOverride ? 'bg-signal-green' : 'bg-white/[0.12]'}`}
             >
               <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${retentionOverride ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
@@ -1122,48 +1122,48 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         </div>
       </div>
 
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
-          <Mail className="w-4 h-4 text-purple-400" /> Notification Templates
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+        <h3 className="text-sm font-medium text-signal-ink mb-4 flex items-center gap-2">
+          <Mail className="w-4 h-4 text-signal-violet" /> Notification Templates
         </h3>
         <div className="space-y-4">
           <label className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-white">Notify on completion</div>
-              <div className="text-xs text-slate-400">Send confirmation email when deletion is complete</div>
+              <div className="text-sm text-signal-ink">Notify on completion</div>
+              <div className="text-xs text-signal-muted">Send confirmation email when deletion is complete</div>
             </div>
             <button
               onClick={() => setNotifyOnComplete(!notifyOnComplete)}
-              className={`w-11 h-6 rounded-full transition-colors relative ${notifyOnComplete ? 'bg-blue-600' : 'bg-slate-600'}`}
+              className={`w-11 h-6 rounded-full transition-colors relative ${notifyOnComplete ? 'bg-signal-green' : 'bg-white/[0.12]'}`}
             >
               <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${notifyOnComplete ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
           </label>
           <label className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-white">Notify on denial</div>
-              <div className="text-xs text-slate-400">Send explanation email when request is denied</div>
+              <div className="text-sm text-signal-ink">Notify on denial</div>
+              <div className="text-xs text-signal-muted">Send explanation email when request is denied</div>
             </div>
             <button
               onClick={() => setNotifyOnDenied(!notifyOnDenied)}
-              className={`w-11 h-6 rounded-full transition-colors relative ${notifyOnDenied ? 'bg-blue-600' : 'bg-slate-600'}`}
+              className={`w-11 h-6 rounded-full transition-colors relative ${notifyOnDenied ? 'bg-signal-green' : 'bg-white/[0.12]'}`}
             >
               <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${notifyOnDenied ? 'left-[22px]' : 'left-0.5'}`} />
             </button>
           </label>
 
-          <div className="border-t border-slate-700 pt-4 space-y-3">
+          <div className="border-t border-white/[0.06] pt-4 space-y-3">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Completion Email Template</label>
+              <label className="block text-sm text-signal-muted mb-1">Completion Email Template</label>
               <textarea
-                className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 h-24 resize-none font-mono"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-signal-ink text-sm focus:outline-none focus:border-signal-green/60 h-24 resize-none font-mono"
                 defaultValue={`Dear {{account_name}},\n\nYour account deletion request ({{request_id}}) has been completed. All personal data has been removed from our systems.\n\nA verification certificate is attached for your records.\n\nRegards,\nCompliance Team`}
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Denial Email Template</label>
+              <label className="block text-sm text-signal-muted mb-1">Denial Email Template</label>
               <textarea
-                className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 h-24 resize-none font-mono"
+                className="w-full bg-white/[0.04] border border-white/[0.10] rounded-xl px-3 py-2 text-signal-ink text-sm focus:outline-none focus:border-signal-green/60 h-24 resize-none font-mono"
                 defaultValue={`Dear {{account_name}},\n\nYour deletion request ({{request_id}}) could not be processed at this time.\n\nReason: {{denial_reason}}\n\nPlease contact support for further assistance.\n\nRegards,\nCompliance Team`}
               />
             </div>
@@ -1174,12 +1174,12 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   );
 
   const renderErrorBanner = () => loadError ? (
-    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+    <div className="mb-4 p-4 bg-signal-bad/10 border border-signal-bad/30 rounded-lg flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-        <span className="text-sm text-red-300">{loadError}</span>
+        <AlertTriangle className="w-5 h-5 text-signal-bad flex-shrink-0" />
+        <span className="text-sm text-signal-bad">{loadError}</span>
       </div>
-      <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 transition-colors">
+      <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-signal-bad/20 text-signal-bad rounded text-sm hover:bg-signal-bad/30 transition-colors">
         <RefreshCw className="w-3.5 h-3.5" /> Retry
       </button>
     </div>
@@ -1189,8 +1189,8 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
     if (loading) {
       return (
         <div className="flex items-center justify-center py-20">
-          <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
-          <span className="ml-3 text-slate-400">{t('common.loading')}...</span>
+          <RefreshCw className="w-6 h-6 text-signal-blue animate-spin" />
+          <span className="ml-3 text-signal-muted">{t('common.loading')}...</span>
         </div>
       );
     }
@@ -1206,29 +1206,29 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      <div className="border-b border-slate-700 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-40">
+    <div className="min-h-screen bg-signal-canvas text-signal-ink">
+      <div className="border-b border-white/[0.06] bg-signal-canvas/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
               <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+                className="flex items-center gap-2 text-signal-muted hover:text-signal-ink transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="text-sm">{t('common.back')}</span>
               </button>
-              <div className="h-5 w-px bg-slate-700" />
+              <div className="h-5 w-px bg-white/[0.06]" />
               <div className="flex items-center gap-2">
-                <Trash2 className="w-5 h-5 text-red-400" />
-                <h1 className="text-lg font-semibold text-white">{t('privacy.accountDeletion')}</h1>
+                <Trash2 className="w-5 h-5 text-signal-bad" />
+                <h1 className="text-lg font-semibold text-signal-ink">{t('privacy.accountDeletion')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={loadData}
                 disabled={loading}
-                className="p-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+                className="p-2 text-signal-muted hover:text-signal-ink transition-colors disabled:opacity-50"
                 title="Refresh"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -1239,15 +1239,15 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex gap-1 mb-6 bg-slate-800 rounded-lg p-1 overflow-x-auto">
+        <div className="flex gap-1 mb-6 bg-white/[0.03] rounded-lg p-1 overflow-x-auto">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-slate-700 text-white font-medium'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-signal-green/15 text-signal-ink font-medium ring-1 ring-signal-green/25'
+                  : 'text-signal-muted hover:text-signal-ink hover:bg-white/[0.04]'
               }`}
             >
               {tab.icon}

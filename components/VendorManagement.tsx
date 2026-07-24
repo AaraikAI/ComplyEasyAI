@@ -69,18 +69,18 @@ type ViewMode = 'dashboard' | 'list' | 'detail' | 'create' | 'edit'
   | 'assessment';
 
 const RISK_COLORS: Record<string, string> = {
-  Critical: 'bg-red-100 text-red-800 border-red-200',
-  High: 'bg-orange-100 text-orange-800 border-orange-200',
-  Medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  Low: 'bg-green-100 text-green-800 border-green-200',
+  Critical: 'bg-red-100 text-red-800 border-red-200 dark:bg-signal-bad/10 dark:text-signal-bad dark:border-signal-bad/20',
+  High: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-signal-amber/10 dark:text-signal-amber dark:border-signal-amber/20',
+  Medium: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-signal-warn/10 dark:text-signal-warn dark:border-signal-warn/20',
+  Low: 'bg-green-100 text-green-800 border-green-200 dark:bg-signal-good/10 dark:text-signal-good dark:border-signal-good/20',
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  Active: 'bg-green-100 text-green-800',
-  Onboarding: 'bg-blue-100 text-blue-800',
-  Offboarding: 'bg-gray-100 text-gray-700',
-  Suspended: 'bg-red-100 text-red-800',
-  Inactive: 'bg-gray-100 text-gray-500',
+  Active: 'bg-green-100 text-green-800 dark:bg-signal-good/10 dark:text-signal-good',
+  Onboarding: 'bg-blue-100 text-blue-800 dark:bg-signal-blue/10 dark:text-signal-blue',
+  Offboarding: 'bg-gray-100 text-gray-700 dark:bg-white/[0.06] dark:text-signal-muted',
+  Suspended: 'bg-red-100 text-red-800 dark:bg-signal-bad/10 dark:text-signal-bad',
+  Inactive: 'bg-gray-100 text-gray-500 dark:bg-white/[0.04] dark:text-signal-muted',
 };
 
 const PIE_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
@@ -107,11 +107,11 @@ const Badge: React.FC<{ text: string; className: string }> = ({ text, className 
 );
 
 const riskScoreBadge = (score: number) => {
-  if (score >= 80) return 'bg-red-600 text-white';
-  if (score >= 60) return 'bg-orange-500 text-white';
-  if (score >= 40) return 'bg-yellow-500 text-white';
-  if (score >= 20) return 'bg-green-500 text-white';
-  return 'bg-gray-300 text-gray-800';
+  if (score >= 80) return 'bg-red-600 text-white dark:bg-signal-bad/15 dark:text-signal-bad';
+  if (score >= 60) return 'bg-orange-500 text-white dark:bg-signal-amber/15 dark:text-signal-amber';
+  if (score >= 40) return 'bg-yellow-500 text-white dark:bg-signal-warn/15 dark:text-signal-warn';
+  if (score >= 20) return 'bg-green-500 text-white dark:bg-signal-good/15 dark:text-signal-good';
+  return 'bg-gray-300 text-gray-800 dark:bg-white/[0.06] dark:text-signal-muted';
 };
 
 const emptyVendorForm = (): Partial<Vendor> => ({
@@ -468,8 +468,8 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="animate-spin text-brand-600" size={32} />
-        <span className="ml-3 text-gray-600">{t('common.loading')}</span>
+        <Loader2 className="animate-spin text-brand-600 dark:text-signal-green" size={32} />
+        <span className="ml-3 text-gray-600 dark:text-signal-body">{t('common.loading')}</span>
       </div>
     );
   }
@@ -497,28 +497,28 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
       <div className="space-y-6">
         {/* Stats cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">Total Vendors</div>
-            <div className="text-2xl font-bold mt-1">{dashboard.totalVendors}</div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="text-sm text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:text-[10px] dark:tracking-[0.14em]">Total Vendors</div>
+            <div className="text-2xl font-bold mt-1 dark:font-display dark:text-signal-ink">{dashboard.totalVendors}</div>
           </div>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">Pending Assessments</div>
-            <div className="text-2xl font-bold mt-1 text-orange-600">{dashboard.assessmentMetrics.pendingAssessments}</div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="text-sm text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:text-[10px] dark:tracking-[0.14em]">Pending Assessments</div>
+            <div className="text-2xl font-bold mt-1 text-orange-600 dark:font-display dark:text-signal-amber">{dashboard.assessmentMetrics.pendingAssessments}</div>
           </div>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">Active Monitors</div>
-            <div className="text-2xl font-bold mt-1 text-green-600">{dashboard.monitoringMetrics.activeMonitors}</div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="text-sm text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:text-[10px] dark:tracking-[0.14em]">Active Monitors</div>
+            <div className="text-2xl font-bold mt-1 text-green-600 dark:font-display dark:text-signal-good">{dashboard.monitoringMetrics.activeMonitors}</div>
           </div>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">Alerts</div>
-            <div className="text-2xl font-bold mt-1 text-red-600">{dashboard.monitoringMetrics.alertsDetected}</div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="text-sm text-gray-500 dark:text-signal-muted dark:font-mono dark:uppercase dark:text-[10px] dark:tracking-[0.14em]">Alerts</div>
+            <div className="text-2xl font-bold mt-1 text-red-600 dark:font-display dark:text-signal-bad">{dashboard.monitoringMetrics.alertsDetected}</div>
           </div>
         </div>
 
         {/* Charts row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Risk Distribution</h3>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body mb-4">Risk Distribution</h3>
             {riskData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
@@ -530,11 +530,11 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-[220px] text-gray-400">No vendor data yet</div>
+              <div className="flex items-center justify-center h-[220px] text-gray-400 dark:text-signal-muted">No vendor data yet</div>
             )}
           </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('vendors.complianceStatus')}</h3>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body mb-4">{t('vendors.complianceStatus')}</h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={certData}>
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -547,13 +547,13 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
         </div>
 
         {/* Status summary */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Vendor Status Summary</h3>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body mb-4">Vendor Status Summary</h3>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {Object.entries(dashboard.statusDistribution).map(([key, val]) => (
               <div key={key} className="flex items-center space-x-3">
                 <div className={`w-3 h-3 rounded-full ${key === 'active' ? 'bg-green-500' : key === 'onboarding' ? 'bg-blue-500' : key === 'offboarding' ? 'bg-gray-400' : 'bg-red-500'}`} />
-                <span className="text-sm text-gray-600 capitalize">{key}: <strong>{val}</strong></span>
+                <span className="text-sm text-gray-600 dark:text-signal-body capitalize">{key}: <strong>{val}</strong></span>
               </div>
             ))}
           </div>
@@ -561,19 +561,19 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
         {/* Top risk vendors */}
         {dashboard.topRiskVendors.length > 0 && (
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Top Risk Vendors</h3>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body mb-4">Top Risk Vendors</h3>
             <div className="space-y-2">
               {dashboard.topRiskVendors.map(v => (
-                <div key={v.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
+                <div key={v.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] cursor-pointer"
                   onClick={() => { const full = vendors.find(vv => vv.id === v.id); if (full) openDetail(full); }}>
                   <div className="flex items-center space-x-3">
                     <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${riskScoreBadge(v.riskScore)}`}>{v.riskScore}</span>
-                    <span className="font-medium text-gray-900">{v.name}</span>
+                    <span className="font-medium text-gray-900 dark:text-signal-ink">{v.name}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Badge text={v.riskLevel} className={RISK_COLORS[v.riskLevel] || ''} />
-                    {v.hasDataAccess && <span className="text-xs text-red-600 font-medium">Data Access</span>}
+                    {v.hasDataAccess && <span className="text-xs text-red-600 dark:text-signal-bad font-medium">Data Access</span>}
                   </div>
                 </div>
               ))}
@@ -592,26 +592,26 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
       {/* Filters bar */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-signal-muted" />
           <input
             type="text" placeholder={`${t('common.search')}...`}
             value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"
+            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green"
           />
         </div>
         <select value={filterRisk} onChange={e => setFilterRisk(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted">
           <option value="All">All Risk Levels</option>
           {['Critical', 'High', 'Medium', 'Low'].map(r => <option key={r} value={r}>{r}</option>)}
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted">
           <option value="All">All Statuses</option>
           {['Active', 'Onboarding', 'Offboarding', 'Suspended', 'Inactive'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         {categories.length > 0 && (
           <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted">
             <option value="All">All Categories</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -619,10 +619,10 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+            <thead className="bg-gray-50 dark:bg-white/[0.02] text-gray-600 dark:text-signal-muted dark:font-mono dark:uppercase dark:text-[11px] dark:tracking-[0.12em]">
               <tr>
                 <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('name')}>
                   <span className="flex items-center gap-1">{t('vendors.vendorName')} <SortIcon field="name" /></span>
@@ -639,20 +639,20 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
                 <th className="text-right px-4 py-3">{t('common.actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
               {sortedVendors.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-gray-400">
+                <tr><td colSpan={7} className="text-center py-12 text-gray-400 dark:text-signal-muted">
                   {vendors.length === 0 ? `${t('common.noResults')}` : `${t('common.noResults')}`}
                 </td></tr>
               ) : sortedVendors.map(v => (
-                <tr key={v.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={v.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors">
                   <td className="px-4 py-3">
-                    <button onClick={() => openDetail(v)} className="text-brand-600 hover:underline font-medium">
+                    <button onClick={() => openDetail(v)} className="text-brand-600 dark:text-signal-green hover:underline font-medium">
                       {v.name}
                     </button>
-                    {v.website && <div className="text-xs text-gray-400">{v.website}</div>}
+                    {v.website && <div className="text-xs text-gray-400 dark:text-signal-muted">{v.website}</div>}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{v.category || '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-signal-body">{v.category || '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${riskScoreBadge(v.riskScore)}`}>
                       {v.riskScore}
@@ -662,29 +662,29 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
                   <td className="px-4 py-3"><Badge text={v.status} className={STATUS_COLORS[v.status] || ''} /></td>
                   <td className="px-4 py-3">
                     {v.hasDataAccess ? (
-                      <span className="text-red-600 text-xs font-medium flex items-center gap-1"><AlertTriangle size={12} />Yes</span>
+                      <span className="text-red-600 dark:text-signal-bad text-xs font-medium flex items-center gap-1"><AlertTriangle size={12} />Yes</span>
                     ) : (
-                      <span className="text-gray-400 text-xs">No</span>
+                      <span className="text-gray-400 dark:text-signal-muted text-xs">No</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end space-x-1">
                       <button onClick={() => handleAIScore(v)}
                         disabled={aiScoreLoading === v.id}
-                        className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        className="p-1.5 text-purple-600 hover:bg-purple-50 dark:text-signal-violet dark:hover:bg-signal-violet/10 rounded-lg transition-colors"
                         title="AI Risk Score">
                         {aiScoreLoading === v.id ? <Loader2 size={16} className="animate-spin" /> : <Brain size={16} />}
                       </button>
                       <button onClick={() => openDetail(v)}
-                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title={t('common.details')}>
+                        className="p-1.5 text-gray-600 dark:text-signal-body hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg" title={t('common.details')}>
                         <Eye size={16} />
                       </button>
                       <button onClick={() => openEdit(v)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('common.edit')}>
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-signal-blue dark:hover:bg-signal-blue/10 rounded-lg" title={t('common.edit')}>
                         <Edit3 size={16} />
                       </button>
                       <button onClick={() => handleArchiveVendor(v)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title={t('common.delete')}>
+                        className="p-1.5 text-red-600 hover:bg-red-50 dark:text-signal-bad dark:hover:bg-signal-bad/10 rounded-lg" title={t('common.delete')}>
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -702,15 +702,15 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
           {Object.entries(aiScoreResults).map(([id, result]) => {
             const v = vendors.find(vv => vv.id === id);
             return (
-              <div key={id} className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+              <div key={id} className="bg-purple-50 border border-purple-200 rounded-xl dark:bg-signal-violet/10 dark:border-signal-violet/20 p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-purple-900 flex items-center gap-2">
+                  <h4 className="font-medium text-purple-900 dark:text-signal-ink flex items-center gap-2">
                     <Brain size={16} /> AI Risk Analysis: {v?.name || id}
                   </h4>
                   <button onClick={() => setAiScoreResults(prev => { const n = { ...prev }; delete n[id]; return n; })}
-                    className="text-purple-400 hover:text-purple-600"><X size={16} /></button>
+                    className="text-purple-400 hover:text-purple-600 dark:text-signal-muted dark:hover:text-signal-violet"><X size={16} /></button>
                 </div>
-                <div className="prose prose-sm max-w-none text-purple-900">
+                <div className="prose prose-sm max-w-none text-purple-900 dark:text-signal-ink">
                   <ReactMarkdown>{result}</ReactMarkdown>
                 </div>
               </div>
@@ -731,14 +731,14 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{v.name}</h2>
-            <p className="text-sm text-gray-500">{v.category || 'Uncategorized'} &middot; {v.serviceDescription || 'No description'}</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink">{v.name}</h2>
+            <p className="text-sm text-gray-500 dark:text-signal-muted">{v.category || 'Uncategorized'} &middot; {v.serviceDescription || 'No description'}</p>
           </div>
           <div className="flex items-center space-x-2">
-            <button onClick={() => openEdit(v)} className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1">
+            <button onClick={() => openEdit(v)} className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-white/[0.10] dark:text-signal-body dark:hover:bg-white/[0.04] flex items-center gap-1">
               <Edit3 size={14} /> {t('common.edit')}
             </button>
-            <button onClick={() => handleArchiveVendor(v)} className="px-3 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 flex items-center gap-1">
+            <button onClick={() => handleArchiveVendor(v)} className="px-3 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 dark:border-signal-bad/25 dark:text-signal-bad dark:hover:bg-signal-bad/10 flex items-center gap-1">
               <Trash2 size={14} /> {t('common.delete')}
             </button>
           </div>
@@ -746,21 +746,21 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
         {/* Quick info cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">{t('vendors.vendorScore')}</div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="text-xs text-gray-500 dark:text-signal-muted mb-1">{t('vendors.vendorScore')}</div>
             <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold ${riskScoreBadge(v.riskScore)}`}>{v.riskScore}</span>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">{t('vendors.riskTier')}</div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="text-xs text-gray-500 dark:text-signal-muted mb-1">{t('vendors.riskTier')}</div>
             <Badge text={v.riskLevel} className={RISK_COLORS[v.riskLevel]} />
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">{t('common.status')}</div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="text-xs text-gray-500 dark:text-signal-muted mb-1">{t('common.status')}</div>
             <Badge text={v.status} className={STATUS_COLORS[v.status] || ''} />
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">{t('vendors.dataProcessing')}</div>
-            <span className={`text-sm font-medium ${v.hasDataAccess ? 'text-red-600' : 'text-green-600'}`}>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <div className="text-xs text-gray-500 dark:text-signal-muted mb-1">{t('vendors.dataProcessing')}</div>
+            <span className={`text-sm font-medium ${v.hasDataAccess ? 'text-red-600 dark:text-signal-bad' : 'text-green-600 dark:text-signal-good'}`}>
               {v.hasDataAccess ? 'Yes' : 'No'}
             </span>
           </div>
@@ -768,30 +768,30 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
         {/* Contact & contract info */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700">Contact Information</h3>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03] space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body">Contact Information</h3>
             <div className="space-y-2 text-sm">
-              {v.contactName && <div className="flex items-center gap-2 text-gray-600"><Building2 size={14} />{v.contactName}</div>}
-              {v.contactEmail && <div className="flex items-center gap-2 text-gray-600"><Mail size={14} />{v.contactEmail}</div>}
-              {v.contactPhone && <div className="flex items-center gap-2 text-gray-600"><Phone size={14} />{v.contactPhone}</div>}
-              {v.website && <div className="flex items-center gap-2 text-gray-600"><Globe size={14} />{v.website}</div>}
-              {!v.contactName && !v.contactEmail && !v.contactPhone && <p className="text-gray-400">No contact info</p>}
+              {v.contactName && <div className="flex items-center gap-2 text-gray-600 dark:text-signal-body"><Building2 size={14} />{v.contactName}</div>}
+              {v.contactEmail && <div className="flex items-center gap-2 text-gray-600 dark:text-signal-body"><Mail size={14} />{v.contactEmail}</div>}
+              {v.contactPhone && <div className="flex items-center gap-2 text-gray-600 dark:text-signal-body"><Phone size={14} />{v.contactPhone}</div>}
+              {v.website && <div className="flex items-center gap-2 text-gray-600 dark:text-signal-body"><Globe size={14} />{v.website}</div>}
+              {!v.contactName && !v.contactEmail && !v.contactPhone && <p className="text-gray-400 dark:text-signal-muted">No contact info</p>}
             </div>
           </div>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700">{t('vendors.contractExpiry')}</h3>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03] space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body">{t('vendors.contractExpiry')}</h3>
             <div className="space-y-2 text-sm">
-              {v.contractStart && <div className="flex items-center gap-2 text-gray-600"><Calendar size={14} />Start: {new Date(v.contractStart).toLocaleDateString()}</div>}
-              {v.contractEnd && <div className="flex items-center gap-2 text-gray-600"><Calendar size={14} />End: {new Date(v.contractEnd).toLocaleDateString()}</div>}
-              {v.annualSpend !== null && <div className="flex items-center gap-2 text-gray-600"><DollarSign size={14} />Annual Spend: ${v.annualSpend.toLocaleString()}</div>}
-              {!v.contractStart && !v.contractEnd && !v.annualSpend && <p className="text-gray-400">No contract details</p>}
+              {v.contractStart && <div className="flex items-center gap-2 text-gray-600 dark:text-signal-body"><Calendar size={14} />Start: {new Date(v.contractStart).toLocaleDateString()}</div>}
+              {v.contractEnd && <div className="flex items-center gap-2 text-gray-600 dark:text-signal-body"><Calendar size={14} />End: {new Date(v.contractEnd).toLocaleDateString()}</div>}
+              {v.annualSpend !== null && <div className="flex items-center gap-2 text-gray-600 dark:text-signal-body"><DollarSign size={14} />Annual Spend: ${v.annualSpend.toLocaleString()}</div>}
+              {!v.contractStart && !v.contractEnd && !v.annualSpend && <p className="text-gray-400 dark:text-signal-muted">No contract details</p>}
             </div>
           </div>
         </div>
 
         {/* Certifications */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('vendors.complianceStatus')}</h3>
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body mb-3">{t('vendors.complianceStatus')}</h3>
           <div className="flex flex-wrap gap-3">
             {[
               { label: 'SOC 2', active: v.soc2Report },
@@ -799,7 +799,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
               { label: 'GDPR', active: v.gdprCompliant },
               { label: 'HIPAA BAA', active: v.hipaaBaa },
             ].map(cert => (
-              <div key={cert.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${cert.active ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-400'}`}>
+              <div key={cert.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${cert.active ? 'bg-green-50 border-green-200 text-green-700 dark:bg-signal-good/10 dark:border-signal-good/20 dark:text-signal-good' : 'bg-gray-50 border-gray-200 text-gray-400 dark:text-signal-muted dark:bg-white/[0.03] dark:border-white/[0.08]'}`}>
                 {cert.active ? <CheckCircle size={14} /> : <XCircle size={14} />}
                 {cert.label}
               </div>
@@ -809,17 +809,17 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
         {/* Assessments */}
         {v.assessments && v.assessments.length > 0 && (
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('vendors.lastAssessment')}</h3>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body mb-3">{t('vendors.lastAssessment')}</h3>
             <div className="space-y-2">
               {v.assessments.map((a: any) => (
-                <div key={a.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
+                <div key={a.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm dark:bg-white/[0.03]">
                   <div className="flex items-center gap-3">
-                    <Clock size={14} className="text-gray-400" />
+                    <Clock size={14} className="text-gray-400 dark:text-signal-muted" />
                     <span className="font-medium">{a.assessmentType}</span>
-                    <Badge text={a.status} className={a.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} />
+                    <Badge text={a.status} className={a.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-signal-good/10 dark:text-signal-good' : 'bg-yellow-100 text-yellow-700 dark:bg-signal-warn/10 dark:text-signal-warn'} />
                   </div>
-                  <div className="text-gray-500">
+                  <div className="text-gray-500 dark:text-signal-muted">
                     {a.score !== null && <span className="mr-3">Score: {a.score}</span>}
                     {a.assessedDate && new Date(a.assessedDate).toLocaleDateString()}
                   </div>
@@ -830,30 +830,30 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
         )}
 
         {/* AI Actions */}
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-200">
-          <h3 className="text-sm font-semibold text-purple-800 mb-3 flex items-center gap-2">
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-200 dark:from-signal-violet/10 dark:to-signal-blue/10 dark:border-signal-violet/20">
+          <h3 className="text-sm font-semibold text-purple-800 dark:text-signal-violet mb-3 flex items-center gap-2">
             <Brain size={16} /> AI-Powered Actions
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <button onClick={() => handleAIScore(v)}
               disabled={aiScoreLoading === v.id}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors dark:bg-white/[0.04] dark:border-signal-violet/25 dark:text-signal-violet dark:hover:bg-signal-violet/10 disabled:opacity-50">
               {aiScoreLoading === v.id ? <Loader2 size={16} className="animate-spin" /> : <ShieldAlert size={16} />}
               AI Risk Score
             </button>
             <button onClick={() => { setContractText(''); setContractAnalysis(''); setViewMode('ai-contract'); }}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors">
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors dark:bg-white/[0.04] dark:border-signal-violet/25 dark:text-signal-violet dark:hover:bg-signal-violet/10">
               <FileText size={16} /> Analyze Contract
             </button>
             <button onClick={() => handleDueDiligence(v)}
               disabled={dueDiligenceLoading}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors dark:bg-white/[0.04] dark:border-signal-violet/25 dark:text-signal-violet dark:hover:bg-signal-violet/10 disabled:opacity-50">
               {dueDiligenceLoading ? <Loader2 size={16} className="animate-spin" /> : <BarChart3 size={16} />}
               {t('vendors.dueDiligence')}
             </button>
             <button onClick={() => handleAIMonitoring(v)}
               disabled={monitoringLoading}
-              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors dark:bg-white/[0.04] dark:border-signal-violet/25 dark:text-signal-violet dark:hover:bg-signal-violet/10 disabled:opacity-50">
               {monitoringLoading ? <Loader2 size={16} className="animate-spin" /> : <ListChecks size={16} />}
               {t('vendors.monitoringFrequency')}
             </button>
@@ -862,24 +862,24 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
         {/* Inline AI score result for this vendor */}
         {aiScoreResults[v.id] && (
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-5">
+          <div className="bg-purple-50 border border-purple-200 rounded-xl dark:bg-signal-violet/10 dark:border-signal-violet/20 p-5">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-purple-900 flex items-center gap-2"><Brain size={16} /> AI Risk Score Analysis</h4>
+              <h4 className="font-medium text-purple-900 dark:text-signal-ink flex items-center gap-2"><Brain size={16} /> AI Risk Score Analysis</h4>
               <button onClick={() => setAiScoreResults(prev => { const n = { ...prev }; delete n[v.id]; return n; })}
-                className="text-purple-400 hover:text-purple-600"><X size={16} /></button>
+                className="text-purple-400 hover:text-purple-600 dark:text-signal-muted dark:hover:text-signal-violet"><X size={16} /></button>
             </div>
-            <div className="prose prose-sm max-w-none text-purple-900">
+            <div className="prose prose-sm max-w-none text-purple-900 dark:text-signal-ink">
               <ReactMarkdown>{aiScoreResults[v.id]}</ReactMarkdown>
             </div>
           </div>
         )}
 
         {/* Create assessment */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('vendors.questionnaire')}</h3>
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03]">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body mb-3">{t('vendors.questionnaire')}</h3>
           <div className="flex items-center gap-3">
             <select value={assessmentType} onChange={e => setAssessmentType(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1">
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted flex-1">
               <option>Security Review</option>
               <option>Privacy Assessment</option>
               <option>SOC 2 Review</option>
@@ -888,7 +888,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
               <option>Incident Response</option>
             </select>
             <button onClick={handleCreateAssessment} disabled={assessmentLoading}
-              className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
+              className="px-4 py-2 bg-brand-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg text-sm font-medium hover:bg-brand-700 dark:hover:bg-signal-green/90 disabled:opacity-50 flex items-center gap-2">
               {assessmentLoading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
               {t('common.create')}
             </button>
@@ -907,91 +907,91 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
     return (
       <form onSubmit={isEdit ? handleUpdateVendor : handleCreateVendor} className="space-y-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-5">
-          <h3 className="text-sm font-semibold text-gray-700">{isEdit ? `${t('common.edit')} ${t('vendors.vendorName')}` : t('vendors.addVendor')}</h3>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03] space-y-5">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-signal-body">{isEdit ? `${t('common.edit')} ${t('vendors.vendorName')}` : t('vendors.addVendor')}</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vendors.vendorName')} *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('vendors.vendorName')} *</label>
               <input required value={f.name || ''} onChange={e => setField('name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Category</label>
               <select value={f.category || ''} onChange={e => setField('category', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted">
                 <option value="">Select category</option>
                 {VENDOR_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Website</label>
               <input value={f.website || ''} onChange={e => setField('website', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="https://" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted" placeholder="https://" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('common.description')}</label>
               <input value={f.serviceDescription || ''} onChange={e => setField('serviceDescription', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted" />
             </div>
           </div>
 
-          <h4 className="text-sm font-semibold text-gray-700 pt-2">Contact Information</h4>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-signal-body pt-2">Contact Information</h4>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Contact Name</label>
               <input value={f.contactName || ''} onChange={e => setField('contactName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Contact Email</label>
               <input type="email" value={f.contactEmail || ''} onChange={e => setField('contactEmail', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Contact Phone</label>
               <input value={f.contactPhone || ''} onChange={e => setField('contactPhone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted" />
             </div>
           </div>
 
-          <h4 className="text-sm font-semibold text-gray-700 pt-2">Contract Details</h4>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-signal-body pt-2">Contract Details</h4>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contract Start</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Contract Start</label>
               <input type="date" value={f.contractStart ? new Date(f.contractStart).toISOString().split('T')[0] : ''}
                 onChange={e => setField('contractStart', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vendors.contractExpiry')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">{t('vendors.contractExpiry')}</label>
               <input type="date" value={f.contractEnd ? new Date(f.contractEnd).toISOString().split('T')[0] : ''}
                 onChange={e => setField('contractEnd', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Annual Spend ($)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Annual Spend ($)</label>
               <input type="number" value={f.annualSpend || ''} onChange={e => setField('annualSpend', parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted" />
             </div>
           </div>
 
-          <h4 className="text-sm font-semibold text-gray-700 pt-2">Data Access & Security</h4>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-signal-body pt-2">Data Access & Security</h4>
           <div className="space-y-3">
             <label className="flex items-center gap-3">
               <input type="checkbox" checked={f.hasDataAccess || false} onChange={e => setField('hasDataAccess', e.target.checked)}
-                className="rounded border-gray-300 text-brand-600" />
-              <span className="text-sm text-gray-700">Vendor has access to sensitive data</span>
+                className="rounded border-gray-300 text-brand-600 dark:text-signal-green" />
+              <span className="text-sm text-gray-700 dark:text-signal-body">Vendor has access to sensitive data</span>
             </label>
             {f.hasDataAccess && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data Types Accessed</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Data Types Accessed</label>
                 <div className="flex flex-wrap gap-2">
                   {['PII', 'Payment', 'Health', 'Financial', 'Employee', 'IP'].map(dt => (
                     <label key={dt} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs cursor-pointer transition-colors ${
                       (f.dataTypes || []).includes(dt)
-                        ? 'bg-red-50 border-red-200 text-red-700'
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                        ? 'bg-red-50 border-red-200 text-red-700 dark:bg-signal-bad/10 dark:border-signal-bad/25 dark:text-signal-bad'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 dark:text-signal-body hover:bg-gray-100 dark:bg-white/[0.03] dark:border-white/[0.08] dark:hover:bg-white/[0.06]'
                     }`}>
                       <input type="checkbox" className="sr-only"
                         checked={(f.dataTypes || []).includes(dt)}
@@ -1006,13 +1006,13 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Security Contact</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-1">Security Contact</label>
               <input value={f.securityContact || ''} onChange={e => setField('securityContact', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted" />
             </div>
           </div>
 
-          <h4 className="text-sm font-semibold text-gray-700 pt-2">{t('vendors.complianceStatus')}</h4>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-signal-body pt-2">{t('vendors.complianceStatus')}</h4>
           <div className="flex flex-wrap gap-4">
             {[
               { key: 'soc2Report', label: 'SOC 2' },
@@ -1023,8 +1023,8 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
               <label key={cert.key} className="flex items-center gap-2">
                 <input type="checkbox" checked={(f as any)[cert.key] || false}
                   onChange={e => setField(cert.key, e.target.checked)}
-                  className="rounded border-gray-300 text-brand-600" />
-                <span className="text-sm text-gray-700">{cert.label}</span>
+                  className="rounded border-gray-300 text-brand-600 dark:text-signal-green" />
+                <span className="text-sm text-gray-700 dark:text-signal-body">{cert.label}</span>
               </label>
             ))}
           </div>
@@ -1032,11 +1032,11 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
         <div className="flex items-center justify-end gap-3">
           <button type="button" onClick={() => setViewMode(isEdit ? 'detail' : 'list')}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-signal-ink dark:placeholder:text-signal-muted hover:bg-gray-50">
             {t('common.cancel')}
           </button>
           <button type="submit" disabled={isSaving || isSubmitting || !f.name}
-            className="px-6 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
+            className="px-6 py-2 bg-brand-600 dark:bg-signal-green text-white dark:text-signal-canvas rounded-lg text-sm font-medium hover:bg-brand-700 dark:hover:bg-signal-green/90 disabled:opacity-50 flex items-center gap-2">
             {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
             {isEdit ? t('common.save') : t('vendors.addVendor')}
           </button>
@@ -1051,36 +1051,36 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
   const renderContractAnalyzer = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Contract Analyzer</h2>
-        {selectedVendor && <p className="text-sm text-gray-500 mt-1">Vendor: {selectedVendor.name}</p>}
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink">Contract Analyzer</h2>
+        {selectedVendor && <p className="text-sm text-gray-500 dark:text-signal-muted mt-1">Vendor: {selectedVendor.name}</p>}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Paste Contract Text</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-signal-body mb-2">Paste Contract Text</label>
             <textarea
               value={contractText}
               onChange={e => setContractText(e.target.value)}
               rows={16}
-              className="w-full p-4 border border-gray-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-brand-500 resize-none"
+              className="w-full p-4 border border-gray-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-brand-500 dark:focus:ring-signal-green resize-none"
               placeholder="Paste the vendor contract text here for AI analysis..."
             />
-            <p className="text-xs text-gray-400 mt-1">{contractText.length.toLocaleString()} characters</p>
+            <p className="text-xs text-gray-400 dark:text-signal-muted mt-1">{contractText.length.toLocaleString()} characters</p>
           </div>
           <button onClick={handleContractAnalysis}
             disabled={contractLoading || !contractText.trim()}
-            className="w-full bg-brand-600 text-white py-3 rounded-lg hover:bg-brand-700 disabled:opacity-50 flex justify-center items-center gap-2 text-sm font-medium">
+            className="w-full bg-brand-600 dark:bg-signal-green text-white dark:text-signal-canvas py-3 rounded-lg hover:bg-brand-700 dark:hover:bg-signal-green/90 disabled:opacity-50 flex justify-center items-center gap-2 text-sm font-medium">
             {contractLoading ? <><Loader2 className="animate-spin" size={16} /> Analyzing...</> : <><Search size={16} /> Analyze for Compliance Risks</>}
           </button>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-y-auto max-h-[600px]">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03] overflow-y-auto max-h-[600px]">
           {contractAnalysis ? (
             <div className="prose prose-sm max-w-none">
-              <h3 className="flex items-center text-brand-700 mb-4"><FileText className="mr-2" size={20} /> AI Analysis Report</h3>
+              <h3 className="flex items-center text-brand-700 dark:text-signal-green mb-4"><FileText className="mr-2" size={20} /> AI Analysis Report</h3>
               <ReactMarkdown>{contractAnalysis}</ReactMarkdown>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 py-12">
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-signal-muted py-12">
               <AlertTriangle size={48} className="mb-2" />
               <p className="text-center">Paste contract text to detect missing DPA clauses, GDPR issues, and security gaps.</p>
             </div>
@@ -1096,21 +1096,21 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
   const renderDueDiligence = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">{t('vendors.dueDiligence')}</h2>
-        {selectedVendor && <p className="text-sm text-gray-500 mt-1">Vendor: {selectedVendor.name}</p>}
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink">{t('vendors.dueDiligence')}</h2>
+        {selectedVendor && <p className="text-sm text-gray-500 dark:text-signal-muted mt-1">Vendor: {selectedVendor.name}</p>}
       </div>
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03] min-h-[400px]">
         {dueDiligenceLoading ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="animate-spin text-brand-600 mb-3" size={32} />
-            <p className="text-gray-500">Generating comprehensive due diligence report...</p>
+            <Loader2 className="animate-spin text-brand-600 dark:text-signal-green mb-3" size={32} />
+            <p className="text-gray-500 dark:text-signal-muted">Generating comprehensive due diligence report...</p>
           </div>
         ) : dueDiligenceReport ? (
           <div className="prose prose-sm max-w-none">
             <ReactMarkdown>{dueDiligenceReport}</ReactMarkdown>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-signal-muted">
             <BarChart3 size={48} className="mb-2" />
             <p>No report generated yet.</p>
           </div>
@@ -1125,21 +1125,21 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
   const renderMonitoringSuggestions = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">AI-Suggested Monitoring Controls</h2>
-        {selectedVendor && <p className="text-sm text-gray-500 mt-1">Vendor: {selectedVendor.name}</p>}
+        <h2 className="text-xl font-bold text-gray-900 dark:text-signal-ink">AI-Suggested Monitoring Controls</h2>
+        {selectedVendor && <p className="text-sm text-gray-500 dark:text-signal-muted mt-1">Vendor: {selectedVendor.name}</p>}
       </div>
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/[0.06] dark:bg-white/[0.03] min-h-[400px]">
         {monitoringLoading ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="animate-spin text-brand-600 mb-3" size={32} />
-            <p className="text-gray-500">AI is analyzing vendor profile and suggesting monitors...</p>
+            <Loader2 className="animate-spin text-brand-600 dark:text-signal-green mb-3" size={32} />
+            <p className="text-gray-500 dark:text-signal-muted">AI is analyzing vendor profile and suggesting monitors...</p>
           </div>
         ) : monitoringSuggestions ? (
           <div className="prose prose-sm max-w-none">
             <ReactMarkdown>{monitoringSuggestions}</ReactMarkdown>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-signal-muted">
             <ListChecks size={48} className="mb-2" />
             <p>No monitoring suggestions yet.</p>
           </div>
@@ -1177,9 +1177,9 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
       {/* Error banner */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
-          <AlertTriangle className="text-red-600 mr-3 flex-shrink-0 mt-0.5" size={20} />
-          <p className="text-red-800 text-sm flex-1">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start dark:bg-signal-bad/10 dark:border-signal-bad/20">
+          <AlertTriangle className="text-red-600 dark:text-signal-bad mr-3 flex-shrink-0 mt-0.5" size={20} />
+          <p className="text-red-800 dark:text-signal-bad text-sm flex-1">{error}</p>
           <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800"><X size={18} /></button>
         </div>
       )}
@@ -1188,36 +1188,36 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           {isSubView ? (
-            <button onClick={handleSubBack} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+            <button onClick={handleSubBack} className="p-2 hover:bg-gray-200 dark:hover:bg-white/[0.06] rounded-full transition-colors">
               <ArrowLeft size={20} />
             </button>
           ) : (
-            <button onClick={onBack} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+            <button onClick={onBack} className="p-2 hover:bg-gray-200 dark:hover:bg-white/[0.06] rounded-full transition-colors">
               <ArrowLeft size={20} />
             </button>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('vendors.title')}</h1>
-            <p className="text-sm text-gray-500">{vendors.length} vendor{vendors.length !== 1 ? 's' : ''} tracked</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-signal-ink dark:font-display">{t('vendors.title')}</h1>
+            <p className="text-sm text-gray-500 dark:text-signal-muted">{vendors.length} vendor{vendors.length !== 1 ? 's' : ''} tracked</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {!isSubView && (
             <>
-              <div className="flex bg-gray-100 rounded-lg p-0.5">
+              <div className="flex bg-gray-100 dark:bg-white/[0.04] rounded-lg p-0.5">
                 <button onClick={() => setViewMode('dashboard')}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'dashboard' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'dashboard' ? 'bg-white dark:bg-white/[0.08] shadow text-gray-900 dark:text-signal-ink' : 'text-gray-500 dark:text-signal-muted hover:text-gray-700 dark:hover:text-signal-body'}`}>
                   {t('common.overview')}
                 </button>
                 <button onClick={() => setViewMode('list')}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-white/[0.08] shadow text-gray-900 dark:text-signal-ink' : 'text-gray-500 dark:text-signal-muted hover:text-gray-700 dark:hover:text-signal-body'}`}>
                   Vendors
                 </button>
               </div>
               <button onClick={openCreate}
                 disabled={vendorLimitReached}
                 title={vendorLimitReached ? getUpgradeMessage(plan, 'maxVendors', vendors.length) : undefined}
-                className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 shadow-md flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                className="bg-brand-600 dark:bg-signal-green text-white dark:text-signal-canvas px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 dark:hover:bg-signal-green/90 shadow-md flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <Plus size={16} /> {t('vendors.addVendor')}
               </button>
             </>

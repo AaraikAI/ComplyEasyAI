@@ -283,11 +283,11 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
     });
   }, [controls, categoryFilter, processFilter, searchQuery]);
 
-  const effectivenessColor = (e: Effectiveness) => e === 'Effective' ? 'text-emerald-400' : e === 'Ineffective' ? 'text-red-400' : 'text-amber-400';
-  const effectivenessBg = (e: Effectiveness) => e === 'Effective' ? 'bg-emerald-500/20 text-emerald-400' : e === 'Ineffective' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400';
-  const riskBg = (r: RiskLevel) => r === 'High' ? 'bg-red-500/20 text-red-400' : r === 'Medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400';
-  const resultBg = (r: TestResult) => r === 'Pass' ? 'bg-emerald-500/20 text-emerald-400' : r === 'Fail' ? 'bg-red-500/20 text-red-400' : r === 'Exception' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-500/20 text-slate-400';
-  const defTypeBg = (t: DeficiencyType) => t === 'Material Weakness' ? 'bg-red-500/20 text-red-400' : t === 'Significant Deficiency' ? 'bg-orange-500/20 text-orange-400' : 'bg-amber-500/20 text-amber-400';
+  const effectivenessColor = (e: Effectiveness) => e === 'Effective' ? 'text-emerald-400 dark:text-signal-good' : e === 'Ineffective' ? 'text-red-400 dark:text-signal-bad' : 'text-amber-400 dark:text-signal-warn';
+  const effectivenessBg = (e: Effectiveness) => e === 'Effective' ? 'bg-emerald-500/20 text-emerald-400 dark:bg-signal-good/10 dark:text-signal-good' : e === 'Ineffective' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad' : 'bg-amber-500/20 text-amber-400 dark:bg-signal-warn/10 dark:text-signal-warn';
+  const riskBg = (r: RiskLevel) => r === 'High' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad' : r === 'Medium' ? 'bg-amber-500/20 text-amber-400 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-emerald-500/20 text-emerald-400 dark:bg-signal-good/10 dark:text-signal-good';
+  const resultBg = (r: TestResult) => r === 'Pass' ? 'bg-emerald-500/20 text-emerald-400 dark:bg-signal-good/10 dark:text-signal-good' : r === 'Fail' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad' : r === 'Exception' ? 'bg-amber-500/20 text-amber-400 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-slate-500/20 text-slate-400 dark:bg-white/[0.06] dark:text-signal-muted';
+  const defTypeBg = (t: DeficiencyType) => t === 'Material Weakness' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad' : t === 'Significant Deficiency' ? 'bg-orange-500/20 text-orange-400 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-amber-500/20 text-amber-400 dark:bg-signal-warn/10 dark:text-signal-warn';
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: 'overview', label: 'Overview', icon: <BarChart3 size={15} /> },
@@ -302,10 +302,10 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
+        <div className="bg-slate-800 rounded-lg dark:rounded-2xl p-5 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-slate-400">Compliance Score</span>
-            <Shield size={18} className="text-blue-400" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400 dark:text-signal-muted">Compliance Score</span>
+            <Shield size={18} className="text-blue-400 dark:text-signal-blue" />
           </div>
           <div className="flex items-center gap-3">
             <div className="relative w-14 h-14">
@@ -313,49 +313,49 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
                 <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" strokeWidth="3" />
                 <circle cx="18" cy="18" r="15.9" fill="none" stroke={complianceScore >= 80 ? '#10b981' : complianceScore >= 60 ? '#f59e0b' : '#ef4444'} strokeWidth="3" strokeDasharray={`${complianceScore} ${100 - complianceScore}`} strokeLinecap="round" />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">{complianceScore}%</span>
+              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white dark:text-signal-ink">{complianceScore}%</span>
             </div>
-            <div><div className="text-2xl font-bold text-white">{complianceScore}%</div><div className="text-xs text-slate-400">ICFR Rating</div></div>
+            <div><div className="text-2xl font-bold text-white dark:font-display dark:text-signal-ink">{complianceScore}%</div><div className="text-xs text-slate-400 dark:text-signal-muted">ICFR Rating</div></div>
           </div>
         </div>
         {[
-          { label: 'Total Controls', value: controls.length, icon: Shield, color: 'text-blue-400' },
-          { label: 'Tested Controls', value: tests.length, icon: CheckCircle, color: 'text-emerald-400' },
-          { label: 'Total Deficiencies', value: totalDeficiencies, icon: AlertTriangle, color: 'text-amber-400' },
-          { label: 'Material Weaknesses', value: materialWeaknesses, icon: XCircle, color: 'text-red-400' },
+          { label: 'Total Controls', value: controls.length, icon: Shield, color: 'text-blue-400 dark:text-signal-blue' },
+          { label: 'Tested Controls', value: tests.length, icon: CheckCircle, color: 'text-emerald-400 dark:text-signal-good' },
+          { label: 'Total Deficiencies', value: totalDeficiencies, icon: AlertTriangle, color: 'text-amber-400 dark:text-signal-warn' },
+          { label: 'Material Weaknesses', value: materialWeaknesses, icon: XCircle, color: 'text-red-400 dark:text-signal-bad' },
         ].map(m => (
-          <div key={m.label} className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-            <div className="flex items-center justify-between mb-2"><span className="text-sm text-slate-400">{m.label}</span><m.icon size={18} className={m.color} /></div>
-            <div className="text-2xl font-bold text-white">{m.value}</div>
+          <div key={m.label} className="bg-slate-800 rounded-lg dark:rounded-2xl p-5 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
+            <div className="flex items-center justify-between mb-2"><span className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400 dark:text-signal-muted">{m.label}</span><m.icon size={18} className={m.color} /></div>
+            <div className="text-2xl font-bold text-white dark:font-display dark:text-signal-ink">{m.value}</div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Control Effectiveness Breakdown</h3>
+        <div className="bg-slate-800 rounded-lg dark:rounded-2xl p-5 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink mb-4">Control Effectiveness Breakdown</h3>
           <div className="space-y-3">
             {[
-              { label: 'Effective', count: effectiveCount, pct: controls.length > 0 ? Math.round((effectiveCount / controls.length) * 100) : 0, color: 'bg-emerald-500' },
-              { label: 'Needs Improvement', count: needsImprovementCount, pct: controls.length > 0 ? Math.round((needsImprovementCount / controls.length) * 100) : 0, color: 'bg-amber-500' },
-              { label: 'Ineffective', count: ineffectiveCount, pct: controls.length > 0 ? Math.round((ineffectiveCount / controls.length) * 100) : 0, color: 'bg-red-500' },
+              { label: 'Effective', count: effectiveCount, pct: controls.length > 0 ? Math.round((effectiveCount / controls.length) * 100) : 0, color: 'bg-emerald-500 dark:bg-signal-good' },
+              { label: 'Needs Improvement', count: needsImprovementCount, pct: controls.length > 0 ? Math.round((needsImprovementCount / controls.length) * 100) : 0, color: 'bg-amber-500 dark:bg-signal-warn' },
+              { label: 'Ineffective', count: ineffectiveCount, pct: controls.length > 0 ? Math.round((ineffectiveCount / controls.length) * 100) : 0, color: 'bg-red-500 dark:bg-signal-bad' },
             ].map(item => (
               <div key={item.label}>
-                <div className="flex justify-between text-sm mb-1"><span className="text-slate-300">{item.label}</span><span className="text-white font-medium">{item.count} ({item.pct}%)</span></div>
-                <div className="h-2 bg-slate-700 rounded-full"><div className={`h-2 ${item.color} rounded-full transition-all`} style={{ width: `${item.pct}%` }} /></div>
+                <div className="flex justify-between text-sm mb-1"><span className="text-slate-300 dark:text-signal-body">{item.label}</span><span className="text-white dark:text-signal-ink font-medium">{item.count} ({item.pct}%)</span></div>
+                <div className="h-2 bg-slate-700 dark:bg-white/[0.06] rounded-full"><div className={`h-2 ${item.color} rounded-full transition-all`} style={{ width: `${item.pct}%` }} /></div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Recent Testing Activity</h3>
+        <div className="bg-slate-800 rounded-lg dark:rounded-2xl p-5 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink mb-4">Recent Testing Activity</h3>
           <div className="space-y-3">
             {tests.slice(0, 5).map(tr => (
-              <div key={tr.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+              <div key={tr.id} className="flex items-center justify-between p-3 bg-slate-700/50 dark:bg-white/[0.04] rounded-lg">
                 <div>
-                  <div className="text-sm font-medium text-white">{tr.controlId}: {tr.controlTitle.slice(0, 35)}...</div>
-                  <div className="text-xs text-slate-400">{tr.tester} · {tr.testDate}</div>
+                  <div className="text-sm font-medium text-white dark:text-signal-ink">{tr.controlId}: {tr.controlTitle.slice(0, 35)}...</div>
+                  <div className="text-xs text-slate-400 dark:text-signal-muted">{tr.tester} · {tr.testDate}</div>
                 </div>
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${resultBg(tr.result)}`}>{tr.result}</span>
               </div>
@@ -364,20 +364,20 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
         </div>
       </div>
 
-      <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Upcoming Deadlines</h3>
+      <div className="bg-slate-800 rounded-lg dark:rounded-2xl p-5 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink mb-4">Upcoming Deadlines</h3>
         {upcomingDeadlines.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {upcomingDeadlines.map((d, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-                <Calendar size={16} className="text-blue-400 flex-shrink-0" />
-                <div><div className="text-sm text-white">{d.event}</div><div className="text-xs text-slate-400">{d.date}</div></div>
-                <span className={`ml-auto px-2 py-0.5 rounded text-xs ${d.severity === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>{d.severity}</span>
+              <div key={i} className="flex items-center gap-3 p-3 bg-slate-700/50 dark:bg-white/[0.04] rounded-lg">
+                <Calendar size={16} className="text-blue-400 dark:text-signal-blue flex-shrink-0" />
+                <div><div className="text-sm text-white dark:text-signal-ink">{d.event}</div><div className="text-xs text-slate-400 dark:text-signal-muted">{d.date}</div></div>
+                <span className={`ml-auto px-2 py-0.5 rounded text-xs ${d.severity === 'High' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad' : 'bg-amber-500/20 text-amber-400 dark:bg-signal-warn/10 dark:text-signal-warn'}`}>{d.severity}</span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-sm text-slate-400 py-4">No upcoming control-test or remediation deadlines.</div>
+          <div className="text-sm text-slate-400 dark:text-signal-muted py-4">No upcoming control-test or remediation deadlines.</div>
         )}
       </div>
     </div>
@@ -388,49 +388,49 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-signal-muted" />
+          <input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg dark:rounded-xl text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink dark:focus:ring-signal-green" />
         </div>
-        <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm">
+        <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink">
           <option value="all">All Categories</option>
           {['ITGC', 'Business Process', 'Entity Level', 'Transaction Level', 'IT Application'].map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select value={processFilter} onChange={e => setProcessFilter(e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm">
+        <select value={processFilter} onChange={e => setProcessFilter(e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink">
           <option value="all">All Process Areas</option>
           {['Revenue', 'Procurement', 'Financial Close', 'Treasury', 'Payroll', 'IT General'].map(p => <option key={p} value={p}>{p}</option>)}
         </select>
-        <button onClick={openCreateControl} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><Plus size={16} /> Add Control</button>
+        <button onClick={openCreateControl} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90"><Plus size={16} /> Add Control</button>
       </div>
 
-      <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto">
+      <div className="bg-slate-800 rounded-lg dark:rounded-2xl border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06] overflow-x-auto">
         <table className="w-full text-sm">
-          <thead><tr className="border-b border-slate-700">
+          <thead><tr className="border-b border-slate-700 dark:border-white/[0.06]">
             {['Control ID', 'Title', 'Category', 'Process Area', 'Type', 'Frequency', 'Effectiveness', 'Risk', 'Owner', 'Actions'].map(h => (
-              <th key={h} className="text-left px-4 py-3 text-slate-400 font-medium">{h}</th>
+              <th key={h} className="text-left px-4 py-3 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400 dark:text-signal-muted font-medium">{h}</th>
             ))}
           </tr></thead>
           <tbody>
             {filteredControls.map(c => (
-              <tr key={c.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                <td className="px-4 py-3 text-blue-400 font-mono text-xs">{c.controlId}</td>
-                <td className="px-4 py-3 text-white">{c.title}</td>
-                <td className="px-4 py-3"><span className="px-2 py-0.5 bg-slate-700 text-slate-300 rounded text-xs">{c.category}</span></td>
-                <td className="px-4 py-3 text-slate-300">{c.processArea}</td>
-                <td className="px-4 py-3 text-slate-300">{c.controlType}</td>
-                <td className="px-4 py-3 text-slate-400 text-xs">{c.frequency}</td>
+              <tr key={c.id} className="border-b border-slate-700/50 dark:border-white/[0.06] hover:bg-slate-700/30 dark:hover:bg-white/[0.04]">
+                <td className="px-4 py-3 text-blue-400 dark:text-signal-blue font-mono text-xs">{c.controlId}</td>
+                <td className="px-4 py-3 text-white dark:text-signal-ink">{c.title}</td>
+                <td className="px-4 py-3"><span className="px-2 py-0.5 bg-slate-700 text-slate-300 rounded text-xs dark:bg-white/[0.06] dark:text-signal-body">{c.category}</span></td>
+                <td className="px-4 py-3 text-slate-300 dark:text-signal-body">{c.processArea}</td>
+                <td className="px-4 py-3 text-slate-300 dark:text-signal-body">{c.controlType}</td>
+                <td className="px-4 py-3 text-slate-400 dark:text-signal-muted text-xs">{c.frequency}</td>
                 <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${effectivenessBg(c.effectiveness)}`}>{c.effectiveness}</span></td>
                 <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${riskBg(c.riskLevel)}`}>{c.riskLevel}</span></td>
-                <td className="px-4 py-3 text-slate-300 text-xs">{c.owner}</td>
+                <td className="px-4 py-3 text-slate-300 dark:text-signal-body text-xs">{c.owner}</td>
                 <td className="px-4 py-3"><div className="flex gap-1">
-                  <button onClick={() => setSelectedControl(c)} className="p-1 hover:bg-slate-600 rounded" title="View"><Eye size={14} className="text-slate-400" /></button>
-                  <button onClick={() => openEditControl(c)} className="p-1 hover:bg-slate-600 rounded" title={t('common.edit')}><Edit3 size={14} className="text-slate-400" /></button>
+                  <button onClick={() => setSelectedControl(c)} className="p-1 hover:bg-slate-600 dark:hover:bg-white/[0.06] rounded" title="View"><Eye size={14} className="text-slate-400 dark:text-signal-muted" /></button>
+                  <button onClick={() => openEditControl(c)} className="p-1 hover:bg-slate-600 dark:hover:bg-white/[0.06] rounded" title={t('common.edit')}><Edit3 size={14} className="text-slate-400 dark:text-signal-muted" /></button>
                 </div></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div className="text-sm text-slate-400">{filteredControls.length} of {controls.length} controls shown</div>
+      <div className="text-sm text-slate-400 dark:text-signal-muted">{filteredControls.length} of {controls.length} controls shown</div>
     </div>
   );
 
@@ -441,29 +441,29 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
         <div className="flex gap-4">
           {['Pass', 'Fail', 'Exception'].map(r => {
             const count = tests.filter(tr => tr.result === r).length;
-            return <div key={r} className="bg-slate-800 rounded-lg px-4 py-2 border border-slate-700"><span className="text-xs text-slate-400">{r}</span><div className={`text-xl font-bold ${r === 'Pass' ? 'text-emerald-400' : r === 'Fail' ? 'text-red-400' : 'text-amber-400'}`}>{count}</div></div>;
+            return <div key={r} className="bg-slate-800 rounded-lg dark:rounded-2xl px-4 py-2 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]"><span className="text-xs text-slate-400 dark:text-signal-muted">{r}</span><div className={`text-xl font-bold ${r === 'Pass' ? 'text-emerald-400 dark:text-signal-good' : r === 'Fail' ? 'text-red-400 dark:text-signal-bad' : 'text-amber-400 dark:text-signal-warn'}`}>{count}</div></div>;
           })}
         </div>
-        <button onClick={() => setShowCreateTest(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><Plus size={16} /> New Test</button>
+        <button onClick={() => setShowCreateTest(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90"><Plus size={16} /> New Test</button>
       </div>
 
-      <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto">
+      <div className="bg-slate-800 rounded-lg dark:rounded-2xl border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06] overflow-x-auto">
         <table className="w-full text-sm">
-          <thead><tr className="border-b border-slate-700">
+          <thead><tr className="border-b border-slate-700 dark:border-white/[0.06]">
             {['Control', 'Tester', 'Methodology', 'Sample', 'Result', 'Date', 'Findings'].map(h => (
-              <th key={h} className="text-left px-4 py-3 text-slate-400 font-medium">{h}</th>
+              <th key={h} className="text-left px-4 py-3 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400 dark:text-signal-muted font-medium">{h}</th>
             ))}
           </tr></thead>
           <tbody>
             {tests.map(tr => (
-              <tr key={tr.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                <td className="px-4 py-3"><div className="text-blue-400 font-mono text-xs">{tr.controlId}</div><div className="text-white text-xs">{tr.controlTitle.slice(0, 30)}...</div></td>
-                <td className="px-4 py-3 text-slate-300">{tr.tester}</td>
-                <td className="px-4 py-3 text-slate-300">{tr.methodology}</td>
-                <td className="px-4 py-3 text-slate-400">{tr.sampleSize || 'N/A'}</td>
+              <tr key={tr.id} className="border-b border-slate-700/50 dark:border-white/[0.06] hover:bg-slate-700/30 dark:hover:bg-white/[0.04]">
+                <td className="px-4 py-3"><div className="text-blue-400 dark:text-signal-blue font-mono text-xs">{tr.controlId}</div><div className="text-white dark:text-signal-ink text-xs">{tr.controlTitle.slice(0, 30)}...</div></td>
+                <td className="px-4 py-3 text-slate-300 dark:text-signal-body">{tr.tester}</td>
+                <td className="px-4 py-3 text-slate-300 dark:text-signal-body">{tr.methodology}</td>
+                <td className="px-4 py-3 text-slate-400 dark:text-signal-muted">{tr.sampleSize || 'N/A'}</td>
                 <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${resultBg(tr.result)}`}>{tr.result}</span></td>
-                <td className="px-4 py-3 text-slate-400">{tr.testDate}</td>
-                <td className="px-4 py-3 text-slate-300 text-xs max-w-[200px] truncate">{tr.findings}</td>
+                <td className="px-4 py-3 text-slate-400 dark:text-signal-muted">{tr.testDate}</td>
+                <td className="px-4 py-3 text-slate-300 dark:text-signal-body text-xs max-w-[200px] truncate">{tr.findings}</td>
               </tr>
             ))}
           </tbody>
@@ -477,29 +477,29 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Material Weaknesses', count: materialWeaknesses, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30' },
-          { label: 'Significant Deficiencies', count: significantDeficiencies, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/30' },
-          { label: 'Control Deficiencies', count: deficiencies.filter(d => d.type === 'Control Deficiency').length, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30' },
+          { label: 'Material Weaknesses', count: materialWeaknesses, color: 'text-red-400 dark:text-signal-bad', bg: 'bg-red-500/10 border-red-500/30 dark:bg-signal-bad/10 dark:border-signal-bad/30' },
+          { label: 'Significant Deficiencies', count: significantDeficiencies, color: 'text-orange-400 dark:text-signal-warn', bg: 'bg-orange-500/10 border-orange-500/30 dark:bg-signal-warn/10 dark:border-signal-warn/30' },
+          { label: 'Control Deficiencies', count: deficiencies.filter(d => d.type === 'Control Deficiency').length, color: 'text-amber-400 dark:text-signal-warn', bg: 'bg-amber-500/10 border-amber-500/30 dark:bg-signal-warn/10 dark:border-signal-warn/30' },
         ].map(m => (
-          <div key={m.label} className={`rounded-lg p-4 border ${m.bg}`}>
-            <div className="text-sm text-slate-400">{m.label}</div>
-            <div className={`text-3xl font-bold ${m.color}`}>{m.count}</div>
+          <div key={m.label} className={`rounded-lg dark:rounded-2xl p-4 border ${m.bg}`}>
+            <div className="text-sm text-slate-400 dark:text-signal-muted">{m.label}</div>
+            <div className={`text-3xl font-bold dark:font-display ${m.color}`}>{m.count}</div>
           </div>
         ))}
       </div>
 
       <div className="space-y-3">
         {deficiencies.map(d => (
-          <div key={d.id} className="bg-slate-800 rounded-lg p-4 border border-slate-700 hover:border-slate-600 cursor-pointer" onClick={() => setSelectedDeficiency(d)}>
+          <div key={d.id} className="bg-slate-800 rounded-lg dark:rounded-2xl p-4 border border-slate-700 hover:border-slate-600 dark:bg-white/[0.03] dark:border-white/[0.06] dark:hover:border-white/[0.12] cursor-pointer" onClick={() => setSelectedDeficiency(d)}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${defTypeBg(d.type)}`}>{d.type}</span>
-                <span className="text-white font-medium">{d.title}</span>
+                <span className="text-white dark:text-signal-ink font-medium">{d.title}</span>
               </div>
-              <span className={`px-2 py-0.5 rounded text-xs ${d.status === 'Open' ? 'bg-red-500/20 text-red-400' : d.status === 'In Remediation' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>{d.status}</span>
+              <span className={`px-2 py-0.5 rounded text-xs ${d.status === 'Open' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad' : d.status === 'In Remediation' ? 'bg-amber-500/20 text-amber-400 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-emerald-500/20 text-emerald-400 dark:bg-signal-good/10 dark:text-signal-good'}`}>{d.status}</span>
             </div>
-            <div className="text-sm text-slate-400 mb-2">{d.description}</div>
-            <div className="flex items-center gap-4 text-xs text-slate-500">
+            <div className="text-sm text-slate-400 dark:text-signal-body mb-2">{d.description}</div>
+            <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-signal-muted">
               <span>Control: {d.controlId}</span>
               <span>Owner: {d.owner}</span>
               <span>Due: {d.dueDate}</span>
@@ -513,16 +513,16 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   // ── Walkthroughs Tab ──────────────────────────────────────────────────
   const renderWalkthroughs = () => (
     <div className="space-y-6">
-      <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">COSO Framework Alignment</h3>
+      <div className="bg-slate-800 rounded-lg dark:rounded-2xl p-5 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink mb-4">COSO Framework Alignment</h3>
         <div className="grid grid-cols-5 gap-3">
           {['Control Environment', 'Risk Assessment', 'Control Activities', 'Information & Communication', 'Monitoring'].map((comp, i) => {
             const count = walkthroughs.filter(w => w.cosoComponent === comp).length;
             return (
-              <div key={comp} className="text-center p-3 bg-slate-700/50 rounded-lg">
-                <div className="text-xs text-slate-400 mb-1">{comp}</div>
-                <div className="text-lg font-bold text-blue-400">{count}</div>
-                <div className="text-xs text-slate-500">processes</div>
+              <div key={comp} className="text-center p-3 bg-slate-700/50 dark:bg-white/[0.04] rounded-lg">
+                <div className="text-xs text-slate-400 dark:text-signal-muted mb-1">{comp}</div>
+                <div className="text-lg font-bold text-blue-400 dark:text-signal-blue">{count}</div>
+                <div className="text-xs text-slate-500 dark:text-signal-muted">processes</div>
               </div>
             );
           })}
@@ -531,12 +531,12 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
 
       <div className="space-y-3">
         {walkthroughs.map(w => (
-          <div key={w.id} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+          <div key={w.id} className="bg-slate-800 rounded-lg dark:rounded-2xl p-4 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-white font-medium">{w.processName}</div>
-              <span className={`px-2 py-0.5 rounded text-xs ${w.status === 'Complete' ? 'bg-emerald-500/20 text-emerald-400' : w.status === 'In Progress' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-500/20 text-slate-400'}`}>{w.status}</span>
+              <div className="text-white dark:text-signal-ink font-medium">{w.processName}</div>
+              <span className={`px-2 py-0.5 rounded text-xs ${w.status === 'Complete' ? 'bg-emerald-500/20 text-emerald-400 dark:bg-signal-good/10 dark:text-signal-good' : w.status === 'In Progress' ? 'bg-blue-500/20 text-blue-400 dark:bg-signal-blue/10 dark:text-signal-blue' : 'bg-slate-500/20 text-slate-400 dark:bg-white/[0.06] dark:text-signal-muted'}`}>{w.status}</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-slate-400">
+            <div className="flex items-center gap-6 text-sm text-slate-400 dark:text-signal-body">
               <span>COSO: {w.cosoComponent}</span>
               <span>{w.steps} Steps</span>
               <span>{w.keyControls} Key Controls</span>
@@ -545,7 +545,7 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
             </div>
             <div className="mt-3 flex gap-2">
               {Array.from({ length: w.steps }, (_, i) => (
-                <div key={i} className={`h-2 flex-1 rounded-full ${i < (w.status === 'Complete' ? w.steps : w.status === 'In Progress' ? Math.floor(w.steps * 0.6) : 0) ? 'bg-blue-500' : 'bg-slate-700'}`} />
+                <div key={i} className={`h-2 flex-1 rounded-full ${i < (w.status === 'Complete' ? w.steps : w.status === 'In Progress' ? Math.floor(w.steps * 0.6) : 0) ? 'bg-blue-500 dark:bg-signal-green' : 'bg-slate-700 dark:bg-white/[0.06]'}`} />
               ))}
             </div>
           </div>
@@ -557,45 +557,45 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   // ── Reports Tab ───────────────────────────────────────────────────────
   const renderReports = () => (
     <div className="space-y-6">
-      <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Management Assessment of ICFR</h3>
+      <div className="bg-slate-800 rounded-lg dark:rounded-2xl p-6 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
+        <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink mb-4">Management Assessment of ICFR</h3>
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <div className="text-sm text-slate-400 mb-2">Overall Assessment</div>
-            <div className={`text-xl font-bold ${materialWeaknesses === 0 ? 'text-emerald-400' : 'text-red-400'}`}>{materialWeaknesses === 0 ? 'Effective' : 'Ineffective'}</div>
-            <div className="text-sm text-slate-400 mt-1">Internal Control over Financial Reporting is {materialWeaknesses === 0 ? 'effective' : 'not effective'} as of the assessment date.</div>
+            <div className="text-sm text-slate-400 dark:text-signal-muted mb-2">Overall Assessment</div>
+            <div className={`text-xl font-bold dark:font-display ${materialWeaknesses === 0 ? 'text-emerald-400 dark:text-signal-good' : 'text-red-400 dark:text-signal-bad'}`}>{materialWeaknesses === 0 ? 'Effective' : 'Ineffective'}</div>
+            <div className="text-sm text-slate-400 dark:text-signal-body mt-1">Internal Control over Financial Reporting is {materialWeaknesses === 0 ? 'effective' : 'not effective'} as of the assessment date.</div>
           </div>
           <div className="space-y-2">
-            <div className="flex justify-between text-sm"><span className="text-slate-400">Material Weaknesses</span><span className={materialWeaknesses > 0 ? 'text-red-400' : 'text-emerald-400'}>{materialWeaknesses}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-slate-400">Significant Deficiencies</span><span className="text-orange-400">{significantDeficiencies}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-slate-400">Control Deficiencies</span><span className="text-amber-400">{deficiencies.filter(d => d.type === 'Control Deficiency').length}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-slate-400">Controls Tested</span><span className="text-white">{tests.length} / {controls.length}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-slate-400 dark:text-signal-muted">Material Weaknesses</span><span className={materialWeaknesses > 0 ? 'text-red-400 dark:text-signal-bad' : 'text-emerald-400 dark:text-signal-good'}>{materialWeaknesses}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-slate-400 dark:text-signal-muted">Significant Deficiencies</span><span className="text-orange-400 dark:text-signal-warn">{significantDeficiencies}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-slate-400 dark:text-signal-muted">Control Deficiencies</span><span className="text-amber-400 dark:text-signal-warn">{deficiencies.filter(d => d.type === 'Control Deficiency').length}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-slate-400 dark:text-signal-muted">Controls Tested</span><span className="text-white dark:text-signal-ink">{tests.length} / {controls.length}</span></div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Quarterly Certification Readiness</h3>
+        <div className="bg-slate-800 rounded-lg dark:rounded-2xl p-5 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink mb-4">Quarterly Certification Readiness</h3>
           {quarterReadiness.map(q => (
-            <div key={q.label} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
-              <span className="text-sm text-slate-300">{q.label}</span>
+            <div key={q.label} className="flex items-center justify-between py-2 border-b border-slate-700/50 dark:border-white/[0.06] last:border-0">
+              <span className="text-sm text-slate-300 dark:text-signal-body">{q.label}</span>
               <span className={`px-2 py-0.5 rounded text-xs ${
-                q.status === 'Ready' ? 'bg-emerald-500/20 text-emerald-400'
-                : q.status === 'Complete' ? 'bg-blue-500/20 text-blue-400'
-                : q.status === 'Not Ready' ? 'bg-red-500/20 text-red-400'
-                : 'bg-slate-500/20 text-slate-400'
+                q.status === 'Ready' ? 'bg-emerald-500/20 text-emerald-400 dark:bg-signal-good/10 dark:text-signal-good'
+                : q.status === 'Complete' ? 'bg-blue-500/20 text-blue-400 dark:bg-signal-blue/10 dark:text-signal-blue'
+                : q.status === 'Not Ready' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad'
+                : 'bg-slate-500/20 text-slate-400 dark:bg-white/[0.06] dark:text-signal-muted'
               }`}>{q.status}</span>
             </div>
           ))}
         </div>
 
-        <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Available Reports</h3>
+        <div className="bg-slate-800 rounded-lg dark:rounded-2xl p-5 border border-slate-700 dark:bg-white/[0.03] dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink mb-4">Available Reports</h3>
           {['Management Assessment Report', 'Control Testing Summary', 'Deficiency Analysis', 'Walkthrough Documentation', 'External Auditor Package'].map(r => (
-            <div key={r} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
-              <div className="flex items-center gap-2"><FileText size={14} className="text-blue-400" /><span className="text-sm text-slate-300">{r}</span></div>
-              <button onClick={() => exportReport(r)} disabled={exportingReport === r} className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"><Download size={12} /> {exportingReport === r ? 'Generating...' : 'Export'}</button>
+            <div key={r} className="flex items-center justify-between py-2 border-b border-slate-700/50 dark:border-white/[0.06] last:border-0">
+              <div className="flex items-center gap-2"><FileText size={14} className="text-blue-400 dark:text-signal-blue" /><span className="text-sm text-slate-300 dark:text-signal-body">{r}</span></div>
+              <button onClick={() => exportReport(r)} disabled={exportingReport === r} className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 dark:text-signal-green dark:hover:text-signal-green/80 disabled:opacity-50"><Download size={12} /> {exportingReport === r ? 'Generating...' : 'Export'}</button>
             </div>
           ))}
         </div>
@@ -606,26 +606,26 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   // ── Modals ────────────────────────────────────────────────────────────
   const renderCreateControlModal = () => showCreateControl && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateControl(false)}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">{editingControlId ? 'Edit SOX Control' : 'Add SOX Control'}</h3>
-          <button onClick={() => setShowCreateControl(false)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+      <div className="bg-slate-800 rounded-xl border border-slate-700 dark:bg-signal-panel2 dark:border-white/[0.08] w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-700 dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink">{editingControlId ? 'Edit SOX Control' : 'Add SOX Control'}</h3>
+          <button onClick={() => setShowCreateControl(false)} className="p-1 hover:bg-slate-700 dark:hover:bg-white/[0.06] rounded"><X size={18} className="text-slate-400 dark:text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
-          <div><label className="block text-sm text-slate-400 mb-1">Control ID</label><input type="text" value={controlForm.controlId} onChange={e => setControlForm(f => ({ ...f, controlId: e.target.value }))} placeholder="e.g. ITGC-07" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
-          <div><label className="block text-sm text-slate-400 mb-1">Title</label><input type="text" value={controlForm.title} onChange={e => setControlForm(f => ({ ...f, title: e.target.value }))} placeholder="Control title" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
-          <div><label className="block text-sm text-slate-400 mb-1">Description</label><input type="text" value={controlForm.description} onChange={e => setControlForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the control objective" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
+          <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Control ID</label><input type="text" value={controlForm.controlId} onChange={e => setControlForm(f => ({ ...f, controlId: e.target.value }))} placeholder="e.g. ITGC-07" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink" /></div>
+          <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Title</label><input type="text" value={controlForm.title} onChange={e => setControlForm(f => ({ ...f, title: e.target.value }))} placeholder="Control title" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink" /></div>
+          <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Description</label><input type="text" value={controlForm.description} onChange={e => setControlForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the control objective" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink" /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm text-slate-400 mb-1">Category</label><select value={controlForm.category} onChange={e => setControlForm(f => ({ ...f, category: e.target.value as ControlCategory }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['ITGC', 'Business Process', 'Entity Level', 'Transaction Level', 'IT Application'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
-            <div><label className="block text-sm text-slate-400 mb-1">Process Area</label><select value={controlForm.processArea} onChange={e => setControlForm(f => ({ ...f, processArea: e.target.value as ProcessArea }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['Revenue', 'Procurement', 'Financial Close', 'Treasury', 'Payroll', 'IT General'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
-            <div><label className="block text-sm text-slate-400 mb-1">Control Type</label><select value={controlForm.controlType} onChange={e => setControlForm(f => ({ ...f, controlType: e.target.value as ControlType }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['Preventive', 'Detective', 'Corrective'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
-            <div><label className="block text-sm text-slate-400 mb-1">Risk Level</label><select value={controlForm.riskLevel} onChange={e => setControlForm(f => ({ ...f, riskLevel: e.target.value as RiskLevel }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['High', 'Medium', 'Low'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+            <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Category</label><select value={controlForm.category} onChange={e => setControlForm(f => ({ ...f, category: e.target.value as ControlCategory }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink">{['ITGC', 'Business Process', 'Entity Level', 'Transaction Level', 'IT Application'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+            <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Process Area</label><select value={controlForm.processArea} onChange={e => setControlForm(f => ({ ...f, processArea: e.target.value as ProcessArea }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink">{['Revenue', 'Procurement', 'Financial Close', 'Treasury', 'Payroll', 'IT General'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+            <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Control Type</label><select value={controlForm.controlType} onChange={e => setControlForm(f => ({ ...f, controlType: e.target.value as ControlType }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink">{['Preventive', 'Detective', 'Corrective'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+            <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Risk Level</label><select value={controlForm.riskLevel} onChange={e => setControlForm(f => ({ ...f, riskLevel: e.target.value as RiskLevel }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink">{['High', 'Medium', 'Low'].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
           </div>
-          <div><label className="block text-sm text-slate-400 mb-1">Owner</label><input type="text" value={controlForm.owner} onChange={e => setControlForm(f => ({ ...f, owner: e.target.value }))} placeholder="Control owner" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
+          <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Owner</label><input type="text" value={controlForm.owner} onChange={e => setControlForm(f => ({ ...f, owner: e.target.value }))} placeholder="Control owner" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink" /></div>
         </div>
-        <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => setShowCreateControl(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">{t('common.cancel')}</button>
-          <button onClick={submitControl} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">{saving ? 'Saving...' : editingControlId ? 'Save Changes' : 'Create Control'}</button>
+        <div className="flex justify-end gap-3 p-5 border-t border-slate-700 dark:border-white/[0.06]">
+          <button onClick={() => setShowCreateControl(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white dark:text-signal-muted dark:hover:text-signal-ink">{t('common.cancel')}</button>
+          <button onClick={submitControl} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 disabled:opacity-50">{saving ? 'Saving...' : editingControlId ? 'Save Changes' : 'Create Control'}</button>
         </div>
       </div>
     </div>
@@ -633,13 +633,13 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
 
   const renderDetailModal = () => selectedControl && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedControl(null)}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">{selectedControl.controlId}: {selectedControl.title}</h3>
-          <button onClick={() => setSelectedControl(null)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+      <div className="bg-slate-800 rounded-xl border border-slate-700 dark:bg-signal-panel2 dark:border-white/[0.08] w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-700 dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink">{selectedControl.controlId}: {selectedControl.title}</h3>
+          <button onClick={() => setSelectedControl(null)} className="p-1 hover:bg-slate-700 dark:hover:bg-white/[0.06] rounded"><X size={18} className="text-slate-400 dark:text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-3">
-          <div className="text-sm text-slate-300">{selectedControl.description}</div>
+          <div className="text-sm text-slate-300 dark:text-signal-body">{selectedControl.description}</div>
           <div className="grid grid-cols-2 gap-3 text-sm">
             {[
               ['Category', selectedControl.category], ['Process Area', selectedControl.processArea],
@@ -648,10 +648,10 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
               ['Automation', selectedControl.automationLevel], ['Owner', selectedControl.owner],
               ['Last Tested', selectedControl.lastTestedDate], ['Next Test', selectedControl.nextTestDate],
             ].map(([k, v]) => (
-              <div key={k as string}><span className="text-slate-400">{k}: </span><span className="text-white">{v}</span></div>
+              <div key={k as string}><span className="text-slate-400 dark:text-signal-muted">{k}: </span><span className="text-white dark:text-signal-ink">{v}</span></div>
             ))}
           </div>
-          <div className="flex items-center gap-2 mt-2"><span className="text-sm text-slate-400">Effectiveness:</span><span className={`px-2 py-0.5 rounded text-xs font-medium ${effectivenessBg(selectedControl.effectiveness)}`}>{selectedControl.effectiveness}</span></div>
+          <div className="flex items-center gap-2 mt-2"><span className="text-sm text-slate-400 dark:text-signal-muted">Effectiveness:</span><span className={`px-2 py-0.5 rounded text-xs font-medium ${effectivenessBg(selectedControl.effectiveness)}`}>{selectedControl.effectiveness}</span></div>
         </div>
       </div>
     </div>
@@ -659,20 +659,20 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
 
   const renderDeficiencyDetailModal = () => selectedDeficiency && (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedDeficiency(null)}>
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">{selectedDeficiency.title}</h3>
-          <button onClick={() => setSelectedDeficiency(null)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+      <div className="bg-slate-800 rounded-xl border border-slate-700 dark:bg-signal-panel2 dark:border-white/[0.08] w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-700 dark:border-white/[0.06]">
+          <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink">{selectedDeficiency.title}</h3>
+          <button onClick={() => setSelectedDeficiency(null)} className="p-1 hover:bg-slate-700 dark:hover:bg-white/[0.06] rounded"><X size={18} className="text-slate-400 dark:text-signal-muted" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div className="flex gap-2"><span className={`px-2 py-0.5 rounded text-xs font-medium ${defTypeBg(selectedDeficiency.type)}`}>{selectedDeficiency.type}</span></div>
-          <div><div className="text-sm text-slate-400 mb-1">Description</div><div className="text-sm text-slate-300">{selectedDeficiency.description}</div></div>
-          <div><div className="text-sm text-slate-400 mb-1">Remediation Plan</div><div className="text-sm text-slate-300">{selectedDeficiency.remediationPlan}</div></div>
+          <div><div className="text-sm text-slate-400 dark:text-signal-muted mb-1">Description</div><div className="text-sm text-slate-300 dark:text-signal-body">{selectedDeficiency.description}</div></div>
+          <div><div className="text-sm text-slate-400 dark:text-signal-muted mb-1">Remediation Plan</div><div className="text-sm text-slate-300 dark:text-signal-body">{selectedDeficiency.remediationPlan}</div></div>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><span className="text-slate-400">Control: </span><span className="text-white">{selectedDeficiency.controlId}</span></div>
-            <div><span className="text-slate-400">Owner: </span><span className="text-white">{selectedDeficiency.owner}</span></div>
-            <div><span className="text-slate-400">Due Date: </span><span className="text-white">{selectedDeficiency.dueDate}</span></div>
-            <div><span className="text-slate-400">Status: </span><span className="text-white">{selectedDeficiency.status}</span></div>
+            <div><span className="text-slate-400 dark:text-signal-muted">Control: </span><span className="text-white dark:text-signal-ink">{selectedDeficiency.controlId}</span></div>
+            <div><span className="text-slate-400 dark:text-signal-muted">Owner: </span><span className="text-white dark:text-signal-ink">{selectedDeficiency.owner}</span></div>
+            <div><span className="text-slate-400 dark:text-signal-muted">Due Date: </span><span className="text-white dark:text-signal-ink">{selectedDeficiency.dueDate}</span></div>
+            <div><span className="text-slate-400 dark:text-signal-muted">Status: </span><span className="text-white dark:text-signal-ink">{selectedDeficiency.status}</span></div>
           </div>
         </div>
       </div>
@@ -680,12 +680,12 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   );
 
   const renderErrorBanner = () => loadError ? (
-    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg dark:rounded-xl dark:bg-signal-bad/10 dark:border-signal-bad/30 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-        <span className="text-sm text-red-300">{loadError}</span>
+        <AlertTriangle className="w-5 h-5 text-red-400 dark:text-signal-bad flex-shrink-0" />
+        <span className="text-sm text-red-300 dark:text-signal-bad">{loadError}</span>
       </div>
-      <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 transition-colors">
+      <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 dark:bg-signal-bad/15 dark:text-signal-bad dark:hover:bg-signal-bad/25 transition-colors">
         <RefreshCw className="w-3.5 h-3.5" /> Retry
       </button>
     </div>
@@ -693,16 +693,16 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
 
   // ── Main Render ───────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-slate-900 dark:bg-signal-canvas text-white dark:text-signal-ink">
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
-          <button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-lg"><ArrowLeft size={20} /></button>
-          <div><h1 className="text-2xl font-bold">SOX Compliance</h1><p className="text-sm text-slate-400">{t('controls.title')}</p></div>
+          <button onClick={onBack} className="p-2 hover:bg-slate-800 dark:hover:bg-white/[0.06] rounded-lg"><ArrowLeft size={20} /></button>
+          <div><h1 className="text-2xl font-bold dark:font-display dark:text-signal-ink">SOX Compliance</h1><p className="text-sm text-slate-400 dark:text-signal-muted">{t('controls.title')}</p></div>
         </div>
 
-        <div className="flex gap-1 mb-6 border-b border-slate-700 overflow-x-auto">
+        <div className="flex gap-1 mb-6 border-b border-slate-700 dark:border-white/[0.06] overflow-x-auto">
           {tabs.map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-blue-500 text-blue-400 dark:border-signal-green dark:text-signal-green' : 'border-transparent text-slate-400 dark:text-signal-sub hover:text-white dark:hover:text-signal-ink hover:border-slate-600 dark:hover:border-white/[0.12]'}`}>
               {tab.icon}{tab.label}
             </button>
           ))}
@@ -722,20 +722,20 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
       {renderDeficiencyDetailModal()}
       {showCreateTest && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateTest(false)}>
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">Create Test Record</h3>
-              <button onClick={() => setShowCreateTest(false)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+          <div className="bg-slate-800 rounded-xl border border-slate-700 dark:bg-signal-panel2 dark:border-white/[0.08] w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-slate-700 dark:border-white/[0.06]">
+              <h3 className="text-lg font-semibold text-white dark:font-display dark:text-signal-ink">Create Test Record</h3>
+              <button onClick={() => setShowCreateTest(false)} className="p-1 hover:bg-slate-700 dark:hover:bg-white/[0.06] rounded"><X size={18} className="text-slate-400 dark:text-signal-muted" /></button>
             </div>
             <div className="p-5 space-y-4">
-              <div><label className="block text-sm text-slate-400 mb-1">Control</label><select value={testForm.controlId} onChange={e => setTestForm(f => ({ ...f, controlId: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm"><option value="">Select a control...</option>{controls.map(c => <option key={c.id} value={c.controlId}>{c.controlId} - {c.title}</option>)}</select></div>
-              <div><label className="block text-sm text-slate-400 mb-1">Methodology</label><select value={testForm.methodology} onChange={e => setTestForm(f => ({ ...f, methodology: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['Walkthrough', 'Inquiry', 'Observation', 'Inspection', 'Re-performance'].map(m => <option key={m}>{m}</option>)}</select></div>
-              <div><label className="block text-sm text-slate-400 mb-1">Sample Size</label><input type="number" value={testForm.sampleSize} onChange={e => setTestForm(f => ({ ...f, sampleSize: e.target.value }))} placeholder="25" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
-              <div><label className="block text-sm text-slate-400 mb-1">Findings</label><textarea value={testForm.findings} onChange={e => setTestForm(f => ({ ...f, findings: e.target.value }))} placeholder="Describe test findings..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" /></div>
+              <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Control</label><select value={testForm.controlId} onChange={e => setTestForm(f => ({ ...f, controlId: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink"><option value="">Select a control...</option>{controls.map(c => <option key={c.id} value={c.controlId}>{c.controlId} - {c.title}</option>)}</select></div>
+              <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Methodology</label><select value={testForm.methodology} onChange={e => setTestForm(f => ({ ...f, methodology: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink">{['Walkthrough', 'Inquiry', 'Observation', 'Inspection', 'Re-performance'].map(m => <option key={m}>{m}</option>)}</select></div>
+              <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Sample Size</label><input type="number" value={testForm.sampleSize} onChange={e => setTestForm(f => ({ ...f, sampleSize: e.target.value }))} placeholder="25" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink" /></div>
+              <div><label className="block text-sm text-slate-400 dark:text-signal-muted mb-1">Findings</label><textarea value={testForm.findings} onChange={e => setTestForm(f => ({ ...f, findings: e.target.value }))} placeholder="Describe test findings..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg dark:rounded-xl text-white text-sm dark:bg-white/[0.04] dark:border-white/[0.10] dark:text-signal-ink h-20 resize-none" /></div>
             </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-              <button onClick={() => setShowCreateTest(false)} className="px-4 py-2 text-sm text-slate-400">{t('common.cancel')}</button>
-              <button onClick={submitTest} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">{saving ? 'Saving...' : 'Create Test'}</button>
+            <div className="flex justify-end gap-3 p-5 border-t border-slate-700 dark:border-white/[0.06]">
+              <button onClick={() => setShowCreateTest(false)} className="px-4 py-2 text-sm text-slate-400 dark:text-signal-muted dark:hover:text-signal-ink">{t('common.cancel')}</button>
+              <button onClick={submitTest} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 dark:bg-signal-green dark:text-signal-canvas dark:hover:bg-signal-green/90 disabled:opacity-50">{saving ? 'Saving...' : 'Create Test'}</button>
             </div>
           </div>
         </div>

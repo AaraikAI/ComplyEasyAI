@@ -118,10 +118,10 @@ export const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({
   }, [currentStep]);
 
   const arrowClasses: Record<string, string> = {
-    top: 'left-1/2 -translate-x-1/2 -top-2 border-l-transparent border-r-transparent border-t-transparent border-b-slate-600',
-    bottom: 'left-1/2 -translate-x-1/2 -bottom-2 border-l-transparent border-r-transparent border-b-transparent border-t-slate-600',
-    left: 'top-1/2 -translate-y-1/2 -left-2 border-t-transparent border-b-transparent border-l-transparent border-r-slate-600',
-    right: 'top-1/2 -translate-y-1/2 -right-2 border-t-transparent border-b-transparent border-r-transparent border-l-slate-600',
+    top: 'left-1/2 -translate-x-1/2 -top-2 border-l-transparent border-r-transparent border-t-transparent border-b-signal-panel3',
+    bottom: 'left-1/2 -translate-x-1/2 -bottom-2 border-l-transparent border-r-transparent border-b-transparent border-t-signal-panel3',
+    left: 'top-1/2 -translate-y-1/2 -left-2 border-t-transparent border-b-transparent border-l-transparent border-r-signal-panel3',
+    right: 'top-1/2 -translate-y-1/2 -right-2 border-t-transparent border-b-transparent border-r-transparent border-l-signal-panel3',
   };
 
   return (
@@ -136,22 +136,22 @@ export const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({
       role="tooltip"
       aria-label={title}
     >
-      <div className="bg-slate-800 border border-slate-600 rounded-xl shadow-2xl overflow-hidden">
+      <div className="bg-signal-panel2 border border-white/[0.10] rounded-xl shadow-2xl overflow-hidden">
         {/* Arrow */}
         <div
           className={`absolute w-0 h-0 border-[8px] ${arrowClasses[arrowSide]}`}
         />
 
-        {/* Header with brand accent line */}
-        <div className="h-1 bg-gradient-to-r from-brand-500 to-brand-600" />
+        {/* Header accent line */}
+        <div className="h-1 bg-gradient-to-r from-signal-green to-signal-blue" />
 
         <div className="p-4">
           {/* Title and close */}
           <div className="flex items-start justify-between mb-2">
-            <h3 className="text-sm font-bold text-white pr-4">{title}</h3>
+            <h3 className="font-display text-sm font-bold text-signal-ink pr-4">{title}</h3>
             <button
               onClick={onSkip}
-              className="flex-shrink-0 p-1 text-slate-500 hover:text-slate-300 transition-colors"
+              className="flex-shrink-0 p-1 text-signal-muted hover:text-signal-body transition-colors"
               aria-label="Skip tour"
             >
               <X className="w-4 h-4" />
@@ -159,7 +159,7 @@ export const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({
           </div>
 
           {/* Description */}
-          <p className="text-sm text-slate-300 leading-relaxed mb-4">{description}</p>
+          <p className="text-sm text-signal-body leading-relaxed mb-4">{description}</p>
 
           {/* Footer: progress dots + nav buttons */}
           <div className="flex items-center justify-between">
@@ -170,10 +170,10 @@ export const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({
                   key={i}
                   className={`w-1.5 h-1.5 rounded-full transition-colors ${
                     i === currentStep
-                      ? 'bg-brand-500'
+                      ? 'bg-signal-green'
                       : i < currentStep
-                      ? 'bg-brand-500/40'
-                      : 'bg-slate-600'
+                      ? 'bg-signal-green/40'
+                      : 'bg-white/15'
                   }`}
                 />
               ))}
@@ -184,7 +184,7 @@ export const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({
               {!isFirst && (
                 <button
                   onClick={onPrev}
-                  className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                  className="p-1.5 text-signal-sub hover:text-signal-ink hover:bg-white/[0.06] rounded-lg transition-colors"
                   aria-label="Previous step"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -192,7 +192,7 @@ export const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({
               )}
               <button
                 onClick={onNext}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-signal-canvas bg-signal-green hover:opacity-90 rounded-lg transition-all"
               >
                 {isLast ? 'Finish' : 'Next'}
                 {!isLast && <ChevronRight className="w-3.5 h-3.5" />}
