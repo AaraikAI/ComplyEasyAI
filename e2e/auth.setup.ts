@@ -35,6 +35,13 @@ setup('authenticate', async ({ page }) => {
   await page.evaluate((userData) => {
     localStorage.setItem('user_data', JSON.stringify(userData));
 
+    // The redesigned app shell defaults to the classic 256px sidebar (matching
+    // the product screenshots). The E2E suite (SidebarPage page-object +
+    // sidebar-navigation.spec.ts) targets the SlimSidebar 7-pillar icon rail,
+    // which is still a supported mode reached via the sidebar toggle. Pin the
+    // E2E session to the slim rail so the icon-pillar selectors resolve.
+    localStorage.setItem('complyeasy_sidebar_variant', 'slim');
+
     // Mark signup modal as seen to prevent it from appearing
     sessionStorage.setItem('hasSeenSignupModal', 'true');
 
@@ -198,6 +205,7 @@ setup('authenticate', async ({ page }) => {
   // `user_data`, so every spec that loads this state boots authenticated.
   await page.evaluate((userData) => {
     localStorage.setItem('user_data', JSON.stringify(userData));
+    localStorage.setItem('complyeasy_sidebar_variant', 'slim');
     localStorage.setItem('onboarding_completed', 'true');
     localStorage.setItem('onboarding_skipped', 'true');
     localStorage.setItem('hasSeenOnboarding', 'true');

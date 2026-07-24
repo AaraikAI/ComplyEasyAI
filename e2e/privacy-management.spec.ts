@@ -304,11 +304,11 @@ test.describe('Privacy Management', () => {
       await page.waitForTimeout(2000);
 
       // Landing page is reached: the public sign-in affordance is present. The
-      // current LandingPage header CTA opens the auth modal and is labelled via
-      // i18n auth.login ("Log In"); the hero CTA is "Start Free Trial". Assert one
-      // of these public, unauthenticated affordances is visible.
+      // redesigned marketing LandingPage exposes a "Log in" link (to /login) and
+      // a "Book a demo" CTA. Assert one of these public, unauthenticated
+      // affordances is visible.
       const signInAffordance = page
-        .getByRole('button', { name: /log in|sign in|start free trial|get started/i })
+        .getByRole('link', { name: /log in|book a demo/i })
         .first();
       await expect(signInAffordance).toBeVisible({ timeout: 10000 });
 

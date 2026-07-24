@@ -514,8 +514,9 @@ const App: React.FC = () => {
             {/* ── Marketing pages (Signal redesign, public) ─────────── */}
             <Route path="/platform" element={<PublicPageWrapper><PlatformPage /></PublicPageWrapper>} />
             <Route path="/pricing" element={<PublicPageWrapper><PricingPage /></PublicPageWrapper>} />
-            {/* /frameworks is auth-gated: marketing index for visitors, app view for signed-in users */}
-            <Route path="/frameworks" element={<FrameworksGate />} />
+            {/* /frameworks is dual-purpose (marketing index for visitors, app view
+                for signed-in users) — handled inside the root gate below so MainApp
+                keeps its root splat mount and its nested routes resolve. */}
 
             {/* ── Marketing / SEO pillar pages (public, crawlable) ──── */}
             <Route path="/platform/ai-compliance" element={<PublicPageWrapper><AICompliancePillar /></PublicPageWrapper>} />
@@ -552,12 +553,10 @@ const App: React.FC = () => {
             {/* Landing page at root for unauthenticated users */}
             <Route path="/" element={<AuthGate />} />
 
-            {/* Authenticated App Routes */}
-            <Route path="/*" element={
-              <ProtectedRoute>
-                <MainApp />
-              </ProtectedRoute>
-            } />
+            {/* Authenticated App Routes (root gate: keeps MainApp at the /* mount
+                so its nested routes resolve; serves the public frameworks index
+                to unauthenticated visitors at /frameworks). */}
+            <Route path="/*" element={<RootAppGate />} />
           </Routes>
         </WebSocketProvider>
         </AuthProvider>
@@ -584,11 +583,15 @@ const AuthGate: React.FC = () => {
 };
 
 /**
- * /frameworks serves two audiences: signed-in users get the in-app frameworks
- * view (via MainApp's internal routing), visitors get the marketing index.
+ * Root gate for the app splat route. Authenticated users get MainApp (mounted at
+ * the "/*" root so its nested <Routes> resolve correctly). Unauthenticated
+ * visitors to /frameworks get the public marketing frameworks index — the one
+ * app path that doubles as a public SEO page — while every other protected path
+ * still redirects to the landing page via ProtectedRoute.
  */
-const FrameworksGate: React.FC = () => {
+const RootAppGate: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -598,18 +601,18 @@ const FrameworksGate: React.FC = () => {
     );
   }
 
-  if (isAuthenticated) {
+  if (!isAuthenticated && location.pathname === '/frameworks') {
     return (
-      <ProtectedRoute>
-        <MainApp />
-      </ProtectedRoute>
+      <PublicPageWrapper>
+        <FrameworksIndexPage />
+      </PublicPageWrapper>
     );
   }
 
   return (
-    <PublicPageWrapper>
-      <FrameworksIndexPage />
-    </PublicPageWrapper>
+    <ProtectedRoute>
+      <MainApp />
+    </ProtectedRoute>
   );
 };
 

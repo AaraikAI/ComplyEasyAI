@@ -160,22 +160,17 @@ test.describe('Authentication Flows', () => {
   });
 
   test('User sees error message with invalid credentials', async ({ page }) => {
-    // Boot unauthenticated so the LandingPage + login modal are reachable.
+    // Boot unauthenticated and use the dedicated /login page (the redesign moved
+    // auth off the landing modal onto a standalone LoginPage).
     await seedUnauthenticatedContext(page);
     await page.context().clearCookies();
-    await page.goto('/');
+    await page.goto('/login');
     await page.waitForLoadState('networkidle').catch(() => {});
 
-    // Open the auth modal via the header "Log In" CTA (the signup modal is
-    // suppressed via sessionStorage, so this CTA is the only overlay path).
-    const loginCta = page.getByRole('button', { name: 'Log In' }).first();
-    await expect(loginCta).toBeVisible({ timeout: 15000 });
-    await loginCta.click();
-
-    // The modal defaults to magic-link; switch to the password tab.
-    const passwordTab = page.getByRole('button', { name: /^password$/i }).first();
-    await expect(passwordTab).toBeVisible({ timeout: 5000 });
-    await passwordTab.click();
+    // The login page defaults to magic-link; reveal the password form.
+    const passwordToggle = page.getByRole('button', { name: /use password instead/i }).first();
+    await expect(passwordToggle).toBeVisible({ timeout: 15000 });
+    await passwordToggle.click();
 
     const emailInput = page.locator('input[type="email"]').last();
     const passwordInput = page.locator('input[type="password"]').last();
@@ -201,11 +196,15 @@ test.describe('Authentication Flows', () => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle').catch(() => {});
 
-    // The landing page presents a "Log In" CTA (the email input lives inside the
-    // modal it opens), and is NOT the authenticated HomeOS shell.
-    await expect(page.getByRole('button', { name: 'Log In' }).first()).toBeVisible({
-      timeout: 15000,
-    });
+    // ProtectedRoute redirects to the public marketing landing, which exposes a
+    // "Log in" link (to the dedicated /login page) and a "Book a demo" CTA — not
+    // the authenticated HomeOS shell.
+    await expect(
+      page
+        .getByRole('link', { name: /log in/i })
+        .or(page.getByRole('link', { name: /book a demo/i }))
+        .first(),
+    ).toBeVisible({ timeout: 15000 });
 
     // And the authenticated icon rail / compliance gauge must be absent.
     await expect(page.locator('nav[data-onboarding="sidebar-nav"]')).toHaveCount(0);
