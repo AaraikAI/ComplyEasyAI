@@ -1,4 +1,4 @@
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router';
 import { useCallback } from 'react';
 import { viewToPath, pathToView, getBreadcrumbs, ROUTES } from '../routes/routeConfig';
 import type { BreadcrumbItem } from '../routes/routeConfig';

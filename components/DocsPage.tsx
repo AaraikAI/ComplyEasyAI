@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { ChevronDown } from 'lucide-react';
 import { MarketingLayout } from './marketing/MarketingLayout';
 import { SignalPage } from './marketing/signal';

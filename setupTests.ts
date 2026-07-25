@@ -192,8 +192,8 @@ vi.mock('@/contexts/AuthContext', () => ({
 }));
 
 // Mock react-router-dom globally so components using Link, useNavigate etc. don't crash
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual<typeof import('react-router')>('react-router');
   return {
     ...actual,
     useNavigate: vi.fn().mockReturnValue(vi.fn()),

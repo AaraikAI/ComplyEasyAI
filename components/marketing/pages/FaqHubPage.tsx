@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { HelpCircle, ChevronDown } from 'lucide-react';
 import { MarketingLayout } from '../MarketingLayout';
 import { Seo } from '../../seo/Seo';

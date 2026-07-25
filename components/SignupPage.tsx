@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import {
   ArrowRight, CheckCircle, Loader2, Eye, EyeOff, Check,
   Briefcase, GraduationCap, Heart, Landmark, Factory, ShoppingCart,

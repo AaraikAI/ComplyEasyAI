@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 
 // --- Mocks ---
 
@@ -254,7 +254,7 @@ describe('Layout Component', () => {
 
     it('highlights active nav item', async () => {
       // Override useLocation to simulate being on /dashboard
-      const rrdom = await import('react-router-dom');
+      const rrdom = await import('react-router');
       (rrdom.useLocation as any).mockReturnValue({ pathname: '/dashboard', search: '', hash: '', state: null });
       renderLayout('/dashboard');
       const dashboardLinks = screen.getAllByText('Dashboard');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import ReactMarkdown from 'react-markdown';
 import { ArrowLeft, ArrowRight, CalendarDays } from 'lucide-react';
 import MarketingLayout from '../MarketingLayout';

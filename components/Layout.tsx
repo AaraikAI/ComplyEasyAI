@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { normalizePlan, canAccessView } from '../constants/tierFeatures';
 import { pathToView, viewToPath, getBreadcrumbs, ROUTES } from '../routes/routeConfig';

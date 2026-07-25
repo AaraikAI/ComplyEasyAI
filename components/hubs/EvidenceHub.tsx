@@ -1,5 +1,5 @@
 import React, { lazy, useState } from 'react';
-import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate } from 'react-router';
 import { TabbedContainer, TabDefinition } from '../TabbedContainer';
 import { ScanSearch, Sparkles, FileWarning, ShieldCheck } from 'lucide-react';
 
