@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Bell, Check, CheckCheck, X, AlertTriangle, Shield, FileText, Users, Clock, ChevronRight, Settings, Volume2, VolumeX, Filter } from 'lucide-react';
 import { api } from '../services/api';
 import { ROUTES } from '../routes/routeConfig';

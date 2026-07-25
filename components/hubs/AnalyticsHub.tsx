@@ -1,5 +1,5 @@
 import React, { lazy } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { TabbedContainer, TabDefinition } from '../TabbedContainer';
 import { Monitor, Activity, TrendingUp, DollarSign } from 'lucide-react';
 

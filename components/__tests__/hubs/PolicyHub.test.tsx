@@ -1,9 +1,9 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 
-vi.unmock('react-router-dom');
+vi.unmock('react-router');
 
 vi.mock('../../PolicyManagement', () => ({ default: () => <div data-testid="policy-management">PolicyManagement</div> }));
 vi.mock('../../AIFeatures/PolicyGenerator', () => ({

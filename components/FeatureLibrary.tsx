@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Search, Pin, PinOff, Lock, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { normalizePlan, canAccessView } from '../constants/tierFeatures';

@@ -1,9 +1,9 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 
-vi.unmock('react-router-dom');
+vi.unmock('react-router');
 
 vi.mock('../../MonitoringDashboard', () => ({ default: () => <div data-testid="monitoring-dashboard">MonitoringDashboard</div> }));
 vi.mock('../../RealTimeAnalytics', () => ({ default: () => <div data-testid="realtime-analytics">RealTimeAnalytics</div> }));

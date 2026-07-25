@@ -1,5 +1,5 @@
 import React, { lazy } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { TabbedContainer, TabDefinition } from '../TabbedContainer';
 import { Recycle, Award, Package, FileCode, Trash2, TreePine, BadgeCheck } from 'lucide-react';
 

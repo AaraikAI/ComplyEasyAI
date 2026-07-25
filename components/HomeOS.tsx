@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Sparkles, ArrowRight, Shield, AlertTriangle, Users, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useExecutiveDashboard } from '../hooks/queries/useDashboard';

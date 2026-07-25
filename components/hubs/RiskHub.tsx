@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { TabbedContainer, TabDefinition } from '../TabbedContainer';
 import { ShieldAlert, Target, Network, CheckSquare } from 'lucide-react';
 

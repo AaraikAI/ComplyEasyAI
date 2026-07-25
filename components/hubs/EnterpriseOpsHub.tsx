@@ -1,5 +1,5 @@
 import React, { lazy } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { TabbedContainer, TabDefinition } from '../TabbedContainer';
 import { Boxes, Smartphone, GitBranch, Lock, Radar, BookOpen } from 'lucide-react';
 

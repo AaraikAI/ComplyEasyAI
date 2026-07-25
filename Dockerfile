@@ -108,6 +108,14 @@ RUN npm ci --omit=dev --ignore-scripts
 COPY server/prisma ./prisma
 RUN npx prisma generate
 
+# Security: patch npm's bundled tar (CVE-2026-59873 — node-tar gzip-bomb DoS).
+# node:22-alpine ships npm 10.9.8 whose bundled tar is 7.5.11 (vulnerable);
+# npm 12.0.1 bundles tar 7.5.19, which fixes it. Runs after `npm ci` so the
+# dependency install keeps using the base npm, and this global npm is never
+# invoked at runtime (the app runs `node dist/index.js`) — it solely clears the
+# Trivy container image scan. Pinned for reproducible builds.
+RUN npm install -g npm@12.0.1
+
 # Copy compiled backend code
 COPY --from=backend-build /app/server/dist ./dist
 
