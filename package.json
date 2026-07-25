@@ -41,10 +41,10 @@
     "sonner": "^2.0.7"
   },
   "optionalDependencies": {
-    "@rolldown/binding-linux-x64-gnu": "1.1.2",
-    "@rolldown/binding-linux-x64-musl": "1.1.2",
-    "lightningcss-linux-x64-gnu": "1.32.0",
-    "lightningcss-linux-x64-musl": "1.32.0",
+    "@rolldown/binding-linux-x64-gnu": "1.2.0",
+    "@rolldown/binding-linux-x64-musl": "1.2.0",
+    "lightningcss-linux-x64-gnu": "1.33.0",
+    "lightningcss-linux-x64-musl": "1.33.0",
     "@tailwindcss/oxide-linux-x64-gnu": "4.3.3",
     "@tailwindcss/oxide-linux-x64-musl": "4.3.3",
     "@unrs/resolver-binding-linux-x64-gnu": "1.12.2",
