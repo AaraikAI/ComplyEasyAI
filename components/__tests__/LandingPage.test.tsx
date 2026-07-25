@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router';
 
 import { LandingPage } from '../LandingPage';
 
-// react-router-dom, lucide-react and the marketing contexts are mocked globally
+// react-router, lucide-react and the marketing contexts are mocked globally
 // in setupTests.ts (Link -> <a href>, useLocation -> '/'). MemoryRouter is a
 // passthrough there, matching the other marketing-page tests.
 const renderPage = () => render(<MemoryRouter><LandingPage /></MemoryRouter>);
