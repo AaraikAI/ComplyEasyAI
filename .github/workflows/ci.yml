@@ -717,13 +717,17 @@ jobs:
           AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SUPA_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          APPRUNNER_ARN: ${{ secrets.APPRUNNER_SERVICE_ARN }}
+          S3_BUCKET: ${{ secrets.S3_FRONTEND_BUCKET }}
+          CF_DIST: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
         run: |
-          if [ -n "$AWS_KEY" ] && [ -n "$AWS_SECRET" ] && [ -n "$SUPA_URL" ]; then
+          if [ -n "$AWS_KEY" ] && [ -n "$AWS_SECRET" ] && [ -n "$SUPA_URL" ] \
+             && [ -n "$APPRUNNER_ARN" ] && [ -n "$S3_BUCKET" ] && [ -n "$CF_DIST" ]; then
             echo "configured=true" >> "$GITHUB_OUTPUT"
             echo "Deploy secrets present — Deploy to Production will run."
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Production deploy skipped::AWS/Supabase deploy secrets are not configured. Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and SUPABASE_DATABASE_URL (Go Live runbook) to enable the Deploy to Production job."
+            echo "::notice title=Production deploy skipped::Deploy secrets are not fully configured. Required: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, SUPABASE_DATABASE_URL, APPRUNNER_SERVICE_ARN, S3_FRONTEND_BUCKET, CLOUDFRONT_DISTRIBUTION_ID (see the Go Live runbook)."
           fi
 
   # ============================================
@@ -783,15 +787,28 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
 
-      - name: Deploy API to ECS
+      # Point the App Runner service at the immutable SHA-tagged image just
+      # pushed. update-service both rewrites the source config and triggers the
+      # rollout, so the deployed revision is always traceable to a commit — no
+      # ':latest' indirection.
+      - name: Deploy API to App Runner
+        env:
+          ECR: ${{ steps.ecr.outputs.registry }}
+          ECR_REPO: complyeasy-production-api
+          SERVICE_ARN: ${{ secrets.APPRUNNER_SERVICE_ARN }}
         run: |
-          aws ecs update-service \
-            --cluster complyeasy-production \
-            --service complyeasy-production-api \
-            --force-new-deployment
+          aws apprunner update-service \
+            --service-arn "$SERVICE_ARN" \
+            --source-configuration "ImageRepository={ImageIdentifier=$ECR/$ECR_REPO:${{ github.sha }},ImageRepositoryType=ECR,ImageConfiguration={Port=3001}}"
 
+      # The SPA is served from the same origin as the API (CloudFront routes
+      # /api/* to App Runner), so the bundle calls a relative /api. This keeps
+      # the backend's httpOnly, sameSite='strict' session cookies working — a
+      # cross-origin API URL would silently break login in production.
       - name: Build frontend
         run: npm ci && npm run build
+        env:
+          VITE_API_URL: /api
 
       - name: Deploy frontend to S3 + CloudFront
         run: |
@@ -816,11 +833,30 @@ jobs:
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
 
-      - name: Wait for ECS stability
+      # App Runner reports OPERATION_IN_PROGRESS while rolling out and returns
+      # to RUNNING when the new revision is serving. There is no `aws apprunner
+      # wait`, so poll explicitly and fail fast on a terminal error state.
+      - name: Wait for App Runner rollout
+        env:
+          SERVICE_ARN: ${{ secrets.APPRUNNER_SERVICE_ARN }}
         run: |
-          aws ecs wait services-stable \
-            --cluster complyeasy-production \
-            --services complyeasy-production-api
+          for i in $(seq 1 60); do
+            STATUS=$(aws apprunner describe-service \
+              --service-arn "$SERVICE_ARN" \
+              --query 'Service.Status' --output text)
+            echo "App Runner status: $STATUS (attempt $i/60)"
+            case "$STATUS" in
+              RUNNING)
+                echo "Rollout complete."
+                exit 0 ;;
+              CREATE_FAILED|DELETED|DELETE_FAILED|PAUSED)
+                echo "::error::App Runner service entered terminal state: $STATUS"
+                exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::App Runner did not reach RUNNING within 15 minutes"
+          exit 1
 
       - name: Verify health
         run: |
