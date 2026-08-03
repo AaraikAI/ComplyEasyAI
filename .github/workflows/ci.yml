@@ -845,7 +845,7 @@ jobs:
       - name: Verify health
         run: |
           for i in $(seq 1 10); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://complyeasyai.com/health)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.complyeasyai.com/health)
             [ "$STATUS" = "200" ] && echo "Healthy" && exit 0
             sleep 10
           done
