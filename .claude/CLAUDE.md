@@ -725,6 +725,43 @@ The PR's last CI run (`27526183687`) had two red E2E shards. Both were diagnosed
 - **Local full-stack bring-up recipe works as documented** (postgres:16 + redis:7 containers → `prisma db push` → `VITE_API_URL=/api npx vite build` → backend on :3001 with the CI env block → `E2E_API_PROXY_TARGET=http://localhost:3001 vite preview --port 4173`). Same-origin proxy makes httpOnly cookies flow; register + login round-trip and org-scoped dashboard reads all 200. Demo account created: `demo@example.com` / `TestPass123!`.
 - **Doc drift corrected:** CLAUDE.md "Key File Paths" said `src/services/api.ts` for the frontend API service; the Vite frontend actually lives at the **repo root** (`services/`, `contexts/`, `components/`, `hooks/`), `@` alias → repo root. Corrected in the Key File Paths section.
 
+### Container boot hostility — the class that static scans miss (2026-08-04)
+
+The first production ECS deploy crash-looped with ECS reporting only "Essential container in
+task exited" and **no application log**, because the process died during **module import** —
+before any logging or error handling was live. Four separate instances of the same class were
+found; each would have cost its own ~20-minute deploy cycle if fixed one at a time:
+
+- **`config/logger.ts`** — winston opened a log file at import; the non-root user cannot write
+  `/app/server/logs` → `EACCES` → boot abort. Fixed with a `resolveLogDir()` that returns null
+  when the dir is not writable (console transport only).
+- **`services/advanced/zeroKnowledgeService.ts:79`** and
+  **`services/advanced/complianceAsCodeService.ts:95`** — both `fs.mkdirSync(...)` from a
+  **constructor** that runs at module load, under a root-owned `/app/server` (mode 755).
+- **`services/advanced/zeroTrustService.ts:12`** — `import RE2 from 're2'`. The Dockerfile
+  installs with **`--ignore-scripts`**, which skips the install script that compiles the native
+  binding, and **re2 ships no prebuilt binary** (its published `files` list has no `build/`).
+
+**Rules that prevent the whole class:**
+- **Never do filesystem work, env-var assertions, or native-module-dependent work at module
+  load.** Constructors of module-level singletons run at `import`. Make it lazy (first use),
+  fail-soft (`logger.warn` + fallback), or delete it if the paths are never read.
+- **The Dockerfile must create and `chown` every runtime-writable path before `USER`.** Every
+  `COPY` lands root-owned; there is no implicit chown.
+- **`--ignore-scripts` requires an explicit `npm rebuild <pkg>` for each native dependency.**
+  Add the toolchain and remove it in the same layer (`apk add --virtual .native-build-deps
+  python3 make g++ && npm rebuild re2 && apk del .native-build-deps`) so the image does not grow.
+- **Verify a package ships a binary by reading its `files` array — never assume.** A local
+  `node_modules` copy proves nothing: it was built by *your* install, which ran the scripts.
+- Diagnosing this needs the **`stoppedReason` + the CloudWatch log stream of a stopped task**;
+  `describe-services` events only ever say the task exited.
+
+**Deploy-path facts (see the `project-aws-golive-ecs-express` memory for detail):** the local
+AWS user has no ECS rights, the Mac is arm64 while the task definition is `X86_64`, and
+`aws-actions/amazon-ecs-deploy-express-service` rebuilds `primaryContainer` from its inputs —
+so `ci.yml` derives a new task definition revision from the live one and passes
+`task-definition-arn` rather than `image`.
+
 ## Architecture Quick Reference
 
 - **Server:** Express 5 + Prisma 7 + PostgreSQL
