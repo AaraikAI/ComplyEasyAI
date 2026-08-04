@@ -792,20 +792,65 @@ jobs:
         id: acct
         run: echo "id=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_OUTPUT"
 
-      # ECS Express Mode provisions and manages the Fargate service, its shared
-      # ALB, TLS, autoscaling and log wiring from a container image alone. The
-      # action creates the service on first run and updates it thereafter,
-      # blocking until the deployment reaches a stable state — so no separate
-      # wait step is needed. The image is the immutable SHA tag pushed above.
+      # Derive the next task definition from the one the service is running and
+      # change ONLY the image. Everything else — the Secrets Manager references
+      # for DATABASE_URL/JWT_SECRET/ENCRYPTION_KEY/REDIS_URL/etc., the env vars,
+      # cpu/memory, and the awslogs group — is carried over untouched.
+      #
+      # This matters because the Express Mode action builds primaryContainer
+      # purely from its own inputs and never reads the running service's
+      # container config, so deploying with `image:` alone would register a task
+      # definition with NO secrets and NO environment, and silently fall back to
+      # the Express defaults of 256 CPU / 512 MiB. The container would then die
+      # at boot on a missing DATABASE_URL. Deriving the revision here also means
+      # a secret added in the console survives the next deploy automatically,
+      # and no account ID or secret ARN has to be committed to this public repo.
+      - name: Register task definition revision with the new image
+        id: taskdef
+        env:
+          ECR: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          aws ecs describe-task-definition \
+            --task-definition complyeasy-production-complyeasy-production-api \
+            --query 'taskDefinition' --output json > /tmp/td-current.json
+
+          # Strip the server-managed fields RegisterTaskDefinition rejects, and
+          # drop taskRoleArn when it is empty (an empty ARN is not valid input).
+          jq --arg img "$ECR/complyeasy-production-api:$IMAGE_TAG" '
+            .containerDefinitions[0].image = $img
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                  .compatibilities, .registeredAt, .registeredBy, .deregisteredAt)
+            | if (.taskRoleArn // "") == "" then del(.taskRoleArn) else . end
+          ' /tmp/td-current.json > /tmp/td-next.json
+
+          ARN=$(aws ecs register-task-definition \
+                  --cli-input-json file:///tmp/td-next.json \
+                  --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "arn=$ARN" >> "$GITHUB_OUTPUT"
+          echo "Registered $ARN"
+
+          # Fail loudly here rather than after a half-applied deploy.
+          for k in DATABASE_URL JWT_SECRET ENCRYPTION_KEY REDIS_URL; do
+            jq -e --arg k "$k" \
+              '.containerDefinitions[0].secrets | map(.name) | index($k)' \
+              /tmp/td-next.json > /dev/null \
+              || { echo "::error::$k missing from the new task definition"; exit 1; }
+          done
+
+      # ECS Express Mode manages the Fargate service, its shared ALB, TLS,
+      # autoscaling and log wiring. Pointing it at an explicit task definition
+      # (rather than an image) keeps full control of the container spec here;
+      # the action blocks until the deployment reaches a stable state, so no
+      # separate wait step is needed.
       - name: Deploy API to ECS Express Mode
         uses: aws-actions/amazon-ecs-deploy-express-service@7c48a2de16441d528a3c89829831968dc1455010 # v1
         with:
           cluster: complyeasy-production
           service-name: complyeasy-production-api
-          image: ${{ steps.ecr.outputs.registry }}/complyeasy-production-api:${{ github.sha }}
-          execution-role-arn: arn:aws:iam::${{ steps.acct.outputs.id }}:role/ecsTaskExecutionRole
+          task-definition-arn: ${{ steps.taskdef.outputs.arn }}
           infrastructure-role-arn: arn:aws:iam::${{ steps.acct.outputs.id }}:role/ecsInfrastructureRoleForExpressServices
-          container-port: 3001
 
       # The SPA is served from the same origin as the API (CloudFront routes
       # /api/* to the Express service), so the bundle calls a relative /api.
