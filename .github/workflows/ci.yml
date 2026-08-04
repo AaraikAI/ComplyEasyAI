@@ -717,13 +717,16 @@ jobs:
           AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SUPA_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          S3_BUCKET: ${{ secrets.S3_FRONTEND_BUCKET }}
+          CF_DIST: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
         run: |
-          if [ -n "$AWS_KEY" ] && [ -n "$AWS_SECRET" ] && [ -n "$SUPA_URL" ]; then
+          if [ -n "$AWS_KEY" ] && [ -n "$AWS_SECRET" ] && [ -n "$SUPA_URL" ] \
+             && [ -n "$S3_BUCKET" ] && [ -n "$CF_DIST" ]; then
             echo "configured=true" >> "$GITHUB_OUTPUT"
             echo "Deploy secrets present — Deploy to Production will run."
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Production deploy skipped::AWS/Supabase deploy secrets are not configured. Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and SUPABASE_DATABASE_URL (Go Live runbook) to enable the Deploy to Production job."
+            echo "::notice title=Production deploy skipped::Deploy secrets are not fully configured. Required: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, SUPABASE_DATABASE_URL, S3_FRONTEND_BUCKET, CLOUDFRONT_DISTRIBUTION_ID (see the Go Live runbook)."
           fi
 
   # ============================================
@@ -783,15 +786,35 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
 
-      - name: Deploy API to ECS
-        run: |
-          aws ecs update-service \
-            --cluster complyeasy-production \
-            --service complyeasy-production-api \
-            --force-new-deployment
+      # Role ARNs for Express Mode are account-scoped; resolve the account from
+      # the deploy credentials rather than carrying it as another secret.
+      - name: Resolve AWS account ID
+        id: acct
+        run: echo "id=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_OUTPUT"
 
+      # ECS Express Mode provisions and manages the Fargate service, its shared
+      # ALB, TLS, autoscaling and log wiring from a container image alone. The
+      # action creates the service on first run and updates it thereafter,
+      # blocking until the deployment reaches a stable state — so no separate
+      # wait step is needed. The image is the immutable SHA tag pushed above.
+      - name: Deploy API to ECS Express Mode
+        uses: aws-actions/amazon-ecs-deploy-express-service@7c48a2de16441d528a3c89829831968dc1455010 # v1
+        with:
+          cluster: complyeasy-production
+          service-name: complyeasy-production-api
+          image: ${{ steps.ecr.outputs.registry }}/complyeasy-production-api:${{ github.sha }}
+          execution-role-arn: arn:aws:iam::${{ steps.acct.outputs.id }}:role/ecsTaskExecutionRole
+          infrastructure-role-arn: arn:aws:iam::${{ steps.acct.outputs.id }}:role/ecsInfrastructureRoleForExpressServices
+          container-port: 3001
+
+      # The SPA is served from the same origin as the API (CloudFront routes
+      # /api/* to the Express service), so the bundle calls a relative /api.
+      # This keeps the backend's httpOnly, sameSite='strict' session cookies
+      # working — a cross-origin API URL would silently break login in prod.
       - name: Build frontend
         run: npm ci && npm run build
+        env:
+          VITE_API_URL: /api
 
       - name: Deploy frontend to S3 + CloudFront
         run: |
@@ -816,16 +839,13 @@ jobs:
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
 
-      - name: Wait for ECS stability
-        run: |
-          aws ecs wait services-stable \
-            --cluster complyeasy-production \
-            --services complyeasy-production-api
+      # (No explicit wait step: the Express Mode deploy action above already
+      # blocks until the service and its deployment reach a stable state.)
 
       - name: Verify health
         run: |
           for i in $(seq 1 10); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://complyeasyai.com/health)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.complyeasyai.com/health)
             [ "$STATUS" = "200" ] && echo "Healthy" && exit 0
             sleep 10
           done
