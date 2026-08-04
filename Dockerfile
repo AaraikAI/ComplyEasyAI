@@ -105,6 +105,18 @@ WORKDIR /app/server
 # Install only production dependencies
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
+
+# `--ignore-scripts` above is a supply-chain control, but it also skips the
+# install script that produces re2's native binding. re2 ships no prebuilt
+# binary (its `files` list has no build/ directory) and zeroTrustService imports
+# it at module load, so without this the container throws
+# "Cannot find module .../re2.node" before the server ever listens. Rebuild only
+# this one vetted package, with the toolchain added and removed in the same
+# layer so it never reaches the final image.
+RUN apk add --no-cache --virtual .native-build-deps python3 make g++ \
+ && npm rebuild re2 \
+ && apk del .native-build-deps
+
 COPY server/prisma ./prisma
 RUN npx prisma generate
 
@@ -141,9 +153,20 @@ COPY server/src/zkp/keys ./dist/zkp/keys
 # Copy frontend build so Express can serve it (optional — when NOT using Nginx)
 COPY --from=frontend-build /app/dist ./public
 
-# Copy entrypoint wrapper that composes DATABASE_URL from ECS secret fields
+# Copy the entrypoint wrapper. DATABASE_URL is injected directly by ECS from
+# Secrets Manager; the wrapper only derives CLIENT_URL from CLOUDFRONT_DOMAIN
+# when unset, optionally runs migrations under RUN_MIGRATIONS, then execs node.
 COPY infrastructure/lib/entrypoint-wrapper.sh /app/server/entrypoint.sh
 RUN chmod +x /app/server/entrypoint.sh
+
+# Runtime-writable directories, handed to the user the process actually runs as.
+# Every COPY above lands root-owned and /app/server is mode 755, so a non-root
+# mkdir throws EACCES. Several services create these paths at module load
+# (zeroKnowledgeService, complianceAsCodeService), which means that EACCES kills
+# the container during import — ECS reports only "Essential container in task
+# exited" with no application log to explain it.
+RUN mkdir -p logs dist/policies dist/zkp/circuits dist/zkp/proofs \
+ && chown -R complyeasy:nodejs logs dist/policies dist/zkp
 
 USER complyeasy
 
