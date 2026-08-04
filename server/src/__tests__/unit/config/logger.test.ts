@@ -3,7 +3,12 @@
  * Tests for Winston logger instance, transports, and sanitization
  */
 
+import path from 'path';
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
+
+/** File transports now resolve to absolute paths, so match on the tail. */
+const endsWithLogFile = (filename: unknown, name: string) =>
+  typeof filename === 'string' && filename.endsWith(path.join('logs', name));
 
 // Mock dependencies before importing logger
 jest.mock('../../../config/index', () => ({
@@ -162,19 +167,28 @@ describe('Logger Configuration', () => {
       expect(mockTransportsConsole).toHaveBeenCalled();
     });
 
-    it('should not add console transport in production when LOG_CONSOLE is false', () => {
+    it('keeps one console sink when LOG_CONSOLE is false and no file sink exists', () => {
+      // LOG_CONSOLE=false suppresses the formatted console transport, and file
+      // logging is off by default in production. A logger with zero transports
+      // discards every line in silence, so one console sink is restored — this
+      // is what stops a container deploy from running blind.
       process.env.NODE_ENV = 'production';
       process.env.LOG_CONSOLE = 'false';
+      delete process.env.LOG_FILE;
       jest.resetModules();
       setupMockImplementations();
 
       require('../../../config/logger');
-      expect(mockTransportsConsole).not.toHaveBeenCalled();
+
+      const createArgs = mockCreateLogger.mock.calls[0][0] as any;
+      expect(createArgs.transports).toHaveLength(1);
+      expect(mockTransportsConsole).toHaveBeenCalled();
     });
   });
 
   describe('File Transports', () => {
     it('should add file transports when LOG_FILE is not false', () => {
+      process.env.NODE_ENV = 'development';
       delete process.env.LOG_FILE;
       jest.resetModules();
       setupMockImplementations();
@@ -186,14 +200,15 @@ describe('Logger Configuration', () => {
       // Filter to only the log file transports
       const logFileCalls = mockTransportsFile.mock.calls.filter(
         (call: any[]) =>
-          call[0]?.filename === 'logs/error.log' ||
-          call[0]?.filename === 'logs/combined.log' ||
-          call[0]?.filename === 'logs/access.log'
+          endsWithLogFile(call[0]?.filename, 'error.log') ||
+          endsWithLogFile(call[0]?.filename, 'combined.log') ||
+          endsWithLogFile(call[0]?.filename, 'access.log')
       );
       expect(logFileCalls.length).toBe(3);
     });
 
     it('should configure error.log file transport with error level', () => {
+      process.env.NODE_ENV = 'development';
       delete process.env.LOG_FILE;
       jest.resetModules();
       setupMockImplementations();
@@ -201,13 +216,14 @@ describe('Logger Configuration', () => {
       require('../../../config/logger');
 
       const errorCall = mockTransportsFile.mock.calls.find(
-        (call: any[]) => call[0]?.filename === 'logs/error.log'
+        (call: any[]) => endsWithLogFile(call[0]?.filename, 'error.log')
       );
       expect(errorCall).toBeDefined();
       expect(errorCall![0].level).toBe('error');
     });
 
     it('should configure combined.log file transport', () => {
+      process.env.NODE_ENV = 'development';
       delete process.env.LOG_FILE;
       jest.resetModules();
       setupMockImplementations();
@@ -215,12 +231,13 @@ describe('Logger Configuration', () => {
       require('../../../config/logger');
 
       const combinedCall = mockTransportsFile.mock.calls.find(
-        (call: any[]) => call[0]?.filename === 'logs/combined.log'
+        (call: any[]) => endsWithLogFile(call[0]?.filename, 'combined.log')
       );
       expect(combinedCall).toBeDefined();
     });
 
     it('should configure access.log file transport with info level', () => {
+      process.env.NODE_ENV = 'development';
       delete process.env.LOG_FILE;
       jest.resetModules();
       setupMockImplementations();
@@ -228,10 +245,24 @@ describe('Logger Configuration', () => {
       require('../../../config/logger');
 
       const accessCall = mockTransportsFile.mock.calls.find(
-        (call: any[]) => call[0]?.filename === 'logs/access.log'
+        (call: any[]) => endsWithLogFile(call[0]?.filename, 'access.log')
       );
       expect(accessCall).toBeDefined();
       expect(accessCall![0].level).toBe('info');
+    });
+
+    it('writes no file transports in production — the container has no writable dir', () => {
+      // Regression guard for the EACCES crash: winston creates a File
+      // transport's directory eagerly at construction, so an unwritable path
+      // aborted process start before any application code ran.
+      process.env.NODE_ENV = 'production';
+      delete process.env.LOG_FILE;
+      jest.resetModules();
+      setupMockImplementations();
+
+      require('../../../config/logger');
+
+      expect(mockTransportsFile).not.toHaveBeenCalled();
     });
 
     it('should not add file transports when LOG_FILE is false', () => {

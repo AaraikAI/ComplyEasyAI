@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import winston from 'winston';
 import config from './index';
 import elasticsearch from './elasticsearch';
@@ -39,6 +41,41 @@ const jsonFormat = combine(
   json()
 );
 
+/**
+ * Resolve the directory for file-based logs, or null to log to stdout only.
+ *
+ * Containers get stdout: the filesystem is ephemeral, the app runs as a non-root
+ * user that owns no writable directory, and the platform's log driver (awslogs on
+ * ECS) already ships stdout/stderr to CloudWatch. Winston creates a File
+ * transport's directory eagerly at construction, so an unwritable path aborts
+ * process start before any application code — or any diagnostic message — runs.
+ *
+ * File logging is therefore on by default only outside production, and even when
+ * requested it degrades to stdout rather than taking the process down.
+ * LOG_FILE=true forces it on, LOG_FILE=false forces it off, LOG_DIR overrides
+ * the location.
+ */
+function resolveLogDir(): string | null {
+  if (process.env.LOG_FILE === 'false') return null;
+  if (process.env.LOG_FILE !== 'true' && process.env.NODE_ENV === 'production') return null;
+
+  const dir = path.resolve(process.env.LOG_DIR || path.join(process.cwd(), 'logs'));
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.accessSync(dir, fs.constants.W_OK);
+    return dir;
+  } catch {
+    // Config loads before the logger exists, so write directly to stdout — the
+    // same approach config/index.ts uses for its startup warnings.
+    process.stdout.write(
+      `File logging disabled: ${dir} is not writable. Using stdout only.\n`
+    );
+    return null;
+  }
+}
+
+const logDir = resolveLogDir();
+
 // Build transports array
 const transports: winston.transport[] = [];
 
@@ -55,11 +92,11 @@ if (process.env.NODE_ENV !== 'production' || process.env.LOG_CONSOLE !== 'false'
 }
 
 // File transports
-if (process.env.LOG_FILE !== 'false') {
+if (logDir) {
   // Error log file
   transports.push(
     new winston.transports.File({
-      filename: 'logs/error.log',
+      filename: path.join(logDir, 'error.log'),
       level: 'error',
       format: jsonFormat,
     })
@@ -68,7 +105,7 @@ if (process.env.LOG_FILE !== 'false') {
   // Combined log file
   transports.push(
     new winston.transports.File({
-      filename: 'logs/combined.log',
+      filename: path.join(logDir, 'combined.log'),
       format: jsonFormat,
     })
   );
@@ -76,7 +113,7 @@ if (process.env.LOG_FILE !== 'false') {
   // Access log file (for HTTP requests)
   transports.push(
     new winston.transports.File({
-      filename: 'logs/access.log',
+      filename: path.join(logDir, 'access.log'),
       level: 'info',
       format: jsonFormat,
     })
@@ -91,6 +128,13 @@ if (process.env.ELASTICSEARCH_ENABLED === 'true') {
   }
 }
 
+// A logger with no transports discards every line silently. If the environment
+// turned off both console and file sinks, fall back to stdout so production is
+// never blind.
+if (transports.length === 0) {
+  transports.push(new winston.transports.Console({ format: jsonFormat }));
+}
+
 // Create logger instance
 const logger = winston.createLogger({
   level: config.logging.level,
@@ -102,13 +146,15 @@ const logger = winston.createLogger({
     timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   ),
   transports,
-  // Handle exceptions and rejections
-  exceptionHandlers: [
-    new winston.transports.File({ filename: 'logs/exceptions.log' }),
-  ],
-  rejectionHandlers: [
-    new winston.transports.File({ filename: 'logs/rejections.log' }),
-  ],
+  // Handle exceptions and rejections. These mirror the transports above: a file
+  // when one is writable, otherwise stdout so crashes still reach the platform's
+  // log driver instead of vanishing.
+  exceptionHandlers: logDir
+    ? [new winston.transports.File({ filename: path.join(logDir, 'exceptions.log') })]
+    : [new winston.transports.Console({ format: jsonFormat })],
+  rejectionHandlers: logDir
+    ? [new winston.transports.File({ filename: path.join(logDir, 'rejections.log') })]
+    : [new winston.transports.Console({ format: jsonFormat })],
 });
 
 export default logger;
