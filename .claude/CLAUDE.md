@@ -762,6 +762,51 @@ AWS user has no ECS rights, the Mac is arm64 while the task definition is `X86_6
 so `ci.yml` derives a new task definition revision from the live one and passes
 `task-definition-arn` rather than `image`.
 
+### Migration history is 97% fictional — the schema cannot be rebuilt from source (2026-08-05)
+
+Measured, not estimated. `prisma migrate diff --from-empty --to-schema prisma/schema.prisma
+--script` (needs no database) emits **283 CREATE TABLE**, 56 CREATE TYPE, 362 ADD CONSTRAINT.
+The 11 tracked migration directories create **9 tables**. So `prisma migrate deploy` against an
+empty database misses **274 of 283 tables (97%)** — it fails immediately, because
+`add_missing_tables.sql`-era tables FK to `Organization`, which no migration creates.
+
+Where the 283 come from:
+| Source | Tables |
+|---|---|
+| Tracked migrations (`migrations/*/migration.sql`) | 9 |
+| 15 loose `.sql` files sitting directly in `migrations/` (Prisma never runs these) | 150 |
+| **Nothing at all in the repo** — created by `prisma db push` | **124** |
+
+**Do NOT "fix" this by promoting the loose files into migration directories.** That reaches 159
+of 283 and the rebuild still fails — the 124 `db push` tables (`Organization`, `User`,
+`ComplianceFramework`, `AuditLog`, `ApiKey`, `DataMap`, …) have no SQL to promote.
+
+**The correct fix is a squash-to-baseline**, and it is a maintenance-window job, not a drive-by:
+1. Generate the baseline (above) into `migrations/00000000000000_baseline/migration.sql`.
+2. Archive the 11 existing migration dirs and the 15 loose `.sql` files — leaving them in place
+   makes a fresh replay fail, because e.g. `20241219_add_zero_trust_models` does a bare
+   `CREATE TABLE "DeviceTrust"` that the baseline has already created.
+3. **RLS is lost by this step.** `migrate diff` reads the Prisma datamodel, which cannot express
+   row-level-security policies, so the ~1,000 lines of policy SQL in `20260603_rls_enable_policies`,
+   `20260604_enforce_rls` and `rls_policies_all_tables.sql` must be re-added as an explicit
+   post-baseline migration or they silently disappear.
+4. Baseline production: `npx prisma migrate resolve --applied 00000000000000_baseline`, since it
+   already has every table.
+5. **Acceptance test — the step that actually proves it:** clean `postgres:16` container →
+   `prisma migrate deploy` from empty → then `prisma migrate diff --from-migrations
+   ./prisma/migrations --to-schema prisma/schema.prisma` must come back **empty**. Anything else
+   means the baseline is wrong. (Blocked on 2026-08-05: host disk at 86% / 2 GiB free, so
+   containerd threw `input/output error` on image pull. Needs ~10 GB free to run.)
+
+Ordering facts, if the loose files are ever replayed for archaeology: all 15 are idempotent
+EXCEPT `add_uuid_defaults.sql`; `acos_v3_tables.sql` must precede `add_control_loop_features.sql`,
+`add_debt_impact_fields.sql`, `add_goal_name_deadline.sql` and `add_uuid_defaults.sql`;
+`rls_policies_all_tables.sql` depends on ~130 tables and must run last; `acos_v3_tables.sql`
+needs the `uuid-ossp` extension but never creates it (only `add_missing_tables.sql` does).
+
+This does **not** affect the running production database, which has every table. It breaks
+disaster recovery, new environments, and CI-from-scratch.
+
 ## Architecture Quick Reference
 
 - **Server:** Express 5 + Prisma 7 + PostgreSQL
