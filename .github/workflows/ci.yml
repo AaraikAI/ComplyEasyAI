@@ -780,7 +780,24 @@ jobs:
       # served to the internet — a database dump placed there is downloadable by
       # anyone who guesses the key (verified against the live distribution).
       # Fail closed rather than fall back to the frontend bucket.
+      # Supabase runs Postgres 17.x and ubuntu-latest ships pg_dump 16, which
+      # refuses to dump a newer server ("aborting because of server version
+      # mismatch"). Install the matching major, exactly as scheduled-backup.yml
+      # already does.
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq curl ca-certificates gnupg lsb-release
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
       - name: Pre-migration database backup
+        shell: bash
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
           BACKUP_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
@@ -790,15 +807,29 @@ jobs:
             echo "::error::S3_BACKUP_BUCKET is not set. Create a PRIVATE bucket (no CloudFront origin) and add it as a secret; refusing to write a database dump into the public frontend bucket."
             exit 1
           fi
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::SUPABASE_DATABASE_URL secret is empty"
+            exit 1
+          fi
           BACKUP_TS=$(date -u +%Y%m%d_%H%M%S)
           BACKUP_KEY="backups/pre-migration/${BACKUP_TS}_${GITHUB_SHA:0:7}.sql.gz"
           echo "Creating pre-migration backup: ${BACKUP_KEY}"
-          pg_dump "$DATABASE_URL" --no-owner --no-acl | gzip > "/tmp/backup.sql.gz"
-          BACKUP_SIZE=$(stat -f%z "/tmp/backup.sql.gz" 2>/dev/null || stat -c%s "/tmp/backup.sql.gz")
-          if [ "$BACKUP_SIZE" -lt 100 ]; then
+          # Call the pinned binary by path — the PATH default is still 16. The
+          # Supabase-managed schemas are excluded because the application role
+          # cannot read them, and pipefail makes a pg_dump failure abort the pipe
+          # instead of leaving a valid-but-tiny gzip behind.
+          /usr/lib/postgresql/17/bin/pg_dump \
+            "$DATABASE_URL" \
+            --no-owner --no-acl --format=plain \
+            --exclude-schema='auth' --exclude-schema='storage' \
+            --exclude-schema='realtime' --exclude-schema='supabase_migrations' \
+            | gzip > /tmp/backup.sql.gz
+          BACKUP_SIZE=$(stat -c%s /tmp/backup.sql.gz)
+          if [ "$BACKUP_SIZE" -lt 1024 ]; then
             echo "::error::Pre-migration backup too small (${BACKUP_SIZE} bytes), aborting deployment"
             exit 1
           fi
+          echo "Backup is ${BACKUP_SIZE} bytes"
           aws s3 cp /tmp/backup.sql.gz "s3://${BACKUP_BUCKET}/${BACKUP_KEY}"
           rm -f /tmp/backup.sql.gz
 
