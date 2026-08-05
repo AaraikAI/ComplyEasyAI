@@ -18,7 +18,10 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  BACKUP_BUCKET: ${{ secrets.S3_FRONTEND_BUCKET }}
+  # MUST be a private bucket with no CloudFront origin. S3_FRONTEND_BUCKET is the
+  # origin for the public website, so database dumps written there are served to
+  # the internet to anyone who guesses the key.
+  BACKUP_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
   RETENTION_DAYS: ${{ github.event.inputs.retention_days || '30' }}
 
 jobs:
@@ -86,6 +89,11 @@ jobs:
 
       - name: Upload backup to S3
         run: |
+          set -euo pipefail
+          if [ -z "${BACKUP_BUCKET:-}" ]; then
+            echo "::error::S3_BACKUP_BUCKET is not set. Create a PRIVATE bucket (no CloudFront origin) and add it as a secret; refusing to write a database dump into a public bucket."
+            exit 1
+          fi
           aws s3 cp /tmp/backup.sql.gz "s3://${BACKUP_BUCKET}/${BACKUP_KEY}" \
             --storage-class STANDARD_IA \
             --metadata "timestamp=${BACKUP_TS},size=${BACKUP_SIZE},type=scheduled"

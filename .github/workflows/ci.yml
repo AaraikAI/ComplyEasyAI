@@ -764,8 +764,21 @@ jobs:
           docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }} $ECR/$ECR_REPO:${{ github.sha }}
           docker push $ECR/$ECR_REPO:${{ github.sha }}
 
+      # The dump goes to a PRIVATE bucket, never S3_FRONTEND_BUCKET. That bucket is
+      # the CloudFront origin for the public site, so anything written under it is
+      # served to the internet — a database dump placed there is downloadable by
+      # anyone who guesses the key (verified against the live distribution).
+      # Fail closed rather than fall back to the frontend bucket.
       - name: Pre-migration database backup
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          BACKUP_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
         run: |
+          set -euo pipefail
+          if [ -z "${BACKUP_BUCKET:-}" ]; then
+            echo "::error::S3_BACKUP_BUCKET is not set. Create a PRIVATE bucket (no CloudFront origin) and add it as a secret; refusing to write a database dump into the public frontend bucket."
+            exit 1
+          fi
           BACKUP_TS=$(date -u +%Y%m%d_%H%M%S)
           BACKUP_KEY="backups/pre-migration/${BACKUP_TS}_${GITHUB_SHA:0:7}.sql.gz"
           echo "Creating pre-migration backup: ${BACKUP_KEY}"
@@ -775,10 +788,8 @@ jobs:
             echo "::error::Pre-migration backup too small (${BACKUP_SIZE} bytes), aborting deployment"
             exit 1
           fi
-          aws s3 cp /tmp/backup.sql.gz "s3://${{ secrets.S3_FRONTEND_BUCKET }}/${BACKUP_KEY}"
+          aws s3 cp /tmp/backup.sql.gz "s3://${BACKUP_BUCKET}/${BACKUP_KEY}"
           rm -f /tmp/backup.sql.gz
-        env:
-          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
 
       - name: Run database migrations (Supabase)
         run: |
@@ -867,10 +878,13 @@ jobs:
           #    file (root index.html AND nested prerendered per-route
           #    index.html) is excluded here so it never inherits immutable
           #    caching, then re-uploaded with no-cache below.
+          # --exclude "backups/*" is belt-and-braces: backups now go to a separate
+          # private bucket, but --delete would otherwise erase anything historic
+          # left under that prefix here.
           aws s3 sync ./dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
-            --exclude "*.html" --exclude "*.json"
+            --exclude "*.html" --exclude "*.json" --exclude "backups/*"
           # 2) Re-upload all HTML (root + nested prerendered shells) with a
           #    no-cache policy so deploys are picked up immediately. The
           #    recursive copy with --exclude "*" --include "*.html" covers
