@@ -719,14 +719,25 @@ jobs:
           SUPA_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
           S3_BUCKET: ${{ secrets.S3_FRONTEND_BUCKET }}
           CF_DIST: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+          BACKUP_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
         run: |
+          # A run's secrets are snapshotted when the run is CREATED, so a secret
+          # added while a run sits at the approval gate is invisible to it. This
+          # job runs before the gate, so a missing secret shows up here — several
+          # minutes in — rather than after an approval and an image push.
           if [ -n "$AWS_KEY" ] && [ -n "$AWS_SECRET" ] && [ -n "$SUPA_URL" ] \
-             && [ -n "$S3_BUCKET" ] && [ -n "$CF_DIST" ]; then
+             && [ -n "$S3_BUCKET" ] && [ -n "$CF_DIST" ] && [ -n "$BACKUP_BUCKET" ]; then
             echo "configured=true" >> "$GITHUB_OUTPUT"
             echo "Deploy secrets present — Deploy to Production will run."
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Production deploy skipped::Deploy secrets are not fully configured. Required: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, SUPABASE_DATABASE_URL, S3_FRONTEND_BUCKET, CLOUDFRONT_DISTRIBUTION_ID (see the Go Live runbook)."
+            for pair in "AWS_ACCESS_KEY_ID:$AWS_KEY" "AWS_SECRET_ACCESS_KEY:$AWS_SECRET" \
+                        "SUPABASE_DATABASE_URL:$SUPA_URL" "S3_FRONTEND_BUCKET:$S3_BUCKET" \
+                        "CLOUDFRONT_DISTRIBUTION_ID:$CF_DIST" "S3_BACKUP_BUCKET:$BACKUP_BUCKET"; do
+              name="${pair%%:*}"; value="${pair#*:}"
+              [ -z "$value" ] && echo "  MISSING: $name"
+            done
+            echo "::notice title=Production deploy skipped::One or more deploy secrets are not visible to this run (see the job log for which). If you just added one, push a new commit — a run cannot see secrets created after it started."
           fi
 
   # ============================================
