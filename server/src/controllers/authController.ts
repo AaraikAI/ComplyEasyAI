@@ -597,8 +597,12 @@ class AuthController {
         throw new AppError('Invalid email or password', 401);
       }
 
-      // Check if 2FA is enabled
-      if (user.twoFactorEnabled && !user.twoFactorVerified) {
+      // twoFactorVerified records that ENROLLMENT was verified, not that this
+      // login was — verifyAndEnableTwoFactor sets it true alongside
+      // twoFactorEnabled. Gating on it therefore skipped the challenge for every
+      // fully-enrolled user, so password alone logged them in. Match
+      // verifyMagicLink and gate on twoFactorEnabled only.
+      if (user.twoFactorEnabled) {
         // Return a short-lived signed JWT for 2FA verification instead of raw userId
         const twoFactorToken = jwt.sign(
           { userId: user.id, purpose: '2fa_pending' },

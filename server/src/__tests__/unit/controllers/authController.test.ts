@@ -649,7 +649,13 @@ describe('AuthController', () => {
       ).rejects.toThrow(AppError);
     });
 
-    it('should skip 2FA check when twoFactorEnabled is true but twoFactorVerified is also true', async () => {
+    // Regression guard. This previously asserted the opposite — that a fully
+    // enrolled user (both flags true) skipped the challenge — which encoded an
+    // authentication bypass as intended behaviour. twoFactorVerified records
+    // that ENROLLMENT was verified, and verifyAndEnableTwoFactor sets it true
+    // together with twoFactorEnabled, so gating the challenge on it let every
+    // enrolled user log in with a password alone.
+    it('should still challenge for 2FA when enrollment was verified (twoFactorVerified true)', async () => {
       mockReq.body = { email: 'test@example.com', password: 'pass' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({
         ...mockUserWithPassword, twoFactorEnabled: true, twoFactorVerified: true,
@@ -660,15 +666,15 @@ describe('AuthController', () => {
 
       await authController.login(mockReq as Request, mockRes as Response);
 
-      // Tokens are set via httpOnly cookies, not in JSON body
-      expect(mockRes.cookie).toHaveBeenCalledWith(
+      // The challenge must be issued, and no session may be established yet.
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        requires2FA: true,
+      }));
+      expect(mockRes.cookie).not.toHaveBeenCalledWith(
         'access_token',
         expect.any(String),
-        expect.objectContaining({ httpOnly: true })
+        expect.anything()
       );
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-        user: expect.objectContaining({ id: 'user-123' }),
-      }));
     });
   });
 
