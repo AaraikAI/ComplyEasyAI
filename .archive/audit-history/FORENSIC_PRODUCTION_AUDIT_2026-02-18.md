@@ -73,8 +73,8 @@
 - **Snippet (from .env.backup):**
   ```
   DATABASE_URL="postgresql://postgres:<ROTATED-SEE-SECRETS-MANAGER>@db.wnvdmaqwlcblcrrvbjmr.supabase.co:5432/postgres?sslmode=require"
-  JWT_SECRET="0856bed4f492a7190fb8d9ee679860e42405b12501bbc9eb57a6e78f408514f7"
-  ENCRYPTION_KEY="afc7172fc0f1dd8c59ce28d8b28905dc1a856e74166587f6b4367a6ead1459eb"
+  JWT_SECRET="<ROTATED-SEE-SECRETS-MANAGER>"
+  ENCRYPTION_KEY="<ROTATED-SEE-SECRETS-MANAGER>"
   GEMINI_API_KEY=AIzaSy...REDACTED
   ```
 - **Fix Required:**

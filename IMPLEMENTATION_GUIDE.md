@@ -210,7 +210,7 @@ beforeEach(async () => {
 ```bash
 DATABASE_URL="postgresql://testuser:testpass@localhost:5432/complyeasy_test?schema=public"
 JWT_SECRET="test-jwt-secret-key"
-ENCRYPTION_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+ENCRYPTION_KEY="<ROTATED-SEE-SECRETS-MANAGER>"
 GEMINI_API_KEY="test-api-key"
 NODE_ENV="test"
 ```
