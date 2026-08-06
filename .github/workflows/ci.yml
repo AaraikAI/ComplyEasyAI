@@ -892,18 +892,52 @@ jobs:
               || { echo "::error::$k missing from the new task definition"; exit 1; }
           done
 
-      # ECS Express Mode manages the Fargate service, its shared ALB, TLS,
-      # autoscaling and log wiring. Pointing it at an explicit task definition
-      # (rather than an image) keeps full control of the container spec here;
-      # the action blocks until the deployment reaches a stable state, so no
-      # separate wait step is needed.
+      # Deployed with the AWS CLI rather than aws-actions/amazon-ecs-deploy-express-service.
+      # That action's latest RELEASE (v1.2.2 = 7c48a2de) has no task-definition-arn
+      # input — it exists only on unreleased main — and its other inputs rebuild
+      # primaryContainer from scratch, which silently drops every secret and env
+      # var and falls back to 256 CPU / 512 MiB. UpdateExpressGatewayService takes
+      # the task definition directly and is in the released CLI, so the revision
+      # derived above is deployed exactly as registered.
       - name: Deploy API to ECS Express Mode
-        uses: aws-actions/amazon-ecs-deploy-express-service@7c48a2de16441d528a3c89829831968dc1455010 # v1
-        with:
-          cluster: complyeasy-production
-          service-name: complyeasy-production-api
-          task-definition-arn: ${{ steps.taskdef.outputs.arn }}
-          infrastructure-role-arn: arn:aws:iam::${{ steps.acct.outputs.id }}:role/ecsInfrastructureRoleForExpressServices
+        env:
+          TD_ARN: ${{ steps.taskdef.outputs.arn }}
+          SVC_ARN: arn:aws:ecs:${{ env.AWS_REGION }}:${{ steps.acct.outputs.id }}:service/complyeasy-production/complyeasy-production-api
+        run: |
+          set -euo pipefail
+
+          if ! aws ecs update-express-gateway-service help >/dev/null 2>&1; then
+            echo "::error::This runner's AWS CLI ($(aws --version 2>&1)) has no ecs update-express-gateway-service. Express Mode needs a newer CLI."
+            exit 1
+          fi
+
+          echo "Deploying $TD_ARN to $SVC_ARN"
+          aws ecs update-express-gateway-service \
+            --service-arn "$SVC_ARN" \
+            --task-definition-arn "$TD_ARN" >/dev/null
+
+          # Wait for convergence ourselves, since the CLI returns immediately.
+          # While a rollout is in flight the service lists BOTH the old and the
+          # new revision in activeConfigurations; it is done when the new ARN is
+          # the only one left and the service is ACTIVE.
+          for i in $(seq 1 60); do
+            OUT=$(aws ecs describe-express-gateway-service --service-arn "$SVC_ARN" --output json)
+            CODE=$(printf '%s' "$OUT" | jq -r '.service.status.statusCode // "UNKNOWN"')
+            ARNS=$(printf '%s' "$OUT" | jq -r '[.service.activeConfigurations[]?.taskDefinitionArn] | unique | join(",")')
+            echo "  [$i/60] status=$CODE active=${ARNS:-<none>}"
+            if [ "$CODE" = "ACTIVE" ] && [ "$ARNS" = "$TD_ARN" ]; then
+              echo "Service converged on the new task definition."
+              exit 0
+            fi
+            if [ "$CODE" = "INACTIVE" ]; then
+              echo "::error::Service went INACTIVE during deployment"
+              printf '%s' "$OUT" | jq -r '.service.status.statusReason // "no reason given"'
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::error::Service did not converge on $TD_ARN within 15 minutes. Check the stopped task's stoppedReason and its CloudWatch log stream — a container that dies during module import reports only 'Essential container in task exited'."
+          exit 1
 
       # The SPA is served from the same origin as the API (CloudFront routes
       # /api/* to the Express service), so the bundle calls a relative /api.
@@ -945,11 +979,16 @@ jobs:
 
       - name: Verify health
         run: |
-          for i in $(seq 1 10); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.complyeasyai.com/health)
+          # 5 minutes, not 100 seconds: the ECS rollout is already converged by
+          # this point, but the first request through CloudFront to a freshly
+          # started task can still lose a round or two.
+          for i in $(seq 1 20); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://www.complyeasyai.com/health || echo 000)
+            echo "  [$i/20] /health -> $STATUS"
             [ "$STATUS" = "200" ] && echo "Healthy" && exit 0
-            sleep 10
+            sleep 15
           done
+          echo "::error::/health never returned 200. A 503 here means the container is up but its database check is failing — check DB_CA_CERT and that DATABASE_URL uses the IPv4 pooler host."
           exit 1
 
   # ============================================
