@@ -1,5 +1,6 @@
 import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
+import tokenBlacklist from './tokenBlacklistService';
 import { AuditLogger } from '../utils/auditLogger';
 import { AppError } from '../middleware/errorHandler';
 
@@ -135,6 +136,10 @@ export class PersonnelService {
         endDate: new Date(),
       },
     });
+
+    // Termination previously flipped the flag and revoked nothing, so a
+    // terminated employee's existing tokens kept working until they expired.
+    await tokenBlacklist.revokeAllForUser(personnel.userId);
 
     // Trigger access review
     await this.createAccessReview({

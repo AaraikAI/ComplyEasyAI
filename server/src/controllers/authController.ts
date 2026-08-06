@@ -471,12 +471,27 @@ class AuthController {
         throw new AppError('Invalid refresh token', 401);
       }
 
+      // changePassword and resetPassword revoke by recording a per-user
+      // revoke-all timestamp, which authenticate() consults for access tokens.
+      // Without the same check here a refresh token issued before the reset
+      // still mints fresh access tokens, so a stolen session outlived the very
+      // password change meant to end it.
+      if (await tokenBlacklist.isRevokedByUserReset(refreshToken, userId)) {
+        throw new AppError('Refresh token has been revoked', 401);
+      }
+
       const user = await prisma.user.findUnique({
         where: { id: userId },
       });
 
       if (!user) {
         throw new AppError('User not found', 404);
+      }
+
+      // Deactivated and SCIM-deprovisioned accounts must not be able to extend
+      // a session; offboarding flips this flag without revoking tokens.
+      if (!user.active) {
+        throw new AppError('Account is deactivated', 401);
       }
 
       // Blacklist the old refresh token (rotation)

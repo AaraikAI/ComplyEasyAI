@@ -10,6 +10,7 @@
 
 import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import { asyncHandler } from '../types/express';
+import tokenBlacklist from '../services/tokenBlacklistService';
 import { validateBody } from '../middleware/validate';
 import {
   scimCreateUserSchema,
@@ -722,6 +723,11 @@ router.delete(
         where: { id: req.params.id },
         data: { active: false },
       });
+
+      // Deactivation alone left outstanding access and refresh tokens usable
+      // until they expired, so a deprovisioned identity kept working for as
+      // long as its token lived. Revoke everything the identity holds now.
+      await tokenBlacklist.revokeAllForUser(req.params.id);
 
       res.status(204).send();
     } catch (error) {

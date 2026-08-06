@@ -124,6 +124,25 @@ const authenticateMiddleware = async (
         return;
       }
 
+      // Offboarding — both the SCIM deprovision path and the personnel
+      // termination path — flips `active` without revoking outstanding tokens.
+      // Existence alone was the only condition applied here, so a deactivated
+      // or deprovisioned account kept full API access until its access token
+      // happened to expire.
+      if (!user.active) {
+        logSecurityEvent({
+          type: SecurityEventType.AUTHENTICATION_FAILURE,
+          severity: 'high',
+          message: 'Token presented for a deactivated account',
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+          userId: user.id,
+        });
+        res.status(401).json({ error: 'Account is deactivated' });
+        return;
+      }
+
       (req as AuthRequest).user = user;
       
       // Set user context for error tracking
