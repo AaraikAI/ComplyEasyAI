@@ -45,6 +45,10 @@ jest.mock('../../../services/tokenBlacklistService', () => ({
   default: {
     isRevoked: jest.fn<any>().mockResolvedValue(false as never),
     revoke: jest.fn<any>().mockResolvedValue(undefined as never),
+    // refreshToken() consults the per-user revoke-all timestamp so a token
+    // issued before a password reset cannot mint new access tokens.
+    isRevokedByUserReset: jest.fn<any>().mockResolvedValue(false as never),
+    revokeAllForUser: jest.fn<any>().mockResolvedValue(undefined as never),
   },
 }));
 
@@ -100,9 +104,13 @@ describe('AuthController Contract Tests', () => {
     auth.generateRefreshToken.mockReturnValue('mock-refresh-token');
     auth.verifyRefreshToken.mockReturnValue('user-123');
 
+    // jest.config sets resetMocks, which wipes implementations declared in the
+    // factory above, so they must be re-established here every test.
     const tokenBlacklist = require('../../../services/tokenBlacklistService').default;
     tokenBlacklist.isRevoked.mockResolvedValue(false);
     tokenBlacklist.revoke.mockResolvedValue(undefined);
+    tokenBlacklist.isRevokedByUserReset.mockResolvedValue(false);
+    tokenBlacklist.revokeAllForUser.mockResolvedValue(undefined);
 
     const fipsHashing = require('../../../utils/fipsPasswordHashing');
     fipsHashing.hashPassword.mockResolvedValue('hashed-password');
@@ -306,6 +314,8 @@ describe('AuthController Contract Tests', () => {
         name: 'Test User',
         role: 'admin',
         organizationId: 'org-123',
+        // refreshToken() rejects inactive accounts; an ordinary user is active.
+        active: true,
       };
 
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUser as never);
