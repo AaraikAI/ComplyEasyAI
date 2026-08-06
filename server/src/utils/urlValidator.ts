@@ -207,6 +207,25 @@ async function assertResolvedHostIsPublic(urlString: string): Promise<void> {
 }
 
 /**
+ * Full SSRF guard: the synchronous checks in isUrlSafe PLUS DNS resolution.
+ *
+ * isUrlSafe alone only inspects the hostname as written, so its private-range
+ * checks fire only when the host is already an IP literal. A name the attacker
+ * controls — evil.example.com with an A record of 169.254.169.254 — passes it
+ * unchanged. Any call site that reaches the network must use this instead, and
+ * must await it: `await assertUrlSafe(url)`.
+ *
+ * Throws AppError(400) rather than returning false so a missing `await` fails
+ * loudly instead of silently evaluating a Promise as truthy.
+ */
+export async function assertUrlSafe(urlString: string): Promise<void> {
+  if (!isUrlSafe(urlString)) {
+    throw new AppError('URL failed SSRF validation', 400);
+  }
+  await assertResolvedHostIsPublic(urlString);
+}
+
+/**
  * Safe fetch wrapper with SSRF protection. Validates the URL, resolves the host
  * to confirm it is public, and follows redirects through a bounded loop where
  * every hop is re-validated (callers do NOT need to re-invoke per hop).

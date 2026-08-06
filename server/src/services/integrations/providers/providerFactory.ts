@@ -16,7 +16,7 @@ import BaseIntegrationProvider, {
   EvidenceType,
 } from './baseIntegration';
 import logger from '../../../config/logger';
-import { isUrlSafe } from '../../../utils/urlValidator';
+import { isUrlSafe, isPrivateIp } from '../../../utils/urlValidator';
 import { AppError } from '../../../middleware/errorHandler';
 
 // ─── Provider Descriptor ─────────────────────────────────────────────────────
@@ -209,22 +209,58 @@ class ConfiguredProvider extends BaseIntegrationProvider {
     return items;
   }
 
-  /** Replace {placeholder} tokens in URLs with credential values */
+  /**
+   * A token substituted into a descriptor URL must never be able to change the
+   * request's authority. Several descriptors are nothing but the placeholder —
+   * `https://{instance}`, `https://{host}:5000/v3` — so an unchecked credential
+   * pointed the request wherever the caller liked, including 169.254.169.254.
+   *
+   * Accept only a bare hostname. A leading scheme and trailing slashes are
+   * tolerated because operators commonly paste a full base URL, but anything
+   * that survives must be DNS labels only: no credentials, port, path, query or
+   * fragment, and no private-range IP literal.
+   */
+  private static sanitizeUrlToken(value: string | undefined, field: string): string {
+    if (!value) return '';
+    const stripped = value
+      .trim()
+      .replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '')
+      .replace(/\/+$/, '');
+    const HOSTNAME =
+      /^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$/;
+    if (!HOSTNAME.test(stripped)) {
+      throw new AppError(
+        `Invalid ${field}: expected a hostname with no port, path, query or credentials`,
+        400,
+      );
+    }
+    if (isPrivateIp(stripped)) {
+      throw new AppError(`Invalid ${field}: resolves to a private address`, 400);
+    }
+    return stripped;
+  }
+
+  /** Replace {placeholder} tokens in URLs with sanitised credential values */
   private resolveUrl(url: string): string {
+    const F = ConfiguredProvider.sanitizeUrlToken;
+    const base = F(this.credentials.baseUrl, 'baseUrl');
+    const region = F(this.credentials.region, 'region');
+    const account = F(this.credentials.accountId, 'accountId');
+    const tenant = F(this.credentials.tenantId, 'tenantId');
     return url
-      .replace(/\{domain\}/g, this.credentials.baseUrl || '')
-      .replace(/\{host\}/g, this.credentials.baseUrl || '')
-      .replace(/\{instance\}/g, this.credentials.baseUrl || '')
-      .replace(/\{tenant\}/g, this.credentials.tenantId || '')
-      .replace(/\{region\}/g, this.credentials.region || 'us-east-1')
-      .replace(/\{account\}/g, this.credentials.accountId || '')
-      .replace(/\{org\}/g, this.credentials.accountId || '')
-      .replace(/\{subdomain\}/g, this.credentials.baseUrl || '')
-      .replace(/\{company\}/g, this.credentials.baseUrl || '')
-      .replace(/\{geo\}/g, this.credentials.region || 'us')
-      .replace(/\{env\}/g, this.credentials.baseUrl || '')
-      .replace(/\{portal\}/g, this.credentials.baseUrl || '')
-      .replace(/\{dc\}/g, this.credentials.region || '');
+      .replace(/\{domain\}/g, base)
+      .replace(/\{host\}/g, base)
+      .replace(/\{instance\}/g, base)
+      .replace(/\{tenant\}/g, tenant)
+      .replace(/\{region\}/g, region || 'us-east-1')
+      .replace(/\{account\}/g, account)
+      .replace(/\{org\}/g, account)
+      .replace(/\{subdomain\}/g, base)
+      .replace(/\{company\}/g, base)
+      .replace(/\{geo\}/g, region || 'us')
+      .replace(/\{env\}/g, base)
+      .replace(/\{portal\}/g, base)
+      .replace(/\{dc\}/g, region);
   }
 
   /**
