@@ -23,7 +23,7 @@ The `production` and `production-approval` environments already exist; just no s
 | `AWS_ACCESS_KEY_ID` | `.github/workflows/ci.yml:557` | AWS IAM — deploy user | Recommended: dedicated IAM user with ECR push + ECS update perms only. Better: switch to OIDC + `role-to-assume` (eliminates long-lived keys). |
 | `AWS_SECRET_ACCESS_KEY` | `.github/workflows/ci.yml:558` | AWS IAM — deploy user | Pair with above. |
 | `S3_FRONTEND_BUCKET` | `.github/workflows/scheduled-backup.yml:16` and ci.yml | AWS S3 bucket name | Bucket for compiled frontend + backups. |
-| `SUPABASE_DATABASE_URL` | `scheduled-backup.yml:47`, ci.yml deploy migrations | Supabase project settings → Database → Connection string (URI mode) | `postgresql://postgres:<pw>@db.wnvdmaqwlcblcrrvbjmr.supabase.co:5432/postgres?sslmode=require` |
+| `SUPABASE_DATABASE_URL` | `scheduled-backup.yml:47`, ci.yml deploy migrations | Supabase project settings → Database → Connection string (URI mode) | `postgresql://postgres:<ROTATED-SEE-SECRETS-MANAGER>@db.wnvdmaqwlcblcrrvbjmr.supabase.co:5432/postgres?sslmode=require` |
 
 ## Required for `deploy-staging` (if used)
 
