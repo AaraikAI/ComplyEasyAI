@@ -17,7 +17,12 @@ import { AppError } from '../middleware/errorHandler';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
+/** Legacy envelope: PBKDF2 with a fixed, publicly known salt. Read-only. */
 const ENCRYPTED_PREFIX = 'enc_v1:';
+/** Current envelope: HKDF with a random per-record salt carried in the value. */
+const ENCRYPTED_PREFIX_V2 = 'enc_v2:';
+const SALT_LENGTH = 16;
+const HKDF_INFO = Buffer.from('complyeasy-field-encryption-v2');
 
 /**
  * Derive a 32-byte encryption key from the configured ENCRYPTION_KEY
@@ -51,14 +56,47 @@ export function destroyKey(): void {
 }
 
 /**
+ * Derive a per-record key with HKDF-SHA256 (NIST SP 800-56C).
+ *
+ * v1 used PBKDF2 with the literal salt 'complyeasy-credential-salt', published
+ * in this repository. Two things were wrong with that. The salt being public
+ * meant the derivation had no secret input beyond the key itself; and PBKDF2's
+ * 100k iterations exist to stretch LOW-entropy passwords, which buys nothing
+ * for a 256-bit random key while costing ~100ms per operation — prohibitive
+ * once the salt is per-record.
+ *
+ * HKDF is the correct primitive for high-entropy input keying material: it is
+ * fast enough to run per record, and a random per-record salt means two
+ * identical plaintexts no longer share a key.
+ *
+ * Note honestly what this does NOT do: because the salt is stored beside the
+ * ciphertext, it offers no protection against disclosure of ENCRYPTION_KEY
+ * itself. Defending against that needs the key to stop living in the process —
+ * i.e. envelope encryption with a KMS data key.
+ */
+function deriveKeyV2(salt: Buffer): Buffer {
+  const rawKey = config.encryption.key;
+  if (!rawKey) {
+    throw new AppError('ENCRYPTION_KEY is not configured', 500);
+  }
+  return Buffer.from(
+    crypto.hkdfSync('sha256', Buffer.from(rawKey, 'utf8'), salt, HKDF_INFO, 32) as ArrayBuffer,
+  );
+}
+
+/**
  * Encrypt a plaintext string value.
- * Returns a prefixed string: enc_v1:<iv>:<authTag>:<ciphertext>
+ * Returns a prefixed string: enc_v2:<salt>:<iv>:<authTag>:<ciphertext>
  */
 export function encryptField(plaintext: string): string {
   if (!plaintext) return plaintext;
-  if (plaintext.startsWith(ENCRYPTED_PREFIX)) return plaintext; // Already encrypted
+  // Already encrypted under either envelope version.
+  if (plaintext.startsWith(ENCRYPTED_PREFIX) || plaintext.startsWith(ENCRYPTED_PREFIX_V2)) {
+    return plaintext;
+  }
 
-  const key = getKey();
+  const salt = crypto.randomBytes(SALT_LENGTH);
+  const key = deriveKeyV2(salt);
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
@@ -67,7 +105,7 @@ export function encryptField(plaintext: string): string {
 
   const authTag = cipher.getAuthTag();
 
-  return `${ENCRYPTED_PREFIX}${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted}`;
+  return `${ENCRYPTED_PREFIX_V2}${salt.toString('base64')}:${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted}`;
 }
 
 /**
@@ -76,17 +114,28 @@ export function encryptField(plaintext: string): string {
  */
 export function decryptField(encryptedValue: string): string {
   if (!encryptedValue) return encryptedValue;
-  if (!encryptedValue.startsWith(ENCRYPTED_PREFIX)) return encryptedValue; // Not encrypted, return as-is
+
+  const isV2 = encryptedValue.startsWith(ENCRYPTED_PREFIX_V2);
+  const isV1 = encryptedValue.startsWith(ENCRYPTED_PREFIX);
+  if (!isV1 && !isV2) return encryptedValue; // Not encrypted, return as-is
 
   try {
-    const key = getKey();
-    const parts = encryptedValue.slice(ENCRYPTED_PREFIX.length).split(':');
-    if (parts.length !== 3) {
+    // v1 values carry no salt and use the legacy fixed-salt PBKDF2 key; v2
+    // values carry their own salt. Both are readable so a rollout does not
+    // require rewriting every row before it can serve traffic.
+    const prefix = isV2 ? ENCRYPTED_PREFIX_V2 : ENCRYPTED_PREFIX;
+    const parts = encryptedValue.slice(prefix.length).split(':');
+    const expected = isV2 ? 4 : 3;
+    if (parts.length !== expected) {
       logger.warn('Invalid encrypted field format, returning as-is');
       return encryptedValue;
     }
 
-    const [ivB64, authTagB64, ciphertextB64] = parts;
+    const [saltB64, ivB64, authTagB64, ciphertextB64] = isV2
+      ? parts
+      : ([undefined, ...parts] as [undefined, string, string, string]);
+
+    const key = isV2 ? deriveKeyV2(Buffer.from(saltB64 as string, 'base64')) : getKey();
     const iv = Buffer.from(ivB64, 'base64');
     const authTag = Buffer.from(authTagB64, 'base64');
 
