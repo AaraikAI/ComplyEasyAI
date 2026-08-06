@@ -495,8 +495,10 @@ describe('AuthController', () => {
     it('should return new access token for valid refresh token', async () => {
       mockReq.body = { refreshToken: 'valid-refresh' };
       mockVerifyRefreshToken.mockReturnValue('user-123');
+      mockIsRevokedByUserReset.mockResolvedValue(false);
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'user-123', email: 'test@example.com', role: 'admin', organizationId: 'org-1',
+        active: true,
       });
       mockGenerateToken.mockReturnValue('new-access-token');
 
@@ -509,6 +511,30 @@ describe('AuthController', () => {
         expect.objectContaining({ httpOnly: true })
       );
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Token refreshed successfully' });
+    });
+
+    it('should reject a refresh token issued before a password reset', async () => {
+      mockReq.body = { refreshToken: 'pre-reset-refresh' };
+      mockVerifyRefreshToken.mockReturnValue('user-123');
+      mockIsRevokedByUserReset.mockResolvedValue(true);
+
+      await expect(
+        authController.refreshToken(mockReq as Request, mockRes as Response)
+      ).rejects.toThrow('Refresh token has been revoked');
+    });
+
+    it('should reject refresh for a deactivated account', async () => {
+      mockReq.body = { refreshToken: 'valid-refresh' };
+      mockVerifyRefreshToken.mockReturnValue('user-123');
+      mockIsRevokedByUserReset.mockResolvedValue(false);
+      (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({
+        id: 'user-123', email: 'test@example.com', role: 'admin', organizationId: 'org-1',
+        active: false,
+      });
+
+      await expect(
+        authController.refreshToken(mockReq as Request, mockRes as Response)
+      ).rejects.toThrow('Account is deactivated');
     });
 
     it('should handle unexpected error and throw generic AppError', async () => {

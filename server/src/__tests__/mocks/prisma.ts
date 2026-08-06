@@ -23,6 +23,10 @@ export const createMockUser = (overrides: Record<string, unknown> = {}) => ({
   updatedAt: new Date(),
   twoFactorEnabled: false,
   twoFactorSecret: null,
+  // The default fixture models an ordinary, usable account. authenticate() and
+  // refreshToken() reject inactive users, so omitting this made every mock user
+  // look deprovisioned. Pass `active: false` explicitly to exercise that path.
+  active: true,
   ...overrides,
 });
 

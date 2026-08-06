@@ -218,6 +218,7 @@ describe('Auth Middleware', () => {
         email: 'test@example.com',
         role: 'admin',
         organizationId: 'org-1',
+        active: true,
         organization: { id: 'org-1', name: 'Test Org' },
       };
       mockVerify.mockReturnValue(decoded);
@@ -248,6 +249,7 @@ describe('Auth Middleware', () => {
         email: 'test@example.com',
         role: 'admin',
         organizationId: 'org-1',
+        active: true,
         organization: { id: 'org-1', name: 'Test Org' },
       };
       mockVerify.mockReturnValue(decoded);
@@ -277,6 +279,7 @@ describe('Auth Middleware', () => {
         email: 'test@example.com',
         role: 'admin',
         organizationId: 'org-1',
+        active: true,
         organization: { id: 'org-1', name: 'Test Org' },
       };
       mockVerify.mockReturnValue(decoded);
@@ -307,6 +310,7 @@ describe('Auth Middleware', () => {
         email: 'test@example.com',
         role: 'admin',
         organizationId: 'org-1',
+        active: true,
         organization: { id: 'org-1', name: 'Test Org' },
       };
       mockVerify.mockReturnValue(decoded);
