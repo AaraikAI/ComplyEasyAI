@@ -5,6 +5,12 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  # A run's secrets are snapshotted when the run is CREATED, so a run already
+  # waiting at the approval gate can never see a secret rotated afterwards — and
+  # re-running it reuses that same snapshot. Without a manual trigger the only
+  # way to pick up a rotated credential was to invent a commit. This lets you
+  # start a genuinely new run instead.
+  workflow_dispatch:
 
 # Least-privilege default for GITHUB_TOKEN. Jobs that need more (package push,
 # code-scanning upload, OIDC) grant the minimum extra at the job level.
