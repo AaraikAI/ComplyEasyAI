@@ -281,6 +281,10 @@ caught. Key genuine gaps, logged for the audit trail (NONE are in the original 4
   Tenant isolation is therefore **100% application-layer with no DB defense-in-depth.** The RLS file also
   has **0 `ENABLE ROW LEVEL SECURITY`** statements and references a function defined in no repo SQL —
   inert/non-reproducible from source.
+  > **SUPERSEDED 2026-08-11** — every specific in this bullet is now stale: the GUC is `app.current_org`
+  > (not `request.jwt.claims`), `database.ts:215` **does** call `set_config`, and **324/324** tables have
+  > RLS enabled with 202 `FORCE`d. See *"RLS is fully wired in code — but the `app_runtime` cutover would
+  > break login (2026-08-11)"* near the end of this file. History here left unchanged.
 - **patValidationService SSRF is NOT fixed (HIGH)** despite REMEDIATION_LOG row 399 = FIXED. 12 validators
   (Sentry/Auth0/Datadog/Qualys/Tenable/CrowdStrike/PaloAlto/Rapid7/ADP/Salesforce) interpolate a
   user-controlled `baseUrl` with no `assertSafeOutbound`; guarded ones still bypass `safeFetch` (no
@@ -869,6 +873,60 @@ was found the hard way; each item on its own would have failed the deploy.
   disclosure of `ENCRYPTION_KEY` — the salt sits beside the ciphertext. Only KMS envelope
   encryption does. Rotating `ENCRYPTION_KEY` makes existing ciphertext undecryptable, and the
   envelope carries no key id, so rotation means re-encrypt or clear the columns.
+
+### RLS is fully wired in code — but the `app_runtime` cutover would break login (2026-08-11)
+
+Verified live against the production database (`wnvdmaqwlcblcrrvbjmr`) with read-only queries.
+**Four claims in the 2026-06-02 scope-gap section above are now STALE and are corrected here.**
+
+**What that section got wrong:**
+
+| Claim (2026-06-02) | Measured 2026-08-11 |
+|---|---|
+| policy reads `current_setting('request.jwt.claims')` | reads **`app.current_org`** — `get_current_organization_id()` is `SELECT current_setting('app.current_org', true)` |
+| "no `set_config`/`SET LOCAL` anywhere in `server/src`" | **`config/database.ts:215`** runs ``tx.$executeRaw`SELECT set_config('app.current_org', ${org}, true)` `` |
+| "**0/324** tables are `FORCE`d" | **324/324** have RLS enabled; **202** are `FORCE`d |
+| RLS file is "inert / 0 `ENABLE ROW LEVEL SECURITY`" | policies are live: `ComplianceFramework` and `RiskItem` each carry 5 `org_isolation*` policies |
+
+The isolation machinery is genuinely built and coherent: `config/orgContext.ts`
+(`AsyncLocalStorage`) → `middleware/auth.ts:168` `runWithOrg(user.organizationId, next)` → the
+`$allOperations` extension in `config/database.ts:165-221`, which wraps each op in a transaction
+that binds the **transaction-local** GUC before querying. `app_runtime` is provisioned and correct:
+`rolcanlogin=true`, `rolbypassrls=false`, `rolsuper=false`, 324 SELECT + 324 INSERT grants,
+schema USAGE. There is a full `server/prisma/migrations/RLS_DEPLOY_RUNBOOK.md`.
+
+> ⚠️ **DO NOT point `DATABASE_URL` at `app_runtime` yet — it would break authentication site-wide.**
+>
+> Every `org_isolation_select` policy applies to role `{public}` (so it binds `app_runtime`) with
+> `USING ("organizationId" = get_current_organization_id())`. Org context is bound at
+> `auth.ts:168`, i.e. **after** authentication — so login's own user lookup
+> (`authController.ts:1502`, `prisma.user.findUnique({ where: { email } })`, on the *extended*
+> client) runs with **no GUC**. `current_setting('app.current_org', true)` then returns NULL,
+> `"organizationId" = NULL` is NULL, and the row is filtered out. Measured on production:
+>
+> ```
+> get_current_organization_id() with no GUC -> NULL
+> User          20 rows total ->  0 visible under policy
+> Organization  15 rows total ->  0 visible under policy
+> (baseline as postgres/BYPASSRLS: 126 ComplianceFramework, 119 RiskItem)
+> ```
+>
+> So under `app_runtime` **every login returns "invalid credentials"**, and rollback costs a full
+> Secrets-Manager-edit + ECS-redeploy cycle. The runbook's own Verification section treats
+> "0 rows with no org set" as *success* — it never accounts for login being an unauthenticated
+> path that must read `User`.
+
+**The remaining work is a code change, not a role swap:** the pre-authentication lookups need an
+RLS carve-out. Options, in preference order: (1) a `SECURITY DEFINER` lookup function granted to
+`app_runtime` exposing only the columns login needs; (2) a separate `BYPASSRLS` connection used
+*only* by the auth controller's pre-auth reads; (3) restricted policies on `User`/`Organization`
+permitting an email lookup when no org is bound. Whichever is chosen, audit **every**
+unauthenticated path that touches a tenant table — registration duplicate-email checks, password
+reset, magic link, email verification, refresh-token lookup — not just login.
+
+Note also that the raw escape hatches (`$queryRaw*`/`$executeRaw*`) are deliberately excluded from
+the extension (`database.ts:188-197`), so they get **no** RLS backstop and must keep explicit
+`organizationId` filters.
 
 ## Architecture Quick Reference
 
