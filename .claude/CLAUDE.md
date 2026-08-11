@@ -807,6 +807,69 @@ needs the `uuid-ossp` extension but never creates it (only `add_missing_tables.s
 This does **not** affect the running production database, which has every table. It breaks
 disaster recovery, new environments, and CI-from-scratch.
 
+### First successful production deploy — what it actually took (2026-08-07)
+
+`www.complyeasyai.com` went live on run `31136283298`. `/health` returns 200. Everything below
+was found the hard way; each item on its own would have failed the deploy.
+
+**GitHub Actions**
+- **A run's secrets are snapshotted when the run is CREATED.** A run parked at an approval gate
+  can never see a secret rotated afterwards, and **re-running it reuses the same snapshot**. This
+  cost two approvals (`S3_BACKUP_BUCKET`, then `SUPABASE_DATABASE_URL`). `ci.yml` now has
+  `workflow_dispatch` so a genuinely new run can be started; otherwise you must push a commit.
+- `check-deploy-secrets` tests **presence, not validity**. It went green on the run that then died
+  with `password authentication failed`. Always prove a rotated credential works before approving.
+- After an Actions outage, GitHub does **not** retroactively create runs for events dropped during
+  it. Close/reopen the PR (or dispatch) to re-trigger. Check the repo's newest run timestamp, not
+  just the status page — the page said `operational` while zero runs were being created.
+- Branch protection with `required_approving_review_count: 1` **deadlocks a sole maintainer** —
+  GitHub forbids self-approval. Use 0; the value is in the required status checks.
+
+**ECS Express Mode**
+- `aws-actions/amazon-ecs-deploy-express-service` **v1.2.2 (latest release) has no
+  `task-definition-arn` input** — it exists only on unreleased `main`. Its other inputs rebuild
+  `primaryContainer` from scratch, silently dropping every secret and env var and falling back to
+  256 CPU / 512 MiB. Deploy with the released CLI instead:
+  `aws ecs update-express-gateway-service --service-arn … --task-definition-arn …`, then poll
+  `describe-express-gateway-service` until `activeConfigurations[].taskDefinitionArn` contains only
+  the new ARN and `status.statusCode == ACTIVE`. `ci.yml` derives each revision from the LIVE task
+  definition and swaps only the image, so console-added secrets survive future deploys.
+
+**Supabase / Supavisor**
+- **The pooler requires the project ref in the username for EVERY role**, not just `postgres`:
+  `postgres.wnvdmaqwlcblcrrvbjmr`, `app_runtime.wnvdmaqwlcblcrrvbjmr`. Without it you get
+  `FATAL: (ENOIDENTIFIER) no tenant identifier provided (external_id or sni_hostname required)`.
+  The direct host `db.<ref>.supabase.co` is **IPv6-only** and unreachable from Fargate — always
+  use `aws-1-us-east-1.pooler.supabase.com:5432` (session mode; transaction mode breaks Prisma's
+  advisory locks).
+- **`DB_CA_CERT` is mandatory.** `database.ts:122` sets `rejectUnauthorized: isProduction`, and
+  Supabase presents a private CA, so without the base64 PEM every connection fails TLS and
+  `/health` returns 503 forever while the container stays *alive* — no crash, no obvious signal.
+  Worse, `prisma migrate deploy` still succeeds and masks it (Prisma treats `sslmode=require` as
+  no-verify, and the migration step uses a different secret).
+- **Supabase runs PG17; `ubuntu-latest` ships pg_dump 16**, which refuses to dump a newer server.
+  Install `postgresql-client-17` from the PGDG repo and call `/usr/lib/postgresql/17/bin/pg_dump`
+  by full path, excluding the `auth`, `storage`, `realtime` and `supabase_migrations` schemas.
+
+**Secrets Manager**
+- **`--secret-id` takes the NAME, not the ARN fragment.** The ARN is
+  `…:secret:complyeasy/production-CEcbWm:KEY::` where `-CEcbWm` is an AWS-appended random suffix;
+  the name is `complyeasy/production`. Passing the suffix gives `ResourceNotFoundException`.
+- **The SecretString must be valid JSON or ECS resolves NOTHING.** A missing comma after one key
+  broke every `:KEY::` reference at once; the console shows "The secret value can't be converted
+  to key name and value pairs" and the task would have died at startup with no application log.
+  Diagnose without printing values:
+  `… --query SecretString --output text | awk '{q=gsub(/"/,"&"); printf "%2d q=%d comma=%s\n", NR, q, ($0 ~ /,[[:space:]]*$/)}'`
+  — every key line wants `q=4` and a trailing comma except the last.
+
+**Field encryption**
+- The envelope is now **`enc_v2:<salt>:<iv>:<authTag>:<ciphertext>`**, derived with **HKDF-SHA256**
+  and a random per-record salt. `decryptField` still reads legacy `enc_v1:` (PBKDF2 + the literal
+  salt `complyeasy-credential-salt`). Note honestly: a per-record salt does NOT defend against
+  disclosure of `ENCRYPTION_KEY` — the salt sits beside the ciphertext. Only KMS envelope
+  encryption does. Rotating `ENCRYPTION_KEY` makes existing ciphertext undecryptable, and the
+  envelope carries no key id, so rotation means re-encrypt or clear the columns.
+
 ## Architecture Quick Reference
 
 - **Server:** Express 5 + Prisma 7 + PostgreSQL
