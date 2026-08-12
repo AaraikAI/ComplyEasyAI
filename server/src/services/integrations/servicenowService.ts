@@ -10,7 +10,7 @@ import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, hardenAxiosInstance } from '../../utils/urlValidator';
 import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 // ---------------------------------------------------------------------------
@@ -213,7 +213,12 @@ class ServiceNowService {
       headers['Authorization'] = `Basic ${encoded}`;
     }
 
-    return axios.create({ baseURL: `${instanceUrl}/api/now`, headers, timeout: 30000 });
+    // instanceUrl is tenant-supplied, so the client is hardened: DNS-resolved
+    // SSRF check on every request and no automatic redirect following.
+    return hardenAxiosInstance(
+      axios.create({ baseURL: `${instanceUrl}/api/now`, headers, timeout: 30000 }),
+      'servicenow'
+    );
   }
 
   /**

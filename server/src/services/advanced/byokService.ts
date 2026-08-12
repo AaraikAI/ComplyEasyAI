@@ -23,7 +23,7 @@ import axios, { AxiosInstance } from 'axios';
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, hardenAxiosInstance } from '../../utils/urlValidator';
 import { AppError } from '../../middleware/errorHandler';
 
 type KeyProvider = 'aws_kms' | 'azure_kv' | 'gcp_kms' | 'hashicorp_vault';
@@ -188,14 +188,19 @@ class BYOKService {
     const cacheKey = `${vaultUrl}:${tokenHash}`;
 
     if (!this.vaultClients.has(cacheKey)) {
-      const client = axios.create({
-        baseURL: vaultUrl,
-        headers: {
-          'X-Vault-Token': vaultToken,
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000,
-      });
+      // vaultUrl is operator-supplied, so the client is hardened: DNS-resolved
+      // SSRF check on every request and no automatic redirect following.
+      const client = hardenAxiosInstance(
+        axios.create({
+          baseURL: vaultUrl,
+          headers: {
+            'X-Vault-Token': vaultToken,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        }),
+        'vault'
+      );
 
       this.vaultClients.set(cacheKey, client);
     }

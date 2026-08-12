@@ -10,7 +10,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, hardenAxiosInstance } from '../../utils/urlValidator';
 import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 // ---------------------------------------------------------------------------
@@ -199,7 +199,12 @@ class AzureDevOpsService {
     }
 
     return {
-      client: axios.create({ baseURL, headers, timeout: 30000 }),
+      // baseURL is tenant-supplied (Azure DevOps Server can be self-hosted), so
+      // every request is DNS-checked and redirects are never auto-followed.
+      client: hardenAxiosInstance(
+        axios.create({ baseURL, headers, timeout: 30000 }),
+        'azure-devops'
+      ),
       config: adoConfig,
     };
   }

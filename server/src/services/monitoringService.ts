@@ -5,7 +5,7 @@ import { AuditLogger } from '../utils/auditLogger';
 import { AppError } from '../middleware/errorHandler';
 import geminiService from './geminiService';
 import axios from 'axios';
-import { isWebhookUrlSafe } from '../utils/urlValidator';
+import { isWebhookUrlSafe, safeAxiosGet } from '../utils/urlValidator';
 
 
 /**
@@ -824,7 +824,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
     // Check via custom HTTP endpoint if configured
     if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
-        const response = await axios.get(config.endpoint, {
+        const response = await safeAxiosGet(config.endpoint, 'monitoring endpoint', {
           headers: config.headers || {},
           timeout: 30000,
         });
@@ -972,7 +972,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
 
     if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
-        const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
+        const response = await safeAxiosGet(config.endpoint, 'monitoring endpoint', { headers: config.headers || {}, timeout: 30000 });
         passedTests++;
         findings.push({ test: 'Cloud Endpoint Health', passed: true, severity: null });
       } catch (error: any) {
@@ -999,7 +999,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
 
     if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
-        const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
+        const response = await safeAxiosGet(config.endpoint, 'monitoring endpoint', { headers: config.headers || {}, timeout: 30000 });
         const data = response.data;
         if (data.checks && Array.isArray(data.checks)) {
           for (const check of data.checks) {
@@ -1035,7 +1035,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
 
     if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
-        const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
+        const response = await safeAxiosGet(config.endpoint, 'monitoring endpoint', { headers: config.headers || {}, timeout: 30000 });
         const data = response.data;
         if (data.devices && Array.isArray(data.devices)) {
           for (const device of data.devices) {
@@ -1125,7 +1125,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
     // Custom code scanning endpoint
     if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
-        const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
+        const response = await safeAxiosGet(config.endpoint, 'monitoring endpoint', { headers: config.headers || {}, timeout: 30000 });
         const data = response.data;
         if (data.vulnerabilities && Array.isArray(data.vulnerabilities)) {
           const criticalVulns = data.vulnerabilities.filter((v: any) => v.severity === 'critical' || v.severity === 'high');
