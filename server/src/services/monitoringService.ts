@@ -972,7 +972,9 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
 
     if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
-        const response = await safeAxiosGet(config.endpoint, 'monitoring endpoint', { headers: config.headers || {}, timeout: 30000 });
+        // Reachability probe only: the response body is not inspected, so the
+        // call is made purely for its throw-on-failure side effect.
+        await safeAxiosGet(config.endpoint, 'monitoring endpoint', { headers: config.headers || {}, timeout: 30000 });
         passedTests++;
         findings.push({ test: 'Cloud Endpoint Health', passed: true, severity: null });
       } catch (error: any) {
