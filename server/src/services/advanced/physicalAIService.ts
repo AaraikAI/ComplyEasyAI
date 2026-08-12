@@ -16,7 +16,7 @@ import crypto from 'crypto';
 import { AppError } from '../../middleware/errorHandler';
 import mqttService from './mqttService';
 import cacheService from '../cache/redisCacheService';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, safeAxiosGet } from '../../utils/urlValidator';
 import { encryptConfigSecrets } from '../../utils/credentialEncryption';
 
 const PHYSICAL_AI_CACHE_NAMESPACE = 'physical-ai';
@@ -2805,7 +2805,7 @@ class PhysicalAIService {
             logger.warn('[Physical AI] Firmware registry URL rejected by isUrlSafe');
             return undefined;
           }
-          const response = await axios.get(firmwareUrl, {
+          const response = await safeAxiosGet(firmwareUrl, 'firmware download', {
             timeout: 5000,
             headers: {
               'User-Agent': 'ComplyEasyAI-PhysicalAI/1.0',
@@ -2831,7 +2831,7 @@ class PhysicalAIService {
           if (!isUrlSafe(nvdUrl)) {
             logger.warn('[Physical AI] Rejected unsafe NVD URL', { deviceType });
           } else {
-            const response = await axios.get(nvdUrl, {
+            const response = await safeAxiosGet(nvdUrl, 'NVD CVE lookup', {
               timeout: 5000,
               headers: nvdApiKey ? { 'apiKey': nvdApiKey } : {},
             });
@@ -2863,7 +2863,7 @@ class PhysicalAIService {
               logger.warn(`[Physical AI] Manufacturer API URL rejected by isUrlSafe: ${manufacturer}`);
               continue;
             }
-            const response = await axios.get(apiUrl, {
+            const response = await safeAxiosGet(apiUrl, 'device vendor API', {
               timeout: 5000,
               headers: {
                 'User-Agent': 'ComplyEasyAI-PhysicalAI/1.0',

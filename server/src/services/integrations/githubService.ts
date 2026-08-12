@@ -8,7 +8,7 @@ import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, safeAxiosGet } from '../../utils/urlValidator';
 import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 interface GitHubTokenResponse {
@@ -99,7 +99,7 @@ class GitHubService {
         logger.error('GitHub outbound URL rejected by isUrlSafe', { url });
         throw new AppError(`Unsafe GitHub URL: ${url}`, 400);
       }
-      const response = await axios.get(url, {
+      const response = await safeAxiosGet(url, 'github api', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           Accept: 'application/vnd.github.v3+json',
@@ -191,7 +191,7 @@ class GitHubService {
       throw new AppError('Blocked unsafe outbound URL', 400);
     }
     try {
-      const response = await axios.get(url, {
+      const response = await safeAxiosGet(url, 'github api', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           Accept: 'application/vnd.github.v3+json',

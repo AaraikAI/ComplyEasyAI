@@ -17,6 +17,22 @@ jest.mock('axios', () => ({
   },
 }));
 
+// GitHub reads now route through safeAxiosGet (SSRF guard: DNS resolution plus
+// per-hop redirect re-validation) rather than axios.get directly, so the mock
+// has to sit at that boundary. Mocking it here also keeps the unit test from
+// performing a real DNS lookup for api.github.com.
+//
+// Deliberately plain functions, not jest.fn(...): jest.config.js sets
+// resetMocks/restoreMocks, which wipes implementations defined at module load
+// and would leave isUrlSafe returning undefined (i.e. "unsafe").
+jest.mock('../../../../utils/urlValidator', () => ({
+  __esModule: true,
+  isUrlSafe: () => true,
+  assertUrlSafe: async () => undefined,
+  safeAxiosGet: (url: string, _context?: string, options?: unknown) => mockAxiosGet(url, options),
+  safeAxios: (config: { url: string }) => mockAxiosGet(config.url, config),
+}));
+
 jest.mock('../../../../config', () => ({
   __esModule: true,
   default: {

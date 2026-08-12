@@ -6,6 +6,8 @@
 import { URL } from 'url';
 import net from 'net';
 import { lookup as dnsLookup } from 'dns/promises';
+import axios, { AxiosError } from 'axios';
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { logSecurityEvent, SecurityEventType } from './securityEventLogger';
 import { AppError } from '../middleware/errorHandler';
 
@@ -333,4 +335,195 @@ export function sanitizeUrlForLogging(url: string): string {
   } catch {
     return '[Invalid URL]';
   }
+}
+
+/** Headers that must never survive a redirect to a different origin. */
+const CREDENTIAL_HEADERS = ['authorization', 'cookie', 'proxy-authorization', 'x-api-key'];
+
+function originOf(urlString: string): string {
+  try {
+    const u = new URL(urlString);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Drop credential-bearing headers when a redirect crosses to another origin, so
+ * an integration token cannot be replayed to a host the operator never chose.
+ */
+function stripCredentialHeadersIfCrossOrigin(
+  headers: Record<string, unknown>,
+  fromUrl: string,
+  toUrl: string
+): Record<string, unknown> {
+  if (originOf(fromUrl) === originOf(toUrl)) return headers;
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (!CREDENTIAL_HEADERS.includes(key.toLowerCase())) cleaned[key] = value;
+  }
+  return cleaned;
+}
+
+/**
+ * SSRF-hardened axios request. This is the shared primitive every outbound
+ * axios call should use; it is the axios counterpart of safeFetch.
+ *
+ * Why a plain `isUrlSafe(url)` check before `axios.get(url)` is not enough:
+ *   1. isUrlSafe never resolves DNS, so its private-range checks only fire when
+ *      the host is already an IP literal. A name the attacker controls —
+ *      evil.example.com with an A record of 169.254.169.254 — passes it intact.
+ *   2. axios follows redirects on its own by default, so a validated public URL
+ *      can 302 straight to the metadata endpoint after the check has passed.
+ *
+ * This helper closes both: it awaits assertUrlSafe (synchronous checks PLUS DNS
+ * resolution) on the initial URL *and on every redirect target*, and it sets
+ * maxRedirects: 0 so axios can never follow a hop unvalidated. Redirects are
+ * followed manually, bounded by MAX_REDIRECTS.
+ *
+ * Caller-visible behaviour is preserved: the returned AxiosResponse is the same
+ * shape as axios.request, and a status the caller considers a failure still
+ * throws an AxiosError carrying `.response`, so existing
+ * `catch (e) { e.response?.status }` handling keeps working.
+ *
+ * @param config - standard axios config; `url` is required
+ * @param context - short label used in error messages and security logs
+ * @throws AppError(403) if the URL, a resolved address, or a redirect target is unsafe
+ */
+export async function safeAxios(
+  config: AxiosRequestConfig & { url: string },
+  context = 'outbound request'
+): Promise<AxiosResponse> {
+  const callerValidate = config.validateStatus ?? ((status: number) => status >= 200 && status < 300);
+
+  let currentUrl = config.url;
+  let method = (config.method ?? 'get').toString().toLowerCase();
+  let data = config.data;
+  let headers: Record<string, unknown> = { ...(config.headers as Record<string, unknown>) };
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    // Full guard: protocol/host/IP checks AND DNS resolution of the hostname.
+    // Throws AppError(400) from assertUrlSafe when the URL itself is unsafe.
+    await assertUrlSafe(currentUrl);
+
+    const response = await axios.request({
+      ...config,
+      url: currentUrl,
+      method,
+      data,
+      // Tracked internally as a plain record so redirect handling can drop
+      // credential headers by name; cast back at the axios boundary.
+      headers: headers as AxiosRequestConfig['headers'],
+      // Never let axios follow a redirect for us: every hop must be re-validated.
+      maxRedirects: 0,
+      // Accept everything so redirect handling and the caller's own status
+      // policy are applied here rather than by an axios throw.
+      validateStatus: () => true,
+    });
+
+    const isRedirect = response.status >= 300 && response.status < 400;
+    const location = isRedirect
+      ? ((response.headers?.location ?? (response.headers as any)?.Location) as string | undefined)
+      : undefined;
+
+    if (!isRedirect || !location) {
+      if (!callerValidate(response.status)) {
+        throw new AxiosError(
+          `Request failed with status code ${response.status}`,
+          response.status >= 500 ? AxiosError.ERR_BAD_RESPONSE : AxiosError.ERR_BAD_REQUEST,
+          response.config,
+          response.request,
+          response
+        );
+      }
+      return response;
+    }
+
+    if (hop === MAX_REDIRECTS) {
+      logSecurityEvent({
+        type: SecurityEventType.SUSPICIOUS_INPUT,
+        severity: 'medium',
+        message: `Maximum redirect depth reached (${context})`,
+        details: { url: sanitizeUrlForLogging(currentUrl) },
+      });
+      throw new AppError(`Too many redirects (SSRF protection: ${context})`, 403);
+    }
+
+    const nextUrl = new URL(location, currentUrl).href;
+
+    // Fail fast on an unsafe hop with a clear message; assertUrlSafe at the top
+    // of the next iteration performs the DNS half of the check.
+    if (!isUrlSafe(nextUrl)) {
+      logSecurityEvent({
+        type: SecurityEventType.SSRF_ATTEMPT,
+        severity: 'critical',
+        message: `Blocked redirect to internal URL (${context})`,
+        details: {
+          from: sanitizeUrlForLogging(currentUrl),
+          to: sanitizeUrlForLogging(nextUrl),
+        },
+      });
+      throw new AppError(`Redirect to internal URL blocked (SSRF protection: ${context})`, 403);
+    }
+
+    headers = stripCredentialHeadersIfCrossOrigin(headers, currentUrl, nextUrl);
+
+    // Match browser/fetch semantics: 303, and 301/302 on a non-GET/HEAD, become
+    // a GET with no body rather than replaying the payload to a new location.
+    if (
+      response.status === 303 ||
+      ((response.status === 301 || response.status === 302) && method !== 'get' && method !== 'head')
+    ) {
+      method = 'get';
+      data = undefined;
+    }
+
+    currentUrl = nextUrl;
+  }
+
+  // Unreachable: every path above returns or throws.
+  throw new AppError(`Redirect handling failed (SSRF protection: ${context})`, 403);
+}
+
+/**
+ * Convenience wrapper for the common `axios.get(url, options)` shape.
+ * Equivalent to safeAxios({ ...options, url, method: 'get' }, context).
+ */
+export async function safeAxiosGet(
+  url: string,
+  context = 'outbound request',
+  options?: AxiosRequestConfig
+): Promise<AxiosResponse> {
+  return safeAxios({ ...options, url, method: 'get' }, context);
+}
+
+/**
+ * SSRF-harden a long-lived axios instance created with axios.create().
+ *
+ * Instance-based clients (baseURL + shared auth headers) cannot route through
+ * safeAxios without rewriting every call site, so they are hardened in place:
+ *
+ *   - maxRedirects: 0 — axios can never follow an unvalidated hop. A 3xx is
+ *     surfaced to the caller instead of being chased, which fails closed.
+ *   - an async request interceptor resolves the effective URL against baseURL
+ *     and awaits assertUrlSafe on it, so the DNS-resolution check runs on the
+ *     real target of every request, including any per-call url override.
+ *
+ * Use this wherever a client is constructed from an operator- or tenant-supplied
+ * baseURL (self-hosted Jira, ServiceNow instance URLs, KMS endpoints, …).
+ */
+export function hardenAxiosInstance<T extends AxiosInstance>(instance: T, context = 'outbound request'): T {
+  instance.defaults.maxRedirects = 0;
+  instance.interceptors.request.use(async (requestConfig) => {
+    const base = requestConfig.baseURL ?? instance.defaults.baseURL;
+    const target = requestConfig.url ?? '';
+    // Resolve relative paths against baseURL so the check sees the real host.
+    const effectiveUrl = base ? new URL(target, base.endsWith('/') ? base : `${base}/`).href : target;
+    if (effectiveUrl) {
+      await assertUrlSafe(effectiveUrl);
+    }
+    return requestConfig;
+  });
+  return instance;
 }

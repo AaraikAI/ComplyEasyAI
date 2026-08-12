@@ -10,7 +10,7 @@
 
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import logger from '../../../config/logger';
-import { isUrlSafe } from '../../../utils/urlValidator';
+import { assertUrlSafe } from '../../../utils/urlValidator';
 import { AppError } from '../../../middleware/errorHandler';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -135,6 +135,10 @@ export abstract class BaseIntegrationProvider {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
+      // Never follow a redirect automatically: the interceptor below validates
+      // the URL it is given, but axios would chase a 302 to an internal address
+      // afterwards without that check ever running again. Fail closed instead.
+      maxRedirects: 0,
     });
 
     // SSRF chokepoint: validate every outbound URL before the request is sent.
@@ -142,18 +146,26 @@ export abstract class BaseIntegrationProvider {
     // routes through `this.httpClient`. URLs interpolating user-supplied tokens
     // (baseUrl/tenantId/region/accountId) are blocked if they resolve to
     // private IPs, localhost, link-local, or unsupported protocols.
-    this.httpClient.interceptors.request.use((cfg) => {
+    this.httpClient.interceptors.request.use(async (cfg) => {
       const baseURL = (cfg.baseURL || '').toString();
       const url = (cfg.url || '').toString();
       const fullUrl = /^https?:\/\//i.test(url) || !baseURL
         ? url
         : `${baseURL.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
-      if (fullUrl && !isUrlSafe(fullUrl)) {
-        logger.error('Integration outbound URL rejected by isUrlSafe', {
-          providerId: this.providerId,
-          url: fullUrl,
-        });
-        throw new AppError(`Unsafe outbound URL for provider ${this.providerId}: ${fullUrl}`, 400);
+      if (fullUrl) {
+        try {
+          // assertUrlSafe layers DNS resolution on top of the synchronous
+          // checks, so a hostname the tenant controls that resolves to an
+          // internal address (evil.example.com -> 169.254.169.254) is blocked
+          // too. isUrlSafe alone only catches hosts written as IP literals.
+          await assertUrlSafe(fullUrl);
+        } catch {
+          logger.error('Integration outbound URL rejected by SSRF validation', {
+            providerId: this.providerId,
+            url: fullUrl,
+          });
+          throw new AppError(`Unsafe outbound URL for provider ${this.providerId}: ${fullUrl}`, 400);
+        }
       }
       return cfg;
     });
