@@ -17,12 +17,32 @@ on:
 permissions:
   contents: read
 
+# Serialize runs per ref so two closely-spaced merges to main cannot deploy at
+# the same time. Overlapping deploys were not merely wasteful: each one polled
+# for ITS OWN task definition revision to become the only active one, so when a
+# newer revision superseded an older deploy mid-flight, the older job waited out
+# its full 15-minute budget and then failed with a message blaming a container
+# boot crash. main QUEUES rather than cancels — cancelling a job mid-rollout
+# would abandon an in-flight ECS deployment — while PR runs still cancel their
+# own superseded runs to save CI time.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 env:
   NODE_VERSION: '22'
   REGISTRY: ghcr.io
   # IMAGE_NAME must be lowercase — Trivy/Cosign reject uppercase image refs
   IMAGE_NAME: aaraikai/complyeasyai
   AWS_REGION: us-east-1
+  # Make every npm invocation in the pipeline survive a transient registry
+  # blip. A bare `npm ci` retries very little by default, so a single
+  # ECONNRESET mid-install failed an entire production deploy (run
+  # 31536545427). These are read by npm from the environment, so they apply to
+  # every job without touching each step.
+  NPM_CONFIG_FETCH_RETRIES: '5'
+  NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: '20000'
+  NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: '120000'
 
 jobs:
   # ============================================
@@ -839,11 +859,44 @@ jobs:
           aws s3 cp /tmp/backup.sql.gz "s3://${BACKUP_BUCKET}/${BACKUP_KEY}"
           rm -f /tmp/backup.sql.gz
 
+      # `prisma migrate deploy` needs only the CLI, the schema and DATABASE_URL.
+      # It previously ran behind `npm ci --omit=dev`, which installed 600+
+      # production packages (aws-sdk, tensorflow, sharp, …) purely to reach a
+      # CLI that --omit=dev does not even install, because `prisma` is a
+      # devDependency. `npx prisma` therefore downloaded whatever prisma@latest
+      # happened to be, meaning production migrations ran on a FLOATING CLI
+      # version that no commit here pinned. The version is now read from the
+      # lockfile so the CLI always matches the repo.
+      #
+      # `prisma generate` was also dropped: it writes the client to
+      # ../src/generated/prisma/client on the runner, which is discarded — the
+      # deployed image already contains generated code from the Docker build.
+      #
+      # Retried because this sits on the critical path of every production
+      # deploy and a single transient ECONNRESET used to fail the whole thing.
       - name: Run database migrations (Supabase)
-        run: |
-          cd server && npm ci --omit=dev && npx prisma generate && npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          cd server
+
+          PRISMA_VERSION=$(node -p "require('./package-lock.json').packages['node_modules/prisma'].version")
+          echo "Using prisma@$PRISMA_VERSION (pinned from package-lock.json)"
+
+          for attempt in 1 2 3; do
+            if npx --yes "prisma@$PRISMA_VERSION" migrate deploy; then
+              echo "Migrations applied on attempt $attempt."
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "::warning::migrate deploy failed (attempt $attempt/3); retrying in $((attempt * 15))s"
+              sleep $((attempt * 15))
+            fi
+          done
+
+          echo "::error::prisma migrate deploy failed after 3 attempts. If the cause was a network error the registry or Supabase was unreachable; anything else is a genuine migration failure and the database was NOT changed by the failed attempt."
+          exit 1
 
       # Role ARNs for Express Mode are account-scoped; resolve the account from
       # the deploy credentials rather than carrying it as another secret.
@@ -935,6 +988,26 @@ jobs:
               echo "Service converged on the new task definition."
               exit 0
             fi
+
+            # A newer deploy can legitimately supersede this one. The
+            # concurrency group above makes that rare, but a re-run or a
+            # workflow_dispatch can still overlap. If OUR revision has been
+            # dropped from activeConfigurations and a HIGHER revision is
+            # serving, the service moved on deliberately and the rollout
+            # succeeded — just not on our revision. Previously this waited out
+            # the full 15 minutes and then failed with a message blaming a
+            # container boot crash, which sent debugging in entirely the wrong
+            # direction (run 31529113468).
+            if [ "$CODE" = "ACTIVE" ] && [ -n "$ARNS" ] \
+               && ! printf '%s' "$ARNS" | tr ',' '\n' | grep -qxF "$TD_ARN"; then
+              MY_REV=${TD_ARN##*:}
+              NEWEST=$(printf '%s' "$ARNS" | tr ',' '\n' | sed 's/.*://' | sort -n | tail -1)
+              if [ -n "$NEWEST" ] && [ "$NEWEST" -gt "$MY_REV" ] 2>/dev/null; then
+                echo "::notice::Superseded by task definition revision $NEWEST (this deploy registered revision $MY_REV). A newer deploy won the race; the service is ACTIVE and healthy, so this is not a failure."
+                exit 0
+              fi
+            fi
+
             if [ "$CODE" = "INACTIVE" ]; then
               echo "::error::Service went INACTIVE during deployment"
               printf '%s' "$OUT" | jq -r '.service.status.statusReason // "no reason given"'
@@ -942,7 +1015,7 @@ jobs:
             fi
             sleep 15
           done
-          echo "::error::Service did not converge on $TD_ARN within 15 minutes. Check the stopped task's stoppedReason and its CloudWatch log stream — a container that dies during module import reports only 'Essential container in task exited'."
+          echo "::error::Service did not converge on $TD_ARN within 15 minutes, and no higher revision superseded it (that case exits 0 above). This is a genuine rollout failure: check the stopped task's stoppedReason and its CloudWatch log stream — a container that dies during module import reports only 'Essential container in task exited'."
           exit 1
 
       # The SPA is served from the same origin as the API (CloudFront routes
