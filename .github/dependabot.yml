@@ -110,6 +110,18 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    # github/codeql-action/{init,analyze,upload-sarif} MUST move together.
+    # CodeQL refuses to run when init and analyze are on different versions:
+    #   "Loaded a configuration file for version '4.36.3', but running
+    #    version '4.37.8'"
+    # Ungrouped, Dependabot opens one PR per action path, so `analyze` bumps
+    # while `init` stays behind and both Analyze jobs fail - which is what
+    # happened to #340 and again to #434. Grouping them makes every
+    # codeql-action bump a single, mergeable PR.
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
     labels:
       - "dependencies"
       - "ci"
