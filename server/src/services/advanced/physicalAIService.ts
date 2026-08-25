@@ -2793,7 +2793,6 @@ class PhysicalAIService {
    */
   private async queryFirmwareRegistry(deviceType: string, currentVersion: string): Promise<string | undefined> {
     try {
-      const axios = require('axios');
       
       // 1. Try custom firmware registry URL (if configured)
       const firmwareRegistry = process.env.FIRMWARE_REGISTRY_URL;

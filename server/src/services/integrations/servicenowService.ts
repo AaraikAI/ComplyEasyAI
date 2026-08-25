@@ -6,11 +6,11 @@
  * ServiceNow Table API with support for basic auth and OAuth 2.0.
  */
 
-import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
-import { isUrlSafe, hardenAxiosInstance } from '../../utils/urlValidator';
+import { isUrlSafe, hardenAxiosInstance, safeAxios } from '../../utils/urlValidator';
 import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 // ---------------------------------------------------------------------------
@@ -258,16 +258,17 @@ class ServiceNowService {
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       try {
-        const response = await axios.post<ServiceNowOAuthTokenResponse>(
-          `${instanceUrl}/oauth_token.do`,
-          new URLSearchParams({
+        const response = await safeAxios<ServiceNowOAuthTokenResponse>({
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 15000,
+          url: `${instanceUrl}/oauth_token.do`,
+          method: 'post',
+          data: new URLSearchParams({
             grant_type: 'refresh_token',
             client_id: config.clientId!,
             client_secret: config.clientSecret!,
             refresh_token: config.refreshToken!,
           }).toString(),
-          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 15000 }
-        );
+        }, 'ServiceNow OAuth token');
 
         const { access_token, refresh_token, expires_in } = response.data;
         const tokenExpiresAt = new Date(Date.now() + expires_in * 1000).toISOString();

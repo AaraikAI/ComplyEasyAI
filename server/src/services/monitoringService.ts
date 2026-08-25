@@ -4,7 +4,6 @@ import logger from '../config/logger';
 import { AuditLogger } from '../utils/auditLogger';
 import { AppError } from '../middleware/errorHandler';
 import geminiService from './geminiService';
-import axios from 'axios';
 import { isWebhookUrlSafe, safeAxiosGet } from '../utils/urlValidator';
 
 

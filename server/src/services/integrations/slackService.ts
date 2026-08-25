@@ -3,12 +3,11 @@
  * Handles authentication, token management, and messaging with Slack
  */
 
-import axios from 'axios';
 import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, safeAxios } from '../../utils/urlValidator';
 import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 interface SlackTokenResponse {
@@ -78,18 +77,17 @@ class SlackService {
         logger.error('Slack outbound URL rejected by isUrlSafe', { url });
         throw new AppError(`Unsafe Slack URL: ${url}`, 400);
       }
-      const response = await axios.post(
+      const response = await safeAxios({
+        params: {
+          client_id: config.oauth.slack.clientId,
+          client_secret: config.oauth.slack.clientSecret,
+          code,
+          redirect_uri: config.oauth.slack.callbackUrl,
+        },
         url,
-        null,
-        {
-          params: {
-            client_id: config.oauth.slack.clientId,
-            client_secret: config.oauth.slack.clientSecret,
-            code,
-            redirect_uri: config.oauth.slack.callbackUrl,
-          },
-        }
-      );
+        method: 'post',
+        data: null,
+      }, 'Slack API');
 
       const data: SlackTokenResponse = response.data;
 
@@ -114,11 +112,13 @@ class SlackService {
         logger.error('Slack outbound URL rejected by isUrlSafe', { url });
         throw new AppError(`Unsafe Slack URL: ${url}`, 400);
       }
-      const response = await axios.get(url, {
+      const response = await safeAxios({
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-      });
+        url,
+        method: 'get',
+      }, 'Slack API');
 
       if (!response.data.ok) {
         throw new AppError(response.data.error || 'Failed to fetch user info', 500);
@@ -234,12 +234,14 @@ class SlackService {
       throw new AppError('Blocked unsafe outbound URL', 400);
     }
     try {
-      const response = await axios.get(url, {
+      const response = await safeAxios({
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         params,
-      });
+        url,
+        method: 'get',
+      }, 'Slack API');
 
       if (!response.data.ok) {
         throw new AppError(response.data.error || 'Slack API request failed', 500);
@@ -393,20 +395,19 @@ class SlackService {
         throw new AppError(`Unsafe Slack URL: ${url}`, 400);
       }
       const accessToken = decryptField(integration.accessToken);
-      const response = await axios.post(
+      const response = await safeAxios({
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
         url,
-        {
+        method: 'post',
+        data: {
           channel: channelId,
           text,
           blocks,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      }, 'Slack API');
 
       if (!response.data.ok) {
         throw new AppError(response.data.error || 'Failed to post message', 500);
@@ -543,15 +544,14 @@ class SlackService {
             throw new AppError(`Unsafe Slack URL: ${url}`, 400);
           }
           const accessToken = decryptField(integration.accessToken);
-          await axios.post(
+          await safeAxios({
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
             url,
-            null,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
+            method: 'post',
+            data: null,
+          }, 'Slack API');
         } catch (error) {
           logger.warn('Error revoking Slack token (may already be revoked)', error);
         }
@@ -672,9 +672,11 @@ class SlackService {
         throw new AppError(`Unsafe Slack URL: ${alertUrl}`, 400);
       }
       const accessToken = decryptField(integration.accessToken);
-      const response = await axios.post(
-        alertUrl,
-        {
+      const response = await safeAxios({
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        url: alertUrl,
+        method: 'post',
+        data: {
           channel: alertChannel,
           text: `[${alert.severity.toUpperCase()}] ${alert.title}`,
           blocks,
@@ -683,10 +685,7 @@ class SlackService {
             fallback: `${alert.title}: ${alert.description}`,
           }],
         },
-        {
-          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        }
-      );
+      }, 'Slack API');
 
       if (!response.data.ok) {
         throw new AppError(response.data.error || 'Failed to send Slack alert', 500);
@@ -799,18 +798,17 @@ class SlackService {
         throw new AppError(`Unsafe Slack URL: ${digestUrl}`, 400);
       }
       const accessToken = decryptField(integration.accessToken);
-      await axios.post(
-        digestUrl,
-        {
+      await safeAxios({
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        url: digestUrl,
+        method: 'post',
+        data: {
           channel,
           text: `Compliance Digest - ${digest.period}: Score ${digest.overallScore}%`,
           blocks,
           attachments: [{ color: scoreColor, fallback: `Score: ${digest.overallScore}%` }],
         },
-        {
-          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        }
-      );
+      }, 'Slack API');
 
       logger.info(`[Slack] Compliance digest sent for org ${organizationId}`);
       return { success: true };

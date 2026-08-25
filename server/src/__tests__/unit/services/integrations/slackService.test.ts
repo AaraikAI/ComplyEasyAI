@@ -5,16 +5,24 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
-// Mock axios (the service uses axios, not @slack/web-api)
+// The service no longer calls axios directly: every outbound request goes
+// through safeAxios, which validates the URL (including DNS resolution) and
+// re-checks each redirect hop. Mock at that boundary instead, routing by the
+// method on the config object so the per-test expectations below are unchanged.
+//
+// The factory body and isUrlSafe are PLAIN functions on purpose: jest.config.js
+// sets resetMocks/restoreMocks, which wipes implementations attached at module
+// load. Only the inner jest.fn()s are reset, and each test re-establishes those.
 const mockAxiosGet = jest.fn() as jest.Mock<any>;
 const mockAxiosPost = jest.fn() as jest.Mock<any>;
 
-jest.mock('axios', () => ({
+jest.mock('../../../../utils/urlValidator', () => ({
   __esModule: true,
-  default: {
-    get: mockAxiosGet,
-    post: mockAxiosPost,
-  },
+  isUrlSafe: () => true,
+  safeAxios: (config: any, ...rest: any[]) =>
+    String(config?.method ?? 'get').toLowerCase() === 'post'
+      ? mockAxiosPost(config, ...rest)
+      : mockAxiosGet(config, ...rest),
 }));
 
 jest.mock('../../../../config', () => ({

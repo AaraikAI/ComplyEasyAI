@@ -4,7 +4,6 @@
  * Integrates with CI/CD pipelines for continuous compliance checks
  */
 
-import axios from 'axios';
 import crypto from 'crypto';
 import { execFile } from 'child_process';
 import * as fs from 'fs';
@@ -14,7 +13,7 @@ import { promisify } from 'util';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, safeAxios } from '../../utils/urlValidator';
 
 const execFileAsync = promisify(execFile);
 
@@ -356,22 +355,25 @@ class ComplianceAsCodeService {
       throw new AppError('OPA policy URL is unsafe', 400);
     }
     try {
-      await axios.put(policyUrl, rego, {
+      await safeAxios({
         headers: {
           'Content-Type': 'text/plain',
           ...(process.env.OPA_AUTH_TOKEN ? { Authorization: `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {}),
         },
         timeout: 5000,
-      });
+        url: policyUrl,
+        method: 'put',
+        data: rego,
+      }, 'OPA policy API');
       // Remove the throwaway validation policy (best-effort).
-      await axios
-        .delete(policyUrl, {
-          headers: process.env.OPA_AUTH_TOKEN ? { Authorization: `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {},
-          timeout: 5000,
-        })
-        .catch(() => {
-          // Ignore cleanup failures for the temporary validation policy.
-        });
+      await safeAxios({
+        headers: process.env.OPA_AUTH_TOKEN ? { Authorization: `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {},
+        timeout: 5000,
+        url: policyUrl,
+        method: 'delete',
+      }, 'OPA policy API').catch(() => {
+        // Ignore cleanup failures for the temporary validation policy.
+      });
       return { ok: true };
     } catch (error: any) {
       const status = error?.response?.status;
@@ -401,17 +403,16 @@ class ComplianceAsCodeService {
       if (!isUrlSafe(policyUrl)) {
         throw new AppError('OPA policy URL is unsafe', 400);
       }
-      await axios.put(
-        policyUrl,
-        rego,
-        {
-          headers: { 
-            'Content-Type': 'text/plain',
-            ...(process.env.OPA_AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {}),
-          },
-          timeout: 5000,
-        }
-      );
+      await safeAxios({
+        headers: {
+          'Content-Type': 'text/plain',
+          ...(process.env.OPA_AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {}),
+        },
+        timeout: 5000,
+        url: policyUrl,
+        method: 'put',
+        data: rego,
+      }, 'OPA policy API');
       logger.info(`Uploaded policy ${policyId} to OPA`);
     } catch (error: any) {
       // Production: Fail if OPA unavailable
@@ -452,17 +453,16 @@ class ComplianceAsCodeService {
       if (!isUrlSafe(dataUrl)) {
         throw new AppError('OPA data URL is unsafe', 400);
       }
-      const response = await axios.post(
-        dataUrl,
-        { input },
-        {
-          headers: { 
-            'Content-Type': 'application/json',
-            ...(process.env.OPA_AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {}),
-          },
-          timeout: 10000,
-        }
-      ).catch((error) => {
+      const response = await safeAxios({
+        headers: {
+          'Content-Type': 'application/json',
+          ...(process.env.OPA_AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {}),
+        },
+        timeout: 10000,
+        url: dataUrl,
+        method: 'post',
+        data: { input },
+      }, 'OPA policy API').catch((error) => {
         // Production: Fail if OPA unavailable
         if (process.env.NODE_ENV === 'production') {
           logger.error('OPA server unavailable in production', error);
@@ -798,9 +798,16 @@ class ComplianceAsCodeService {
           return;
         }
 
-        await axios.post(
-          githubCheckUrl,
-          {
+        await safeAxios({
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+          timeout: 10000,
+          url: githubCheckUrl,
+          method: 'post',
+          data: {
             name: 'Compliance Policy Check',
             head_sha: headSha,
             status: 'completed',
@@ -812,15 +819,7 @@ class ComplianceAsCodeService {
             },
             completed_at: new Date().toISOString(),
           },
-          {
-            headers: {
-              'Authorization': `Bearer ${githubToken}`,
-              'Accept': 'application/vnd.github+json',
-              'X-GitHub-Api-Version': '2022-11-28',
-            },
-            timeout: 10000,
-          }
-        );
+        }, 'OPA policy API');
 
         logger.info(`[ComplianceAsCode] Posted check run to GitHub ${repoFullName}@${headSha}: ${status}`);
       } else if (provider === 'gitlab') {
@@ -847,22 +846,21 @@ class ComplianceAsCodeService {
           return;
         }
 
-        await axios.post(
-          gitlabStatusUrl,
-          {
+        await safeAxios({
+          headers: {
+            'PRIVATE-TOKEN': gitlabToken,
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000,
+          url: gitlabStatusUrl,
+          method: 'post',
+          data: {
             state: evaluation.allowed ? 'success' : 'failed',
             name: 'compliance-policy-check',
             description: `Compliance Check: ${status} (${evaluation.violations.length} violation(s))`,
             target_url: undefined, // Could be set to a compliance dashboard URL
           },
-          {
-            headers: {
-              'PRIVATE-TOKEN': gitlabToken,
-              'Content-Type': 'application/json',
-            },
-            timeout: 10000,
-          }
-        );
+        }, 'OPA policy API');
 
         logger.info(`[ComplianceAsCode] Posted commit status to GitLab project ${projectId}@${commitSha}: ${status}`);
       } else {
@@ -1468,11 +1466,16 @@ allow {
         throw new AppError('OPA policy delete URL is unsafe', 400);
       }
       if (process.env.NODE_ENV === 'production') {
-        await axios.delete(deleteUrl, {
+        await safeAxios({
           headers: process.env.OPA_AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {},
-        });
+          url: deleteUrl,
+          method: 'delete',
+        }, 'OPA policy API');
       } else {
-        await axios.delete(deleteUrl).catch(() => {
+        await safeAxios({
+          url: deleteUrl,
+          method: 'delete',
+        }, 'OPA policy API').catch(() => {
           logger.warn('OPA server not available, policy deleted from database only');
         });
       }

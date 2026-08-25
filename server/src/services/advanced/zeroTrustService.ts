@@ -525,7 +525,6 @@ class ZeroTrustService {
       const abuseIPDBKey = process.env.ABUSEIPDB_API_KEY;
       if (abuseIPDBKey) {
         try {
-          const axios = require('axios');
           if (!isUrlSafe('https://api.abuseipdb.com/api/v2/check')) {
             throw new AppError('AbuseIPDB URL is unsafe', 400);
           }
@@ -578,7 +577,6 @@ class ZeroTrustService {
       const virusTotalKey = process.env.VIRUSTOTAL_API_KEY;
       if (virusTotalKey) {
         try {
-          const axios = require('axios');
           if (!isUrlSafe('https://www.virustotal.com/vtapi/v2/ip-address/report')) {
             throw new AppError('VirusTotal URL is unsafe', 400);
           }

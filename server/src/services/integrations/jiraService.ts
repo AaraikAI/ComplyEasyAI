@@ -3,12 +3,11 @@
  * Handles authentication, token management, and issue tracking with Jira
  */
 
-import axios from 'axios';
 import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, safeAxios } from '../../utils/urlValidator';
 import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 interface JiraTokenResponse {
@@ -66,19 +65,18 @@ class JiraService {
         logger.error('Jira outbound URL rejected by isUrlSafe', { url });
         throw new AppError(`Unsafe Jira URL: ${url}`, 400);
       }
-      const response = await axios.post(
+      const response = await safeAxios({
+        headers: { 'Content-Type': 'application/json' },
         url,
-        {
+        method: 'post',
+        data: {
           grant_type: 'authorization_code',
           client_id: config.oauth.jira.clientId,
           client_secret: config.oauth.jira.clientSecret,
           code,
           redirect_uri: config.oauth.jira.callbackUrl,
         },
-        {
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      }, 'Jira API');
 
       const data: JiraTokenResponse = response.data;
 
@@ -105,18 +103,17 @@ class JiraService {
       }
       // Caller may pass an encrypted refresh token from the DB; ensure plaintext is used in the API call.
       const plaintextRefreshToken = decryptField(refreshToken);
-      const response = await axios.post(
+      const response = await safeAxios({
+        headers: { 'Content-Type': 'application/json' },
         url,
-        {
+        method: 'post',
+        data: {
           grant_type: 'refresh_token',
           client_id: config.oauth.jira.clientId,
           client_secret: config.oauth.jira.clientSecret,
           refresh_token: plaintextRefreshToken,
         },
-        {
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      }, 'Jira API');
 
       return response.data;
     } catch (error) {
@@ -135,15 +132,14 @@ class JiraService {
         logger.error('Jira outbound URL rejected by isUrlSafe', { url });
         throw new AppError(`Unsafe Jira URL: ${url}`, 400);
       }
-      const response = await axios.get(
+      const response = await safeAxios({
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
         url,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            Accept: 'application/json',
-          },
-        }
-      );
+        method: 'get',
+      }, 'Jira API');
 
       return response.data;
     } catch (error) {
@@ -352,16 +348,15 @@ class JiraService {
       throw new AppError('Blocked unsafe outbound URL', 400);
     }
     try {
-      const response = await axios.get(
+      const response = await safeAxios({
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+        params,
         url,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            Accept: 'application/json',
-          },
-          params,
-        }
-      );
+        method: 'get',
+      }, 'Jira API');
 
       return response.data;
     } catch (error: any) {
@@ -464,9 +459,14 @@ class JiraService {
         logger.error('Jira outbound URL rejected by isUrlSafe', { url, cloudId });
         throw new AppError(`Unsafe Jira URL: ${url}`, 400);
       }
-      const response = await axios.post(
+      const response = await safeAxios({
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
         url,
-        {
+        method: 'post',
+        data: {
           fields: {
             project: {
               key: projectKey,
@@ -497,13 +497,7 @@ class JiraService {
               : undefined,
           },
         },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      }, 'Jira API');
 
       logger.info(`Created Jira issue ${response.data.key} for org ${organizationId}`);
 
@@ -823,10 +817,11 @@ class JiraService {
         throw new AppError(`Unsafe Jira URL: ${transitionsUrl}`, 400);
       }
       // Get available transitions
-      const transitionsResponse = await axios.get(
-        transitionsUrl,
-        { headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } }
-      );
+      const transitionsResponse = await safeAxios({
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+        url: transitionsUrl,
+        method: 'get',
+      }, 'Jira API');
 
       const transitions = transitionsResponse.data.transitions || [];
       const targetTransition = transitions.find(
@@ -835,11 +830,12 @@ class JiraService {
       );
 
       if (targetTransition) {
-        await axios.post(
-          transitionsUrl,
-          { transition: { id: targetTransition.id } },
-          { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
-        );
+        await safeAxios({
+          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          url: transitionsUrl,
+          method: 'post',
+          data: { transition: { id: targetTransition.id } },
+        }, 'Jira API');
       }
 
       // Add comment if provided
@@ -849,17 +845,18 @@ class JiraService {
           logger.error('Jira outbound URL rejected by isUrlSafe', { url: commentUrl, cloudId, issueKey });
           throw new AppError(`Unsafe Jira URL: ${commentUrl}`, 400);
         }
-        await axios.post(
-          commentUrl,
-          {
+        await safeAxios({
+          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          url: commentUrl,
+          method: 'post',
+          data: {
             body: {
               type: 'doc',
               version: 1,
               content: [{ type: 'paragraph', content: [{ type: 'text', text: comment }] }],
             },
           },
-          { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
-        );
+        }, 'Jira API');
       }
 
       logger.info(`[Jira] Issue ${issueKey} updated to status: ${status}`);
