@@ -859,18 +859,30 @@ jobs:
           aws s3 cp /tmp/backup.sql.gz "s3://${BACKUP_BUCKET}/${BACKUP_KEY}"
           rm -f /tmp/backup.sql.gz
 
-      # `prisma migrate deploy` needs only the CLI, the schema and DATABASE_URL.
-      # It previously ran behind `npm ci --omit=dev`, which installed 600+
-      # production packages (aws-sdk, tensorflow, sharp, …) purely to reach a
-      # CLI that --omit=dev does not even install, because `prisma` is a
-      # devDependency. `npx prisma` therefore downloaded whatever prisma@latest
-      # happened to be, meaning production migrations ran on a FLOATING CLI
-      # version that no commit here pinned. The version is now read from the
-      # lockfile so the CLI always matches the repo.
+      # `prisma migrate deploy` needs the CLI, the schema, DATABASE_URL — and a
+      # server/node_modules, because prisma.config.ts imports `prisma/config`
+      # and `dotenv`. Node resolves both of those from server/, NOT from the
+      # temporary directory that `npx --yes prisma@X` installs into, so without
+      # them present here the CLI cannot load its own config file and every
+      # attempt dies with "Cannot find module 'dotenv/config'" (run
+      # 31634406344, which blocked the deploy of dcdd40b6 entirely).
       #
-      # `prisma generate` was also dropped: it writes the client to
-      # ../src/generated/prisma/client on the runner, which is discarded — the
-      # deployed image already contains generated code from the Docker build.
+      # Installing only those two packages, at the versions the lockfile pins,
+      # costs ~90 packages and a few seconds — versus the 600+ (aws-sdk,
+      # tensorflow, sharp) that `npm ci --omit=dev` pulled in to reach the same
+      # place. `--prefix` is load-bearing: it stops npm reifying the whole
+      # project tree from server/package.json. The install is then linked in as
+      # server/node_modules so module resolution finds it.
+      #
+      # Running that binary directly instead of through npx also takes a
+      # registry round-trip off the critical path of every production deploy.
+      #
+      # NOTE for anyone tempted to slim this further: `prisma` looks like a pure
+      # devDependency in server/package.json, but @prisma/client (a production
+      # dependency) declares it as `peerDependency: "*"`, so npm auto-installs
+      # it and the lockfile marks node_modules/prisma as dev:false. That is why
+      # the older `npm ci --omit=dev` step worked, and why `npx prisma` ran the
+      # lockfile-pinned CLI rather than a floating latest.
       #
       # Retried because this sits on the critical path of every production
       # deploy and a single transient ECONNRESET used to fail the whole thing.
@@ -882,10 +894,28 @@ jobs:
           cd server
 
           PRISMA_VERSION=$(node -p "require('./package-lock.json').packages['node_modules/prisma'].version")
-          echo "Using prisma@$PRISMA_VERSION (pinned from package-lock.json)"
+          DOTENV_VERSION=$(node -p "require('./package-lock.json').packages['node_modules/dotenv'].version")
+          echo "Using prisma@$PRISMA_VERSION with dotenv@$DOTENV_VERSION (pinned from package-lock.json)"
+
+          CLI_DIR="$RUNNER_TEMP/prisma-cli"
+          npm install --prefix "$CLI_DIR" --no-audit --no-fund --ignore-scripts \
+            "prisma@$PRISMA_VERSION" "dotenv@$DOTENV_VERSION"
+
+          # server/node_modules is gitignored and absent on a fresh checkout;
+          # replacing it keeps this step idempotent when a job is re-run.
+          rm -rf node_modules
+          ln -s "$CLI_DIR/node_modules" node_modules
+
+          # Fail here, with an actionable message, rather than inside Prisma's
+          # config loader — whose "Cannot find module" says nothing about what
+          # to do next.
+          node -e "require.resolve('prisma/config'); require.resolve('dotenv/config')" || {
+            echo "::error::prisma.config.ts imports are not resolvable from server/. The migration CLI cannot load its config without them."
+            exit 1
+          }
 
           for attempt in 1 2 3; do
-            if npx --yes "prisma@$PRISMA_VERSION" migrate deploy; then
+            if "$CLI_DIR/node_modules/.bin/prisma" migrate deploy; then
               echo "Migrations applied on attempt $attempt."
               exit 0
             fi
