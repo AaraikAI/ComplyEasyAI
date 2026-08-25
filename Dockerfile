@@ -107,14 +107,25 @@ COPY server/package.json server/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
 # `--ignore-scripts` above is a supply-chain control, but it also skips the
-# install script that produces re2's native binding. re2 ships no prebuilt
-# binary (its `files` list has no build/ directory) and zeroTrustService imports
-# it at module load, so without this the container throws
+# install script that produces re2's native binding, and zeroTrustService
+# imports re2 at module load — so without this the container throws
 # "Cannot find module .../re2.node" before the server ever listens. Rebuild only
 # this one vetted package, with the toolchain added and removed in the same
 # layer so it never reaches the final image.
-RUN apk add --no-cache --virtual .native-build-deps python3 make g++ \
+#
+# `npm rebuild re2` has TWO paths and both must work. re2's npm tarball carries
+# no binding (its `files` list has no build/), so the install script first tries
+# to download a prebuilt from the project's GitHub releases — normally
+# linux-musl-x64-<abi>.br, which does exist for this version — and only compiles
+# locally when that download fails. That fallback is not optional: a single blip
+# against the GitHub release CDN drops every image build into it (run
+# 31634528095). Compiling needs `linux-headers`, because re2 vendors abseil,
+# whose direct_mmap.h includes <linux/unistd.h>; musl does not provide it and
+# python3/make/g++ alone leave the build dying on
+# "fatal error: linux/unistd.h: No such file or directory".
+RUN apk add --no-cache --virtual .native-build-deps python3 make g++ linux-headers \
  && npm rebuild re2 \
+ && node -e "new (require('re2'))('^ok')" \
  && apk del .native-build-deps
 
 COPY server/prisma ./prisma
