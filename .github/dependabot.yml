@@ -14,6 +14,13 @@ updates:
         versions: [">=10.0.0"]
       - dependency-name: "typescript"
         versions: [">=6.0.0"]
+    # Majors are deliberately kept OUT of the groups. A grouped PR is
+    # all-or-nothing, so one breaking major makes the whole batch unmergeable:
+    # #420 bundled 47 routine AWS SDK patches with stripe 21->22 and
+    # googleapis 171->176, and failed Lint & Type Check on the two majors,
+    # blocking every patch in the group. Excluding majors here does NOT ignore
+    # them - Dependabot opens an individual PR per major, which is what a
+    # breaking change deserves.
     groups:
       production-dependencies:
         patterns:
@@ -24,10 +31,16 @@ updates:
           - "typescript"
           - "vitest"
           - "@testing-library/*"
+        update-types:
+          - "minor"
+          - "patch"
       dev-dependencies:
         dependency-type: "development"
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "frontend"
@@ -46,6 +59,13 @@ updates:
         versions: [">=6.0.0"]
       - dependency-name: "eslint"
         versions: [">=10.0.0"]
+    # Majors are deliberately kept OUT of the groups. A grouped PR is
+    # all-or-nothing, so one breaking major makes the whole batch unmergeable:
+    # #420 bundled 47 routine AWS SDK patches with stripe 21->22 and
+    # googleapis 171->176, and failed Lint & Type Check on the two majors,
+    # blocking every patch in the group. Excluding majors here does NOT ignore
+    # them - Dependabot opens an individual PR per major, which is what a
+    # breaking change deserves.
     groups:
       production-dependencies:
         patterns:
@@ -56,10 +76,16 @@ updates:
           - "typescript"
           - "jest*"
           - "ts-jest"
+        update-types:
+          - "minor"
+          - "patch"
       dev-dependencies:
         dependency-type: "development"
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "backend"
