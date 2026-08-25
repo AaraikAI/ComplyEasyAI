@@ -60,7 +60,7 @@ jobs:
         run: node scripts/self-improvement/monitor-sources.mjs --out "$RUNNER_TEMP/si" || true
 
       - name: Run compliance agent
-        uses: anthropics/claude-code-action@558b1d6cab4085c7753fe402c10bef0fbb92ac7a # v1
+        uses: anthropics/claude-code-action@24dcd50c0568f0fc9e9211213a4fd2d9eb15c4e0 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: '--max-turns 30'
