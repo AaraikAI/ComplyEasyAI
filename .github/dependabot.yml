@@ -142,5 +142,31 @@ updates:
       # which breaks the mobile jest preset. Hold it until react-native moves.
       - dependency-name: "@react-native/jest-preset"
         versions: [">=0.86.0"]
+      # Expo SDK 57 is a coordinated SDK migration, not a dependency bump. The
+      # tree is coherently on SDK 56 - expo, expo-secure-store, expo-status-bar
+      # and jest-expo all 56.x against react-native 0.85.2 with a matching
+      # @react-native/jest-preset. Dependabot proposes the family piecemeal
+      # (#436 expo, #431 jest-expo, #433 expo-status-bar -> 57, while
+      # expo-secure-store stays on 56), and expo's peerDependencies are all "*",
+      # so npm cannot reject the mismatched tree - it surfaces at runtime. The
+      # 55->56 bump with jest-expo left behind threw "Super expression must
+      # either be null or a function".
+      #
+      # Empirically: #431 (jest-expo 57 against expo 56) failed CI, but #436
+      # (expo 57 alone) PASSED - which is the more dangerous case, because
+      # Build iOS and Build Android are skipped on PRs, so no native build ever
+      # validates an SDK major. Green checks are not evidence here.
+      #
+      # Hold the whole family until an SDK 57 migration is done deliberately:
+      # every expo-* package, react-native and @react-native/jest-preset moved
+      # together, with a native build and device testing.
+      - dependency-name: "expo"
+        versions: [">=57.0.0"]
+      - dependency-name: "expo-status-bar"
+        versions: [">=57.0.0"]
+      - dependency-name: "expo-secure-store"
+        versions: [">=57.0.0"]
+      - dependency-name: "jest-expo"
+        versions: [">=57.0.0"]
     commit-message:
       prefix: "chore(deps):"
