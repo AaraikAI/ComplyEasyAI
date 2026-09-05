@@ -712,8 +712,18 @@ jobs:
   approve-production:
     name: Approve Production Deploy
     runs-on: ubuntu-latest
-    needs: [sign-images, security]
-    if: github.ref == 'refs/heads/main'
+    # e2e-staging is the gate once a staging environment is configured: a failing
+    # staging suite blocks this approval. While staging is NOT configured the E2E
+    # job is skipped and production stays approvable exactly as before — hence
+    # `always()` with explicit result checks; a plain `needs` would skip this job
+    # whenever e2e-staging is skipped.
+    needs: [sign-images, security, e2e-staging]
+    if: >-
+      always()
+      && github.ref == 'refs/heads/main'
+      && needs.sign-images.result == 'success'
+      && needs.security.result == 'success'
+      && (needs.e2e-staging.result == 'success' || needs.e2e-staging.result == 'skipped')
     environment:
       name: production-approval
     steps:
@@ -1103,14 +1113,63 @@ jobs:
   # ============================================
   # DEPLOY — Staging (develop branch)
   # ============================================
+  # STAGING GATE — main branch only.
+  # Deploy to staging, run the FULL E2E suite against it, and only then allow
+  # the production approval. Until the staging secrets exist, these jobs are
+  # skipped and production is approvable exactly as before.
+  # See docs/STAGING_ENVIRONMENT.md for provisioning.
+  # ============================================
+  check-staging-config:
+    name: Check staging config
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+      base_url: ${{ steps.check.outputs.base_url }}
+    steps:
+      - id: check
+        # Presence only — values are never printed. Same snapshot caveat as the
+        # production check: a secret added after a run starts is invisible to it.
+        env:
+          AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SUPA_URL: ${{ secrets.STAGING_SUPABASE_DATABASE_URL }}
+          S3_BUCKET: ${{ secrets.STAGING_S3_FRONTEND_BUCKET }}
+          CF_DIST: ${{ secrets.STAGING_CLOUDFRONT_DISTRIBUTION_ID }}
+          BASE_URL: ${{ vars.STAGING_BASE_URL }}
+        run: |
+          base="${BASE_URL:-https://staging.complyeasyai.com}"
+          echo "base_url=$base" >> "$GITHUB_OUTPUT"
+          if [ -n "$AWS_KEY" ] && [ -n "$AWS_SECRET" ] && [ -n "$SUPA_URL" ] \
+             && [ -n "$S3_BUCKET" ] && [ -n "$CF_DIST" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "Staging secrets present — Deploy to Staging and E2E (staging) will run and gate production."
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            for pair in "STAGING_SUPABASE_DATABASE_URL:$SUPA_URL" "STAGING_S3_FRONTEND_BUCKET:$S3_BUCKET" \
+                        "STAGING_CLOUDFRONT_DISTRIBUTION_ID:$CF_DIST" "AWS_ACCESS_KEY_ID:$AWS_KEY" \
+                        "AWS_SECRET_ACCESS_KEY:$AWS_SECRET"; do
+              name="${pair%%:*}"; value="${pair#*:}"
+              [ -z "$value" ] && echo "  MISSING: $name"
+            done
+            echo "::notice title=Staging not configured::Staging deploy and the E2E gate are skipped; production approval proceeds as before. See docs/STAGING_ENVIRONMENT.md."
+          fi
+
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [docker, security]
-    if: github.ref == 'refs/heads/develop'
+    needs: [sign-images, security, check-staging-config]
+    if: github.ref == 'refs/heads/main' && needs.check-staging-config.outputs.configured == 'true'
     environment:
       name: staging
-      url: https://staging.complyeasyai.com
+      url: ${{ needs.check-staging-config.outputs.base_url }}
+    env:
+      STAGING_ECR_REPO: complyeasy-staging-api
+      STAGING_CLUSTER: complyeasy-staging
+      STAGING_SERVICE: complyeasy-staging-api
+      # ECS Express Mode names the task-definition family <cluster>-<service>.
+      STAGING_TASKDEF_FAMILY: complyeasy-staging-complyeasy-staging-api
+      STAGING_BASE_URL: ${{ needs.check-staging-config.outputs.base_url }}
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -1126,26 +1185,256 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2.1.6
 
-      - name: Push to ECR + deploy
+      # The same immutable image the production job deploys: built once by the
+      # docker job, scanned and signed, then retagged into the staging repository.
+      - name: Push API image to ECR
         env:
           ECR: ${{ steps.ecr.outputs.registry }}
-          ECR_REPO: complyeasy-staging-api
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:develop
-          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:develop $ECR/$ECR_REPO:staging
-          docker push $ECR/$ECR_REPO:staging
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }} $ECR/$STAGING_ECR_REPO:${{ github.sha }}
+          docker push $ECR/$STAGING_ECR_REPO:${{ github.sha }}
 
-      - name: Run migrations (Supabase)
-        run: cd server && npm ci --omit=dev && npx prisma generate && npx prisma migrate deploy
+      # Staging is a disposable E2E target. Start from an empty schema every run so
+      # the suite's empty-state assertions hold and no run inherits another's data.
+      # `migrate deploy` cannot rebuild the schema — the tracked migrations create
+      # 9 of 283 tables — so the datamodel is pushed directly, exactly as the
+      # PR-level E2E job does against its throwaway Postgres.
+      - name: Reset the staging database and push the schema
         env:
-          DATABASE_URL: ${{ secrets.SUPABASE_STAGING_DATABASE_URL }}
-
-      - name: Deploy to staging ECS
+          DATABASE_URL: ${{ secrets.STAGING_SUPABASE_DATABASE_URL }}
         run: |
-          aws ecs update-service \
-            --cluster complyeasy-staging \
-            --service complyeasy-staging-api \
-            --force-new-deployment
+          set -euo pipefail
+          cd server
+
+          # Pinned CLI install, identical to the production migrations step:
+          # prisma.config.ts imports `prisma/config` and `dotenv`, which must
+          # resolve from server/node_modules.
+          PRISMA_VERSION=$(node -p "require('./package-lock.json').packages['node_modules/prisma'].version")
+          DOTENV_VERSION=$(node -p "require('./package-lock.json').packages['node_modules/dotenv'].version")
+          CLI_DIR="$RUNNER_TEMP/prisma-cli"
+          npm install --prefix "$CLI_DIR" --no-audit --no-fund --ignore-scripts \
+            "prisma@$PRISMA_VERSION" "dotenv@$DOTENV_VERSION"
+          rm -rf node_modules
+          ln -s "$CLI_DIR/node_modules" node_modules
+          node -e "require.resolve('prisma/config'); require.resolve('dotenv/config')"
+          PRISMA="$CLI_DIR/node_modules/.bin/prisma"
+
+          printf 'DROP SCHEMA IF EXISTS public CASCADE;\nCREATE SCHEMA public;\nCREATE EXTENSION IF NOT EXISTS "uuid-ossp";\n' \
+            | "$PRISMA" db execute --stdin
+          "$PRISMA" db push --accept-data-loss --skip-generate
+          echo "Staging schema reset and pushed."
+
+      - name: Resolve AWS account ID
+        id: acct
+        run: echo "id=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_OUTPUT"
+
+      # Derive the next task definition from the one the service is running and
+      # change ONLY the image. Everything else — the Secrets Manager references
+      # for DATABASE_URL/JWT_SECRET/ENCRYPTION_KEY/REDIS_URL/etc., the env vars,
+      # cpu/memory, and the awslogs group — is carried over untouched.
+      #
+      # This matters because the Express Mode action builds primaryContainer
+      # purely from its own inputs and never reads the running service's
+      # container config, so deploying with `image:` alone would register a task
+      # definition with NO secrets and NO environment, and silently fall back to
+      # the Express defaults of 256 CPU / 512 MiB. The container would then die
+      # at boot on a missing DATABASE_URL. Deriving the revision here also means
+      # a secret added in the console survives the next deploy automatically,
+      # and no account ID or secret ARN has to be committed to this public repo.
+      - name: Register task definition revision with the new image
+        id: taskdef
+        env:
+          ECR: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.STAGING_TASKDEF_FAMILY }} \
+            --query 'taskDefinition' --output json > /tmp/td-current.json
+
+          # Strip the server-managed fields RegisterTaskDefinition rejects, and
+          # drop taskRoleArn when it is empty (an empty ARN is not valid input).
+          jq --arg img "$ECR/${{ env.STAGING_ECR_REPO }}:$IMAGE_TAG" '
+            .containerDefinitions[0].image = $img
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                  .compatibilities, .registeredAt, .registeredBy, .deregisteredAt)
+            | if (.taskRoleArn // "") == "" then del(.taskRoleArn) else . end
+          ' /tmp/td-current.json > /tmp/td-next.json
+
+          ARN=$(aws ecs register-task-definition \
+                  --cli-input-json file:///tmp/td-next.json \
+                  --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "arn=$ARN" >> "$GITHUB_OUTPUT"
+          echo "Registered $ARN"
+
+          # Fail loudly here rather than after a half-applied deploy.
+          for k in DATABASE_URL JWT_SECRET ENCRYPTION_KEY REDIS_URL; do
+            jq -e --arg k "$k" \
+              '.containerDefinitions[0].secrets | map(.name) | index($k)' \
+              /tmp/td-next.json > /dev/null \
+              || { echo "::error::$k missing from the new task definition"; exit 1; }
+          done
+
+      # Deployed with the AWS CLI rather than aws-actions/amazon-ecs-deploy-express-service.
+      # That action's latest RELEASE (v1.2.2 = 7c48a2de) has no task-definition-arn
+      # input — it exists only on unreleased main — and its other inputs rebuild
+      # primaryContainer from scratch, which silently drops every secret and env
+      # var and falls back to 256 CPU / 512 MiB. UpdateExpressGatewayService takes
+      # the task definition directly and is in the released CLI, so the revision
+      # derived above is deployed exactly as registered.
+      - name: Deploy API to ECS Express Mode
+        env:
+          TD_ARN: ${{ steps.taskdef.outputs.arn }}
+          SVC_ARN: arn:aws:ecs:${{ env.AWS_REGION }}:${{ steps.acct.outputs.id }}:service/${{ env.STAGING_CLUSTER }}/${{ env.STAGING_ECR_REPO }}
+        run: |
+          set -euo pipefail
+
+          if ! aws ecs update-express-gateway-service help >/dev/null 2>&1; then
+            echo "::error::This runner's AWS CLI ($(aws --version 2>&1)) has no ecs update-express-gateway-service. Express Mode needs a newer CLI."
+            exit 1
+          fi
+
+          echo "Deploying $TD_ARN to $SVC_ARN"
+          aws ecs update-express-gateway-service \
+            --service-arn "$SVC_ARN" \
+            --task-definition-arn "$TD_ARN" >/dev/null
+
+          # Wait for convergence ourselves, since the CLI returns immediately.
+          # While a rollout is in flight the service lists BOTH the old and the
+          # new revision in activeConfigurations; it is done when the new ARN is
+          # the only one left and the service is ACTIVE.
+          for i in $(seq 1 60); do
+            OUT=$(aws ecs describe-express-gateway-service --service-arn "$SVC_ARN" --output json)
+            CODE=$(printf '%s' "$OUT" | jq -r '.service.status.statusCode // "UNKNOWN"')
+            ARNS=$(printf '%s' "$OUT" | jq -r '[.service.activeConfigurations[]?.taskDefinitionArn] | unique | join(",")')
+            echo "  [$i/60] status=$CODE active=${ARNS:-<none>}"
+            if [ "$CODE" = "ACTIVE" ] && [ "$ARNS" = "$TD_ARN" ]; then
+              echo "Service converged on the new task definition."
+              exit 0
+            fi
+
+            # A newer deploy can legitimately supersede this one. The
+            # concurrency group above makes that rare, but a re-run or a
+            # workflow_dispatch can still overlap. If OUR revision has been
+            # dropped from activeConfigurations and a HIGHER revision is
+            # serving, the service moved on deliberately and the rollout
+            # succeeded — just not on our revision. Previously this waited out
+            # the full 15 minutes and then failed with a message blaming a
+            # container boot crash, which sent debugging in entirely the wrong
+            # direction (run 31529113468).
+            if [ "$CODE" = "ACTIVE" ] && [ -n "$ARNS" ] \
+               && ! printf '%s' "$ARNS" | tr ',' '\n' | grep -qxF "$TD_ARN"; then
+              MY_REV=${TD_ARN##*:}
+              NEWEST=$(printf '%s' "$ARNS" | tr ',' '\n' | sed 's/.*://' | sort -n | tail -1)
+              if [ -n "$NEWEST" ] && [ "$NEWEST" -gt "$MY_REV" ] 2>/dev/null; then
+                echo "::notice::Superseded by task definition revision $NEWEST (this deploy registered revision $MY_REV). A newer deploy won the race; the service is ACTIVE and healthy, so this is not a failure."
+                exit 0
+              fi
+            fi
+
+            if [ "$CODE" = "INACTIVE" ]; then
+              echo "::error::Service went INACTIVE during deployment"
+              printf '%s' "$OUT" | jq -r '.service.status.statusReason // "no reason given"'
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::error::Service did not converge on $TD_ARN within 15 minutes, and no higher revision superseded it (that case exits 0 above). This is a genuine rollout failure: check the stopped task's stoppedReason and its CloudWatch log stream — a container that dies during module import reports only 'Essential container in task exited'."
+          exit 1
+
+      # The SPA is served from the same origin as the API (CloudFront routes
+      # /api/* to the Express service), so the bundle calls a relative /api.
+      # This keeps the backend's httpOnly, sameSite='strict' session cookies
+      # working — a cross-origin API URL would silently break login in prod.
+      - name: Build frontend
+        run: npm ci && npm run build
+        env:
+          VITE_API_URL: /api
+
+      - name: Deploy frontend to S3 + CloudFront
+        run: |
+          # 1) Upload hashed assets with a 1-year immutable cache. Every HTML
+          #    file (root index.html AND nested prerendered per-route
+          #    index.html) is excluded here so it never inherits immutable
+          #    caching, then re-uploaded with no-cache below.
+          # --exclude "backups/*" is belt-and-braces: backups now go to a separate
+          # private bucket, but --delete would otherwise erase anything historic
+          # left under that prefix here.
+          aws s3 sync ./dist s3://${{ secrets.STAGING_S3_FRONTEND_BUCKET }} \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html" --exclude "*.json" --exclude "backups/*"
+          # 2) Re-upload all HTML (root + nested prerendered shells) with a
+          #    no-cache policy so deploys are picked up immediately. The
+          #    recursive copy with --exclude "*" --include "*.html" covers
+          #    every index.html at any depth (e.g. /learn/index.html).
+          aws s3 cp ./dist s3://${{ secrets.STAGING_S3_FRONTEND_BUCKET }} \
+            --recursive \
+            --exclude "*" --include "*.html" \
+            --content-type "text/html" \
+            --cache-control "no-cache, no-store, must-revalidate"
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.STAGING_CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      # (No explicit wait step: the Express Mode deploy action above already
+      # blocks until the service and its deployment reach a stable state.)
+
+      - name: Verify health
+        run: |
+          # 5 minutes, not 100 seconds: the ECS rollout is already converged by
+          # this point, but the first request through CloudFront to a freshly
+          # started task can still lose a round or two.
+          for i in $(seq 1 20); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$STAGING_BASE_URL/health" || echo 000)
+            echo "  [$i/20] /health -> $STATUS"
+            [ "$STATUS" = "200" ] && echo "Healthy" && exit 0
+            sleep 15
+          done
+          echo "::error::/health never returned 200. A 503 here means the container is up but its database check is failing — check DB_CA_CERT and that DATABASE_URL uses the IPv4 pooler host."
+          exit 1
+
+  # ============================================
+  # DEPLOY — Staging (develop branch)
+
+  e2e-staging:
+    name: E2E Tests (staging)
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, check-staging-config]
+    if: github.ref == 'refs/heads/main' && needs.deploy-staging.result == 'success'
+    # The full browser suite against the real staging deployment. Run UNSHARDED on
+    # purpose: auth.setup registers and logs in once per Playwright project, and
+    # authLimiter is hard-coded at 5 attempts per window (the brute-force spec
+    # depends on it), so several shards from one runner IP would lock each other
+    # out. A real multi-vCPU backend has the headroom the PR-level shards lacked.
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the full E2E suite against staging
+        env:
+          CI: true
+          E2E_BASE_URL: ${{ needs.check-staging-config.outputs.base_url }}
+          # Specs build API URLs as `${API_URL}/api/...` and `${API_URL}/health`,
+          # so this is the origin (same-origin through CloudFront), not `/api`.
+          API_URL: ${{ needs.check-staging-config.outputs.base_url }}
+        run: npx playwright test --project=chromium --workers=2
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: playwright-report-staging
+          path: playwright-report/
+          retention-days: 14
 
   # ============================================
   # NOTIFY

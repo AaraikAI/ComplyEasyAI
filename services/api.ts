@@ -26,24 +26,54 @@ const clearAuthToken = (): void => {
   localStorage.removeItem('user_data');
 };
 
-// CSRF token for state-changing requests (double-submit cookie)
+// CSRF token for state-changing requests (double-submit cookie).
+//
+// The server issues the token AND its cookie with a 1-hour lifetime. Caching the
+// token for longer guarantees a header/cookie mismatch (403) once the cookie
+// expires — exactly what a marketing page left open in a tab, then submitted,
+// runs into. Keep the cache comfortably inside the server's lifetime.
+const CSRF_CACHE_TTL_MS = 50 * 60 * 1000;
 let csrfTokenCache: string | null = null;
+let csrfTokenCachedAt = 0;
 
 /** Clears CSRF cache (for tests only). */
 export function __clearCsrfCacheForTest(): void {
+  invalidateCsrfToken();
+}
+
+function invalidateCsrfToken(): void {
   csrfTokenCache = null;
+  csrfTokenCachedAt = 0;
 }
 
 export async function getCsrfToken(): Promise<string | null> {
-  if (csrfTokenCache) return csrfTokenCache;
+  if (csrfTokenCache && Date.now() - csrfTokenCachedAt < CSRF_CACHE_TTL_MS) return csrfTokenCache;
   try {
     const res = await fetch(`${API_BASE_URL}/csrf-token`, { credentials: 'include' });
     if (!res.ok) return null;
     const data = await res.json();
     csrfTokenCache = data.csrfToken ?? null;
+    csrfTokenCachedAt = Date.now();
     return csrfTokenCache;
   } catch {
     return null;
+  }
+}
+
+/**
+ * An HTML body on an /api path means the request never reached the API — the
+ * CDN served the SPA shell in place of a 403/404 — not that the API misbehaved.
+ * Surface that as a readable error instead of letting response.json() fail with
+ * "Unexpected token '<'".
+ */
+function throwIfHtml(response: Response, endpoint: string): void {
+  // Tolerate minimal Response-like objects (tests mock fetch without headers).
+  const contentType =
+    (typeof response.headers?.get === 'function' && response.headers.get('content-type')) || '';
+  if (/text\/html/i.test(contentType)) {
+    throw new Error(
+      `The server returned an unexpected response (HTTP ${response.status}) for ${endpoint}. Please refresh the page and try again.`
+    );
   }
 }
 
@@ -70,7 +100,8 @@ export async function csrfFetch(input: string, init: RequestInit = {}): Promise<
 async function fetchAPI<T>(
   endpoint: string,
   options: RequestInit = {},
-  timeoutMs: number = 30000 // Default 30 second timeout
+  timeoutMs: number = 30000, // Default 30 second timeout
+  retriedCsrf = false
 ): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -81,7 +112,8 @@ async function fetchAPI<T>(
   // No Authorization header needed — the backend reads the cookie.
 
   const method = (options.method || 'GET').toUpperCase();
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+  if (isMutating) {
     const csrf = await getCsrfToken();
     if (csrf) headers['X-CSRF-Token'] = csrf;
   }
@@ -102,7 +134,19 @@ async function fetchAPI<T>(
 
     if (!response.ok) {
       if (response.status === 403) {
-        csrfTokenCache = null;
+        invalidateCsrfToken();
+        // A stale or expired double-submit token is recoverable: fetch a fresh
+        // one and replay the request exactly once. Any other 403 (authorization)
+        // falls through to the normal error path.
+        if (isMutating && !retriedCsrf) {
+          const probeRes = typeof response.clone === 'function' ? response.clone() : response;
+          const probe = await probeRes.json().catch(() => null);
+          const errText = typeof probe?.error === 'string' ? probe.error : probe?.error?.message;
+          if (typeof errText === 'string' && /csrf/i.test(errText)) {
+            clearTimeout(timeoutId);
+            return fetchAPI<T>(endpoint, options, timeoutMs, true);
+          }
+        }
       }
       if (response.status === 401) {
         // A 401 from an auth-bootstrap endpoint (login / register / magic-link
@@ -170,6 +214,7 @@ async function fetchAPI<T>(
         }
       }
 
+      throwIfHtml(response, endpoint);
       const error = await response.json().catch(() => ({}));
       // Backend may return { error: "string" } or { status: 'error', error: { code, message } }
       const errorBody = error.error;
@@ -196,6 +241,7 @@ async function fetchAPI<T>(
       throw new Error(errorMessage);
     }
 
+    throwIfHtml(response, endpoint);
     const json = await response.json();
 
     // Auto-unwrap the backend's standard envelope { status: 'success', data, meta }

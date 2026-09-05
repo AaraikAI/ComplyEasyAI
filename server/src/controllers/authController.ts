@@ -71,6 +71,9 @@ function bearerAuthTokens(req: Request, accessToken: string, refreshToken: strin
   return { token: accessToken, accessToken, refreshToken };
 }
 
+// Logged once per process so an unconfigured CAPTCHA is visible without flooding the logs.
+let captchaUnconfiguredWarned = false;
+
 class AuthController {
   /**
    * Verify CAPTCHA token with the configured provider (hCaptcha or reCAPTCHA).
@@ -84,10 +87,21 @@ class AuthController {
 
     const captchaSecret = process.env.HCAPTCHA_SECRET || process.env.RECAPTCHA_SECRET;
     if (!captchaSecret) {
-      if (process.env.NODE_ENV === 'production') {
+      // CAPTCHA is an opt-in control. The web client ships no CAPTCHA widget and
+      // never sends a captchaToken, so failing closed here blocked every new
+      // sign-up and every magic link for an unknown email in production with
+      // 503 "CAPTCHA verification unavailable" — while adding no protection,
+      // because these routes are already rate-limited by authLimiter. Fail
+      // closed only when an operator explicitly asks for it.
+      if (process.env.CAPTCHA_REQUIRED === 'true') {
         throw new AppError('CAPTCHA verification unavailable', 503);
       }
-      logger.warn('[Auth] No CAPTCHA secret configured (dev mode)');
+      if (!captchaUnconfiguredWarned) {
+        captchaUnconfiguredWarned = true;
+        logger.warn(
+          '[Auth] CAPTCHA not configured; skipping verification. Set HCAPTCHA_SECRET or RECAPTCHA_SECRET (and ship the client widget) to enable it, or CAPTCHA_REQUIRED=true to fail closed.'
+        );
+      }
       return;
     }
 

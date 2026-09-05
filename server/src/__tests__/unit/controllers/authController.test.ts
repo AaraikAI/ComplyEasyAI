@@ -901,6 +901,61 @@ describe('AuthController', () => {
       }
     });
 
+    describe('CAPTCHA gating', () => {
+      const primeNewUserMocks = () => {
+        (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(null);
+        (prismaMock.organization.create as jest.Mock<any>).mockResolvedValue({ id: 'org-new' });
+        (prismaMock.user.create as jest.Mock<any>).mockResolvedValue({ id: 'u-new', email: 'new@example.com', name: 'New User' });
+        (prismaMock.magicLink.create as jest.Mock<any>).mockResolvedValue({ email: 'new@example.com', token: 'tok' });
+      };
+
+      it('registers in production when no CAPTCHA secret is configured (CAPTCHA is opt-in)', async () => {
+        process.env.NODE_ENV = 'production';
+        delete process.env.HCAPTCHA_SECRET;
+        delete process.env.RECAPTCHA_SECRET;
+        delete process.env.CAPTCHA_REQUIRED;
+        // The web client sends no captchaToken; this must not be an error.
+        mockReq.body = { email: 'new@example.com', name: 'New User' };
+        primeNewUserMocks();
+
+        await authController.register(mockReq as Request, mockRes as Response);
+
+        expect(mockRes.status).toHaveBeenCalledWith(201);
+      });
+
+      it('fails closed with 503 only when CAPTCHA_REQUIRED=true and no secret is configured', async () => {
+        process.env.NODE_ENV = 'production';
+        delete process.env.HCAPTCHA_SECRET;
+        delete process.env.RECAPTCHA_SECRET;
+        process.env.CAPTCHA_REQUIRED = 'true';
+        mockReq.body = { email: 'new@example.com', name: 'New User' };
+        primeNewUserMocks();
+
+        try {
+          await expect(
+            authController.register(mockReq as Request, mockRes as Response)
+          ).rejects.toMatchObject({ statusCode: 503, message: 'CAPTCHA verification unavailable' });
+        } finally {
+          delete process.env.CAPTCHA_REQUIRED;
+        }
+      });
+
+      it('rejects with 400 when a secret IS configured but the client sent no token', async () => {
+        process.env.NODE_ENV = 'production';
+        process.env.HCAPTCHA_SECRET = 'test-secret';
+        mockReq.body = { email: 'new@example.com', name: 'New User' };
+        primeNewUserMocks();
+
+        try {
+          await expect(
+            authController.register(mockReq as Request, mockRes as Response)
+          ).rejects.toMatchObject({ statusCode: 400, message: 'CAPTCHA verification is required' });
+        } finally {
+          delete process.env.HCAPTCHA_SECRET;
+        }
+      });
+    });
+
     it('should handle unexpected error with generic AppError', async () => {
       mockReq.body = { email: 'new@example.com', name: 'New User' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockRejectedValue(new Error('DB crash'));

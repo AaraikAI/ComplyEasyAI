@@ -85,8 +85,8 @@ vi.mock('@/contexts/OnboardingContext', () => ({
 
 import { StatusPage } from '@/components/StatusPage';
 
-// The page now renders ONLY real, live service telemetry from the /api/health
-// liveness probe. When that feed reports a `services` array, those entries are
+// The page now renders ONLY real, live service telemetry from the /health
+// liveness probe (the API's real path; /api/health never existed). When that feed reports a `services` array, those entries are
 // shown; when it does not, the page shows a neutral "live status unavailable"
 // state with a "—%" overall-uptime placeholder instead of fabricated figures.
 const LIVE_SERVICES = [
@@ -98,7 +98,7 @@ const LIVE_SERVICES = [
 
 const mockFetch = (services: any[] | null) => {
   return vi.fn((url: string) => {
-    if (typeof url === 'string' && url.startsWith('/api/health')) {
+    if (typeof url === 'string' && url.startsWith('/health')) {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve(services ? { services } : { status: 'ok' }),
@@ -133,6 +133,50 @@ describe('StatusPage', () => {
     expect(await screen.findByText('Database Cluster')).toBeTruthy();
     // All entries operational -> overall banner reflects it
     expect(screen.getByText('All Systems Operational')).toBeTruthy();
+  });
+
+  /** The API's real /health payload: a `checks` map and no `services` array. */
+  const mockHealth = (body: any, ok = true) =>
+    vi.fn((url: string) => {
+      if (typeof url === 'string' && url.startsWith('/health')) {
+        return Promise.resolve({ ok, status: ok ? 200 : 503, json: () => Promise.resolve(body) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+    });
+
+  it('derives per-component status from the /health checks map', async () => {
+    vi.stubGlobal('fetch', mockHealth({
+      status: 'healthy',
+      timestamp: '2026-09-05T00:00:00.000Z',
+      responseTime: 4,
+      checks: {
+        database: { status: 'connected', responseTime: 3 },
+        websocket: { status: 'connected' },
+        jobQueue: { status: 'ok' },
+        cache: { status: 'ok' },
+        memory: { status: 'ok' },
+        region: { status: 'ok' },
+      },
+    }));
+    render(<StatusPage />);
+    expect(await screen.findByText('Database')).toBeTruthy();
+    expect(screen.getByText('Real-time updates')).toBeTruthy();
+    expect(screen.getByText('All Systems Operational')).toBeTruthy();
+  });
+
+  it('renders a 503 health response as an outage rather than "unavailable"', async () => {
+    // /health answers 503 when a dependency is down but still carries the body.
+    vi.stubGlobal('fetch', mockHealth({
+      status: 'unhealthy',
+      responseTime: 9,
+      checks: {
+        database: { status: 'disconnected', error: 'timeout' },
+        websocket: { status: 'connected' },
+      },
+    }, false));
+    render(<StatusPage />);
+    expect(await screen.findByText('Major System Outage')).toBeTruthy();
+    expect(screen.queryByText('Live Status Unavailable')).toBeNull();
   });
 
   it('displays AI Processing Engine status from the live feed', async () => {
