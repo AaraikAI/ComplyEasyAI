@@ -928,6 +928,76 @@ Note also that the raw escape hatches (`$queryRaw*`/`$executeRaw*`) are delibera
 the extension (`database.ts:188-197`), so they get **no** RLS backstop and must keep explicit
 `organizationId` filters.
 
+### Audit-backlog re-verification (2026-08-25) — 7 of 8 open findings were STALE
+
+Every open finding from the 2026-06-02 scope-gap section was re-checked against the
+working tree. **Seven were already fixed and are corrected here; one is real but has
+moved in both directions.** This is the third time the backlog has been found to
+overstate open risk — the log records findings but not their remediation, so verify
+before acting on anything in it.
+
+| Claim (2026-06-02) | Measured 2026-08-25 |
+|---|---|
+| `ci.yml`/`mobile.yml` have no top-level `permissions:` → write-all token | **FALSE.** Both declare `permissions: { contents: read }` |
+| "no third-party action pinned to a SHA" | **FALSE.** All 20 are SHA-pinned. The one unpinned-looking `uses:` is inside a comment (`codeql.yml:72`) |
+| `dependency-scan.yml` runs `npm audit fix --force` unattended | **FALSE.** `dependency-scan.yml:84` documents deliberately NOT doing this; `self-heal-cve.yml:59` uses `npm audit fix --no-audit --package-lock-only`, no `--force` |
+| prod nginx mounts non-existent `./nginx/conf.d` → no TLS/server block | **FALSE.** `docker-compose.prod.yml:107` mounts the FILE `./nginx/default.conf` → `/etc/nginx/conf.d/default.conf`. It exists and has both a `:80` and a `:443 ssl` server block with certs |
+| ES transport 9300 + datastore/admin ports host-exposed | **FALSE** for `docker-compose.prod.yml`: only `80:80` and `443:443` are published, and the API binds `127.0.0.1:3001:3001` (loopback-only, with a comment explaining why) |
+| Falco `privileged: true` | **FALSE.** Replaced with a minimal `cap_add` set (SYS_PTRACE, SYS_ADMIN, SYS_RESOURCE, BPF, PERFMON) |
+| `deploy.sh` still pushes/deploys `:latest`; `cmd_full` broken because `cmd_infra` passes no `--context imageTag` | **FALSE.** `deploy.sh:86` derives an immutable tag from `git rev-parse --short HEAD`, and `cmd_infra` DOES pass `--context imageTag` (`:96`) |
+| CodeQL backlog 155 open (24 critical / 103 high) | **Moved both ways.** Live: **1110 open** — security-severity **1 critical / 201 high / 287 medium / 1 low**, plus 620 quality (note/warning). Criticals fell 24→1; highs rose 103→201 |
+
+**The one remaining CRITICAL is a false positive in the sanitizer itself.**
+`js/request-forgery` at `utils/urlValidator.ts:249` flags the `fetch()` inside
+`safeFetch` — the line immediately after `isUrlSafe()` and
+`await assertResolvedHostIsPublic()`, with `redirect: 'manual'` so each hop is
+re-validated. CodeQL cannot recognise project-defined sanitizers, so the SSRF guard
+reads as an SSRF sink. Dismiss it in the Security UI, or better, add a CodeQL
+sanitizer model for `isUrlSafe`/`assertUrlSafe` — that would also clear a share of
+the 75 `js/user-controlled-bypass` and other guard-adjacent highs. Do NOT "fix" the
+code; the code is the fix.
+
+### New findings from the same pass (2026-08-25) — none were in the backlog
+
+- **`Docker Build & Push` never runs on pull requests (HIGH).** `ci.yml:477` gates it
+  on `github.event_name == 'push'`, so **no PR ever builds the production image**.
+  This is why the `re2` breakage below only surfaced after merge, and it means any
+  dependency bump affecting the image (native modules, puppeteer/chromium) is
+  unvalidated until it is already on `main`.
+- **`npm rebuild re2` had no working fallback (HIGH, fixed in #424).** re2 downloads a
+  prebuilt from GitHub releases and only compiles locally if that fails. The compile
+  path could never succeed — abseil's `direct_mmap.h` includes `<linux/unistd.h>`,
+  which musl lacks, and `.native-build-deps` carried only `python3 make g++`. Every
+  image build was a coin flip against a third-party CDN. Fixed by adding
+  `linux-headers`; verified both ways with `RE2_DOWNLOAD_FORCE_BUILD=1`.
+- **`fast-xml-parser` was an undeclared dependency (HIGH, fixed in #425).**
+  `routes/sso.ts:20` imports it; no manifest declared it. It resolved only as a
+  hoisted transitive of `@aws-sdk/xml-builder`, so an AWS SDK bump deleted it — which
+  is what broke #420.
+- **PRs opened by GitHub Actions can never merge.** Actions-created PRs do not trigger
+  `pull_request` workflows, so required checks never report (observed on #398, which
+  had only the mobile workflow's checks). Workaround: close and reopen the PR, which
+  fires `reopened` and runs CI. A durable fix needs a PAT/App token in the workflow
+  that opens them.
+- **`.github/dependabot.yml` referenced four labels that did not exist** (`backend`,
+  `ci`, `docker`, `frontend`; only `dependencies` existed), so Dependabot could never
+  apply area labels and posted an error on every dependency PR. Labels created.
+- **Grouped Dependabot PRs bundled majors with patches (fixed in #428).** One breaking
+  major made the whole batch unmergeable: #420 carried 47 AWS SDK patches plus
+  `stripe 21→22.5` and `googleapis 171→176`. Groups are now restricted to
+  minor/patch; majors get individual PRs.
+- **codeql-action bumps split across PRs (fixed in #442).** CodeQL refuses to run when
+  `init` and `analyze` differ: `Loaded a configuration file for version '4.36.3', but
+  running version '4.37.8'`. Confirmed live on #434 (the #340 log had expired, so
+  #426 could only call it likely). A `codeql-action` group now keeps all four
+  references together.
+- **Expo SDK 57 must not be taken piecemeal (held in #443).** Dependabot proposes
+  `expo`, `jest-expo` and `expo-status-bar` to 57 while `expo-secure-store` stays on
+  56 and no `react-native` bump is offered; expo's peers are all `*`, so npm cannot
+  reject the mismatch. Note the trap: #431 (jest-expo alone) FAILED CI but #436 (expo
+  alone) PASSED — and `Build iOS`/`Build Android` are skipped on PRs, so a green check
+  is not evidence an SDK major is safe.
+
 ## Architecture Quick Reference
 
 - **Server:** Express 5 + Prisma 7 + PostgreSQL
