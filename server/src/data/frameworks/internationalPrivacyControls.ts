@@ -2,7 +2,7 @@ import { FrameworkControlTemplate } from './soc2Controls';
 
 /**
  * International Privacy Frameworks
- * PDPA Malaysia, PIPL China, PDPB India, Privacy Shield, APEC CBPR
+ * PDPA Malaysia, PIPL China, Privacy Shield, APEC CBPR (India DPDPA moved to indiaDpdpaControls.ts)
  */
 
 export const PDPA_MALAYSIA_CONTROLS: FrameworkControlTemplate[] = [
@@ -137,49 +137,6 @@ export const PIPL_CONTROLS: FrameworkControlTemplate[] = [
     implementationGuidance: 'Identify data collection in China. Store locally. Document storage locations. Justify any transfers.',
     evidenceRequirements: ['Collection identification', 'Storage location records', 'Location documentation', 'Transfer justification'],
     testProcedures: ['Review collection', 'Verify storage', 'Check documentation', 'Assess justifications'],
-    status: 'Not Started'
-  }
-];
-
-export const PDPB_CONTROLS: FrameworkControlTemplate[] = [
-  {
-    controlId: 'PDPB-1.1',
-    name: 'Lawful Processing',
-    description: 'Process personal data only for lawful purposes with consent or other legitimate grounds.',
-    category: 'Processing Principles',
-    implementationGuidance: 'Establish lawful basis for processing. Obtain consent where required. Document processing grounds.',
-    evidenceRequirements: ['Lawful basis documentation', 'Consent records', 'Processing records'],
-    testProcedures: ['Review lawful basis', 'Verify consent', 'Check documentation'],
-    status: 'Not Started'
-  },
-  {
-    controlId: 'PDPB-1.2',
-    name: 'Purpose Limitation',
-    description: 'Collect personal data only for specified, explicit, and lawful purposes and not process incompatibly with those purposes.',
-    category: 'Processing Principles',
-    implementationGuidance: 'Define processing purposes clearly. Document at collection. Ensure processing compatibility.',
-    evidenceRequirements: ['Purpose definitions', 'Collection documentation', 'Compatibility assessment'],
-    testProcedures: ['Review purposes', 'Verify documentation', 'Test compatibility'],
-    status: 'Not Started'
-  },
-  {
-    controlId: 'PDPB-1.3',
-    name: 'Data Principal Rights',
-    description: 'Provide data principals with rights to access, correction, erasure, and data portability.',
-    category: 'Data Principal Rights',
-    implementationGuidance: 'Implement all required rights. Handle requests timely. Document actions taken.',
-    evidenceRequirements: ['Rights implementation', 'Request handling records', 'Action documentation'],
-    testProcedures: ['Test rights functionality', 'Verify request handling', 'Review documentation'],
-    status: 'Not Started'
-  },
-  {
-    controlId: 'PDPB-1.4',
-    name: 'Data Fiduciary Obligations',
-    description: 'Fulfill data fiduciary obligations including implementing security safeguards and appointing data protection officer where required.',
-    category: 'Fiduciary Duties',
-    implementationGuidance: 'Implement required safeguards. Appoint DPO if threshold met. Maintain compliance program.',
-    evidenceRequirements: ['Safeguard implementation', 'DPO appointment', 'Compliance program documentation'],
-    testProcedures: ['Test safeguards', 'Verify DPO appointment', 'Review compliance program'],
     status: 'Not Started'
   }
 ];

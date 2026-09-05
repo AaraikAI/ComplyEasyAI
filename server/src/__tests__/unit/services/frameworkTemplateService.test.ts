@@ -145,6 +145,57 @@ describe('FrameworkTemplateService', () => {
   // ======================================================================
   // getAvailableTemplates
   // ======================================================================
+  // ======================================================================
+  // AIUC-1 and India DPDPA (real control modules — not mocked above)
+  // ======================================================================
+  describe('AIUC-1 and India DPDPA templates', () => {
+    const requireComplete = (controls: any[]) => {
+      const ids = controls.map(c => c.controlId);
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const c of controls) {
+        expect(c.name).toBeTruthy();
+        expect(c.description.length).toBeGreaterThan(40);
+        expect(c.category).toBeTruthy();
+        expect(c.implementationGuidance.length).toBeGreaterThan(40);
+        expect(c.evidenceRequirements.length).toBeGreaterThanOrEqual(3);
+        expect(c.testProcedures.length).toBeGreaterThanOrEqual(3);
+      }
+    };
+
+    it('registers AIUC-1 with complete controls across all six pillars', () => {
+      const controls = frameworkTemplateService.getTemplatesForFramework('AIUC-1');
+      expect(controls.length).toBeGreaterThanOrEqual(40);
+      expect(controls[0].controlId).toBe('AIUC1-A.1');
+      expect(new Set(controls.map(c => c.category))).toEqual(
+        new Set(['Data and Privacy', 'Security', 'Safety', 'Reliability', 'Accountability', 'Society'])
+      );
+      requireComplete(controls);
+    });
+
+    it('resolves AIUC-1 aliases', () => {
+      for (const alias of ['AIUC1', 'AIUC 1', 'aiuc-1', 'AIUC', 'aiuc']) {
+        expect(frameworkTemplateService.getTemplatesForFramework(alias)[0]?.controlId).toBe('AIUC1-A.1');
+      }
+    });
+
+    it('registers India DPDPA (Act 2023) with complete controls', () => {
+      const controls = frameworkTemplateService.getTemplatesForFramework('India DPDPA');
+      expect(controls.length).toBeGreaterThanOrEqual(35);
+      expect(controls[0].controlId).toBe('IN-DPDPA-1.1');
+      requireComplete(controls);
+    });
+
+    it('keeps the old PDPB key and India phrasings resolving to India DPDPA', () => {
+      for (const alias of ['PDPB', 'pdpb', 'PDPB India', 'India Privacy', 'DPDP Act', 'DPDPA India', 'Digital Personal Data Protection Act']) {
+        expect(frameworkTemplateService.getTemplatesForFramework(alias)[0]?.controlId).toBe('IN-DPDPA-1.1');
+      }
+    });
+
+    it('leaves the bare "DPDPA" key pointing at the Delaware act (existing customer frameworks depend on it)', () => {
+      expect(frameworkTemplateService.getTemplatesForFramework('DPDPA')[0]?.controlId).toBe('DPDPA-CR-1');
+    });
+  });
+
   describe('getAvailableTemplates()', () => {
     it('should return all available templates with metadata', () => {
       const result = frameworkTemplateService.getAvailableTemplates();
