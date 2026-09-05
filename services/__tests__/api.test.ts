@@ -147,6 +147,51 @@ describe('api service', () => {
     });
 
     // 401 handling: refresh succeeds (httpOnly cookie auth)
+    describe('CSRF and non-JSON handling', () => {
+      const lead = { firstName: 'Ada', lastName: 'Lovelace', email: 'ada@example.com', company: 'Analytical Engines' };
+
+      /** The CDN rewriting an API 403/404 into the SPA shell: HTML with a 200. */
+      function html(status = 200) {
+        return {
+          ok: status >= 200 && status < 300,
+          status,
+          statusText: 'OK',
+          json: () => Promise.reject(new SyntaxError("Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON")),
+          text: () => Promise.resolve('<!DOCTYPE html><html></html>'),
+          headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
+        };
+      }
+
+      it('explains an HTML response instead of surfacing a JSON parse error', async () => {
+        mockFetch.mockResolvedValueOnce(ok({ csrfToken: 't1' })); // getCsrfToken()
+        mockFetch.mockResolvedValueOnce(html(200));                // SPA shell served for the API path
+
+        await expect(api.demo.submitRequest(lead)).rejects.toThrow(/unexpected response \(HTTP 200\)/);
+      });
+
+      it('fetches a fresh CSRF token and retries exactly once on a CSRF 403', async () => {
+        mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'stale' }));                    // getCsrfToken()
+        mockFetch.mockResolvedValueOnce(fail(403, { error: 'CSRF token invalid' }));    // POST rejected
+        mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'fresh' }));                    // re-fetch token
+        mockFetch.mockResolvedValueOnce(ok({ success: true, demoRequest: { id: 'd1' }, message: 'ok' })); // replay
+
+        const result = await api.demo.submitRequest(lead);
+
+        expect(result).toMatchObject({ success: true });
+        expect(mockFetch).toHaveBeenCalledTimes(4);
+        const replayHeaders = mockFetch.mock.calls[3][1].headers as Record<string, string>;
+        expect(replayHeaders['X-CSRF-Token']).toBe('fresh');
+      });
+
+      it('does not retry a 403 that is not about CSRF', async () => {
+        mockFetch.mockResolvedValueOnce(ok({ csrfToken: 't1' }));
+        mockFetch.mockResolvedValueOnce(fail(403, { error: 'Forbidden' }));
+
+        await expect(api.demo.submitRequest(lead)).rejects.toThrow('Forbidden');
+        expect(mockFetch).toHaveBeenCalledTimes(2);
+      });
+    });
+
     it('refreshes token on 401 when authenticated and refresh succeeds', async () => {
       setAuthToken('old-token'); // Set authenticated flag
 

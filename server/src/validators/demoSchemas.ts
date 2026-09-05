@@ -15,6 +15,18 @@ export const submitDemoRequestSchema = Joi.object({
   jobTitle: Joi.string().max(200).allow('', null).optional(),
   companySize: Joi.string().max(100).allow('', null).optional(),
   message: Joi.string().max(5000).allow('', null).optional(),
+  // Lead-qualification fields the booking form (components/DemoBookingForm.tsx)
+  // sends and demoController persists. They were missing here, and the schema is
+  // .unknown(false), so every real submission was rejected with 400 "... is not
+  // allowed" before it reached the controller.
+  industry: Joi.string().max(200).allow('', null).optional(),
+  country: Joi.string().max(120).allow('', null).optional(),
+  interestedTier: Joi.string().max(100).allow('', null).optional(),
+  currentChallenge: Joi.string().max(5000).allow('', null).optional(),
+  howDidYouHear: Joi.string().max(200).allow('', null).optional(),
+  utmSource: Joi.string().max(200).allow('', null).optional(),
+  utmMedium: Joi.string().max(200).allow('', null).optional(),
+  utmCampaign: Joi.string().max(200).allow('', null).optional(),
   source: Joi.string().max(200).allow('', null).optional(),
   frameworks: Joi.array().items(Joi.string().max(100)).allow(null).optional(),
   preferredDate: Joi.date().iso().allow(null).optional(),
