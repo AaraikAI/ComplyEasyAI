@@ -1048,6 +1048,13 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   (`GET /api/frameworks/templates`). New `controlCrosswalk.integrity.test.ts` found **25 pre-existing dead
   mappings — every `ISO 27017` row** uses `ISO27017-CLD.x.y` ids while the template uses `ISO27017-5.1.1`
   style; budget pinned at 25 so it can only shrink.
+- **A run parked at the production approval gate holds the `main` concurrency slot indefinitely.** Two
+  runs left `waiting` at `Approve Production Deploy` since **2026-08-11** and **2026-08-25** silently blocked
+  every later `main` run (they showed as `pending` with 0 jobs and no error). Diagnose with
+  `gh run list --workflow ci.yml --status waiting --branch main`; cancel superseded waiting runs (nothing has
+  deployed yet at that point) and the newest run starts. Related: the daily `self-heal/cve-autofix` runs sit at
+  `action_required` (bot-authored PRs need "Approve and run"), so that workflow's CI has effectively never
+  executed — 20 such runs since 2026-08-10.
 - **Small traps hit:** `no-new-func` blocks `new Function` in tests — evaluate generated code with
   `node:vm.runInNewContext`; the Supabase bot's "no changes in supabase directory" review comment (relayed by
   Autofix on every PR) is informational noise; `gh pr merge` fails "Head branch is out of date" only
