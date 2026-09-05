@@ -20,6 +20,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import { promisify } from 'util';
 import deepfakeDetectionService, { DeepfakeAnalysisResult } from './deepfakeDetectionService';
 import livenessDetectionService, { LivenessResult, LivenessChallenge } from './livenessDetectionService';
+import { safeAxios } from '../../utils/urlValidator';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -367,7 +368,6 @@ class MultimodalIntakeService {
       
       if (pyannoteServiceUrl && audioBuffer) {
         try {
-          const axios = require('axios');
           const FormData = require('form-data');
           const formData = new FormData();
           formData.append('audio', audioBuffer, { filename: 'audio.wav' });
@@ -377,10 +377,13 @@ class MultimodalIntakeService {
           if (!isUrlSafe(diarizeUrl)) {
             throw new AppError('Pyannote service URL is unsafe', 400);
           }
-          const response = await axios.post(diarizeUrl, formData, {
+          const response = await safeAxios({
             headers: formData.getHeaders(),
             timeout: 30000,
-          });
+            url: diarizeUrl,
+            method: 'post',
+            data: formData,
+          }, 'speaker diarization service');
           
           if (response.data?.speakers) {
             logger.info(`[Multimodal] Speaker diarization via pyannote.audio: ${response.data.speakers.length} speakers`);

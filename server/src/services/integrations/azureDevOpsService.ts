@@ -10,7 +10,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
-import { isUrlSafe, hardenAxiosInstance } from '../../utils/urlValidator';
+import { isUrlSafe, hardenAxiosInstance, safeAxios } from '../../utils/urlValidator';
 import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 // ---------------------------------------------------------------------------
@@ -265,10 +265,13 @@ class AzureDevOpsService {
               redirect_uri: `${process.env.APP_URL || 'http://localhost:3001'}/api/integrations/azure-devops/callback`,
             }).toString();
 
-        const response = await axios.post<AzureDevOpsOAuthTokenResponse>(tokenUrl, body, {
+        const response = await safeAxios<AzureDevOpsOAuthTokenResponse>({
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           timeout: 15000,
-        });
+          url: tokenUrl,
+          method: 'post',
+          data: body,
+        }, 'Azure DevOps OAuth token');
 
         const { access_token, refresh_token, expires_in } = response.data;
         const tokenExpiresAt = new Date(Date.now() + expires_in * 1000).toISOString();

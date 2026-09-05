@@ -391,10 +391,10 @@ function stripCredentialHeadersIfCrossOrigin(
  * @param context - short label used in error messages and security logs
  * @throws AppError(403) if the URL, a resolved address, or a redirect target is unsafe
  */
-export async function safeAxios(
+export async function safeAxios<T = any>(
   config: AxiosRequestConfig & { url: string },
   context = 'outbound request'
-): Promise<AxiosResponse> {
+): Promise<AxiosResponse<T>> {
   const callerValidate = config.validateStatus ?? ((status: number) => status >= 200 && status < 300);
 
   let currentUrl = config.url;
@@ -490,12 +490,12 @@ export async function safeAxios(
  * Convenience wrapper for the common `axios.get(url, options)` shape.
  * Equivalent to safeAxios({ ...options, url, method: 'get' }, context).
  */
-export async function safeAxiosGet(
+export async function safeAxiosGet<T = any>(
   url: string,
   context = 'outbound request',
   options?: AxiosRequestConfig
-): Promise<AxiosResponse> {
-  return safeAxios({ ...options, url, method: 'get' }, context);
+): Promise<AxiosResponse<T>> {
+  return safeAxios<T>({ ...options, url, method: 'get' }, context);
 }
 
 /**

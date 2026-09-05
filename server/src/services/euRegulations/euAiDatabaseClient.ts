@@ -8,10 +8,9 @@
  * "Registration ID Pending" state.
  */
 
-import axios from 'axios';
 import config from '../../config';
 import logger from '../../config/logger';
-import { isUrlSafe } from '../../utils/urlValidator';
+import { isUrlSafe, safeAxios } from '../../utils/urlValidator';
 import { AppError } from '../../middleware/errorHandler';
 
 interface EUAIRegistrationPayload {
@@ -63,9 +62,18 @@ class EUAiDatabaseClient {
         throw new AppError('EU AI database URL is unsafe', 400);
       }
 
-      const response = await axios.post<EUAIRegistrationResponse>(
+      const response = await safeAxios<EUAIRegistrationResponse>({
+        timeout: 10000,
+        auth: {
+          username: euAiDb.clientId,
+          password: euAiDb.clientSecret,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         url,
-        {
+        method: 'post',
+        data: {
           organizationId: euAiDb.orgId,
           systemName: payload.systemName,
           riskLevel: payload.riskLevel,
@@ -73,17 +81,7 @@ class EUAiDatabaseClient {
           isGeneralPurpose: payload.isGeneralPurpose,
           isGenerative: payload.isGenerative,
         },
-        {
-          timeout: 10000,
-          auth: {
-            username: euAiDb.clientId,
-            password: euAiDb.clientSecret,
-          },
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+      }, 'EU AI database API');
 
       if (!response.data?.registrationId) {
         logger.warn(

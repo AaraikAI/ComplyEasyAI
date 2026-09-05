@@ -10,7 +10,7 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import { Prisma } from '../generated/prisma/client';
 import { encryptField, decryptField } from '../utils/credentialEncryption';
-import { isUrlSafe } from '../utils/urlValidator';
+import { isUrlSafe, safeAxios } from '../utils/urlValidator';
 
 // Import integration services
 import googleService from '../services/integrations/googleService';
@@ -890,22 +890,24 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
     // Validate Azure credentials by acquiring an access token from Azure AD
     let azureAccessToken: string | null = null;
     try {
-      const axios = (await import('axios')).default;
       const safeTenantId = encodeURIComponent(tenantId);
       const safeSubscriptionId = encodeURIComponent(subscriptionId);
       const tokenUrl = `https://login.microsoftonline.com/${safeTenantId}/oauth2/v2.0/token`;
       if (!isUrlSafe(tokenUrl)) {
         throw new AppError('Azure tenant ID resolved to an unsafe URL', 400);
       }
-      const tokenResponse = await axios.post(tokenUrl, new URLSearchParams({
+      const tokenResponse = await safeAxios({
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 15000,
+        url: tokenUrl,
+        method: 'post',
+        data: new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
         scope: 'https://management.azure.com/.default',
         grant_type: 'client_credentials',
-      }).toString(), {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout: 15000,
-      });
+      }).toString(),
+      }, 'integration OAuth callback');
 
       azureAccessToken = tokenResponse.data.access_token;
       if (!azureAccessToken) {
@@ -917,13 +919,12 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
       if (!isUrlSafe(subUrl)) {
         throw new AppError('Azure subscription ID resolved to an unsafe URL', 400);
       }
-      const subResponse = await axios.get(
-        subUrl,
-        {
-          headers: { Authorization: `Bearer ${azureAccessToken}` },
-          timeout: 15000,
-        }
-      );
+      const subResponse = await safeAxios({
+        headers: { Authorization: `Bearer ${azureAccessToken}` },
+        timeout: 15000,
+        url: subUrl,
+        method: 'get',
+      }, 'integration OAuth callback');
 
       if (!subResponse.data || !subResponse.data.subscriptionId) {
         throw new AppError('Azure credentials valid but subscription not accessible', 400);

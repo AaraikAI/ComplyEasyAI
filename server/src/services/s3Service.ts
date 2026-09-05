@@ -5,7 +5,7 @@ import config from '../config';
 import logger from '../config/logger';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
-import { isUrlSafe } from '../utils/urlValidator';
+import { isUrlSafe, safeAxios } from '../utils/urlValidator';
 
 // Multer file interface to avoid Express.Multer namespace issues
 interface MulterFile {
@@ -336,7 +336,6 @@ class S3Service {
         }
       } else if (scanMethod === 'clamav' && process.env.CLAMAV_HOST) {
         // Use ClamAV for virus scanning
-        const axios = require('axios');
         const FormData = require('form-data');
         const form = new FormData();
         form.append('file', fileBuffer, { filename: 'scan-file' });
@@ -345,11 +344,12 @@ class S3Service {
         if (!isUrlSafe(clamavUrl)) {
           throw new AppError('ClamAV scanner URL is unsafe', 400);
         }
-        const response = await axios.post(
-          clamavUrl,
-          form,
-          { headers: form.getHeaders() }
-        );
+        const response = await safeAxios({
+          headers: form.getHeaders(),
+          url: clamavUrl,
+          method: 'post',
+          data: form,
+        }, 'ClamAV virus scan');
 
         const isClean = response.data.status === 'clean' || response.data.status === 'ok';
         logger.info(`[S3] Virus scan completed via ClamAV: ${isClean ? 'CLEAN' : 'THREAT DETECTED'}`);

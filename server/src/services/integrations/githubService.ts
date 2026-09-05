@@ -3,12 +3,11 @@
  * Handles authentication, token management, and data syncing with GitHub
  */
 
-import axios from 'axios';
 import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
-import { isUrlSafe, safeAxiosGet } from '../../utils/urlValidator';
+import { isUrlSafe, safeAxiosGet, safeAxios } from '../../utils/urlValidator';
 import { encryptField, decryptField } from '../../utils/credentialEncryption';
 
 interface GitHubTokenResponse {
@@ -63,18 +62,17 @@ class GitHubService {
         logger.error('GitHub outbound URL rejected by isUrlSafe', { url });
         throw new AppError(`Unsafe GitHub URL: ${url}`, 400);
       }
-      const response = await axios.post(
+      const response = await safeAxios({
+        headers: { Accept: 'application/json' },
         url,
-        {
+        method: 'post',
+        data: {
           client_id: config.oauth.github.clientId,
           client_secret: config.oauth.github.clientSecret,
           code,
           redirect_uri: config.oauth.github.callbackUrl,
         },
-        {
-          headers: { Accept: 'application/json' },
-        }
-      );
+      }, 'GitHub API');
 
       const data: GitHubTokenResponse = response.data;
 

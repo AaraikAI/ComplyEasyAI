@@ -19,6 +19,7 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import { execFile } from 'child_process';
+import { safeAxios } from '../../utils/urlValidator';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -524,7 +525,6 @@ class WhisperService {
 
       if (pyannoteServiceUrl) {
         try {
-          const axios = require('axios');
           const FormData = require('form-data');
           const formData = new FormData();
           formData.append('audio', audioBuffer, { filename: 'audio.wav' });
@@ -535,10 +535,13 @@ class WhisperService {
           if (!isUrlSafe(diarizeUrl)) {
             throw new AppError('Pyannote service URL is unsafe', 400);
           }
-          const response = await axios.post(diarizeUrl, formData, {
+          const response = await safeAxios({
             headers: formData.getHeaders(),
             timeout: 60000,
-          });
+            url: diarizeUrl,
+            method: 'post',
+            data: formData,
+          }, 'speaker diarization service');
 
           if (response.data?.speakers) {
             pyannoteResult = response.data;

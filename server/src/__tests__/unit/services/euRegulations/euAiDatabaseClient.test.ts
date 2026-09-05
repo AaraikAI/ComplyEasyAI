@@ -5,13 +5,16 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 // ---------- Mocks ----------
+// The client now issues its request through safeAxios, which validates the URL
+// (including DNS) and re-checks every redirect hop, so the mock moves to that
+// boundary. isUrlSafe is a plain function because jest.config.js sets
+// resetMocks/restoreMocks, which would wipe an implementation attached here.
 const mockAxiosPost = jest.fn() as jest.Mock<any>;
 
-jest.mock('axios', () => ({
+jest.mock('../../../../utils/urlValidator', () => ({
   __esModule: true,
-  default: {
-    post: mockAxiosPost,
-  },
+  isUrlSafe: () => true,
+  safeAxios: (config: any, ...rest: any[]) => mockAxiosPost(config, ...rest),
 }));
 
 jest.mock('../../../../config/logger', () => ({
@@ -74,20 +77,22 @@ describe('EUAiDatabaseClient', () => {
 
       expect(result).toBe('eu-reg-abc-123');
       expect(mockAxiosPost).toHaveBeenCalledWith(
-        'https://euai.example.com/api/systems',
         expect.objectContaining({
-          organizationId: 'eu-org-123',
-          systemName: 'HighRisk AI System',
-          riskLevel: 'high',
-          highRiskCategory: 'critical_infrastructure',
-        }),
-        expect.objectContaining({
+          url: 'https://euai.example.com/api/systems',
+          method: 'post',
+          data: expect.objectContaining({
+            organizationId: 'eu-org-123',
+            systemName: 'HighRisk AI System',
+            riskLevel: 'high',
+            highRiskCategory: 'critical_infrastructure',
+          }),
           timeout: 10000,
           auth: {
             username: 'test-client-id',
             password: 'test-client-secret',
           },
         }),
+        expect.any(String),
       );
     });
 
@@ -100,9 +105,8 @@ describe('EUAiDatabaseClient', () => {
       await euAiDatabaseClient.registerSystem(payload);
 
       expect(mockAxiosPost).toHaveBeenCalledWith(
-        'https://euai.example.com/api/systems',
-        expect.any(Object),
-        expect.any(Object),
+        expect.objectContaining({ url: 'https://euai.example.com/api/systems', method: 'post' }),
+        expect.any(String),
       );
     });
 

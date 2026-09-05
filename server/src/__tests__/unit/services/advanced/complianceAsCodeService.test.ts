@@ -40,6 +40,16 @@ jest.mock('../../../../utils/urlValidator', () => ({
   __esModule: true,
   isUrlSafe: jest.fn().mockReturnValue(true),
   isWebhookUrlSafe: jest.fn().mockReturnValue(true),
+  // Every OPA call now goes through safeAxios (URL + DNS validation, and each
+  // redirect hop re-checked). Delegate to the axios mocks by method so the
+  // per-test setup in beforeEach still drives the responses. Declared as a
+  // plain function, not jest.fn(): resetMocks would wipe an implementation
+  // attached at module load.
+  safeAxios: (config: any) => {
+    const axios = require('axios').default;
+    const method = String(config?.method ?? 'get').toLowerCase();
+    return axios[method](config?.url, config?.data, config);
+  },
 }));
 
 jest.mock('../../../../config/database', () => ({
