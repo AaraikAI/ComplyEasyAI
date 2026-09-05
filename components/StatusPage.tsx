@@ -11,8 +11,10 @@ interface ServiceStatus {
   name: string;
   description: string;
   status: 'operational' | 'degraded' | 'partial_outage' | 'major_outage' | 'maintenance';
-  uptime: number;
-  responseTime: number;
+  /** Measured 90-day availability; absent when there is no per-service telemetry. */
+  uptime?: number;
+  /** Measured latency in ms; absent when the probe does not time this component. */
+  responseTime?: number;
   lastChecked: string;
   icon?: React.ComponentType<any>;
 }
@@ -40,6 +42,57 @@ interface MaintenanceWindow {
   scheduledEnd: string;
   affectedServices: string[];
   status: 'scheduled' | 'in_progress' | 'completed';
+}
+
+/**
+ * Components reported by the API's /health probe, in display order. `critical`
+ * components take the page to a major outage when they fail; the rest degrade it.
+ */
+const HEALTH_COMPONENTS: Array<{ key: string; name: string; description: string; critical: boolean }> = [
+  { key: 'database', name: 'Database', description: 'Primary PostgreSQL database', critical: true },
+  { key: 'websocket', name: 'Real-time updates', description: 'WebSocket notifications and live views', critical: false },
+  { key: 'jobQueue', name: 'Background jobs', description: 'Evidence collection and scheduled processing', critical: false },
+  { key: 'cache', name: 'Cache', description: 'Response and session cache', critical: false },
+  { key: 'memory', name: 'Application memory', description: 'API server memory headroom', critical: false },
+  { key: 'region', name: 'Region routing', description: 'Data-residency region resolution', critical: false },
+];
+
+const HEALTHY_CHECK_STATES = new Set(['connected', 'ok']);
+
+function checkToServiceStatus(state: string, critical: boolean): ServiceStatus['status'] {
+  if (HEALTHY_CHECK_STATES.has(state)) return 'operational';
+  if (state === 'warning') return 'degraded';
+  return critical ? 'major_outage' : 'partial_outage';
+}
+
+/** Derive the per-component list from the /health payload's `checks` object. */
+function servicesFromHealth(health: any): ServiceStatus[] {
+  const checks = health?.checks;
+  if (!checks || typeof checks !== 'object') return [];
+  const overall: ServiceStatus['status'] =
+    health.status === 'healthy' ? 'operational' : health.status === 'unhealthy' ? 'major_outage' : 'degraded';
+  const checkedAt = typeof health.timestamp === 'string' ? health.timestamp : new Date().toISOString();
+  const services: ServiceStatus[] = [
+    {
+      name: 'API',
+      description: 'ComplyEasyAI application server',
+      status: overall,
+      responseTime: typeof health.responseTime === 'number' ? health.responseTime : undefined,
+      lastChecked: checkedAt,
+    },
+  ];
+  for (const component of HEALTH_COMPONENTS) {
+    const check = checks[component.key];
+    if (!check || typeof check !== 'object') continue;
+    services.push({
+      name: component.name,
+      description: component.description,
+      status: checkToServiceStatus(String(check.status), component.critical),
+      responseTime: typeof check.responseTime === 'number' ? check.responseTime : undefined,
+      lastChecked: checkedAt,
+    });
+  }
+  return services;
 }
 
 interface UptimeData {
@@ -93,15 +146,23 @@ export const StatusPage: React.FC = () => {
 
     const fetchStatus = async () => {
       try {
-        const response = await fetch('/api/health', { credentials: 'include' });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.services && Array.isArray(data.services) && !cancelled) {
-            setLiveServices(data.services);
-          }
+        // The liveness probe lives at /health (its own CloudFront behaviour), not
+        // under /api — that path never existed and came back as the SPA shell.
+        // It answers 503 when a dependency is down but still carries the JSON
+        // body, so read it regardless of status: an outage should render as an
+        // outage, not as "live status unavailable".
+        const response = await fetch('/health', { credentials: 'include' });
+        const data = await response.json().catch(() => null);
+        if (cancelled || !data) return;
+        if (Array.isArray(data.services) && data.services.length > 0) {
+          setLiveServices(data.services);
+        } else {
+          const derived = servicesFromHealth(data);
+          if (derived.length > 0) setLiveServices(derived);
         }
       } catch {
-        // /health is the lightweight liveness probe; service-level detail is optional
+        // No reachable liveness probe: leave the list empty so the page shows
+        // its neutral unavailable state rather than fabricated figures.
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -258,8 +319,10 @@ export const StatusPage: React.FC = () => {
   const overall = getOverallStatus();
   // Derive headline metrics from the live service set when available so the
   // public page reflects real data instead of the static fallback list.
-  const overallUptime = activeServices.length > 0
-    ? (activeServices.reduce((acc, s) => acc + s.uptime, 0) / activeServices.length).toFixed(3)
+  // Availability comes from the measured 90-day history feed, never from
+  // per-component numbers the probe does not actually measure.
+  const overallUptime = uptimeHistory.length > 0
+    ? (uptimeHistory.reduce((acc, d) => acc + d.uptime, 0) / uptimeHistory.length).toFixed(3)
     : '—';
 
   return (
@@ -395,11 +458,11 @@ export const StatusPage: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-6 text-sm">
                         <div className="text-right hidden sm:block">
-                          <div className="text-white">{service.uptime}%</div>
+                          <div className="text-white">{service.uptime !== undefined ? `${service.uptime}%` : '—'}</div>
                           <div className="text-slate-500">Uptime</div>
                         </div>
                         <div className="text-right hidden md:block">
-                          <div className="text-white">{service.responseTime}ms</div>
+                          <div className="text-white">{service.responseTime !== undefined ? `${service.responseTime}ms` : '—'}</div>
                           <div className="text-slate-500">Response</div>
                         </div>
                         <div className={`w-3 h-3 rounded-full ${getStatusColor(service.status)}`}></div>
