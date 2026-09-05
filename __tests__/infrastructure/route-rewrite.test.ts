@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { runInNewContext } from 'node:vm';
 
 /**
  * Guards the CloudFront viewer-request function that replaced the distribution-
@@ -15,8 +16,9 @@ const source = readFileSync(resolve(ROOT, 'infrastructure/cloudfront/route-rewri
 const routes: string[] = JSON.parse(readFileSync(resolve(ROOT, 'infrastructure/prerendered-routes.json'), 'utf8'));
 const routeSet = Object.fromEntries(routes.map((r) => [r, 1]));
 const rendered = source.replaceAll('__PRERENDERED_ROUTES__', JSON.stringify(routeSet));
-// eslint-disable-next-line @typescript-eslint/no-implied-eval
-const handler = new Function(`${rendered}; return handler;`)() as (event: { request: { uri: string } }) => { uri: string };
+// The function body is generated code; evaluate it in an isolated vm context
+// (what CloudFront itself does) rather than via the Function constructor.
+const handler = runInNewContext(`${rendered}; handler`, {}) as (event: { request: { uri: string } }) => { uri: string };
 const route = (uri: string) => handler({ request: { uri } }).uri;
 
 describe('CloudFront route-rewrite function', () => {
