@@ -5,6 +5,8 @@ cdk-outputs.json
 *.js
 *.d.ts
 !jest.config.js
+# CloudFront Function source (and its rendered copy) is JavaScript by nature.
+!cloudfront/*.js
 .env
 *.env
 !*.env.example
