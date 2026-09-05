@@ -156,8 +156,27 @@ export default [
     },
   },
   {
+    // CloudFront Function sources (infrastructure/cloudfront). `handler` is the
+    // runtime entry point — CloudFront calls it, nothing imports it — and
+    // __PRERENDERED_ROUTES__ is substituted at build/synth time (the .rendered.js
+    // copy carries the object literal). A `/* global */` directive cannot be used
+    // in the source: it would be substituted too.
+    files: ['infrastructure/cloudfront/*.js'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: 'script',
+      globals: { __PRERENDERED_ROUTES__: 'readonly' },
+    },
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^handler$' }],
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
+      // Compiled CDK output (gitignored; only ever present after a local `tsc` in infrastructure/).
+      'infrastructure/dist/**',
+      'infrastructure/cdk.out/**',
       'dist/**',
       'build/**',
       'server/**',
