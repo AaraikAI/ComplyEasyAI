@@ -79,7 +79,7 @@ import { CJIS_CONTROLS } from '../data/frameworks/cjisControls';
 import { INCDPA_CONTROLS, TIPA_CONTROLS, NH_PRIVACY_CONTROLS as NH_CONTROLS, MD_PRIVACY_CONTROLS as MD_CONTROLS, MN_PRIVACY_CONTROLS as MN_CONTROLS, NE_PRIVACY_CONTROLS as NE_CONTROLS, RI_PRIVACY_CONTROLS as RI_CONTROLS, VT_PRIVACY_CONTROLS as VT_CONTROLS, KCDPA_CONTROLS } from '../data/frameworks/additionalStatePrivacyControls';
 
 // Additional International Privacy
-import { PDPA_MALAYSIA_CONTROLS, PIPL_CONTROLS, PDPB_CONTROLS, PRIVACY_SHIELD_CONTROLS, APEC_CBPR_CONTROLS } from '../data/frameworks/internationalPrivacyControls';
+import { PDPA_MALAYSIA_CONTROLS, PIPL_CONTROLS, PRIVACY_SHIELD_CONTROLS, APEC_CBPR_CONTROLS } from '../data/frameworks/internationalPrivacyControls';
 
 // Additional Security Standards
 import { NIST_800_207_CONTROLS, NIST_800_218_CONTROLS, NIST_800_172_CONTROLS, FIPS_140_3_CONTROLS } from '../data/frameworks/nistSecurityControls';
@@ -108,6 +108,8 @@ import { ITIL_CONTROLS, CMMI_CONTROLS } from '../data/frameworks/qualityFramewor
 import { TRAIGA_CONTROLS } from '../data/frameworks/traigaControls';
 import { COLORADO_AI_ACT_CONTROLS } from '../data/frameworks/coloradoAiActControls';
 import { KOREA_AI_BASIC_ACT_CONTROLS } from '../data/frameworks/koreaAiBasicActControls';
+import { AIUC1_CONTROLS } from '../data/frameworks/aiuc1Controls';
+import { INDIA_DPDPA_CONTROLS } from '../data/frameworks/indiaDpdpaControls';
 import { CALIFORNIA_AI_TRANSPARENCY_CONTROLS } from '../data/frameworks/californiaAiTransparencyControls';
 import { ISO_23894_CONTROLS } from '../data/frameworks/iso23894Controls';
 import { ISO_5338_CONTROLS } from '../data/frameworks/iso5338Controls';
@@ -377,8 +379,8 @@ const FRAMEWORK_TEMPLATE_MAP: Record<string, { controls: FrameworkControlTemplat
   },
   'DPDPA': {
     controls: DPDPA_CONTROLS,
-    displayName: 'DPDPA',
-    description: 'Delaware Personal Data Privacy Act consumer privacy protections',
+    displayName: 'DPDPA (Delaware)',
+    description: 'Delaware Personal Data Privacy Act consumer privacy protections (for India, see "India DPDPA")',
   },
   'ICDPA': {
     controls: ICDPA_CONTROLS,
@@ -604,10 +606,10 @@ const FRAMEWORK_TEMPLATE_MAP: Record<string, { controls: FrameworkControlTemplat
     displayName: 'PIPL China',
     description: 'China Personal Information Protection Law for personal data protection',
   },
-  'PDPB': {
-    controls: PDPB_CONTROLS,
-    displayName: 'PDPB India',
-    description: 'India Digital Personal Data Protection Bill requirements',
+  'India DPDPA': {
+    controls: INDIA_DPDPA_CONTROLS,
+    displayName: 'India DPDPA (Digital Personal Data Protection Act, 2023)',
+    description: 'India Digital Personal Data Protection Act 2023 and DPDP Rules 2025: notice and consent, Data Fiduciary duties, breach notification, children, Significant Data Fiduciary, Data Principal rights, cross-border transfers',
   },
   'Privacy Shield': {
     controls: PRIVACY_SHIELD_CONTROLS,
@@ -908,6 +910,11 @@ const FRAMEWORK_TEMPLATE_MAP: Record<string, { controls: FrameworkControlTemplat
     controls: NIST_AI_600_1_CONTROLS,
     displayName: 'NIST AI 600-1 Generative AI Profile',
     description: 'NIST Generative AI Profile (July 2024) — companion to NIST AI RMF 1.0 addressing 12 GenAI-specific risks including hallucinations, data leakage, and misuse.',
+  },
+  'AIUC-1': {
+    controls: AIUC1_CONTROLS,
+    displayName: 'AIUC-1 (AI Agent Standard)',
+    description: 'AI Underwriting Company standard for AI agents: data and privacy, security, safety, reliability, accountability and society controls',
   },
   // 4 amendments
   'ISO 27001 Amd 1': {
@@ -1332,8 +1339,20 @@ const FRAMEWORK_ALIASES: Record<string, string> = {
   'pipl': 'PIPL',
   'China Privacy': 'PIPL',
   'China PIPL': 'PIPL',
-  'pdpb': 'PDPB',
-  'India Privacy': 'PDPB',
+  'PDPB': 'India DPDPA',
+  'pdpb': 'India DPDPA',
+  'PDPB India': 'India DPDPA',
+  'India Privacy': 'India DPDPA',
+  'DPDP': 'India DPDPA',
+  'DPDP Act': 'India DPDPA',
+  'DPDPA India': 'India DPDPA',
+  'Digital Personal Data Protection Act': 'India DPDPA',
+  'Digital Personal Data Protection Act, 2023': 'India DPDPA',
+  'AIUC1': 'AIUC-1',
+  'AIUC 1': 'AIUC-1',
+  'aiuc-1': 'AIUC-1',
+  'AIUC': 'AIUC-1',
+  'AI Underwriting Company Standard': 'AIUC-1',
   'privacy-shield': 'Privacy Shield',
   'EU-US DPF': 'Privacy Shield',
   'apec-cbpr': 'APEC CBPR',
@@ -2105,6 +2124,19 @@ export class FrameworkTemplateService {
       'aims standard': 'iso 42001',
       'aims': 'iso 42001',
       'ai management system': 'iso 42001',
+      // India DPDPA (Act 2023) and AIUC-1 normalizations — 'dpdpa' alone stays Delaware
+      'pdpb': 'india dpdpa',
+      'pdpb india': 'india dpdpa',
+      'india privacy': 'india dpdpa',
+      'dpdp': 'india dpdpa',
+      'dpdp act': 'india dpdpa',
+      'dpdpa india': 'india dpdpa',
+      'digital personal data protection act': 'india dpdpa',
+      'digital personal data protection act, 2023': 'india dpdpa',
+      'aiuc1': 'aiuc-1',
+      'aiuc 1': 'aiuc-1',
+      'aiuc': 'aiuc-1',
+      'ai underwriting company standard': 'aiuc-1',
     };
 
     return aliases[normalized] || normalized;
