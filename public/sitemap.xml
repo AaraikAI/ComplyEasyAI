@@ -31,6 +31,36 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://complyeasyai.com/platform</loc>
+    <lastmod>2026-06-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://complyeasyai.com/pricing</loc>
+    <lastmod>2026-06-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://complyeasyai.com/frameworks</loc>
+    <lastmod>2026-06-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://complyeasyai.com/demo</loc>
+    <lastmod>2026-06-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://complyeasyai.com/login</loc>
+    <lastmod>2026-06-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://complyeasyai.com/platform/ai-compliance</loc>
     <lastmod>2026-06-07</lastmod>
     <changefreq>weekly</changefreq>
@@ -79,31 +109,49 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://complyeasyai.com/compare/vanta-alternative</loc>
+    <loc>https://complyeasyai.com/nist-csf</loc>
     <lastmod>2026-06-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://complyeasyai.com/compare/drata-alternative</loc>
+    <loc>https://complyeasyai.com/pci-dss</loc>
     <lastmod>2026-06-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://complyeasyai.com/compare/secureframe-alternative</loc>
+    <loc>https://complyeasyai.com/ccpa</loc>
     <lastmod>2026-06-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://complyeasyai.com/compare/sprinto-alternative</loc>
+    <loc>https://complyeasyai.com/iso-42001</loc>
     <lastmod>2026-06-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://complyeasyai.com/compare/onetrust-alternative</loc>
+    <loc>https://complyeasyai.com/dora-compliance</loc>
+    <lastmod>2026-06-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://complyeasyai.com/dma-compliance</loc>
+    <lastmod>2026-06-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://complyeasyai.com/dsa-compliance</loc>
+    <lastmod>2026-06-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://complyeasyai.com/csrd-compliance</loc>
     <lastmod>2026-06-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

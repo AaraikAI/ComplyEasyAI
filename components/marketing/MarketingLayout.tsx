@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { SignalLogo } from './signal';
 import { FRAMEWORK_PILLARS } from '../../data/frameworkPillarContent';
 
@@ -18,15 +18,6 @@ const FRAMEWORK_LINKS: NavLinkItem[] = Object.values(FRAMEWORK_PILLARS).map((f) 
   label: f.name,
   to: f.path,
 }));
-
-/** Competitor comparison pages (nav dropdown + footer "Compare" column). */
-const COMPARE_LINKS: NavLinkItem[] = [
-  { label: 'Vanta alternative', to: '/compare/vanta-alternative' },
-  { label: 'Drata alternative', to: '/compare/drata-alternative' },
-  { label: 'Secureframe alternative', to: '/compare/secureframe-alternative' },
-  { label: 'Sprinto alternative', to: '/compare/sprinto-alternative' },
-  { label: 'OneTrust alternative', to: '/compare/onetrust-alternative' },
-];
 
 const RESOURCE_LINKS: NavLinkItem[] = [
   { label: 'Blog', to: '/blog' },
@@ -46,7 +37,7 @@ const LEGAL_LINKS: NavLinkItem[] = [
   { label: 'DPA', to: '/dpa' },
 ];
 
-/** Primary nav links (Signal spec: Platform, Frameworks, Pricing, Compare). */
+/** Primary nav links (Signal spec: Platform, Frameworks, Pricing). */
 const PRIMARY_LINKS: NavLinkItem[] = [
   { label: 'Platform', to: '/platform' },
   { label: 'Frameworks', to: '/frameworks' },
@@ -61,7 +52,6 @@ const PRIMARY_LINKS: NavLinkItem[] = [
  */
 const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [compareOpen, setCompareOpen] = useState(false);
   const location = useLocation();
 
   const isActive = (to: string) =>
@@ -90,38 +80,6 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
                 </Link>
               ))}
 
-              {/* Compare dropdown */}
-              <div
-                className="relative"
-                onMouseEnter={() => setCompareOpen(true)}
-                onMouseLeave={() => setCompareOpen(false)}
-              >
-                <button
-                  type="button"
-                  className={`flex items-center gap-1 ${navLink(isActive('/compare'))}`}
-                  aria-haspopup="true"
-                  aria-expanded={compareOpen}
-                  onClick={() => setCompareOpen((v) => !v)}
-                >
-                  Compare
-                  <ChevronDown size={14} aria-hidden="true" />
-                </button>
-                {compareOpen && (
-                  <div className="absolute left-0 top-full w-60 pt-2">
-                    <div className="grid grid-cols-1 gap-1 rounded-2xl border border-white/[0.08] bg-signal-panel p-2 shadow-2xl shadow-black/50">
-                      {COMPARE_LINKS.map((item) => (
-                        <Link
-                          key={item.to}
-                          to={item.to}
-                          className="rounded-lg px-3 py-2 text-sm text-signal-sub transition-colors hover:bg-white/[0.05] hover:text-signal-green"
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             </nav>
 
             <div className="hidden items-center gap-6 md:flex">
@@ -158,7 +116,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
             className="border-t border-white/[0.06] bg-signal-canvas px-6 py-4 md:hidden"
           >
             <div className="flex flex-col gap-1">
-              {[...PRIMARY_LINKS, { label: 'Compare', to: '/compare/vanta-alternative' }].map((item) => (
+              {PRIMARY_LINKS.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -193,7 +151,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
       {/* ============================== Footer ============================= */}
       <footer className="border-t border-white/[0.06] bg-signal-canvas">
         <div className="mx-auto max-w-[1200px] px-6 py-16 md:px-10">
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
               <Link to="/" aria-label="ComplyEasyAI home">
@@ -223,22 +181,6 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
                     All frameworks →
                   </Link>
                 </li>
-              </ul>
-            </div>
-
-            {/* Compare */}
-            <div>
-              <h2 className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-signal-muted">
-                Compare
-              </h2>
-              <ul className="space-y-3 text-sm text-signal-sub">
-                {COMPARE_LINKS.map((item) => (
-                  <li key={item.to}>
-                    <Link to={item.to} className="transition-colors hover:text-signal-ink">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
               </ul>
             </div>
 
