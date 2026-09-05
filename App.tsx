@@ -58,11 +58,6 @@ const DORAPillar = lazy(() => import('./components/marketing/pages/DORAPillar'))
 const DMAPillar = lazy(() => import('./components/marketing/pages/DMAPillar'));
 const DSAPillar = lazy(() => import('./components/marketing/pages/DSAPillar'));
 const CSRDPillar = lazy(() => import('./components/marketing/pages/CSRDPillar'));
-const VantaAlternative = lazy(() => import('./components/marketing/pages/VantaAlternative'));
-const DrataAlternative = lazy(() => import('./components/marketing/pages/DrataAlternative'));
-const SecureframeAlternative = lazy(() => import('./components/marketing/pages/SecureframeAlternative'));
-const SprintoAlternative = lazy(() => import('./components/marketing/pages/SprintoAlternative'));
-const OneTrustAlternative = lazy(() => import('./components/marketing/pages/OneTrustAlternative'));
 const FaqHubPage = lazy(() => import('./components/marketing/pages/FaqHubPage'));
 const GlossaryIndex = lazy(() => import('./components/marketing/pages/GlossaryIndex'));
 const GlossaryTerm = lazy(() => import('./components/marketing/pages/GlossaryTerm'));
@@ -537,11 +532,8 @@ const App: React.FC = () => {
             <Route path="/csrd-compliance" element={<PublicPageWrapper><CSRDPillar /></PublicPageWrapper>} />
 
             {/* ── Competitor comparison pages (public) ──────────────── */}
-            <Route path="/compare/vanta-alternative" element={<PublicPageWrapper><VantaAlternative /></PublicPageWrapper>} />
-            <Route path="/compare/drata-alternative" element={<PublicPageWrapper><DrataAlternative /></PublicPageWrapper>} />
-            <Route path="/compare/secureframe-alternative" element={<PublicPageWrapper><SecureframeAlternative /></PublicPageWrapper>} />
-            <Route path="/compare/sprinto-alternative" element={<PublicPageWrapper><SprintoAlternative /></PublicPageWrapper>} />
-            <Route path="/compare/onetrust-alternative" element={<PublicPageWrapper><OneTrustAlternative /></PublicPageWrapper>} />
+            {/* The competitor-comparison section was removed; keep indexed links alive. */}
+            <Route path="/compare/*" element={<Navigate to="/platform" replace />} />
 
             {/* ── FAQ, Glossary, Blog (public) ──────────────────────── */}
             <Route path="/faq" element={<PublicPageWrapper><FaqHubPage /></PublicPageWrapper>} />

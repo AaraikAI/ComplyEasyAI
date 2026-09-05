@@ -32,12 +32,6 @@ export const STATIC_ROUTES = [
   '/dma-compliance',
   '/dsa-compliance',
   '/csrd-compliance',
-  // Competitor comparison pages
-  '/compare/vanta-alternative',
-  '/compare/drata-alternative',
-  '/compare/secureframe-alternative',
-  '/compare/sprinto-alternative',
-  '/compare/onetrust-alternative',
   // FAQ, glossary index, blog index
   '/faq',
   '/glossary',
