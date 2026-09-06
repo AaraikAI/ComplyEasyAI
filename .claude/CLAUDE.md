@@ -998,6 +998,68 @@ code; the code is the fix.
   alone) PASSED — and `Build iOS`/`Build Android` are skipped on PRs, so a green check
   is not evidence an SDK major is safe.
 
+### Production sign-up outage, demo form, status page, staging and frameworks (2026-09-05)
+
+Diagnosed from live probes of www.complyeasyai.com; every cause verified at the cited line.
+
+- **New-user sign-up was 100% broken (HIGH, fixed #465).** `authController.verifyCaptcha` threw 503
+  `CAPTCHA verification unavailable` whenever `NODE_ENV=production` and no `HCAPTCHA_SECRET`/`RECAPTCHA_SECRET`
+  was set — and none is set anywhere, while the web client has **no CAPTCHA widget at all** (never sends
+  `captchaToken`). Existing users were unaffected (the check is skipped for known emails), which is why it
+  went unnoticed. CAPTCHA is now opt-in (`CAPTCHA_REQUIRED=true` fails closed). It remains a half-built
+  control: shipping it needs the hCaptcha widget + site key + secret.
+- **CloudFront rewrites EVERY API 403/404 into the SPA shell with a 200 (HIGH, #479).** The distribution's
+  custom error responses (`403`/`404 → /index.html`) are distribution-wide, so they also apply to the
+  `/api/*` and `/health` behaviours: `GET /api/anything-unknown → 200 text/html`, and a CSRF 403 on
+  `POST /api/demo/request` arrived as HTML — hence `Unexpected token '<'` on the demo form. Fix: decide
+  "prerendered page vs SPA shell" per request in the viewer-request CloudFront Function (route set generated
+  from `scripts/publicRoutes.mjs` by `npm run sitemap` → `infrastructure/prerendered-routes.json`) and delete
+  the error responses. **The live distribution `E4CUOI17YEQ7E` has drifted from the CDK `FrontendStack`**
+  (`/ws/*` was added by hand) — apply via console/CLI per `docs/CLOUDFRONT_API_ERROR_PASSTHROUGH.md`; do NOT
+  `cdk deploy ComplyEasy-Frontend`. Also: `infrastructure/.gitignore` ignores `*.js`, so the function source
+  had to be un-ignored (`!cloudfront/*.js`), and `String.replace` substitutes only the FIRST occurrence — a
+  placeholder that also appears in a comment ships the bare identifier (now guarded by a hard failure + test).
+- **Demo form contract drift (fixed #466).** `submitDemoRequestSchema` is `.unknown(false)` but omitted 8 fields
+  `DemoBookingForm` sends and the controller persists (`industry`, `country`, `interestedTier`, `currentChallenge`,
+  `howDidYouHear`, `utm*`) → every submission 400. Separately, `services/api.ts` cached the CSRF token forever
+  while the server issues it with a 1-hour cookie → 403 after an hour, never retried. Now: 50-min TTL, one
+  fresh-token replay on a CSRF 403, and a readable error when an `/api` path returns `text/html`.
+- **Status page (fixed #467).** Fetched `/api/health` (never existed) and expected a `services` array; the probe
+  is `/health` and reports a `checks` map. Now derives components from `checks`, reads the body on 503 too,
+  and shows `—` where nothing is measured (no fabricated per-service uptime).
+- **Compare section removed (#473).** Nav dropdown, footer column, 5 `/compare/*` routes + pages,
+  `SignalCompetitorPage`, `data/competitorPageContent.ts`, `data/comparisons.ts` (never imported); `/compare/*`
+  redirects to `/platform`. Incidental: the committed `public/sitemap.xml` was stale (40 routes, missing 13
+  live pages) — the build regenerates it, only the checked-in copy lagged.
+- **Staging did not exist (#480).** No environment, secrets, DNS, Supabase project or AWS resources; the old
+  `deploy-staging` was gated on a `develop` branch nobody pushes to. `main` now runs
+  staging → **full E2E** → `approve-production`, gated on `check-staging-config`; inert until
+  `STAGING_SUPABASE_DATABASE_URL`/`STAGING_S3_FRONTEND_BUCKET`/`STAGING_CLOUDFRONT_DISTRIBUTION_ID` exist
+  (`approve-production` allows `e2e-staging` = success OR skipped). Runbook `docs/STAGING_ENVIRONMENT.md`.
+  Staging DB is dropped + `db push`ed every deploy (`migrate deploy` cannot rebuild the schema — see the
+  migration-history section). Prod runs **ECS Express Mode**, not the CDK ALB stack — mirror the live topology.
+  Real-session E2E on staging depends on #465 (registration would otherwise 503).
+- **Frameworks (#482).** AIUC-1 was absent; `'DPDPA'` in the registry is **Delaware**; India existed only as a
+  4-control `PDPB` stub named after the superseded 2019 Bill. Added AIUC-1 (48 controls, 6 pillars — wording
+  paraphrases the standard; verify before certification use) and `'India DPDPA'` (44 controls citing Act
+  sections + DPDP Rules 2025), 151 crosswalk mappings. **The bare `DPDPA` key stays Delaware**:
+  `ComplianceFramework.name` is a free string resolved via `FRAMEWORK_ALIASES`, so renaming it would orphan
+  customer frameworks; `PDPB`/`DPDP Act`/… alias to India. The UI catalogue is backend-driven
+  (`GET /api/frameworks/templates`). New `controlCrosswalk.integrity.test.ts` found **25 pre-existing dead
+  mappings — every `ISO 27017` row** uses `ISO27017-CLD.x.y` ids while the template uses `ISO27017-5.1.1`
+  style; budget pinned at 25 so it can only shrink.
+- **A run parked at the production approval gate holds the `main` concurrency slot indefinitely.** Two
+  runs left `waiting` at `Approve Production Deploy` since **2026-08-11** and **2026-08-25** silently blocked
+  every later `main` run (they showed as `pending` with 0 jobs and no error). Diagnose with
+  `gh run list --workflow ci.yml --status waiting --branch main`; cancel superseded waiting runs (nothing has
+  deployed yet at that point) and the newest run starts. Related: the daily `self-heal/cve-autofix` runs sit at
+  `action_required` (bot-authored PRs need "Approve and run"), so that workflow's CI has effectively never
+  executed — 20 such runs since 2026-08-10.
+- **Small traps hit:** `no-new-func` blocks `new Function` in tests — evaluate generated code with
+  `node:vm.runInNewContext`; the Supabase bot's "no changes in supabase directory" review comment (relayed by
+  Autofix on every PR) is informational noise; `gh pr merge` fails "Head branch is out of date" only
+  transiently during a Dependabot rebase (the ruleset's `strict` flag is false).
+
 ## Architecture Quick Reference
 
 - **Server:** Express 5 + Prisma 7 + PostgreSQL
