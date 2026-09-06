@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
@@ -112,44 +114,44 @@ export class FrontendStack extends cdk.Stack {
       : undefined;
 
     // ---------------------------------------------------------------
-    // Viewer-request URI rewrite for prerendered per-route HTML.
+    // Viewer-request URI rewrite: prerendered page or SPA shell, decided up front.
     // ---------------------------------------------------------------
-    // The build prerenders public routes to /<route>/index.html in S3, but a
-    // crawler requests the clean path (e.g. /soc2-compliance). CloudFront's
-    // default-root-object only resolves '/' to index.html, so a clean
-    // sub-path would otherwise 404/403 and fall back to the empty SPA shell —
-    // defeating prerendering. This function rewrites any extension-less URI
-    // that does not already end in '/' by appending '/index.html' (and maps a
-    // bare '/' to '/index.html'). Requests for hashed assets (which carry a
-    // file extension) and /api, /health, /socket.io (separate behaviors) are
-    // left untouched. Unknown routes with no prerendered object still fall
-    // through to the 403/404 → /index.html SPA fallback below.
+    // The build prerenders every public route to /<route>/index.html in S3.
+    // The function maps a clean prerendered path to that object, and every other
+    // extension-less path (application routes such as /dashboard/…) straight to
+    // /index.html. Requests with a file extension pass through untouched.
+    //
+    // This deliberately replaces the distribution-wide 403/404 -> /index.html
+    // custom error responses that used to provide the SPA fallback. Those apply
+    // to EVERY origin, so a 403 from the API's CSRF middleware or a 404 for an
+    // unknown /api path came back to the browser as the SPA's HTML with a 200 —
+    // and the client then failed parsing HTML as JSON ("Unexpected token '<'").
+    // With the decision made here, no error-response rewrite is needed and API
+    // errors reach the browser as the real 4xx JSON they are.
+    //
+    // The route set is generated from scripts/publicRoutes.mjs by
+    // scripts/export-prerender-manifest.mjs (part of `npm run sitemap`); the
+    // function body itself lives in infrastructure/cloudfront/route-rewrite.js so
+    // the same source can be pasted into the console for a distribution that is
+    // not managed by this stack.
+    const prerenderedRoutes: string[] = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '..', 'prerendered-routes.json'), 'utf8')
+    );
+    const prerenderedSet = prerenderedRoutes.reduce<Record<string, 1>>((acc, route) => {
+      acc[route] = 1;
+      return acc;
+    }, {});
+    const rewriteSource = fs
+      .readFileSync(path.join(__dirname, '..', 'cloudfront', 'route-rewrite.js'), 'utf8')
+      .replaceAll('__PRERENDERED_ROUTES__', JSON.stringify(prerenderedSet));
+    if (rewriteSource.includes('__PRERENDERED_ROUTES__')) {
+      throw new Error('route-rewrite.js: prerendered-route placeholder was not substituted');
+    }
     const rewriteFunction = new cloudfront.Function(this, 'RouteRewrite', {
       functionName: `${prefix}-route-rewrite`,
-      comment: 'Append /index.html to extension-less clean paths for prerendered routes',
+      comment: 'Prerendered routes -> /<route>/index.html; other app routes -> /index.html; paths with extensions untouched',
       runtime: cloudfront.FunctionRuntime.JS_2_0,
-      code: cloudfront.FunctionCode.fromInline(
-        [
-          'function handler(event) {',
-          '  var request = event.request;',
-          '  var uri = request.uri;',
-          "  if (uri === '/' || uri === '') {",
-          "    request.uri = '/index.html';",
-          '    return request;',
-          '  }',
-          "  if (uri.endsWith('/')) {",
-          "    request.uri = uri + 'index.html';",
-          '    return request;',
-          '  }',
-          '  // Only rewrite paths with no file extension in the last segment.',
-          "  var lastSegment = uri.slice(uri.lastIndexOf('/') + 1);",
-          "  if (lastSegment.indexOf('.') === -1) {",
-          "    request.uri = uri + '/index.html';",
-          '  }',
-          '  return request;',
-          '}',
-        ].join('\n')
-      ),
+      code: cloudfront.FunctionCode.fromInline(rewriteSource),
     });
 
     // ---------------------------------------------------------------
@@ -235,21 +237,9 @@ export class FrontendStack extends cdk.Stack {
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         },
       },
-      // SPA: serve index.html for all 403/404 (client-side routing)
-      errorResponses: [
-        {
-          httpStatus: 403,
-          responseHttpStatus: 200,
-          responsePagePath: '/index.html',
-          ttl: cdk.Duration.seconds(0),
-        },
-        {
-          httpStatus: 404,
-          responseHttpStatus: 200,
-          responsePagePath: '/index.html',
-          ttl: cdk.Duration.seconds(0),
-        },
-      ],
+      // No custom error responses on purpose: the viewer-request function above
+      // provides the SPA fallback for the S3 origin only, so 403/404 from the
+      // /api/*, /health and websocket behaviours pass through unchanged.
       domainNames: props.domainName ? [props.domainName] : undefined,
       certificate,
       minimumProtocolVersion:
