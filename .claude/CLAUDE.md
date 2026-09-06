@@ -1060,6 +1060,48 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   Autofix on every PR) is informational noise; `gh pr merge` fails "Head branch is out of date" only
   transiently during a Dependabot rebase (the ruleset's `strict` flag is false).
 
+### Addendum — later in the 2026-09-05 session (ZK mirrors, lint traps, PAT, what is still open)
+
+- **Every production deploy depends on an experimental feature's third-party download (HIGH, fixed #484).**
+  `Docker Build & Push` runs `Generate ZK proving keys` → `setup-circuits.sh`, which fetched
+  `powersOfTau28_hez_final_12.ptau` from public mirrors. On 2026-09-05 all of them were dead at once
+  (`storage.googleapis.com/zkevm/ptau` → 403; the snarkjs raw path never hosted it; `cloudflare-ipfs.com`
+  is shut down; the Hermez S3 bucket and every IPFS gateway fail) and the consolidated deploy run 33995562596
+  failed there — the same step had passed on 2026-08-25. The verified file (SHA-256 pinned in
+  `server/src/zkp/checksums.sha256`; a local copy lives gitignored at `server/src/zkp/…ptau`) is now a
+  **release asset of this repo, tag `zk-ptau-hez-12`** (prerelease, not "latest"), tried first; the pin is
+  still enforced, `PTAU_URL` overrides. Because `Docker Build & Push` never runs on PRs, this class of
+  failure can only be seen after merge.
+- **GitHub concurrency has two different behaviours.** A newly queued `main` run auto-cancels the previous
+  *pending* run, but a run *waiting* at the `production-approval` gate is never cancelled and holds the slot —
+  so later runs sit `pending` with 0 jobs and no error. Runs from 2026-08-11 and 2026-08-25 did exactly that.
+  `gh run list --workflow ci.yml --branch main --status waiting`, then cancel the superseded ones.
+- **Lint traps hit while landing #479:** (1) the `__PRERENDERED_ROUTES__` placeholder in
+  `infrastructure/cloudfront/route-rewrite.js` must appear exactly once — `String.replaceAll` at render time
+  substitutes it everywhere, so even a `/* global __PRERENDERED_ROUTES__ */` directive becomes an invalid
+  globals comment in the rendered copy; the identifier and CloudFront's `handler` entry point are declared in
+  a scoped ESLint block for `infrastructure/cloudfront/*.js` instead. (2) `no-new-func` rejects `new Function`
+  in tests — evaluate generated code with `node:vm.runInNewContext`. (3) A local `tsc` in `infrastructure/`
+  leaves `infrastructure/dist/**/*.js`, which made local `npx eslint .` fail with 43 `no-undef` errors while
+  CI (clean checkout) was green; `infrastructure/dist/**` and `cdk.out/**` are now in the ESLint ignores.
+  Reproduce CI's lint with `npx eslint .` — the flat config ignores `--ext`.
+- **Expired fine-grained PAT "ComplyEasyAI Github Token".** It is referenced by **no** workflow (they use
+  `GITHUB_TOKEN`/`EXPO_TOKEN`/`CODECOV_TOKEN`), no Actions or Dependabot secret, and not by the local `gh`
+  session (OAuth `gho_`). The only PAT-shaped consumer in the codebase is
+  `services/advanced/complianceAsCodeService.ts:777` reading `process.env.GITHUB_TOKEN` to post check-run
+  statuses for the Compliance-as-Code gate (`.env.example`: `YOUR_GITHUB_PAT`, optional). It fails soft
+  (`logger.warn` and skip) when missing, so expiry degrades that feature only. Rotate it wherever
+  `GITHUB_TOKEN` is set for the runtime — Secrets Manager `complyeasy/production` (if the task definition
+  references it) and/or `server/.env` — and redeploy so ECS re-injects the secret.
+- **Supabase `preview branches` bot** comments "no changes detected in `supabase` directory" on every PR; the
+  desktop Autofix relays each one. They are informational; disable in Supabase → Project Integrations if unwanted.
+- **Merged this session:** #441 #442 #443 #444 (Aug), #465 #466 #467 #473 #479 #480 #482 #483; #484 (ZK) pending.
+  **Still not applied:** the CloudFront live change (#479 is in the repo; the distribution needs the console/CLI
+  edit — IAM grant for `complyeasy-s3-user` was still missing at session end). **Still open (user):** staging
+  provisioning; the 25 dead ISO 27017 crosswalk rows (ids `ISO27017-CLD.x.y` vs template `ISO27017-5.1.1`);
+  AIUC-1 wording review against the official text; the daily `self-heal/cve-autofix` runs stuck at
+  `action_required`.
+
 ## Architecture Quick Reference
 
 - **Server:** Express 5 + Prisma 7 + PostgreSQL
