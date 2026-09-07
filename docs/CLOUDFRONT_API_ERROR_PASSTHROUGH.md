@@ -40,6 +40,9 @@ no CloudFront rights, so every step below fails with `AccessDenied` until an
 administrator attaches this inline policy (or an equivalent managed one). Note
 that `cloudfront:ListFunctions` is not resource-scoped and must be granted on
 `"*"`; every other action here is scoped to the distribution or to functions.
+`CreateFunction` is needed because the live distribution has **no** function
+(see below); `DeleteFunction` only for cleanup/rollback of a function that was
+never attached.
 
 ```json
 {
@@ -50,8 +53,9 @@ that `cloudfront:ListFunctions` is not resource-scoped and must be granted on
                  "cloudfront:UpdateDistribution", "cloudfront:CreateInvalidation"],
       "Resource": "arn:aws:cloudfront::267949707729:distribution/E4CUOI17YEQ7E" },
     { "Sid": "FunctionReadWrite", "Effect": "Allow",
-      "Action": ["cloudfront:DescribeFunction", "cloudfront:GetFunction", "cloudfront:UpdateFunction",
-                 "cloudfront:TestFunction", "cloudfront:PublishFunction"],
+      "Action": ["cloudfront:CreateFunction", "cloudfront:DescribeFunction", "cloudfront:GetFunction",
+                 "cloudfront:UpdateFunction", "cloudfront:TestFunction", "cloudfront:PublishFunction",
+                 "cloudfront:DeleteFunction"],
       "Resource": "arn:aws:cloudfront::267949707729:function/*" },
     { "Sid": "FunctionList", "Effect": "Allow",
       "Action": "cloudfront:ListFunctions", "Resource": "*" }
@@ -83,24 +87,51 @@ Remove the policy again after the change is verified
 
 Distribution: `E4CUOI17YEQ7E` (www.complyeasyai.com).
 
-1. **Update the function.** CloudFront → Functions → the function associated
-   with the default behaviour's *viewer request* event (CDK-named
-   `complyeasy-production-route-rewrite`). Replace its code with the contents of
-   `infrastructure/cloudfront/route-rewrite.rendered.js` (regenerate first with
-   `npm run sitemap` so the route set is current). Use the **Test** tab with the
-   URIs from the table above, then **Publish**. Runtime: `cloudfront-js-2.0`.
+> **Live state measured 2026-09-07:** the distribution has **no CloudFront
+> function anywhere** (`list-functions` is empty; the default behaviour's
+> `FunctionAssociations.Quantity` is 0), `DefaultRootObject` is empty, and the
+> S3 origin is a REST endpoint behind OAC. So today *every* extension-less path,
+> including `/`, is a 403 from S3 that the error page rewrites into the SPA
+> shell, and prerendered pages are never served. Consequence: **the function
+> must be created, published, and attached in the same `update-distribution`
+> call that deletes the error pages.** Deleting the error pages first would
+> serve S3's 403 XML on the home page.
 
-2. **Delete the custom error responses.** Distribution → *Error pages* → delete
-   the entries for **403** and **404**. Save. Via CLI:
+1. **Create and publish the function.** Regenerate the rendered source first
+   (`npm run sitemap`) so the route set is current.
+
+   ```bash
+   FN=complyeasy-production-route-rewrite
+   SRC=infrastructure/cloudfront/route-rewrite.rendered.js
+   aws cloudfront create-function --name "$FN" --runtime cloudfront-js-2.0 \
+     --function-config "Comment=Serve prerendered public routes and the SPA shell; pass /api and files through,Runtime=cloudfront-js-2.0" \
+     --function-code "fileb://$SRC"
+   ETAG=$(aws cloudfront describe-function --name "$FN" --stage DEVELOPMENT --query ETag --output text)
+   # Test on the DEVELOPMENT stage with the URIs from the table above, e.g.:
+   printf '%s' '{"version":"1.0","context":{"eventType":"viewer-request"},"viewer":{"ip":"1.2.3.4"},"request":{"method":"GET","uri":"/soc2-compliance","querystring":{},"headers":{"host":{"value":"www.complyeasyai.com"}},"cookies":{}}}' > event.json
+   aws cloudfront test-function --name "$FN" --if-match "$ETAG" --stage DEVELOPMENT \
+     --event-object fileb://event.json --query 'TestResult.FunctionOutput' --output text
+   aws cloudfront publish-function --name "$FN" --if-match "$ETAG"
+   FN_ARN=$(aws cloudfront describe-function --name "$FN" --stage LIVE --query FunctionSummary.FunctionMetadata.FunctionARN --output text)
+   ```
+
+   If a function already exists (a future re-run), use `update-function` on it
+   instead of `create-function`; the rest is identical.
+
+2. **Attach the function and delete the custom error responses in ONE update.**
 
    ```bash
    aws cloudfront get-distribution-config --id E4CUOI17YEQ7E > dist.json
    ETAG=$(jq -r .ETag dist.json)
-   jq '.DistributionConfig
-       | .CustomErrorResponses = {"Quantity":0,"Items":[]}' dist.json > dist-config.json
+   jq --arg arn "$FN_ARN" '.DistributionConfig
+       | .DefaultCacheBehavior.FunctionAssociations = {"Quantity":1,"Items":[{"FunctionARN":$arn,"EventType":"viewer-request"}]}
+       | .CustomErrorResponses = {"Quantity":0}' dist.json > dist-config.json
    aws cloudfront update-distribution --id E4CUOI17YEQ7E --if-match "$ETAG" \
      --distribution-config file://dist-config.json
    ```
+
+   Only the default (S3) behaviour gets the function; `/api/*`, `/health` and
+   `/ws/*` keep routing to the Express origin untouched.
 
 3. **Verify** (propagation takes a few minutes):
 
@@ -114,8 +145,10 @@ Distribution: `E4CUOI17YEQ7E` (www.complyeasyai.com).
    curl -s -o /dev/null -w '%{http_code} %{content_type}\n' $B/health                       # 200 application/json
    ```
 
-**Rollback.** Re-add the 403 and 404 → `/index.html` (200, TTL 0) error
-responses; the function is backwards compatible with them.
+**Rollback.** `update-distribution` with the saved `dist.json` config (it
+re-adds the two error responses and drops the association in one step); the
+function is backwards compatible with the error responses, so leaving it
+attached is also safe.
 
 **Ordering with the frontend deploy.** The function and the S3 objects are
 independent: a new prerendered route serves the SPA shell until the function is
