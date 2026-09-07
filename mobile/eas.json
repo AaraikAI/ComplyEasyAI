@@ -20,13 +20,13 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://staging-api.complyeasyai.com"
+        "EXPO_PUBLIC_API_URL": "https://staging.complyeasyai.com"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.complyeasyai.com"
+        "EXPO_PUBLIC_API_URL": "https://www.complyeasyai.com"
       }
     }
   },

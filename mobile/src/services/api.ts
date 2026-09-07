@@ -10,7 +10,11 @@ import { logger } from '../utils/logger';
 // React Native global — true in dev builds, false in production
 declare const __DEV__: boolean;
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.complyeasy.ai';
+// Production API is served behind CloudFront on the site origin (/api/* routes to the
+// Express service); there is no separate api.* host. EAS build profiles set this
+// per environment (see eas.json).
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://www.complyeasyai.com';
+const API_HOSTNAME = new URL(API_BASE_URL).hostname;
 const API_VERSION = 'v2';
 
 // ============================================================================
@@ -23,15 +27,16 @@ const API_VERSION = 'v2';
 // below and rejects mismatches. The helpers here validate that valid pins are
 // configured and gate startup in production; treat the native integration as
 // the actual enforcement point. See ESCALATION note in validateCertificatePin.
-// Public key hashes (SPKI SHA-256) for api.complyeasy.ai.
-// To obtain your pin: openssl s_client -connect api.complyeasy.ai:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64
-// Always include a backup pin (e.g. an intermediate CA or next-rotation key).
+// Public key hashes (SPKI SHA-256) for the configured API host (API_HOSTNAME).
+// To obtain a pin: openssl s_client -connect www.complyeasyai.com:443 -servername www.complyeasyai.com | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64
+// The production host is fronted by CloudFront with an ACM-managed certificate whose
+// leaf key rotates on renewal, so pin the issuing intermediate (and a backup) rather
+// than the leaf, and always include a backup pin.
 // Valid pin format: base64-encoded SHA-256 hash = exactly 44 characters ending with '='
-// Example: openssl s_client -connect api.complyeasy.ai:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64
 const PIN_REGEX = /^[A-Za-z0-9+/]{43}=$/;
 
-const CERTIFICATE_PINS = {
-  'api.complyeasy.ai': {
+const CERTIFICATE_PINS: Record<string, { pins: string[]; enforce: boolean }> = {
+  [API_HOSTNAME]: {
     // Primary: leaf certificate public key hash
     // Backup: intermediate CA public key hash (ensures connectivity during cert rotation)
     // IMPORTANT: Replace these placeholder hashes with your actual certificate SPKI hashes before production release.
@@ -39,10 +44,10 @@ const CERTIFICATE_PINS = {
       process.env.EXPO_PUBLIC_CERT_PIN_PRIMARY || '',
       process.env.EXPO_PUBLIC_CERT_PIN_BACKUP || '',
     ],
-    // Whether to enforce pinning. MUST be true in production builds.
-    // Set EXPO_PUBLIC_CERT_PIN_ENFORCE=true in production .env
-    enforce: process.env.EXPO_PUBLIC_CERT_PIN_ENFORCE === 'true' ||
-      process.env.NODE_ENV === 'production',
+    // Whether pinning is enforced. Set EXPO_PUBLIC_CERT_PIN_ENFORCE=true in the
+    // production build profile once the native pinning layer is integrated; until
+    // then the pins are inert configuration, so enforcement must be explicit.
+    enforce: process.env.EXPO_PUBLIC_CERT_PIN_ENFORCE === 'true',
   },
 };
 
@@ -62,7 +67,7 @@ const CERTIFICATE_PINS = {
  *   - expo-network with a custom native module
  */
 function validateCertificatePin(hostname: string): void {
-  const pinConfig = CERTIFICATE_PINS[hostname as keyof typeof CERTIFICATE_PINS];
+  const pinConfig = CERTIFICATE_PINS[hostname];
   if (!pinConfig) return;
 
   // Validate pin format: base64-encoded SHA-256 = 44 chars ending with '='
@@ -70,13 +75,17 @@ function validateCertificatePin(hostname: string): void {
 
   if (validPins.length === 0) {
     const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.EXPO_PUBLIC_ENV !== 'production';
-    if (!isDev) {
+    if (pinConfig.enforce) {
+      // Enforcement was requested but no usable pins exist: fail closed, since a
+      // native pinning layer with an empty pin set would reject every connection.
       logger.error(
-        '[CertPin] CRITICAL: No valid certificate pins configured for production! ' +
-        'Set EXPO_PUBLIC_CERT_PIN_PRIMARY and EXPO_PUBLIC_CERT_PIN_BACKUP with valid SPKI SHA-256 hashes. ' +
-        'See: openssl s_client -connect api.complyeasy.ai:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64'
+        '[CertPin] CRITICAL: pin enforcement is on but no valid certificate pins are configured. ' +
+        'Set EXPO_PUBLIC_CERT_PIN_PRIMARY and EXPO_PUBLIC_CERT_PIN_BACKUP with valid SPKI SHA-256 hashes for ' + hostname + '.'
       );
-      throw new Error(`Certificate pinning not configured for ${hostname}. Cannot proceed in production without valid pins.`);
+      throw new Error(`Certificate pinning enforcement is on but no valid pins are configured for ${hostname}.`);
+    }
+    if (!isDev) {
+      logger.warn('[CertPin] No certificate pins configured for ' + hostname + '; native pinning is not integrated, so transport security relies on system TLS.');
     } else {
       console.warn('[CertPin] No certificate pins configured. Pinning is disabled in development mode.');
     }
