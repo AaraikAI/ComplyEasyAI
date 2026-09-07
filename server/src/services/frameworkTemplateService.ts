@@ -914,7 +914,7 @@ const FRAMEWORK_TEMPLATE_MAP: Record<string, { controls: FrameworkControlTemplat
   'AIUC-1': {
     controls: AIUC1_CONTROLS,
     displayName: 'AIUC-1 (AI Agent Standard)',
-    description: 'AI Underwriting Company standard for AI agents: data and privacy, security, safety, reliability, accountability and society controls',
+    description: 'Artificial Intelligence Underwriting Company standard for AI agents (July 15 2026 release, 51 requirements): data and privacy, security, safety, reliability, accountability and society. Verified against aiuc-1.com on 2026-09-07; wording paraphrases the public requirement summaries.',
   },
   // 4 amendments
   'ISO 27001 Amd 1': {
