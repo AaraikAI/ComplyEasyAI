@@ -9,20 +9,29 @@
     "splash": {
       "backgroundColor": "#1a1a2e"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.complyeasy.ai"
+      "bundleIdentifier": "com.complyeasy.ai",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#1a1a2e"
+        "backgroundColor": "#1a1a2e",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "package": "com.complyeasy.ai"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-secure-store"]
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "scheme": "complyeasy"
   }
 }
