@@ -31,6 +31,10 @@ jobs:
         working-directory: server
         run: npm ci --ignore-scripts
 
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm ci --ignore-scripts
+
       - name: Audit root dependencies
         id: audit_root
         # `npm audit` exits non-zero when advisories exist; this step only
@@ -50,37 +54,97 @@ jobs:
           HIGH_COUNT=$(jq '[.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value.severity == "critical")] | length' /tmp/server-audit.json || echo "0")
           echo "high_count=$HIGH_COUNT" >> "$GITHUB_OUTPUT"
 
-      - name: Create issue if vulnerabilities found
-        if: steps.audit_root.outputs.high_count > 0 || steps.audit_server.outputs.high_count > 0
+      - name: Audit mobile dependencies
+        id: audit_mobile
+        working-directory: mobile
+        run: |
+          npm audit --json > /tmp/mobile-audit.json || true
+          HIGH_COUNT=$(jq '[.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value.severity == "critical")] | length' /tmp/mobile-audit.json || echo "0")
+          echo "high_count=$HIGH_COUNT" >> "$GITHUB_OUTPUT"
+
+      # One markdown line per HIGH/CRITICAL advisory with whether npm can fix it
+      # without a breaking upgrade, so the tracking issue is actionable on its own.
+      - name: Summarise advisories
+        id: summary
+        run: |
+          {
+            for ws in root server mobile; do
+              f=/tmp/$ws-audit.json
+              [ -s "$f" ] || continue
+              jq -r --arg ws "$ws" '
+                .vulnerabilities | to_entries[]
+                | select(.value.severity == "high" or .value.severity == "critical")
+                | "- `\(.key)` (\($ws), \(.value.severity)) — "
+                  + (if (.value.fixAvailable|type) == "object" then
+                       (if .value.fixAvailable.isSemVerMajor then "needs BREAKING upgrade: " else "fix: " end)
+                       + .value.fixAvailable.name + "@" + .value.fixAvailable.version
+                     elif .value.fixAvailable == true then "non-breaking `npm audit fix`"
+                     else "no fix published" end)
+                  + (if (.value.via|map(select(type=="object"))|length) > 0
+                     then " — " + (.value.via|map(select(type=="object"))[0].title|.[0:120]) else "" end)
+              ' "$f"
+            done
+          } > /tmp/advisories.md || true
+          echo "lines=$(wc -l < /tmp/advisories.md | tr -d ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update the tracking issue
+        if: steps.audit_root.outputs.high_count > 0 || steps.audit_server.outputs.high_count > 0 || steps.audit_mobile.outputs.high_count > 0
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
+            const fs = require('fs');
             const rootCount = parseInt('${{ steps.audit_root.outputs.high_count }}') || 0;
             const serverCount = parseInt('${{ steps.audit_server.outputs.high_count }}') || 0;
-            const total = rootCount + serverCount;
+            const mobileCount = parseInt('${{ steps.audit_mobile.outputs.high_count }}') || 0;
+            const total = rootCount + serverCount + mobileCount;
+            let advisories = '';
+            try { advisories = fs.readFileSync('/tmp/advisories.md', 'utf8').trim(); } catch {}
 
+            const date = new Date().toISOString().split('T')[0];
+            const title = `[Security] ${total} HIGH/CRITICAL dependency vulnerabilities found`;
             const body = `## Dependency Vulnerability Scan Results
 
-            **Date:** ${new Date().toISOString().split('T')[0]}
+            **Date:** ${date}
             **HIGH/CRITICAL vulnerabilities found:** ${total}
 
             - Root dependencies: ${rootCount} high/critical
             - Server dependencies: ${serverCount} high/critical
+            - Mobile dependencies: ${mobileCount} high/critical
+
+            ### Advisories
+            ${advisories || '_none listed_'}
 
             ### Next Steps
-            1. Run \`npm audit\` locally to review details
-            2. Run \`npm audit fix\` to apply non-breaking fixes
-            3. Review breaking changes manually
+            1. Apply the non-breaking ones with \`npm audit fix\` (never \`--force\`) — the daily self-heal workflow does this automatically.
+            2. For "needs BREAKING upgrade" / "no fix published" entries, add an \`overrides\` entry when the vulnerable transitive is not used on our code path, or track it in the breaking-upgrade issue.
+            3. Known-unfixable advisories are listed in \`.claude/CLAUDE.md\`; do not re-open them.
 
-            _This issue was automatically created by the weekly dependency scan._`;
+            _Updated automatically by the weekly dependency scan (${context.runId})._`;
 
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `[Security] ${total} HIGH/CRITICAL dependency vulnerabilities found`,
-              body: body,
-              labels: ['security', 'dependencies'],
+            // De-dupe: update the open tracking issue instead of opening a new one
+            // every week. Search by the fixed title prefix.
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'security,dependencies', per_page: 50,
             });
+            const existing = open.find(i => i.title.startsWith('[Security] ') && i.title.includes('HIGH/CRITICAL dependency vulnerabilities'));
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: existing.number, title, body,
+              });
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Scan ${date}: ${total} high/critical (root ${rootCount}, server ${serverCount}, mobile ${mobileCount}). Issue body updated.`,
+              });
+              core.info(`Updated existing issue #${existing.number}`);
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ['security', 'dependencies'],
+              });
+            }
       # NOTE: no unattended `npm audit fix --force` here — a forced fix can pull
       # in breaking major upgrades without review. Remediation is handled by
       # Dependabot PRs and the tracking issue opened above.

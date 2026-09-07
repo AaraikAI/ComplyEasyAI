@@ -1,7 +1,8 @@
 # Framework / regulation amendment monitor.
 #
 # Weekly: fetch every source in scripts/self-improvement/sources.json, detect
-# content changes (deterministic hash diff), commit the refreshed baseline state,
+# content changes (deterministic hash diff), save the refreshed baseline state to the
+# unprotected `framework-monitor-state` branch,
 # and — when something changed — open a review issue AND hand the change report to
 # the compliance agent so it can draft proposal PRs.
 name: Framework Monitor
@@ -31,25 +32,48 @@ jobs:
         with:
           node-version: 20
 
+      # Baselines live on the unprotected `framework-monitor-state` branch. The
+      # default branch's ruleset blocks direct pushes from GITHUB_TOKEN, so a
+      # baseline committed here never landed: from 2026-08-10 to 2026-09-07 every
+      # weekly run re-detected the same three page changes and opened another
+      # issue. Restore the last saved baseline before diffing.
+      - name: Restore baseline state from the state branch
+        run: |
+          if git fetch --depth=1 origin framework-monitor-state 2>/dev/null; then
+            git checkout FETCH_HEAD -- scripts/self-improvement/state
+            git reset -q -- scripts/self-improvement/state
+            echo "Restored baseline state from framework-monitor-state."
+          else
+            echo "No framework-monitor-state branch yet; using the checked-in baseline."
+          fi
+
       - name: Run monitor
         id: monitor
         run: |
           node scripts/self-improvement/monitor-sources.mjs \
             --out "$RUNNER_TEMP/si" --update-state | tee -a "$GITHUB_OUTPUT"
 
-      - name: Commit refreshed baseline state
+      - name: Save refreshed baseline state to the state branch
         if: always()
         run: |
-          if [ -n "$(git status --porcelain -- scripts/self-improvement/state)" ]; then
-            git config user.name "complyeasy-self-heal[bot]"
-            git config user.email "self-heal@users.noreply.github.com"
-            git add scripts/self-improvement/state
-            git commit -m "chore(monitor): refresh framework source baselines [skip ci]"
-            # Direct push; if the default branch is protected and the bot can't push,
-            # don't fail the run — log it (grant the Action bypass or use a state branch).
-            git push origin "HEAD:${GITHUB_REF_NAME}" || \
-              echo "::warning::Could not push baseline state (branch protection?). Change detection will re-baseline next run; see docs/SELF_IMPROVEMENT.md."
+          if [ -z "$(git status --porcelain -- scripts/self-improvement/state)" ]; then
+            echo "Baseline unchanged."
+            exit 0
           fi
+          git config user.name "complyeasy-self-heal[bot]"
+          git config user.email "self-heal@users.noreply.github.com"
+          # Snapshot only the state directory onto an orphan commit and replace the
+          # state branch with it; history is not needed and the branch is unprotected.
+          TMP="$(mktemp -d)"
+          cp -R scripts/self-improvement/state "$TMP/state"
+          git checkout -q --orphan framework-monitor-state-tmp
+          git rm -rfq . >/dev/null 2>&1 || true
+          mkdir -p scripts/self-improvement
+          cp -R "$TMP/state" scripts/self-improvement/state
+          git add scripts/self-improvement/state
+          git commit -qm "chore(monitor): baseline state $(date -u +%Y-%m-%dT%H:%MZ) [skip ci]"
+          git push --force origin HEAD:framework-monitor-state
+          echo "Saved baseline state to framework-monitor-state."
 
       - name: Open review issue for detected changes
         if: steps.monitor.outputs.changed_count != '0'
@@ -59,10 +83,22 @@ jobs:
           for L in "compliance:5319e7" "needs-review:fbca04"; do
             gh label create "${L%%:*}" --color "${L##*:}" 2>/dev/null || true
           done
-          gh issue create \
-            --title "Framework/regulation change(s) detected ($(date -u +%Y-%m-%d))" \
-            --body-file "$RUNNER_TEMP/si/monitor-report.md" \
-            --label "compliance" --label "needs-review"
+          # De-dupe: append to the open review issue instead of stacking a new one
+          # every week (the same pattern self-heal-cve.yml uses).
+          EXISTING="$(gh issue list --state open --label compliance --label needs-review \
+            --search 'in:title "Framework/regulation change(s) detected"' \
+            --json number --jq '.[0].number' || true)"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file "$RUNNER_TEMP/si/monitor-report.md"
+            gh issue edit "$EXISTING" \
+              --title "Framework/regulation change(s) detected (latest: $(date -u +%Y-%m-%d))"
+            echo "Appended report to existing issue #$EXISTING."
+          else
+            gh issue create \
+              --title "Framework/regulation change(s) detected ($(date -u +%Y-%m-%d))" \
+              --body-file "$RUNNER_TEMP/si/monitor-report.md" \
+              --label "compliance" --label "needs-review"
+          fi
 
       - name: Upload report artifact
         if: steps.monitor.outputs.changed_count != '0'
