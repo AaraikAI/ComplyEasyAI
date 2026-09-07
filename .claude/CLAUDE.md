@@ -202,6 +202,16 @@ majors), which is out-of-scope dependency-replacement work, not a code fix.
 
 `lodash 4.x` and `effect <3.20.0` from the prior table no longer appear in the current server audit.
 
+**Refreshed 2026-09-07 (after the Dependabot drain + #498).** Root = **0**. Server = **0 high** (was 4: all
+transitive through the `prisma` CLI — `deepmerge-ts <8` via `@prisma/config`, which pins 7.1.5 even at Prisma
+7.10.0, and `mysql2 <=3.23.0`, pulled by the CLI but never used on our PostgreSQL code path). npm's only suggested
+"fix" was a downgrade to Prisma 6; fixed instead with `overrides.deepmerge-ts: ^8.0.2` + `overrides.mysql2:
+^3.24.3` (clean-room `npm ci` + `prisma validate/generate` + `tsc` verified). **Mobile = 4 high, genuinely
+unfixable today:** `image-size` (GHSA-w3rx-r6r6-pgpr, GHSA-5p2g-fcmc-qvqq) affects **every published version
+(≤2.0.2 = latest)**; it is a transitive of Metro (the dev-time RN bundler) and is not shipped in the app binary.
+`npm audit fix` churns the lock without clearing it — do not chase it; re-check when image-size publishes >2.0.2.
+The weekly `dependency-scan.yml` now audits `mobile/` too and updates ONE tracking issue (#497).
+
 ### Prisma model names (correct references)
 
 - `riskItem` (NOT `risk`), `frameworkControl` (NOT `control`),
