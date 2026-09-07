@@ -33,6 +33,46 @@ into the console. Logic:
 | anything with a file extension (`/assets/x.js`, `/sitemap.xml`) | untouched — S3 answers |
 | `/api/*`, `/health`, websocket | not affected — separate behaviours, and no error-response rewrite any more |
 
+## Prerequisite: IAM permissions for the operator
+
+The local CLI identity (`arn:aws:iam::267949707729:user/complyeasy-s3-user`) has
+no CloudFront rights, so every step below fails with `AccessDenied` until an
+administrator attaches this inline policy (or an equivalent managed one). Note
+that `cloudfront:ListFunctions` is not resource-scoped and must be granted on
+`"*"`; every other action here is scoped to the distribution or to functions.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "DistributionReadWrite", "Effect": "Allow",
+      "Action": ["cloudfront:GetDistribution", "cloudfront:GetDistributionConfig",
+                 "cloudfront:UpdateDistribution", "cloudfront:CreateInvalidation"],
+      "Resource": "arn:aws:cloudfront::267949707729:distribution/E4CUOI17YEQ7E" },
+    { "Sid": "FunctionReadWrite", "Effect": "Allow",
+      "Action": ["cloudfront:DescribeFunction", "cloudfront:GetFunction", "cloudfront:UpdateFunction",
+                 "cloudfront:TestFunction", "cloudfront:PublishFunction"],
+      "Resource": "arn:aws:cloudfront::267949707729:function/*" },
+    { "Sid": "FunctionList", "Effect": "Allow",
+      "Action": "cloudfront:ListFunctions", "Resource": "*" }
+  ]
+}
+```
+
+From an administrator session (console or CLI), save the JSON as
+`cloudfront-live-fix-policy.json` and run:
+
+```bash
+aws iam put-user-policy --user-name complyeasy-s3-user \
+  --policy-name CloudFrontLiveFix-E4CUOI17YEQ7E \
+  --policy-document file://cloudfront-live-fix-policy.json
+```
+
+Verify from the operator machine with
+`aws cloudfront get-distribution-config --id E4CUOI17YEQ7E --query ETag`.
+Remove the policy again after the change is verified
+(`aws iam delete-user-policy --user-name complyeasy-s3-user --policy-name CloudFrontLiveFix-E4CUOI17YEQ7E`).
+
 ## Apply to the live distribution (console / CLI)
 
 > The live distribution has drifted from the CDK `FrontendStack` (e.g. the
