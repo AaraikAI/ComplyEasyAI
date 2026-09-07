@@ -1096,6 +1096,16 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
 - **Supabase `preview branches` bot** comments "no changes detected in `supabase` directory" on every PR; the
   desktop Autofix relays each one. They are informational; disable in Supabase → Project Integrations if unwanted.
 - **Merged this session:** #441 #442 #443 #444 (Aug), #465 #466 #467 #473 #479 #480 #482 #483; #484 (ZK) pending.
+- **#479 broke the production image build (found 2026-09-07, after merge, fixed #489).** `npm run build`
+  chains `npm run sitemap`, which #479 extended with `scripts/export-prerender-manifest.mjs` — and that
+  script writes into `infrastructure/`. The Dockerfile's `frontend-build` stage `COPY`s a curated list of
+  directories that has no `infrastructure/`, so the image build died with `ENOENT
+  /app/infrastructure/prerendered-routes.json` on the first `main` run after #484 un-stuck the ZK step.
+  The script now skips (exit 0, with a message) when the CloudFront template is absent and `mkdir -p`s
+  otherwise. Third instance of the same class (re2, fast-xml-parser, this): **`Docker Build & Push` never
+  runs on PRs**, so anything the image build does differently from a full checkout is only tested on
+  `main`. Reproduce locally without Docker by copying exactly the Dockerfile's `COPY` list into a temp dir,
+  symlinking `node_modules`, and running the failing `npm run …` there.
   **Still not applied:** the CloudFront live change (#479 is in the repo; the distribution needs the console/CLI
   edit — IAM grant for `complyeasy-s3-user` was still missing at session end). **Still open (user):** staging
   provisioning; the 25 dead ISO 27017 crosswalk rows (ids `ISO27017-CLD.x.y` vs template `ISO27017-5.1.1`);
