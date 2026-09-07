@@ -1114,6 +1114,25 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   anywhere. Rule: **any job downstream of a conditionally-skipped job must use `always()` + explicit
   `needs.<job>.result == 'success'` checks.** Re-runs use the original workflow snapshot, so a workflow fix
   always needs a fresh run (and a fresh approval).
+- **CloudFront live fix APPLIED 2026-09-07 (~04:24 UTC).** The live distribution had NO function at all and an empty
+  `DefaultRootObject` (every path was an S3 403 rewritten to the shell), so the function had to be created, published
+  and attached in the SAME `update-distribution` that removed the error pages. Verified: unknown `/api/*` → 404 JSON,
+  CSRF 403 → JSON, prerendered pages actually served for the first time. Runbook + policy updated (#487, #491).
+- **Prerendered pages shipped `http://127.0.0.1:5050/assets/*.js` modulepreload links (found 2026-09-07, fixed #493).**
+  Vite injects modulepreload tags at runtime; the prerenderer serialised them with its own local origin. Browsers
+  preload from localhost → CSP `script-src 'self'` console error on every prerendered page. Invisible until the
+  CloudFront fix made prerendered pages reachable. The prerenderer now relativises its origin and refuses to write a
+  page that still references it. **Lesson: a fix that exposes a previously-unreachable code path needs its own smoke
+  test of that path** — the E2E suite runs the SPA, never the prerendered HTML.
+- **Post-deploy smoke (2026-09-07, run 34084272262):** `/health` 200 on the new task; nav/footer have no Compare;
+  `/compare/*` → `/platform`; `/status` derives components from `/health`; demo schema accepts all 8 added fields
+  (same-origin CSRF probe with an invalid email → 400 mentioning only the email); marketing `/frameworks` still lists
+  14 frameworks (AIUC-1 / India DPDPA not on the marketing page yet — pending task). During the ECS rollout (two tasks
+  alive) CSRF probes returned "token has expired or is invalid" for a few minutes, then 100% pass — expected with
+  overlapping tasks. **Open finding:** `/health` reports `cache.mode: "memory"` — `redisCacheService.initialize()`
+  fell back at boot and never retries, so a transient Redis blip at task start leaves the task without Redis cache
+  for its whole life (the CSRF store and BullMQ connect fine later). Sign-up CAPTCHA and the in-app framework
+  catalogue could not be verified without creating a production account (not done by the assistant).
   **Still not applied:** the CloudFront live change (#479 is in the repo; the distribution needs the console/CLI
   edit — IAM grant for `complyeasy-s3-user` was still missing at session end). **Still open (user):** staging
   provisioning; the 25 dead ISO 27017 crosswalk rows (ids `ISO27017-CLD.x.y` vs template `ISO27017-5.1.1`);
