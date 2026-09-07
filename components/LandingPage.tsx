@@ -17,6 +17,7 @@ import {
   softwareApplicationSchema,
   breadcrumbSchema,
 } from './seo/siteSchema';
+import { FRAMEWORK_PILLAR_COUNT } from '../data/frameworkPillarContent';
 
 // ---------------------------------------------------------------------------
 // SEO copy
@@ -108,7 +109,7 @@ const HeroStatusCard: React.FC = () => (
       </div>
 
       <div className="mt-[18px] border-t border-white/[0.07] pt-4 font-mono text-[11px] text-signal-muted">
-        14 frameworks · 30+ integrations · agents on watch 24/7
+        {FRAMEWORK_PILLAR_COUNT} frameworks · 30+ integrations · agents on watch 24/7
       </div>
     </div>
   </div>
@@ -127,7 +128,7 @@ const JOB_CARDS: { glyph: JobGlyph; title: string; body: string }[] = [
   },
   {
     glyph: 'outline',
-    title: 'One platform, 14 frameworks',
+    title: `One platform, ${FRAMEWORK_PILLAR_COUNT} frameworks`,
     body: 'Shared controls mapped once and reused across SOC 2, ISO 27001, GDPR, HIPAA and more.',
   },
   {

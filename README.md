@@ -1,6 +1,6 @@
 # ComplyEasyAI
 
-> Continuous-evidence GRC platform for 14 compliance frameworks. One platform replaces the audit-management + SBOM + evidence-collection + vendor-risk + framework-mapping stack that mid-market teams typically stitch from 4-6 tools.
+> Continuous-evidence GRC platform for 16 compliance frameworks. One platform replaces the audit-management + SBOM + evidence-collection + vendor-risk + framework-mapping stack that mid-market teams typically stitch from 4-6 tools.
 
 [![Production Readiness](https://img.shields.io/badge/production_readiness-97.51%25-brightgreen)](./PRODUCTION_READINESS_REPORT.md)
 [![TypeScript](https://img.shields.io/badge/types-strict-blue)](./tsconfig.json)

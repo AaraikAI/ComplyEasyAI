@@ -16,20 +16,22 @@ import {
   SignalPage,
   SignalSection,
 } from '../signal';
-import { FRAMEWORK_PILLARS } from '../../../data/frameworkPillarContent';
+import {
+  FRAMEWORK_PILLARS,
+  FRAMEWORK_PILLAR_COUNT,
+} from '../../../data/frameworkPillarContent';
 
 // ---------------------------------------------------------------------------
 // SEO copy
 // ---------------------------------------------------------------------------
 const SEO_TITLE =
   'Compliance Frameworks: SOC 2, ISO 27001, GDPR, HIPAA, EU AI Act & More | ComplyEasy AI';
-const SEO_DESCRIPTION =
-  'Explore the 14 compliance frameworks ComplyEasyAI keeps continuously audit-ready — security, privacy, AI governance and the full EU digital stack — mapped once, with shared controls and evidence reused across every framework.';
+const SEO_DESCRIPTION = `Explore the ${FRAMEWORK_PILLAR_COUNT} compliance frameworks ComplyEasyAI keeps continuously audit-ready — security, privacy, AI governance and the full EU digital stack — mapped once, with shared controls and evidence reused across every framework.`;
 const SEO_KEYWORDS =
-  'compliance frameworks, SOC 2, ISO 27001, NIST CSF, PCI DSS, GDPR, HIPAA, CCPA, EU AI Act, NIST AI RMF, ISO 42001, DORA, DMA, DSA, CSRD, compliance automation';
+  'compliance frameworks, SOC 2, ISO 27001, NIST CSF, PCI DSS, GDPR, HIPAA, CCPA, India DPDPA, EU AI Act, NIST AI RMF, ISO 42001, AIUC-1, DORA, DMA, DSA, CSRD, compliance automation';
 
 // ---------------------------------------------------------------------------
-// Index data — the 14 pillar pages, in catalog order
+// Index data — every pillar page, in catalog order
 // ---------------------------------------------------------------------------
 const FRAMEWORKS = Object.values(FRAMEWORK_PILLARS);
 
@@ -42,9 +44,11 @@ const FRAMEWORK_BLURBS: Record<string, string> = {
   gdpr: 'RoPA, DPIAs and data-subject request workflows.',
   hipaa: 'Administrative, physical and technical safeguard tracking.',
   ccpa: 'US state privacy obligations and consumer-rights handling.',
+  'india-dpdpa': 'DPDP Act 2023 and Rules 2025 — consent, Data Fiduciary duties and Data Principal rights.',
   'eu-ai-act': 'Risk classification, technical documentation and transparency.',
   'nist-ai-rmf': 'GOVERN, MAP, MEASURE and MANAGE for AI systems.',
   'iso-42001': 'AI management system certification support.',
+  'aiuc-1': 'Six-pillar certification for AI agents — data, security, safety, reliability, accountability, society.',
   dora: 'Operational-resilience controls for financial entities.',
   dma: 'Gatekeeper obligations and core platform services.',
   dsa: 'Content-moderation tracking and VLOP/VLOSE controls.',
@@ -78,7 +82,7 @@ const MULTIPLIER_POINTS: { glyph: string; title: string; desc: string }[] = [
 ];
 
 /**
- * Marketing index of all 14 framework pillar pages ("Signal" design): hero,
+ * Marketing index of every framework pillar page ("Signal" design): hero,
  * category-filterable card grid linking to each pillar, the shared-evidence
  * multiplier story, and a closing demo CTA.
  */
@@ -129,8 +133,8 @@ const FrameworksIndexPage: React.FC = () => {
             One platform.
           </SectionTitle>
           <p className="mx-auto mt-5 max-w-[640px] text-lg leading-relaxed text-signal-sub">
-            Security, privacy, AI governance and the full EU digital stack — 14 frameworks, mapped
-            once and kept continuously audit-ready.
+            Security, privacy, AI governance and the full EU digital stack —{' '}
+            {FRAMEWORK_PILLAR_COUNT} frameworks, mapped once and kept continuously audit-ready.
           </p>
         </section>
 

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { SignalPage, SignalLogo, OutlineCta } from './marketing/signal';
+import { FRAMEWORK_PILLAR_COUNT } from '../data/frameworkPillarContent';
 
 // ---------------------------------------------------------------------------
 // Signal signup: split screen — value panel left, guided registration right.
@@ -64,7 +65,7 @@ const primaryGoals = [
 // Left value panel — copy from the Signal design handoff.
 const benefits = [
   { title: 'Free trial, no credit card', desc: 'Connect a system and see controls populate in minutes.' },
-  { title: '14 frameworks, one platform', desc: 'SOC 2, ISO 27001, GDPR, EU AI Act and more.' },
+  { title: `${FRAMEWORK_PILLAR_COUNT} frameworks, one platform`, desc: 'SOC 2, ISO 27001, GDPR, EU AI Act and more.' },
   { title: 'Audit-ready from day one', desc: 'Continuous evidence, not a final-quarter scramble.' },
 ];
 
