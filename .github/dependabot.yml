@@ -154,6 +154,12 @@ updates:
       # which breaks the mobile jest preset. Hold it until react-native moves.
       - dependency-name: "@react-native/jest-preset"
         versions: [">=0.86.0"]
+      # react-native itself is part of the same coupling: Expo SDK 56 pairs
+      # with react-native 0.85, and the 0.87 PR (#469) failed mobile tsc on RN's
+      # stricter ListEmptyComponent / TextInput ref types. Take react-native
+      # together with the Expo SDK 57 migration below, not on its own.
+      - dependency-name: "react-native"
+        versions: [">=0.86.0"]
       # Expo SDK 57 is a coordinated SDK migration, not a dependency bump. The
       # tree is coherently on SDK 56 - expo, expo-secure-store, expo-status-bar
       # and jest-expo all 56.x against react-native 0.85.2 with a matching
