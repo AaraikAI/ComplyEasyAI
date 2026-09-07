@@ -1106,6 +1106,14 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   runs on PRs**, so anything the image build does differently from a full checkout is only tested on
   `main`. Reproduce locally without Docker by copying exactly the Dockerfile's `COPY` list into a temp dir,
   symlinking `node_modules`, and running the failing `npm run …` there.
+- **#480 silently disabled production deploys (found 2026-09-07 on the first approved run since, fixed #492).**
+  `deploy-production` had a plain `if:` (implicit `success()`), but `e2e-staging` — skipped while staging is
+  unconfigured — sits in its dependency chain via `approve-production`. GitHub propagates a skip to every
+  downstream job that relies on the implicit `success()`, even through a job that ran thanks to `always()`.
+  Run 34081215093: approval `success`, `Deploy to Production: skipped`, run conclusion `success` — no error
+  anywhere. Rule: **any job downstream of a conditionally-skipped job must use `always()` + explicit
+  `needs.<job>.result == 'success'` checks.** Re-runs use the original workflow snapshot, so a workflow fix
+  always needs a fresh run (and a fresh approval).
   **Still not applied:** the CloudFront live change (#479 is in the repo; the distribution needs the console/CLI
   edit — IAM grant for `complyeasy-s3-user` was still missing at session end). **Still open (user):** staging
   provisioning; the 25 dead ISO 27017 crosswalk rows (ids `ISO27017-CLD.x.y` vs template `ISO27017-5.1.1`);

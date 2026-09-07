@@ -783,7 +783,18 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [approve-production, check-deploy-secrets]
-    if: github.ref == 'refs/heads/main' && needs.check-deploy-secrets.outputs.configured == 'true'
+    # e2e-staging sits in this job's dependency chain (via approve-production)
+    # and is skipped whenever staging is not configured. GitHub propagates a
+    # skip down the whole chain to every job whose `if` relies on the implicit
+    # success() — which is why run 34081215093 skipped this job right after the
+    # reviewer approved it. always() with explicit result checks is the only
+    # way to gate on the approval itself.
+    if: >-
+      always()
+      && github.ref == 'refs/heads/main'
+      && needs.approve-production.result == 'success'
+      && needs.check-deploy-secrets.result == 'success'
+      && needs.check-deploy-secrets.outputs.configured == 'true'
     environment:
       name: production
       url: https://complyeasyai.com
