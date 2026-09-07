@@ -139,19 +139,26 @@ PTAU_FILE="powersOfTau28_hez_final_12.ptau"
 if [ ! -f "$PTAU_FILE" ]; then
     echo "Downloading $PTAU_FILE (6.5 MB)..."
 
-    # Multiple mirror URLs (try in order until one works)
+    # Sources, tried in order until one downloads AND passes the SHA-256 pin in
+    # checksums.sha256. The first is the copy this project hosts itself (a GitHub
+    # release asset of the verified file): on 2026-09-05 every public mirror was
+    # dead at once — storage.googleapis.com returned 403, the Hermez S3 bucket,
+    # the snarkjs raw path and every IPFS gateway failed — and production image
+    # builds stopped with them. PTAU_URL, if set, is tried before everything.
+    PTAU_SELF_HOSTED="https://github.com/AaraikAI/ComplyEasyAI/releases/download/zk-ptau-hez-12/$PTAU_FILE"
     PTAU_URLS=(
+        ${PTAU_URL:+"$PTAU_URL"}
+        "$PTAU_SELF_HOSTED"
         "https://storage.googleapis.com/zkevm/ptau/$PTAU_FILE"
-        "https://github.com/iden3/snarkjs/raw/master/build/$PTAU_FILE"
-        "https://ipfs.io/ipfs/QmTiT4eiYz5KF7gQrDsgfBDVZmCc8CPPFmzGhdXVmq8dXR?filename=$PTAU_FILE"
-        "https://cloudflare-ipfs.com/ipfs/QmTiT4eiYz5KF7gQrDsgfBDVZmCc8CPPFmzGhdXVmq8dXR?filename=$PTAU_FILE"
         "https://hermez.s3-eu-west-1.amazonaws.com/$PTAU_FILE"
+        "https://ipfs.io/ipfs/QmTiT4eiYz5KF7gQrDsgfBDVZmCc8CPPFmzGhdXVmq8dXR?filename=$PTAU_FILE"
+        "https://dweb.link/ipfs/QmTiT4eiYz5KF7gQrDsgfBDVZmCc8CPPFmzGhdXVmq8dXR?filename=$PTAU_FILE"
     )
 
     DOWNLOAD_SUCCESS=0
     for url in "${PTAU_URLS[@]}"; do
         echo "Trying: $url"
-        if curl -L -f -o "$PTAU_FILE" "$url" 2>/dev/null; then
+        if curl -L -f --retry 3 --retry-delay 5 --max-time 600 -o "$PTAU_FILE" "$url" 2>/dev/null; then
             # Fail closed unless the file matches the pinned ceremony digest.
             PTAU_EXPECTED="${PTAU_SHA256:-$(pinned_sha256 "$PTAU_FILE")}"
             verify_sha256 "$PTAU_FILE" "$PTAU_EXPECTED"
