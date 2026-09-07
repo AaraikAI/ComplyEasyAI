@@ -20,6 +20,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import sirv from 'sirv';
 import puppeteer from 'puppeteer';
 import { allPublicRoutes } from './publicRoutes.mjs';
+import { referencesOrigin, relativizeOrigin } from './prerenderUtils.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = resolve(__dirname, '..', 'dist');
@@ -140,7 +141,16 @@ async function prerenderRoute(browser, route) {
       };
     });
 
-    const out = `<!DOCTYPE html>\n${result.html}`;
+    // The DOM was serialised while running under the local static server, so
+    // Vite's injected <link rel="modulepreload"> tags (and any other captured
+    // absolute URL) point at http://127.0.0.1:PORT. Make them root-relative and
+    // refuse to ship a page that still references the local origin.
+    const origin = `http://127.0.0.1:${PORT}`;
+    const html = relativizeOrigin(result.html, origin);
+    if (referencesOrigin(html, origin)) {
+      throw new Error(`prerendered ${route} still references ${origin}`);
+    }
+    const out = `<!DOCTYPE html>\n${html}`;
     const outPath = outputPathFor(route);
     mkdirSync(dirname(outPath), { recursive: true });
     writeFileSync(outPath, out, 'utf8');
