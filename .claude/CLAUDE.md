@@ -1143,6 +1143,47 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   fell back at boot and never retries, so a transient Redis blip at task start leaves the task without Redis cache
   for its whole life (the CSRF store and BullMQ connect fine later). Sign-up CAPTCHA and the in-app framework
   catalogue could not be verified without creating a production account (not done by the assistant).
+
+### Follow-ups landed the same evening (2026-09-07, after the deploy)
+
+- **Deploy #1150 (main 3460d391) went live ~19:20 UTC** with the full Dependabot drain (37 server + 15 root production
+  bumps); `Deploy to Production` ran because #492 gates it on the approval result. Verified: health on the new task,
+  API errors as JSON at the edge, prerendered pages without localhost preloads (#493).
+- **Weekly-issue spam fixed at the source (#497).** `framework-monitor.yml` committed its baseline to the protected
+  default branch → the push was blocked from 2026-08-03 → the same three page-hash changes were re-detected every Monday
+  (8 duplicate issues). The baseline now lives on the unprotected `framework-monitor-state` branch and reports append
+  to the one open issue. `dependency-scan.yml` now audits `mobile/` too, lists each advisory with fix availability, and
+  updates one tracking issue (11 duplicates closed). Reviewed sources: AI RMF 1.0, CSF 2.0, PCI DSS v4.0.1 unchanged.
+- **Server audit high 4 → 0 (#498)** via `overrides` on the Prisma-CLI chain; mobile's 4 highs (`image-size`) are
+  unfixable today (see the refreshed known-unfixable list). Adding overrides desyncs the lock → run
+  `npm install --package-lock-only` before `npm ci`.
+- **ISO 27017 crosswalk (#500):** the 25 dangling rows used `ISO27017-CLD.x.y` ids; the template
+  (`iso27017Controls.ts`) keys controls by ISO/IEC 27002:2013 clause (`ISO27017-9.1.1` …). Rows re-pointed to the
+  semantically matching clause controls and **`PREEXISTING_DANGLING_BUDGET` is now 0**. Follow-up: the template still
+  has no entries for the seven Annex-A cloud-only controls (CLD.6.3.1, 8.1.5, 9.5.1, 9.5.2, 12.1.5, 12.4.5, 13.1.4).
+- **AIUC-1 wording VERIFIED and rebuilt (#502).** The 2026-09-05 file (48 controls, eight per pillar) did not match
+  the standard: it invented requirements (training-data provenance, availability SLOs, accessibility, dark patterns,
+  misinformation, minors, complaint/redress, governance body …) and omitted mandatory ones. Rebuilt against the
+  official July-15-2026 release (`aiuc-1.com/evidence` + per-requirement pages + changelog): **51 live requirements**
+  (A001–A008, B001–B010, C001–C012, D001–D004, E001–E017 minus retired E007/E014, F001–F002; 43 mandatory, 8 optional).
+  `AIUC1-<pillar>.<n>` == official `<pillar>00n`; names reuse the official titles; descriptions paraphrase the public
+  summaries (the auditor-facing full text is not public). Crosswalk rows re-derived (68 → 163). The marketing
+  `/aiuc-1` pillar copy (#501) was reconciled to the same structure in the follow-up PR.
+- **Marketing `/frameworks` now lists 16 (#501):** `/aiuc-1` and `/india-dpdpa` pillar pages; counts derive from
+  `FRAMEWORK_PILLAR_COUNT` in `data/frameworkPillarContent.ts`; a guard test asserts every pillar has a route, a
+  `publicRoutes.mjs` entry and a prerender-manifest entry. **The CloudFront function must be republished** from
+  `infrastructure/cloudfront/route-rewrite.rendered.js` (now 50 routes) after the next deploy, or the two new pages
+  serve the SPA shell instead of their prerendered HTML.
+- **Mobile App Store readiness (#499, `docs/MOBILE_RELEASE.md`):** production API host in `eas.json` had no DNS
+  record and `api.ts` defaulted to another dead host; `mobile/assets/` (icon/favicon) did not exist; the cert-pin
+  guard threw in every production build unless pins were set and was keyed to the dead host; no
+  `ITSAppUsesNonExemptEncryption`; no URL scheme. All fixed; icons are placeholders from `public/favicon.svg`.
+  Still outside the repo: `eas init`, Apple credentials, `EXPO_TOKEN`/`APPLE_*` secrets, privacy URL, real icon.
+- **Ruleset now requires `Docker Build (PR)`** (#491, ~3 min; builds `frontend-build` + `backend-build` with the real
+  Dockerfile). PRs opened before it need a re-run (`@dependabot rebase` / close-reopen) to report the check.
+- **Workflow-agent gotchas seen today:** worktrees have no `node_modules`/`src/generated` — symlink them from the
+  main checkout (`--preserveSymlinks` for tsc) instead of installing; a subagent can die on "session limit" mid-run
+  (the AIUC-1 verifier did) — verify such PRs by hand before merging.
   **Still not applied:** the CloudFront live change (#479 is in the repo; the distribution needs the console/CLI
   edit — IAM grant for `complyeasy-s3-user` was still missing at session end). **Still open (user):** staging
   provisioning; the 25 dead ISO 27017 crosswalk rows (ids `ISO27017-CLD.x.y` vs template `ISO27017-5.1.1`);
