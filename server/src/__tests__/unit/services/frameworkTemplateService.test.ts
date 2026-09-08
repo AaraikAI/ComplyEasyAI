@@ -172,6 +172,39 @@ describe('FrameworkTemplateService', () => {
       requireComplete(controls);
     });
 
+    it('maps AIUC-1 control ids one-to-one onto the published requirement ids (July 15 2026 release)', () => {
+      // Verified against https://www.aiuc-1.com/evidence and the per-requirement pages on 2026-09-07.
+      // 51 live requirements: A001-A008, B001-B010, C001-C012, D001-D004, E001-E017 less the two
+      // retired ids (E007 merged into E004, E014 merged into E017), F001-F002.
+      const range = (pillar: string, count: number, skip: number[] = []) =>
+        Array.from({ length: count }, (_, i) => i + 1)
+          .filter(n => !skip.includes(n))
+          .map(n => `AIUC1-${pillar}.${n}`);
+      const expected = [
+        ...range('A', 8),
+        ...range('B', 10),
+        ...range('C', 12),
+        ...range('D', 4),
+        ...range('E', 17, [7, 14]),
+        ...range('F', 2),
+      ];
+      const controls = frameworkTemplateService.getTemplatesForFramework('AIUC-1');
+      expect(controls.map(c => c.controlId)).toEqual(expected);
+      expect(controls).toHaveLength(51);
+
+      // Mandatory/optional status as published: exactly these eight are optional for certification.
+      const optional = controls.filter(c => c.description.startsWith('(Optional for certification)')).map(c => c.controlId);
+      expect(optional).toEqual(['AIUC1-B.2', 'AIUC1-B.3', 'AIUC1-B.5', 'AIUC1-C.7', 'AIUC1-C.8', 'AIUC1-C.9', 'AIUC1-E.13', 'AIUC1-E.17']);
+
+      // Names are the official requirement titles so controls can be matched to the standard.
+      const byId = new Map(controls.map(c => [c.controlId, c.name]));
+      expect(byId.get('AIUC1-A.8')).toBe('Prevent leakage of credentials and secrets');
+      expect(byId.get('AIUC1-B.10')).toBe('Promote secure patterns in generated code');
+      expect(byId.get('AIUC1-C.5')).toBe('Prevent agent-specific high risk outputs');
+      expect(byId.get('AIUC1-E.4')).toBe('Assign accountability');
+      expect(byId.get('AIUC1-F.2')).toBe('Prevent catastrophic misuse');
+    });
+
     it('resolves AIUC-1 aliases', () => {
       for (const alias of ['AIUC1', 'AIUC 1', 'aiuc-1', 'AIUC', 'aiuc']) {
         expect(frameworkTemplateService.getTemplatesForFramework(alias)[0]?.controlId).toBe('AIUC1-A.1');
