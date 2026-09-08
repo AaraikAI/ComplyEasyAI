@@ -32,10 +32,10 @@ const SEO_KEYWORDS =
 // ---------------------------------------------------------------------------
 // Section anchors + shared scroll behavior
 // ---------------------------------------------------------------------------
-const COMPARE_SECTION_ID = 'compare';
+const PLATFORM_SECTION_ID = 'platform';
 
-const scrollToCompare = () => {
-  document.getElementById(COMPARE_SECTION_ID)?.scrollIntoView({ behavior: 'smooth' });
+const scrollToPlatform = () => {
+  document.getElementById(PLATFORM_SECTION_ID)?.scrollIntoView({ behavior: 'smooth' });
 };
 
 // ---------------------------------------------------------------------------
@@ -262,179 +262,6 @@ const DEPTH_ITEMS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Comparison matrix
-// ---------------------------------------------------------------------------
-const MATRIX_CATEGORIES = ['All', 'EU & Regulatory', 'Autonomy', 'Economics'] as const;
-type MatrixCategory = (typeof MATRIX_CATEGORIES)[number];
-type MatrixMark = 'y' | 'p' | 'n';
-
-interface MatrixRow {
-  category: Exclude<MatrixCategory, 'All'>;
-  capability: string;
-  /** ComplyEasyAI first, then Vanta, Drata, Sprinto, Secureframe, OneTrust. */
-  marks: MatrixMark[];
-}
-
-const MATRIX_ROWS: MatrixRow[] = [
-  { category: 'EU & Regulatory', capability: 'EU AI Act', marks: ['y', 'y', 'n', 'n', 'y', 'p'] },
-  { category: 'EU & Regulatory', capability: 'DORA', marks: ['y', 'n', 'n', 'n', 'n', 'p'] },
-  { category: 'EU & Regulatory', capability: 'DMA + DSA', marks: ['y', 'n', 'n', 'n', 'n', 'n'] },
-  {
-    category: 'Autonomy',
-    capability: 'Autonomous remediation + rollback',
-    marks: ['y', 'p', 'p', 'p', 'n', 'n'],
-  },
-  { category: 'Autonomy', capability: 'Predictive gap detection', marks: ['y', 'p', 'p', 'p', 'p', 'p'] },
-  { category: 'Autonomy', capability: 'Compliance Digital Twin', marks: ['y', 'n', 'n', 'n', 'n', 'n'] },
-  { category: 'Economics', capability: 'Transparent pricing', marks: ['y', 'n', 'n', 'y', 'p', 'n'] },
-  {
-    category: 'Economics',
-    capability: 'Cross-framework evidence reuse',
-    marks: ['y', 'y', 'y', 'y', 'p', 'y'],
-  },
-];
-
-const COMPETITOR_COLUMNS: { key: string; node: React.ReactNode }[] = [
-  { key: 'vanta', node: 'Vanta' },
-  { key: 'drata', node: 'Drata' },
-  { key: 'sprinto', node: 'Sprinto' },
-  {
-    key: 'secureframe',
-    node: (
-      <>
-        Secure
-        <br />
-        frame
-      </>
-    ),
-  },
-  { key: 'onetrust', node: 'OneTrust' },
-];
-
-const MARK_META: Record<MatrixMark, { glyph: string; label: string }> = {
-  y: { glyph: '●', label: 'Full' },
-  p: { glyph: '◐', label: 'Partial' },
-  n: { glyph: '–', label: 'None' },
-};
-
-const markColor = (mark: MatrixMark, isUs: boolean): string => {
-  if (mark === 'y') return isUs ? '#38E8A6' : '#34C88A';
-  if (mark === 'p') return '#E8B93A';
-  return '#4b5568';
-};
-
-const ComparisonMatrix: React.FC = () => {
-  const [category, setCategory] = useState<MatrixCategory>('All');
-  const rows = MATRIX_ROWS.filter((row) => category === 'All' || row.category === category);
-  const gridCols = 'grid grid-cols-[1.7fr_repeat(6,1fr)]';
-
-  return (
-    <>
-      <div className="mb-[26px] flex flex-wrap justify-center gap-2.5">
-        {MATRIX_CATEGORIES.map((cat) => {
-          const active = cat === category;
-          return (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setCategory(cat)}
-              aria-pressed={active}
-              className={`rounded-full border px-5 py-2.5 text-sm font-semibold transition-colors ${
-                active
-                  ? 'border-signal-green bg-signal-green text-signal-canvas'
-                  : 'border-white/[0.14] bg-white/[0.04] text-signal-sub hover:border-white/[0.28] hover:text-signal-ink'
-              }`}
-            >
-              {cat}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="overflow-x-auto">
-        <div
-          role="table"
-          aria-label="Capability comparison across compliance platforms"
-          className="min-w-[720px] overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.02]"
-        >
-          <div role="row" className={gridCols}>
-            <div
-              role="columnheader"
-              className="flex items-end px-[22px] py-[18px] font-mono text-[11px] uppercase tracking-[0.1em] text-signal-muted"
-            >
-              Capability
-            </div>
-            <div
-              role="columnheader"
-              className="border-x border-signal-green/25 bg-signal-green/10 px-2 py-4 text-center"
-            >
-              <div className="font-display text-[13px] font-bold leading-[1.2] text-signal-green">
-                Comply
-                <br />
-                EasyAI
-              </div>
-            </div>
-            {COMPETITOR_COLUMNS.map((column) => (
-              <div
-                key={column.key}
-                role="columnheader"
-                className="flex items-end justify-center px-2 py-4 text-center font-display text-[13px] font-semibold leading-[1.2] text-signal-body"
-              >
-                {column.node}
-              </div>
-            ))}
-          </div>
-
-          {rows.map((row) => (
-            <div key={row.capability} role="row" className={`${gridCols} border-t border-white/[0.05]`}>
-              <div role="cell" className="flex items-center px-[22px] py-4 text-sm font-medium text-signal-body">
-                {row.capability}
-              </div>
-              {row.marks.map((mark, index) => {
-                const isUs = index === 0;
-                return (
-                  <div
-                    key={`${row.capability}-${index}`}
-                    role="cell"
-                    className="flex items-center justify-center px-2 py-4"
-                    style={isUs ? { backgroundColor: 'rgba(56,232,166,.10)' } : undefined}
-                  >
-                    <span
-                      role="img"
-                      aria-label={MARK_META[mark].label}
-                      className="text-lg"
-                      style={{ color: markColor(mark, isUs) }}
-                    >
-                      {MARK_META[mark].glyph}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-5 flex justify-center gap-6 text-[13px] text-[#8A94A6]">
-        <span>
-          <span className="text-signal-good">●</span> Full
-        </span>
-        <span>
-          <span className="text-signal-warn">◐</span> Partial
-        </span>
-        <span>
-          <span className="text-[#4b5568]">–</span> None
-        </span>
-      </div>
-      <p className="mx-auto mt-3.5 max-w-[680px] text-center text-xs text-signal-muted">
-        Reflects publicly reported capabilities as of 2026, for evaluation purposes. Where a
-        competitor leads, we say so.
-      </p>
-    </>
-  );
-};
-
-// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 export interface LandingPageProps {
@@ -494,7 +321,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
                 <PrimaryCta to="/demo">
                   Book a demo <span aria-hidden="true">→</span>
                 </PrimaryCta>
-                <OutlineCta onClick={scrollToCompare}>See it in motion</OutlineCta>
+                <OutlineCta onClick={scrollToPlatform}>See it in motion</OutlineCta>
               </div>
               <p className="mt-10 font-mono text-[11.5px] uppercase tracking-[0.14em] text-signal-muted">
                 In design partnerships across fintech · health-tech · EU SaaS
@@ -560,16 +387,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
               <h2 className="font-display text-[30px] font-bold leading-[1.08] tracking-[-0.02em] text-signal-ink md:text-[36px]">
                 Depth that the mid-market tools can't match
               </h2>
-              <a
-                href={`#${COMPARE_SECTION_ID}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToCompare();
-                }}
-                className="mt-5 inline-flex border-b border-signal-green/40 pb-[3px] text-[15px] font-semibold text-signal-green"
-              >
-                See the full comparison →
-              </a>
             </div>
             <div className="flex w-full flex-col gap-3 lg:w-[540px] lg:flex-none">
               {DEPTH_ITEMS.map((item) => (
@@ -592,17 +409,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
           </div>
         </SignalSection>
 
-        {/* ============================ Comparison matrix ============================ */}
-        <SignalSection id={COMPARE_SECTION_ID} variant="glow" width={1100}>
-          <div className="mb-8 text-center">
-            <div className="mb-3">
-              <Eyebrow>Compare</Eyebrow>
-            </div>
-            <SectionTitle>How the platforms stack up</SectionTitle>
-            <p className="mt-2.5 text-base text-signal-sub">Filter by what matters to you.</p>
-          </div>
-          <ComparisonMatrix />
-        </SignalSection>
 
         {/* ============================== Pricing teaser ============================== */}
         <SignalSection id="company" variant="glow" className="text-center">

@@ -53,7 +53,7 @@ describe('LandingPage', () => {
       });
     });
 
-    it('scrolls to the comparison matrix when "See it in motion" is clicked', () => {
+    it('scrolls to the platform section when "See it in motion" is clicked', () => {
       renderPage();
       fireEvent.click(screen.getByText('See it in motion'));
       expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
@@ -95,51 +95,16 @@ describe('LandingPage', () => {
     });
   });
 
-  // ---- Comparison matrix ----
+  // ---- Competitor comparison (removed 2026-09-07; must not come back) ----
 
-  describe('comparison matrix', () => {
-    it('renders the matrix with the ComplyEasyAI column and competitors', () => {
-      renderPage();
-      expect(
-        screen.getByRole('table', { name: /Capability comparison/i }),
-      ).toBeInTheDocument();
-      expect(screen.getByText('Vanta')).toBeInTheDocument();
-      expect(screen.getByText('OneTrust')).toBeInTheDocument();
-    });
-
-    it('renders the category chips with "All" active by default', () => {
-      renderPage();
-      for (const cat of ['All', 'EU & Regulatory', 'Autonomy', 'Economics']) {
-        expect(screen.getByRole('button', { name: cat })).toBeInTheDocument();
-      }
-      expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
-    });
-
-    it('filters the matrix rows by category chip', () => {
-      renderPage();
-      // "All" shows rows from every category.
-      expect(screen.getByText('DMA + DSA')).toBeInTheDocument(); // EU & Regulatory
-      expect(screen.getByText('Predictive gap detection')).toBeInTheDocument(); // Autonomy
-      expect(screen.getByText('Transparent pricing')).toBeInTheDocument(); // Economics
-
-      // Filter to Economics.
-      fireEvent.click(screen.getByRole('button', { name: 'Economics' }));
-      expect(screen.getByRole('button', { name: 'Economics' })).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getByText('Transparent pricing')).toBeInTheDocument();
-      expect(screen.getByText('Cross-framework evidence reuse')).toBeInTheDocument();
-      expect(screen.queryByText('Predictive gap detection')).not.toBeInTheDocument();
-      expect(screen.queryByText('DMA + DSA')).not.toBeInTheDocument();
-
-      // Filter to EU & Regulatory.
-      fireEvent.click(screen.getByRole('button', { name: 'EU & Regulatory' }));
-      expect(screen.getByText('DMA + DSA')).toBeInTheDocument();
-      expect(screen.queryByText('Transparent pricing')).not.toBeInTheDocument();
-
-      // Back to All.
-      fireEvent.click(screen.getByRole('button', { name: 'All' }));
-      expect(screen.getByText('Predictive gap detection')).toBeInTheDocument();
-      expect(screen.getByText('Transparent pricing')).toBeInTheDocument();
-    });
+  it('does not render a competitor comparison matrix', () => {
+    renderPage();
+    expect(screen.queryByRole('table', { name: /Capability comparison/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('How the platforms stack up')).not.toBeInTheDocument();
+    expect(screen.queryByText('See the full comparison →')).not.toBeInTheDocument();
+    for (const competitor of ['Vanta', 'Drata', 'Sprinto', 'OneTrust']) {
+      expect(screen.queryByText(competitor)).not.toBeInTheDocument();
+    }
   });
 
   // ---- Pricing teaser (no numbers) ----

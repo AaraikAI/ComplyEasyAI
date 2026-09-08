@@ -31,7 +31,6 @@ function metaFor(route) {
   // Topical pillar pages.
   if (PILLAR_ROUTES.has(route)) return { changefreq: 'weekly', priority: '0.8' };
   // Competitor comparison pages.
-  if (route.startsWith('/compare/')) return { changefreq: 'weekly', priority: '0.7' };
   // Detail pages for glossary terms and blog posts.
   if (route.startsWith('/blog/')) return { changefreq: 'monthly', priority: '0.6' };
   if (route.startsWith('/glossary/')) return { changefreq: 'monthly', priority: '0.6' };
