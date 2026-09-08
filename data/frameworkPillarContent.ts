@@ -692,55 +692,55 @@ export const FRAMEWORK_PILLARS: Record<string, FrameworkPillarContent> = {
     "name": "AIUC-1",
     "category": "AI Governance",
     "tagline": "certify your AI agents",
-    "definition": "AIUC-1 is the AI Underwriting Company's certification standard for organizations that build or deploy AI agents. It organizes auditable requirements into six pillars — Data and Privacy, Security, Safety, Reliability, Accountability and Society — designed to underpin insurance coverage for AI risk and to align with ISO/IEC 42001, the NIST AI RMF and the EU AI Act.",
+    "definition": "AIUC-1 is the AI Underwriting Company's certification standard for organizations that build or deploy AI agents. The July 2026 release defines 51 auditable requirements (43 mandatory, 8 optional) across six pillars \u2014 Data & Privacy, Security, Safety, Reliability, Accountability and Society \u2014 written to underpin insurance coverage for AI risk and to sit alongside ISO/IEC 42001, SOC 2, the NIST AI RMF and the EU AI Act.",
     "requirements": [
       {
         "num": "01",
-        "name": "Data and Privacy",
-        "desc": "Classify and minimise agent data, redact personal data in prompts, outputs and traces, and enforce non-training and retention terms with model providers."
+        "name": "Data & Privacy (A001\u2013A008)",
+        "desc": "Input and output data policies, limits on what the agent can access, protection of IP and trade secrets, and prevention of cross-customer exposure, PII leakage, IP violations and credential leakage."
       },
       {
         "num": "02",
-        "name": "Security",
-        "desc": "Defend against prompt injection, red-team before release, scope tools to least privilege, keep secrets out of model context and sandbox tool execution."
+        "name": "Security (B001\u2013B010)",
+        "desc": "Third-party adversarial-robustness testing, adversarial-input detection and real-time input filtering, controlled release of technical details, endpoint anti-scraping, prevention of unauthorized agent actions, user access privileges, a protected deployment environment, limited output over-exposure and secure patterns in generated code."
       },
       {
         "num": "03",
-        "name": "Safety",
-        "desc": "Define a harm taxonomy, evaluate before deployment, filter at runtime, and keep humans in the loop for high-stakes actions and escalations."
+        "name": "Safety (C001\u2013C012)",
+        "desc": "An AI risk taxonomy, pre-deployment testing, prevention of harmful, out-of-scope and agent-specific high-risk outputs and output vulnerabilities, human review and real-time intervention for high-risk outputs, and third-party testing for harmful, out-of-scope and customer-defined risks."
       },
       {
         "num": "04",
-        "name": "Reliability",
-        "desc": "Bound intended use, control hallucinations, regression-test every model or prompt change, and monitor production for drift and degradation."
+        "name": "Reliability (D001\u2013D004)",
+        "desc": "Prevention of hallucinated outputs, restriction of unsafe tool calls, and independent third-party testing of both hallucinations and tool calls."
       },
       {
         "num": "05",
-        "name": "Accountability",
-        "desc": "Executive ownership, use-case risk classification, system and model cards, tamper-evident audit trails and AI incident response."
+        "name": "Accountability (E001\u2013E017)",
+        "desc": "AI failure plans for security breaches, harmful outputs and hallucinations; assigned accountability; documented data-storage security; vendor due diligence; internal process reviews; third-party access monitoring; an AI acceptable-use policy; recorded processing locations; a regulatory compliance register; a quality management system; activity logging; AI disclosure and a transparency policy."
       },
       {
         "num": "06",
-        "name": "Society",
-        "desc": "Bias and fairness testing, accessibility, no manipulation or dark patterns, synthetic-content labelling and prohibited-use enforcement."
+        "name": "Society (F001\u2013F002)",
+        "desc": "Prevention of AI cyber misuse and of catastrophic misuse, including chemical, biological, radiological and nuclear uplift."
       }
     ],
     "faqs": [
       {
         "q": "Who is AIUC-1 for?",
-        "a": "Organizations that build or deploy AI agents — systems that take actions through tools rather than only generating text. The standard is written to be audited and to underpin insurance coverage for AI risk."
+        "a": "Organizations that build or deploy AI agents \u2014 systems that take actions through tools rather than only generating text. The standard is written to be audited and to underpin insurance coverage for AI risk."
       },
       {
         "q": "How does AIUC-1 relate to ISO 42001 and the EU AI Act?",
-        "a": "It aligns with both: ISO 42001 supplies the management-system backbone and the AI Act the regulatory obligations, while AIUC-1 adds agent-specific controls such as tool permissions, prompt-injection defence and runtime safety. Shared controls are mapped once and reused."
+        "a": "It complements both: ISO 42001 supplies the management-system backbone and the AI Act the regulatory obligations, while AIUC-1 adds agent-specific requirements such as unsafe tool-call restrictions, adversarial-robustness testing and AI failure plans. Shared controls are mapped once and reused."
       },
       {
         "q": "Is AIUC-1 a certification?",
-        "a": "Yes — it is designed as a certifiable standard assessed against its six pillars. Control wording in ComplyEasyAI paraphrases the published requirement themes; verify against the official AIUC-1 text before relying on it for certification."
+        "a": "Yes \u2014 it is a certifiable standard assessed against its 51 requirements. ComplyEasyAI's control names reuse the official requirement titles (July 2026 release) and its descriptions paraphrase the public per-requirement summaries; the full auditor-facing text is not published, so confirm details with your auditor before relying on them for certification."
       },
       {
         "q": "How do you help?",
-        "a": "The platform maps each agent to the 48 controls across the six pillars, collects evidence from your AI stack and keeps it continuously audit-ready."
+        "a": "The platform maps each agent to the 51 requirements across the six pillars, flags the 8 optional ones, collects evidence from your AI stack and keeps it continuously audit-ready."
       }
     ]
   },
