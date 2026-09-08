@@ -82,7 +82,7 @@ AI automates the repetitive, high-volume work — collecting evidence, watching 
 
 ## Getting started
 
-If you are scoping a first SOC 2 or trying to make recertification less painful, the practical path is: connect your systems, turn on continuous evidence collection and monitoring, and map your controls across every framework you need. Explore how ComplyEasy AI approaches this on the [SOC 2 framework page](/frameworks/soc-2), or compare approaches on our [Vanta alternative](/compare/vanta-alternative) and [Drata alternative](/compare/drata-alternative) pages.`,
+If you are scoping a first SOC 2 or trying to make recertification less painful, the practical path is: connect your systems, turn on continuous evidence collection and monitoring, and map your controls across every framework you need. Explore how ComplyEasy AI approaches this on the [SOC 2 framework page](/frameworks/soc-2).`,
   },
   {
     slug: 'eu-ai-act-compliance-checklist',
@@ -226,7 +226,7 @@ A few honest guidelines:
 
 ## Dig deeper
 
-For the full side-by-side, see our dedicated [Vanta alternative](/compare/vanta-alternative) and [Drata alternative](/compare/drata-alternative) pages, or read [how to automate SOC 2 compliance with AI](/blog/how-to-automate-soc-2-compliance-with-ai) for the underlying mechanics.`,
+Read [how to automate SOC 2 compliance with AI](/blog/how-to-automate-soc-2-compliance-with-ai) for the underlying mechanics.`,
   },
 ];
 
