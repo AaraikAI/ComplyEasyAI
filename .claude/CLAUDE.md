@@ -1184,6 +1184,16 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
 - **Workflow-agent gotchas seen today:** worktrees have no `node_modules`/`src/generated` — symlink them from the
   main checkout (`--preserveSymlinks` for tsc) instead of installing; a subagent can die on "session limit" mid-run
   (the AIUC-1 verifier did) — verify such PRs by hand before merging.
+- **2026-09-08 00:30 UTC — second deploy of the day (run 34184890928, main 805ed094) + CloudFront function
+  republished (50 routes).** Live and verified: `/aiuc-1` and `/india-dpdpa` served prerendered, `/frameworks` says
+  16, the landing-page comparison matrix is gone (#504 — #473 had missed it, plus dead `/compare/*` links in two blog
+  posts), 0 console errors. Zero open PRs at that point.
+- **Prerendered pages shipped the GENERIC `<title>` on every route (found by the post-deploy check; fixed in the
+  prerender-title PR).** `og:title` and `description` were page-specific but `<title>` was the shell's fallback,
+  because `prerender.mjs` kept the LAST `<title>` while React 19 hoists a page's own `<title>` to the FRONT of
+  `<head>`. Search results would have shown the generic title for every marketing page. The prerenderer now keeps
+  the title that differs from the shell's. **Lesson: after a deploy, diff the served HTML `<head>` of a prerendered
+  route against what the browser shows after hydration** — the E2E suite only ever sees the hydrated DOM.
   **Still not applied:** the CloudFront live change (#479 is in the repo; the distribution needs the console/CLI
   edit — IAM grant for `complyeasy-s3-user` was still missing at session end). **Still open (user):** staging
   provisioning; the 25 dead ISO 27017 crosswalk rows (ids `ISO27017-CLD.x.y` vs template `ISO27017-5.1.1`);

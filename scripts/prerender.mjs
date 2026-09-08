@@ -25,6 +25,8 @@ import { referencesOrigin, relativizeOrigin } from './prerenderUtils.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = resolve(__dirname, '..', 'dist');
 const PORT = 5050;
+// Text of the built shell's fallback <title>; set in main() before any capture.
+let SHELL_TITLE = '';
 const NAV_TIMEOUT_MS = 30000;
 const CONTENT_TIMEOUT_MS = 30000;
 const SETTLE_MS = 350;
@@ -105,10 +107,21 @@ async function prerenderRoute(browser, route) {
     // Give React 19 a brief moment to flush hoisted <head> metadata + JSON-LD.
     await new Promise((r) => setTimeout(r, SETTLE_MS));
 
-    const result = await page.evaluate(() => {
+    const result = await page.evaluate((shellTitle) => {
       document
         .querySelectorAll('vite-error-overlay, #vite-error-overlay')
         .forEach((node) => node.remove());
+
+      // React 19 hoists a page's own <title> to the FRONT of <head>, ahead of
+      // the shell's fallback title, so "keep the last one" kept the fallback on
+      // every prerendered page (og:title and description were right because
+      // those are appended last). Prefer the title that differs from the shell's.
+      const titles = Array.from(document.head.querySelectorAll('title'));
+      if (titles.length > 1) {
+        const own = titles.filter((el) => (el.textContent || '').trim() !== shellTitle);
+        const keep = own.length > 0 ? own[own.length - 1] : titles[titles.length - 1];
+        titles.forEach((el) => { if (el !== keep) el.remove(); });
+      }
 
       // The built shell ships fallback SEO tags; the page's own <Seo> appends
       // its (authoritative) tags later in <head>. Collapse each single-valued
@@ -119,7 +132,6 @@ async function prerenderRoute(browser, route) {
         els.slice(0, -1).forEach((el) => el.remove());
       };
       [
-        'title',
         'link[rel="canonical"]',
         'meta[name="description"]',
         'meta[property="og:title"]',
@@ -139,7 +151,7 @@ async function prerenderRoute(browser, route) {
         ldCount: document.querySelectorAll('script[type="application/ld+json"]').length,
         h1: (document.querySelector('main h1, h1')?.textContent || '').trim().slice(0, 80),
       };
-    });
+    }, SHELL_TITLE);
 
     // The DOM was serialised while running under the local static server, so
     // Vite's injected <link rel="modulepreload"> tags (and any other captured
@@ -175,6 +187,7 @@ async function main() {
 
   // Read the pristine app shell BEFORE any snapshot is written to dist.
   const shellHtml = readFileSync(join(DIST_DIR, 'index.html'), 'utf8');
+  SHELL_TITLE = (shellHtml.match(/<title>([^<]*)<\/title>/) || ['', ''])[1].trim();
 
   const server = await startStaticServer(shellHtml);
   let browser;
