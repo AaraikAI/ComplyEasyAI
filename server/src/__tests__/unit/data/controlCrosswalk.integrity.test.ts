@@ -43,11 +43,12 @@ describe('control crosswalk integrity', () => {
 
   it('does not grow the pre-existing set of dangling references', () => {
     const preexisting = dangling.filter(d => !d.strict).map(d => d.p);
-    // Pinned at the count measured when this test was introduced; lower it as they are fixed.
-    expect(preexisting.length).toBeLessThanOrEqual(PREEXISTING_DANGLING_BUDGET);
+    // Rows past the budget are listed verbatim on failure. The budget is 0: every row must resolve.
+    expect(preexisting.slice(PREEXISTING_DANGLING_BUDGET)).toEqual([]);
   });
 });
 
-// 25 dangling references existed when this test was introduced, all in pre-existing
-// frameworks (listed in the PR that added it). Lower the budget as they are fixed.
-const PREEXISTING_DANGLING_BUDGET = 25;
+// 25 dangling references existed when this test was introduced, all ISO 27017 rows labelled
+// "ISO27017-CLD.x.y" (ids no template defines). They were re-pointed at real template ids, so
+// the budget is 0 and must stay there: this test can only get stricter.
+const PREEXISTING_DANGLING_BUDGET = 0;
