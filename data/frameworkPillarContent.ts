@@ -1,9 +1,15 @@
 import type { SignalCategory } from '../components/marketing/signal';
 
 /**
- * Content for the 14 marketing framework pillar pages ("Signal" redesign).
+ * Content for the 16 marketing framework pillar pages ("Signal" redesign).
  * Source of truth: the design handoff (FrameworkPillar._data) — grounded in
- * constants/frameworkControls.ts. Rendered by SignalFrameworkPillar.
+ * constants/frameworkControls.ts. AIUC-1 and India DPDPA are grounded in the
+ * backend catalogue (server/src/data/frameworks/aiuc1Controls.ts and
+ * indiaDpdpaControls.ts). Rendered by SignalFrameworkPillar.
+ *
+ * Adding a pillar: add its entry here, a components/marketing/pages/<Name>Pillar.tsx
+ * wrapper, a route in App.tsx, and its path in scripts/publicRoutes.mjs (then
+ * `npm run sitemap`). __tests__/data/frameworkPillarContent.test.ts guards this.
  */
 
 export interface PillarRequirement {
@@ -463,6 +469,64 @@ export const FRAMEWORK_PILLARS: Record<string, FrameworkPillarContent> = {
       }
     ]
   },
+  "india-dpdpa": {
+    "slug": "india-dpdpa",
+    "path": "/india-dpdpa",
+    "name": "India DPDPA",
+    "category": "Privacy",
+    "tagline": "meet the DPDP Act and Rules",
+    "definition": "India's Digital Personal Data Protection Act, 2023 (DPDP Act) and the DPDP Rules, 2025 govern digital personal data processed in India — and processing abroad connected with offering goods or services to people in India. Obligations fall on Data Fiduciaries, with heightened duties for Significant Data Fiduciaries and for children's data, enforced by the Data Protection Board of India with penalties of up to INR 250 crore.",
+    "requirements": [
+      {
+        "num": "01",
+        "name": "Scope & roles",
+        "desc": "Confirm applicability (s.3), classify each activity as Data Fiduciary or Data Processor, and track the factors behind Significant Data Fiduciary designation (s.10)."
+      },
+      {
+        "num": "02",
+        "name": "Notice & consent",
+        "desc": "Free, specific, informed and unambiguous consent, preceded by a standalone plain-language notice and withdrawable as easily as it was given (ss.5–7)."
+      },
+      {
+        "num": "03",
+        "name": "Data Fiduciary duties",
+        "desc": "Reasonable security safeguards, accuracy, processor contracts, erasure once the purpose is served and grievance redressal (s.8, Rule 6)."
+      },
+      {
+        "num": "04",
+        "name": "Breach notification",
+        "desc": "Intimate affected Data Principals without delay and the Data Protection Board within 72 hours of becoming aware of a breach (s.8(6), Rule 7)."
+      },
+      {
+        "num": "05",
+        "name": "Children & Significant Data Fiduciaries",
+        "desc": "Verifiable parental consent and no tracking or targeted ads at children (s.9); an India-based DPO, independent audits and DPIAs for SDFs (s.10)."
+      },
+      {
+        "num": "06",
+        "name": "Data Principal rights & transfers",
+        "desc": "Access, correction, erasure, nomination and grievance rights (ss.11–14), and transfers only to territories the government has not restricted (s.16)."
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Does the DPDP Act apply to companies outside India?",
+        "a": "Yes. It covers processing outside India that is connected with offering goods or services to Data Principals in India (s.3), so businesses serving Indian users are in scope wherever they are based."
+      },
+      {
+        "q": "How does it differ from GDPR?",
+        "a": "Both rest on lawful grounds, notice, individual rights and breach notification, so much of the operational work overlaps. The DPDP Act is consent-centric with a short list of 'certain legitimate uses' (s.7) rather than a legitimate-interest ground, and it bans tracking and targeted advertising directed at children outright."
+      },
+      {
+        "q": "What is a Significant Data Fiduciary?",
+        "a": "A Data Fiduciary the Central Government notifies based on the volume and sensitivity of data processed, risk to Data Principals and similar factors (s.10). SDFs must appoint an India-based Data Protection Officer and an independent data auditor and run a DPIA at least every twelve months."
+      },
+      {
+        "q": "How do you help?",
+        "a": "The platform maps your processing to 44 controls citing the Act's sections and the 2025 Rules, tracks consent records, rights requests and breach timelines, and keeps the evidence continuously current."
+      }
+    ]
+  },
   "eu-ai-act": {
     "slug": "eu-ai-act",
     "path": "/eu-ai-act",
@@ -619,6 +683,64 @@ export const FRAMEWORK_PILLARS: Record<string, FrameworkPillarContent> = {
       {
         "q": "How do you help?",
         "a": "The platform maps AIMS controls to evidence and keeps lifecycle documentation current."
+      }
+    ]
+  },
+  "aiuc-1": {
+    "slug": "aiuc-1",
+    "path": "/aiuc-1",
+    "name": "AIUC-1",
+    "category": "AI Governance",
+    "tagline": "certify your AI agents",
+    "definition": "AIUC-1 is the AI Underwriting Company's certification standard for organizations that build or deploy AI agents. It organizes auditable requirements into six pillars — Data and Privacy, Security, Safety, Reliability, Accountability and Society — designed to underpin insurance coverage for AI risk and to align with ISO/IEC 42001, the NIST AI RMF and the EU AI Act.",
+    "requirements": [
+      {
+        "num": "01",
+        "name": "Data and Privacy",
+        "desc": "Classify and minimise agent data, redact personal data in prompts, outputs and traces, and enforce non-training and retention terms with model providers."
+      },
+      {
+        "num": "02",
+        "name": "Security",
+        "desc": "Defend against prompt injection, red-team before release, scope tools to least privilege, keep secrets out of model context and sandbox tool execution."
+      },
+      {
+        "num": "03",
+        "name": "Safety",
+        "desc": "Define a harm taxonomy, evaluate before deployment, filter at runtime, and keep humans in the loop for high-stakes actions and escalations."
+      },
+      {
+        "num": "04",
+        "name": "Reliability",
+        "desc": "Bound intended use, control hallucinations, regression-test every model or prompt change, and monitor production for drift and degradation."
+      },
+      {
+        "num": "05",
+        "name": "Accountability",
+        "desc": "Executive ownership, use-case risk classification, system and model cards, tamper-evident audit trails and AI incident response."
+      },
+      {
+        "num": "06",
+        "name": "Society",
+        "desc": "Bias and fairness testing, accessibility, no manipulation or dark patterns, synthetic-content labelling and prohibited-use enforcement."
+      }
+    ],
+    "faqs": [
+      {
+        "q": "Who is AIUC-1 for?",
+        "a": "Organizations that build or deploy AI agents — systems that take actions through tools rather than only generating text. The standard is written to be audited and to underpin insurance coverage for AI risk."
+      },
+      {
+        "q": "How does AIUC-1 relate to ISO 42001 and the EU AI Act?",
+        "a": "It aligns with both: ISO 42001 supplies the management-system backbone and the AI Act the regulatory obligations, while AIUC-1 adds agent-specific controls such as tool permissions, prompt-injection defence and runtime safety. Shared controls are mapped once and reused."
+      },
+      {
+        "q": "Is AIUC-1 a certification?",
+        "a": "Yes — it is designed as a certifiable standard assessed against its six pillars. Control wording in ComplyEasyAI paraphrases the published requirement themes; verify against the official AIUC-1 text before relying on it for certification."
+      },
+      {
+        "q": "How do you help?",
+        "a": "The platform maps each agent to the 48 controls across the six pillars, collects evidence from your AI stack and keeps it continuously audit-ready."
       }
     ]
   },
@@ -835,6 +957,9 @@ export const FRAMEWORK_PILLARS: Record<string, FrameworkPillarContent> = {
     ]
   }
 };
+
+/** Number of framework pillar pages — use this in copy instead of a literal. */
+export const FRAMEWORK_PILLAR_COUNT = Object.keys(FRAMEWORK_PILLARS).length;
 
 /** Related pillars: same category first, padded with others (max 3). */
 export function relatedPillars(slug: string): FrameworkPillarContent[] {

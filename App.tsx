@@ -58,6 +58,8 @@ const DORAPillar = lazy(() => import('./components/marketing/pages/DORAPillar'))
 const DMAPillar = lazy(() => import('./components/marketing/pages/DMAPillar'));
 const DSAPillar = lazy(() => import('./components/marketing/pages/DSAPillar'));
 const CSRDPillar = lazy(() => import('./components/marketing/pages/CSRDPillar'));
+const AIUC1Pillar = lazy(() => import('./components/marketing/pages/AIUC1Pillar'));
+const IndiaDPDPAPillar = lazy(() => import('./components/marketing/pages/IndiaDPDPAPillar'));
 const FaqHubPage = lazy(() => import('./components/marketing/pages/FaqHubPage'));
 const GlossaryIndex = lazy(() => import('./components/marketing/pages/GlossaryIndex'));
 const GlossaryTerm = lazy(() => import('./components/marketing/pages/GlossaryTerm'));
@@ -530,6 +532,8 @@ const App: React.FC = () => {
             <Route path="/dma-compliance" element={<PublicPageWrapper><DMAPillar /></PublicPageWrapper>} />
             <Route path="/dsa-compliance" element={<PublicPageWrapper><DSAPillar /></PublicPageWrapper>} />
             <Route path="/csrd-compliance" element={<PublicPageWrapper><CSRDPillar /></PublicPageWrapper>} />
+            <Route path="/aiuc-1" element={<PublicPageWrapper><AIUC1Pillar /></PublicPageWrapper>} />
+            <Route path="/india-dpdpa" element={<PublicPageWrapper><IndiaDPDPAPillar /></PublicPageWrapper>} />
 
             {/* ── Competitor comparison pages (public) ──────────────── */}
             {/* The competitor-comparison section was removed; keep indexed links alive. */}

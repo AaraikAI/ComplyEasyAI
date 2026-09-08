@@ -32,6 +32,8 @@ export const STATIC_ROUTES = [
   '/dma-compliance',
   '/dsa-compliance',
   '/csrd-compliance',
+  '/aiuc-1',
+  '/india-dpdpa',
   // FAQ, glossary index, blog index
   '/faq',
   '/glossary',
