@@ -119,7 +119,7 @@
     "node-cron": "^4.6.0",
     "node-seal": "^7.0.0",
     "ntp-client": "^0.5.3",
-    "openai": "^6.34.0",
+    "openai": "^7.15.0",
     "paillier-bigint": "^3.4.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
