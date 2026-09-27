@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 import { breadcrumbSchema } from '../../seo/siteSchema';
 import { Eyebrow } from '../signal';
 import DemoBookingForm from '../../DemoBookingForm';
@@ -34,8 +35,8 @@ const DemoPage: React.FC = () => {
       />
       <JsonLd
         data={breadcrumbSchema([
-          { name: 'Home', url: 'https://complyeasyai.com/' },
-          { name: 'Book a demo', url: 'https://complyeasyai.com/demo' },
+          { name: 'Home', url: `${SITE_ORIGIN}/` },
+          { name: 'Book a demo', url: `${SITE_ORIGIN}/demo` },
         ])}
       />
 

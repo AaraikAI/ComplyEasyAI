@@ -6,8 +6,7 @@ import { Seo } from '../../seo/Seo';
 import { JsonLd } from '../../seo/JsonLd';
 import { breadcrumbSchema } from '../../seo/siteSchema';
 import { blogPosts } from '../../../data/blog';
-
-const SITE_ORIGIN = 'https://complyeasyai.com';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 
 /** Format a 'YYYY-MM-DD' string as a readable date without relying on a runtime clock. */
 const MONTHS = [

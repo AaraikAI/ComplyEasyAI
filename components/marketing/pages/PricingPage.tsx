@@ -3,6 +3,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
 import {
   SignalPage,
@@ -242,8 +243,8 @@ const PricingPage: React.FC = () => {
       />
       <JsonLd
         data={breadcrumbSchema([
-          { name: 'Home', url: 'https://complyeasyai.com/' },
-          { name: 'Pricing', url: 'https://complyeasyai.com/pricing' },
+          { name: 'Home', url: `${SITE_ORIGIN}/` },
+          { name: 'Pricing', url: `${SITE_ORIGIN}/pricing` },
         ])}
       />
       <JsonLd data={faqSchema(FAQ_ITEMS)} />

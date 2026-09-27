@@ -6,8 +6,7 @@ import { SignalPage } from './marketing/signal';
 import { Seo } from './seo/Seo';
 import { JsonLd } from './seo/JsonLd';
 import { breadcrumbSchema } from './seo/siteSchema';
-
-const SITE_ORIGIN = 'https://complyeasyai.com';
+import { SITE_ORIGIN } from './seo/siteOrigin';
 
 /** One content block inside a docs section. */
 type DocBlock =

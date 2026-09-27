@@ -4,6 +4,7 @@ import { ArrowRight, Diamond } from 'lucide-react';
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 import { breadcrumbSchema } from '../../seo/siteSchema';
 import type { SignalCategory } from '../signal';
 import {
@@ -103,8 +104,8 @@ const FrameworksIndexPage: React.FC = () => {
       />
       <JsonLd
         data={breadcrumbSchema([
-          { name: 'Home', url: 'https://complyeasyai.com/' },
-          { name: 'Frameworks', url: 'https://complyeasyai.com/frameworks' },
+          { name: 'Home', url: `${SITE_ORIGIN}/` },
+          { name: 'Frameworks', url: `${SITE_ORIGIN}/frameworks` },
         ])}
       />
       <JsonLd
@@ -116,7 +117,7 @@ const FrameworksIndexPage: React.FC = () => {
             '@type': 'ListItem',
             position: index + 1,
             name: framework.name,
-            url: `https://complyeasyai.com${framework.path}`,
+            url: `${SITE_ORIGIN}${framework.path}`,
           })),
         }}
       />

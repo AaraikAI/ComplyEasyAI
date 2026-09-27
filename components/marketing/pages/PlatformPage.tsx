@@ -4,6 +4,7 @@ import { ArrowRight, Check, FileCheck, KeyRound, Lock, Timer, Users } from 'luci
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 import { breadcrumbSchema, softwareApplicationSchema } from '../../seo/siteSchema';
 import {
   Eyebrow,
@@ -101,8 +102,8 @@ const PlatformPage: React.FC = () => {
       <JsonLd data={softwareApplicationSchema()} />
       <JsonLd
         data={breadcrumbSchema([
-          { name: 'Home', url: 'https://complyeasyai.com/' },
-          { name: 'Platform', url: 'https://complyeasyai.com/platform' },
+          { name: 'Home', url: `${SITE_ORIGIN}/` },
+          { name: 'Platform', url: `${SITE_ORIGIN}/platform` },
         ])}
       />
 

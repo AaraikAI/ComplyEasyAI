@@ -34,8 +34,7 @@ import {
   PILLAR_HOW_IT_WORKS,
   relatedPillars,
 } from '../../../data/frameworkPillarContent';
-
-const SITE_ORIGIN = 'https://complyeasyai.com';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 
 /** Icons paired by position with the six shared PILLAR_CAPABILITIES cards. */
 const CAPABILITY_ICONS = [Network, FileCheck, RefreshCw, Gauge, Layers, ClipboardCheck];

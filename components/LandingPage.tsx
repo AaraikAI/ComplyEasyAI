@@ -12,6 +12,7 @@ import {
 } from './marketing/signal';
 import Seo from './seo/Seo';
 import JsonLd from './seo/JsonLd';
+import { SITE_ORIGIN } from './seo/siteOrigin';
 import {
   organizationSchema,
   softwareApplicationSchema,
@@ -277,7 +278,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
       <Seo title={SEO_TITLE} description={SEO_DESCRIPTION} canonicalPath="/" keywords={SEO_KEYWORDS} />
       <JsonLd data={organizationSchema()} />
       <JsonLd data={softwareApplicationSchema()} />
-      <JsonLd data={breadcrumbSchema([{ name: 'Home', url: 'https://complyeasyai.com/' }])} />
+      <JsonLd data={breadcrumbSchema([{ name: 'Home', url: `${SITE_ORIGIN}/` }])} />
 
       <SignalPage>
         {/* ================================ Hero ================================ */}

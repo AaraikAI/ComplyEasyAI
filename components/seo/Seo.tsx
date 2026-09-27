@@ -1,6 +1,6 @@
 import React from 'react';
+import { SITE_ORIGIN } from './siteOrigin';
 
-const SITE_ORIGIN = 'https://complyeasyai.com';
 const SITE_NAME = 'ComplyEasy AI';
 const DEFAULT_OG_IMAGE = '/og/default-og.svg';
 

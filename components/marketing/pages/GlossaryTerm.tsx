@@ -7,8 +7,8 @@ import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
 import { breadcrumbSchema } from '../../seo/siteSchema';
 import { getGlossaryTerm } from '../../../data/glossary';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 
-const SITE_ORIGIN = 'https://complyeasyai.com';
 const TERM_SET_URL = SITE_ORIGIN + '/glossary';
 
 /**

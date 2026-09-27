@@ -18,6 +18,7 @@ import {
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
 
 // ---------------------------------------------------------------------------
@@ -226,10 +227,10 @@ const AICompliancePillar: React.FC = () => {
       <JsonLd data={faqSchema(faqItems)} />
       <JsonLd
         data={breadcrumbSchema([
-          { name: 'Home', url: 'https://complyeasyai.com/' },
+          { name: 'Home', url: `${SITE_ORIGIN}/` },
           {
             name: 'AI Compliance',
-            url: 'https://complyeasyai.com/platform/ai-compliance',
+            url: `${SITE_ORIGIN}/platform/ai-compliance`,
           },
         ])}
       />
@@ -241,14 +242,14 @@ const AICompliancePillar: React.FC = () => {
           description: SEO_DESCRIPTION,
           datePublished: '2026-06-07',
           dateModified: '2026-06-07',
-          mainEntityOfPage: 'https://complyeasyai.com/platform/ai-compliance',
+          mainEntityOfPage: `${SITE_ORIGIN}/platform/ai-compliance`,
           author: { '@type': 'Organization', name: 'ComplyEasy AI' },
           publisher: {
             '@type': 'Organization',
             name: 'ComplyEasy AI',
             logo: {
               '@type': 'ImageObject',
-              url: 'https://complyeasyai.com/favicon.svg',
+              url: `${SITE_ORIGIN}/favicon.svg`,
             },
           },
         }}
@@ -273,7 +274,7 @@ const AICompliancePillar: React.FC = () => {
           '@context': 'https://schema.org',
           '@type': 'WebPage',
           name: SEO_TITLE,
-          url: 'https://complyeasyai.com/platform/ai-compliance',
+          url: `${SITE_ORIGIN}/platform/ai-compliance`,
           speakable: {
             '@type': 'SpeakableSpecification',
             cssSelector: ['#ai-compliance-definition'],

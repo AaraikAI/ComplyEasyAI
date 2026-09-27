@@ -2,12 +2,13 @@
  * schema.org structured-data builders for ComplyEasy AI.
  *
  * Brand facts are verifiable-only: name 'ComplyEasy AI', url
- * https://complyeasyai.com, logo /favicon.svg. Social profiles (sameAs) and
+ * https://www.complyeasyai.com, logo /favicon.svg. Social profiles (sameAs) and
  * contactPoint are intentionally omitted because they are not verified here.
  * No aggregateRating / review data is emitted anywhere.
  */
 
-const SITE_ORIGIN = 'https://complyeasyai.com';
+import { SITE_ORIGIN } from './siteOrigin';
+
 const SITE_NAME = 'ComplyEasy AI';
 const SITE_LOGO = `${SITE_ORIGIN}/favicon.svg`;
 

@@ -17,6 +17,7 @@ import {
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 import { breadcrumbSchema, faqSchema, softwareApplicationSchema } from '../../seo/siteSchema';
 
 // ---------------------------------------------------------------------------
@@ -171,8 +172,8 @@ const GRCPillar: React.FC = () => {
       <JsonLd data={softwareApplicationSchema()} />
       <JsonLd
         data={breadcrumbSchema([
-          { name: 'Home', url: 'https://complyeasyai.com/' },
-          { name: 'GRC Software', url: 'https://complyeasyai.com/grc' },
+          { name: 'Home', url: `${SITE_ORIGIN}/` },
+          { name: 'GRC Software', url: `${SITE_ORIGIN}/grc` },
         ])}
       />
       <JsonLd data={faqSchema(FAQ)} />

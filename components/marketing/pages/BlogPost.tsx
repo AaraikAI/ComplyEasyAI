@@ -7,9 +7,9 @@ import { Seo } from '../../seo/Seo';
 import { JsonLd } from '../../seo/JsonLd';
 import { breadcrumbSchema } from '../../seo/siteSchema';
 import { getBlogPost } from '../../../data/blog';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 
-const SITE_ORIGIN = 'https://complyeasyai.com';
-const ARTICLE_IMAGE = 'https://complyeasyai.com/og/default-og.svg';
+const ARTICLE_IMAGE = `${SITE_ORIGIN}/og/default-og.svg`;
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',

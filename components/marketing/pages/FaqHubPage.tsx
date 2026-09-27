@@ -5,8 +5,7 @@ import { MarketingLayout } from '../MarketingLayout';
 import { Seo } from '../../seo/Seo';
 import { JsonLd } from '../../seo/JsonLd';
 import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
-
-const SITE_ORIGIN = 'https://complyeasyai.com';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 
 interface QaItem {
   q: string;

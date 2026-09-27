@@ -6,8 +6,7 @@ import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
 import { breadcrumbSchema } from '../../seo/siteSchema';
 import { glossaryTerms } from '../../../data/glossary';
-
-const SITE_ORIGIN = 'https://complyeasyai.com';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
 
 /**
  * Glossary landing page (/glossary). Lists every compliance, privacy, and
