@@ -25,7 +25,6 @@ const RESOURCE_LINKS: NavLinkItem[] = [
   { label: 'FAQ', to: '/faq' },
   { label: 'Learning center', to: '/learn' },
   { label: 'Documentation', to: '/docs' },
-  { label: 'Community', to: '/community' },
   { label: 'System status', to: '/status' },
 ];
 

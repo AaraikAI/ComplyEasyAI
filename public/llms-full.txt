@@ -23,7 +23,6 @@ Last updated: 2026-09-27
 - https://www.complyeasyai.com/frameworks — Frameworks. Index of the 16 framework guides across security, privacy, AI governance and EU digital regulation.
 - https://www.complyeasyai.com/demo — Book a demo. A 30-minute walkthrough tailored to your frameworks and stack.
 - https://www.complyeasyai.com/learn — Learning center. Guides, checklists and definitions, linking the framework guides, glossary and blog.
-- https://www.complyeasyai.com/community — Community. Practitioner community for compliance and GRC teams.
 - https://www.complyeasyai.com/docs — Documentation. Product documentation: quickstart, integrations, evidence, monitoring, aCOS, reports, roles and the API.
 - https://www.complyeasyai.com/status — System status. Live availability of the web app, API, database and background jobs from the production health check.
 

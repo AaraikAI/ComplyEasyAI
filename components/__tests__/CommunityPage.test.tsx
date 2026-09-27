@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 
 vi.mock('recharts', () => ({
@@ -95,18 +95,32 @@ describe('CommunityPage', () => {
     expect(screen.getAllByText(/Community/i).length).toBeGreaterThan(0);
   });
 
-  it('displays forum posts', () => {
+  it('says plainly that the community is in early access', () => {
     render(<CommunityPage />);
-    expect(screen.getAllByText(/SOC 2 evidence/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('early access');
+    expect(screen.getByText(/opening to customers and design partners first/)).toBeInTheDocument();
   });
 
-  it('shows community events or resources section', () => {
+  it('shows no member counts, forum threads, events, leaderboards or dead Slack links', () => {
     render(<CommunityPage />);
-    expect(screen.getAllByText(/Azure DevOps/i).length).toBeGreaterThan(0);
+    const html = document.documentElement.innerHTML;
+    for (const unsupported of [/15,000/, /15K\+/, /50K\+/, /Jennifer M\./, /slack\.complyeasyai\.com/, /Upcoming Events/]) {
+      expect(html).not.toMatch(unsupported);
+    }
   });
 
-  it('displays forum categories', () => {
+  it('is kept out of search results until there is community content', () => {
     render(<CommunityPage />);
-    expect(screen.getAllByText(/Best Practices/i).length).toBeGreaterThan(0);
+    expect(document.querySelector('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
+  });
+
+  it('points visitors at the demo and the published resources', () => {
+    render(<CommunityPage />);
+    for (const link of screen.getAllByText('Book a demo')) {
+      expect(link.closest('a')).toHaveAttribute('href', '/demo');
+    }
+    expect(screen.getByText('Browse the learning center').closest('a')).toHaveAttribute('href', '/learn');
+    const glossaryCard = screen.getByRole('heading', { level: 3, name: 'Glossary' });
+    expect(glossaryCard.closest('a')).toHaveAttribute('href', '/glossary');
   });
 });
