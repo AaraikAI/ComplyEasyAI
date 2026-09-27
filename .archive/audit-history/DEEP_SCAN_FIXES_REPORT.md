@@ -12,7 +12,7 @@
 - This causes all email sending to fail silently
 
 **Root Cause:**
-- Invalid API key format: `SK0192e75889cc08a28990e42fa1734852`
+- Invalid API key format: `[REDACTED]`
 - Should be: `SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 
 **Impact:**
@@ -165,7 +165,7 @@
 ## 📋 Next Steps
 
 1. **Update SendGrid API Key** in `server/.env`
-   - Replace `SK0192e75889cc08a28990e42fa1734852` with valid `SG.` key
+   - Replace `[REDACTED]` with valid `SG.` key
    - Verify sender email in SendGrid dashboard
 
 2. **Restart Backend Server**
