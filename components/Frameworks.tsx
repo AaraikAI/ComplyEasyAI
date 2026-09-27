@@ -13,6 +13,7 @@ import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import { logger } from '../utils/logger';
+import { findTemplateForFramework } from '../utils/frameworkTemplateMatch';
 
 interface TemplateInfo {
   frameworkType: string;
@@ -20,6 +21,7 @@ interface TemplateInfo {
   description: string;
   controlCount: number;
   categories: string[];
+  aliases?: string[];
 }
 
 interface TemplateControlDetail {
@@ -269,14 +271,8 @@ export const Frameworks: React.FC<FrameworksProps> = ({
     }
   }, [activeFrameworks, onSelectFramework]);
 
-  const getTemplateForFramework = (frameworkName: string): TemplateInfo | undefined => {
-    return templates.find(tmpl =>
-      tmpl.frameworkType === frameworkName ||
-      tmpl.displayName === frameworkName ||
-      frameworkName.includes(tmpl.frameworkType) ||
-      tmpl.frameworkType.includes(frameworkName)
-    );
-  };
+  const getTemplateForFramework = (frameworkName: string): TemplateInfo | undefined =>
+    findTemplateForFramework(templates, frameworkName);
 
   const handlePreviewTemplate = async (frameworkType: string) => {
     setTemplatePreviewLoading(true);

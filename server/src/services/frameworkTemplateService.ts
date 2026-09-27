@@ -21,6 +21,7 @@ import { CMMC_CONTROLS } from '../data/frameworks/cmmcControls';
 import { HITRUST_CONTROLS } from '../data/frameworks/hitrustControls';
 import { CIS_CONTROLS } from '../data/frameworks/cisControls';
 import { ISO27017_CONTROLS } from '../data/frameworks/iso27017Controls';
+import { ISO27017_2026_CONTROLS } from '../data/frameworks/iso27017_2026Controls';
 import { EU_AI_ACT_CONTROLS } from '../data/frameworks/euAiActControls';
 import { NIS2_CONTROLS } from '../data/frameworks/nis2Controls';
 import { DORA_CONTROLS } from '../data/frameworks/doraControls';
@@ -192,10 +193,17 @@ const FRAMEWORK_TEMPLATE_MAP: Record<string, { controls: FrameworkControlTemplat
     displayName: 'CIS Controls v8',
     description: 'Center for Internet Security Controls with 18 critical security controls and implementation groups',
   },
+  // The bare 'ISO 27017' key stays on the 2015 edition: ComplianceFramework.name is a free string
+  // resolved through this map, so existing ISO 27017 frameworks keep the controls they were built from.
   'ISO 27017': {
     controls: ISO27017_CONTROLS,
-    displayName: 'ISO 27017:2015',
-    description: 'Cloud security controls extending ISO 27001 with guidance for cloud service providers and customers',
+    displayName: 'ISO 27017:2015 (withdrawn)',
+    description: 'ISO/IEC 27017:2015 cloud security code of practice, withdrawn on publication of ISO 27017:2026 (July 2026) and kept for organizations still assessed against the first edition',
+  },
+  'ISO 27017:2026': {
+    controls: ISO27017_2026_CONTROLS,
+    displayName: 'ISO 27017:2026',
+    description: 'Cloud security controls for cloud service customers and providers: cloud guidance on all 93 ISO 27002:2022 controls plus four cloud-specific controls (5.38, 5.39, 8.35, 8.36)',
   },
   'EU AI Act': {
     controls: EU_AI_ACT_CONTROLS,
@@ -995,6 +1003,16 @@ const FRAMEWORK_ALIASES: Record<string, string> = {
   'ISO 27017:2015': 'ISO 27017',
   'iso27017': 'ISO 27017',
   'iso-27017': 'ISO 27017',
+  'ISO/IEC 27017': 'ISO 27017',
+  'ISO/IEC 27017:2015': 'ISO 27017',
+  'ISO 27017:2015 (withdrawn)': 'ISO 27017',
+  // ISO 27017:2026 (second edition) — every spelling names the year, so the bare names above keep the 2015 edition
+  'ISO/IEC 27017:2026': 'ISO 27017:2026',
+  'ISO27017:2026': 'ISO 27017:2026',
+  'ISO 27017 2026': 'ISO 27017:2026',
+  'ISO 27017 (2026)': 'ISO 27017:2026',
+  'iso-27017-2026': 'ISO 27017:2026',
+  'ISO/IEC 27017 Edition 2': 'ISO 27017:2026',
   // EU AI Act aliases
   'eu-ai-act': 'EU AI Act',
   'EU AI Act 2024': 'EU AI Act',
@@ -1600,7 +1618,15 @@ export class FrameworkTemplateService {
     description: string;
     controlCount: number;
     categories: string[];
+    aliases: string[];
   }> {
+    // Aliases let clients match a framework name to its template the same way resolveFrameworkKey does.
+    const aliasesByKey = new Map<string, string[]>();
+    for (const [alias, key] of Object.entries(FRAMEWORK_ALIASES)) {
+      const list = aliasesByKey.get(key) || [];
+      list.push(alias);
+      aliasesByKey.set(key, list);
+    }
     return Object.entries(FRAMEWORK_TEMPLATE_MAP).map(([key, value]) => {
       const categories = [...new Set(value.controls.map(c => c.category))];
       return {
@@ -1609,6 +1635,7 @@ export class FrameworkTemplateService {
         description: value.description,
         controlCount: value.controls.length,
         categories,
+        aliases: aliasesByKey.get(key) || [],
       };
     });
   }
@@ -1995,6 +2022,19 @@ export class FrameworkTemplateService {
       'csa ccm v4.0': 'csa ccm',
       'cloud controls matrix': 'csa ccm',
       'ccm': 'csa ccm',
+      'iso27017': 'iso 27017',
+      'iso 27017:2015': 'iso 27017',
+      'iso-27017': 'iso 27017',
+      'iso/iec 27017': 'iso 27017',
+      'iso/iec 27017:2015': 'iso 27017',
+      'iso 27017:2015 (withdrawn)': 'iso 27017',
+      // ISO 27017:2026 — never collapse a 2026 spelling onto the 2015 'iso 27017'
+      'iso/iec 27017:2026': 'iso 27017:2026',
+      'iso27017:2026': 'iso 27017:2026',
+      'iso 27017 2026': 'iso 27017:2026',
+      'iso 27017 (2026)': 'iso 27017:2026',
+      'iso-27017-2026': 'iso 27017:2026',
+      'iso/iec 27017 edition 2': 'iso 27017:2026',
       'iso27018': 'iso 27018',
       'iso 27018:2019': 'iso 27018',
       'cloud pii': 'iso 27018',

@@ -4,6 +4,12 @@
  *
  * This standard provides guidelines for information security controls applicable to cloud services.
  * It extends ISO 27001/27002 with cloud-specific implementation guidance.
+ *
+ * WITHDRAWN EDITION: ISO/IEC 27017:2015 was replaced by ISO/IEC 27017:2026 (published 2026-07-27),
+ * whose controls are in iso27017_2026Controls.ts under the registry key 'ISO 27017:2026'. This file
+ * stays under the key 'ISO 27017' for organizations still assessed against the first edition. Its
+ * control ids and names must not change: applied controls are stored as "<controlId>: <name>" and
+ * re-applying the template de-duplicates on that string.
  */
 
 export interface FrameworkControlTemplate {

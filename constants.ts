@@ -87,7 +87,8 @@ export const AVAILABLE_FRAMEWORKS = [
   // =========================================================================
   // ISO Standards
   // =========================================================================
-  { name: 'ISO 27017', region: 'Global', description: 'Cloud security controls and guidelines' },
+  { name: 'ISO 27017', region: 'Global', description: 'ISO/IEC 27017:2015 cloud security controls (withdrawn edition, replaced by ISO 27017:2026)' },
+  { name: 'ISO 27017:2026', region: 'Global', description: 'Cloud security controls for cloud service customers and providers (2026 edition, aligned to ISO 27002:2022)' },
   { name: 'ISO 27018', region: 'Global', description: 'Protection of personally identifiable information in public clouds' },
   { name: 'ISO 27701', region: 'Global', description: 'Privacy Information Management System (PIMS)' },
   { name: 'ISO 22301', region: 'Global', description: 'Business Continuity Management System' },
