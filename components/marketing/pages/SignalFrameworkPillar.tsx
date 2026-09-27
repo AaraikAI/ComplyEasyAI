@@ -12,11 +12,7 @@ import {
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
-import {
-  softwareApplicationSchema,
-  breadcrumbSchema,
-  faqSchema,
-} from '../../seo/siteSchema';
+import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
 import {
   Eyebrow,
   OutlineCta,
@@ -75,7 +71,6 @@ const SignalFrameworkPillar: React.FC<SignalFrameworkPillarProps> = ({
         canonicalPath={content.path}
         keywords={seoKeywords}
       />
-      <JsonLd data={softwareApplicationSchema()} />
       <JsonLd
         data={breadcrumbSchema([
           { name: 'Home', url: `${SITE_ORIGIN}/` },

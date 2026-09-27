@@ -6,6 +6,8 @@ import { Seo } from '../../seo/Seo';
 import { JsonLd } from '../../seo/JsonLd';
 import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
 import { SITE_ORIGIN } from '../../seo/siteOrigin';
+import { FRAMEWORK_PILLAR_COUNT } from '../../../data/frameworkPillarContent';
+import { ACOS_PLANS, EU_STACK_PLAN } from '../../../data/marketingFacts';
 
 interface QaItem {
   q: string;
@@ -14,6 +16,9 @@ interface QaItem {
 
 interface FaqTopic {
   id: string;
+  /** Short name for the topic jump links. */
+  label: string;
+  /** Section heading, phrased as the question the topic answers. */
   title: string;
   blurb: string;
   items: QaItem[];
@@ -27,7 +32,8 @@ interface FaqTopic {
 const FAQ_TOPICS: FaqTopic[] = [
   {
     id: 'getting-started',
-    title: 'Getting started',
+    label: 'Getting started',
+    title: 'How do I get started?',
     blurb: 'What the platform is, who it serves, and how onboarding works.',
     items: [
       {
@@ -54,7 +60,8 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'pricing-billing',
-    title: 'Pricing and billing',
+    label: 'Pricing and billing',
+    title: 'How does pricing work?',
     blurb: 'Tiers, tier changes, payment methods, and refunds.',
     items: [
       {
@@ -77,16 +84,17 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'platform-features',
-    title: 'Platform and features',
+    label: 'Platform and features',
+    title: 'What does the platform do?',
     blurb: 'Core capabilities, autonomous operations, and evidence automation.',
     items: [
       {
         q: 'What compliance frameworks does the platform support?',
-        a: 'The platform includes more than 50 built-in frameworks spanning security (SOC 2 Type I and II, ISO 27001, ISO 27701, NIST CSF, CIS Controls), privacy (GDPR, CCPA, HIPAA, PIPEDA, LGPD), cloud (FedRAMP, StateRAMP, TISAX), AI/ML (EU AI Act, NIST AI RMF, ISO 42001), and industry standards (PCI DSS, HITRUST, 21 CFR Part 11, ITAR), plus the EU Digital Markets Act and Digital Services Act. Custom frameworks are available as an add-on with the Growth tier and above.',
+        a: 'The platform includes more than 50 built-in frameworks spanning security (SOC 2 Type I and II, ISO 27001, ISO 27701, NIST CSF, CIS Controls), privacy (GDPR, CCPA, HIPAA, PIPEDA, LGPD), cloud (FedRAMP, StateRAMP, TISAX), AI/ML (EU AI Act, NIST AI RMF, ISO 42001), and industry standards (PCI DSS, HITRUST, 21 CFR Part 11, ITAR), plus the EU Digital Markets Act and Digital Services Act. Growth and Visionary plans can build custom frameworks.',
       },
       {
         q: 'What is aCOS (Autonomous Compliance Operations System)?',
-        a: 'aCOS is the autonomous compliance engine. It monitors your infrastructure continuously with AI agents, detects compliance drift in real time, remediates issues automatically when it is safe to do so, learns from your environment to adapt policies, predicts emerging risks, and orchestrates remediation workflows. It is available in the Essentials tier and above, or as a separately billed add-on.',
+        a: `aCOS is the autonomous compliance engine. It monitors your infrastructure continuously with AI agents, detects compliance drift in real time, remediates issues automatically when it is safe to do so, learns from your environment to adapt policies, predicts emerging risks, and orchestrates remediation workflows. The full aCOS loop is included in ${ACOS_PLANS}; continuous control monitoring is in every tier.`,
       },
       {
         q: 'How does automated evidence collection work?',
@@ -104,7 +112,8 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'ai-features',
-    title: 'AI and automation',
+    label: 'AI and automation',
+    title: 'How does the AI work?',
     blurb: 'How the AI works, what it automates, and where humans stay in the loop.',
     items: [
       {
@@ -131,7 +140,8 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'frameworks',
-    title: 'Compliance frameworks',
+    label: 'Compliance frameworks',
+    title: 'Which frameworks are covered?',
     blurb: 'Timelines, running multiple frameworks, and staying current with updates.',
     items: [
       {
@@ -148,26 +158,27 @@ const FAQ_TOPICS: FaqTopic[] = [
       },
       {
         q: 'How do you handle framework updates?',
-        a: 'Framework changes are tracked centrally. When a standard is revised, new controls are added to your instance, you receive advance notice, and AI assists the transition while preserving and remapping existing evidence. This has covered updates such as the ISO 27001:2022 revision, NIST CSF 2.0, and the EU AI Act, so you stay current without manual framework maintenance.',
+        a: 'Framework changes are tracked centrally. When a standard is revised, new controls are added to your instance, you receive advance notice, and AI assists the transition while preserving and remapping existing evidence. This has covered updates such as the ISO 27001:2022 revision and NIST CSF 2.0.',
       },
     ],
   },
   {
     id: 'eu-regulations',
-    title: 'EU regulations',
+    label: 'EU regulations',
+    title: 'Which EU regulations are covered?',
     blurb: 'EU AI Act, DMA, DSA, and GDPR coverage.',
     items: [
       {
         q: 'Do you support the EU AI Act?',
-        a: 'Yes. The platform helps you classify AI system risk, generate technical documentation for high-risk systems, run conformity assessments, manage required transparency disclosures and labeling, operate human-oversight governance workflows, and monitor data quality and accuracy. It is included with the Visionary tier and available as an add-on for lower tiers.',
+        a: `Yes. The platform helps you classify AI system risk, generate technical documentation for high-risk systems, run conformity assessments, manage required transparency disclosures and labeling, operate human-oversight governance workflows, and monitor data quality and accuracy. It is included in the ${EU_STACK_PLAN} plan's full EU stack (AI Act, DORA, DMA and DSA). After the 2026 Digital Omnibus amendments, most high-risk obligations apply from 2 December 2027 (Annex III systems) or 2 August 2028 (AI in products covered by Annex I).`,
       },
       {
         q: 'What about the Digital Markets Act (DMA)?',
-        a: 'The platform supports DMA obligations for digital gatekeepers, including gatekeeper assessment, mapping of the DMA obligations, documenting interoperability and data portability, monitoring self-preferencing and data-combination practices, and generating compliance reports. It is available in the Visionary tier or as a Growth-tier add-on.',
+        a: `The platform supports DMA obligations for digital gatekeepers, including gatekeeper assessment, mapping of the DMA obligations, documenting interoperability and data portability, monitoring self-preferencing and data-combination practices, and generating compliance reports. It is included in the ${EU_STACK_PLAN} plan.`,
       },
       {
         q: 'And the Digital Services Act (DSA)?',
-        a: 'The platform provides a DSA toolkit covering content-moderation tracking, notice-and-action workflows, automated transparency reporting, systemic-risk analysis for very large platforms, recommender-system documentation, advertising transparency, and user-rights request handling. It is available in the Visionary tier or as a Growth-tier add-on.',
+        a: `The platform provides a DSA toolkit covering content-moderation tracking, notice-and-action workflows, automated transparency reporting, systemic-risk analysis for very large platforms, recommender-system documentation, advertising transparency, and user-rights request handling. It is included in the ${EU_STACK_PLAN} plan.`,
       },
       {
         q: 'How does the platform help with GDPR?',
@@ -177,7 +188,8 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'security',
-    title: 'Security and privacy',
+    label: 'Security and privacy',
+    title: 'How is my data protected?',
     blurb: 'Architecture, data residency, access controls, and customer-managed keys.',
     items: [
       {
@@ -200,12 +212,13 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'integrations',
-    title: 'Integrations',
+    label: 'Integrations',
+    title: 'Which tools does it connect to?',
     blurb: 'Supported tools, connection methods, and building your own.',
     items: [
       {
         q: 'What integrations do you support?',
-        a: 'The platform offers more than 80 pre-built integrations across cloud providers (AWS, Azure, GCP, Oracle Cloud, IBM Cloud), security and compliance tools (Wiz, Vanta, Snyk, Crowdstrike, Qualys, Tenable), DevOps (GitHub, GitLab, Bitbucket, Jenkins, CircleCI, Terraform), communication (Slack, Microsoft Teams, PagerDuty, Opsgenie), HR and identity (Okta, Azure AD, Google Workspace, BambooHR, Workday), ticketing (Jira, ServiceNow, Linear, Asana), and monitoring (Datadog, Splunk, Elasticsearch, Prometheus, Grafana).',
+        a: 'The platform offers more than 80 pre-built integrations across cloud providers (AWS, Azure, GCP, Oracle Cloud, IBM Cloud), security and compliance tools (Wiz, Snyk, Crowdstrike, Qualys, Tenable), DevOps (GitHub, GitLab, Bitbucket, Jenkins, CircleCI, Terraform), communication (Slack, Microsoft Teams, PagerDuty, Opsgenie), HR and identity (Okta, Azure AD, Google Workspace, BambooHR, Workday), ticketing (Jira, ServiceNow, Linear, Asana), and monitoring (Datadog, Splunk, Elasticsearch, Prometheus, Grafana).',
       },
       {
         q: 'How do integrations work?',
@@ -223,7 +236,8 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'technical',
-    title: 'Technical questions',
+    label: 'Technical questions',
+    title: 'What are the technical details?',
     blurb: 'Uptime, deployment, rate limits, and developer interfaces.',
     items: [
       {
@@ -246,7 +260,8 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'support-services',
-    title: 'Support and services',
+    label: 'Support and services',
+    title: 'What support is included?',
     blurb: 'Support tiers, professional services, training, and migration help.',
     items: [
       {
@@ -267,13 +282,14 @@ const FAQ_TOPICS: FaqTopic[] = [
       },
       {
         q: 'What if I need help migrating from another tool?',
-        a: 'Migration support is included for all tiers and typically takes a week or two. The team imports your data from tools such as Vanta, Drata, or Secureframe, handles data mapping and validation, and runs the platform in parallel during the transition for no downtime. Growth and above add a dedicated migration engineer and custom data transformation.',
+        a: "Migration support is included for all tiers and typically takes a week or two. The team imports your controls, evidence and policies from spreadsheets or your current compliance tool's exports, handles data mapping and validation, and runs the platform in parallel during the transition for no downtime. Growth and above add a dedicated migration engineer and custom data transformation.",
       },
     ],
   },
   {
     id: 'additional',
-    title: 'Additional questions',
+    label: 'Additional questions',
+    title: 'What about white-labeling and multi-tenancy?',
     blurb: 'White-labeling, multi-tenancy, and enterprise add-ons.',
     items: [
       {
@@ -308,7 +324,7 @@ const FaqHubPage: React.FC = () => {
   return (
     <MarketingLayout>
       <Seo
-        title="Frequently Asked Questions — ComplyEasy AI"
+        title="ComplyEasyAI FAQ: Pricing, Frameworks, AI & Security"
         description="Answers about the ComplyEasy AI compliance automation platform: supported frameworks, AI features, security architecture, integrations, pricing, deployment, and support."
         canonicalPath="/faq"
         keywords="ComplyEasy AI FAQ, compliance automation questions, SOC 2 platform, ISO 27001, GDPR, EU AI Act, BYOK, audit preparation"
@@ -338,12 +354,18 @@ const FaqHubPage: React.FC = () => {
           </span>
 
           <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-surface-900 sm:text-5xl dark:text-white">
-            ComplyEasy AI <span className="text-gradient">FAQ</span>
+            ComplyEasyAI <span className="text-gradient">FAQ</span>: frameworks, AI, security and
+            pricing
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-surface-600 dark:text-surface-300">
-            Clear answers about the platform, its AI capabilities, supported compliance frameworks,
-            security architecture, integrations, pricing, and support. Browse by topic below, or
-            jump straight to the area you care about.
+            Straight answers on what the platform does, what it costs and how it protects your data.
+          </p>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-surface-600 dark:text-surface-300">
+            ComplyEasyAI is an AI compliance automation platform for SOC 2, ISO 27001, GDPR, HIPAA,
+            the EU AI Act and {FRAMEWORK_PILLAR_COUNT - 5} more frameworks with dedicated guides. It
+            collects evidence through read-only integrations, monitors controls continuously and maps
+            shared controls once across frameworks. The answers below cover setup, pricing, AI,
+            security, integrations and support; jump to a topic or browse them in order.
           </p>
 
           {/* Topic jump links */}
@@ -355,7 +377,7 @@ const FaqHubPage: React.FC = () => {
                     href={`#${topic.id}`}
                     className="inline-flex rounded-full border border-surface-200 bg-white/70 px-4 py-1.5 text-sm font-medium text-surface-700 transition-colors hover:border-brand-300 hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-surface-700 dark:bg-surface-900/70 dark:text-surface-200 dark:hover:border-brand-700 dark:hover:text-brand-300"
                   >
-                    {topic.title}
+                    {topic.label}
                   </a>
                 </li>
               ))}

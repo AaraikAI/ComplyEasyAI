@@ -18,9 +18,9 @@ import {
 // ---------------------------------------------------------------------------
 // SEO copy
 // ---------------------------------------------------------------------------
-const SEO_TITLE = 'Pricing — ComplyEasyAI';
+const SEO_TITLE = 'ComplyEasyAI Pricing: Plans for Every Stage';
 const SEO_DESCRIPTION =
-  "Enterprise-grade compliance at a fraction of a four-to-six tool stack. Pick the tier that fits — we'll tailor an exact number to your frameworks.";
+  'Four annual plans, from Foundation (3 frameworks, 10 users) to Visionary (unlimited). One platform price, no per-framework add-ons. Exact quote in a 30-minute call.';
 const SEO_KEYWORDS =
   'ComplyEasyAI pricing, compliance automation pricing, compliance platform tiers, SOC 2 automation pricing, GRC platform cost';
 
@@ -254,17 +254,23 @@ const PricingPage: React.FC = () => {
         <section className="relative overflow-hidden bg-signal-glow-tight px-6 pb-[30px] pt-[60px] text-center md:px-10">
           <Eyebrow className="mb-3.5">Pricing</Eyebrow>
           <SectionTitle as="h1">
-            Pricing that pays
+            ComplyEasyAI pricing:
             <br />
-            for itself.
+            four plans, one platform price.
           </SectionTitle>
           <p className="mx-auto mt-5 max-w-[620px] text-lg leading-relaxed text-signal-sub">
-            Enterprise-grade compliance at a fraction of a four-to-six tool stack. Pick the tier
-            that fits — we'll tailor an exact number to your frameworks.
+            Pick the plan that matches your stage. We tailor the exact number to your frameworks and
+            team size.
           </p>
-          <div className="mt-[30px] font-mono text-[13px] uppercase tracking-[0.1em] text-signal-muted">
-            See what fits your stage
-          </div>
+          <p className="mx-auto mt-4 max-w-[640px] text-[15px] leading-relaxed text-signal-body">
+            ComplyEasyAI has four annual plans: Foundation (3 frameworks, 10 users), Essentials (10
+            frameworks, 100 users), Growth (50 frameworks, 1,000 users) and Visionary (unlimited).
+            Each plan is one platform price with no per-framework add-ons or renewal step-ups. Exact
+            figures depend on your framework mix and team size and are shared on a 30-minute call.
+          </p>
+          <h2 className="mt-[30px] font-mono text-[13px] font-normal uppercase tracking-[0.1em] text-signal-muted">
+            Which plan fits your company?
+          </h2>
           <div
             role="group"
             aria-label="Company size"
@@ -308,7 +314,7 @@ const PricingPage: React.FC = () => {
         <SignalSection variant="glow" width={1000}>
           <div className="mb-9 text-center">
             <Eyebrow className="mb-3">Compare tiers</Eyebrow>
-            <SectionTitle>What's included, tier by tier</SectionTitle>
+            <SectionTitle>What's included in each plan?</SectionTitle>
           </div>
           <div className="overflow-x-auto">
             <div className="min-w-[680px] overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.02]">

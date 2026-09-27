@@ -18,7 +18,7 @@ import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
 import { SITE_ORIGIN } from '../../seo/siteOrigin';
-import { breadcrumbSchema, faqSchema, softwareApplicationSchema } from '../../seo/siteSchema';
+import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
 
 // ---------------------------------------------------------------------------
 // SEO copy
@@ -169,7 +169,6 @@ const GRCPillar: React.FC = () => {
         keywords={SEO_KEYWORDS}
         ogType="article"
       />
-      <JsonLd data={softwareApplicationSchema()} />
       <JsonLd
         data={breadcrumbSchema([
           { name: 'Home', url: `${SITE_ORIGIN}/` },

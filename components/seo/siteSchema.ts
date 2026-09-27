@@ -10,16 +10,27 @@
 import { SITE_ORIGIN } from './siteOrigin';
 
 const SITE_NAME = 'ComplyEasy AI';
+/** The brand as written in the product UI, so both spellings resolve to one entity. */
+const SITE_ALTERNATE_NAME = 'ComplyEasyAI';
 const SITE_LOGO = `${SITE_ORIGIN}/favicon.svg`;
 
 const ORG_DESCRIPTION =
-  'ComplyEasy AI is an AI-powered compliance automation platform that helps teams achieve and maintain readiness for frameworks including SOC 2, ISO 27001, GDPR, HIPAA, and the EU AI Act.';
+  'ComplyEasy AI is an AI compliance automation platform that collects audit evidence, monitors controls and maps shared controls across frameworks including SOC 2, ISO 27001, GDPR, HIPAA and the EU AI Act.';
+
+const FEATURE_LIST = [
+  'Automated evidence collection',
+  'Continuous control monitoring',
+  'Cross-framework control mapping',
+  'Risk and vendor management',
+  'Audit-ready reporting',
+];
 
 export function organizationSchema(): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: SITE_NAME,
+    alternateName: SITE_ALTERNATE_NAME,
     url: SITE_ORIGIN,
     logo: SITE_LOGO,
     description: ORG_DESCRIPTION,
@@ -31,12 +42,8 @@ export function webSiteSchema(): Record<string, unknown> {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: SITE_NAME,
+    alternateName: SITE_ALTERNATE_NAME,
     url: SITE_ORIGIN,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `${SITE_ORIGIN}/search?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
   };
 }
 
@@ -56,9 +63,11 @@ export function softwareApplicationSchema(): Record<string, unknown> {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: SITE_NAME,
+    url: SITE_ORIGIN,
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web',
     description: ORG_DESCRIPTION,
+    featureList: FEATURE_LIST,
     offers: PRICING_OFFERS.map((offer) => ({
       '@type': 'Offer',
       name: offer.name,

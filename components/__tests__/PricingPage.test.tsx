@@ -19,6 +19,14 @@ const readJsonLd = (): Array<Record<string, unknown>> =>
   );
 
 describe('PricingPage', () => {
+  it('names the brand and the plan structure in the H1 and answers it in the lede', () => {
+    renderPage();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ComplyEasyAI pricing:');
+    expect(
+      screen.getByText(/ComplyEasyAI has four annual plans: Foundation \(3 frameworks, 10 users\)/)
+    ).toBeInTheDocument();
+  });
+
   it('states the price positioning without naming another vendor', () => {
     renderPage();
     expect(

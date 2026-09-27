@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { csrfFetch } from '../services/api';
 import { logger } from '../utils/logger';
 import { SignalPage, SignalLogo } from './marketing/signal';
+import { Seo } from './seo/Seo';
 
 // ---------------------------------------------------------------------------
 // Signal login page: magic link first, SAML SSO, and a password fallback.
@@ -170,11 +171,22 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  if (isLoading) return null;
+  // Sign-in is not a search landing page: noindex, and left out of the sitemap.
+  const seo = (
+    <Seo
+      title="Log in | ComplyEasyAI"
+      description="Sign in to your ComplyEasyAI workspace."
+      canonicalPath="/login"
+      noindex
+    />
+  );
+
+  if (isLoading) return seo;
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
   return (
     <SignalPage>
+      {seo}
       <div className="flex min-h-screen items-center justify-center bg-signal-glow-tight px-6 py-10">
         <div className="w-full max-w-[460px]">
           <Link to="/" className="mb-9 flex items-center justify-center" aria-label="ComplyEasyAI home">

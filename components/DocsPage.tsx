@@ -355,11 +355,11 @@ const DOCS: Record<string, DocArticle> = {
         blocks: [
           {
             t: 'p',
-            v: 'Generate an API key in Settings → Developers. Pass it as a bearer token on every request.',
+            v: 'Send an access token as a bearer header. API clients receive one from POST /api/v2/auth/login; browser sessions use an httpOnly cookie instead. API keys (prefixed cea_) are accepted on the webhook endpoints.',
           },
           {
             t: 'code',
-            v: 'curl https://api.complyeasyai.com/v1/frameworks \\\n  -H "Authorization: Bearer $CEAI_API_KEY"',
+            v: 'curl https://www.complyeasyai.com/api/v1/frameworks \\\n  -H "Authorization: Bearer $CEAI_ACCESS_TOKEN"',
           },
         ],
       },
@@ -368,11 +368,11 @@ const DOCS: Record<string, DocArticle> = {
         blocks: [
           {
             t: 'p',
-            v: 'Subscribe to events to react to compliance changes in your own systems — for example, opening a ticket when a control drifts.',
+            v: 'Subscribe to events to react to compliance changes in your own systems — for example, opening a ticket when a control changes status or a monitor fails. GET /api/v1/webhooks/event-types lists every event; creating a webhook needs an admin.',
           },
           {
             t: 'code',
-            v: 'POST /v1/webhooks\n{\n  "url": "https://example.com/hooks/ceai",\n  "events": ["control.drifted", "evidence.collected"]\n}',
+            v: 'POST /api/v1/webhooks\n{\n  "name": "Ticket on control change",\n  "url": "https://example.com/hooks/ceai",\n  "events": ["control.updated", "monitor.failed"]\n}',
           },
         ],
       },

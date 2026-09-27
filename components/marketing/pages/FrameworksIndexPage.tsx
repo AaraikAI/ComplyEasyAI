@@ -5,7 +5,7 @@ import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
 import { SITE_ORIGIN } from '../../seo/siteOrigin';
-import { breadcrumbSchema } from '../../seo/siteSchema';
+import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
 import type { SignalCategory } from '../signal';
 import {
   Eyebrow,
@@ -14,6 +14,8 @@ import {
   SIGNAL_CATEGORIES,
   SectionTitle,
   SignalCard,
+  SignalChip,
+  SignalFaq,
   SignalPage,
   SignalSection,
 } from '../signal';
@@ -21,12 +23,12 @@ import {
   FRAMEWORK_PILLARS,
   FRAMEWORK_PILLAR_COUNT,
 } from '../../../data/frameworkPillarContent';
+import { FRAMEWORK_GUIDE_LIST } from '../../../data/marketingFacts';
 
 // ---------------------------------------------------------------------------
 // SEO copy
 // ---------------------------------------------------------------------------
-const SEO_TITLE =
-  'Compliance Frameworks: SOC 2, ISO 27001, GDPR, HIPAA, EU AI Act & More | ComplyEasy AI';
+const SEO_TITLE = 'Compliance Frameworks: SOC 2, ISO 27001, GDPR & More';
 const SEO_DESCRIPTION = `Explore the ${FRAMEWORK_PILLAR_COUNT} compliance frameworks ComplyEasyAI keeps continuously audit-ready — security, privacy, AI governance and the full EU digital stack — mapped once, with shared controls and evidence reused across every framework.`;
 const SEO_KEYWORDS =
   'compliance frameworks, SOC 2, ISO 27001, NIST CSF, PCI DSS, GDPR, HIPAA, CCPA, India DPDPA, EU AI Act, NIST AI RMF, ISO 42001, AIUC-1, DORA, DMA, DSA, CSRD, compliance automation';
@@ -39,21 +41,21 @@ const FRAMEWORKS = Object.values(FRAMEWORK_PILLARS);
 /** One-line index-card blurbs per pillar slug (design copy). */
 const FRAMEWORK_BLURBS: Record<string, string> = {
   'soc-2': 'Type I & II readiness with continuous control monitoring.',
-  'iso-27001': 'Annex A control mapping and Statement of Applicability support.',
-  'nist-csf': 'Identify, Protect, Detect, Respond and Recover coverage.',
-  'pci-dss': 'Cardholder-data controls with compensating-control worksheets.',
+  'iso-27001': 'ISO/IEC 27001:2022 (+Amd 1:2024): Annex A mapping and Statement of Applicability.',
+  'nist-csf': 'CSF 2.0: Govern, Identify, Protect, Detect, Respond and Recover.',
+  'pci-dss': 'PCI DSS v4.0.1 cardholder-data controls with compensating-control worksheets.',
   gdpr: 'RoPA, DPIAs and data-subject request workflows.',
   hipaa: 'Administrative, physical and technical safeguard tracking.',
-  ccpa: 'US state privacy obligations and consumer-rights handling.',
+  ccpa: 'CCPA/CPRA consumer rights, sensitive-data limits and automated decision-making opt-outs.',
   'india-dpdpa': 'DPDP Act 2023 and Rules 2025 — consent, Data Fiduciary duties and Data Principal rights.',
-  'eu-ai-act': 'Risk classification, technical documentation and transparency.',
+  'eu-ai-act': 'Risk classification, GPAI and transparency duties, and the 2027–2028 high-risk deadlines.',
   'nist-ai-rmf': 'GOVERN, MAP, MEASURE and MANAGE for AI systems.',
   'iso-42001': 'AI management system certification support.',
   'aiuc-1': 'Six-pillar certification for AI agents — data, security, safety, reliability, accountability, society.',
-  dora: 'Operational-resilience controls for financial entities.',
+  dora: 'ICT risk, incident reporting and resilience testing, applying since 17 January 2025.',
   dma: 'Gatekeeper obligations and core platform services.',
   dsa: 'Content-moderation tracking and VLOP/VLOSE controls.',
-  csrd: 'Sustainability reporting for in-scope groups.',
+  csrd: 'ESRS reporting for companies above 1,000 employees and €450M turnover (Omnibus I).',
 };
 
 const CATEGORY_FILTERS = ['All', 'Security', 'Privacy', 'AI Governance', 'EU Digital'] as const;
@@ -62,7 +64,7 @@ type CategoryFilter = (typeof CATEGORY_FILTERS)[number];
 // ---------------------------------------------------------------------------
 // "Map once. Reuse everywhere." section data
 // ---------------------------------------------------------------------------
-const EVIDENCE_MAPPINGS = ['SOC 2 · CC6.1', 'ISO 27001 · A.9', 'GDPR · Art. 32', 'HIPAA · §164.312'];
+const EVIDENCE_MAPPINGS = ['SOC 2 · CC6.1', 'ISO 27001 · A.5.15', 'GDPR · Art. 32', 'HIPAA · §164.312'];
 
 const MULTIPLIER_POINTS: { glyph: string; title: string; desc: string }[] = [
   {
@@ -77,8 +79,32 @@ const MULTIPLIER_POINTS: { glyph: string; title: string; desc: string }[] = [
   },
   {
     glyph: '↺',
-    title: 'Stay current automatically',
-    desc: 'When a regulation changes, the affected controls update — across every framework that shares them.',
+    title: 'Stay current as rules change',
+    desc: 'We track regulatory changes and update the shared control library, so an update lands once across every framework that uses the control.',
+  },
+];
+
+/** Guide count per category, in filter order (drives the TL;DR chips). */
+const CATEGORY_COUNTS = CATEGORY_FILTERS.filter(
+  (filter): filter is SignalCategory => filter !== 'All',
+).map((filter) => ({
+  category: filter,
+  count: FRAMEWORKS.filter((framework) => framework.category === filter).length,
+}));
+
+/** Framework questions (rendered and emitted as FAQPage structured data). */
+const FRAMEWORKS_FAQ: { q: string; a: string }[] = [
+  {
+    q: 'Which compliance framework should I start with?',
+    a: 'Start with the one your customers or regulators ask for. B2B SaaS teams usually start with SOC 2 for US buyers or ISO 27001 for international buyers. Teams handling EU personal data add GDPR, and teams building AI add the EU AI Act, ISO 42001 or AIUC-1.',
+  },
+  {
+    q: 'Can one control satisfy several frameworks?',
+    a: 'Yes. Access reviews, encryption, change management and logging appear in almost every framework. ComplyEasyAI maps each control to every requirement it satisfies, so one piece of evidence counts across SOC 2, ISO 27001, GDPR, HIPAA and the rest.',
+  },
+  {
+    q: "What if my framework isn't listed?",
+    a: 'The in-app catalogue goes beyond these guides, with standards such as ISO 27701, CIS Controls, FedRAMP, HITRUST, PIPEDA and LGPD, and Growth and Visionary plans can build custom frameworks.',
   },
 ];
 
@@ -108,6 +134,7 @@ const FrameworksIndexPage: React.FC = () => {
           { name: 'Frameworks', url: `${SITE_ORIGIN}/frameworks` },
         ])}
       />
+      <JsonLd data={faqSchema(FRAMEWORKS_FAQ)} />
       <JsonLd
         data={{
           '@context': 'https://schema.org',
@@ -129,19 +156,36 @@ const FrameworksIndexPage: React.FC = () => {
             <Eyebrow>Frameworks</Eyebrow>
           </div>
           <SectionTitle as="h1">
-            Every framework.
+            {FRAMEWORK_PILLAR_COUNT} compliance frameworks,
             <br />
-            One platform.
+            one control library.
           </SectionTitle>
           <p className="mx-auto mt-5 max-w-[640px] text-lg leading-relaxed text-signal-sub">
-            Security, privacy, AI governance and the full EU digital stack —{' '}
-            {FRAMEWORK_PILLAR_COUNT} frameworks, mapped once and kept continuously audit-ready.
+            Security, privacy, AI governance and the EU digital stack, all on one shared evidence
+            layer.
           </p>
+          <p className="mx-auto mt-4 max-w-[640px] text-[15px] leading-relaxed text-signal-body">
+            ComplyEasyAI supports {FRAMEWORK_PILLAR_COUNT} compliance frameworks with dedicated
+            guides: {FRAMEWORK_GUIDE_LIST}. Shared controls are mapped once, so each new framework
+            mostly reuses evidence you already collect.
+          </p>
+          <ul className="mt-6 flex flex-wrap justify-center gap-2" aria-label="Framework guides by category">
+            {CATEGORY_COUNTS.map(({ category: name, count }) => (
+              <li key={name}>
+                <SignalChip color={SIGNAL_CATEGORIES[name].color} active>
+                  {name} · {count}
+                </SignalChip>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* ================= Category filter + framework grid =============== */}
         <section className="bg-signal-canvas px-6 pb-16 pt-5 md:px-10 md:pb-20">
           <div className="mx-auto max-w-[1200px]">
+            <SectionTitle className="mb-6 text-center">
+              Which frameworks does ComplyEasyAI cover?
+            </SectionTitle>
             <div className="mb-9 flex flex-wrap justify-center gap-2.5">
               {CATEGORY_FILTERS.map((filter) => {
                 const isActive = category === filter;
@@ -208,9 +252,10 @@ const FrameworksIndexPage: React.FC = () => {
             <div className="mb-3.5">
               <Eyebrow>The multiplier</Eyebrow>
             </div>
-            <SectionTitle>Map once. Reuse everywhere.</SectionTitle>
+            <SectionTitle>How does mapping once reduce the work?</SectionTitle>
             <p className="mx-auto mt-3.5 max-w-[640px] text-base leading-relaxed text-signal-sub">
-              Most frameworks share the majority of their controls. ComplyEasyAI maps shared controls
+              Map once, reuse everywhere. Most frameworks share the majority of their controls.
+              ComplyEasyAI maps shared controls
               a single time, so each new framework mostly reuses evidence you already have.
             </p>
           </div>
@@ -253,6 +298,21 @@ const FrameworksIndexPage: React.FC = () => {
                     <div className="text-sm leading-relaxed text-signal-sub">{point.desc}</div>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </SignalSection>
+
+        {/* ============================== FAQ =============================== */}
+        <SignalSection variant="plain" width={1000}>
+          <div className="mx-auto max-w-[820px]">
+            <div className="mb-8 text-center">
+              <Eyebrow className="mb-3">Questions</Eyebrow>
+              <SectionTitle>Framework FAQ</SectionTitle>
+            </div>
+            <div className="flex flex-col gap-3">
+              {FRAMEWORKS_FAQ.map((item) => (
+                <SignalFaq key={item.q} q={item.q} a={item.a} />
               ))}
             </div>
           </div>

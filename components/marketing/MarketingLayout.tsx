@@ -33,7 +33,6 @@ const LEGAL_LINKS: NavLinkItem[] = [
   { label: 'Privacy Policy', to: '/privacy' },
   { label: 'Terms of Service', to: '/terms' },
   { label: 'Security', to: '/security' },
-  { label: 'GDPR', to: '/gdpr' },
   { label: 'DPA', to: '/dpa' },
 ];
 
