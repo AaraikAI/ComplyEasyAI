@@ -4,6 +4,13 @@
  * Maintains a blacklist of revoked JWT tokens using the cache layer
  * Uses Redis when REDIS_URL is configured; falls back to in-memory storage otherwise.
  *
+ * Revocations are written as durable cache entries: each instance keeps a copy
+ * in memory, lookups are answered from that copy while Redis is unreachable
+ * (so a Redis outage does not reject every authenticated request), and
+ * revocations recorded during an outage are copied into Redis once it is back.
+ * While Redis is unreachable, a revocation recorded by another instance, or
+ * before this instance started, is not visible until Redis returns.
+ *
  * Tokens are blacklisted on logout and checked during authentication.
  * Each blacklist entry auto-expires when the original token would have expired,
  * preventing unbounded growth of the blacklist.
@@ -61,7 +68,7 @@ class TokenBlacklistService {
     await cacheService.set(
       `blacklist:${hash}`,
       { revokedAt: Date.now(), reason },
-      { ttl, namespace: BLACKLIST_NAMESPACE }
+      { ttl, namespace: BLACKLIST_NAMESPACE, durable: true }
     );
 
     logger.info(`[TokenBlacklist] Token revoked (reason=${reason}, ttl=${ttl}s)`);
@@ -78,14 +85,12 @@ class TokenBlacklistService {
     try {
       const entry = await cacheService.get(
         `blacklist:${hash}`,
-        { namespace: BLACKLIST_NAMESPACE, throwOnError: true }
+        { namespace: BLACKLIST_NAMESPACE }
       );
       return entry !== null;
     } catch (error) {
-      // SECURITY: the authoritative revocation store (Redis) errored. Fail
-      // CLOSED — treat the token as revoked rather than falling back to a store
-      // that cannot contain the blacklist entry (which would accept a
-      // logged-out / password-reset-invalidated token while Redis is unhealthy).
+      // The cache answers from memory when Redis is unreachable, so this only
+      // runs on an unexpected failure. SECURITY: fail CLOSED (token treated as revoked).
       logger.error('[TokenBlacklist] isRevoked lookup failed; failing closed (token treated as revoked)', error);
       return true;
     }
@@ -102,7 +107,7 @@ class TokenBlacklistService {
     await cacheService.set(
       `revoke-all:${userId}`,
       { revokedAt: Math.floor(Date.now() / 1000) },
-      { ttl: maxTtl, namespace: BLACKLIST_NAMESPACE }
+      { ttl: maxTtl, namespace: BLACKLIST_NAMESPACE, durable: true }
     );
 
     logger.info(`[TokenBlacklist] All tokens revoked for user ${userId}`);
@@ -120,10 +125,10 @@ class TokenBlacklistService {
     try {
       entry = await cacheService.get<{ revokedAt: number }>(
         `revoke-all:${userId}`,
-        { namespace: BLACKLIST_NAMESPACE, throwOnError: true }
+        { namespace: BLACKLIST_NAMESPACE }
       );
     } catch (error) {
-      // SECURITY: fail CLOSED if the authoritative store errored (see isRevoked).
+      // SECURITY: fail CLOSED on an unexpected lookup failure (see isRevoked).
       logger.error('[TokenBlacklist] isRevokedByUserReset lookup failed; failing closed', error);
       return true;
     }
