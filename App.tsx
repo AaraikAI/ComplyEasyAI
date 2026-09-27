@@ -538,6 +538,7 @@ const App: React.FC = () => {
             {/* ── Competitor comparison pages (public) ──────────────── */}
             {/* The competitor-comparison section was removed; keep indexed links alive. */}
             <Route path="/compare/*" element={<Navigate to="/platform" replace />} />
+            <Route path="/blog/vanta-vs-drata-vs-complyeasy-ai" element={<Navigate to="/blog" replace />} />
 
             {/* ── FAQ, Glossary, Blog (public) ──────────────────────── */}
             <Route path="/faq" element={<PublicPageWrapper><FaqHubPage /></PublicPageWrapper>} />

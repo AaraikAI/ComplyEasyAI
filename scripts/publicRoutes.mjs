@@ -62,7 +62,6 @@ export const GLOSSARY_SLUGS = [
 export const BLOG_SLUGS = [
   'how-to-automate-soc-2-compliance-with-ai',
   'eu-ai-act-compliance-checklist',
-  'vanta-vs-drata-vs-complyeasy-ai',
 ];
 
 export function allPublicRoutes() {
