@@ -7,8 +7,9 @@ import { PlatformPage } from '../marketing/pages/PlatformPage';
 import { FrameworksIndexPage } from '../marketing/pages/FrameworksIndexPage';
 import { DemoPage } from '../marketing/pages/DemoPage';
 import { FaqHubPage } from '../marketing/pages/FaqHubPage';
+import { softwareApplicationSchema } from '../seo/siteSchema';
 
-// react-router, lucide-react and the marketing contexts are mocked globally in
+// react-router, lucide-react and the marketing contexts are stubbed globally in
 // setupTests.ts (Link -> <a href>). MemoryRouter is a passthrough there.
 const renderPage = (page: React.ReactElement) => render(<MemoryRouter>{page}</MemoryRouter>);
 
@@ -106,11 +107,25 @@ describe('FaqHubPage', () => {
     expect(document.documentElement.innerHTML).not.toMatch(COMPETITOR_NAMES);
   });
 
+  it('publishes no list prices, matching the quote-based pricing page', () => {
+    renderPage(<FaqHubPage />);
+    expect(document.documentElement.innerHTML).not.toMatch(/\$\d/);
+  });
+
   it('matches the plan gating: aCOS on Growth and Visionary, the EU stack on Visionary', () => {
     renderPage(<FaqHubPage />);
     expect(screen.getByText(/The full aCOS loop is included in Growth and Visionary/)).toBeInTheDocument();
     expect(screen.queryByText(/Essentials tier and above, or as a separately billed add-on/)).toBeNull();
     expect(screen.queryByText(/Growth-tier add-on/)).toBeNull();
     expect(screen.getByText(/2 December 2027 \(Annex III systems\)/)).toBeInTheDocument();
+  });
+});
+
+describe('site-wide SoftwareApplication data', () => {
+  it('carries one price-less offer that points at /pricing', () => {
+    const schema = softwareApplicationSchema() as { offers: Record<string, unknown> };
+    expect(Array.isArray(schema.offers)).toBe(false);
+    expect(schema.offers).not.toHaveProperty('price');
+    expect(schema.offers.url).toBe('https://www.complyeasyai.com/pricing');
   });
 });

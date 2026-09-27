@@ -66,7 +66,7 @@ const FAQ_TOPICS: FaqTopic[] = [
     items: [
       {
         q: 'How does your pricing work?',
-        a: 'Pricing is tier-based with flat annual rates. Foundation is $8,500/year for up to 10 users and three frameworks. Essentials is $17,000/year for up to 100 users and 10 frameworks. Growth ranges from $42,500 to $51,000/year for 100 to 1,000 users and up to 50 frameworks. Visionary ranges from $68,000 to $170,000/year with unlimited users and frameworks. Growth and Visionary are quoted by the sales team.',
+        a: 'Pricing is tier-based with flat annual rates: Foundation (3 frameworks, 10 users), Essentials (10 frameworks, 100 users), Growth (50 frameworks, 1,000 users) and Visionary (unlimited). Each plan is one platform price; exact figures depend on your framework mix and team size and are shared on a 30-minute call.',
       },
       {
         q: 'Can I switch tiers?',
@@ -302,7 +302,7 @@ const FAQ_TOPICS: FaqTopic[] = [
       },
       {
         q: 'What enterprise add-ons are available?',
-        a: 'Add-ons include custom frameworks at $2,997/year per framework (Growth and Visionary), on-premise deployment at $3,200/year (Visionary), custom fine-tuned AI models at $1,920/year (Visionary), and a dedicated vCISO service at $9,997/year for 10 consulting hours per month (all tiers). An audit-bundling option provides pre-negotiated rates with a partner network of certified audit firms.',
+        a: 'Custom frameworks are included in the Growth and Visionary plans. Optional services are quoted with your plan: on-premise deployment (Visionary), custom fine-tuned AI models (Visionary) and a dedicated vCISO service with 10 consulting hours per month (all tiers). An audit-bundling option provides pre-negotiated rates with a partner network of certified audit firms.',
       },
     ],
   },

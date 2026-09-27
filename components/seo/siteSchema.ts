@@ -48,15 +48,17 @@ export function webSiteSchema(): Record<string, unknown> {
 }
 
 /**
- * Offer entries derived from the published pricing tiers in
- * components/PricingSection.tsx (annual list price per tier, USD).
+ * One price-less offer pointing at /pricing. The public pricing page quotes
+ * each plan per framework mix and team size, so no list price is published
+ * here either.
  */
-const PRICING_OFFERS: { name: string; price: string }[] = [
-  { name: 'Foundation', price: '8500' },
-  { name: 'Essentials', price: '17000' },
-  { name: 'Growth', price: '42500' },
-  { name: 'Visionary', price: '68000' },
-];
+const PRICING_OFFER = {
+  '@type': 'Offer',
+  url: `${SITE_ORIGIN}/pricing`,
+  availability: 'https://schema.org/InStock',
+  description:
+    'Four annual plans (Foundation, Essentials, Growth, Visionary), quoted per framework mix and team size.',
+};
 
 export function softwareApplicationSchema(): Record<string, unknown> {
   return {
@@ -68,12 +70,7 @@ export function softwareApplicationSchema(): Record<string, unknown> {
     operatingSystem: 'Web',
     description: ORG_DESCRIPTION,
     featureList: FEATURE_LIST,
-    offers: PRICING_OFFERS.map((offer) => ({
-      '@type': 'Offer',
-      name: offer.name,
-      price: offer.price,
-      priceCurrency: 'USD',
-    })),
+    offers: PRICING_OFFER,
   };
 }
 
