@@ -574,7 +574,7 @@ export class RedisCacheService {
 
     if (!entry) return false;
     if (entry.expiresAt > 0 && Date.now() > entry.expiresAt) {
-      this.cache.delete(fullKey);
+      this.removeMemoryEntry(fullKey);
       return false;
     }
 
@@ -691,10 +691,11 @@ export class RedisCacheService {
   }
 
   /**
-   * Check if Redis is connected.
+   * Check if Redis is connected and serving. ioredis updates `status` before it
+   * emits 'close', so the client status is checked as well as the flag.
    */
   isRedisConnected(): boolean {
-    return this.redisConnected;
+    return this.readyClient() !== null;
   }
 
   // ============================================================================
@@ -939,8 +940,8 @@ export class RedisCacheService {
   }
 
   private writeMemoryEntry<T>(fullKey: string, value: T, ttl: number, tags: string[], durable: boolean): void {
-    // Evict if at capacity (LRU)
-    if (this.cache.size >= this.maxMemoryEntries) {
+    // Evict if at capacity (LRU); overwriting an existing key does not grow the store
+    if (!this.cache.has(fullKey) && this.cache.size >= this.maxMemoryEntries) {
       this.evictLRU();
     }
 
@@ -996,12 +997,32 @@ export class RedisCacheService {
       : '0%';
   }
 
+  /**
+   * Evicts one entry to make room. Durable entries (token revocations) go only
+   * when no ordinary entry is left: first those already in Redis, then those
+   * that are not, each time the one that expires soonest.
+   */
   private evictLRU(): void {
     // Find the least recently used entry (lowest hits + oldest)
     let oldestKey: string | null = null;
     let oldestScore = Infinity;
+    let durableKey: string | null = null;
+    let durableUnsynced = true;
+    let durableExpiresAt = Infinity;
 
     for (const [key, entry] of this.cache.entries()) {
+      if (entry.durable) {
+        const unsynced = this.unsyncedKeys.has(key);
+        const expiresAt = entry.expiresAt > 0 ? entry.expiresAt : Infinity;
+        const earlier = unsynced === durableUnsynced ? expiresAt < durableExpiresAt : !unsynced;
+        if (durableKey === null || earlier) {
+          durableKey = key;
+          durableUnsynced = unsynced;
+          durableExpiresAt = expiresAt;
+        }
+        continue;
+      }
+
       // Score: lower = more likely to evict (fewer hits, older creation)
       const score = entry.hits * 1000 + (Date.now() - entry.createdAt);
       if (score < oldestScore) {
@@ -1010,14 +1031,16 @@ export class RedisCacheService {
       }
     }
 
-    if (oldestKey) {
-      const entry = this.cache.get(oldestKey);
-      if (entry) {
-        this.removeFromTagIndex(oldestKey, entry.tags);
-      }
-      this.cache.delete(oldestKey);
-      this.unsyncedKeys.delete(oldestKey);
+    const victim = oldestKey ?? durableKey;
+    if (!victim) return;
+
+    if (victim === durableKey && durableUnsynced) {
+      // Only the namespace is logged: keys carry token hashes and user IDs.
+      logger.warn('[Cache] In-memory store full; evicted a durable entry that is not in Redis yet', {
+        namespace: victim.split(':')[0],
+      });
     }
+    this.removeMemoryEntry(victim);
   }
 
   private cleanup(): void {

@@ -177,7 +177,7 @@ import tokenBlacklist from '../../../../services/tokenBlacklistService';
 const warnMock = logger.warn as unknown as jest.Mock;
 const infoMock = logger.info as unknown as jest.Mock;
 
-/** Lets chained promise callbacks settle without advancing fake time. */
+/** Lets chained promise callbacks settle without advancing jest's clock. */
 async function flush(): Promise<void> {
   for (let i = 0; i < 50; i++) {
     await Promise.resolve();
@@ -459,6 +459,11 @@ describe('RedisCacheService connection lifecycle', () => {
       const client = mockInstances[0];
       await svc.set('blacklist:before', { revokedAt: 1, reason: 'logout' }, { ttl: 600, ...REVOCATION });
 
+      // ioredis sets the status first and emits 'close' on the next tick.
+      client.status = 'reconnecting';
+      expect(svc.isRedisConnected()).toBe(false);
+      expect(svc.getRedisClient()).toBeNull();
+
       dropConnection(client);
 
       expect(svc.getStats()).toEqual(expect.objectContaining({ mode: 'memory', reconnecting: true }));
@@ -561,6 +566,48 @@ describe('RedisCacheService connection lifecycle', () => {
       const redis = mockInstances[1];
       expect(JSON.parse(redis.store.get('token-blacklist:revoke-all:newer-in-redis')!)).toEqual({ revokedAt: 300 });
       expect(JSON.parse(redis.store.get('token-blacklist:revoke-all:older-in-redis')!)).toEqual({ revokedAt: 200 });
+    });
+
+    it('evicts ordinary entries before revocations when the in-memory store is full', async () => {
+      mockPlan.push('fail');
+      await svc.initialize();
+      svc['maxMemoryEntries'] = 3;
+
+      await svc.set('blacklist:kept', { revokedAt: 1, reason: 'logout' }, { ttl: 600, ...REVOCATION });
+      for (const key of ['a', 'b', 'c', 'd']) {
+        await svc.set(key, key);
+      }
+
+      expect(svc.getStats().size).toBe(3);
+      await expect(svc.get('blacklist:kept', { namespace: 'token-blacklist' }))
+        .resolves.toEqual({ revokedAt: 1, reason: 'logout' });
+      expect(svc['unsyncedKeys'].has('token-blacklist:blacklist:kept')).toBe(true);
+
+      mockPlan.push('ok');
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(mockInstances[1].store.has('token-blacklist:blacklist:kept')).toBe(true);
+    });
+
+    it('evicts a revocation already in Redis before one that is not, and never for an overwrite', async () => {
+      mockPlan.push('ok');
+      await svc.initialize();
+      svc['maxMemoryEntries'] = 2;
+      const client = mockInstances[0];
+      await svc.set('blacklist:synced', { revokedAt: 1, reason: 'logout' }, { ttl: 900, ...REVOCATION });
+
+      dropConnection(client);
+      await svc.set('blacklist:soon', { revokedAt: 2, reason: 'logout' }, { ttl: 30, ...REVOCATION });
+      await svc.set('blacklist:soon', { revokedAt: 3, reason: 'logout' }, { ttl: 30, ...REVOCATION });
+      expect(svc.getStats().size).toBe(2); // the overwrite evicted nothing
+      await svc.set('blacklist:late', { revokedAt: 4, reason: 'logout' }, { ttl: 600, ...REVOCATION });
+
+      expect(svc['cache'].has('token-blacklist:blacklist:synced')).toBe(false);
+      expect([...svc['unsyncedKeys']].sort()).toEqual(['token-blacklist:blacklist:late', 'token-blacklist:blacklist:soon']);
+      expect(warnsContaining('not in Redis yet')).toHaveLength(0);
+
+      await restoreConnection(client);
+      expect(client.store.has('token-blacklist:blacklist:soon')).toBe(true);
+      expect(client.store.has('token-blacklist:blacklist:late')).toBe(true);
     });
   });
 
