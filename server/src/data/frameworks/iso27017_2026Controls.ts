@@ -245,7 +245,7 @@ export const ISO27017_2026_CONTROLS: FrameworkControlTemplate[] = [
   },
   {
     controlId: 'ISO27017-2026-5.23', name: 'Information Security for Use of Cloud Services',
-    description: 'A defined process governs how cloud services are selected, acquired, used, managed and exited in line with the organization\'s security requirements.',
+    description: 'Every cloud service passes through one lifecycle the organization controls, from approval and secure setup through day-to-day oversight to a planned exit, and each stage checks the service against the organization\'s security needs.',
     category: 'Organizational Controls',
     implementationGuidance: 'Cloud service customer: Run a documented process for approving new cloud services, configuring them securely, monitoring their use and exiting them, with security requirements agreed before adoption. Cloud service provider: Give customers the information that process needs: service capabilities, certifications, the responsibility split, and the options for data location and exit.',
     evidenceRequirements: ['Cloud service adoption and exit procedure', 'Approved cloud service register', 'Provider: customer-facing security and compliance documentation'],
@@ -371,7 +371,7 @@ export const ISO27017_2026_CONTROLS: FrameworkControlTemplate[] = [
   },
   {
     controlId: 'ISO27017-2026-5.37', name: 'Documented Operating Procedures',
-    description: 'Procedures for cloud operations are documented, especially administrative actions that are destructive or hard to reverse.',
+    description: 'Cloud operations have written, step-by-step instructions, above all for administrative actions that are destructive or hard to reverse.',
     category: 'Organizational Controls',
     implementationGuidance: 'Cloud service customer: Document procedures for routine and critical cloud operations (deployment, backup and restore, scaling, deletion of resources or accounts), including checks before irreversible actions. Cloud service provider: Document operator procedures, and give customers documentation for critical operations and their effects.',
     evidenceRequirements: ['Operating procedures for cloud administration', 'Runbooks for critical or destructive actions', 'Provider: customer documentation for critical operations'],
@@ -501,7 +501,7 @@ export const ISO27017_2026_CONTROLS: FrameworkControlTemplate[] = [
   },
   {
     controlId: 'ISO27017-2026-7.4', name: 'Physical Security Monitoring',
-    description: 'Facilities hosting cloud services are monitored continuously for unauthorized physical access.',
+    description: 'Data centres that run cloud services have round-the-clock surveillance and intrusion detection, so that anyone entering without permission is spotted and dealt with.',
     category: 'Physical Controls',
     implementationGuidance: 'Cloud service customer: Review the provider\'s evidence of physical monitoring as part of supplier review. Cloud service provider: Monitor facilities continuously (surveillance, intrusion detection, guarding) and respond to alarms.',
     evidenceRequirements: ['Audit report coverage of physical monitoring', 'Provider: monitoring system records', 'Provider: alarm response records'],
@@ -683,7 +683,7 @@ export const ISO27017_2026_CONTROLS: FrameworkControlTemplate[] = [
   },
   {
     controlId: 'ISO27017-2026-8.10', name: 'Information Deletion',
-    description: 'Data is deleted when no longer needed, including snapshots, replicas and backups, and providers delete customer data on request and at contract end.',
+    description: 'Cloud-held data that has outlived its purpose is erased everywhere it lives, including snapshots, replicas and backups, and providers erase customer data on request and when the contract ends.',
     category: 'Technological Controls',
     implementationGuidance: 'Cloud service customer: Delete data that is no longer needed from cloud stores, including snapshots, replicas and backups, and obtain confirmation of deletion when a service is exited. Cloud service provider: Delete customer data on request and at contract end within stated timescales, including backups, and confirm the deletion to the customer.',
     evidenceRequirements: ['Deletion procedures for cloud-hosted data', 'Deletion records', 'Provider: deletion confirmations'],
@@ -800,7 +800,7 @@ export const ISO27017_2026_CONTROLS: FrameworkControlTemplate[] = [
   },
   {
     controlId: 'ISO27017-2026-8.23', name: 'Web Filtering',
-    description: 'Outbound web access from cloud workloads is filtered to reduce exposure to malicious sites and data exfiltration.',
+    description: 'Cloud workloads can reach only the external web destinations they need, which cuts off known-bad sites and limits routes for data exfiltration.',
     category: 'Technological Controls',
     implementationGuidance: 'Cloud service customer: Filter outbound web access from cloud workloads through egress controls or proxies. Cloud service provider: Offer egress filtering capabilities customers can apply.',
     evidenceRequirements: ['Egress filtering configuration', 'Blocked request logs', 'Provider: egress control documentation'],
@@ -845,7 +845,7 @@ export const ISO27017_2026_CONTROLS: FrameworkControlTemplate[] = [
   },
   {
     controlId: 'ISO27017-2026-8.28', name: 'Secure Coding',
-    description: 'Secure coding practices apply to application code and infrastructure-as-code deployed to the cloud.',
+    description: 'Application code and infrastructure-as-code written for cloud deployment follow agreed secure coding standards and are checked by automated analysis before release.',
     category: 'Technological Controls',
     implementationGuidance: 'Cloud service customer: Apply secure coding standards and automated analysis to application code and infrastructure-as-code. Cloud service provider: Apply secure coding standards and analysis to the platform code.',
     evidenceRequirements: ['Secure coding standard', 'Static analysis results', 'Infrastructure-as-code scanning results'],

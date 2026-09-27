@@ -620,7 +620,10 @@ export const CONTROL_CROSSWALK: ControlCrosswalkMapping[] = [
   { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.24', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.7', mappingType: 'partial', confidence: 0.8 },
   { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.15', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.2', mappingType: 'partial', confidence: 0.8 },
   { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.32', targetFramework: 'SOC 2 Type II', targetControlId: 'CC8.1', mappingType: 'equivalent', confidence: 0.9 },
-  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.24', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.3', mappingType: 'equivalent', confidence: 0.9 },
+  // CC7.3 (evaluating events to decide whether they are incidents) is the subject of 5.25; the
+  // incident-planning control 5.24 matches the response-programme part of CC7.4.
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.25', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.3', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.24', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.4', mappingType: 'partial', confidence: 0.8 },
   { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.30', targetFramework: 'SOC 2 Type II', targetControlId: 'CC9.1', mappingType: 'partial', confidence: 0.8 },
   // NIST 800-53
   { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.15', targetFramework: 'NIST 800-53', targetControlId: 'AC-1', mappingType: 'equivalent', confidence: 0.9 },

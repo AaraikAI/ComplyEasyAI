@@ -72,6 +72,12 @@ describe('control crosswalk integrity', () => {
       }
     });
 
+    it('maps SOC 2 CC7.3 event evaluation to 5.25, not to the incident-planning control 5.24', () => {
+      const soc2 = (id: string) => rows2026.filter(m => m.sourceControlId === id && m.targetFramework === 'SOC 2 Type II').map(m => [m.targetControlId, m.mappingType]);
+      expect(soc2('ISO27017-2026-5.25')).toEqual([['CC7.3', 'equivalent']]);
+      expect(soc2('ISO27017-2026-5.24')).toEqual([['CC7.4', 'partial']]);
+    });
+
     it('has no duplicate rows and uses base control ids only', () => {
       const keys = rows2026.map(m => `${m.sourceFramework}|${m.sourceControlId}|${m.targetFramework}|${m.targetControlId}`);
       expect(new Set(keys).size).toBe(keys.length);
