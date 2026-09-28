@@ -1,14 +1,18 @@
 import React from 'react';
 import { SITE_ORIGIN } from './siteOrigin';
-
-const SITE_NAME = 'ComplyEasy AI';
-const DEFAULT_OG_IMAGE = '/og/default-og.svg';
+import { BRAND_NAME, DEFAULT_OG_IMAGE } from './brand';
 
 export interface SeoProps {
   title: string;
   description: string;
   canonicalPath: string;
+  /** Share image path or URL. Defaults to the 1200x630 PNG social card. */
   ogImage?: string;
+  /** Pixel size of a custom ogImage; emitted as og:image:width/height when given. */
+  ogImageWidth?: number;
+  ogImageHeight?: number;
+  /** Alt text for a custom ogImage. */
+  ogImageAlt?: string;
   ogType?: string;
   noindex?: boolean;
   keywords?: string;
@@ -31,13 +35,20 @@ const Seo: React.FC<SeoProps> = ({
   description,
   canonicalPath,
   ogImage,
+  ogImageWidth,
+  ogImageHeight,
+  ogImageAlt,
   ogType = 'website',
   noindex = false,
   keywords,
 }) => {
   const canonicalUrl =
     SITE_ORIGIN + (canonicalPath.startsWith('/') ? canonicalPath : '/' + canonicalPath);
-  const imageUrl = toAbsoluteUrl(ogImage ?? DEFAULT_OG_IMAGE);
+  const usesDefaultImage = ogImage === undefined;
+  const imageUrl = usesDefaultImage ? DEFAULT_OG_IMAGE.url : toAbsoluteUrl(ogImage);
+  const imageWidth = usesDefaultImage ? DEFAULT_OG_IMAGE.width : ogImageWidth;
+  const imageHeight = usesDefaultImage ? DEFAULT_OG_IMAGE.height : ogImageHeight;
+  const imageAlt = usesDefaultImage ? DEFAULT_OG_IMAGE.alt : ogImageAlt;
 
   return (
     <>
@@ -53,13 +64,18 @@ const Seo: React.FC<SeoProps> = ({
       <meta property="og:type" content={ogType} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:image" content={imageUrl} />
-      <meta property="og:site_name" content={SITE_NAME} />
+      {usesDefaultImage ? <meta property="og:image:type" content={DEFAULT_OG_IMAGE.type} /> : null}
+      {imageWidth ? <meta property="og:image:width" content={String(imageWidth)} /> : null}
+      {imageHeight ? <meta property="og:image:height" content={String(imageHeight)} /> : null}
+      {imageAlt ? <meta property="og:image:alt" content={imageAlt} /> : null}
+      <meta property="og:site_name" content={BRAND_NAME} />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={imageUrl} />
+      {imageAlt ? <meta name="twitter:image:alt" content={imageAlt} /> : null}
     </>
   );
 };
