@@ -113,7 +113,7 @@ const HeroStatusCard: React.FC = () => (
       </div>
 
       <div className="mt-[18px] border-t border-white/[0.07] pt-4 font-mono text-[11px] text-signal-muted">
-        {FRAMEWORK_PILLAR_COUNT} framework guides · {INTEGRATION_COUNT} integrations · agents on watch 24/7
+        {FRAMEWORK_PILLAR_COUNT} framework guides · {INTEGRATION_COUNT} integrations · watching 24/7
       </div>
     </div>
   </div>
