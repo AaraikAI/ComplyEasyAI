@@ -28,13 +28,6 @@ const RESOURCE_LINKS: NavLinkItem[] = [
   { label: 'System status', to: '/status' },
 ];
 
-const LEGAL_LINKS: NavLinkItem[] = [
-  { label: 'Privacy Policy', to: '/privacy' },
-  { label: 'Terms of Service', to: '/terms' },
-  { label: 'Security', to: '/security' },
-  { label: 'DPA', to: '/dpa' },
-];
-
 /** Primary nav links (Signal spec: Platform, Frameworks, Pricing). */
 const PRIMARY_LINKS: NavLinkItem[] = [
   { label: 'Platform', to: '/platform' },
@@ -198,7 +191,9 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
               </ul>
             </div>
 
-            {/* Company + Legal */}
+            {/* Company. The legal documents (privacy policy, terms, DPA, security
+                overview) are linked here once they are published as public pages;
+                until then no footer link points at a route that does not exist. */}
             <div>
               <h2 className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-signal-muted">
                 Company
@@ -220,18 +215,6 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
                   </Link>
                 </li>
               </ul>
-              <h2 className="mb-4 mt-6 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-signal-muted">
-                Legal
-              </h2>
-              <ul className="space-y-3 text-sm text-signal-sub">
-                {LEGAL_LINKS.map((item) => (
-                  <li key={item.to}>
-                    <Link to={item.to} className="transition-colors hover:text-signal-ink">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
 
@@ -241,15 +224,6 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
               <span className="text-sm text-signal-muted">© 2026 ComplyEasyAI. All rights reserved.</span>
             </div>
             <div className="flex flex-wrap items-center gap-5 font-mono text-[11px] uppercase tracking-[0.14em] text-signal-muted">
-              <Link to="/privacy" className="transition-colors hover:text-signal-sub">
-                Privacy
-              </Link>
-              <Link to="/terms" className="transition-colors hover:text-signal-sub">
-                Terms
-              </Link>
-              <Link to="/security" className="transition-colors hover:text-signal-sub">
-                Security
-              </Link>
               <Link to="/status" className="transition-colors hover:text-signal-sub">
                 Status
               </Link>
