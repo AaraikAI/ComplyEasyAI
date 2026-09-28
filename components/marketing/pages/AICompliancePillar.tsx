@@ -106,7 +106,7 @@ const faqItems: { q: string; a: string }[] = [
   },
   {
     q: 'When do organizations need to start on AI compliance?',
-    a: 'Now, if you build, fine-tune, buy or deploy AI that affects people or business decisions. Under the EU AI Act, prohibitions and general-purpose AI duties already apply, transparency duties start in August 2026, and high-risk duties apply from 2 December 2027. Inventory and classification take time, so start well before the deadline.',
+    a: 'Now, if you build, fine-tune, buy or deploy AI that affects people or business decisions. Under the EU AI Act, prohibitions and general-purpose AI duties already apply, transparency duties have applied since 2 August 2026, and high-risk duties apply from 2 December 2027. Inventory and classification take time, so start well before the deadline.',
   },
   {
     q: 'Does AI compliance slow down AI development?',
@@ -114,7 +114,7 @@ const faqItems: { q: string; a: string }[] = [
   },
   {
     q: 'What is the EU AI Act deadline for high-risk AI?',
-    a: 'After the 2026 Digital Omnibus (Regulation (EU) 2026/1744), stand-alone high-risk systems listed in Annex III must comply from 2 December 2027, and high-risk AI built into products covered by Annex I from 2 August 2028. The original date was 2 August 2026.',
+    a: 'After the 2026 Digital Omnibus (Regulation (EU) 2026/1744), stand-alone high-risk systems listed in Annex III must comply from 2 December 2027, and high-risk AI built into products covered by Annex I from 2 August 2028. The original dates were 2 August 2026 and 2 August 2027.',
   },
 ];
 
@@ -495,8 +495,8 @@ const AICompliancePillar: React.FC = () => {
               </p>
               <p className="mt-3 text-lg leading-relaxed text-surface-700 dark:text-surface-300">
                 Key dates: prohibited practices have been banned since 2 February 2025 and
-                general-purpose AI duties have applied since 2 August 2025. Transparency duties apply
-                from August 2026. After the 2026 Digital Omnibus (Regulation (EU) 2026/1744),
+                general-purpose AI duties have applied since 2 August 2025. Transparency duties have
+                applied since 2 August 2026. After the 2026 Digital Omnibus (Regulation (EU) 2026/1744),
                 high-risk duties apply from 2 December 2027 for Annex III systems and 2 August 2028
                 for AI in regulated products.
               </p>
