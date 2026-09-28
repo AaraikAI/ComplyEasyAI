@@ -57,8 +57,12 @@ The canonical deep-scan file list lives at **`.claude/deep-scan/filelist.txt`**
 A full deep-read of 1,180 files is **one comprehensive parallel pass**, not
 33 sessions. Fan out subagents (≈10–12 files each, ~100 batches, ~16 concurrent),
 each reading its assigned files **end-to-end** and returning structured findings.
-Synthesize into a single `PRODUCTION_READINESS_REPORT.md`. Exclude only
-generated/vendored/duplicate code.
+Synthesize into a single report. Exclude only generated/vendored/duplicate code.
+
+> **Keep audit reports OUT of the repo (user decision 2026-09-27).** Every committed
+> `PRODUCTION_READINESS*` report (root `PRODUCTION_READINESS_REPORT*.md` + backups, the
+> `.archive/audit-history` copies and the audit PDF) was removed. Write new reports to a scratch
+> directory or attach them to an issue; do not commit them.
 
 ### Mandatory dynamic / runtime verification phases (NOT optional)
 
@@ -212,6 +216,24 @@ unfixable today:** `image-size` (GHSA-w3rx-r6r6-pgpr, GHSA-5p2g-fcmc-qvqq) affec
 `npm audit fix` churns the lock without clearing it — do not chase it; re-check when image-size publishes >2.0.2.
 The weekly `dependency-scan.yml` now audits `mobile/` too and updates ONE tracking issue (#497).
 
+**Refreshed 2026-09-24 — SUPERSEDES the "Mobile = 4 high, genuinely unfixable" and "Server = 0 high" lines
+above.** On main `f3a948e2` there are **4 distinct HIGH advisories, 0 critical**:
+- `js-yaml` GHSA-2883-xcg3-v3hh (published 2026-09-08T21:24Z, 2 h after #505 merged) in root (dev only),
+  server (devDependency `server/package.json:179`, but 4.3.1 is ALSO in the production tree via
+  `swagger-jsdoc → @apidevtools/swagger-parser → json-schema-ref-parser`) and mobile. Server `mocha` shows high
+  only because of this js-yaml (circom chain). Fixed by Dependabot #508 (root), #509 (server), #510 (mobile).
+- `image-size` GHSA-w3rx-r6r6-pgpr + GHSA-5p2g-fcmc-qvqq (mobile) — **now fixable**: 2.0.3/2.0.4 were published
+  2026-09-14, but metro 0.84.3 pins `image-size ^1.0.2`; metro ≥0.84.5 drops image-size entirely, and #513
+  (react-native 0.85.3) removes it from the lock. metro/metro-config/metro-transform-worker are flagged ONLY via
+  image-size. **npm's advisory feed currently omits image-size** (bulk endpoint returns `{}`), so `npm audit`
+  under-reports mobile — confirm with `npm ls image-size --package-lock-only`, not audit.
+- `adm-zip` GHSA-7q85-xj36-vmfc in `server/src/blockchain` (dev only; not scanned by `dependency-scan.yml`).
+  #534's `@nomicfoundation/hardhat-toolbox@7.0.0` is a stub that `process.exit(1)`s on import — replace it with a
+  manual PR (drop the toolbox, `hardhat ^3.17`, `overrides.adm-zip ^0.6.1`, re-lock with `--legacy-peer-deps`).
+- Tracking issue #533's "8 HIGH" counts package nodes, not advisories; its "non-breaking `npm audit fix`" label
+  (`fixAvailable == true`) was right for only 2 of the 8. `npm audit fix` alone does not clear server js-yaml
+  (the hoisted 4.3.1 is pinned by an override) nor mobile image-size.
+
 ### Prisma model names (correct references)
 
 - `riskItem` (NOT `risk`), `frameworkControl` (NOT `control`),
@@ -250,7 +272,7 @@ Running log of doc-vs-code drift caught while remediating the v21 findings. Corr
 
 - **`AppError` location:** defined in `server/src/middleware/errorHandler.ts` (line 7), **not** `server/src/utils/errors.ts` (which does not exist). All references corrected.
 - **Server logger location:** `server/src/config/logger.ts` (`export default logger`), **not** `server/src/utils/logger.ts` (which does not exist). Import as `import logger from '../config/logger'`. All references corrected.
-- **Shared primitives already present (do NOT rebuild):** JWT algorithm pinning (`middleware/auth.ts:80,215` → `algorithms:['HS256']`), rate-limiter Redis store (`middleware/rateLimiter.ts:12-26`), `encryptField`/`decryptField`/`encryptConfigFields` (`utils/credentialEncryption.ts`), `isUrlSafe`/`isWebhookUrlSafe` (`utils/urlValidator.ts`), `verifyWebhookHmac` (`routes/ticketing.ts`).
+- **Shared primitives already present (do NOT rebuild):** JWT algorithm pinning (`middleware/auth.ts:80,215` → `algorithms:['HS256']`), rate-limiter Redis store (`middleware/rateLimiter.ts:12-26`; **CORRECTION 2026-09-24: it never activates — `rate-limit-redis` is not in `server/package.json`, so every limiter is in-memory and per task**), `encryptField`/`decryptField`/`encryptConfigFields` (`utils/credentialEncryption.ts`), `isUrlSafe`/`isWebhookUrlSafe` (`utils/urlValidator.ts`), `verifyWebhookHmac` (`routes/ticketing.ts`).
 - **New shared primitives added in v21:** `utils/orgOwnership.ts` → `assertOrgOwned(model,id,orgId)` / `assertOwnedByOrg(model,id,orgWhere)` / `getOwnedOrThrow(...)`; `encryptConfigSecrets`/`decryptConfigSecrets` in `utils/credentialEncryption.ts`; `escapeCsvCell`/`neutralizeCsvFormula` in `utils/csvExport.ts`.
 - **Dependency audit drift (2026-05-31):** root = **0 vulns**; server = **30** (1 high `tmp` path-traversal — fixable; the rest rooted in `elliptic`, `serialize-javascript`-via-`mocha`-via-`circom_runtime`, `aws-sdk` v2, and legacy `@azure/*`→`uuid`). The known-unfixable table below is being refreshed with current evidence.
 
@@ -1065,6 +1087,10 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   deployed yet at that point) and the newest run starts. Related: the daily `self-heal/cve-autofix` runs sit at
   `action_required` (bot-authored PRs need "Approve and run"), so that workflow's CI has effectively never
   executed — 20 such runs since 2026-08-10.
+  > **Corrected 2026-09-24/27:** not "indefinitely" — GitHub cancels a run after **35 days** including approval
+  > waits (Actions limits page). A parked run also needs `gh api -X POST …/actions/runs/<id>/force-cancel`;
+  > plain `gh run cancel` left run 34267676579 `waiting`. And since the repo went **private** (2026-09-27) the
+  > `production-approval` gate no longer exists at all — see the 2026-09-27 section.
 - **Small traps hit:** `no-new-func` blocks `new Function` in tests — evaluate generated code with
   `node:vm.runInNewContext`; the Supabase bot's "no changes in supabase directory" review comment (relayed by
   Autofix on every PR) is informational noise; `gh pr merge` fails "Head branch is out of date" only
@@ -1103,6 +1129,12 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   (`logger.warn` and skip) when missing, so expiry degrades that feature only. Rotate it wherever
   `GITHUB_TOKEN` is set for the runtime — Secrets Manager `complyeasy/production` (if the task definition
   references it) and/or `server/.env` — and redeploy so ECS re-injects the secret.
+  > **SUPERSEDED 2026-09-24 — do NOT rotate; delete it.** The call at `complianceAsCodeService.ts:795` is
+  > `POST /repos/{o}/{r}/check-runs`, and GitHub only lets **GitHub Apps** create check runs (fine-grained PATs
+  > have no Checks permission), so no PAT can make it work. Production task definition rev 21 has no
+  > `GITHUB_TOKEN`. To revive the feature: a GitHub App, or switch to the Commit Statuses API
+  > (`POST /repos/{o}/{r}/statuses/{sha}`, which a PAT can call) — plus the missing `GITHUB_WEBHOOK_SECRET` and a
+  > persisted per-integration secret.
 - **Supabase `preview branches` bot** comments "no changes detected in `supabase` directory" on every PR; the
   desktop Autofix relays each one. They are informational; disable in Supabase → Project Integrations if unwanted.
 - **Merged this session:** #441 #442 #443 #444 (Aug), #465 #466 #467 #473 #479 #480 #482 #483; #484 (ZK) pending.
@@ -1155,7 +1187,8 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   to the one open issue. `dependency-scan.yml` now audits `mobile/` too, lists each advisory with fix availability, and
   updates one tracking issue (11 duplicates closed). Reviewed sources: AI RMF 1.0, CSF 2.0, PCI DSS v4.0.1 unchanged.
 - **Server audit high 4 → 0 (#498)** via `overrides` on the Prisma-CLI chain; mobile's 4 highs (`image-size`) are
-  unfixable today (see the refreshed known-unfixable list). Adding overrides desyncs the lock → run
+  unfixable today (see the refreshed known-unfixable list; **superseded 2026-09-24** — image-size 2.0.3 exists and
+  #513 removes it from the mobile lock). Adding overrides desyncs the lock → run
   `npm install --package-lock-only` before `npm ci`.
 - **ISO 27017 crosswalk (#500):** the 25 dangling rows used `ISO27017-CLD.x.y` ids; the template
   (`iso27017Controls.ts`) keys controls by ISO/IEC 27002:2013 clause (`ISO27017-9.1.1` …). Rows re-pointed to the
@@ -1181,13 +1214,18 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   Still outside the repo: `eas init`, Apple credentials, `EXPO_TOKEN`/`APPLE_*` secrets, privacy URL, real icon.
 - **Ruleset now requires `Docker Build (PR)`** (#491, ~3 min; builds `frontend-build` + `backend-build` with the real
   Dockerfile). PRs opened before it need a re-run (`@dependabot rebase` / close-reopen) to report the check.
+  (Ruleset `20492206` required exactly six checks — Lint & Type Check, Backend Tests, Integration Tests, Frontend
+  Tests, Analyze (javascript-typescript), Docker Build (PR) — **not** Security Scan. Since the repo went private on
+  GitHub Free the ruleset API returns 403 "Upgrade to GitHub Pro" and nothing is enforced; see 2026-09-27.)
 - **Workflow-agent gotchas seen today:** worktrees have no `node_modules`/`src/generated` — symlink them from the
   main checkout (`--preserveSymlinks` for tsc) instead of installing; a subagent can die on "session limit" mid-run
   (the AIUC-1 verifier did) — verify such PRs by hand before merging.
 - **2026-09-08 00:30 UTC — second deploy of the day (run 34184890928, main 805ed094) + CloudFront function
   republished (50 routes).** Live and verified: `/aiuc-1` and `/india-dpdpa` served prerendered, `/frameworks` says
   16, the landing-page comparison matrix is gone (#504 — #473 had missed it, plus dead `/compare/*` links in two blog
-  posts), 0 console errors. Zero open PRs at that point.
+  posts), 0 console errors. Zero open PRs at that point. (The LIVE function's `LastModifiedTime` reads
+  **2026-09-08T18:22:46Z** per `describe-function` on 2026-09-24; LIVE == DEVELOPMENT == main's rendered file,
+  50 routes.)
 - **Prerendered pages shipped the GENERIC `<title>` on every route (found by the post-deploy check; fixed in the
   prerender-title PR).** `og:title` and `description` were page-specific but `<title>` was the shell's fallback,
   because `prerender.mjs` kept the LAST `<title>` while React 19 hoists a page's own `<title>` to the FRONT of
@@ -1199,6 +1237,113 @@ Diagnosed from live probes of www.complyeasyai.com; every cause verified at the 
   provisioning; the 25 dead ISO 27017 crosswalk rows (ids `ISO27017-CLD.x.y` vs template `ISO27017-5.1.1`);
   AIUC-1 wording review against the official text; the daily `self-heal/cve-autofix` runs stuck at
   `action_required`.
+  > **SUPERSEDED (contradicts entries above; verified 2026-09-24):** the CloudFront live change WAS applied
+  > 2026-09-07; the 25 ISO 27017 rows were fixed in #500 (budget 0); AIUC-1 wording was verified in #502. The
+  > temporary inline policy `CloudFrontLiveFix-E4CUOI17YEQ7E` is **still attached** to `complyeasy-s3-user`
+  > (remove with `aws iam delete-user-policy`, admin session, after any pending function republish). Still
+  > genuinely open: staging provisioning, and self-heal PRs stuck at `action_required` (repo auto-merge is
+  > disabled, the job uses Node 20, and `npm audit fix` cleared only 2 of #533's 8 highs).
+
+### Private-repo switch, credential exposure and a full read-only audit (2026-09-24 → 2026-09-27)
+
+A 17-agent read-only audit (2026-09-24), then the user made the repo **private** (by 2026-09-27). Verified facts:
+
+**The repo going private removed the CI safety rails (GitHub Free, user-owned repo).**
+- Rulesets / branch rules: `GET …/rulesets` and `…/rules/branches/main` return **403 "Upgrade to GitHub Pro"** →
+  required checks are no longer enforced; any PR can be merged red.
+- Environments: `production-approval` now lists `protection_rules: []`. GitHub docs: *"If you are on a GitHub
+  Free, GitHub Pro, or GitHub Team plan, required reviewers are only available for public repositories."* So
+  **every push to main now deploys to production with no approval** (and `approve-production` never waited on
+  E2E 1-4 anyway: its `needs` are `[sign-images, security, e2e-staging]`). **Pro does not restore the gate.**
+  The fix is a CI change (production deploy only via a manual `workflow_dispatch`), not a plan upgrade.
+- Actions minutes: Free = **2,000 min/month** for private repos (Pro 3,000). Measured cost: a full `main` run
+  ≈ **104 job-minutes**, a PR run ≈ **67** (+ CodeQL and mobile workflows). Re-running CI on all 19 Dependabot PRs
+  plus 6 batch runs would exceed the free quota.
+- Code scanning (CodeQL upload) and secret scanning are paid features on private repos → the
+  `Analyze (javascript-typescript)` job fails; Dependabot alerts still work.
+- The Dependabot drain (Task 1) is **paused** by the user until the deploy-gate question is settled; run
+  34267676579 (#1176) was force-cancelled 2026-09-27.
+
+**Credential exposure (found while the repo was public).**
+- GitHub served orphaned commits **b752b366, ba506576, 27fe5b9e (Dec 2025) and 2c53f0f7** containing
+  `server/.env` / `.env.bak` / `.env.backup` with Postgres URLs for `wnvdmaqwlcblcrrvbjmr` (verified by line
+  counts, values never printed). The embedded password equals the one in the local `server/.env`. Purging needs
+  a GitHub Support request; revoke at the providers regardless.
+- Supabase `postgres_logs`: `password authentication failed for user "postgres"` ~4/hour from an external IPv6
+  (`2a02:6ea0:…`) from **2026-09-24 17:22Z until 2026-09-26 14:23:31Z**, then stopped. All failed.
+- Secret-scanning alerts (open while public): Twilio `SK…` (also in the HEAD tree at
+  `.archive/audit-history/DEEP_SCAN_FIXES_REPORT.md:15,168`), Google API key, Stripe test key.
+- The local `server/.env` held a pasted `arn:…:secret:complyeasy/production-CEcbWm:<KEY>::<value>` block
+  (lines 231, 235-258), `NODE_ENV=production`, the production DB URL and live Stripe keys; the user is deleting
+  it. **Never classify `.env` lines by splitting on `=`** — values contain `=`; a subagent echoed three secret
+  values that way (JWT_SECRET, JWT_REFRESH_SECRET, DATABASE_URL) → rotate the JWT secrets.
+
+**Supabase "Disk IO budget" warning — not application code (~90% confidence).** Measured over 15 min: relation
+reads/writes/WAL from the app ≈ 0; Postgres-countable IO is dominated by Supabase's own `postgres_exporter`
+reading a nearly full `pg_stat_statements` (4,932 entries; spills above ~4,200 at `work_mem` 3.5 MB) =
+**7.2 GB/day** of short-lived temp files that likely never reach disk (lifetime `temp_bytes` 1.96 TB ≈ 6.8 GB/day
+since Dec 2025; 99.8% untracked by pgss). Likely real driver: swap on the 1 GB **Micro** instance (UNVERIFIED;
+check Dashboard → Database Health swap / Disk IO %). The org has 6 projects — confirm which one the email names.
+Real but minor code issues: `pg.Pool` defaults (10 s idle timeout → ~4k new backends/day, `database.ts:129`);
+`/health` runs `SELECT 1` ~12×/min (`index.ts:491`); `prisma migrate dev` has been run against production
+(shadow-DB creates on 2026-01-19 and 02-25 — never point `server/.env` at production).
+
+**Production configuration gaps (task definition rev 21; image 3bb3e369).** Missing: `GEMINI_MODEL` /
+`GEMINI_FAST_MODEL` (code falls back to retired Gemini 1.5 ids; the local key is an `AQ.`-format key that returns
+401), `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_S3_BUCKET` (uploads 500; no task role and
+`s3Service.ts:91` needs explicit keys), all `STRIPE_*` (billing off; the live Stripe webhook points at the
+non-existent `api.complyeasyai.com`), `SENTRY_ENABLED` / `SENTRY_DSN`, `API_URL`, `APP_URL`,
+`PLATFORM_ADMIN_EMAILS`. Do NOT set `CAPTCHA_REQUIRED`/`HCAPTCHA_SECRET`/`RECAPTCHA_SECRET` (no client widget →
+sign-up breaks) or `RLS_ENFORCE` (boot halts: the app role `postgres` has BYPASSRLS).
+
+**Email.** SendGrid account 57915435 is `free` with **0 credits since 2026-02-01** (0 API requests Mar-Sep):
+magic-link login returns 500, password reset silently never arrives, invitees can never log in. SendGrid ended
+permanent free plans in 2025 (60-day trial only). Fix = Essentials 50K ($19.95/mo) + click Verify on the
+`em9146` domain authentication (DNS is already correct; SendGrid still shows `valid:false`). Twilio: trial
+account, nothing wired (2FA is TOTP; the SMS path is unreachable).
+
+**SEO.** Canonical URLs, `og:url`, `sitemap.xml` and the robots `Sitemap:` line use `https://complyeasyai.com/…`;
+the bare domain 301s only `/` and returns **404 for every other path** → canonical URLs point at 404s.
+`/community`, `/login`, `/status` carry the shell title; `/status` bakes a build-time fetch error into its HTML.
+
+**Frameworks.** ISO/IEC 27017:2015 is **withdrawn**; ISO/IEC 27017:2026 (2nd ed.) was published 2026-07-27 and
+ISO/IEC 27018:2025 is current. The framework monitor has blind spots: EUR-Lex answers runners with an AWS WAF
+challenge (HTTP 202) that normalises to "" (`e3b0c44298fc…` = SHA-256 of empty) → the EU AI Act / GDPR were never
+really monitored and it **missed Regulation (EU) 2026/1744 (Digital Omnibus on AI)**; the PCI document table is
+JS-loaded; HHS and ISO are bot walls (403 even with browser headers). The 09-21 report was real but editorial
+(NIST IR 8623 ipd; PCI Key Management & Operations Standard v1.0; PCI DSS still 4.0.1). `nistCsfControls.ts`
+lacks GV.OV-01..03 and PR.IR-03/04, has 27 non-CSF-2.0 ids and a duplicate GV.SC-10.
+
+**Dependabot / CI mechanics.** `dependabot.yml` `ignore` also suppresses **security** updates (don't ignore
+adm-zip). `vitest` and `@vitest/*` pin each other exactly, so a major split across PRs (#516/#517/#519) can never
+`npm ci` — they need one group. Node base-image majors (#535, node 25) are odd non-LTS lines — move on purpose.
+Security Scan hard-fails at the root audit (`ci.yml:427`), which also hides the Trivy fs step. `/health`
+`jobQueue.mode: "redis/bullmq"` proves nothing (`jobQueue.ts:209` sets it without connecting).
+
+**Local-machine lessons.** The disk filled to 0 bytes (`ENOSPC`): every Bash call fails because the tool cannot
+create its output file under `/private/tmp` — use the terminal panel to free space. Docker Desktop hung on the
+full disk (the CLI ignores SIGALRM, so `perl -e 'alarm N'` does not bound it; ping the socket with
+`curl -m 5 --unix-socket ~/.docker/run/docker.sock http://localhost/_ping`, and a hung backend needed SIGKILL);
+`docker builder prune -af` + `docker image prune -af` reclaimed ~17 GB. Subagent scratch clones + `/tmp/npmcache-*`
+used ~1.5 GB — clean them after every workflow.
+
+**CI on the private repo.** `gitleaks-action` lists a PR's commits via the REST API, which on a private repo needs
+`pull-requests: read` (403 "Resource not accessible by integration" otherwise) — fixed at the job level in
+`ci.yml` (commit `98fa2c23`, carried on #540/#541/#542). `ci.yml`/`codeql.yml` only run for PRs whose **base** is
+`main`/`develop` and for pushes to `main`/`develop`: plain branch pushes run nothing, and a PR stacked on another
+feature branch gets **no CI** — open stacked PRs against `main` if they need validation.
+
+**Open PRs from this session (none merged — merging deploys to production while the gate is gone):**
+#540 production-readiness report removal (56 files) + Twilio key-string redaction + the GitLeaks fix + these
+CLAUDE.md corrections; #541 neutral pricing copy + removal of the Vanta/Drata comparison post (route set 50 → 49);
+#542 Redis background reconnect + the dead-client fix (token-revocation checks now fall back to per-task memory
+while Redis is down instead of failing closed — needs the user's sign-off); #543 ISO/IEC 27017:2026 template
+(97 controls: the 93 ISO/IEC 27002:2022 controls + cloud-specific 5.38, 5.39, 8.35, 8.36; the 2015 template keeps
+its `'ISO 27017'` key and ids, displayName → "ISO 27017:2015 (withdrawn)"); and the marketing refresh (stacked on
+#541: www canonical origin, answer-first openings, brand "ComplyEasyAI", prices private, `/community` deleted →
+`/learn`, "request a trial" while billing is off, "SOC 2 Type I audit in progress", three new regulatory posts,
+legal drafts under `docs/legal/` that are NOT live). After #541 + the marketing PR deploy, the CloudFront function
+must be republished (route set changes). The apex domain fix is a GoDaddy forwarding change (user).
 
 ## Architecture Quick Reference
 
