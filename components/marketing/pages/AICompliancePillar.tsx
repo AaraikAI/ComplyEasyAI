@@ -19,17 +19,62 @@ import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
 import { SITE_ORIGIN } from '../../seo/siteOrigin';
-import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
+import {
+  breadcrumbSchema,
+  faqSchema,
+  reviewedArticleSchema,
+  reviewedWebPageSchema,
+} from '../../seo/siteSchema';
+import { ReviewedByline, TldrList } from '../answerFirst';
+import { BYOK_PLAN, TRIAL_CTA } from '../../../data/marketingFacts';
 
 // ---------------------------------------------------------------------------
 // SEO copy
 // ---------------------------------------------------------------------------
-const SEO_TITLE = 'What is AI Compliance? The Complete 2026 Guide | ComplyEasy AI';
+const SEO_TITLE = 'What Is AI Compliance? 2026 Guide | ComplyEasyAI';
 const SEO_DESCRIPTION =
-  'AI compliance is the practice of governing artificial-intelligence systems so they meet legal, ethical, and security obligations. This complete 2026 guide covers requirements, frameworks like the EU AI Act and NIST AI RMF, common challenges, and how to automate it.';
+  'AI compliance means governing AI systems to meet laws, standards and ethics: the EU AI Act timeline after the 2026 Digital Omnibus, NIST AI RMF, ISO 42001 and AIUC-1.';
 const SEO_KEYWORDS =
-  'AI compliance, AI governance, AI risk management, EU AI Act compliance, NIST AI RMF, ISO 42001, responsible AI, AI regulation, AI audit, algorithmic accountability';
+  'AI compliance, AI governance, AI risk management, EU AI Act compliance, EU AI Act timeline, Digital Omnibus, NIST AI RMF, ISO 42001, AIUC-1, responsible AI, AI regulation, AI audit';
 const CANONICAL_PATH = '/platform/ai-compliance';
+const ARTICLE_HEADLINE = 'What Is AI Compliance? (Updated September 2026)';
+/** First publication of this guide. */
+const DATE_PUBLISHED = '2026-06-07';
+/** Last check of the facts below (EU AI Act dates, standards versions) against their sources. */
+const LAST_REVIEWED = '2026-09-27';
+
+/** The 40–60-word direct answer under the H1 (also the speakable selector). */
+const DEFINITION =
+  'AI compliance is the practice of governing AI systems so their design, development and use meet applicable laws, standards and ethical policies. It combines an AI inventory, risk classification, data governance, model documentation, bias testing, human oversight and continuous monitoring, so every system stays lawful, safe, transparent and accountable across its lifecycle.';
+
+const TLDR = [
+  'Start with an inventory: you cannot classify or govern AI you have not catalogued.',
+  'EU AI Act high-risk duties apply from 2 December 2027 (Annex III) and 2 August 2028 (Annex I).',
+  'The NIST AI RMF and ISO/IEC 42001 give the operating model; AIUC-1 adds agent-specific controls.',
+  'Reuse SOC 2, ISO 27001 and GDPR evidence instead of duplicating it.',
+];
+
+/** Primary sources for the regulatory facts on this page. */
+const SOURCES: { label: string; url: string }[] = [
+  {
+    label: 'European Commission, AI Act',
+    url: 'https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai',
+  },
+  {
+    label: 'European Commission, AI Omnibus enters into force',
+    url: 'https://digital-strategy.ec.europa.eu/en/news/ai-omnibus-enters-force',
+  },
+  {
+    label: 'NIST, AI Risk Management Framework',
+    url: 'https://www.nist.gov/itl/ai-risk-management-framework',
+  },
+  { label: 'ISO, ISO/IEC 42001:2023', url: 'https://www.iso.org/standard/42001' },
+  { label: 'AIUC-1, changelog', url: 'https://standard.aiuc-1.com/changelog/' },
+  {
+    label: 'Texas Legislature, HB 149 (TRAIGA)',
+    url: 'https://capitol.texas.gov/BillLookup/History.aspx?Bill=HB149&LegSess=89R',
+  },
+];
 
 // ---------------------------------------------------------------------------
 // On-page FAQ — also emitted as FAQPage JSON-LD
@@ -45,7 +90,7 @@ const faqItems: { q: string; a: string }[] = [
   },
   {
     q: 'Which regulations and frameworks govern AI compliance?',
-    a: 'Key frameworks include the EU AI Act (a risk-tiered law for AI providers and deployers), the NIST AI Risk Management Framework (a voluntary GOVERN-MAP-MEASURE-MANAGE structure), and ISO/IEC 42001 (a certifiable AI management-system standard). AI systems that process personal data also fall under privacy laws such as GDPR and CCPA, and sector rules in healthcare, finance, and employment add further obligations.',
+    a: 'Key frameworks include the EU AI Act (a risk-tiered law for AI providers and deployers), the NIST AI Risk Management Framework (a voluntary GOVERN-MAP-MEASURE-MANAGE structure), and ISO/IEC 42001 (a certifiable AI management-system standard). AI systems that process personal data also fall under privacy laws such as GDPR and CCPA, and sector rules in healthcare, finance, and employment add further obligations. AIUC-1 adds a certifiable standard specifically for AI agents.',
   },
   {
     q: 'What are the risk categories under the EU AI Act?',
@@ -61,11 +106,15 @@ const faqItems: { q: string; a: string }[] = [
   },
   {
     q: 'When do organizations need to start on AI compliance?',
-    a: 'Organizations should begin as soon as they build, fine-tune, procure, or deploy AI systems that affect people or business decisions — not when an audit is scheduled. Building an inventory, classifying systems by risk, and establishing governance early is far less costly than retrofitting controls onto systems already in production, and several obligations under the EU AI Act apply on phased timelines that reward early preparation.',
+    a: 'Now, if you build, fine-tune, buy or deploy AI that affects people or business decisions. Under the EU AI Act, prohibitions and general-purpose AI duties already apply, transparency duties start in August 2026, and high-risk duties apply from 2 December 2027. Inventory and classification take time, so start well before the deadline.',
   },
   {
     q: 'Does AI compliance slow down AI development?',
     a: 'Well-implemented AI compliance is a guardrail rather than a roadblock. By embedding documentation, risk assessment, and monitoring into the model lifecycle from the start, teams catch issues earlier, reduce rework, and ship with confidence. Automating evidence collection and documentation removes most of the manual overhead that would otherwise compete with engineering time.',
+  },
+  {
+    q: 'What is the EU AI Act deadline for high-risk AI?',
+    a: 'After the 2026 Digital Omnibus (Regulation (EU) 2026/1744), stand-alone high-risk systems listed in Annex III must comply from 2 December 2027, and high-risk AI built into products covered by Annex I from 2 August 2028. The original date was 2 August 2026.',
   },
 ];
 
@@ -161,7 +210,7 @@ const helps: { icon: React.FC<any>; title: string; body: string }[] = [
   {
     icon: Lock,
     title: 'Security by architecture',
-    body: 'Protect models and compliance data with encryption at rest and in transit, role-based access control, bring-your-own-key encryption, and just-in-time privileged access.',
+    body: `Protect compliance data with encryption at rest and TLS in transit, multi-factor authentication, role-based access control and audit logging, plus bring-your-own-key encryption on the ${BYOK_PLAN} plan.`,
   },
 ];
 
@@ -235,24 +284,14 @@ const AICompliancePillar: React.FC = () => {
         ])}
       />
       <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'Article',
-          headline: 'What is AI Compliance? The Complete 2026 Guide',
+        data={reviewedArticleSchema({
+          headline: ARTICLE_HEADLINE,
           description: SEO_DESCRIPTION,
-          datePublished: '2026-06-07',
-          dateModified: '2026-06-07',
-          mainEntityOfPage: `${SITE_ORIGIN}/platform/ai-compliance`,
-          author: { '@type': 'Organization', name: 'ComplyEasy AI' },
-          publisher: {
-            '@type': 'Organization',
-            name: 'ComplyEasy AI',
-            logo: {
-              '@type': 'ImageObject',
-              url: `${SITE_ORIGIN}/favicon.svg`,
-            },
-          },
-        }}
+          path: CANONICAL_PATH,
+          datePublished: DATE_PUBLISHED,
+          dateModified: LAST_REVIEWED,
+          keywords: ['AI compliance', 'EU AI Act', 'NIST AI RMF', 'ISO/IEC 42001', 'AIUC-1'],
+        })}
       />
       <JsonLd
         data={{
@@ -271,10 +310,15 @@ const AICompliancePillar: React.FC = () => {
       />
       <JsonLd
         data={{
-          '@context': 'https://schema.org',
-          '@type': 'WebPage',
-          name: SEO_TITLE,
-          url: `${SITE_ORIGIN}/platform/ai-compliance`,
+          ...reviewedWebPageSchema({
+            name: SEO_TITLE,
+            description: SEO_DESCRIPTION,
+            path: CANONICAL_PATH,
+            lastReviewed: LAST_REVIEWED,
+            datePublished: DATE_PUBLISHED,
+            about: 'AI compliance',
+            citations: SOURCES.map((source) => source.url),
+          }),
           speakable: {
             '@type': 'SpeakableSpecification',
             cssSelector: ['#ai-compliance-definition'],
@@ -301,44 +345,60 @@ const AICompliancePillar: React.FC = () => {
 
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700 dark:border-brand-800 dark:bg-brand-950/60 dark:text-brand-300">
             <Sparkles className="h-4 w-4" aria-hidden="true" />
-            The complete 2026 guide
+            Updated September 2026
           </div>
 
           <h1 className="text-4xl font-extrabold tracking-tight text-surface-900 sm:text-5xl dark:text-white">
             What is <span className="text-gradient">AI compliance</span>?
           </h1>
 
+          <p className="mt-6 text-xl leading-relaxed text-surface-700 dark:text-surface-200">
+            The one-paragraph answer, the laws that apply, and a six-step plan to get there.
+          </p>
+
           {/* Answer-first definition block — the quotable direct answer */}
           <p
             id="ai-compliance-definition"
-            className="mt-6 text-xl leading-relaxed text-surface-700 dark:text-surface-200"
+            className="mt-4 text-lg leading-relaxed text-surface-700 dark:text-surface-200"
           >
-            <strong className="font-semibold text-surface-900 dark:text-white">
-              AI compliance is the practice of governing artificial-intelligence systems so that
-              their design, development, and deployment meet applicable laws, regulations, industry
-              standards, and ethical policies.
-            </strong>{' '}
-            It combines AI governance, risk classification, data governance, model documentation,
-            bias and fairness testing, human oversight, and continuous monitoring into one program
-            that keeps AI systems lawful, safe, transparent, and accountable across their entire
-            lifecycle.
+            {DEFINITION}
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
-              to="/"
+              to="/demo"
               className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
-              Start free trial
+              Book a demo
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
-              to="/"
+              to={TRIAL_CTA.to}
               className="inline-flex items-center gap-2 rounded-full border border-surface-300 bg-white px-6 py-3 text-sm font-semibold text-surface-800 transition-colors hover:border-brand-400 hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-100 dark:hover:text-brand-300"
             >
-              Book a demo
+              {TRIAL_CTA.label}
             </Link>
           </div>
+
+          <TldrList items={TLDR} className="mt-10" />
+
+          <ReviewedByline lastReviewed={LAST_REVIEWED} className="mt-6" />
+          <p className="mt-2 text-[13px] leading-relaxed text-surface-500 dark:text-surface-400">
+            <span className="font-mono text-[11px] uppercase tracking-[0.12em]">Sources:</span>{' '}
+            {SOURCES.map((source, index) => (
+              <React.Fragment key={source.url}>
+                {index > 0 ? <span aria-hidden="true"> · </span> : null}
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-white/20 underline-offset-2 hover:text-surface-300"
+                >
+                  {source.label}
+                </a>
+              </React.Fragment>
+            ))}
+          </p>
         </div>
       </section>
 
@@ -346,7 +406,7 @@ const AICompliancePillar: React.FC = () => {
       <section className="border-t border-surface-200/70 dark:border-surface-800">
         <div className="mx-auto max-w-4xl px-4 py-20 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold tracking-tight text-surface-900 sm:text-4xl dark:text-white">
-            Why AI compliance matters
+            Why does AI compliance matter?
           </h2>
           <div className="mt-6 space-y-5 text-lg leading-relaxed text-surface-700 dark:text-surface-300">
             <p>
@@ -380,7 +440,7 @@ const AICompliancePillar: React.FC = () => {
       <section className="border-t border-surface-200/70 bg-surface-50/60 dark:border-surface-800 dark:bg-surface-900/40">
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
           <SectionHeading eyebrow="How it works">
-            The key requirements of AI compliance
+            What does AI compliance require?
           </SectionHeading>
           <p className="mx-auto mt-5 max-w-3xl text-center text-lg text-surface-600 dark:text-surface-400">
             Across the major frameworks, AI compliance reduces to a recognizable set of building
@@ -411,7 +471,7 @@ const AICompliancePillar: React.FC = () => {
       <section className="border-t border-surface-200/70 dark:border-surface-800">
         <div className="mx-auto max-w-4xl px-4 py-24 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold tracking-tight text-surface-900 sm:text-4xl dark:text-white">
-            The AI compliance framework landscape
+            Which laws and frameworks govern AI?
           </h2>
           <div className="mt-8 space-y-8">
             <div>
@@ -426,12 +486,19 @@ const AICompliancePillar: React.FC = () => {
                 assessment. Its requirements apply to providers and deployers, including those
                 outside the EU whose systems reach EU users.{' '}
                 <Link
-                  to="/frameworks/eu-ai-act"
+                  to="/eu-ai-act"
                   className="font-medium text-brand-600 underline-offset-2 hover:underline dark:text-brand-400"
                 >
                   Explore the EU AI Act guide
                 </Link>
                 .
+              </p>
+              <p className="mt-3 text-lg leading-relaxed text-surface-700 dark:text-surface-300">
+                Key dates: prohibited practices have been banned since 2 February 2025 and
+                general-purpose AI duties have applied since 2 August 2025. Transparency duties apply
+                from August 2026. After the 2026 Digital Omnibus (Regulation (EU) 2026/1744),
+                high-risk duties apply from 2 December 2027 for Annex III systems and 2 August 2028
+                for AI in regulated products.
               </p>
             </div>
             <div>
@@ -444,7 +511,7 @@ const AICompliancePillar: React.FC = () => {
                 assess, and treat the risks of AI systems in a structured, repeatable way, and pairs
                 naturally with regulatory obligations as an operational backbone.{' '}
                 <Link
-                  to="/frameworks/nist-ai-rmf"
+                  to="/nist-ai-rmf"
                   className="font-medium text-brand-600 underline-offset-2 hover:underline dark:text-brand-400"
                 >
                   Explore the NIST AI RMF guide
@@ -457,12 +524,17 @@ const AICompliancePillar: React.FC = () => {
                 ISO/IEC 42001 and privacy laws
               </h3>
               <p className="mt-2 text-lg leading-relaxed text-surface-700 dark:text-surface-300">
-                ISO/IEC 42001 is a certifiable AI management-system standard — the AI counterpart to
-                ISO 27001 for information security — that establishes governance, accountability, and
-                continual improvement for AI. Where AI processes personal data, privacy regulations
-                such as{' '}
                 <Link
-                  to="/frameworks/gdpr"
+                  to="/iso-42001"
+                  className="font-medium text-brand-600 underline-offset-2 hover:underline dark:text-brand-400"
+                >
+                  ISO/IEC 42001
+                </Link>{' '}
+                is a certifiable AI management-system standard — the AI counterpart to ISO 27001 for
+                information security — that establishes governance, accountability, and continual
+                improvement for AI. Where AI processes personal data, privacy regulations such as{' '}
+                <Link
+                  to="/gdpr"
                   className="font-medium text-brand-600 underline-offset-2 hover:underline dark:text-brand-400"
                 >
                   GDPR
@@ -470,12 +542,37 @@ const AICompliancePillar: React.FC = () => {
                 add requirements for lawful basis, transparency, and automated-decision safeguards,
                 while security frameworks such as{' '}
                 <Link
-                  to="/frameworks/iso-27001"
+                  to="/iso-27001"
                   className="font-medium text-brand-600 underline-offset-2 hover:underline dark:text-brand-400"
                 >
                   ISO 27001
                 </Link>{' '}
                 protect the models and data themselves.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-surface-900 dark:text-white">AIUC-1</h3>
+              <p className="mt-2 text-lg leading-relaxed text-surface-700 dark:text-surface-300">
+                AIUC-1 is a certification standard for AI agents, with 51 requirements across data
+                and privacy, security, safety, reliability, accountability and society in its 15 July
+                2026 release.{' '}
+                <Link
+                  to="/aiuc-1"
+                  className="font-medium text-brand-600 underline-offset-2 hover:underline dark:text-brand-400"
+                >
+                  Explore the AIUC-1 guide
+                </Link>
+                .
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-surface-900 dark:text-white">
+                US state laws
+              </h3>
+              <p className="mt-2 text-lg leading-relaxed text-surface-700 dark:text-surface-300">
+                In the US there is no comprehensive federal AI law. State laws such as the Texas
+                Responsible Artificial Intelligence Governance Act, in effect since 1 January 2026,
+                and sector regulators add obligations.
               </p>
             </div>
           </div>
@@ -486,7 +583,7 @@ const AICompliancePillar: React.FC = () => {
       <section className="border-t border-surface-200/70 bg-surface-50/60 dark:border-surface-800 dark:bg-surface-900/40">
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
           <SectionHeading eyebrow="What makes it hard">
-            Common AI compliance challenges
+            What makes AI compliance hard?
           </SectionHeading>
           <div className="mt-14 grid gap-6 md:grid-cols-2">
             {challenges.map((item) => (
@@ -514,7 +611,7 @@ const AICompliancePillar: React.FC = () => {
       <section className="border-t border-surface-200/70 dark:border-surface-800">
         <div className="mx-auto max-w-4xl px-4 py-24 sm:px-6 lg:px-8">
           <SectionHeading eyebrow="Step by step">
-            How to get AI compliant
+            How do you become AI compliant?
           </SectionHeading>
           <p className="mx-auto mt-5 max-w-3xl text-center text-lg text-surface-600 dark:text-surface-400">
             Building an AI compliance program follows a repeatable sequence. These six steps take a
@@ -546,14 +643,14 @@ const AICompliancePillar: React.FC = () => {
         </div>
       </section>
 
-      {/* ====================== How ComplyEasy AI helps ==================== */}
+      {/* ====================== How ComplyEasyAI helps ==================== */}
       <section className="border-t border-surface-200/70 dark:border-surface-800">
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
           <SectionHeading eyebrow="The platform">
-            How ComplyEasy AI helps with AI compliance
+            How does ComplyEasyAI automate AI compliance?
           </SectionHeading>
           <p className="mx-auto mt-5 max-w-3xl text-center text-lg text-surface-600 dark:text-surface-400">
-            ComplyEasy AI turns AI compliance from a manual, spreadsheet-driven effort into a
+            ComplyEasyAI turns AI compliance from a manual, spreadsheet-driven effort into a
             continuous, automated program — mapping AI obligations alongside your security and
             privacy frameworks so evidence is collected once and reused everywhere.
           </p>
@@ -582,18 +679,18 @@ const AICompliancePillar: React.FC = () => {
               Connect AI compliance to the rest of your program
             </h3>
             <p className="mt-3 text-surface-600 dark:text-surface-400">
-              AI governance rarely stands alone. Inside ComplyEasy AI, your AI controls live next to
+              AI governance rarely stands alone. Inside ComplyEasyAI, your AI controls live next to
               the frameworks and modules that support them — risk management, evidence collection,
               and unified governance across every standard you pursue.
             </p>
             <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               <li>
                 <Link
-                  to="/risk-management"
+                  to="/iso-42001"
                   className="flex items-center gap-2 text-brand-600 hover:underline dark:text-brand-400"
                 >
                   <ArrowRight className="h-4 w-4 flex-none" aria-hidden="true" />
-                  AI risk management module
+                  ISO 42001 AI management system
                 </Link>
               </li>
               <li>
@@ -607,7 +704,7 @@ const AICompliancePillar: React.FC = () => {
               </li>
               <li>
                 <Link
-                  to="/frameworks/eu-ai-act"
+                  to="/eu-ai-act"
                   className="flex items-center gap-2 text-brand-600 hover:underline dark:text-brand-400"
                 >
                   <ArrowRight className="h-4 w-4 flex-none" aria-hidden="true" />
@@ -616,7 +713,7 @@ const AICompliancePillar: React.FC = () => {
               </li>
               <li>
                 <Link
-                  to="/frameworks/nist-ai-rmf"
+                  to="/nist-ai-rmf"
                   className="flex items-center gap-2 text-brand-600 hover:underline dark:text-brand-400"
                 >
                   <ArrowRight className="h-4 w-4 flex-none" aria-hidden="true" />
@@ -664,17 +761,17 @@ const AICompliancePillar: React.FC = () => {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
-              to="/"
+              to="/demo"
               className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
-              Start free trial
+              Book a demo
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
-              to="/"
+              to={TRIAL_CTA.to}
               className="inline-flex items-center gap-2 rounded-full border border-surface-300 bg-white px-7 py-3 text-sm font-semibold text-surface-800 transition-colors hover:border-brand-400 hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-100 dark:hover:text-brand-300"
             >
-              Book a demo
+              {TRIAL_CTA.label}
             </Link>
           </div>
         </div>

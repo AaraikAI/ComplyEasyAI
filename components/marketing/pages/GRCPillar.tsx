@@ -18,17 +18,27 @@ import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
 import { SITE_ORIGIN } from '../../seo/siteOrigin';
-import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
+import { breadcrumbSchema, faqSchema, reviewedWebPageSchema } from '../../seo/siteSchema';
+import { ReviewedByline, TldrList } from '../answerFirst';
+import { BYOK_PLAN, INTEGRATION_COUNT, TRIAL_CTA } from '../../../data/marketingFacts';
 
 // ---------------------------------------------------------------------------
 // SEO copy
 // ---------------------------------------------------------------------------
-const SEO_TITLE =
-  'GRC Software: Governance, Risk & Compliance Automation | ComplyEasy AI';
+const SEO_TITLE = 'GRC Software: Governance, Risk & Compliance | ComplyEasyAI';
 const SEO_DESCRIPTION =
-  'GRC software unifies governance, risk management, and compliance in one platform. Learn how AI-native GRC software automates risk registers, control mapping, and continuous compliance across SOC 2, ISO 27001, GDPR, and the EU AI Act.';
+  'GRC software unifies governance, risk management and compliance in one system of record: risk registers, control mapping and continuous evidence across SOC 2, ISO 27001, GDPR and more.';
 const SEO_KEYWORDS =
   'GRC software, governance risk and compliance, GRC platform, risk management software, compliance automation, integrated risk management, GRC tool, continuous compliance, control mapping, risk register software';
+/** Last review of this page's content. */
+const LAST_REVIEWED = '2026-09-27';
+
+const TLDR = [
+  'GRC = governance (policy and ownership), risk (register and treatment) and compliance (evidence).',
+  'A unified control library lets one control satisfy many frameworks.',
+  'Continuous evidence replaces point-in-time audit scrambles.',
+  'AI agents collect evidence and flag drift; people approve the decisions.',
+];
 
 // ---------------------------------------------------------------------------
 // The three GRC pillars
@@ -130,7 +140,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How is GRC software different from a compliance tool?',
-    a: 'A compliance tool focuses on collecting evidence and passing audits for specific frameworks. GRC software is broader: it adds governance (policy and accountability) and integrated risk management (a risk register, assessments, and treatment plans) and links all three so the risk a control mitigates is connected to the evidence that the control works. ComplyEasy AI combines both — framework automation plus integrated risk and governance.',
+    a: 'A compliance tool focuses on collecting evidence and passing audits for specific frameworks. GRC software is broader: it adds governance (policy and accountability) and integrated risk management (a risk register, assessments, and treatment plans) and links all three so the risk a control mitigates is connected to the evidence that the control works. ComplyEasyAI combines both — framework automation plus integrated risk and governance.',
   },
   {
     q: 'What are the three pillars of GRC?',
@@ -146,10 +156,10 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How does AI improve GRC software?',
-    a: 'AI extends GRC software beyond static tracking. ComplyEasy AI uses autonomous agents to collect evidence continuously, map incoming data to the right controls, surface control drift and gaps before an audit, and help draft policies and risk assessments. Critical actions support human-in-the-loop review so teams retain oversight of automated decisions.',
+    a: 'AI extends GRC software beyond static tracking. ComplyEasyAI uses autonomous agents to collect evidence continuously, map incoming data to the right controls, surface control drift and gaps before an audit, and help draft policies and risk assessments. Critical actions support human-in-the-loop review so teams retain oversight of automated decisions.',
   },
   {
-    q: 'Does ComplyEasy AI support continuous compliance?',
+    q: 'Does ComplyEasyAI support continuous compliance?',
     a: 'Yes. Read-only integrations keep control evidence current on a recurring schedule rather than only at audit time, and dashboards reflect live posture across frameworks and risks. This shifts the program from point-in-time certification toward continuous compliance, where drift is detected and remediated as it happens.',
   },
 ];
@@ -176,6 +186,15 @@ const GRCPillar: React.FC = () => {
         ])}
       />
       <JsonLd data={faqSchema(FAQ)} />
+      <JsonLd
+        data={reviewedWebPageSchema({
+          name: SEO_TITLE,
+          description: SEO_DESCRIPTION,
+          path: '/grc',
+          lastReviewed: LAST_REVIEWED,
+          about: 'Governance, risk and compliance (GRC) software',
+        })}
+      />
 
       {/* ============================== Hero ============================== */}
       <section className="relative overflow-hidden mesh-gradient">
@@ -203,15 +222,19 @@ const GRCPillar: React.FC = () => {
             compliance
           </h1>
 
-          {/* Answer-first, quotable definition */}
           <p className="mt-6 max-w-3xl text-xl leading-relaxed text-surface-700 dark:text-surface-200">
+            One system of record for policies, risks, controls and evidence.
+          </p>
+
+          {/* Answer-first, quotable definition */}
+          <p className="mt-4 max-w-3xl text-lg leading-relaxed text-surface-700 dark:text-surface-200">
             GRC software is a single platform that brings governance, risk management, and compliance
             together so an organization can align security work with business goals, manage risk
             consistently, and prove compliance against frameworks like SOC 2, ISO 27001, and GDPR from
             one system of record.
           </p>
           <p className={`${LEAD} max-w-3xl`}>
-            ComplyEasy AI is AI-native GRC software: autonomous agents collect evidence continuously,
+            ComplyEasyAI is AI-native GRC software: autonomous agents collect evidence continuously,
             map controls across every framework you pursue, and keep your risk register and audit
             posture current — replacing fragmented spreadsheets, wikis, and shared drives with one
             connected program.
@@ -219,19 +242,22 @@ const GRCPillar: React.FC = () => {
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link
-              to="/"
+              to="/demo"
               className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-7 py-3 text-base font-semibold text-white shadow-lg shadow-brand-500/25 transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-surface-950"
             >
-              Start free trial
+              Book a demo
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
-              to="/"
+              to={TRIAL_CTA.to}
               className="inline-flex items-center gap-2 rounded-full border border-surface-300 bg-white px-7 py-3 text-base font-semibold text-surface-800 transition-colors hover:border-brand-400 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-100 dark:hover:text-brand-400"
             >
-              Book a demo
+              {TRIAL_CTA.label}
             </Link>
           </div>
+
+          <TldrList items={TLDR} className="mt-10 max-w-3xl" />
+          <ReviewedByline lastReviewed={LAST_REVIEWED} className="mt-6" />
         </div>
       </section>
 
@@ -280,7 +306,7 @@ const GRCPillar: React.FC = () => {
       <section className="border-y border-surface-200 bg-surface-50 dark:border-surface-800 dark:bg-surface-900/40">
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
-            <h2 className={SECTION_HEADING}>Key capabilities of a GRC platform</h2>
+            <h2 className={SECTION_HEADING}>What should a GRC platform do?</h2>
             <p className={LEAD}>
               A complete GRC platform does more than store documents. It is the operational backbone
               that ties policies, controls, risks, and evidence together and keeps them moving. These
@@ -310,7 +336,7 @@ const GRCPillar: React.FC = () => {
       {/* ====================== How it works ====================== */}
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <h2 className={SECTION_HEADING}>How GRC software works</h2>
+          <h2 className={SECTION_HEADING}>How does GRC software work?</h2>
           <p className={LEAD}>
             A modern GRC program follows a continuous loop. Rather than a once-a-year project, the
             platform keeps governance, risk, and compliance synchronized as your environment changes.
@@ -358,7 +384,7 @@ const GRCPillar: React.FC = () => {
       <section className="border-y border-surface-200 bg-surface-50 dark:border-surface-800 dark:bg-surface-900/40">
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
-            <h2 className={SECTION_HEADING}>Common GRC challenges</h2>
+            <h2 className={SECTION_HEADING}>What goes wrong without GRC software?</h2>
             <p className={LEAD}>
               The reasons organizations adopt dedicated GRC software almost always trace back to the
               same recurring problems with manual, disconnected programs.
@@ -387,12 +413,12 @@ const GRCPillar: React.FC = () => {
         </div>
       </section>
 
-      {/* ====================== How ComplyEasy AI helps ====================== */}
+      {/* ====================== How ComplyEasyAI helps ====================== */}
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <h2 className={SECTION_HEADING}>How ComplyEasy AI helps</h2>
+          <h2 className={SECTION_HEADING}>How does ComplyEasyAI handle GRC?</h2>
           <p className={LEAD}>
-            ComplyEasy AI is GRC software built around autonomous AI agents. It does not just track
+            ComplyEasyAI is GRC software built around autonomous AI agents. It does not just track
             governance, risk, and compliance — it operates them, collecting evidence, mapping controls,
             and surfacing drift continuously so your team can focus on decisions instead of busywork.
           </p>
@@ -408,15 +434,16 @@ const GRCPillar: React.FC = () => {
             </h3>
             <p className={`${PROSE} mt-2`}>
               Map a single control library to all the frameworks you pursue and reuse evidence across
-              overlapping requirements. The{' '}
-              <Link to="/dashboard" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
-                compliance dashboard
+              overlapping requirements. A compliance dashboard keeps posture visible in real time.
+              See the{' '}
+              <Link to="/platform" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
+                platform overview
               </Link>{' '}
-              and{' '}
+              and the{' '}
               <Link to="/frameworks" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
-                frameworks workspace
-              </Link>{' '}
-              keep posture visible in real time.
+                framework guides
+              </Link>
+              .
             </p>
           </div>
 
@@ -428,12 +455,15 @@ const GRCPillar: React.FC = () => {
               Integrated risk management
             </h3>
             <p className={`${PROSE} mt-2`}>
-              Maintain a living risk register with scored assessments and treatment plans in the{' '}
-              <Link to="/risks" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
-                risk management module
-              </Link>
-              , with each risk linked to the controls that mitigate it so risk and compliance stay in
-              sync.
+              Maintain a living{' '}
+              <Link
+                to="/glossary/risk-register"
+                className="font-medium text-brand-600 hover:underline dark:text-brand-400"
+              >
+                risk register
+              </Link>{' '}
+              with scored assessments and treatment plans, with each risk linked to the controls that
+              mitigate it so risk and compliance stay in sync.
             </p>
           </div>
 
@@ -445,13 +475,13 @@ const GRCPillar: React.FC = () => {
               Continuous evidence and integrations
             </h3>
             <p className={`${PROSE} mt-2`}>
-              Connect your stack with read-only access in the{' '}
-              <Link to="/integrations" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
-                integrations hub
-              </Link>{' '}
-              and let agents collect{' '}
-              <Link to="/evidence" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
-                evidence
+              Connect your stack through {INTEGRATION_COUNT} verified integrations, read-only for
+              evidence collection, and let agents{' '}
+              <Link
+                to="/glossary/evidence-collection"
+                className="font-medium text-brand-600 hover:underline dark:text-brand-400"
+              >
+                collect evidence
               </Link>{' '}
               on a recurring schedule, maintaining a versioned audit trail for every artifact.
             </p>
@@ -465,13 +495,10 @@ const GRCPillar: React.FC = () => {
               Governance, policies, and oversight
             </h3>
             <p className={`${PROSE} mt-2`}>
-              Manage versioned policies, control owners, and review cycles in the{' '}
-              <Link to="/policies" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
-                policy center
-              </Link>
-              . Customer data is encrypted at rest and in transit, governed by role-based access
-              control, and captured in a full audit trail — with bring-your-own-key encryption and
-              just-in-time privileged access supported by the architecture.
+              Manage versioned policies, control owners, and review cycles in the policy center.
+              Customer data is encrypted at rest and in transit, access is governed by roles and
+              multi-factor authentication, and changes are captured in an audit log. Bring-your-own-key
+              encryption is available on the {BYOK_PLAN} plan.
             </p>
           </div>
         </div>
@@ -487,11 +514,12 @@ const GRCPillar: React.FC = () => {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             {[
-              { label: 'SOC 2 compliance', to: '/frameworks/soc-2' },
-              { label: 'ISO 27001', to: '/frameworks/iso-27001' },
-              { label: 'GDPR', to: '/frameworks/gdpr' },
-              { label: 'EU AI Act', to: '/frameworks/eu-ai-act' },
-              { label: 'NIST AI RMF', to: '/frameworks/nist-ai-rmf' },
+              { label: 'SOC 2 compliance', to: '/soc2-compliance' },
+              { label: 'ISO 27001', to: '/iso-27001' },
+              { label: 'GDPR', to: '/gdpr' },
+              { label: 'EU AI Act', to: '/eu-ai-act' },
+              { label: 'NIST AI RMF', to: '/nist-ai-rmf' },
+              { label: 'AI compliance guide', to: '/platform/ai-compliance' },
             ].map((item) => (
               <Link
                 key={item.to}
@@ -509,7 +537,7 @@ const GRCPillar: React.FC = () => {
       {/* ====================== FAQ ====================== */}
       <section className="border-t border-surface-200 bg-surface-50 dark:border-surface-800 dark:bg-surface-900/40">
         <div className="mx-auto max-w-4xl px-4 py-24 sm:px-6 lg:px-8">
-          <h2 className={`${SECTION_HEADING} text-center`}>Frequently asked questions</h2>
+          <h2 className={`${SECTION_HEADING} text-center`}>GRC software FAQ</h2>
           <p className={`${LEAD} text-center mx-auto max-w-2xl`}>
             Common questions about GRC software, governance, risk, and compliance.
           </p>
@@ -541,17 +569,17 @@ const GRCPillar: React.FC = () => {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
-              to="/"
+              to="/demo"
               className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-base font-semibold text-brand-700 shadow-lg transition-colors hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-brand-950"
             >
-              Start free trial
+              Book a demo
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
-              to="/"
+              to={TRIAL_CTA.to}
               className="inline-flex items-center gap-2 rounded-full border border-white/30 px-7 py-3 text-base font-semibold text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white"
             >
-              Book a demo
+              {TRIAL_CTA.label}
             </Link>
           </div>
         </div>
