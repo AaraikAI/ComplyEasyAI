@@ -5,7 +5,8 @@ import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
 import { SITE_ORIGIN } from '../../seo/siteOrigin';
-import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
+import { breadcrumbSchema, faqSchema, reviewedWebPageSchema } from '../../seo/siteSchema';
+import { BRAND_NAME } from '../../seo/brand';
 import type { SignalCategory } from '../signal';
 import {
   Eyebrow,
@@ -19,11 +20,18 @@ import {
   SignalPage,
   SignalSection,
 } from '../signal';
+import { ReviewedByline, TldrList } from '../answerFirst';
 import {
   FRAMEWORK_PILLARS,
   FRAMEWORK_PILLAR_COUNT,
 } from '../../../data/frameworkPillarContent';
-import { FRAMEWORK_GUIDE_LIST } from '../../../data/marketingFacts';
+import {
+  FRAMEWORK_CATALOGUE_LABEL,
+  FRAMEWORK_GUIDE_LIST,
+} from '../../../data/marketingFacts';
+
+/** Date the framework facts on this page (blurbs, dates, thresholds) were last reviewed. */
+const LAST_REVIEWED = '2026-09-27';
 
 // ---------------------------------------------------------------------------
 // SEO copy
@@ -104,8 +112,16 @@ const FRAMEWORKS_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What if my framework isn't listed?",
-    a: 'The in-app catalogue goes beyond these guides, with standards such as ISO 27701, CIS Controls, FedRAMP, HITRUST, PIPEDA and LGPD, and Growth and Visionary plans can build custom frameworks.',
+    a: `The in-app catalogue covers ${FRAMEWORK_CATALOGUE_LABEL} frameworks and standards, including ISO 27701, CIS Controls, FedRAMP, HITRUST, PIPEDA and LGPD, and Growth and Visionary plans can build custom frameworks.`,
   },
+];
+
+/** Key facts shown as the TL;DR under the hero. */
+const FRAMEWORKS_TLDR: string[] = [
+  `${FRAMEWORK_PILLAR_COUNT} in-depth framework guides across security, privacy, AI governance and EU digital regulation.`,
+  `${FRAMEWORK_CATALOGUE_LABEL} frameworks and standards in the in-app catalogue; Growth and Visionary plans can build custom frameworks.`,
+  'Shared controls are mapped once, so each new framework mostly reuses evidence you already collect.',
+  'We track regulatory changes and update the shared control library once for every framework that uses it.',
 ];
 
 /**
@@ -136,10 +152,19 @@ const FrameworksIndexPage: React.FC = () => {
       />
       <JsonLd data={faqSchema(FRAMEWORKS_FAQ)} />
       <JsonLd
+        data={reviewedWebPageSchema({
+          name: SEO_TITLE,
+          description: SEO_DESCRIPTION,
+          path: '/frameworks',
+          lastReviewed: LAST_REVIEWED,
+          about: 'Compliance frameworks',
+        })}
+      />
+      <JsonLd
         data={{
           '@context': 'https://schema.org',
           '@type': 'ItemList',
-          name: 'Compliance frameworks supported by ComplyEasy AI',
+          name: `Compliance frameworks supported by ${BRAND_NAME}`,
           itemListElement: FRAMEWORKS.map((framework, index) => ({
             '@type': 'ListItem',
             position: index + 1,
@@ -165,8 +190,9 @@ const FrameworksIndexPage: React.FC = () => {
             layer.
           </p>
           <p className="mx-auto mt-4 max-w-[640px] text-[15px] leading-relaxed text-signal-body">
-            ComplyEasyAI supports {FRAMEWORK_PILLAR_COUNT} compliance frameworks with dedicated
-            guides: {FRAMEWORK_GUIDE_LIST}. Shared controls are mapped once, so each new framework
+            ComplyEasyAI has {FRAMEWORK_PILLAR_COUNT} in-depth framework guides:{' '}
+            {FRAMEWORK_GUIDE_LIST}. Its in-app catalogue covers {FRAMEWORK_CATALOGUE_LABEL}{' '}
+            frameworks and standards, and shared controls are mapped once, so each new framework
             mostly reuses evidence you already collect.
           </p>
           <ul className="mt-6 flex flex-wrap justify-center gap-2" aria-label="Framework guides by category">
@@ -178,6 +204,10 @@ const FrameworksIndexPage: React.FC = () => {
               </li>
             ))}
           </ul>
+          <div className="mx-auto mt-7 max-w-[720px]">
+            <TldrList items={FRAMEWORKS_TLDR} />
+          </div>
+          <ReviewedByline lastReviewed={LAST_REVIEWED} className="mt-5" />
         </section>
 
         {/* ================= Category filter + framework grid =============== */}

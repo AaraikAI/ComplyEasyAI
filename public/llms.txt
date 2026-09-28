@@ -1,6 +1,6 @@
 # ComplyEasyAI
 
-> ComplyEasyAI (also written "ComplyEasy AI") is an AI compliance automation platform.
+> ComplyEasyAI is an AI compliance automation platform.
 > Read-only integrations collect audit evidence continuously, agents monitor controls and
 > propose fixes with human approval for high-impact changes, and each control is mapped once
 > across frameworks such as SOC 2, ISO 27001, GDPR, HIPAA and the EU AI Act.
@@ -9,6 +9,16 @@ Frameworks listed are standards the platform helps customers prepare for, not ce
 held by ComplyEasyAI. Pricing is quoted per framework mix (four annual plans; see /pricing).
 Last updated: 2026-09-27
 
+## Key facts
+
+- Frameworks: 16 in-depth framework guides (listed below) and 150+ frameworks and standards in the in-app catalogue.
+- Integrations: 26 verified integrations, meaning the credential is checked with the provider at connect time and evidence is collected on sync: AWS, Microsoft Azure, DigitalOcean, Heroku, Kubernetes, Okta, Google Workspace, BambooHR, ADP, GitHub, GitLab, Bitbucket, CircleCI, CrowdStrike, Qualys, Jira, ServiceNow, Azure DevOps, Zendesk, Asana, Monday.com, Confluence, Slack, Discord, SendGrid and Twilio.
+- Pricing: four annual plans (Foundation, Essentials, Growth, Visionary); each is a tailored quote per framework mix and team size. No list prices are published.
+- Trials: available on request through the demo form (/demo).
+- ComplyEasyAI's own security: SOC 2 Type I audit in progress; no SOC 2 report or ISO 27001 certificate is held yet. Controls in place: encryption at rest (Supabase and AWS), TLS encryption in transit, multi-factor authentication, audit logging, and hosting in a single US region (AWS and Supabase, us-east-1).
+- Developer access: REST and GraphQL APIs are available. SDKs (JavaScript/TypeScript, Python, Go, Java), a CLI, a Terraform provider and a no-code Integration Builder are on the roadmap.
+- Available on request (agreed per contract): uptime SLAs with service credits, on-premises deployment, 24/7 phone support, a dedicated customer success manager, professional and managed services including a virtual CISO, migration help, and audit bundling with partner audit firms.
+
 ## Product
 
 - [Home](https://www.complyeasyai.com/): what ComplyEasyAI does, on one page.
@@ -16,7 +26,7 @@ Last updated: 2026-09-27
 - [Pricing](https://www.complyeasyai.com/pricing): Foundation, Essentials, Growth and Visionary plans.
 - [Frameworks](https://www.complyeasyai.com/frameworks): all 16 framework guides.
 - [FAQ](https://www.complyeasyai.com/faq): pricing, frameworks, AI, security, integrations and support.
-- [Book a demo](https://www.complyeasyai.com/demo): a 30-minute walkthrough tailored to your frameworks.
+- [Book a demo or request a trial](https://www.complyeasyai.com/demo): a 30-minute walkthrough tailored to your frameworks.
 
 ## Framework guides
 

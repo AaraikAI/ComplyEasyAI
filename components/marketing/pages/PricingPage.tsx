@@ -14,13 +14,15 @@ import {
   OutlineCta,
   SignalFaq,
 } from '../signal';
+import { TldrList } from '../answerFirst';
+import { TRIAL_CTA } from '../../../data/marketingFacts';
 
 // ---------------------------------------------------------------------------
 // SEO copy
 // ---------------------------------------------------------------------------
 const SEO_TITLE = 'ComplyEasyAI Pricing: Plans for Every Stage';
 const SEO_DESCRIPTION =
-  'Four annual plans, from Foundation (3 frameworks, 10 users) to Visionary (unlimited). One platform price, no per-framework add-ons. Exact quote in a 30-minute call.';
+  'Four annual plans, from Foundation (3 frameworks, 10 users) to Visionary (unlimited). One platform price, no per-framework add-ons. Tailored quote in a 30-minute call.';
 const SEO_KEYWORDS =
   'ComplyEasyAI pricing, compliance automation pricing, compliance platform tiers, SOC 2 automation pricing, GRC platform cost';
 
@@ -71,7 +73,7 @@ const TIERS: PricingTier[] = [
     target: 'Series A/B · 50–200 people',
     fw: '10 frameworks',
     users: '100 users',
-    note: 'Trust Center & VRM included — often paid extras elsewhere',
+    note: 'Trust Center & VRM included at no extra cost',
     highlights: [
       'Full 6-tool AI suite',
       'Vendor risk management + Trust Center',
@@ -84,7 +86,7 @@ const TIERS: PricingTier[] = [
     target: 'Series C+ · 200–1,000 people',
     fw: '50 frameworks',
     users: '1,000 users',
-    note: 'The only platform with a Compliance Digital Twin',
+    note: 'Includes the Compliance Digital Twin',
     highlights: [
       'Complete aCOS: Digital Twin + auto-remediation',
       'Predictive analytics & forecasting',
@@ -102,7 +104,7 @@ const TIERS: PricingTier[] = [
       'Full EU stack — AI Act, DORA, DMA & DSA',
       'Zero-knowledge proofs & crypto suite',
       'SCIM provisioning & white-labeling',
-      'On-premises option',
+      'On-premises packaging available on request',
     ],
   },
 ];
@@ -122,7 +124,7 @@ const FEATURE_MATRIX: { label: string; tiers: [boolean, boolean, boolean, boolea
 ];
 
 const EVERY_PLAN_INCLUDES = [
-  'Immutable audit trail',
+  'Audit trail',
   'Encryption at rest & in transit',
   '6-language support',
   'WCAG 2.1 AA',
@@ -143,9 +145,17 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     a: 'Yes — shared controls are mapped once and reused across frameworks, so pursuing SOC 2 with ISO 27001 and GDPR shares evidence rather than multiplying the work.',
   },
   {
-    q: 'Is there a free trial?',
-    a: 'Yes — a free trial with no credit card required. Design-partner arrangements are also available for teams willing to share feedback and a reference.',
+    q: 'Can we try ComplyEasyAI before buying?',
+    a: 'Yes. Request a trial through the demo form and we agree its scope and length with you. Design-partner arrangements are also available for teams willing to share feedback and a reference.',
   },
+];
+
+/** Key facts shown as the TL;DR under the hero. */
+const PRICING_TLDR = [
+  'Four annual plans: Foundation, Essentials, Growth and Visionary.',
+  'Each plan is one platform price, with no per-framework add-ons or renewal step-ups.',
+  'Your exact figure is a tailored quote based on your framework mix and team size.',
+  'Trials are available on request.',
 ];
 
 // ---------------------------------------------------------------------------
@@ -265,9 +275,13 @@ const PricingPage: React.FC = () => {
           <p className="mx-auto mt-4 max-w-[640px] text-[15px] leading-relaxed text-signal-body">
             ComplyEasyAI has four annual plans: Foundation (3 frameworks, 10 users), Essentials (10
             frameworks, 100 users), Growth (50 frameworks, 1,000 users) and Visionary (unlimited).
-            Each plan is one platform price with no per-framework add-ons or renewal step-ups. Exact
-            figures depend on your framework mix and team size and are shared on a 30-minute call.
+            Each plan is one platform price with no per-framework add-ons or renewal step-ups. Your
+            exact figure is a tailored quote, based on your framework mix and team size and shared
+            on a 30-minute call.
           </p>
+          <div className="mx-auto mt-7 max-w-[640px]">
+            <TldrList items={PRICING_TLDR} />
+          </div>
           <h2 className="mt-[30px] font-mono text-[13px] font-normal uppercase tracking-[0.1em] text-signal-muted">
             Which plan fits your company?
           </h2>
@@ -385,7 +399,7 @@ const PricingPage: React.FC = () => {
               Book a demo
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </PrimaryCta>
-            <OutlineCta to="/demo">Talk to sales</OutlineCta>
+            <OutlineCta to={TRIAL_CTA.to}>{TRIAL_CTA.label}</OutlineCta>
           </div>
         </SignalSection>
       </SignalPage>

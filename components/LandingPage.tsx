@@ -14,8 +14,15 @@ import {
 import Seo from './seo/Seo';
 import JsonLd from './seo/JsonLd';
 import { faqSchema } from './seo/siteSchema';
+import { TldrList } from './marketing/answerFirst';
 import { FRAMEWORK_PILLAR_COUNT } from '../data/frameworkPillarContent';
-import { FRAMEWORK_GUIDE_LIST } from '../data/marketingFacts';
+import {
+  FRAMEWORK_CATALOGUE_LABEL,
+  FRAMEWORK_GUIDE_LIST,
+  INTEGRATION_COUNT,
+  SECURITY_ATTESTATION,
+  TRIAL_CTA,
+} from '../data/marketingFacts';
 
 // ---------------------------------------------------------------------------
 // SEO copy
@@ -106,7 +113,7 @@ const HeroStatusCard: React.FC = () => (
       </div>
 
       <div className="mt-[18px] border-t border-white/[0.07] pt-4 font-mono text-[11px] text-signal-muted">
-        {FRAMEWORK_PILLAR_COUNT} frameworks · 30+ integrations · agents on watch 24/7
+        {FRAMEWORK_PILLAR_COUNT} framework guides · {INTEGRATION_COUNT} integrations · agents on watch 24/7
       </div>
     </div>
   </div>
@@ -259,6 +266,17 @@ const DEPTH_ITEMS = [
 ];
 
 // ---------------------------------------------------------------------------
+// TL;DR (the page's key facts, directly under the hero)
+// ---------------------------------------------------------------------------
+const HOME_TLDR: string[] = [
+  `Evidence is collected continuously through ${INTEGRATION_COUNT} verified integrations, read-only for evidence collection.`,
+  `Each control is mapped once across ${FRAMEWORK_PILLAR_COUNT} in-depth framework guides and ${FRAMEWORK_CATALOGUE_LABEL} frameworks in the catalogue.`,
+  'Agents flag control drift and propose fixes; anything high-impact waits for your approval.',
+  'Plans are annual and quoted per framework mix; trials are available on request.',
+  `Our own security: ${SECURITY_ATTESTATION}, hosted in a single US region (us-east-1).`,
+];
+
+// ---------------------------------------------------------------------------
 // Common questions (rendered and emitted as FAQPage structured data)
 // ---------------------------------------------------------------------------
 const HOME_FAQ: { q: string; a: string }[] = [
@@ -268,7 +286,7 @@ const HOME_FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'Which frameworks does ComplyEasyAI support?',
-    a: `${FRAMEWORK_PILLAR_COUNT} frameworks have dedicated guides: ${FRAMEWORK_GUIDE_LIST}. The in-app catalogue covers more standards beyond these guides.`,
+    a: `${FRAMEWORK_PILLAR_COUNT} frameworks have in-depth guides: ${FRAMEWORK_GUIDE_LIST}. The in-app catalogue covers ${FRAMEWORK_CATALOGUE_LABEL} frameworks and standards, and Growth and Visionary plans can build custom frameworks.`,
   },
   {
     q: 'Does ComplyEasyAI replace my auditor?',
@@ -365,6 +383,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
           </div>
         </section>
 
+        {/* ================================ TL;DR ================================ */}
+        <section className="bg-signal-canvas px-6 pb-4 pt-2 md:px-10">
+          <div className="mx-auto max-w-[1000px]">
+            <TldrList items={HOME_TLDR} />
+          </div>
+        </section>
+
         {/* ====================== Three jobs it takes off your plate ====================== */}
         <SignalSection id="platform" variant="glow">
           <div className="mb-12 text-center">
@@ -400,15 +425,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
           <RoiCalculator automationPct={automationPct} toolCostK={toolCostK} />
         </SignalSection>
 
-        {/* ============================ Depth vs mid-market ============================ */}
+        {/* ============================ What sets it apart ============================ */}
         <SignalSection variant="glow">
           <div className="flex flex-col items-start gap-11 lg:flex-row lg:items-center">
             <div className="min-w-0 flex-1">
               <div className="mb-3.5">
-                <Eyebrow>Coverage others don't have</Eyebrow>
+                <Eyebrow>Built for regulated teams</Eyebrow>
               </div>
               <h2 className="font-display text-[30px] font-bold leading-[1.08] tracking-[-0.02em] text-signal-ink md:text-[36px]">
-                Depth that the mid-market tools can't match
+                What makes ComplyEasyAI different?
               </h2>
             </div>
             <div className="flex w-full flex-col gap-3 lg:w-[540px] lg:flex-none">
@@ -440,8 +465,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
           </div>
           <SectionTitle>How is ComplyEasyAI priced?</SectionTitle>
           <p className="mx-auto mt-4 max-w-[600px] text-[17px] leading-[1.6] text-[#8A94A6]">
-            Priced for outcomes, not seats: enterprise-grade coverage at a fraction of a
-            four-to-six tool GRC stack, with one platform price and no renewal surprises.
+            Priced for outcomes, not seats: one platform price covers your plan&rsquo;s frameworks
+            and users, with no per-framework add-ons and no renewal surprises.
           </p>
           <div className="mt-[26px] flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
             <Link
@@ -486,7 +511,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
             <PrimaryCta to="/demo">
               Book a demo <span aria-hidden="true">→</span>
             </PrimaryCta>
-            <OutlineCta to="/demo">Talk to sales</OutlineCta>
+            <OutlineCta to={TRIAL_CTA.to}>{TRIAL_CTA.label}</OutlineCta>
           </div>
         </SignalSection>
       </SignalPage>

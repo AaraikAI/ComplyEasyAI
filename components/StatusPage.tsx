@@ -342,7 +342,7 @@ export const StatusPage: React.FC = () => {
                 <div className="bg-brand-600 p-2 rounded-xl">
                   <Shield className="text-white w-5 h-5" />
                 </div>
-                <span className="font-bold text-xl text-white">ComplyEasy AI</span>
+                <span className="font-bold text-xl text-white">ComplyEasyAI</span>
               </a>
               <span className="text-slate-400 text-sm hidden sm:block">| System Status</span>
             </div>
@@ -761,7 +761,7 @@ export const StatusPage: React.FC = () => {
               <div className="bg-brand-600 p-1.5 rounded-lg">
                 <Shield className="text-white w-4 h-4" />
               </div>
-              <span className="font-bold text-white">ComplyEasy AI</span>
+              <span className="font-bold text-white">ComplyEasyAI</span>
               <span className="text-slate-500 text-sm">System Status</span>
             </div>
             <div className="flex space-x-6 text-sm text-slate-400">
@@ -770,7 +770,7 @@ export const StatusPage: React.FC = () => {
               <a href="/docs" className="hover:text-white transition-colors">Docs</a>
             </div>
             <div className="text-sm text-slate-500">
-              © 2026 ComplyEasy AI Inc.
+              © 2026 ComplyEasyAI
             </div>
           </div>
         </div>

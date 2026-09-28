@@ -16,8 +16,10 @@ import { Seo } from './seo/Seo';
 import { JsonLd } from './seo/JsonLd';
 import { breadcrumbSchema } from './seo/siteSchema';
 import { SITE_ORIGIN } from './seo/siteOrigin';
+import { TldrList } from './marketing/answerFirst';
 import { FRAMEWORK_PILLAR_COUNT } from '../data/frameworkPillarContent';
 import { glossaryTerms } from '../data/glossary';
+import { TRIAL_CTA } from '../data/marketingFacts';
 
 type GuideCategory = 'Fundamentals' | SignalCategory;
 type GuideFilter = 'All' | GuideCategory;
@@ -156,6 +158,14 @@ const GUIDES: Guide[] = [
   },
 ];
 
+/** Key facts shown as the TL;DR under the hero. */
+const LEARN_TLDR: string[] = [
+  `${FRAMEWORK_PILLAR_COUNT} in-depth framework guides, from SOC 2 and ISO 27001 to the EU AI Act and CSRD.`,
+  `A glossary of ${glossaryTerms.length} core compliance terms, each with a quotable definition.`,
+  'Step-by-step posts such as the EU AI Act compliance checklist.',
+  'Every card opens a published guide, glossary entry or post.',
+];
+
 const GUIDE_FILTERS: GuideFilter[] = [
   'All',
   'Fundamentals',
@@ -212,6 +222,9 @@ export const LearnPage: React.FC = () => {
             {glossaryTerms.length} core compliance terms, and step-by-step posts such as the EU AI Act
             checklist. Each card below opens the guide, glossary entry or post that answers it.
           </p>
+          <div className="mx-auto mt-8 max-w-[760px]">
+            <TldrList items={LEARN_TLDR} />
+          </div>
         </SignalSection>
 
         {/* Learning paths */}
@@ -305,11 +318,11 @@ export const LearnPage: React.FC = () => {
         <SignalSection variant="tight" className="text-center">
           <SectionTitle as="h2">Put it into practice.</SectionTitle>
           <p className="mt-4 text-lg text-signal-sub">
-            Start free, or see it live in a 30-minute demo.
+            See it live in a 30-minute demo, or request a trial for your team.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3.5">
-            <PrimaryCta to="/signup">Start free</PrimaryCta>
-            <OutlineCta to="/demo">Book a demo</OutlineCta>
+            <PrimaryCta to="/demo">Book a demo</PrimaryCta>
+            <OutlineCta to={TRIAL_CTA.to}>{TRIAL_CTA.label}</OutlineCta>
           </div>
         </SignalSection>
       </SignalPage>

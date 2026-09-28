@@ -149,7 +149,7 @@ describe('LandingPage', () => {
 
     it('lists every framework guide in the frameworks answer', () => {
       renderPage();
-      const answer = screen.getByText(/frameworks have dedicated guides:/);
+      const answer = screen.getByText(/frameworks have in-depth guides:/);
       for (const name of ['SOC 2', 'India DPDPA', 'AIUC-1', 'CSRD']) {
         expect(answer.textContent).toContain(name);
       }
@@ -176,11 +176,27 @@ describe('LandingPage', () => {
     it('renders the closing headline and CTAs', () => {
       renderPage();
       expect(screen.getByRole('heading', { name: /See compliance/i })).toBeInTheDocument();
-      expect(screen.getByText('Talk to sales').closest('a')).toHaveAttribute('href', '/demo');
+      expect(screen.getByText('Request a trial').closest('a')).toHaveAttribute('href', '/demo');
     });
   });
 
   // ---- Legacy UI intentionally removed ----
+
+  it('opens with TL;DR bullets that use the verified counts and the security posture', () => {
+    renderPage();
+    const tldr = screen.getByRole('region', { name: 'TL;DR' });
+    expect(tldr).toHaveTextContent('26 verified integrations');
+    expect(tldr).toHaveTextContent('16 in-depth framework guides and 150+ frameworks in the catalogue');
+    expect(tldr).toHaveTextContent('SOC 2 Type I audit in progress');
+    expect(tldr).toHaveTextContent('trials are available on request');
+  });
+
+  it('describes what sets it apart without comparing itself to other tools', () => {
+    renderPage();
+    expect(screen.getByRole('heading', { name: 'What makes ComplyEasyAI different?' })).toBeInTheDocument();
+    expect(document.body.innerHTML).not.toMatch(/mid-market tools|Coverage others|at a fraction of/i);
+    expect(screen.getByText(/26 integrations/)).toBeInTheDocument();
+  });
 
   it('no longer renders the auth modal, embedded pricing, or embedded demo form', () => {
     // The redesign made this a pure marketing page wrapped in MarketingLayout:

@@ -395,7 +395,7 @@ export const LoginPage: React.FC = () => {
           <p className="mt-[22px] text-center text-[12.5px] text-signal-muted">
             New to ComplyEasyAI?{' '}
             <Link to="/signup" className="text-signal-green hover:opacity-85">
-              Start free
+              Create an account
             </Link>
           </p>
         </div>

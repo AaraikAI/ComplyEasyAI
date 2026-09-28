@@ -85,8 +85,22 @@ describe('brand name', () => {
 
   it.each([
     'index.html',
+    'public/llms.txt',
+    'public/llms-full.txt',
     'components/seo/Seo.tsx',
     'components/seo/siteSchema.ts',
+    'components/marketing/MarketingLayout.tsx',
+    'components/LandingPage.tsx',
+    'components/marketing/pages/PlatformPage.tsx',
+    'components/marketing/pages/PricingPage.tsx',
+    'components/marketing/pages/FaqHubPage.tsx',
+    'components/marketing/pages/FrameworksIndexPage.tsx',
+    'components/marketing/pages/DemoPage.tsx',
+    'components/SignupPage.tsx',
+    'components/LoginPage.tsx',
+    'components/LearnPage.tsx',
+    'components/DocsPage.tsx',
+    'components/StatusPage.tsx',
   ])('%s uses the ComplyEasyAI spelling', (file) => {
     const offending = readFileSync(resolve(ROOT, file), 'utf8')
       .split('\n')

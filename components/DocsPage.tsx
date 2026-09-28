@@ -7,6 +7,8 @@ import { Seo } from './seo/Seo';
 import { JsonLd } from './seo/JsonLd';
 import { breadcrumbSchema } from './seo/siteSchema';
 import { SITE_ORIGIN } from './seo/siteOrigin';
+import { BRAND_NAME } from './seo/brand';
+import { INTEGRATION_COUNT, VERIFIED_INTEGRATION_GROUPS } from '../data/marketingFacts';
 
 /** One content block inside a docs section. */
 type DocBlock =
@@ -44,7 +46,7 @@ const DOCS: Record<string, DocArticle> = {
           {
             t: 'ul',
             v: [
-              'Name your workspace and set your primary region.',
+              'Name your workspace.',
               'Choose the frameworks you intend to pursue first.',
               'Invite teammates by email with a role (Admin, Editor or Viewer).',
             ],
@@ -136,12 +138,7 @@ const DOCS: Record<string, DocArticle> = {
           },
           {
             t: 'ul',
-            v: [
-              'Cloud — AWS, Azure, GCP',
-              'Code — GitHub, GitLab',
-              'Identity — Okta, Google Workspace, Entra ID',
-              'Ticketing — Jira, Linear',
-            ],
+            v: VERIFIED_INTEGRATION_GROUPS.map(({ group, names }) => `${group} — ${names.join(', ')}`),
           },
         ],
       },
@@ -154,7 +151,7 @@ const DOCS: Record<string, DocArticle> = {
           },
           {
             t: 'note',
-            v: 'Over 30 integrations are available. Missing one? Evidence can also be uploaded manually or via the API.',
+            v: `${INTEGRATION_COUNT} verified integrations are available. Missing one? Evidence can also be uploaded manually or via the API.`,
           },
         ],
       },
@@ -489,7 +486,7 @@ export const DocsPage: React.FC = () => {
   return (
     <MarketingLayout>
       <Seo
-        title={`${article.title} — ComplyEasy AI Docs`}
+        title={`${article.title} — ${BRAND_NAME} Docs`}
         description={article.summary}
         canonicalPath={activeId === DEFAULT_DOC ? '/docs' : `/docs/${activeId}`}
         ogType="article"
