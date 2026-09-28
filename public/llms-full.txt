@@ -38,7 +38,7 @@ Last updated: 2026-09-27
 
 ## Pillar pages (topic and framework guides)
 
-- https://www.complyeasyai.com/platform/ai-compliance — What is AI compliance? Requirements, frameworks (EU AI Act, NIST AI RMF, ISO 42001), common challenges and a step-by-step procedure for getting AI compliant.
+- https://www.complyeasyai.com/platform/ai-compliance — What is AI compliance? Requirements, frameworks (EU AI Act, NIST AI RMF, ISO 42001, AIUC-1), the EU AI Act dates after the 2026 Digital Omnibus, common challenges and a step-by-step procedure for getting AI compliant.
 - https://www.complyeasyai.com/grc — GRC software. Governance, risk and compliance in one platform with one control library and one evidence source.
 - https://www.complyeasyai.com/soc2-compliance — SOC 2. The Trust Services Criteria, Type I vs Type II, and how evidence is automated for both reports.
 - https://www.complyeasyai.com/iso-27001 — ISO 27001. The ISMS standard, Annex A control mapping, the Statement of Applicability and certification readiness.
@@ -47,15 +47,15 @@ Last updated: 2026-09-27
 - https://www.complyeasyai.com/gdpr — GDPR. Records of processing, DPIAs, data-subject requests, consent and breach notification.
 - https://www.complyeasyai.com/hipaa — HIPAA. The Security, Privacy and Breach Notification Rules for covered entities and business associates.
 - https://www.complyeasyai.com/ccpa — CCPA/CPRA. Consumer requests (know, delete, correct, opt out), privacy notices and CPRA obligations.
-- https://www.complyeasyai.com/india-dpdpa — India DPDP Act 2023 and DPDP Rules 2025. Notice and consent, Data Fiduciary duties, breach notification, children's data and Data Principal rights.
-- https://www.complyeasyai.com/eu-ai-act — EU AI Act. Risk classification, high-risk and GPAI obligations, conformity assessment and transparency.
+- https://www.complyeasyai.com/india-dpdpa — India DPDP Act 2023 and DPDP Rules 2025. Phase dates (Consent Managers from 13 November 2026, most duties from 13 May 2027), notice and consent, Data Fiduciary duties, breach notification, children's data and Data Principal rights.
+- https://www.complyeasyai.com/eu-ai-act — EU AI Act. Risk classification, GPAI and transparency duties, and the high-risk deadlines after the 2026 Digital Omnibus (Regulation (EU) 2026/1744): 2 December 2027 for Annex III, 2 August 2028 for Annex I.
 - https://www.complyeasyai.com/nist-ai-rmf — NIST AI RMF 1.0. The GOVERN, MAP, MEASURE and MANAGE functions for AI risk.
 - https://www.complyeasyai.com/iso-42001 — ISO/IEC 42001. The AI management system standard: AI risk and impact assessment, lifecycle controls and data governance.
 - https://www.complyeasyai.com/aiuc-1 — AIUC-1. The AI agent standard's six pillars: data and privacy, security, safety, reliability, accountability and society.
 - https://www.complyeasyai.com/dora-compliance — DORA. ICT risk management, major-incident reporting, resilience testing and third-party ICT registers for EU financial entities.
 - https://www.complyeasyai.com/dma-compliance — DMA. Digital Markets Act obligations for designated gatekeepers.
 - https://www.complyeasyai.com/dsa-compliance — DSA. Digital Services Act duties: notice and action, transparency reporting and systemic-risk assessments for very large platforms.
-- https://www.complyeasyai.com/csrd-compliance — CSRD. Double-materiality assessment and ESRS sustainability disclosures.
+- https://www.complyeasyai.com/csrd-compliance — CSRD after Omnibus I (Directive (EU) 2026/470). Scope (over 1,000 employees and €450 million turnover), double materiality, ESRS disclosures and limited assurance.
 
 ## FAQ and reference
 

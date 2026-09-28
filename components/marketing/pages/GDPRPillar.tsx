@@ -1,10 +1,9 @@
 import React from 'react';
 import SignalFrameworkPillar from './SignalFrameworkPillar';
 
-const SEO_TITLE =
-  'GDPR Compliance Software: Automate Data Privacy & DSARs | ComplyEasy AI';
+const SEO_TITLE = 'GDPR Compliance Software: RoPA, DPIAs & DSARs | ComplyEasyAI';
 const SEO_DESCRIPTION =
-  'ComplyEasy AI is GDPR compliance software that automates records of processing (RoPA), DPIAs, data-subject request workflows, consent tracking, and breach notification — helping teams achieve and maintain GDPR readiness.';
+  'GDPR compliance software that keeps your records of processing, DPIAs, data-subject requests and 72-hour breach response current as your product changes.';
 const SEO_KEYWORDS =
   'GDPR compliance software, GDPR automation, data subject access request software, RoPA tool, DPIA software, GDPR data privacy platform, GDPR breach notification, consent management';
 
