@@ -6,7 +6,6 @@
 export const STATIC_ROUTES = [
   '/',
   '/learn',
-  '/community',
   '/status',
   '/docs',
   // Signal marketing pages
@@ -66,7 +65,7 @@ export const PILLAR_PATHS = [
 
 // Routes that stay prerendered (so the CloudFront route set is unchanged) but are
 // left out of the sitemap and llms-full.txt because they carry a noindex robots tag.
-export const SITEMAP_EXCLUDED_ROUTES = ['/login', '/community'];
+export const SITEMAP_EXCLUDED_ROUTES = ['/login'];
 
 export const GLOSSARY_SLUGS = [
   'ai-compliance',

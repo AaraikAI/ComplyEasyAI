@@ -768,7 +768,6 @@ export const StatusPage: React.FC = () => {
               <a href="/" className="hover:text-white transition-colors">Home</a>
               <a href="/learn" className="hover:text-white transition-colors">Learn</a>
               <a href="/docs" className="hover:text-white transition-colors">Docs</a>
-              <a href="/community" className="hover:text-white transition-colors">Community</a>
             </div>
             <div className="text-sm text-slate-500">
               © 2026 ComplyEasy AI Inc.
