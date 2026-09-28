@@ -34,6 +34,12 @@ const PUBLIC_COPY_FILES = [
   'components/LearnPage.tsx',
   'components/DocsPage.tsx',
   'components/StatusPage.tsx',
+  'components/marketing/pages/BlogIndex.tsx',
+  'components/marketing/pages/BlogPost.tsx',
+  'components/marketing/pages/GlossaryIndex.tsx',
+  'components/marketing/pages/GlossaryTerm.tsx',
+  'data/blog/index.ts',
+  'data/glossary.ts',
 ];
 
 /** Lines of `file` matching `pattern`, prefixed with their line number. */

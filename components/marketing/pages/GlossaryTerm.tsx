@@ -1,20 +1,53 @@
 import React from 'react';
 import { Link, useParams } from 'react-router';
 import ReactMarkdown from 'react-markdown';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen } from 'lucide-react';
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
-import { breadcrumbSchema } from '../../seo/siteSchema';
-import { getGlossaryTerm } from '../../../data/glossary';
+import { breadcrumbSchema, faqSchema, reviewedWebPageSchema } from '../../seo/siteSchema';
+import { BRAND_NAME } from '../../seo/brand';
+import { getGlossaryTerm, termInQuestion } from '../../../data/glossary';
 import { SITE_ORIGIN } from '../../seo/siteOrigin';
+import { ReviewedByline, TldrList } from '../answerFirst';
 
 const TERM_SET_URL = SITE_ORIGIN + '/glossary';
 
+const LINK_CLASS =
+  'font-medium text-brand-600 underline decoration-brand-300 underline-offset-2 transition-colors hover:text-brand-700 dark:text-brand-400 dark:decoration-brand-700 dark:hover:text-brand-300';
+
 /**
- * Single glossary entry (/glossary/:term). Renders the quotable short
- * definition first, the full body, and links to related terms. Emits
- * DefinedTerm and breadcrumb structured data.
+ * Styles for the definition body (the Tailwind typography plugin is not
+ * installed, so paragraphs are spaced here). Site-relative links navigate
+ * inside the SPA.
+ */
+const markdownComponents = {
+  p: ({ node: _node, ...props }: React.HTMLAttributes<HTMLParagraphElement> & { node?: unknown }) => (
+    <p className="my-4 leading-relaxed text-surface-600 dark:text-surface-300" {...props} />
+  ),
+  a: ({
+    node: _node,
+    href,
+    children,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) =>
+    href && href.startsWith('/') ? (
+      <Link to={href} className={LINK_CLASS}>
+        {children}
+      </Link>
+    ) : (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS} {...props}>
+        {children}
+      </a>
+    ),
+};
+
+/**
+ * Single glossary entry (/glossary/:term). Answer-first: the H1 asks
+ * "What is {term}?", the quotable definition sits directly under it, then the
+ * TL;DR and review byline, the explanation, a short FAQ, related terms and a
+ * link to the guide that covers the term in depth. Emits DefinedTerm,
+ * reviewed WebPage, FAQPage and breadcrumb structured data.
  */
 const GlossaryTerm: React.FC = () => {
   const { term: slug } = useParams<{ term: string }>();
@@ -24,7 +57,7 @@ const GlossaryTerm: React.FC = () => {
     return (
       <MarketingLayout>
         <Seo
-          title="Term not found | ComplyEasy AI Glossary"
+          title={`Term not found | ${BRAND_NAME} Glossary`}
           description="The glossary term you requested could not be found."
           canonicalPath="/glossary"
           noindex
@@ -54,6 +87,8 @@ const GlossaryTerm: React.FC = () => {
     .filter((t): t is NonNullable<typeof t> => Boolean(t));
 
   const canonicalPath = '/glossary/' + entry.slug;
+  const question = `What is ${termInQuestion(entry)}?`;
+  const seoTitle = `${question} Definition | ${BRAND_NAME}`;
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Home', url: SITE_ORIGIN + '/' },
@@ -72,13 +107,18 @@ const GlossaryTerm: React.FC = () => {
 
   return (
     <MarketingLayout>
-      <Seo
-        title={`${entry.term} — Definition & Meaning | ComplyEasy AI`}
-        description={entry.shortDef}
-        canonicalPath={canonicalPath}
-        ogType="article"
-      />
+      <Seo title={seoTitle} description={entry.shortDef} canonicalPath={canonicalPath} ogType="article" />
       <JsonLd data={definedTerm} />
+      <JsonLd
+        data={reviewedWebPageSchema({
+          name: seoTitle,
+          description: entry.shortDef,
+          path: canonicalPath,
+          lastReviewed: entry.lastReviewed,
+          about: entry.term,
+        })}
+      />
+      {entry.faqs.length > 0 ? <JsonLd data={faqSchema(entry.faqs)} /> : null}
       <JsonLd data={breadcrumbs} />
 
       <article className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
@@ -106,27 +146,70 @@ const GlossaryTerm: React.FC = () => {
 
         <span className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700 dark:bg-brand-950 dark:text-brand-300">
           <BookOpen className="h-4 w-4" aria-hidden="true" />
-          Glossary
+          {entry.term}
         </span>
 
         <h1 className="mt-6 text-4xl font-bold tracking-tight text-surface-900 sm:text-5xl dark:text-white">
-          {entry.term}
+          {question}
         </h1>
 
         {/* Quotable definition, rendered first for answer-engine extraction. */}
-        <p className="mt-6 border-l-4 border-brand-500 pl-5 text-xl font-medium leading-relaxed text-surface-800 dark:text-surface-100">
+        <p
+          id="glossary-definition"
+          className="mt-6 border-l-4 border-brand-500 pl-5 text-xl font-medium leading-relaxed text-surface-800 dark:text-surface-100"
+        >
           {entry.shortDef}
         </p>
 
+        <TldrList items={entry.tldr} className="mt-8" />
+        <ReviewedByline lastReviewed={entry.lastReviewed} className="mt-6" />
+
         {/* Full explanation */}
-        <div className="prose prose-surface mt-10 max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-brand-600 dark:prose-a:text-brand-400 prose-p:leading-relaxed prose-p:text-surface-600 dark:prose-p:text-surface-300">
-          <ReactMarkdown>{entry.body}</ReactMarkdown>
-        </div>
+        <section className="mt-12">
+          <h2 className="text-2xl font-bold tracking-tight text-surface-900 dark:text-white">
+            How does {termInQuestion(entry)} work in practice?
+          </h2>
+          <div className="mt-4">
+            <ReactMarkdown components={markdownComponents}>{entry.body}</ReactMarkdown>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        {entry.faqs.length > 0 && (
+          <section className="mt-12">
+            <h2 className="text-2xl font-bold tracking-tight text-surface-900 dark:text-white">
+              What else do people ask about {termInQuestion(entry)}?
+            </h2>
+            <div className="mt-4 divide-y divide-surface-200 dark:divide-surface-800">
+              {entry.faqs.map((faq) => (
+                <details key={faq.q} className="py-4">
+                  <summary className="cursor-pointer list-none font-semibold text-surface-900 marker:hidden dark:text-white">
+                    {faq.q}
+                  </summary>
+                  <p className="mt-3 leading-relaxed text-surface-700 dark:text-surface-300">{faq.a}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Deeper guide */}
+        <p className="mt-10">
+          <Link
+            to={entry.pillar.path}
+            className="inline-flex items-center gap-2 font-semibold text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+          >
+            Go deeper: {entry.pillar.label}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </p>
 
         {/* Related terms */}
         {related.length > 0 && (
           <section className="mt-14 border-t border-surface-200 pt-10 dark:border-surface-800">
-            <h2 className="text-lg font-semibold text-surface-900 dark:text-white">Related terms</h2>
+            <h2 className="text-lg font-semibold text-surface-900 dark:text-white">
+              Which terms are related to {termInQuestion(entry)}?
+            </h2>
             <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {related.map((relatedTerm) => (
                 <li key={relatedTerm.slug}>

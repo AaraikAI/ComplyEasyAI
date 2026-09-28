@@ -101,6 +101,12 @@ describe('brand name', () => {
     'components/LearnPage.tsx',
     'components/DocsPage.tsx',
     'components/StatusPage.tsx',
+    'components/marketing/pages/BlogIndex.tsx',
+    'components/marketing/pages/BlogPost.tsx',
+    'components/marketing/pages/GlossaryIndex.tsx',
+    'components/marketing/pages/GlossaryTerm.tsx',
+    'data/blog/index.ts',
+    'data/glossary.ts',
   ])('%s uses the ComplyEasyAI spelling', (file) => {
     const offending = readFileSync(resolve(ROOT, file), 'utf8')
       .split('\n')
