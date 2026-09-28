@@ -5,94 +5,74 @@ import { ArrowLeft, ArrowRight, CalendarDays } from 'lucide-react';
 import MarketingLayout from '../MarketingLayout';
 import { Seo } from '../../seo/Seo';
 import { JsonLd } from '../../seo/JsonLd';
-import { breadcrumbSchema } from '../../seo/siteSchema';
+import { breadcrumbSchema, faqSchema, reviewedArticleSchema } from '../../seo/siteSchema';
+import { BRAND_NAME } from '../../seo/brand';
 import { getBlogPost } from '../../../data/blog';
+import { TRIAL_CTA } from '../../../data/marketingFacts';
 import { SITE_ORIGIN } from '../../seo/siteOrigin';
+import { formatReviewDate, ReviewedByline, TldrList } from '../answerFirst';
 
-const ARTICLE_IMAGE = `${SITE_ORIGIN}/og/default-og.svg`;
+/** react-markdown passes its AST node to custom components; keep it off the DOM. */
+type MarkdownProps<T> = T & { node?: unknown };
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-function formatDate(iso: string): string {
-  const [year, month, day] = iso.split('-');
-  const monthIndex = Number(month) - 1;
-  const name = MONTHS[monthIndex] ?? month;
-  return `${name} ${Number(day)}, ${year}`;
-}
+const LINK_CLASS =
+  'font-medium text-brand-600 underline decoration-brand-300 underline-offset-2 transition-colors hover:text-brand-700 dark:text-brand-400 dark:decoration-brand-700 dark:hover:text-brand-300';
 
 /**
- * Markdown renderer styled for readable long-form body copy in the teal design
- * system, with full light/dark support.
+ * Markdown renderer styled for readable long-form body copy, with full
+ * light/dark support. Site-relative links navigate inside the SPA; other links
+ * open in a new tab.
  */
 const markdownComponents = {
-  h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+  h2: ({ node: _node, ...props }: MarkdownProps<React.HTMLAttributes<HTMLHeadingElement>>) => (
     <h2
       className="mt-12 mb-4 text-2xl font-bold tracking-tight text-surface-900 dark:text-white"
       {...props}
     />
   ),
-  h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+  h3: ({ node: _node, ...props }: MarkdownProps<React.HTMLAttributes<HTMLHeadingElement>>) => (
     <h3
       className="mt-8 mb-3 text-xl font-semibold tracking-tight text-surface-900 dark:text-white"
       {...props}
     />
   ),
-  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
+  p: ({ node: _node, ...props }: MarkdownProps<React.HTMLAttributes<HTMLParagraphElement>>) => (
     <p className="my-5 leading-relaxed text-surface-700 dark:text-surface-300" {...props} />
   ),
-  ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
+  ul: ({ node: _node, ...props }: MarkdownProps<React.HTMLAttributes<HTMLUListElement>>) => (
     <ul className="my-5 list-disc space-y-2 pl-6 text-surface-700 dark:text-surface-300" {...props} />
   ),
-  ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
+  ol: ({ node: _node, ...props }: MarkdownProps<React.HTMLAttributes<HTMLOListElement>>) => (
     <ol className="my-5 list-decimal space-y-2 pl-6 text-surface-700 dark:text-surface-300" {...props} />
   ),
-  li: (props: React.LiHTMLAttributes<HTMLLIElement>) => (
+  li: ({ node: _node, ...props }: MarkdownProps<React.LiHTMLAttributes<HTMLLIElement>>) => (
     <li className="leading-relaxed marker:text-brand-500" {...props} />
   ),
-  a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a
-      className="font-medium text-brand-600 underline decoration-brand-300 underline-offset-2 transition-colors hover:text-brand-700 dark:text-brand-400 dark:decoration-brand-700 dark:hover:text-brand-300"
-      {...props}
-    />
-  ),
-  strong: (props: React.HTMLAttributes<HTMLElement>) => (
+  a: ({ node: _node, href, children, ...props }: MarkdownProps<React.AnchorHTMLAttributes<HTMLAnchorElement>>) =>
+    href && href.startsWith('/') ? (
+      <Link to={href} className={LINK_CLASS}>
+        {children}
+      </Link>
+    ) : (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS} {...props}>
+        {children}
+      </a>
+    ),
+  strong: ({ node: _node, ...props }: MarkdownProps<React.HTMLAttributes<HTMLElement>>) => (
     <strong className="font-semibold text-surface-900 dark:text-white" {...props} />
   ),
-  em: (props: React.HTMLAttributes<HTMLElement>) => (
+  em: ({ node: _node, ...props }: MarkdownProps<React.HTMLAttributes<HTMLElement>>) => (
     <em className="italic" {...props} />
   ),
-  blockquote: (props: React.BlockquoteHTMLAttributes<HTMLQuoteElement>) => (
+  blockquote: ({ node: _node, ...props }: MarkdownProps<React.BlockquoteHTMLAttributes<HTMLQuoteElement>>) => (
     <blockquote
       className="my-6 border-l-4 border-brand-400 bg-brand-50/60 py-2 pl-4 pr-2 italic text-surface-700 dark:border-brand-600 dark:bg-brand-950/40 dark:text-surface-300"
       {...props}
     />
   ),
-  code: (props: React.HTMLAttributes<HTMLElement>) => (
+  code: ({ node: _node, ...props }: MarkdownProps<React.HTMLAttributes<HTMLElement>>) => (
     <code
       className="rounded bg-surface-100 px-1.5 py-0.5 text-sm font-mono text-brand-700 dark:bg-surface-800 dark:text-brand-300"
-      {...props}
-    />
-  ),
-  table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
-    <div className="my-6 overflow-x-auto rounded-xl border border-surface-200 dark:border-surface-800">
-      <table className="w-full border-collapse text-left text-sm" {...props} />
-    </div>
-  ),
-  thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => (
-    <thead className="bg-surface-50 dark:bg-surface-900" {...props} />
-  ),
-  th: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => (
-    <th
-      className="border-b border-surface-200 px-4 py-3 font-semibold text-surface-900 dark:border-surface-800 dark:text-white"
-      {...props}
-    />
-  ),
-  td: (props: React.TdHTMLAttributes<HTMLTableCellElement>) => (
-    <td
-      className="border-b border-surface-100 px-4 py-3 text-surface-700 dark:border-surface-800/70 dark:text-surface-300"
       {...props}
     />
   ),
@@ -101,8 +81,11 @@ const markdownComponents = {
 
 /**
  * Individual blog article (/blog/:slug). Looks the post up by slug; an unknown
- * slug renders a noindex not-found message. A valid post renders the article
- * with a byline, markdown body, CTA, and Article + breadcrumb structured data.
+ * slug renders a noindex not-found message. A post opens answer-first — H1,
+ * one-line hook, the direct answer, TL;DR and the review byline — then the
+ * markdown body, a FAQ, the sources and a CTA. Emits Article (organization as
+ * author and publisher, dateModified = review date), FAQPage and breadcrumb
+ * structured data.
  */
 const BlogPost: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -112,7 +95,7 @@ const BlogPost: React.FC = () => {
     return (
       <MarketingLayout>
         <Seo
-          title="Article not found | ComplyEasy AI"
+          title={`Article not found | ${BRAND_NAME}`}
           description="The blog article you are looking for could not be found."
           canonicalPath="/blog"
           noindex
@@ -136,22 +119,8 @@ const BlogPost: React.FC = () => {
     );
   }
 
-  const canonicalUrl = `${SITE_ORIGIN}/blog/${post.slug}`;
-
-  const articleSchema: Record<string, unknown> = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: post.title,
-    description: post.description,
-    datePublished: post.date,
-    dateModified: post.date,
-    author: {
-      '@type': 'Organization',
-      name: 'ComplyEasy AI',
-    },
-    image: ARTICLE_IMAGE,
-    mainEntityOfPage: canonicalUrl,
-  };
+  const path = `/blog/${post.slug}`;
+  const canonicalUrl = `${SITE_ORIGIN}${path}`;
 
   const breadcrumb = breadcrumbSchema([
     { name: 'Home', url: SITE_ORIGIN + '/' },
@@ -162,13 +131,24 @@ const BlogPost: React.FC = () => {
   return (
     <MarketingLayout>
       <Seo
-        title={post.title}
+        title={post.seoTitle}
         description={post.description}
-        canonicalPath={`/blog/${post.slug}`}
+        canonicalPath={path}
         ogType="article"
         keywords={post.tags.join(', ')}
       />
-      <JsonLd data={articleSchema} />
+      <JsonLd
+        data={reviewedArticleSchema({
+          headline: post.title,
+          description: post.description,
+          path,
+          datePublished: post.date,
+          dateModified: post.lastReviewed,
+          keywords: post.tags,
+          citations: post.sources.map((source) => source.url),
+        })}
+      />
+      <JsonLd data={faqSchema(post.faqs)} />
       <JsonLd data={breadcrumb} />
 
       <article className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
@@ -193,7 +173,7 @@ const BlogPost: React.FC = () => {
           </ol>
         </nav>
 
-        {/* Header */}
+        {/* Header: H1, hook, direct answer, TL;DR, byline */}
         <header className="mb-10">
           {post.tags.length > 0 && (
             <ul className="mb-5 flex flex-wrap gap-2">
@@ -210,13 +190,22 @@ const BlogPost: React.FC = () => {
           <h1 className="text-4xl font-bold tracking-tight text-surface-900 sm:text-5xl dark:text-white">
             {post.title}
           </h1>
-          <p className="mt-5 text-lg text-surface-600 dark:text-surface-300">{post.description}</p>
-          <div className="mt-6 flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400">
-            <CalendarDays size={15} aria-hidden="true" />
-            <span>
-              By {post.author} &middot;{' '}
-              <time dateTime={post.date}>{formatDate(post.date)}</time>
-            </span>
+          <p className="mt-5 text-lg text-surface-600 dark:text-surface-300">{post.hook}</p>
+          <p
+            id="post-answer"
+            className="mt-6 border-l-4 border-brand-500 pl-5 text-lg font-medium leading-relaxed text-surface-800 dark:text-surface-100"
+          >
+            {post.answer}
+          </p>
+          <TldrList items={post.tldr} className="mt-8" />
+          <div className="mt-6 flex flex-col gap-2">
+            <ReviewedByline lastReviewed={post.lastReviewed} />
+            <p className="flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400">
+              <CalendarDays size={15} aria-hidden="true" />
+              <span>
+                Published <time dateTime={post.date}>{formatReviewDate(post.date)}</time>
+              </span>
+            </p>
           </div>
         </header>
 
@@ -225,31 +214,74 @@ const BlogPost: React.FC = () => {
           <ReactMarkdown components={markdownComponents}>{post.body}</ReactMarkdown>
         </div>
 
+        {/* FAQ */}
+        {post.faqs.length > 0 && (
+          <section aria-labelledby="post-faq" className="mt-14 border-t border-surface-200 pt-10 dark:border-surface-800">
+            <h2 id="post-faq" className="text-2xl font-bold tracking-tight text-surface-900 dark:text-white">
+              Frequently asked questions
+            </h2>
+            <div className="mt-6 divide-y divide-surface-200 dark:divide-surface-800">
+              {post.faqs.map((faq) => (
+                <details key={faq.q} className="group py-4">
+                  <summary className="cursor-pointer list-none font-semibold text-surface-900 marker:hidden dark:text-white">
+                    {faq.q}
+                  </summary>
+                  <p className="mt-3 leading-relaxed text-surface-700 dark:text-surface-300">{faq.a}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Sources */}
+        {post.sources.length > 0 && (
+          <section aria-labelledby="post-sources" className="mt-12">
+            <h2 id="post-sources" className="text-lg font-semibold text-surface-900 dark:text-white">
+              Sources
+            </h2>
+            <ol className="mt-4 list-decimal space-y-2 pl-6 text-sm text-surface-600 dark:text-surface-400">
+              {post.sources.map((source) => (
+                <li key={source.url}>
+                  <a href={source.url} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+                    {source.label}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+
         {/* CTA */}
         <aside className="mt-16 overflow-hidden rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-white p-8 text-center shadow-sm dark:border-brand-800/60 dark:from-brand-950/50 dark:to-surface-900">
           <h2 className="text-2xl font-bold tracking-tight text-surface-900 dark:text-white">
-            Make compliance continuous
+            Ready to make compliance continuous?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-surface-600 dark:text-surface-300">
-            See how ComplyEasy AI automates evidence collection, monitors controls, and maps a single
-            control set across every framework you need.
+            See how {BRAND_NAME} collects evidence, monitors controls and maps one control set across
+            every framework you need.
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <Link
-              to="/signup"
+              to="/demo"
               className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
-              Start free
+              Book a demo
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <Link
-              to="/blog"
+              to={TRIAL_CTA.to}
               className="inline-flex items-center gap-2 rounded-full border border-surface-300 px-6 py-3 text-sm font-semibold text-surface-700 transition-colors hover:border-brand-400 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-surface-700 dark:text-surface-200 dark:hover:border-brand-600 dark:hover:text-brand-400"
             >
-              <ArrowLeft size={16} aria-hidden="true" />
-              More articles
+              {TRIAL_CTA.label}
             </Link>
           </div>
+          <Link
+            to="/blog"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+          >
+            <ArrowLeft size={15} aria-hidden="true" />
+            More articles
+          </Link>
         </aside>
       </article>
     </MarketingLayout>

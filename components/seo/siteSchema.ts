@@ -175,6 +175,8 @@ export interface ReviewedArticleInput {
   /** Absolute image URL; defaults to the 1200x630 social card. */
   image?: string;
   keywords?: string[];
+  /** Primary sources the article relies on (https URLs). */
+  citations?: string[];
 }
 
 /** Article JSON-LD with the organization as author and publisher. */
@@ -195,5 +197,6 @@ export function reviewedArticleSchema(input: ReviewedArticleInput): Record<strin
     publisher: org,
     inLanguage: 'en',
     ...(input.keywords && input.keywords.length > 0 ? { keywords: input.keywords.join(', ') } : {}),
+    ...(input.citations && input.citations.length > 0 ? { citation: input.citations } : {}),
   };
 }

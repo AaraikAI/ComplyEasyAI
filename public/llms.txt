@@ -39,6 +39,7 @@ Last updated: 2026-09-27
 
 - [What is AI compliance?](https://www.complyeasyai.com/platform/ai-compliance)
 - [GRC software explained](https://www.complyeasyai.com/grc)
+- [EU AI Act timeline after the Digital Omnibus](https://www.complyeasyai.com/blog/eu-ai-act-timeline-digital-omnibus) · [India DPDP Rules 2025: what applies on 13 May 2027](https://www.complyeasyai.com/blog/india-dpdp-rules-2025-timeline) · [CSRD after Omnibus I: who still reports?](https://www.complyeasyai.com/blog/csrd-after-omnibus-i)
 - [Blog](https://www.complyeasyai.com/blog) · [Glossary](https://www.complyeasyai.com/glossary) · [Learning center](https://www.complyeasyai.com/learn) · [Docs](https://www.complyeasyai.com/docs)
 
 ## Optional

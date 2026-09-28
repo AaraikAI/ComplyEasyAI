@@ -60,7 +60,7 @@ Last updated: 2026-09-27
 ## FAQ and reference
 
 - https://www.complyeasyai.com/faq — FAQ. Answers on frameworks, AI features, security, integrations, pricing and support.
-- https://www.complyeasyai.com/glossary — Glossary index. Plain-language definitions of compliance, privacy and AI-governance terms.
+- https://www.complyeasyai.com/glossary — Glossary index. Plain-language definitions of 16 compliance, privacy and AI-governance terms; each entry opens with a quotable definition, key takeaways and short FAQs.
 
 ## Glossary terms
 
@@ -68,7 +68,7 @@ Last updated: 2026-09-27
 - https://www.complyeasyai.com/glossary/soc-2 — SOC 2: AICPA attestation of controls against the Trust Services Criteria.
 - https://www.complyeasyai.com/glossary/iso-27001 — ISO 27001: the international standard for information security management systems.
 - https://www.complyeasyai.com/glossary/gdpr — GDPR: the EU General Data Protection Regulation for personal-data processing.
-- https://www.complyeasyai.com/glossary/eu-ai-act — EU AI Act: the risk-tiered EU law regulating AI providers and deployers.
+- https://www.complyeasyai.com/glossary/eu-ai-act — EU AI Act: the risk-tiered EU law regulating AI providers and deployers; high-risk duties from 2 December 2027 or 2 August 2028 after the 2026 amendments.
 - https://www.complyeasyai.com/glossary/hipaa — HIPAA: US safeguards for protected health information.
 - https://www.complyeasyai.com/glossary/nist-ai-rmf — NIST AI RMF: the voluntary framework for managing AI risk.
 - https://www.complyeasyai.com/glossary/grc — GRC: governance, risk and compliance as an integrated discipline.
@@ -83,6 +83,9 @@ Last updated: 2026-09-27
 
 ## Blog
 
-- https://www.complyeasyai.com/blog — Blog index. Practical guides on automating compliance across SOC 2, ISO 27001, GDPR and the EU AI Act.
+- https://www.complyeasyai.com/blog — Blog index. Answer-first guides with dates and sources: SOC 2 automation, the EU AI Act after the Digital Omnibus, India's DPDP Rules 2025 and CSRD after Omnibus I.
+- https://www.complyeasyai.com/blog/eu-ai-act-timeline-digital-omnibus — EU AI Act timeline after the Digital Omnibus (Regulation (EU) 2026/1744): prohibitions since 2 February 2025, GPAI duties since 2 August 2025, transparency since 2 August 2026, new bans and the marking deadline on 2 December 2026, high-risk duties from 2 December 2027 (Annex III) and 2 August 2028 (Annex I).
+- https://www.complyeasyai.com/blog/india-dpdp-rules-2025-timeline — India DPDP Rules 2025: what applies on 13 May 2027. The Rules' phased start (Board provisions from 13 November 2025, Consent Managers from 13 November 2026, most duties from 13 May 2027), notice and consent, security and 72-hour breach reporting, children's data, Significant Data Fiduciaries and a GDPR comparison.
+- https://www.complyeasyai.com/blog/csrd-after-omnibus-i — CSRD after Omnibus I (Directive (EU) 2026/470): who still reports. Scope above 1,000 employees and €450 million turnover, non-EU groups from financial year 2028, limited assurance only, the revised ESRS and the value-chain cap.
+- https://www.complyeasyai.com/blog/eu-ai-act-compliance-checklist — EU AI Act compliance checklist (2026 update): inventory, risk classification, high-risk obligations, transparency and GPAI duties, with the post-Omnibus dates.
 - https://www.complyeasyai.com/blog/how-to-automate-soc-2-compliance-with-ai — How to automate SOC 2 compliance with AI: connect systems, collect evidence continuously, monitor controls and stay audit-ready year-round.
-- https://www.complyeasyai.com/blog/eu-ai-act-compliance-checklist — EU AI Act compliance checklist: classifying AI systems and meeting the obligations the Act places on providers and deployers.

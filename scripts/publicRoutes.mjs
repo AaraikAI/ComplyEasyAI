@@ -89,6 +89,9 @@ export const GLOSSARY_SLUGS = [
 export const BLOG_SLUGS = [
   'how-to-automate-soc-2-compliance-with-ai',
   'eu-ai-act-compliance-checklist',
+  'eu-ai-act-timeline-digital-omnibus',
+  'india-dpdp-rules-2025-timeline',
+  'csrd-after-omnibus-i',
 ];
 
 export function allPublicRoutes() {
