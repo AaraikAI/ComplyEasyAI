@@ -72,4 +72,3 @@ Last updated: 2026-06-07
 - https://complyeasyai.com/blog — Blog index. Practical guides on automating compliance across SOC 2, ISO 27001, GDPR, and the EU AI Act.
 - https://complyeasyai.com/blog/how-to-automate-soc-2-compliance-with-ai — How to Automate SOC 2 Compliance with AI — connect systems, let agents collect evidence continuously, monitor controls, and stay audit-ready year-round.
 - https://complyeasyai.com/blog/eu-ai-act-compliance-checklist — EU AI Act Compliance Checklist — a step-by-step checklist for classifying AI systems and meeting the obligations the EU AI Act places on providers and deployers.
-- https://complyeasyai.com/blog/vanta-vs-drata-vs-complyeasy-ai — Vanta vs Drata vs ComplyEasy AI — a capability comparison of leading compliance automation platforms.

@@ -48,7 +48,7 @@ interface PricingTier {
   target: string;
   fw: string;
   users: string;
-  note: string;
+  note?: string;
   highlights: string[];
 }
 
@@ -58,7 +58,6 @@ const TIERS: PricingTier[] = [
     target: 'Pre-Series A · 10–50 people',
     fw: '3 frameworks',
     users: '10 users',
-    note: '≈15% below comparable entry tiers',
     highlights: [
       'Core AI: policy generation + gap analysis',
       'Continuous control monitoring',
@@ -132,7 +131,7 @@ const EVERY_PLAN_INCLUDES = [
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
     q: "Why don't you list exact prices?",
-    a: 'Your number depends on which frameworks you pursue and your team size. A 30-minute call gets you an exact, tailored quote — positioned well below comparable competitor tiers.',
+    a: 'Your number depends on which frameworks you pursue and your team size. A 30-minute call gets you an exact, tailored quote.',
   },
   {
     q: 'Are there hidden implementation or renewal fees?',
@@ -192,9 +191,11 @@ const TierCard: React.FC<{ tier: PricingTier; recommended: boolean }> = ({ tier,
         </li>
       ))}
     </ul>
-    <div className="mt-[18px] min-h-[32px] text-[11.5px] leading-[1.45] text-signal-green">
-      {tier.note}
-    </div>
+    {tier.note && (
+      <div className="mt-[18px] min-h-[32px] text-[11.5px] leading-[1.45] text-signal-green">
+        {tier.note}
+      </div>
+    )}
     {recommended ? (
       <PrimaryCta to="/demo" className="mt-4 w-full">
         Talk to us
@@ -297,7 +298,7 @@ const PricingPage: React.FC = () => {
             ))}
           </div>
           <p className="mt-5 text-center text-xs text-signal-muted">
-            Pricing is positioned ≈10–15% below comparable Vanta and Drata tiers. Exact figures
+            Pricing is positioned ≈10–15% lower as compared to the other providers. Exact figures
             shared on a short call.
           </p>
         </section>
