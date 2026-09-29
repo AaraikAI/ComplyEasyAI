@@ -4,7 +4,7 @@
  * Call sites interpolate request-derived values into log messages, so the
  * formats are what stops a CR/LF in such a value from starting a second,
  * forged entry (CodeQL js/log-injection). These tests drive the real winston
- * formats, without mocks.
+ * formats end to end.
  */
 
 import { PassThrough } from 'stream';
