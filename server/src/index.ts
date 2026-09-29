@@ -169,7 +169,7 @@ import { destroyKey } from './utils/credentialEncryption';
 import jobQueueService from './services/queue/jobQueue';
 
 // Redis Cache
-import cacheService from './services/cache/redisCacheService';
+import cacheService, { buildCacheHealthCheck } from './services/cache/redisCacheService';
 
 // Multi-Region
 import multiRegionService from './config/regions/multiRegionConfig';
@@ -535,10 +535,9 @@ app.get('/health', async (req: Request, res: Response) => {
     healthStatus.checks.jobQueue = { status: 'unavailable', error: error.message };
   }
 
-  // 5. Cache check
+  // 5. Cache check ('warning' while Redis is configured but not serving)
   try {
-    const cacheStats = cacheService.getStats();
-    healthStatus.checks.cache = { status: 'ok', mode: cacheStats.mode, hitRate: cacheStats.hitRate, size: cacheStats.size };
+    healthStatus.checks.cache = buildCacheHealthCheck(cacheService.getStats());
   } catch (error: any) {
     healthStatus.checks.cache = { status: 'unavailable', error: error.message };
   }
