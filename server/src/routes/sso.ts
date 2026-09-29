@@ -24,8 +24,19 @@ import { isWebhookUrlSafe, safeFetch } from '../utils/urlValidator';
 const router = Router();
 
 /**
- * Validate that a redirect URL is safe (same origin as our app).
+ * Validate a RelayState redirect target against our own app origins
+ * (CLIENT_URL / API_URL) and return it re-serialized by the WHATWG URL parser,
+ * the same parser browsers use. The Location header then carries exactly the
+ * URL whose origin was checked, never the raw input string. Returns null when
+ * the target is not a string or not on an allowed origin.
  * Prevents open redirect attacks via the RelayState parameter.
+ */
+function safeRedirectTarget(url: unknown): string | null {
+  return typeof url === 'string' && isSafeRedirect(url) ? new URL(url).href : null;
+}
+
+/**
+ * Validate that a redirect URL is safe (same origin as our app).
  */
 function isSafeRedirect(url: string): boolean {
   try {
@@ -445,8 +456,9 @@ router.post(
       });
 
       // If RelayState contains a redirect URL, validate and redirect (no tokens in URL)
-      if (RelayState && isSafeRedirect(RelayState)) {
-        res.redirect(302, RelayState);
+      const redirectTarget = RelayState ? safeRedirectTarget(RelayState) : null;
+      if (redirectTarget) {
+        res.redirect(302, redirectTarget);
         return;
       } else if (RelayState) {
         logger.warn(`SSO ACS: Blocked unsafe redirect to ${RelayState}`);

@@ -26,6 +26,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SOURCES_PATH = join(__dirname, 'sources.json');
 const STATE_DIR = join(__dirname, 'state');
 const FETCH_TIMEOUT_MS = 30000;
+const MAX_REDIRECTS = 5;
 const USER_AGENT =
   'ComplyEasyAI-framework-monitor/1.0 (+https://github.com/AaraikAI/ComplyEasyAI; compliance standard change detection)';
 
@@ -110,14 +111,31 @@ async function fetchSource(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(safeUrl, {
-      signal: controller.signal,
-      redirect: 'follow',
-      headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,application/xhtml+xml' },
-    });
-    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
-    const body = await res.text();
-    return { ok: true, body };
+    // Follow redirects by hand so every hop is checked against the allowlist;
+    // automatic following would let an allowlisted page hand the request to
+    // any other host.
+    let currentUrl = safeUrl;
+    for (let hop = 0; ; hop++) {
+      const res = await fetch(currentUrl, {
+        signal: controller.signal,
+        redirect: 'manual',
+        headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,application/xhtml+xml' },
+      });
+      const location = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null;
+      if (location) {
+        await res.body?.cancel();
+        if (hop >= MAX_REDIRECTS) return { ok: false, error: 'too many redirects' };
+        try {
+          currentUrl = assertAllowedUrl(new URL(location, currentUrl).href);
+        } catch (err) {
+          return { ok: false, error: `rejected redirect (${String(err?.message || err)})` };
+        }
+        continue;
+      }
+      if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+      const body = await res.text();
+      return { ok: true, body };
+    }
   } catch (err) {
     return { ok: false, error: err?.name === 'AbortError' ? 'timeout' : String(err?.message || err) };
   } finally {
