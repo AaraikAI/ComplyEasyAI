@@ -11,17 +11,25 @@ describe('sanitizeCustomCss', () => {
     expect(sanitizeCustomCss(css)).toBe(css);
   });
 
-  it('removes every angle bracket so the style element cannot be closed', () => {
+  it('removes every opening angle bracket so the style element cannot be closed', () => {
     const out = sanitizeCustomCss('a{}</style><script>alert(1)</script><scr<x>ipt>');
     expect(out).not.toContain('<');
-    expect(out).not.toContain('>');
+    expect(out).not.toMatch(/<\/?(?:style|script)/i);
+  });
+
+  it('keeps child combinators and selectors whose names end in a scheme word', () => {
+    const css = '.nav > li { color: red } .user-data:hover, .no-javascript:focus { color: blue }';
+    expect(sanitizeCustomCss(css)).toBe(css);
   });
 
   it.each([
     ['url(javascript:alert(1))'],
     ['url( JavaScript :alert(1))'],
+    ['url("javascript:alert(1)")'],
+    ["url(\n'vbscript:msgbox(1)')"],
     ['url(vbscript:msgbox(1))'],
     ['url(data:text/css;base64,QUJD)'],
+    ['background: image-set("data:image/png;base64,QUJD" 1x)'],
     ['width: expression(alert(1))'],
     ['@import url(https://evil.example/x.css);'],
     ['-moz-binding: url(x.xml#xss)'],
