@@ -46,7 +46,14 @@ jest.mock('../../../config/logger', () => ({
   },
 }));
 
+import jwt from 'jsonwebtoken';
+import config from '../../../config';
 import * as twoFactorController from '../../../controllers/twoFactorController';
+
+/** Signs a second-factor-pending token the way login issues it. */
+function pendingToken(userId: string): string {
+  return jwt.sign({ userId, purpose: '2fa_pending' }, config.jwt.secret, { expiresIn: '5m' });
+}
 
 /**
  * Invokes a controller and captures the thrown error. Returns the error so
@@ -231,8 +238,8 @@ describe('TwoFactorController', () => {
   // Verify Token Tests
   // ===========================================================================
   describe('verifyToken()', () => {
-    it('should verify valid token during login', async () => {
-      mockRequest.body = { userId: 'user-123', token: '123456' };
+    it('should verify valid token for the user named by the pending token', async () => {
+      mockRequest.body = { twoFactorToken: pendingToken('user-123'), token: '123456' };
       mockVerifyTwoFactorToken.mockResolvedValue(true as never);
 
       await twoFactorController.verifyToken(
@@ -241,6 +248,7 @@ describe('TwoFactorController', () => {
         mockNext
       );
 
+      expect(mockVerifyTwoFactorToken).toHaveBeenCalledWith('user-123', '123456');
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
@@ -250,7 +258,7 @@ describe('TwoFactorController', () => {
     });
 
     it('should reject invalid token with AppError(401)', async () => {
-      mockRequest.body = { userId: 'user-123', token: '000000' };
+      mockRequest.body = { twoFactorToken: pendingToken('user-123'), token: '000000' };
       mockVerifyTwoFactorToken.mockResolvedValue(false as never);
 
       const err = await captureThrown(() =>
@@ -266,7 +274,7 @@ describe('TwoFactorController', () => {
       expect(err.message).toBe('Invalid authentication code');
     });
 
-    it('should require userId in request body', async () => {
+    it('should require twoFactorToken in request body', async () => {
       mockRequest.body = { token: '123456' };
 
       const err = await captureThrown(() =>
@@ -279,11 +287,12 @@ describe('TwoFactorController', () => {
 
       expect(err).toBeInstanceOf(AppError);
       expect(err.statusCode).toBe(400);
-      expect(err.message).toBe('User ID and token are required');
+      expect(err.message).toBe('Two-factor token and verification code are required');
+      expect(mockVerifyTwoFactorToken).not.toHaveBeenCalled();
     });
 
     it('should require token in request body', async () => {
-      mockRequest.body = { userId: 'user-123' };
+      mockRequest.body = { twoFactorToken: pendingToken('user-123') };
 
       const err = await captureThrown(() =>
         twoFactorController.verifyToken(
@@ -295,7 +304,94 @@ describe('TwoFactorController', () => {
 
       expect(err).toBeInstanceOf(AppError);
       expect(err.statusCode).toBe(400);
-      expect(err.message).toBe('User ID and token are required');
+      expect(err.message).toBe('Two-factor token and verification code are required');
+    });
+
+    // Regression: this route is public and used to verify the code against a
+    // client-supplied body.userId, so any caller could test any account's TOTP.
+    it('should never verify against a client-supplied userId', async () => {
+      mockRequest.body = { userId: 'victim-user', token: '123456' };
+      mockVerifyTwoFactorToken.mockResolvedValue(true as never);
+
+      const err = await captureThrown(() =>
+        twoFactorController.verifyToken(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(mockVerifyTwoFactorToken).not.toHaveBeenCalled();
+    });
+
+    it('should bind verification to the pending-token subject even when a userId is also sent', async () => {
+      mockRequest.body = { twoFactorToken: pendingToken('user-123'), userId: 'victim-user', token: '123456' };
+      mockVerifyTwoFactorToken.mockResolvedValue(true as never);
+
+      await twoFactorController.verifyToken(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(mockVerifyTwoFactorToken).toHaveBeenCalledTimes(1);
+      expect(mockVerifyTwoFactorToken).toHaveBeenCalledWith('user-123', '123456');
+    });
+
+    it('should reject a pending token signed with another secret with AppError(401)', async () => {
+      const forged = jwt.sign({ userId: 'victim-user', purpose: '2fa_pending' }, 'a-different-signing-secret', { expiresIn: '5m' });
+      mockRequest.body = { twoFactorToken: forged, token: '123456' };
+      mockVerifyTwoFactorToken.mockResolvedValue(true as never);
+
+      const err = await captureThrown(() =>
+        twoFactorController.verifyToken(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(401);
+      expect(mockVerifyTwoFactorToken).not.toHaveBeenCalled();
+    });
+
+    it('should reject an expired pending token with AppError(401)', async () => {
+      const expired = jwt.sign({ userId: 'user-123', purpose: '2fa_pending', exp: 1 }, config.jwt.secret);
+      mockRequest.body = { twoFactorToken: expired, token: '123456' };
+
+      const err = await captureThrown(() =>
+        twoFactorController.verifyToken(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(401);
+      expect(mockVerifyTwoFactorToken).not.toHaveBeenCalled();
+    });
+
+    it('should reject a validly signed token issued for another purpose', async () => {
+      // Access tokens share the signing secret; one must not stand in for a
+      // second-factor-pending token.
+      const accessLike = jwt.sign({ userId: 'user-123', email: 'test@example.com' }, config.jwt.secret, { expiresIn: '5m' });
+      mockRequest.body = { twoFactorToken: accessLike, token: '123456' };
+
+      const err = await captureThrown(() =>
+        twoFactorController.verifyToken(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(401);
+      expect(mockVerifyTwoFactorToken).not.toHaveBeenCalled();
     });
   });
 
@@ -303,8 +399,8 @@ describe('TwoFactorController', () => {
   // Verify Backup Code Tests
   // ===========================================================================
   describe('verifyBackupCode()', () => {
-    it('should verify valid backup code', async () => {
-      mockRequest.body = { userId: 'user-123', code: 'BACKUP-CODE-1234' };
+    it('should verify valid backup code for the user named by the pending token', async () => {
+      mockRequest.body = { twoFactorToken: pendingToken('user-123'), code: 'BACKUP-CODE-1234' };
       mockVerifyBackupCode.mockResolvedValue(true as never);
 
       await twoFactorController.verifyBackupCode(
@@ -313,6 +409,7 @@ describe('TwoFactorController', () => {
         mockNext
       );
 
+      expect(mockVerifyBackupCode).toHaveBeenCalledWith('user-123', 'BACKUP-CODE-1234');
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
@@ -322,7 +419,7 @@ describe('TwoFactorController', () => {
     });
 
     it('should reject invalid backup code with AppError(401)', async () => {
-      mockRequest.body = { userId: 'user-123', code: 'INVALID-CODE' };
+      mockRequest.body = { twoFactorToken: pendingToken('user-123'), code: 'INVALID-CODE' };
       mockVerifyBackupCode.mockResolvedValue(false as never);
 
       const err = await captureThrown(() =>
@@ -338,7 +435,7 @@ describe('TwoFactorController', () => {
       expect(err.message).toBe('Invalid backup code');
     });
 
-    it('should require userId and code', async () => {
+    it('should require twoFactorToken and code', async () => {
       mockRequest.body = {};
 
       const err = await captureThrown(() =>
@@ -351,11 +448,11 @@ describe('TwoFactorController', () => {
 
       expect(err).toBeInstanceOf(AppError);
       expect(err.statusCode).toBe(400);
-      expect(err.message).toBe('User ID and backup code are required');
+      expect(err.message).toBe('Two-factor token and backup code are required');
     });
 
-    it('should require code even when userId provided', async () => {
-      mockRequest.body = { userId: 'user-123' };
+    it('should require code even when twoFactorToken provided', async () => {
+      mockRequest.body = { twoFactorToken: pendingToken('user-123') };
 
       const err = await captureThrown(() =>
         twoFactorController.verifyBackupCode(
@@ -367,6 +464,43 @@ describe('TwoFactorController', () => {
 
       expect(err).toBeInstanceOf(AppError);
       expect(err.statusCode).toBe(400);
+    });
+
+    // Regression: a successful check consumes the backup code, so a
+    // client-supplied userId let an unauthenticated caller test and burn
+    // another account's backup codes.
+    it('should never check or consume backup codes for a client-supplied userId', async () => {
+      mockRequest.body = { userId: 'victim-user', code: 'BACKUP-CODE-1234' };
+      mockVerifyBackupCode.mockResolvedValue(true as never);
+
+      const err = await captureThrown(() =>
+        twoFactorController.verifyBackupCode(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(400);
+      expect(mockVerifyBackupCode).not.toHaveBeenCalled();
+    });
+
+    it('should reject a pending token signed with another secret without touching backup codes', async () => {
+      const forged = jwt.sign({ userId: 'victim-user', purpose: '2fa_pending' }, 'a-different-signing-secret', { expiresIn: '5m' });
+      mockRequest.body = { twoFactorToken: forged, code: 'BACKUP-CODE-1234' };
+
+      const err = await captureThrown(() =>
+        twoFactorController.verifyBackupCode(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        ) as Promise<unknown>
+      );
+
+      expect(err).toBeInstanceOf(AppError);
+      expect(err.statusCode).toBe(401);
+      expect(mockVerifyBackupCode).not.toHaveBeenCalled();
     });
   });
 
@@ -711,7 +845,7 @@ describe('TwoFactorController', () => {
     });
 
     it('should use 401 for auth failures, not 400', async () => {
-      mockRequest.body = { userId: 'user-123', token: 'invalid' };
+      mockRequest.body = { twoFactorToken: pendingToken('user-123'), token: 'invalid' };
       mockVerifyTwoFactorToken.mockResolvedValue(false as never);
 
       const err = await captureThrown(() =>
@@ -727,7 +861,7 @@ describe('TwoFactorController', () => {
     });
 
     it('should not reveal if user exists during verification', async () => {
-      mockRequest.body = { userId: 'nonexistent-user', token: '123456' };
+      mockRequest.body = { twoFactorToken: pendingToken('nonexistent-user'), token: '123456' };
       mockVerifyTwoFactorToken.mockResolvedValue(false as never);
 
       const err = await captureThrown(() =>
