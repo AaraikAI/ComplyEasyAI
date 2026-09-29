@@ -373,6 +373,14 @@ function connectsDirectly(proxy: AxiosRequestConfig['proxy']): boolean {
 /** Largest response body safeFetch buffers (after decompression). */
 const SAFE_FETCH_MAX_BODY_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Upper bound on waiting for response headers, and on an idle socket after
+ * them. Matches the built-in fetch defaults (300 s header and body timeouts),
+ * so a peer that never answers cannot hold a safeFetch call open indefinitely
+ * when the caller passes no signal.
+ */
+const SAFE_FETCH_TIMEOUT_MS = 300_000;
+
 /** Statuses that never carry a response body (Fetch "null body status"). */
 const NULL_BODY_STATUSES = new Set([204, 205, 304]);
 
@@ -429,6 +437,7 @@ async function requestWithPublicOnlyLookup(url: string, init: RequestInit | unde
       responseType: 'arraybuffer',
       decompress: true,
       maxContentLength: SAFE_FETCH_MAX_BODY_BYTES,
+      timeout: SAFE_FETCH_TIMEOUT_MS,
       transformRequest: [(requestData: unknown) => requestData],
     });
   } catch (error) {

@@ -136,6 +136,8 @@ describe('urlValidator', () => {
       expect(config.lookup).toBe(publicOnlyLookup);
       expect(config.proxy).toBe(false);
       expect(config.maxRedirects).toBe(0);
+      // Same 300 s header/idle limit as the built-in fetch.
+      expect(config.timeout).toBe(300_000);
     });
 
     it('returns a null body for 204 responses', async () => {
