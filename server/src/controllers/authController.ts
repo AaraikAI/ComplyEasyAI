@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { hashPassword, verifyPassword, needsRehash } from '../utils/fipsPasswordHashing';
-import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
 import { Prisma } from '../generated/prisma/client';
-import config from '../config';
 import { generateToken, generateRefreshToken, verifyRefreshToken } from '../middleware/auth';
+import { signPendingTwoFactorToken, resolvePendingTwoFactorUserId } from '../utils/twoFactorPendingToken';
 import type { VersionedRequest } from '../middleware/apiVersioning';
 import emailService from '../services/emailService';
 import logger from '../config/logger';
@@ -353,12 +352,9 @@ class AuthController {
 
       // Check if 2FA is enabled
       if (user.twoFactorEnabled) {
-        // Issue a short-lived signed JWT encoding the userId for the 2FA step
-        const twoFactorToken = jwt.sign(
-          { userId: user.id, purpose: '2fa_pending' },
-          config.jwt.secret,
-          { expiresIn: '5m' }
-        );
+        // Issue a short-lived signed JWT encoding the userId for the 2FA step.
+        // It uses its own signing key so it cannot be replayed as an access token.
+        const twoFactorToken = signPendingTwoFactorToken(user.id);
         res.json({
           twoFactorRequired: true,
           twoFactorToken,
@@ -632,12 +628,9 @@ class AuthController {
       // fully-enrolled user, so password alone logged them in. Match
       // verifyMagicLink and gate on twoFactorEnabled only.
       if (user.twoFactorEnabled) {
-        // Return a short-lived signed JWT for 2FA verification instead of raw userId
-        const twoFactorToken = jwt.sign(
-          { userId: user.id, purpose: '2fa_pending' },
-          config.jwt.secret,
-          { expiresIn: '5m' }
-        );
+        // Return a short-lived signed JWT for 2FA verification instead of raw userId.
+        // It uses its own signing key so it cannot be replayed as an access token.
+        const twoFactorToken = signPendingTwoFactorToken(user.id);
         res.json({
           requires2FA: true,
           twoFactorToken,
@@ -960,21 +953,9 @@ class AuthController {
         throw new AppError('Two-factor token and verification code are required', 400);
       }
 
-      // Verify the short-lived 2FA pending JWT to extract userId securely
-      let userId: string;
-      try {
-        const decoded = jwt.verify(twoFactorToken, config.jwt.secret, { algorithms: ['HS256'] }) as {
-          userId: string;
-          purpose: string;
-        };
-        if (decoded.purpose !== '2fa_pending') {
-          throw new AppError('Invalid two-factor token', 401);
-        }
-        userId = decoded.userId;
-      } catch (err) {
-        if (err instanceof AppError) throw err;
-        throw new AppError('Two-factor token expired or invalid', 401);
-      }
+      // Verify the short-lived 2FA pending JWT (signature, expiry, purpose) to
+      // extract userId securely; throws AppError(401) when it is not valid.
+      const userId = resolvePendingTwoFactorUserId(twoFactorToken);
 
       // Get user
       const user = await prisma.user.findUnique({

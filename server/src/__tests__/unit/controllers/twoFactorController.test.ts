@@ -49,10 +49,11 @@ jest.mock('../../../config/logger', () => ({
 import jwt from 'jsonwebtoken';
 import config from '../../../config';
 import * as twoFactorController from '../../../controllers/twoFactorController';
+import { signPendingTwoFactorToken } from '../../../utils/twoFactorPendingToken';
 
 /** Signs a second-factor-pending token the way login issues it. */
 function pendingToken(userId: string): string {
-  return jwt.sign({ userId, purpose: '2fa_pending' }, config.jwt.secret, { expiresIn: '5m' });
+  return signPendingTwoFactorToken(userId);
 }
 
 /**
@@ -359,7 +360,10 @@ describe('TwoFactorController', () => {
     });
 
     it('should reject an expired pending token with AppError(401)', async () => {
-      const expired = jwt.sign({ userId: 'user-123', purpose: '2fa_pending', exp: 1 }, config.jwt.secret);
+      // Issue the token ten minutes in the past so its 5-minute lifetime is over.
+      const clock = jest.spyOn(Date, 'now').mockReturnValue(Date.now() - 10 * 60 * 1000);
+      const expired = pendingToken('user-123');
+      clock.mockRestore();
       mockRequest.body = { twoFactorToken: expired, token: '123456' };
 
       const err = await captureThrown(() =>
@@ -375,9 +379,9 @@ describe('TwoFactorController', () => {
       expect(mockVerifyTwoFactorToken).not.toHaveBeenCalled();
     });
 
-    it('should reject a validly signed token issued for another purpose', async () => {
-      // Access tokens share the signing secret; one must not stand in for a
-      // second-factor-pending token.
+    it('should reject an access token presented as the pending token', async () => {
+      // An access token (signed with the access-token secret) must not stand
+      // in for a second-factor-pending token.
       const accessLike = jwt.sign({ userId: 'user-123', email: 'test@example.com' }, config.jwt.secret, { expiresIn: '5m' });
       mockRequest.body = { twoFactorToken: accessLike, token: '123456' };
 

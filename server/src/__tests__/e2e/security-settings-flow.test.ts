@@ -147,14 +147,13 @@ jest.mock('../../services/advanced/complianceAsCodeService', () => ({
 }));
 
 import jwt from 'jsonwebtoken';
-import config from '../../config';
 import securityRoutes from '../../routes/security';
 import twoFactorRoutes from '../../routes/twoFactor';
 import { errorHandler } from '../../middleware/errorHandler';
+import { signPendingTwoFactorToken } from '../../utils/twoFactorPendingToken';
 
 /** Signs a second-factor-pending token the way login issues it. */
-const pendingTwoFactorToken = (userId: string): string =>
-  jwt.sign({ userId, purpose: '2fa_pending' }, config.jwt.secret, { expiresIn: '5m' });
+const pendingTwoFactorToken = (userId: string): string => signPendingTwoFactorToken(userId);
 
 const app = express();
 app.use(express.json());

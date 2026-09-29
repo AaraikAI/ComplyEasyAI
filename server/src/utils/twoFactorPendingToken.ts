@@ -6,12 +6,50 @@
  * account has 2FA enabled. That token is the only server-verifiable evidence
  * that the first factor was satisfied, so every pre-session 2FA endpoint must
  * derive the subject user from it — never from a user id sent by the client.
+ *
+ * The token is signed with its own key, derived from the access-token secret.
+ * The access-token verifiers (middleware/auth.ts, graphql/index.ts,
+ * services/websocketService.ts, services/advanced/webrtcSignalingService.ts)
+ * check only the signature and then load the user named by `userId`. Signed
+ * with the access-token secret itself, a pending token therefore passed those
+ * checks as a Bearer token, so the password alone gave a full session and the
+ * second factor was never asked for. A separate key makes that impossible.
  */
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import config from '../config';
 import { AppError } from '../middleware/errorHandler';
 
 export const TWO_FACTOR_PENDING_PURPOSE = '2fa_pending';
+
+const TWO_FACTOR_PENDING_TTL = '5m';
+const TWO_FACTOR_PENDING_KEY_LABEL = 'complyeasy:2fa_pending:v1';
+
+/**
+ * HMAC-SHA256 of a fixed label under the access-token secret. Deterministic,
+ * so every server instance derives the same key, and never equal to the
+ * access-token secret, so a pending token cannot verify as an access token
+ * (or the reverse).
+ */
+function pendingTokenKey(): Buffer {
+  return crypto
+    .createHmac('sha256', config.jwt.secret)
+    .update(TWO_FACTOR_PENDING_KEY_LABEL)
+    .digest();
+}
+
+/**
+ * Issue a second-factor-pending token for a user who has passed the first
+ * factor. Valid for five minutes and only accepted by
+ * resolvePendingTwoFactorUserId.
+ */
+export function signPendingTwoFactorToken(userId: string): string {
+  return jwt.sign(
+    { userId, purpose: TWO_FACTOR_PENDING_PURPOSE },
+    pendingTokenKey(),
+    { algorithm: 'HS256', expiresIn: TWO_FACTOR_PENDING_TTL }
+  );
+}
 
 /**
  * Verify a second-factor-pending token and return the user id it was issued
@@ -25,7 +63,7 @@ export function resolvePendingTwoFactorUserId(twoFactorToken: unknown): string {
 
   let decoded: string | jwt.JwtPayload;
   try {
-    decoded = jwt.verify(twoFactorToken, config.jwt.secret, { algorithms: ['HS256'] });
+    decoded = jwt.verify(twoFactorToken, pendingTokenKey(), { algorithms: ['HS256'] });
   } catch (error) {
     const wrapped = new AppError('Two-factor token expired or invalid', 401);
     (wrapped as AppError & { cause?: unknown }).cause = error;
