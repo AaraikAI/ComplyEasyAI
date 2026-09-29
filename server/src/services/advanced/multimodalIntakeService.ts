@@ -21,6 +21,12 @@ import { promisify } from 'util';
 import deepfakeDetectionService, { DeepfakeAnalysisResult } from './deepfakeDetectionService';
 import livenessDetectionService, { LivenessResult, LivenessChallenge } from './livenessDetectionService';
 import { safeAxios } from '../../utils/urlValidator';
+import {
+  createPrivateTempDir,
+  removePrivateTempDir,
+  safeMediaExtension,
+  PRIVATE_TEMP_FILE_OPTIONS,
+} from '../../utils/privateTempDir';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -662,28 +668,20 @@ class MultimodalIntakeService {
     videoBuffer: Buffer,
     format: string
   ): Promise<Buffer | null> {
+    let tempDir: string | null = null;
     try {
       logger.info(`[Multimodal] Extracting audio from ${format} video using FFmpeg`);
       
-      const tempVideoPath = path.join(
-        __dirname,
-        '../../../temp',
-        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
-      );
-      const tempAudioPath = path.join(
-        __dirname,
-        '../../../temp',
-        `audio_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.wav`
-      );
+      // Private per-call directory (0700, unpredictable name): the extracted
+      // audio cannot collide with, or be read by, another request.
+      tempDir = await createPrivateTempDir('multimodal-audio');
+      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      const tempAudioPath = path.join(tempDir, 'audio.wav');
 
-      const tempDir = path.dirname(tempVideoPath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
+      await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
-      await writeFile(tempVideoPath, videoBuffer);
-
-      return new Promise((resolve, reject) => {
+      // Awaited so the finally-block cleanup runs only after FFmpeg finishes.
+      return await new Promise<Buffer | null>((resolve) => {
         ffmpeg(tempVideoPath)
           .outputOptions(['-vn', '-acodec', 'pcm_s16le', '-ar', '16000', '-ac', '1'])
           .output(tempAudioPath)
@@ -709,6 +707,8 @@ class MultimodalIntakeService {
     } catch (error) {
       logger.warn('[Multimodal] Error extracting audio track, will use video directly', error);
       return null;
+    } finally {
+      await removePrivateTempDir(tempDir);
     }
   }
 
@@ -720,18 +720,13 @@ class MultimodalIntakeService {
     format: string,
     duration: number
   ): Promise<VideoAnalysisResult['keyFrames']> {
+    let tempDir: string | null = null;
     try {
-      const tempVideoPath = path.join(
-        __dirname,
-        '../../../temp',
-        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
-      );
-      const tempDir = path.dirname(tempVideoPath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      await writeFile(tempVideoPath, videoBuffer);
+      // Private per-call directory (0700, unpredictable name): frames extracted
+      // below cannot collide with, or be read by, another request.
+      tempDir = await createPrivateTempDir('multimodal-keyframes');
+      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       const keyFrames: VideoAnalysisResult['keyFrames'] = [];
       const frameInterval = Math.max(10, duration / 20); // ~20 key frames
@@ -798,6 +793,8 @@ class MultimodalIntakeService {
         });
       }
       return keyFrames;
+    } finally {
+      await removePrivateTempDir(tempDir);
     }
   }
 
@@ -809,23 +806,18 @@ class MultimodalIntakeService {
     format: string,
     duration: number
   ): Promise<VideoAnalysisResult['objectDetections']> {
+    let tempDir: string | null = null;
     try {
       // Use TensorFlow.js COCO-SSD for object detection
       // Since TensorFlow.js-node failed to install, use API-based approach or lighter model
       const detections: VideoAnalysisResult['objectDetections'] = [];
       
       // Extract frames at intervals for object detection
-      const tempVideoPath = path.join(
-        __dirname,
-        '../../../temp',
-        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
-      );
-      const tempDir = path.dirname(tempVideoPath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      await writeFile(tempVideoPath, videoBuffer);
+      // Private per-call directory (0700, unpredictable name): frames extracted
+      // below cannot collide with, or be read by, another request.
+      tempDir = await createPrivateTempDir('multimodal-objects');
+      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // Sample frames every 5 seconds
       for (let t = 0; t < duration; t += 5) {
@@ -946,6 +938,8 @@ class MultimodalIntakeService {
       logger.error('[Multimodal] Error in object detection', error);
       // Production: return empty array instead of simulated data
       return [];
+    } finally {
+      await removePrivateTempDir(tempDir);
     }
   }
 
@@ -957,21 +951,16 @@ class MultimodalIntakeService {
     format: string,
     duration: number
   ): Promise<VideoAnalysisResult['faceDetections']> {
+    let tempDir: string | null = null;
     try {
       await this.initializeFaceDetector();
       const faces: VideoAnalysisResult['faceDetections'] = [];
       
-      const tempVideoPath = path.join(
-        __dirname,
-        '../../../temp',
-        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
-      );
-      const tempDir = path.dirname(tempVideoPath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      await writeFile(tempVideoPath, videoBuffer);
+      // Private per-call directory (0700, unpredictable name): frames extracted
+      // below cannot collide with, or be read by, another request.
+      tempDir = await createPrivateTempDir('multimodal-faces');
+      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // Sample frames every 10 seconds for face detection
       for (let t = 0; t < duration; t += 10) {
@@ -1064,6 +1053,8 @@ class MultimodalIntakeService {
       logger.error('[Multimodal] Error in face detection', error);
       // Production: return empty array instead of simulated data
       return [];
+    } finally {
+      await removePrivateTempDir(tempDir);
     }
   }
 
@@ -1075,19 +1066,14 @@ class MultimodalIntakeService {
     format: string,
     duration: number
   ): Promise<VideoAnalysisResult['sceneDetections']> {
+    let tempDir: string | null = null;
     try {
       const scenes: VideoAnalysisResult['sceneDetections'] = [];
-      const tempVideoPath = path.join(
-        __dirname,
-        '../../../temp',
-        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
-      );
-      const tempDir = path.dirname(tempVideoPath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      await writeFile(tempVideoPath, videoBuffer);
+      // Private per-call directory (0700, unpredictable name): frames extracted
+      // below cannot collide with, or be read by, another request.
+      tempDir = await createPrivateTempDir('multimodal-scenes');
+      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // ML-based scene categories
       const sceneCategories = [
@@ -1158,6 +1144,8 @@ class MultimodalIntakeService {
     } catch (error) {
       logger.error('[Multimodal] Error in scene classification', error);
       return [];
+    } finally {
+      await removePrivateTempDir(tempDir);
     }
   }
 
@@ -1378,20 +1366,15 @@ class MultimodalIntakeService {
     format: string,
     duration: number
   ): Promise<VideoAnalysisResult['ocrText']> {
+    let tempDir: string | null = null;
     try {
       const ocrResults: VideoAnalysisResult['ocrText'] = [];
       
-      const tempVideoPath = path.join(
-        __dirname,
-        '../../../temp',
-        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
-      );
-      const tempDir = path.dirname(tempVideoPath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      await writeFile(tempVideoPath, videoBuffer);
+      // Private per-call directory (0700, unpredictable name): frames extracted
+      // below cannot collide with, or be read by, another request.
+      tempDir = await createPrivateTempDir('multimodal-ocr');
+      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // FRAME-BY-FRAME OCR for long videos (enhanced)
       // For videos > 1 hour, process every frame; otherwise sample every 5 seconds
@@ -1471,6 +1454,8 @@ class MultimodalIntakeService {
       logger.error('[Multimodal] Error in video OCR', error);
       // Production: return empty array instead of simulated data
       return [];
+    } finally {
+      await removePrivateTempDir(tempDir);
     }
   }
 

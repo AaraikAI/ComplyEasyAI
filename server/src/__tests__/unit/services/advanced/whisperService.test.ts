@@ -33,6 +33,7 @@ jest.mock('../../../../config/logger', () => ({
 
 // Mock OpenAI
 const mockCreate = jest.fn() as jest.Mock<any>;
+const mockToFile = jest.fn() as jest.Mock<any>;
 jest.mock('openai', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({
@@ -42,6 +43,16 @@ jest.mock('openai', () => ({
       },
     },
   })),
+  toFile: (...args: unknown[]) => mockToFile(...args),
+}));
+
+// Private temp directory helpers used by transcribeVideo.
+const mockCreatePrivateTempDir = jest.fn() as jest.Mock<any>;
+const mockRemovePrivateTempDir = jest.fn() as jest.Mock<any>;
+jest.mock('../../../../utils/privateTempDir', () => ({
+  createPrivateTempDir: (...args: unknown[]) => mockCreatePrivateTempDir(...args),
+  removePrivateTempDir: (...args: unknown[]) => mockRemovePrivateTempDir(...args),
+  PRIVATE_TEMP_FILE_OPTIONS: { mode: 0o600, flag: 'wx' },
 }));
 
 // Mock fs operations
@@ -230,6 +241,57 @@ describe('WhisperService', () => {
       );
 
       expect(result.language).toBe('de');
+    });
+  });
+
+  // =========================================================================
+  // Whisper API path: uploaded media handling
+  // =========================================================================
+  describe('uploaded media handling (API path)', () => {
+    const fs = require('fs');
+
+    beforeEach(() => {
+      process.env.OPENAI_API_KEY = 'test-api-key';
+      process.env.NODE_ENV = 'test';
+      (whisperService as any).isInitialized = true;
+      (whisperService as any).openai = { audio: { transcriptions: { create: mockCreate } } };
+      mockToFile.mockImplementation(async (_data: unknown, name: string) => ({ name }));
+      mockCreate.mockResolvedValue({ text: 'hello world', language: 'en', duration: 3, segments: [] });
+      (whisperPrismaMock.transcriptionResult.create as jest.Mock).mockResolvedValue({ id: 't-1' } as any);
+      mockCreatePrivateTempDir.mockResolvedValue('/tmp/complyeasy-whisper-video-abc123');
+      mockRemovePrivateTempDir.mockResolvedValue(undefined);
+    });
+
+    it('uploads audio from memory without touching the filesystem', async () => {
+      const audioBuffer = Buffer.from('fake-audio-data');
+
+      const result = await whisperService.transcribeAudio(audioBuffer, {}, orgId);
+
+      expect(result.text).toBe('hello world');
+      expect(mockToFile).toHaveBeenCalledWith(audioBuffer, 'audio.mp3');
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ file: { name: 'audio.mp3' } }));
+      expect(fs.createReadStream).not.toHaveBeenCalled();
+      expect(fs.mkdirSync).not.toHaveBeenCalled();
+    });
+
+    it('detects language from an in-memory sample', async () => {
+      const result = await whisperService.detectLanguage(Buffer.from('fake-audio-data'), orgId);
+
+      expect(result.language).toBe('en');
+      expect(mockToFile).toHaveBeenCalledWith(expect.any(Buffer), 'lang_detect.mp3');
+      expect(fs.createReadStream).not.toHaveBeenCalled();
+    });
+
+    it('stages video in a private temp dir and removes it even when extraction fails', async () => {
+      // No extracted audio file appears, so FFmpeg extraction fails.
+      fs.existsSync.mockReturnValue(false);
+
+      const result = await whisperService.transcribeVideo(Buffer.from('fake-video-data'), {}, orgId);
+
+      expect(result.text).toContain('Transcription service not available');
+      expect(mockCreatePrivateTempDir).toHaveBeenCalledWith('whisper-video');
+      expect(mockRemovePrivateTempDir).toHaveBeenCalledWith('/tmp/complyeasy-whisper-video-abc123');
+      expect(fs.mkdirSync).not.toHaveBeenCalled();
     });
   });
 

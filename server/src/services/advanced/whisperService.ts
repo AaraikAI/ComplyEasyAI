@@ -8,7 +8,7 @@
  * - Multi-language support
  */
 
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import type { Uploadable } from 'openai/uploads';
 import type { TranscriptionVerbose, TranscriptionSegment } from 'openai/resources/audio/transcriptions';
 import logger from '../../config/logger';
@@ -20,9 +20,13 @@ import path from 'path';
 import { promisify } from 'util';
 import { execFile } from 'child_process';
 import { safeAxios } from '../../utils/urlValidator';
+import {
+  createPrivateTempDir,
+  removePrivateTempDir,
+  PRIVATE_TEMP_FILE_OPTIONS,
+} from '../../utils/privateTempDir';
 
 const writeFile = promisify(fs.writeFile);
-const unlink = promisify(fs.unlink);
 const execFileAsync = promisify(execFile);
 
 export interface TranscriptionOptions {
@@ -103,87 +107,64 @@ class WhisperService {
         return this.fallbackTranscription(audioBuffer, options);
       }
 
-      // Save buffer to temporary file
-      const tempFilePath = path.join(
-        __dirname,
-        '../../../temp',
-        `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp3`
-      );
+      // Upload straight from memory: the uploaded bytes never touch the disk.
+      const audioFile = await toFile(audioBuffer, 'audio.mp3');
 
-      // Ensure temp directory exists
-      const tempDir = path.dirname(tempFilePath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
+      // Create transcription using Whisper API
+      const transcription = await this.openai.audio.transcriptions.create({
+        file: audioFile,
+        model: 'whisper-1',
+        language: options.language,
+        prompt: options.prompt,
+        response_format: options.responseFormat || 'verbose_json',
+        temperature: options.temperature || 0,
+      });
+
+      // Parse result
+      let result: TranscriptionResult;
+
+      if (typeof transcription === 'string') {
+        result = {
+          text: transcription,
+          language: options.language || 'en',
+        };
+      } else {
+        result = {
+          text: transcription.text,
+          language: (transcription as TranscriptionVerbose).language || options.language || 'en',
+          duration: (transcription as TranscriptionVerbose).duration,
+          segments: (transcription as TranscriptionVerbose).segments?.map((seg: TranscriptionSegment) => ({
+            id: seg.id,
+            seek: seg.seek,
+            start: seg.start,
+            end: seg.end,
+            text: seg.text,
+            tokens: seg.tokens,
+            temperature: seg.temperature,
+            avgLogprob: seg.avg_logprob,
+            compressionRatio: seg.compression_ratio,
+            noSpeechProb: seg.no_speech_prob,
+          })),
+        };
       }
 
-      await writeFile(tempFilePath, audioBuffer);
+      // Store transcription in database
+      await prisma.transcriptionResult.create({
+        data: {
+          organizationId,
+          evidenceId,
+          text: result.text,
+          confidence: 0.9, // Whisper API provides high confidence
+          language: result.language,
+          duration: result.duration,
+          segments: result.segments as unknown as Prisma.InputJsonValue,
+          sourceType: 'audio',
+        },
+      });
 
-      try {
-        // Create transcription using Whisper API
-        const transcription = await this.openai.audio.transcriptions.create({
-          file: fs.createReadStream(tempFilePath) as unknown as Uploadable,
-          model: 'whisper-1',
-          language: options.language,
-          prompt: options.prompt,
-          response_format: options.responseFormat || 'verbose_json',
-          temperature: options.temperature || 0,
-        });
+      logger.info('[Whisper] Transcription completed', { charCount: result.text.length, durationSec: result.duration, language: result.language });
 
-        // Clean up temp file
-        await unlink(tempFilePath);
-
-        // Parse result
-        let result: TranscriptionResult;
-
-        if (typeof transcription === 'string') {
-          result = {
-            text: transcription,
-            language: options.language || 'en',
-          };
-        } else {
-          result = {
-            text: transcription.text,
-            language: (transcription as TranscriptionVerbose).language || options.language || 'en',
-            duration: (transcription as TranscriptionVerbose).duration,
-            segments: (transcription as TranscriptionVerbose).segments?.map((seg: TranscriptionSegment) => ({
-              id: seg.id,
-              seek: seg.seek,
-              start: seg.start,
-              end: seg.end,
-              text: seg.text,
-              tokens: seg.tokens,
-              temperature: seg.temperature,
-              avgLogprob: seg.avg_logprob,
-              compressionRatio: seg.compression_ratio,
-              noSpeechProb: seg.no_speech_prob,
-            })),
-          };
-        }
-
-        // Store transcription in database
-        await prisma.transcriptionResult.create({
-          data: {
-            organizationId,
-            evidenceId,
-            text: result.text,
-            confidence: 0.9, // Whisper API provides high confidence
-            language: result.language,
-            duration: result.duration,
-            segments: result.segments as unknown as Prisma.InputJsonValue,
-            sourceType: 'audio',
-          },
-        });
-
-        logger.info('[Whisper] Transcription completed', { charCount: result.text.length, durationSec: result.duration, language: result.language });
-
-        return result;
-      } catch (error) {
-        // Clean up temp file on error
-        if (fs.existsSync(tempFilePath)) {
-          await unlink(tempFilePath).catch(() => {});
-        }
-        throw error;
-      }
+      return result;
     } catch (error: any) {
       logger.error('[Whisper] Error transcribing audio', error);
       // In production, throw error instead of fallback
@@ -241,10 +222,7 @@ class WhisperService {
   ): Promise<TranscriptionResult> {
     await this.initialize();
 
-    const tempId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const tempDir = path.join(__dirname, '../../../temp');
-    const videoPath = path.join(tempDir, `video_${tempId}.mp4`);
-    let audioPath: string | null = null;
+    let tempDir: string | null = null;
 
     try {
       if (!this.openai || !process.env.OPENAI_API_KEY) {
@@ -254,15 +232,14 @@ class WhisperService {
         return this.fallbackTranscription(videoBuffer, options);
       }
 
-      // Ensure temp directory exists
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      await writeFile(videoPath, videoBuffer);
+      // FFmpeg needs the video on disk: write it into a private per-call
+      // directory (0700, unpredictable name) as an owner-only file.
+      tempDir = await createPrivateTempDir('whisper-video');
+      const videoPath = path.join(tempDir, 'input.mp4');
+      await writeFile(videoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // Extract audio from video using FFmpeg
-      audioPath = await this.extractAudioFromVideo(videoPath);
+      const audioPath = await this.extractAudioFromVideo(videoPath);
 
       // Transcribe the extracted audio using Whisper API
       const transcription = await this.openai.audio.transcriptions.create({
@@ -324,9 +301,8 @@ class WhisperService {
       }
       return this.fallbackTranscription(videoBuffer, options);
     } finally {
-      // Clean up temp files
-      if (fs.existsSync(videoPath)) await unlink(videoPath).catch(() => {});
-      if (audioPath && fs.existsSync(audioPath)) await unlink(audioPath).catch(() => {});
+      // Removes the uploaded video and the extracted audio together.
+      await removePrivateTempDir(tempDir);
     }
   }
 
@@ -435,43 +411,25 @@ class WhisperService {
         return { language: 'en', confidence: 0.5 };
       }
 
-      // Save buffer to temporary file
-      const tempFilePath = path.join(
-        __dirname,
-        '../../../temp',
-        `lang_detect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp3`
-      );
-
-      const tempDir = path.dirname(tempFilePath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      // Use only first 30 seconds for language detection (saves API cost)
+      // Use only first 30 seconds for language detection (saves API cost).
+      // Uploaded from memory; nothing is written to disk.
       const sampleBuffer = audioBuffer.length > 480000 ? audioBuffer.slice(0, 480000) : audioBuffer;
-      await writeFile(tempFilePath, sampleBuffer);
+      const sampleFile = await toFile(sampleBuffer, 'lang_detect.mp3');
 
-      try {
-        const transcription = await this.openai.audio.transcriptions.create({
-          file: fs.createReadStream(tempFilePath) as unknown as Uploadable,
-          model: 'whisper-1',
-          response_format: 'verbose_json',
-          temperature: 0,
-        });
+      const transcription = await this.openai.audio.transcriptions.create({
+        file: sampleFile,
+        model: 'whisper-1',
+        response_format: 'verbose_json',
+        temperature: 0,
+      });
 
-        await unlink(tempFilePath);
+      const detectedLanguage = (transcription as TranscriptionVerbose).language || 'en';
+      // Whisper provides high confidence language detection
+      const confidence = 0.95;
 
-        const detectedLanguage = (transcription as TranscriptionVerbose).language || 'en';
-        // Whisper provides high confidence language detection
-        const confidence = 0.95;
+      logger.info(`[Whisper] Language detected: ${detectedLanguage} (confidence: ${confidence})`);
 
-        logger.info(`[Whisper] Language detected: ${detectedLanguage} (confidence: ${confidence})`);
-
-        return { language: detectedLanguage, confidence };
-      } catch (error) {
-        await unlink(tempFilePath).catch(() => {});
-        throw error;
-      }
+      return { language: detectedLanguage, confidence };
     } catch (error: any) {
       logger.error('[Whisper] Error detecting language', error);
       return { language: 'en', confidence: 0.3 };

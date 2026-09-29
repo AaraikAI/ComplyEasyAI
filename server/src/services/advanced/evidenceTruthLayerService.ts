@@ -21,6 +21,11 @@ import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
+import {
+  createPrivateTempDir,
+  removePrivateTempDir,
+  PRIVATE_TEMP_FILE_OPTIONS,
+} from '../../utils/privateTempDir';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -378,6 +383,7 @@ class EvidenceTruthLayerService {
     fileBuffer: Buffer,
     anomalyScore: number
   ): Promise<Array<{ start: number; end: number; score: number }>> {
+    let tempDir: string | null = null;
     try {
       const segments: Array<{ start: number; end: number; score: number }> = [];
       
@@ -386,17 +392,11 @@ class EvidenceTruthLayerService {
         return [];
       }
 
-      const tempVideoPath = path.join(
-        __dirname,
-        '../../../temp',
-        `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`
-      );
-      const tempDir = path.dirname(tempVideoPath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      await writeFile(tempVideoPath, fileBuffer);
+      // Private per-call directory (0700, unpredictable name): sampled frames
+      // cannot collide with, or be replaced by, another request's frames.
+      tempDir = await createPrivateTempDir('evidence-video');
+      const tempVideoPath = path.join(tempDir, 'input.mp4');
+      await writeFile(tempVideoPath, fileBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // Get video duration
       const duration = await new Promise<number>((resolve, reject) => {
@@ -482,6 +482,8 @@ class EvidenceTruthLayerService {
         return [{ start: 0, end: 10, score: anomalyScore }];
       }
       return [];
+    } finally {
+      await removePrivateTempDir(tempDir);
     }
   }
 
