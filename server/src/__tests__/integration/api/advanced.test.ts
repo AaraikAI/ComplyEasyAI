@@ -3,9 +3,8 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import request from 'supertest';
 import express from 'express';
-import { prismaMock, createMockUser, createMockOrganization } from '../../mocks/prisma';
+import { prismaMock } from '../../mocks/prisma';
 
 // Mock dependencies
 jest.mock('../../../config/database', () => ({
@@ -81,8 +80,6 @@ jest.mock('../../../services/advanced/complianceAsCodeService', () => ({
 }));
 
 // Create test app with auth middleware
-import { errorHandler } from '../../../middleware/errorHandler';
-
 const app = express();
 app.use(express.json());
 

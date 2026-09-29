@@ -3,9 +3,7 @@
  * Tests system behavior under extreme load conditions
  */
 
-import { jest, describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import request from 'supertest';
-import app from '../../index';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { LoadTester } from './load-test';
 
 interface StressTestResult {

@@ -134,7 +134,6 @@ jest.mock('isomorphic-dompurify', () => ({
 import jwt from 'jsonwebtoken';
 import authController from '../../../controllers/authController';
 import { AppError } from '../../../middleware/errorHandler';
-import bcrypt from 'bcryptjs';
 
 // Helper to create a valid 2FA pending JWT for tests
 const create2FAToken = (userId: string) =>

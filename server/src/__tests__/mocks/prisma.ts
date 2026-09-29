@@ -1741,15 +1741,6 @@ export const prismaMock = {
     delete: createMockFn(),
     count: createMockFn(),
   },
-  retentionEnforcement: {
-    findUnique: createMockFn(),
-    findFirst: createMockFn(),
-    findMany: createMockFn(),
-    create: createMockFn(),
-    update: createMockFn(),
-    delete: createMockFn(),
-    count: createMockFn(),
-  },
   processingRestriction: {
     findUnique: createMockFn(),
     findFirst: createMockFn(),

@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 /**
  * We capture the configuration objects passed to `rateLimit()` so we can
- * directly exercise the `skip` callback and verify the options.
+ * verify the options.
  */
 const rateLimitConfigs: Record<string, any> = {};
 let rateLimitCallIndex = 0;
@@ -68,18 +68,6 @@ jest.mock('../../../utils/securityEventLogger', () => ({
 // ---------------------------------------------------------------------------
 
 import { apiLimiter, frameworkLimiter, authLimiter, aiLimiter } from '../../../middleware/rateLimiter';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function buildSkipReq(overrides: Record<string, any> = {}): any {
-  return {
-    path: '/',
-    method: 'GET',
-    ...overrides,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Tests

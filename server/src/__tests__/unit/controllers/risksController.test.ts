@@ -34,7 +34,6 @@ jest.mock('../../../services/geminiService', () => ({
 }));
 
 import risksController from '../../../controllers/risksController';
-import { AppError } from '../../../middleware/errorHandler';
 
 // Mock data factories
 const createMockRisk = (overrides: Record<string, unknown> = {}) => ({

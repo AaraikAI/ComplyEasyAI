@@ -4,8 +4,6 @@
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
-import * as fs from 'fs';
-import * as path from 'path';
 
 // Mock snarkjs
 jest.mock('snarkjs', () => ({

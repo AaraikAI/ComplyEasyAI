@@ -7,7 +7,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 jest.mock('../../../config/logger', () => ({
@@ -45,10 +45,19 @@ async function captureThrown(fn: () => Promise<unknown>): Promise<AppError> {
   throw new Error('Expected controller to throw, but it resolved.');
 }
 
+/**
+ * The feature-module handlers are typed as RequestHandler but only take
+ * (req, res): failures surface as rejected promises, which Express 5 forwards
+ * to the error middleware. Invoke them the same way, without a `next`.
+ */
+type ReqResHandler = (req: Request, res: Response) => Promise<unknown>;
+function invoke(handler: RequestHandler, req: Partial<Request>, res: Partial<Response>): Promise<unknown> {
+  return (handler as unknown as ReqResHandler)(req as Request, res as Response);
+}
+
 describe('FeatureModulesController Contract Tests', () => {
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
-  let mockNext: NextFunction;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -69,8 +78,6 @@ describe('FeatureModulesController Contract Tests', () => {
       json: jest.fn().mockReturnThis() as any,
       status: jest.fn().mockReturnThis() as any,
     };
-
-    mockNext = jest.fn() as unknown as NextFunction;
   });
 
   // ===========================================================================
@@ -83,7 +90,7 @@ describe('FeatureModulesController Contract Tests', () => {
       ];
       (prismaMock.governanceBody.findMany as jest.Mock<any>).mockResolvedValue(bodies as never);
 
-      await listGovernanceBodies(mockReq as Request, mockRes as Response, mockNext);
+      await invoke(listGovernanceBodies, mockReq, mockRes);
 
       expect(prismaMock.governanceBody.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -107,7 +114,7 @@ describe('FeatureModulesController Contract Tests', () => {
       const created = { id: 'gb-new', name: 'Audit Committee', type: 'Committee', organizationId: 'org-123' };
       (prismaMock.governanceBody.create as jest.Mock<any>).mockResolvedValue(created as never);
 
-      await createGovernanceBody(mockReq as Request, mockRes as Response, mockNext);
+      await invoke(createGovernanceBody, mockReq, mockRes);
 
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(prismaMock.governanceBody.create).toHaveBeenCalledWith(
@@ -125,7 +132,7 @@ describe('FeatureModulesController Contract Tests', () => {
       mockReq.body = { type: 'Committee' };
 
       const err = await captureThrown(() =>
-        createGovernanceBody(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(createGovernanceBody, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -137,7 +144,7 @@ describe('FeatureModulesController Contract Tests', () => {
       mockReq.body = { name: 'Audit Committee' };
 
       const err = await captureThrown(() =>
-        createGovernanceBody(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(createGovernanceBody, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -155,7 +162,7 @@ describe('FeatureModulesController Contract Tests', () => {
       const updated = { id: 'gb-1', name: 'Updated Committee' };
       (prismaMock.governanceBody.update as jest.Mock<any>).mockResolvedValue(updated as never);
 
-      await updateGovernanceBody(mockReq as Request, mockRes as Response, mockNext);
+      await invoke(updateGovernanceBody, mockReq, mockRes);
 
       // The mutation must be preceded by an organization-scoped ownership lookup.
       expect(prismaMock.governanceBody.findFirst).toHaveBeenCalledWith(
@@ -185,7 +192,7 @@ describe('FeatureModulesController Contract Tests', () => {
       (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
 
       const err = await captureThrown(() =>
-        updateGovernanceBody(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(updateGovernanceBody, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -201,7 +208,7 @@ describe('FeatureModulesController Contract Tests', () => {
       (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue({ id: 'gb-1' } as never);
       (prismaMock.governanceBody.delete as jest.Mock<any>).mockResolvedValue({} as never);
 
-      await deleteGovernanceBody(mockReq as Request, mockRes as Response, mockNext);
+      await invoke(deleteGovernanceBody, mockReq, mockRes);
 
       expect(prismaMock.governanceBody.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -220,7 +227,7 @@ describe('FeatureModulesController Contract Tests', () => {
       (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
 
       const err = await captureThrown(() =>
-        deleteGovernanceBody(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(deleteGovernanceBody, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -245,7 +252,7 @@ describe('FeatureModulesController Contract Tests', () => {
       const created = { id: 'mtg-1', title: 'Q1 Review' };
       (prismaMock.governanceMeeting.create as jest.Mock<any>).mockResolvedValue(created as never);
 
-      await createMeeting(mockReq as Request, mockRes as Response, mockNext);
+      await invoke(createMeeting, mockReq, mockRes);
 
       expect(prismaMock.governanceBody.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -274,7 +281,7 @@ describe('FeatureModulesController Contract Tests', () => {
       (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
 
       const err = await captureThrown(() =>
-        createMeeting(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(createMeeting, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -286,7 +293,7 @@ describe('FeatureModulesController Contract Tests', () => {
       mockReq.body = { title: 'Q1 Review' }; // missing governanceBodyId and date
 
       const err = await captureThrown(() =>
-        createMeeting(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(createMeeting, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -305,7 +312,7 @@ describe('FeatureModulesController Contract Tests', () => {
       const updated = { id: 'mtg-1', title: 'Updated Meeting' };
       (prismaMock.governanceMeeting.update as jest.Mock<any>).mockResolvedValue(updated as never);
 
-      await updateMeeting(mockReq as Request, mockRes as Response, mockNext);
+      await invoke(updateMeeting, mockReq, mockRes);
 
       expect(prismaMock.governanceMeeting.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -322,7 +329,7 @@ describe('FeatureModulesController Contract Tests', () => {
       (prismaMock.governanceMeeting.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
 
       const err = await captureThrown(() =>
-        updateMeeting(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(updateMeeting, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -338,7 +345,7 @@ describe('FeatureModulesController Contract Tests', () => {
       (prismaMock.governanceMeeting.findFirst as jest.Mock<any>).mockResolvedValue({ id: 'mtg-1' } as never);
       (prismaMock.governanceMeeting.delete as jest.Mock<any>).mockResolvedValue({} as never);
 
-      await deleteMeeting(mockReq as Request, mockRes as Response, mockNext);
+      await invoke(deleteMeeting, mockReq, mockRes);
 
       expect(prismaMock.governanceMeeting.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -354,7 +361,7 @@ describe('FeatureModulesController Contract Tests', () => {
       (prismaMock.governanceMeeting.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
 
       const err = await captureThrown(() =>
-        deleteMeeting(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(deleteMeeting, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -378,7 +385,7 @@ describe('FeatureModulesController Contract Tests', () => {
       const created = { id: 'dec-1', title: 'Approve Policy' };
       (prismaMock.governanceDecision.create as jest.Mock<any>).mockResolvedValue(created as never);
 
-      await createDecision(mockReq as Request, mockRes as Response, mockNext);
+      await invoke(createDecision, mockReq, mockRes);
 
       expect(prismaMock.governanceBody.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -398,7 +405,7 @@ describe('FeatureModulesController Contract Tests', () => {
       (prismaMock.governanceBody.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
 
       const err = await captureThrown(() =>
-        createDecision(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(createDecision, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -410,7 +417,7 @@ describe('FeatureModulesController Contract Tests', () => {
       mockReq.body = { title: 'Approve Policy' }; // missing governanceBodyId and decisionType
 
       const err = await captureThrown(() =>
-        createDecision(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(createDecision, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);
@@ -428,7 +435,7 @@ describe('FeatureModulesController Contract Tests', () => {
       const updated = { id: 'dec-1', status: 'approved' };
       (prismaMock.governanceDecision.update as jest.Mock<any>).mockResolvedValue(updated as never);
 
-      await updateDecision(mockReq as Request, mockRes as Response, mockNext);
+      await invoke(updateDecision, mockReq, mockRes);
 
       expect(prismaMock.governanceDecision.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -445,7 +452,7 @@ describe('FeatureModulesController Contract Tests', () => {
       (prismaMock.governanceDecision.findFirst as jest.Mock<any>).mockResolvedValue(null as never);
 
       const err = await captureThrown(() =>
-        updateDecision(mockReq as Request, mockRes as Response, mockNext) as Promise<unknown>
+        invoke(updateDecision, mockReq, mockRes)
       );
 
       expect(err).toBeInstanceOf(AppError);

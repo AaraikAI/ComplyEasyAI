@@ -94,16 +94,25 @@ describe('Elasticsearch Config', () => {
       process.env.ELASTICSEARCH_ENABLED = 'true';
       process.env.ELASTICSEARCH_URL = 'http://localhost:9200';
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      // Simulate @elastic/elasticsearch not being installed: requiring it throws.
+      jest.doMock('@elastic/elasticsearch', () => {
+        throw new Error("Cannot find module '@elastic/elasticsearch'");
+      });
+      const stderrSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
-      const { createElasticsearchTransport } = await import('../../../config/elasticsearch');
-      const transport = createElasticsearchTransport();
+      try {
+        const { createElasticsearchTransport } = await import('../../../config/elasticsearch');
+        const transport = createElasticsearchTransport();
 
-      // When @elastic/elasticsearch is not installed, it should catch the error
-      // and return null
-      expect(transport === null || transport !== null).toBe(true);
-
-      consoleSpy.mockRestore();
+        // The require failure is caught: no transport, and the reason is reported
+        expect(transport).toBeNull();
+        expect(stderrSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to create transport'),
+        );
+      } finally {
+        stderrSpy.mockRestore();
+        jest.dontMock('@elastic/elasticsearch');
+      }
     });
   });
 

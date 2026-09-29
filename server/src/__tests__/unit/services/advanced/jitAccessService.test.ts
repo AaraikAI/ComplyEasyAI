@@ -2,7 +2,7 @@
  * JIT Access Service Unit Tests
  */
 
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
 jest.mock('../../../../config/logger', () => ({
