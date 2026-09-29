@@ -54,7 +54,7 @@ jobs:
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v4
         with:
-          node-version: 20
+          node-version: '24'
 
       - name: Refresh framework monitor report (context for the agent)
         run: node scripts/self-improvement/monitor-sources.mjs --out "$RUNNER_TEMP/si" || true

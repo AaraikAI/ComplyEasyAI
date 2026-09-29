@@ -86,7 +86,8 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
-    command: ["npx", "prisma", "migrate", "deploy"]
+    # backend-production ships no npm/npx; run the locked Prisma CLI with node.
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
     restart: "no"
     networks:
       - complyeasy-network
