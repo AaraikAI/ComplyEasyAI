@@ -76,11 +76,12 @@ function parseArgs(argv) {
 // "changed" (a human glances at it) than a missed amendment.
 function normalize(html) {
   let text = html
-    // Drop the contents of script/style/noscript. End tags allow trailing
-    // whitespace (</script >, </style\n>) so the blocks are fully removed.
-    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, ' ')
-    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, ' ')
-    .replace(/<noscript\b[\s\S]*?<\/noscript\s*>/gi, ' ')
+    // Drop the contents of script/style/noscript. Browsers accept anything up
+    // to the next `>` after the end-tag name (</script >, </style\n foo>), so
+    // the end-tag pattern does too and the blocks are fully removed.
+    .replace(/<script\b[\s\S]*?<\/script\b[^>]*>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style\b[^>]*>/gi, ' ')
+    .replace(/<noscript\b[\s\S]*?<\/noscript\b[^>]*>/gi, ' ')
     .replace(/<!--[\s\S]*?-->/g, ' ')
     .replace(/<[^>]+>/g, ' ')
     // Collapse ALL HTML entities to a space in a SINGLE pass. We never chain

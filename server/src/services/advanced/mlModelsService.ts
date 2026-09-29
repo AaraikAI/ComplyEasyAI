@@ -30,6 +30,10 @@ export interface DeepfakeDetectionResult {
   };
 }
 
+// Largest media payload accepted for deepfake analysis. Matches the upload
+// limit on the evidence routes (routes/acos.ts multer `limits.fileSize`).
+const MAX_MEDIA_BYTES = 100 * 1024 * 1024;
+
 class MLModelsService {
   private tgnModel: tf.LayersModel | null = null;
   private deepfakeModel: tf.LayersModel | null = null;
@@ -614,6 +618,15 @@ class MLModelsService {
     mediaBuffer: Buffer,
     mediaType: 'image' | 'video' | 'audio'
   ): Promise<DeepfakeDetectionResult> {
+    // Feature extraction walks the payload byte by byte, so only accept real
+    // binary data of bounded size (never an array-like object from a JSON body).
+    if (!Buffer.isBuffer(mediaBuffer)) {
+      throw new AppError('Media content must be binary data', 400);
+    }
+    if (mediaBuffer.length > MAX_MEDIA_BYTES) {
+      throw new AppError('Media content exceeds the 100 MB limit', 413);
+    }
+
     await this.initialize();
 
     if (!this.deepfakeModel) {
@@ -922,7 +935,7 @@ class MLModelsService {
 
     // Shannon entropy of the byte distribution (normalized to [0, 1]).
     const fullHist = new Array(256).fill(0);
-    for (let i = 0; i < sampleLimit; i++) { fullHist[buffer[i]]++; }
+    for (let i = 0; i < sampleLimit; i++) { fullHist[buffer[i] & 0xff]++; }
     let entropy = 0;
     for (let i = 0; i < 256; i++) {
       if (fullHist[i] > 0) { const p = fullHist[i] / histNorm; entropy -= p * Math.log2(p); }

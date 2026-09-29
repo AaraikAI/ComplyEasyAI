@@ -18,6 +18,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { isSafeObjectKey } from '../../utils/safeObjectKey';
 import config from '../../config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import crypto from 'crypto';
@@ -523,6 +524,11 @@ Format as JSON with: {prediction, confidence, factors}`;
     }
 
     Object.keys(context).forEach(key => {
+      // Context keys are caller-supplied; skip names such as `__proto__` or
+      // `constructor` that would shadow built-in members of the facts object.
+      if (!isSafeObjectKey(key)) {
+        return;
+      }
       if (key !== 'controls' && key !== 'risks' && typeof context[key] !== 'object') {
         facts[key] = context[key];
       }

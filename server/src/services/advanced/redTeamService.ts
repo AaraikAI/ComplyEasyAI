@@ -1613,6 +1613,14 @@ class RedTeamService {
     vulnerabilityIndex: number,
     userId: string
   ): Promise<void> {
+    // The index selects an element of a parsed array; anything other than a
+    // non-negative integer (e.g. the string `__proto__`) would address the
+    // array's prototype instead.
+    const index = Number(vulnerabilityIndex);
+    if (!Number.isInteger(index) || index < 0) {
+      throw new AppError('vulnerabilityIndex must be a non-negative integer', 400);
+    }
+
     try {
       // Get scan result from audit log
       const scanLog = await prisma.auditLog.findFirst({
@@ -1628,8 +1636,10 @@ class RedTeamService {
 
       if (scanLog) {
         const result = JSON.parse(scanLog.details || '{}');
-        if (result.vulnerabilitiesFound && result.vulnerabilitiesFound[vulnerabilityIndex]) {
-          result.vulnerabilitiesFound[vulnerabilityIndex].falsePositive = true;
+        const findings = Array.isArray(result.vulnerabilitiesFound) ? result.vulnerabilitiesFound : [];
+        const finding = index < findings.length ? findings[index] : undefined;
+        if (finding && typeof finding === 'object') {
+          finding.falsePositive = true;
 
           // Update audit log
           await prisma.auditLog.create({
@@ -1637,7 +1647,7 @@ class RedTeamService {
               action: 'red_team.false_positive_marked',
               details: JSON.stringify({
                 scenarioId,
-                vulnerabilityIndex,
+                vulnerabilityIndex: index,
                 originalResult: result,
               }),
               userId,

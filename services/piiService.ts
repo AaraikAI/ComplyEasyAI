@@ -100,9 +100,10 @@ export const redactPII = (text: string): RedactionContext => {
 export const rehydratePII = (text: string, map: Map<string, string>): string => {
   let originalText = text;
   map.forEach((value, token) => {
-    // Escape brackets for regex
-    const escapedToken = token.replace(/\[/g, '\\[').replace(/\]/g, '\\]');
-    originalText = originalText.replace(new RegExp(escapedToken, 'g'), value);
+    if (!token) return;
+    // Literal split/join: no regex is built from the token, and `$` sequences
+    // in the restored value are not treated as replacement patterns.
+    originalText = originalText.split(token).join(value);
   });
   return originalText;
 };

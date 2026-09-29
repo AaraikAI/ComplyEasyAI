@@ -1252,6 +1252,7 @@ class ACOSController {
       res.json({ success: true });
     } catch (error) {
       logger.error('Mark false positive error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError('Failed to mark false positive', 500);
     }
   };

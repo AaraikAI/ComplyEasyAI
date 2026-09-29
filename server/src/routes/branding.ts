@@ -15,6 +15,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import multer from 'multer';
 import DOMPurify from 'isomorphic-dompurify';
+import { sanitizeCustomCss } from '../utils/cssSanitizer';
 
 const router = Router();
 router.use(authenticate);
@@ -129,8 +130,7 @@ router.post(
       };
       const sanitizeCss = (input: string | null | undefined): string | null => {
         if (input === undefined || input === null) return null;
-        // Strip any HTML tags and JavaScript from CSS — only allow CSS declarations
-        return input.replace(/<[^>]*>/g, '').replace(/javascript:/gi, '').replace(/expression\s*\(/gi, '');
+        return sanitizeCustomCss(input);
       };
       const sanitizeText = (input: string | null | undefined): string | null => {
         if (input === undefined || input === null) return null;
@@ -151,17 +151,20 @@ router.post(
       const branding = await prisma.brandingConfig.upsert({
         where: { organizationId: user.organizationId },
         update: data,
+        // The first save creates the row, so it must store the same sanitized
+        // values as an update does.
         create: {
           organizationId: user.organizationId,
           primaryColor: primaryColor || '#3B82F6',
           secondaryColor: secondaryColor || '#1E40AF',
           accentColor: accentColor || '#10B981',
-          companyName: companyName || null,
+          companyName: sanitizeText(companyName) || null,
           customDomain: customDomain || null,
-          customCSS: customCSS || null,
-          emailTemplate: emailTemplate || null,
-          loginPageHtml: loginPageHtml || null,
-          footerText: footerText || null,
+          customCSS: sanitizeCss(customCSS) || null,
+          // Json? column: omit instead of passing a bare null.
+          emailTemplate: sanitizeHtml(emailTemplate) || undefined,
+          loginPageHtml: sanitizeHtml(loginPageHtml) || null,
+          footerText: sanitizeHtml(footerText) || null,
         },
       });
 

@@ -220,7 +220,29 @@ describe('EvidenceTruthLayerService', () => {
     });
   });
 
+  describe('analyzeEvidence input validation', () => {
+    it('should reject array-like file content that is not a Buffer', async () => {
+      // A JSON body cannot carry a Buffer; an object with a huge `length` would
+      // otherwise drive the byte-level loops.
+      const fake = { length: 1e12, 0: 1 } as unknown as Buffer;
+      await expect(
+        evidenceTruthLayerService.analyzeEvidence('ev-1', orgId, fake, { mimeType: 'image/png' })
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+  });
+
   describe('bulkAnalyzeEvidence', () => {
+    it('should reject more files than one bulk request may carry', async () => {
+      const files = Array.from({ length: 51 }, (_, i) => ({
+        evidenceId: `ev-${i}`,
+        fileBuffer: Buffer.alloc(1),
+        metadata: {},
+      }));
+      await expect(evidenceTruthLayerService.bulkAnalyzeEvidence(orgId, files)).rejects.toMatchObject({
+        statusCode: 400,
+      });
+    });
+
     it('should analyze multiple evidence files', async () => {
       const files = [
         {

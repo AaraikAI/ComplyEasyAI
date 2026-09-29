@@ -15,6 +15,7 @@ import {
 import { asyncHandler } from '../types/express';
 import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
+import { Prisma } from '../generated/prisma/client';
 import logger from '../config/logger';
 
 const router = Router();
@@ -28,6 +29,19 @@ const SUPPORTED_RESOURCE_TYPES = ['risks', 'policies', 'vendors', 'incidents', '
 type ResourceType = (typeof SUPPORTED_RESOURCE_TYPES)[number];
 
 const MAX_BULK_IDS = 500;
+
+/**
+ * Columns a bulk export may select, per resource type: the model's own scalar
+ * fields. Relation names are excluded so a caller cannot pull in related
+ * records (e.g. the whole organization row) through `fields`.
+ */
+const EXPORTABLE_FIELDS: Record<ResourceType, ReadonlySet<string>> = {
+  risks: new Set(Object.values(Prisma.RiskItemScalarFieldEnum)),
+  policies: new Set(Object.values(Prisma.PolicyScalarFieldEnum)),
+  vendors: new Set(Object.values(Prisma.VendorScalarFieldEnum)),
+  incidents: new Set(Object.values(Prisma.GrcIncidentScalarFieldEnum)),
+  assets: new Set(Object.values(Prisma.AssetScalarFieldEnum)),
+};
 
 /**
  * Validate and parse shared bulk request fields.
@@ -231,12 +245,14 @@ router.post(
       const config = getModelConfig(resourceType);
       const model = config.model as any;
 
-      // Build select clause: use requested fields or all available
+      // Build select clause: use requested fields or all available. Only the
+      // model's own scalar columns are selectable; anything else is ignored.
       let selectClause: any = undefined;
       if (fields && Array.isArray(fields) && fields.length > 0) {
+        const exportable = EXPORTABLE_FIELDS[resourceType];
         selectClause = { id: true }; // Always include id
         for (const field of fields) {
-          if (typeof field === 'string') {
+          if (typeof field === 'string' && exportable.has(field)) {
             selectClause[field] = true;
           }
         }
