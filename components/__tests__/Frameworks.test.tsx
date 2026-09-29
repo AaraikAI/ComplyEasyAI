@@ -481,6 +481,26 @@ describe('Frameworks Component', () => {
         expect(screen.getByText('Apply 50 Template Controls')).toBeInTheDocument();
       });
     });
+
+    it('applies the ISO 27017:2026 template, not the withdrawn 2015 template listed before it', async () => {
+      mockFrameworksGetTemplates.mockResolvedValueOnce({
+        templates: [
+          { frameworkType: 'ISO 27017', displayName: 'ISO 27017:2015 (withdrawn)', description: '2015', controlCount: 44, categories: [], aliases: ['ISO/IEC 27017'] },
+          { frameworkType: 'ISO 27017:2026', displayName: 'ISO 27017:2026', description: '2026', controlCount: 97, categories: [], aliases: ['ISO/IEC 27017:2026'] },
+        ],
+      });
+      const cloudFramework: ComplianceFramework = {
+        id: 'iso-2026', name: 'ISO 27017:2026', status: ComplianceStatus.IN_REVIEW, progress: 0, nextAuditDate: '2027-01-31', region: 'Global',
+      };
+      render(<Frameworks activeFrameworks={[cloudFramework]} onAddFramework={mockAdd} onSelectFramework={mockSelect} />);
+
+      const applyButton = await screen.findByText('Apply 97 Template Controls');
+      fireEvent.click(applyButton);
+
+      await waitFor(() => {
+        expect(mockFrameworksApplyTemplate).toHaveBeenCalledWith('iso-2026', 'ISO 27017:2026');
+      });
+    });
   });
 
   // ===== AUDIT DATE FORMATTING =====
