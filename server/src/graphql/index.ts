@@ -25,7 +25,7 @@ import {
   GraphQLObjectType,
   GraphQLList,
 } from 'graphql';
-import depthLimit from 'graphql-depth-limit';
+import { depthLimit } from './depthLimit';
 import jwt from 'jsonwebtoken';
 import config from '../config';
 import logger from '../config/logger';
