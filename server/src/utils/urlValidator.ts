@@ -5,6 +5,8 @@
 
 import { URL } from 'url';
 import net from 'net';
+import dns from 'dns';
+import type { LookupAddress, LookupOptions } from 'dns';
 import { lookup as dnsLookup } from 'dns/promises';
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
@@ -53,27 +55,82 @@ export function isPrivateIp(ip: string): boolean {
   if (kind === 6) {
     // Unspecified / loopback.
     if (addr === '::' || addr === '::1') return true;
-    // Unique-local (fc00::/7) and link-local (fe80::/10).
+    // Unique-local (fc00::/7), link-local (fe80::/10), deprecated site-local
+    // (fec0::/10) and multicast (ff00::/8).
     if (/^f[cd]/.test(addr)) return true;
     if (/^fe[89ab]/.test(addr)) return true;
-    // IPv4-mapped / IPv4-compatible: extract trailing dotted-quad or hex words.
-    const mapped = addr.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
-    if (mapped) return isPrivateIp(mapped[1]);
-    const hexMapped = addr.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
-    if (hexMapped) {
-      const hi = parseInt(hexMapped[1], 16);
-      const lo = parseInt(hexMapped[2], 16);
-      const v4 = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
-      return isPrivateIp(v4);
+    if (/^fe[c-f]/.test(addr)) return true;
+    if (/^ff/.test(addr)) return true;
+    // Addresses that embed an IPv4 address are classified by that address:
+    // IPv4-mapped (::ffff:0:0/96), IPv4-compatible (::/96), NAT64 (64:ff9b::/96)
+    // and 6to4 (2002::/16).
+    for (const prefix of ['::ffff:', '::', '64:ff9b::']) {
+      const v4 = embeddedIpv4(addr, prefix);
+      if (v4 !== null) return isPrivateIp(v4);
     }
+    const sixToFour = addr.match(/^2002:([0-9a-f]{1,4}):([0-9a-f]{1,4})(?::|$)/);
+    if (sixToFour) return isPrivateIp(hexWordsToIpv4(sixToFour[1], sixToFour[2]));
     return false;
   }
 
   if (kind === 4) {
-    return BLOCKED_IP_RANGES.some((r) => r.test(addr));
+    return (
+      BLOCKED_IP_RANGES.some((r) => r.test(addr)) ||
+      NON_PUBLIC_IPV4_CIDRS.some(([base, bits]) => isInIpv4Cidr(addr, base, bits))
+    );
   }
 
   return false;
+}
+
+// IPv4 ranges that are never valid public destinations, in addition to the
+// RFC 1918 / loopback / link-local patterns in BLOCKED_IP_RANGES.
+const NON_PUBLIC_IPV4_CIDRS: ReadonlyArray<readonly [string, number]> = [
+  ['0.0.0.0', 8], // "this network"; connecting to 0.0.0.0 reaches the local host
+  ['100.64.0.0', 10], // carrier-grade NAT, also used for some cloud metadata services
+  ['192.0.0.0', 24], // IETF protocol assignments
+  ['198.18.0.0', 15], // benchmarking
+  ['224.0.0.0', 3], // multicast, reserved and broadcast (224.0.0.0 - 255.255.255.255)
+];
+
+function ipv4ToNumber(addr: string): number | null {
+  const parts = addr.split('.');
+  if (parts.length !== 4) return null;
+  let value = 0;
+  for (const part of parts) {
+    if (!/^\d{1,3}$/.test(part)) return null;
+    const octet = Number(part);
+    if (octet > 255) return null;
+    value = value * 256 + octet;
+  }
+  return value;
+}
+
+function isInIpv4Cidr(addr: string, base: string, bits: number): boolean {
+  const a = ipv4ToNumber(addr);
+  const b = ipv4ToNumber(base);
+  if (a === null || b === null) return false;
+  const blockSize = 2 ** (32 - bits);
+  return Math.floor(a / blockSize) === Math.floor(b / blockSize);
+}
+
+function hexWordsToIpv4(hiWord: string, loWord: string): string {
+  const hi = parseInt(hiWord, 16);
+  const lo = parseInt(loWord, 16);
+  return `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
+}
+
+/**
+ * The IPv4 address carried in the last 32 bits of an IPv6 address that starts
+ * with `prefix`, written either as a dotted quad (::ffff:127.0.0.1) or as two
+ * hex words (::ffff:7f00:1). Returns null when the address has another shape.
+ */
+function embeddedIpv4(addr: string, prefix: string): string | null {
+  if (!addr.startsWith(prefix)) return null;
+  const rest = addr.slice(prefix.length);
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(rest)) return rest;
+  const hex = rest.match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  return hex ? hexWordsToIpv4(hex[1], hex[2]) : null;
 }
 
 /**
@@ -166,12 +223,15 @@ export function isUrlSafe(urlString: string): boolean {
 }
 
 /**
- * Resolve a hostname and confirm every resolved address is public. This is a
- * defense-in-depth guard against DNS rebinding / hostnames that resolve to
- * internal IPs. IP literals are validated synchronously by isUrlSafe already,
- * so only DNS names are resolved here. Resolution failures are logged and
- * treated as non-blocking (the request will fail naturally without having
- * connected to an internal host).
+ * Resolve a hostname and confirm every resolved address is public. This gives
+ * an early, readable rejection for names that point at internal IPs. It is NOT
+ * the authoritative check for requests: the connection resolves the name again,
+ * and a rebinding DNS server can answer differently the second time. The
+ * authoritative check is publicOnlyLookup, which validates the exact addresses
+ * the socket connects to. IP literals are validated synchronously by isUrlSafe
+ * already, so only DNS names are resolved here. Resolution failures are treated
+ * as non-blocking (the connection-time lookup fails the same way, so no
+ * connection to an internal host is made).
  */
 async function assertResolvedHostIsPublic(urlString: string): Promise<void> {
   let hostname: string;
@@ -227,17 +287,240 @@ export async function assertUrlSafe(urlString: string): Promise<void> {
   await assertResolvedHostIsPublic(urlString);
 }
 
+/** Error code carried by connection attempts refused by publicOnlyLookup. */
+export const SSRF_BLOCKED_CODE = 'ERR_SSRF_BLOCKED_ADDRESS';
+
+type LookupCallback = (
+  err: NodeJS.ErrnoException | null,
+  address?: string | LookupAddress[],
+  family?: number
+) => void;
+
+/**
+ * DNS lookup for outbound connections that refuses private addresses at the
+ * moment of connecting (drop-in for the `lookup` option of net/http/https).
+ *
+ * Checking a hostname and then letting the HTTP client resolve it again leaves
+ * a time-of-check/time-of-use gap: a DNS server under an attacker's control can
+ * answer the check with a public address and the connection with 127.0.0.1 or
+ * 169.254.169.254 (DNS rebinding). Here the addresses that are validated are
+ * the same addresses handed to the socket, so there is no second resolution to
+ * race. Every returned address must be public; one private answer fails the
+ * whole lookup, which also covers Happy Eyeballs trying several addresses.
+ */
+export function publicOnlyLookup(
+  hostname: string,
+  options: LookupOptions | number | null | undefined,
+  callback: LookupCallback
+): void {
+  const opts: LookupOptions =
+    typeof options === 'number' ? { family: options } : { ...(options ?? {}) };
+
+  dns.lookup(hostname, { ...opts, all: true }, (err, addresses) => {
+    if (err) {
+      callback(err);
+      return;
+    }
+    const list = Array.isArray(addresses) ? addresses : [];
+    if (list.length === 0) {
+      const notFound: NodeJS.ErrnoException = new Error(`No addresses found for ${hostname}`);
+      notFound.code = 'ENOTFOUND';
+      callback(notFound);
+      return;
+    }
+    const blocked = list.find((entry) => isPrivateIp(entry.address));
+    if (blocked) {
+      logSecurityEvent({
+        type: SecurityEventType.SSRF_ATTEMPT,
+        severity: 'critical',
+        message: 'Blocked connection to a hostname resolving to a private IP (connect-time DNS check)',
+        details: { hostname: hostname.slice(0, 253), resolved: blocked.address },
+      });
+      const blockedError = new AppError('Host resolves to a private address (SSRF protection)', 400);
+      (blockedError as AppError & { code?: string }).code = SSRF_BLOCKED_CODE;
+      callback(blockedError);
+      return;
+    }
+    if (opts.all) {
+      callback(null, list);
+    } else {
+      callback(null, list[0].address, list[0].family);
+    }
+  });
+}
+
+/** publicOnlyLookup typed for axios' `lookup` request option. */
+const axiosPublicOnlyLookup = publicOnlyLookup as unknown as NonNullable<AxiosRequestConfig['lookup']>;
+
+/** Whether an error (or the error it wraps) came from publicOnlyLookup. */
+function isSsrfBlockedError(error: unknown): boolean {
+  const e = error as { code?: unknown; cause?: { code?: unknown } } | null;
+  return e?.code === SSRF_BLOCKED_CODE || e?.cause?.code === SSRF_BLOCKED_CODE;
+}
+
+/**
+ * Whether axios will connect to the target host directly. With an HTTP(S)
+ * proxy the proxy resolves the target itself, and a connect-time lookup would
+ * only ever see the proxy's own (often private) address, so address pinning is
+ * applied only to direct connections.
+ */
+function connectsDirectly(proxy: AxiosRequestConfig['proxy']): boolean {
+  if (proxy === false) return true;
+  if (proxy) return false;
+  return !['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy'].some((name) => Boolean(process.env[name]));
+}
+
+/** Largest response body safeFetch buffers (after decompression). */
+const SAFE_FETCH_MAX_BODY_BYTES = 10 * 1024 * 1024;
+
+/** Statuses that never carry a response body (Fetch "null body status"). */
+const NULL_BODY_STATUSES = new Set([204, 205, 304]);
+
+/**
+ * One HTTP exchange for safeFetch, without following redirects. The request is
+ * made with axios' Node http adapter so the socket connects through
+ * publicOnlyLookup; the result is returned as a standard fetch Response.
+ */
+async function requestWithPublicOnlyLookup(url: string, init: RequestInit | undefined): Promise<Response> {
+  const method = (init?.method ?? 'GET').toUpperCase();
+
+  const headers: Record<string, string | false> = {};
+  new Headers(init?.headers).forEach((value, name) => {
+    headers[name] = value;
+  });
+
+  let data: string | Buffer | undefined;
+  const body = init?.body;
+  if (body === undefined || body === null) {
+    // fetch sends no Content-Type without a body; stop axios adding one.
+    headers['content-type'] ??= false;
+  } else if (typeof body === 'string') {
+    data = body;
+    headers['content-type'] ??= 'text/plain;charset=UTF-8';
+  } else if (body instanceof URLSearchParams) {
+    data = body.toString();
+    headers['content-type'] ??= 'application/x-www-form-urlencoded;charset=UTF-8';
+  } else if (body instanceof ArrayBuffer) {
+    data = Buffer.from(body);
+  } else if (ArrayBuffer.isView(body)) {
+    data = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+  } else {
+    throw new AppError('Unsupported request body type for an outbound request', 500);
+  }
+  // The same defaults the built-in fetch sends.
+  headers['accept'] ??= '*/*';
+  headers['user-agent'] ??= 'node';
+
+  let response: AxiosResponse<Buffer>;
+  try {
+    response = await axios.request<Buffer>({
+      url,
+      method,
+      headers,
+      data,
+      signal: init?.signal ?? undefined,
+      adapter: 'http',
+      // Pin the connection to validated public addresses. No proxy, matching
+      // the built-in fetch, so the pinned lookup always applies.
+      lookup: axiosPublicOnlyLookup,
+      proxy: false,
+      maxRedirects: 0,
+      validateStatus: () => true,
+      responseType: 'arraybuffer',
+      decompress: true,
+      maxContentLength: SAFE_FETCH_MAX_BODY_BYTES,
+      transformRequest: [(requestData: unknown) => requestData],
+    });
+  } catch (error) {
+    if (isSsrfBlockedError(error)) {
+      throw new AppError('Host resolves to a private address (SSRF protection)', 400);
+    }
+    // fetch rejects with the signal's reason when aborted; keep that contract.
+    if (axios.isCancel(error) && init?.signal?.aborted) {
+      throw init.signal.reason ?? error;
+    }
+    throw error;
+  }
+
+  const status = response.status;
+  if (status < 200 || status > 599) {
+    throw new AppError(`Unexpected upstream status ${status}`, 502);
+  }
+
+  const responseHeaders = new Headers();
+  const rawHeaders =
+    response.headers && typeof (response.headers as { toJSON?: unknown }).toJSON === 'function'
+      ? (response.headers as unknown as { toJSON: () => Record<string, unknown> }).toJSON()
+      : ((response.headers ?? {}) as Record<string, unknown>);
+  for (const [name, value] of Object.entries(rawHeaders)) {
+    if (value === undefined || value === null || value === false) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) responseHeaders.append(name, String(item));
+    } else {
+      responseHeaders.set(name, String(value));
+    }
+  }
+
+  const responseBody =
+    NULL_BODY_STATUSES.has(status) || method === 'HEAD' || response.data === undefined || response.data === null
+      ? null
+      : Buffer.from(response.data);
+  return new Response(responseBody, {
+    status,
+    statusText: response.statusText ?? '',
+    headers: responseHeaders,
+  });
+}
+
+/**
+ * Request options for the next hop of a redirect, following the Fetch rules:
+ * credentials are not replayed to another origin, and 303 (or 301/302 after a
+ * non-GET/HEAD request) continues as a GET without a body.
+ */
+function nextHopInit(
+  init: RequestInit | undefined,
+  status: number,
+  fromUrl: string,
+  toUrl: string
+): RequestInit | undefined {
+  if (!init) return init;
+  const next: RequestInit = { ...init };
+  if (init.headers !== undefined) {
+    const headers: Record<string, string> = {};
+    new Headers(init.headers).forEach((value, name) => {
+      headers[name] = value;
+    });
+    next.headers = stripCredentialHeadersIfCrossOrigin(headers, fromUrl, toUrl) as Record<string, string>;
+  }
+  const method = (init.method ?? 'GET').toUpperCase();
+  if (status === 303 || ((status === 301 || status === 302) && method !== 'GET' && method !== 'HEAD')) {
+    next.method = method === 'HEAD' ? 'HEAD' : 'GET';
+    next.body = undefined;
+    if (next.headers) {
+      const headers = { ...(next.headers as Record<string, string>) };
+      delete headers['content-type'];
+      delete headers['content-length'];
+      next.headers = headers;
+    }
+  }
+  return next;
+}
+
 /**
  * Safe fetch wrapper with SSRF protection. Validates the URL, resolves the host
- * to confirm it is public, and follows redirects through a bounded loop where
- * every hop is re-validated (callers do NOT need to re-invoke per hop).
+ * to confirm it is public, connects only to addresses that publicOnlyLookup has
+ * validated (so a rebinding DNS answer cannot redirect the socket after the
+ * check), and follows redirects through a bounded loop where every hop is
+ * re-validated (callers do NOT need to re-invoke per hop). Response bodies are
+ * buffered, up to SAFE_FETCH_MAX_BODY_BYTES after decompression.
  * @param url - URL to fetch
- * @param options - Fetch options
+ * @param options - Fetch options (method, headers, string/binary body, signal)
  * @returns Fetch response
  * @throws AppError if the URL, a resolved address, or any redirect target is unsafe
  */
 export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
   let currentUrl = url;
+  let init = options;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     if (!isUrlSafe(currentUrl)) {
@@ -246,10 +529,8 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
 
     await assertResolvedHostIsPublic(currentUrl);
 
-    const response = await fetch(currentUrl, {
-      ...options,
-      redirect: 'manual', // Validate each redirect target ourselves
-    });
+    // Redirects are never followed by the transport; each hop is validated here.
+    const response = await requestWithPublicOnlyLookup(currentUrl, init);
 
     // Non-redirect response: return it.
     if (response.status < 300 || response.status >= 400) {
@@ -284,6 +565,7 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
       return response;
     }
 
+    init = nextHopInit(init, response.status, currentUrl, resolvedUrl);
     currentUrl = resolvedUrl;
   }
 
@@ -407,20 +689,30 @@ export async function safeAxios<T = any>(
     // Throws AppError(400) from assertUrlSafe when the URL itself is unsafe.
     await assertUrlSafe(currentUrl);
 
-    const response = await axios.request({
-      ...config,
-      url: currentUrl,
-      method,
-      data,
-      // Tracked internally as a plain record so redirect handling can drop
-      // credential headers by name; cast back at the axios boundary.
-      headers: headers as AxiosRequestConfig['headers'],
-      // Never let axios follow a redirect for us: every hop must be re-validated.
-      maxRedirects: 0,
-      // Accept everything so redirect handling and the caller's own status
-      // policy are applied here rather than by an axios throw.
-      validateStatus: () => true,
-    });
+    let response: AxiosResponse<T>;
+    try {
+      response = await axios.request({
+        ...config,
+        url: currentUrl,
+        method,
+        data,
+        // Tracked internally as a plain record so redirect handling can drop
+        // credential headers by name; cast back at the axios boundary.
+        headers: headers as AxiosRequestConfig['headers'],
+        // Never let axios follow a redirect for us: every hop must be re-validated.
+        maxRedirects: 0,
+        // Accept everything so redirect handling and the caller's own status
+        // policy are applied here rather than by an axios throw.
+        validateStatus: () => true,
+        // Connect only to addresses validated at connect time (DNS rebinding).
+        ...(connectsDirectly(config.proxy) ? { lookup: axiosPublicOnlyLookup } : {}),
+      });
+    } catch (error) {
+      if (isSsrfBlockedError(error)) {
+        throw new AppError(`Host resolves to a private address (SSRF protection: ${context})`, 403);
+      }
+      throw error;
+    }
 
     const isRedirect = response.status >= 300 && response.status < 400;
     const location = isRedirect
@@ -522,6 +814,11 @@ export function hardenAxiosInstance<T extends AxiosInstance>(instance: T, contex
     const effectiveUrl = base ? new URL(target, base.endsWith('/') ? base : `${base}/`).href : target;
     if (effectiveUrl) {
       await assertUrlSafe(effectiveUrl);
+    }
+    // Re-check at connect time too, so a rebinding DNS answer cannot move the
+    // socket to a private address after assertUrlSafe passed.
+    if (connectsDirectly(requestConfig.proxy ?? instance.defaults.proxy)) {
+      requestConfig.lookup = axiosPublicOnlyLookup;
     }
     return requestConfig;
   });
