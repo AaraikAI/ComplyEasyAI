@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { buildSchema, parse, validate, getIntrospectionQuery } from 'graphql';
+import { buildSchema, parse, validate, getIntrospectionQuery, Kind } from 'graphql';
 import { depthLimit } from '../../../graphql/depthLimit';
 
 const schema = buildSchema(`
@@ -29,6 +29,18 @@ function nestedQuery(levels: number): string {
 
 function run(query: string, maxDepth: number) {
   return validate(schema, parse(query), [depthLimit(maxDepth)]);
+}
+
+/**
+ * Builds a document where fragment F<i> spreads F<i+1> twice, so the number of
+ * paths to the last fragment doubles with every level (2^count in total).
+ */
+function fanOutQuery(count: number, leaf: string): string {
+  let query = 'query FanOut { node { ...F0 } }\n';
+  for (let i = 0; i < count; i++) {
+    query += `fragment F${i} on Node { ...F${i + 1} ...F${i + 1} }\n`;
+  }
+  return `${query}fragment F${count} on Node { ${leaf} }\n`;
 }
 
 describe('depthLimit validation rule', () => {
@@ -81,6 +93,37 @@ describe('depthLimit validation rule', () => {
 
     expect(() => run(query, 5)).not.toThrow();
     expect(run(query, 5)).toHaveLength(0);
+  });
+
+  it('walks each fragment once per starting depth on fan-out documents', () => {
+    const fragmentCount = 16;
+    const document = parse(fanOutQuery(fragmentCount, 'id'));
+    let selectionSetReads = 0;
+    for (const definition of document.definitions) {
+      if (definition.kind === Kind.FRAGMENT_DEFINITION) {
+        const { selectionSet } = definition;
+        Object.defineProperty(definition, 'selectionSet', {
+          get: () => {
+            selectionSetReads++;
+            return selectionSet;
+          },
+        });
+      }
+    }
+
+    expect(validate(schema, document, [depthLimit(10)])).toHaveLength(0);
+    // Walking every path instead would read the selection sets 2^17 - 1 times.
+    expect(selectionSetReads).toBeLessThan(10 * (fragmentCount + 1));
+  });
+
+  it('reports an over-deep node inside a shared fragment once', () => {
+    // The leaf fragment's `id` sits at depth 2 (node=0, child=1, id=2) behind 2^8 paths.
+    const errors = run(fanOutQuery(8, 'child { id }'), 1);
+
+    expect(errors.map((error) => error.message)).toEqual([
+      "'FanOut' exceeds maximum operation depth of 1",
+    ]);
+    expect(errors[0].locations?.[0].line).toBe(10);
   });
 
   it('evaluates every operation in the document', () => {

@@ -8,9 +8,16 @@
  * semantics and error message, and additionally:
  *  - reports errors with the options-object constructor, so locations survive;
  *  - skips spreads of unknown fragments instead of throwing a TypeError (the
- *    standard KnownFragmentNames rule reports those during execution);
+ *    standard KnownFragmentNames rule reports those when `graphql()` validates
+ *    the document with the specified rules);
  *  - stops at fragment cycles instead of recursing until the stack overflows
- *    (the standard NoFragmentCycles rule reports those during execution).
+ *    (the standard NoFragmentCycles rule reports those in the same pass);
+ *  - measures each fragment at most once per starting depth within an
+ *    operation. graphql-depth-limit re-walked a fragment for every spread that
+ *    reached it, so a few hundred bytes of fragments that each spread the next
+ *    one twice cost 2^n steps and blocked the event loop. The same over-deep
+ *    node inside a shared fragment is therefore reported once, not once per
+ *    path.
  *
  * Depth semantics match graphql-depth-limit 1.1.0: top-level fields sit at
  * depth 0, each nested selection set adds one, fragment spreads and inline
@@ -32,6 +39,15 @@ import {
 
 type DepthNode = SelectionNode | FragmentDefinitionNode | OperationDefinitionNode;
 
+/** Per-operation walk state. */
+interface OperationWalk {
+  operationName: string;
+  /** Fragments currently being expanded on the walk's path (cycle guard). */
+  activeFragments: Set<string>;
+  /** Depth already measured for `<fragment name>:<starting depth>`. */
+  measuredFragments: Map<string, number>;
+}
+
 export function depthLimit(maxDepth: number): ValidationRule {
   return (context: ValidationContext): ASTVisitor => {
     const fragments = new Map<string, FragmentDefinitionNode>();
@@ -41,16 +57,11 @@ export function depthLimit(maxDepth: number): ValidationRule {
       }
     }
 
-    const measure = (
-      node: DepthNode,
-      depthSoFar: number,
-      operationName: string,
-      activeFragments: Set<string>
-    ): number => {
+    const measure = (node: DepthNode, depthSoFar: number, walk: OperationWalk): number => {
       if (depthSoFar > maxDepth) {
         context.reportError(
           new GraphQLError(
-            `'${operationName}' exceeds maximum operation depth of ${maxDepth}`,
+            `'${walk.operationName}' exceeds maximum operation depth of ${maxDepth}`,
             { nodes: node }
           )
         );
@@ -63,24 +74,30 @@ export function depthLimit(maxDepth: number): ValidationRule {
             return 0;
           }
           return 1 + maxOf(node.selectionSet.selections.map((selection) =>
-            measure(selection, depthSoFar + 1, operationName, activeFragments)
+            measure(selection, depthSoFar + 1, walk)
           ));
         case Kind.FRAGMENT_SPREAD: {
           const name = node.name.value;
           const fragment = fragments.get(name);
-          if (!fragment || activeFragments.has(name)) {
+          if (!fragment || walk.activeFragments.has(name)) {
             return 0;
           }
-          activeFragments.add(name);
-          const depth = measure(fragment, depthSoFar, operationName, activeFragments);
-          activeFragments.delete(name);
+          const key = `${name}:${depthSoFar}`;
+          const measured = walk.measuredFragments.get(key);
+          if (measured !== undefined) {
+            return measured;
+          }
+          walk.activeFragments.add(name);
+          const depth = measure(fragment, depthSoFar, walk);
+          walk.activeFragments.delete(name);
+          walk.measuredFragments.set(key, depth);
           return depth;
         }
         case Kind.INLINE_FRAGMENT:
         case Kind.FRAGMENT_DEFINITION:
         case Kind.OPERATION_DEFINITION:
           return maxOf(node.selectionSet.selections.map((selection) =>
-            measure(selection, depthSoFar, operationName, activeFragments)
+            measure(selection, depthSoFar, walk)
           ));
         default:
           return 0;
@@ -89,7 +106,11 @@ export function depthLimit(maxDepth: number): ValidationRule {
 
     return {
       OperationDefinition(node) {
-        measure(node, 0, node.name?.value ?? '', new Set());
+        measure(node, 0, {
+          operationName: node.name?.value ?? '',
+          activeFragments: new Set(),
+          measuredFragments: new Map(),
+        });
         return false;
       },
       FragmentDefinition() {
