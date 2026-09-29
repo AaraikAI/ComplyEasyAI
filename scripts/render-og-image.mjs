@@ -23,7 +23,12 @@ const FONTS_CSS =
   'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=IBM+Plex+Mono:wght@400;500&display=block';
 
 async function main() {
-  const svg = readFileSync(SVG_PATH, 'utf8').replace(/<!--[\s\S]*?-->\s*/, '');
+  // Embed from the <svg> element onwards; the file's leading comment header is
+  // not part of the rendered card.
+  const source = readFileSync(SVG_PATH, 'utf8');
+  const svgStart = source.indexOf('<svg');
+  if (svgStart === -1) throw new Error(`No <svg> element in ${SVG_PATH}`);
+  const svg = source.slice(svgStart);
   const html = `<!DOCTYPE html>
 <html>
   <head>

@@ -17,7 +17,19 @@ import { FRAMEWORK_PILLARS } from '../../data/frameworkPillarContent';
  * og:url, JSON-LD URL, sitemap entry and llms link must use the www origin.
  */
 const ROOT = resolve(__dirname, '..', '..');
-const APEX_URL = /https?:\/\/complyeasyai\.com/;
+const APEX_HOST = 'complyeasyai.com';
+/** Absolute http(s) URLs in source text; stops at quotes, brackets and template `${`. */
+const URL_IN_TEXT = /https?:\/\/[^\s"'`<>()[\]{}\\$]+/g;
+
+/** True when the text contains an absolute URL whose host is exactly the apex. */
+const mentionsApexUrl = (text: string): boolean =>
+  Array.from(text.matchAll(URL_IN_TEXT)).some((match) => {
+    try {
+      return new URL(match[0]).hostname.replace(/\.$/, '') === APEX_HOST;
+    } catch {
+      return false;
+    }
+  });
 
 const read = (relPath: string): string => readFileSync(resolve(ROOT, relPath), 'utf8');
 
@@ -55,7 +67,7 @@ describe('site origin', () => {
       ...sourceFiles('data', ['.ts', '.tsx']),
       ...sourceFiles('scripts', ['.mjs']),
     ];
-    const offenders = files.filter((file) => APEX_URL.test(read(file)));
+    const offenders = files.filter((file) => mentionsApexUrl(read(file)));
     expect(offenders).toEqual([]);
   });
 
