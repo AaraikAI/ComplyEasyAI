@@ -3,7 +3,7 @@
  * Covers plan viewing, upgrades, checkout, and feature unlocking
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator, expect } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class BillingPage extends BasePage {

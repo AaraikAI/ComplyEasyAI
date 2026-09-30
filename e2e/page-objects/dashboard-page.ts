@@ -3,7 +3,7 @@
  * Updated to match new Dashboard redesign with welcome banner, quick actions, and SVG ring chart
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator, expect } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class DashboardPage extends BasePage {

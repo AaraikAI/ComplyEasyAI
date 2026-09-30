@@ -22,7 +22,7 @@
  * non-pillar getters below route through page.goto() for determinism.
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator, expect } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class SidebarPage extends BasePage {

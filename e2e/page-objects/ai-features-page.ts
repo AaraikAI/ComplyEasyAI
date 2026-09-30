@@ -3,7 +3,7 @@
  * Covers all AI-powered compliance tools across document and compliance hubs
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator, expect } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export type AIFeatureTab =

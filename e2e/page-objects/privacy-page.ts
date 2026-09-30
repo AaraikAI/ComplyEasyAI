@@ -3,7 +3,7 @@
  * Covers DPIA wizard, RoPA, DPO dashboard, cookie consent, breach notification, privacy notices
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class PrivacyPage extends BasePage {

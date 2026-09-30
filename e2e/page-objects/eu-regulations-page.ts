@@ -3,7 +3,7 @@
  * Covers EU AI Act, DMA, DSA, CRA, CSRD, Ecodesign, NIS2
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator, expect } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export type RegulationType = 'eu-ai-act' | 'dma' | 'dsa' | 'eu-cra' | 'csrd' | 'ecodesign' | 'nis2' | 'us-privacy';

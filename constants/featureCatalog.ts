@@ -4,14 +4,14 @@
  * Used by FeatureLibrary, GlobalSearch, and HomeOS pinned features.
  */
 import {
-  LayoutDashboard, ShieldAlert, ShieldCheck, AlertTriangle, Users, FileCheck,
+  ShieldAlert, ShieldCheck, AlertTriangle, Users, FileCheck,
   Brain, Shield, Leaf, Network, Recycle, MapPin, Globe,
   UserCheck, Landmark, ScanSearch, Package, Monitor, FileText, Activity,
-  PieChart, Fingerprint, Eye, ClipboardList, UserX, Building2, Lock,
+  PieChart, Fingerprint, Eye, ClipboardList, UserX, Building2,
   Calendar, Gauge, Layers, Briefcase, Bot, Scale, BookOpen,
   Crosshair, BarChart3, DollarSign, Radar, TestTube, Satellite,
   GitBranch, FileCode, Smartphone, Target, TrendingUp, MessageSquare,
-  Workflow, Award, Boxes, Key, FileWarning, BadgeCheck, Trash2, TreePine,
+  Workflow, Award, Boxes, Key, FileWarning, BadgeCheck,
   AlertOctagon
 } from 'lucide-react';
 

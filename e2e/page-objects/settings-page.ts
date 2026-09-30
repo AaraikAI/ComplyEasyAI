@@ -3,7 +3,7 @@
  * Covers profile, security, organization, team, integrations, billing, and features tabs
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class SettingsPage extends BasePage {

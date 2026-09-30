@@ -68,7 +68,7 @@ const backend = new BackendStack(app, `ComplyEasy-Backend`, {
 // ---------------------------------------------------------------------------
 // Stack: Frontend (S3 + CloudFront)
 // ---------------------------------------------------------------------------
-const frontend = new FrontendStack(app, `ComplyEasy-Frontend`, {
+new FrontendStack(app, `ComplyEasy-Frontend`, {
   env,
   envName,
   apiAlbDnsName: backend.alb.loadBalancerDnsName,

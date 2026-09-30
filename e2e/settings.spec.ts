@@ -94,13 +94,6 @@ test.describe('Settings', () => {
     await page.waitForTimeout(1500);
   });
 
-  function skipIfUnauthenticated(page: any) {
-    return async () => {
-      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
-      if (isLanding) test.skip();
-    };
-  }
-
   test.describe('Tab Navigation', () => {
     test('all settings tabs are accessible', async ({ page }) => {
       const tabs = ['Profile', 'Security', 'Organization', 'Team', 'Integrations', 'Billing', 'Features'];

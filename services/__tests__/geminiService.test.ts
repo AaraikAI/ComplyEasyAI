@@ -34,7 +34,7 @@ vi.mock('../api', () => ({
   }
 }));
 
-import { generateComplianceReport, chatWithComplianceBot, prioritizeRisks } from '../geminiService';
+import { generateComplianceReport, prioritizeRisks } from '../geminiService';
 
 describe('Gemini AI Service', () => {
   beforeEach(() => {

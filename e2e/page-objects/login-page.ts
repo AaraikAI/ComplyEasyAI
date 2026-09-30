@@ -3,7 +3,7 @@
  * Handles authentication-related interactions
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator, expect } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class LoginPage extends BasePage {

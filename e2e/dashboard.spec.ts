@@ -6,8 +6,6 @@
 import { test, expect } from '@playwright/test';
 import { dismissOnboarding } from './_onboarding';
 
-const API_BASE = process.env.VITE_API_URL || 'http://localhost:3001';
-
 // Re-seed the cached profile before EVERY navigation so a boot-time API 401
 // can't wipe `user_data` and bounce the app back to '/' (AuthContext restores
 // auth from localStorage; isAuthenticated = !!user).

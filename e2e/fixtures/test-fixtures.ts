@@ -3,11 +3,10 @@
  * Provides database helpers, test data factories, and common utilities
  */
 
-import { test as base, expect, Page, APIRequestContext } from '@playwright/test';
+import { test as base, expect, APIRequestContext } from '@playwright/test';
 
 // Conditional import for Supabase
 let createClient: any;
-let SupabaseClient: any;
 
 try {
   const supabaseModule = require('@supabase/supabase-js');

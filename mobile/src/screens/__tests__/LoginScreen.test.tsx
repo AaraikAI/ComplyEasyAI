@@ -35,7 +35,7 @@ jest.mock('../../contexts/AuthContext', () => ({
 }));
 
 jest.mock('../../components/shared', () => {
-  const { Text, TouchableOpacity, View } = require('react-native');
+  const { Text, TouchableOpacity } = require('react-native');
   return {
     Button: ({ label, onPress, loading, disabled, ...props }: any) => (
       <TouchableOpacity

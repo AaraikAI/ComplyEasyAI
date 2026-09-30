@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useOnboardingContext } from '../contexts/OnboardingContext';
-import { OnboardingFlowName, OnboardingFlowConfig, OnboardingStepConfig } from '../types';
+import { OnboardingFlowName, OnboardingStepConfig } from '../types';
 import { getFlowConfig } from '../constants/onboardingFlows';
 
 /**
@@ -142,7 +142,6 @@ export const useOnboardingHint = (
 export const useOnboardingChecklist = () => {
   const {
     checklist,
-    progress,
     organizationPlan,
     startFlow,
     isOnboarding,

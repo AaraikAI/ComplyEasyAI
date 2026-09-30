@@ -26,13 +26,11 @@ import {
   Loading,
   ErrorState,
   EmptyState,
-  ListItem,
   Button,
   ProgressBar,
   colors,
   spacing,
   fontSize,
-  borderRadius,
 } from '../components/shared';
 
 // ============================================================================
@@ -118,7 +116,7 @@ export default function VendorsScreen({ navigation }: any) {
     { deps: [riskFilter] }
   );
 
-  const { mutate: deleteVendor, loading: deleting } = useMutation(
+  const { mutate: deleteVendor } = useMutation(
     (id: string) => api.vendors.delete(id) as any
   );
 

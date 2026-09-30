@@ -16,7 +16,7 @@ import {
   DescribeSecretCommand,
   UpdateSecretVersionStageCommand,
 } from '@aws-sdk/client-secrets-manager';
-import { randomBytes, randomInt, createHash } from 'crypto';
+import { randomBytes, randomInt } from 'crypto';
 
 // ============================================================================
 // TYPES

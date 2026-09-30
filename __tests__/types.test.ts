@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatLimit, formatPrice, ComplianceStatus, FrameworkType, TierName } from '../types';
+import { formatLimit, formatPrice, ComplianceStatus, FrameworkType } from '../types';
 
 describe('types', () => {
   describe('formatLimit', () => {
