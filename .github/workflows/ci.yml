@@ -525,7 +525,7 @@ jobs:
       # The runtime stages are what ships. backend-production is loaded into
       # the local daemon so the next step can inspect it.
       - name: Build backend-production stage
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           target: backend-production
@@ -560,7 +560,7 @@ jobs:
           "
 
       - name: Build frontend-production stage
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           target: frontend-production
