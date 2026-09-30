@@ -279,7 +279,6 @@ const IncidentManagement: React.FC = () => {
   }, [incidents, searchQuery, severityFilter, statusFilter, categoryFilter]);
 
   const metrics = useMemo(() => {
-    const closedOrRecovered = incidents.filter(i => i.closedAt || i.recoveredAt);
     const detected = incidents.filter(i => i.triagedAt);
     const contained = incidents.filter(i => i.containedAt);
     const recovered = incidents.filter(i => i.recoveredAt);

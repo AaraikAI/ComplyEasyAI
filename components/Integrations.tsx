@@ -535,7 +535,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>(ALL_INTEGRATIONS);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   const connectedCount = integrations.filter(i => i.connected).length;
   const integrationLimitReached = isAtLimit(user?.organization?.plan, 'maxIntegrations', connectedCount);

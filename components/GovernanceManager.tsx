@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, ArrowDown, ArrowRight, Plus, Trash2,
@@ -217,7 +216,6 @@ const formatMinutes = (m: number) => {
 /* ------------------------------------------------------------------ */
 
 export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'dpo' | 'committees' | 'escalation'>('dpo');
 
   /* ---- DPO state ---- */

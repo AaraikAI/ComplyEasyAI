@@ -15,7 +15,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
   Search, Loader2, FileText, AlertTriangle, CheckCircle,
@@ -90,7 +89,6 @@ interface GlobalSearchProps {
 }
 
 const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onClose, onNavigate }) => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(controlledOpen ?? false);
   const [query, setQuery] = useState('');

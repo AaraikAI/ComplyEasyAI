@@ -300,7 +300,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       const formData = new FormData();
       formData.append('file', file);
 
-      const result = await api.frameworks.uploadEvidence(framework.id, controlId, formData);
+      await api.frameworks.uploadEvidence(framework.id, controlId, formData);
 
       // Evidence uploaded successfully
 
