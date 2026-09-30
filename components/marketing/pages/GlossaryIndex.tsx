@@ -4,19 +4,33 @@ import { BookOpen } from 'lucide-react';
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
-import { breadcrumbSchema } from '../../seo/siteSchema';
-import { glossaryTerms } from '../../../data/glossary';
+import { breadcrumbSchema, reviewedWebPageSchema } from '../../seo/siteSchema';
+import { BRAND_NAME } from '../../seo/brand';
+import { glossaryLastReviewed, glossaryTerms } from '../../../data/glossary';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
+import { ReviewedByline, TldrList } from '../answerFirst';
 
-const SITE_ORIGIN = 'https://complyeasyai.com';
+const SEO_TITLE = `Compliance & AI Governance Glossary | ${BRAND_NAME}`;
+const SEO_DESCRIPTION =
+  'Plain-language, vendor-neutral definitions of compliance, privacy and AI-governance terms, from SOC 2 and ISO 27001 to the EU AI Act, GDPR, DPIAs and continuous compliance.';
+
+const GLOSSARY_TLDR = [
+  'The first sentence of every entry is the definition.',
+  'Each entry lists key takeaways and answers common follow-up questions.',
+  'Every term links to related terms and to a deeper guide.',
+];
 
 /**
- * Glossary landing page (/glossary). Lists every compliance, privacy, and
- * AI-governance term with a short preview, linking to its full definition.
+ * Glossary landing page (/glossary). Answer-first introduction, then every
+ * compliance, privacy and AI-governance term with its quotable definition,
+ * linking to the full entry.
  */
 const GlossaryIndex: React.FC = () => {
   const terms = [...glossaryTerms].sort((a, b) =>
     a.term.localeCompare(b.term, 'en', { sensitivity: 'base' }),
   );
+  const lastReviewed = glossaryLastReviewed();
+  const answer = `The ${BRAND_NAME} glossary defines ${terms.length} core compliance terms, from SOC 2 and ISO 27001 to DPIAs, risk registers and the EU AI Act. Each entry opens with a one-paragraph definition you can quote, then explains how the term works in practice and links to related terms.`;
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Home', url: SITE_ORIGIN + '/' },
@@ -26,12 +40,21 @@ const GlossaryIndex: React.FC = () => {
   return (
     <MarketingLayout>
       <Seo
-        title="Compliance & AI Governance Glossary | ComplyEasy AI"
-        description="Clear, vendor-neutral definitions of compliance, privacy, and AI-governance terms — from SOC 2 and ISO 27001 to the EU AI Act, GDPR, and continuous compliance."
+        title={SEO_TITLE}
+        description={SEO_DESCRIPTION}
         canonicalPath="/glossary"
         keywords="compliance glossary, AI governance terms, SOC 2 definition, ISO 27001, GDPR, EU AI Act, GRC"
       />
       <JsonLd data={breadcrumbs} />
+      <JsonLd
+        data={reviewedWebPageSchema({
+          name: SEO_TITLE,
+          description: SEO_DESCRIPTION,
+          path: '/glossary',
+          lastReviewed,
+          about: 'Compliance and AI-governance terminology',
+        })}
+      />
 
       {/* ============================== Hero ============================== */}
       <section className="relative overflow-hidden border-b border-surface-200 dark:border-surface-800">
@@ -51,26 +74,30 @@ const GlossaryIndex: React.FC = () => {
 
           <span className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700 dark:bg-brand-950 dark:text-brand-300">
             <BookOpen className="h-4 w-4" aria-hidden="true" />
-            Reference
+            Glossary
           </span>
 
           <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-surface-900 sm:text-5xl dark:text-white">
-            Compliance &amp; AI Governance <span className="text-gradient">Glossary</span>
+            Compliance glossary: <span className="text-gradient">SOC 2, GDPR, the EU AI Act and more</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-surface-600 dark:text-surface-300">
-            Plain-language, vendor-neutral definitions of the terms that come up across security,
-            privacy, and AI-governance programs. Browse the full list below, or jump straight to a
-            definition.
+            Plain-language definitions of the terms that come up in security, privacy and
+            AI-governance work.
           </p>
-          <p className="mt-3 text-sm text-surface-500 dark:text-surface-400">
-            {terms.length} terms · Last updated 2026-06-07
+          <p
+            id="glossary-answer"
+            className="mt-4 max-w-2xl text-base leading-relaxed text-surface-700 dark:text-surface-200"
+          >
+            {answer}
           </p>
+          <TldrList items={GLOSSARY_TLDR} className="mt-8 max-w-2xl" />
+          <ReviewedByline lastReviewed={lastReviewed} className="mt-6" />
         </div>
       </section>
 
       {/* ============================== Terms ============================= */}
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-        <h2 className="sr-only">All glossary terms</h2>
+        <h2 className="sr-only">Which terms does the glossary define?</h2>
         <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {terms.map((entry) => (
             <li key={entry.slug}>

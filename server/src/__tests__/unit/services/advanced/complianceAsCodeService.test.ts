@@ -542,4 +542,31 @@ describe('ComplianceAsCodeService', () => {
       ).rejects.toThrow();
     });
   });
+
+  describe('deny-by-default detection', () => {
+    const isDenyByDefaultLine = (line: string): boolean =>
+      (complianceAsCodeService as any).isDenyByDefaultLine(line);
+
+    it.each([['default allow = false'], ['default allow := false'], ['default  allow=false'], ['default\tallow :=  false']])(
+      'accepts %s',
+      (line) => {
+        expect(isDenyByDefaultLine(line)).toBe(true);
+      }
+    );
+
+    it.each([['default allow = true'], ['default deny = false'], ['default allow'], ['defaults allow = false']])(
+      'rejects %s',
+      (line) => {
+        expect(isDenyByDefaultLine(line)).toBe(false);
+      }
+    );
+
+    it('stays linear on long whitespace runs', () => {
+      const line = 'default' + ' '.repeat(100000) + 'x';
+      const start = process.hrtime.bigint();
+      isDenyByDefaultLine(line);
+      const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
+      expect(elapsedMs).toBeLessThan(500);
+    });
+  });
 });

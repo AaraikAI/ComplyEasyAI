@@ -389,8 +389,11 @@ class SecurityController {
         throw new AppError('Proof is required', 400);
       }
 
-      const isValid = await zeroKnowledgeService.verifyComplianceProof(proof);
-      res.json({ isValid });
+      // verifyComplianceProof returns { isValid, proofId?, timestamp? }. Wrapping
+      // that object as `{ isValid: result }` made isValid an object, which is
+      // truthy even for a rejected proof; return the boolean at the top level.
+      const result = await zeroKnowledgeService.verifyComplianceProof(proof);
+      res.json({ ...result, isValid: result.isValid === true });
     } catch (error: any) {
       logger.error('Verify compliance proof error', error);
       throw new AppError(error.message || 'Failed to verify compliance proof', 500);
@@ -704,7 +707,6 @@ class SecurityController {
 
   importBYOKKey: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       const { provider, keyId, region, vaultUrl, credentials, keyMaterial, keyType, label, format } = req.body;
 
       // Schema-aligned imports use keyMaterial + keyType + label.
@@ -871,7 +873,6 @@ class SecurityController {
   rotateBYOKKey: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { keyId } = req.params;
       const { oldConfig, newConfig, encryptedData } = req.body;
 
       if (!oldConfig || !newConfig) {
@@ -894,7 +895,6 @@ class SecurityController {
 
   deleteBYOKKey: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       const { keyId } = req.params;
       const { provider, region, vaultUrl, credentials, pendingWindowInDays } = req.body;
 

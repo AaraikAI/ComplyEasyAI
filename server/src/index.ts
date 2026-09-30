@@ -14,7 +14,7 @@ import { authenticate } from './middleware/auth';
 import websocketService from './services/websocketService';
 import realTimeComplianceService from './services/realTimeComplianceService';
 import swaggerSpec from './config/swagger';
-import monitoring, { initializeSentry, initializeAPM } from './config/monitoring';
+import { initializeSentry, initializeAPM } from './config/monitoring';
 import { monitoringMiddleware, errorTrackingMiddleware } from './middleware/monitoring';
 import { responseEnvelope } from './middleware/standardResponse';
 
@@ -686,9 +686,11 @@ app.use('/api/soc2', apiLimiter, soc2Routes);
 app.use('/api/nist-csf', apiLimiter, nistCsfRoutes);
 app.use('/api/nps', apiLimiter, npsRoutes);
 
-// GraphQL endpoint (authenticated + rate limited)
-app.post('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());
-app.get('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());
+// GraphQL endpoint (rate limited, then authenticated). The limiter runs first
+// so that token verification, the revocation lookup and the user query in
+// `authenticate` are budgeted too, including requests that fail auth.
+app.post('/api/graphql', apiLimiter, authenticate, graphqlMiddleware());
+app.get('/api/graphql', apiLimiter, authenticate, graphqlMiddleware());
 if (process.env.NODE_ENV !== 'production') {
   app.get('/api/graphql/playground', graphqlPlayground());
 }

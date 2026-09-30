@@ -102,6 +102,29 @@ describe('Branding API — Contract Tests', () => {
       expect(prismaMock.brandingConfig.upsert).toHaveBeenCalled();
     });
 
+    it('should store sanitized values when the first save creates the row', async () => {
+      prismaMock.brandingConfig.upsert.mockResolvedValue({ organizationId: 'org-123' });
+
+      const res = await request(app)
+        .post('/api/branding/')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          loginPageHtml: '<p>Welcome</p><script>alert(1)</script>',
+          footerText: '<b>Footer</b><script>alert(2)</script>',
+          customCSS: '.a{color:red}</style><script>alert(3)</script>.b{background:url(javascript:alert(4))}',
+        });
+      expect(res.status).toBe(200);
+
+      const args = (prismaMock.brandingConfig.upsert as jest.Mock<any>).mock.calls[0][0];
+      for (const section of [args.create, args.update]) {
+        expect(section.loginPageHtml).not.toContain('<script');
+        expect(section.footerText).not.toContain('<script');
+        expect(section.customCSS).not.toContain('<');
+        expect(section.customCSS).not.toMatch(/javascript\s*:/i);
+      }
+      expect(args.create.customCSS).toContain('.a{color:red}');
+    });
+
     it('should return 400 for invalid hex color', async () => {
       const res = await request(app)
         .post('/api/branding/')

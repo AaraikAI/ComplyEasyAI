@@ -3,7 +3,7 @@
  * Tests API endpoints under various load conditions
  */
 
-import { jest, describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../index';
 

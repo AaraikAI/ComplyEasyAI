@@ -222,6 +222,13 @@ describe('MLModelsService', () => {
   });
 
   describe('detectDeepfake', () => {
+    it('should reject array-like media content that is not a Buffer', async () => {
+      const fake = { length: 1e12, 0: 255 } as unknown as Buffer;
+      await expect(mlModelsService.detectDeepfake(fake, 'image')).rejects.toMatchObject({
+        statusCode: 400,
+      });
+    });
+
     it('should detect deepfake from media buffer', async () => {
       await mlModelsService.initialize();
 

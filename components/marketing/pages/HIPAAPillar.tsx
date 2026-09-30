@@ -1,10 +1,9 @@
 import React from 'react';
 import SignalFrameworkPillar from './SignalFrameworkPillar';
 
-const SEO_TITLE =
-  'HIPAA Compliance Software: Automate Safeguards, Risk Analysis & Audit Readiness | ComplyEasy AI';
+const SEO_TITLE = 'HIPAA Compliance Software for PHI | ComplyEasyAI';
 const SEO_DESCRIPTION =
-  'ComplyEasy AI is HIPAA compliance software that helps covered entities and business associates map the Security, Privacy, and Breach Notification Rules, run continuous risk analysis, and stay audit-ready with automated safeguard tracking and evidence collection.';
+  'HIPAA compliance software for covered entities and business associates: map the Security, Privacy and Breach Notification Rules and keep the risk analysis current.';
 const SEO_KEYWORDS =
   'HIPAA compliance software, HIPAA Security Rule, HIPAA Privacy Rule, HIPAA risk analysis, ePHI safeguards, business associate agreement, HIPAA audit readiness, healthcare compliance automation';
 

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 // Mock uuid

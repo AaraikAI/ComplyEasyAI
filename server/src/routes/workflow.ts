@@ -14,7 +14,6 @@ import {
 import { asyncHandler, AuthenticatedRequest } from '../types/express';
 import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
-import logger from '../config/logger';
 import { Prisma } from '../generated/prisma/client';
 
 interface WorkflowNode {

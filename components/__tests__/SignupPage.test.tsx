@@ -55,7 +55,7 @@ describe('SignupPage', () => {
   describe('Step 1: Account Credentials', () => {
     it('renders step 1 by default', () => {
       render(<SignupPage />);
-      expect(screen.getByText('Start free')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'Create your account' })).toBeInTheDocument();
       expect(screen.getByText(/Enter your work email/)).toBeInTheDocument();
     });
 
@@ -292,7 +292,7 @@ describe('SignupPage', () => {
       fireEvent.click(screen.getByText('1-10 employees'));
       fireEvent.click(screen.getByText('SOC 2 Certification'));
       submitForm();
-      expect(screen.getByText('3-day free trial')).toBeInTheDocument();
+      expect(screen.getByText('Your workspace')).toBeInTheDocument();
     });
 
     it('goes back to step 2 when Back is clicked', () => {
@@ -325,7 +325,7 @@ describe('SignupPage', () => {
 
     it('renders step 4 with review details', () => {
       goToStep4();
-      expect(screen.getByText('3-day free trial')).toBeInTheDocument();
+      expect(screen.getByText('Your workspace')).toBeInTheDocument();
     });
 
     it('displays entered email in review', () => {
@@ -348,19 +348,22 @@ describe('SignupPage', () => {
       expect(screen.getByText('FinTech')).toBeInTheDocument();
     });
 
-    it('shows trial details section', () => {
+    it('shows the Foundation workspace limits and offers a trial on request, not a free trial', () => {
       goToStep4();
-      expect(screen.getByText('3-day free trial')).toBeInTheDocument();
-      // "No credit card required" may appear in more than one place
-      const matches = screen.getAllByText('No credit card required');
-      expect(matches.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('Your workspace')).toBeInTheDocument();
+      expect(screen.getByText('Up to 3 compliance frameworks')).toBeInTheDocument();
+      for (const link of screen.getAllByText('Request a trial')) {
+        expect(link.closest('a')).toHaveAttribute('href', '/demo');
+      }
+      expect(document.body.innerHTML).not.toMatch(/free trial|no credit card/i);
     });
 
-    it('shows Terms of Service and Privacy Policy links', () => {
+    it('asks for agreement to the Terms of Service and Privacy Policy without linking to pages that do not exist', () => {
       goToStep4();
       expect(screen.getByText(/I agree to the/)).toBeInTheDocument();
       expect(screen.getByText('Terms of Service')).toBeInTheDocument();
       expect(screen.getByText('Privacy Policy')).toBeInTheDocument();
+      expect(document.querySelector('a[href="/terms"], a[href="/privacy"]')).toBeNull();
     });
 
     it('shows marketing checkbox', () => {

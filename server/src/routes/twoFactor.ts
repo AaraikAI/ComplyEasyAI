@@ -24,10 +24,12 @@ router.post('/setup', authenticate, authLimiter, asyncHandler(twoFactorControlle
 // Verify and enable 2FA
 router.post('/verify-enable', authenticate, validateBody(verifyAndEnableSchema), asyncHandler(twoFactorController.verifyAndEnable));
 
-// Verify 2FA token during login (public - rate limited to prevent brute-force)
+// Verify 2FA token during login (public - rate limited to prevent brute-force).
+// The subject user comes from the signed twoFactorToken issued by login.
 router.post('/verify', authLimiter, validateBody(verifyTokenSchema), asyncHandler(twoFactorController.verifyToken));
 
-// Verify backup code during login (public - rate limited to prevent brute-force)
+// Verify backup code during login (public - rate limited to prevent brute-force).
+// The subject user comes from the signed twoFactorToken issued by login.
 router.post('/verify-backup', authLimiter, validateBody(verifyBackupCodeSchema), asyncHandler(twoFactorController.verifyBackupCode));
 
 // Disable 2FA (requires authentication, rate limited)

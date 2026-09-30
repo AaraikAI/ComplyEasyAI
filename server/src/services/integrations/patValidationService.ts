@@ -26,6 +26,21 @@ interface ValidationResult {
   note?: string;
 }
 
+/**
+ * Reduce a URL to `protocol//host[:port]` for log output. Outbound validation
+ * URLs can carry credentials in the userinfo, path or query string (a
+ * user-supplied base URL, an account identifier, a provider redirect), so the
+ * full URL is never written to the logs.
+ */
+export function redactUrlForLog(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return '[unparseable URL]';
+  }
+}
+
 class PATValidationService {
   /**
    * Verify baseUrl is safe before use in HTTP requests (SSRF protection).
@@ -45,7 +60,9 @@ class PATValidationService {
    */
   private assertSafeOutbound(url: string, context: string): void {
     if (!isUrlSafe(url)) {
-      logger.error(`PAT validation outbound URL rejected by isUrlSafe (${context})`, { url });
+      logger.error(`PAT validation outbound URL rejected by isUrlSafe (${context})`, {
+        target: redactUrlForLog(url),
+      });
       throw new AppError(`Unsafe outbound URL in ${context}`, 400);
     }
   }
@@ -150,7 +167,9 @@ class PATValidationService {
 
       const resolvedUrl = new URL(location, currentUrl).href;
       if (!isUrlSafe(resolvedUrl)) {
-        logger.error(`PAT validation blocked redirect to unsafe URL (${context})`, { resolvedUrl });
+        logger.error(`PAT validation blocked redirect to unsafe URL (${context})`, {
+          target: redactUrlForLog(resolvedUrl),
+        });
         throw new AppError(`Unsafe redirect target in ${context} (SSRF protection)`, 400);
       }
 
@@ -1932,8 +1951,18 @@ class PATValidationService {
         return { valid: false, error: 'PayPal API token must be in format clientId:clientSecret' };
       }
 
-      // Determine environment
-      const isSandbox = baseUrl?.includes('sandbox') || baseUrl?.includes('sandbox.paypal.com');
+      // Determine environment from the base URL's hostname (PayPal sandbox hosts
+      // live under sandbox.paypal.com, e.g. api-m.sandbox.paypal.com).
+      let isSandbox = false;
+      if (baseUrl) {
+        try {
+          const host = new URL(baseUrl).hostname.toLowerCase();
+          isSandbox = host === 'sandbox.paypal.com' || host.endsWith('.sandbox.paypal.com');
+        } catch {
+          logger.warn('PayPal base URL could not be parsed; using the production endpoint');
+          isSandbox = false;
+        }
+      }
       const apiUrl = isSandbox 
         ? 'https://api.sandbox.paypal.com/v1/oauth2/token'
         : 'https://api.paypal.com/v1/oauth2/token';

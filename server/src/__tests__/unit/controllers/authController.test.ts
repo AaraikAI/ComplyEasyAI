@@ -134,11 +134,13 @@ jest.mock('isomorphic-dompurify', () => ({
 import jwt from 'jsonwebtoken';
 import authController from '../../../controllers/authController';
 import { AppError } from '../../../middleware/errorHandler';
-import bcrypt from 'bcryptjs';
+import {
+  signPendingTwoFactorToken,
+  resolvePendingTwoFactorUserId,
+} from '../../../utils/twoFactorPendingToken';
 
-// Helper to create a valid 2FA pending JWT for tests
-const create2FAToken = (userId: string) =>
-  jwt.sign({ userId, purpose: '2fa_pending' }, 'test-jwt-secret', { expiresIn: '5m' });
+// Helper to create a valid 2FA pending JWT for tests (signed the way login signs it)
+const create2FAToken = (userId: string) => signPendingTwoFactorToken(userId);
 
 describe('AuthController', () => {
   let mockReq: any;
@@ -624,6 +626,24 @@ describe('AuthController', () => {
       }));
     });
 
+    // Regression: the pending token used to be signed with the access-token
+    // secret, so authenticate() (which checks only the signature and userId)
+    // accepted it as a Bearer token and the password alone gave a session.
+    it('should issue a 2FA pending token that does not verify as an access token', async () => {
+      mockReq.body = { email: 'test@example.com', password: 'pass' };
+      (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({
+        ...mockUserWithPassword, twoFactorEnabled: true, twoFactorVerified: true,
+      });
+      require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(true);
+
+      await authController.login(mockReq as Request, mockRes as Response);
+
+      const body = (mockRes.json as jest.Mock<any>).mock.calls[0][0] as { twoFactorToken: string };
+      expect(() => jwt.verify(body.twoFactorToken, 'test-jwt-secret', { algorithms: ['HS256'] })).toThrow();
+      expect(resolvePendingTwoFactorUserId(body.twoFactorToken)).toBe(mockUserWithPassword.id);
+      expect(mockGenerateToken).not.toHaveBeenCalled();
+    });
+
     it('should login successfully with valid credentials', async () => {
       mockReq.body = { email: 'test@example.com', password: 'pass' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUserWithPassword);
@@ -988,6 +1008,16 @@ describe('AuthController', () => {
       await expect(
         authController.completeTwoFactorLogin(mockReq as Request, mockRes as Response)
       ).rejects.toThrow(AppError);
+    });
+
+    it('should reject a pending token signed with the access-token secret', async () => {
+      const accessKeySigned = jwt.sign({ userId: 'user-123', purpose: '2fa_pending' }, 'test-jwt-secret', { expiresIn: '5m' });
+      mockReq.body = { twoFactorToken: accessKeySigned, token: '123456' };
+
+      await expect(
+        authController.completeTwoFactorLogin(mockReq as Request, mockRes as Response)
+      ).rejects.toMatchObject({ statusCode: 401, message: 'Two-factor token expired or invalid' });
+      expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
     });
 
     it('should throw AppError when user not found', async () => {

@@ -29,7 +29,9 @@ deduplicated tracking issue. Engine: `scripts/self-improvement/audit-report.mjs`
 
 ### 2. Framework amendment monitor — `.github/workflows/framework-monitor.yml` (weekly)
 Hash-diffs the authoritative sources in `scripts/self-improvement/sources.json`
-(EU AI Act, GDPR, NIST AI RMF/CSF, HIPAA, PCI DSS, ISO 27001, SOC 2). A changed
+(EU AI Act, GDPR, NIST AI RMF/CSF, HIPAA, PCI DSS, ISO 27001, ISO/IEC 27017, ISO/IEC 27018,
+SOC 2). The two ISO/IEC cloud standards are watched on the IEC webstore, because iso.org
+answers automated fetches with a 403 challenge page. A changed
 page opens a `needs-review` issue and hands the report to the compliance agent.
 Baselines live in `scripts/self-improvement/state/` and are committed each run so
 detection is stateful. Engine: `scripts/self-improvement/monitor-sources.mjs`

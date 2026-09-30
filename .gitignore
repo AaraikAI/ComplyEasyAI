@@ -43,6 +43,8 @@ server/.env.bak
 # Coverage reports
 coverage/
 server/coverage/
+# Vitest 5 artifact directory (attachments, blob/json/junit/html reporter output)
+.vitest/
 server/reports/
 server/models/
 server/server/models/

@@ -29,6 +29,14 @@ jest.mock('../../../utils/logSanitizer', () => ({
   sanitizeForLogging: jest.fn((data: any) => data),
 }));
 
+// Identity sentinels, so the tests can tell which format each transport received.
+// The formats themselves are covered with real winston in logFormats.test.ts.
+jest.mock('../../../config/logFormats', () => ({
+  jsonFormat: { name: 'jsonFormat' },
+  textFormat: { name: 'textFormat' },
+  sanitizationFormat: { name: 'sanitizationFormat' },
+}));
+
 // Mock variables for assertions
 const mockFormat = {
   combine: jest.fn(),
@@ -183,6 +191,42 @@ describe('Logger Configuration', () => {
       const createArgs = mockCreateLogger.mock.calls[0][0] as any;
       expect(createArgs.transports).toHaveLength(1);
       expect(mockTransportsConsole).toHaveBeenCalled();
+    });
+
+    it('writes structured JSON to the production console', () => {
+      // Production stdout is forwarded to CloudWatch one line per event; the JSON
+      // format keeps each entry on one line whatever the logged values contain.
+      process.env.NODE_ENV = 'production';
+      delete process.env.LOG_CONSOLE;
+      delete process.env.LOG_FILE;
+      jest.resetModules();
+      setupMockImplementations();
+
+      require('../../../config/logger');
+      const { jsonFormat } = require('../../../config/logFormats');
+
+      // The log transport plus the exception and rejection handlers: every
+      // production stdout sink writes JSON.
+      expect(mockTransportsConsole).toHaveBeenCalledTimes(3);
+      for (const [opts] of mockTransportsConsole.mock.calls as any[][]) {
+        expect(opts.format).toBe(jsonFormat);
+      }
+    });
+
+    it('uses the colorized, escaped text format on the development console', () => {
+      process.env.NODE_ENV = 'development';
+      delete process.env.LOG_CONSOLE;
+      jest.resetModules();
+      setupMockImplementations();
+      const colorizeResult = { name: 'colorize' };
+      mockFormat.colorize.mockReturnValue(colorizeResult);
+      mockFormat.combine.mockImplementation((...parts: unknown[]) => ({ parts }));
+
+      require('../../../config/logger');
+      const { textFormat } = require('../../../config/logFormats');
+
+      const consoleOpts = mockTransportsConsole.mock.calls[0][0] as any;
+      expect(consoleOpts.format).toEqual({ parts: [colorizeResult, textFormat] });
     });
   });
 
@@ -346,6 +390,24 @@ describe('Logger Configuration', () => {
       expect(createLoggerCall).toBeDefined();
       expect(createLoggerCall.rejectionHandlers).toBeDefined();
       expect(createLoggerCall.rejectionHandlers.length).toBeGreaterThan(0);
+    });
+
+    it('formats exception and rejection log files as escaped JSON', () => {
+      process.env.NODE_ENV = 'development';
+      delete process.env.LOG_FILE;
+      jest.resetModules();
+      setupMockImplementations();
+
+      require('../../../config/logger');
+      const { jsonFormat } = require('../../../config/logFormats');
+
+      for (const name of ['exceptions.log', 'rejections.log']) {
+        const call = mockTransportsFile.mock.calls.find(
+          (c: any[]) => endsWithLogFile(c[0]?.filename, name)
+        );
+        expect(call).toBeDefined();
+        expect((call![0] as any).format).toBe(jsonFormat);
+      }
     });
   });
 });

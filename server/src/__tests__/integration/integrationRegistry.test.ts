@@ -9,7 +9,6 @@
  */
 
 import integrationRegistry from '../../services/integrations/providers/integrationRegistry';
-import { BaseIntegrationProvider } from '../../services/integrations/providers/baseIntegration';
 
 // Expected integration IDs — must match the 381 entries in the front-end catalog
 const EXPECTED_IDS: string[] = [
@@ -254,7 +253,7 @@ describe('Integration Registry', () => {
 
   test('every provider supports at least one evidence type', () => {
     const allProviders = integrationRegistry.getAll();
-    for (const [id, provider] of allProviders) {
+    for (const provider of allProviders.values()) {
       expect(provider.capabilities.supportedEvidenceTypes.length).toBeGreaterThan(0);
     }
   });

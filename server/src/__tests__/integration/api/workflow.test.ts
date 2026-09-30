@@ -86,18 +86,6 @@ const createMockExecution = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const createMockTemplate = (overrides: Record<string, unknown> = {}) => ({
-  id: 'template-123',
-  name: 'SOC 2 Incident Response',
-  description: 'Standard incident response workflow for SOC 2',
-  category: 'Incident Management',
-  nodes: [],
-  edges: [],
-  isPublic: true,
-  createdAt: new Date(),
-  ...overrides,
-});
-
 // Setup app
 let app: Express;
 

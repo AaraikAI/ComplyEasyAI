@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import { redactPII, rehydratePII } from '../../../utils/piiRedaction';
 
 describe('piiRedaction', () => {
@@ -111,6 +111,34 @@ describe('piiRedaction', () => {
       const { redactedText, map } = redactPII(original);
       const restored = rehydratePII(redactedText, map);
       expect(restored).toBe(original);
+    });
+
+    it('restores values literally, without interpreting $ replacement patterns', () => {
+      const map = new Map([['[SECRET_1]', "a$&b$'c$1"]]);
+      expect(rehydratePII('key=[SECRET_1];', map)).toBe("key=a$&b$'c$1;");
+    });
+
+    it('ignores an empty token', () => {
+      expect(rehydratePII('abc', new Map([['', 'x']]))).toBe('abc');
+    });
+  });
+
+  describe('email pattern performance', () => {
+    it.each([
+      ['a run of local-part characters', '%'.repeat(100000)],
+      ['a run ending in @', '%'.repeat(100000) + '@'],
+      ['an unterminated domain', 'a@' + 'a'.repeat(100000)],
+    ])('stays linear on %s', (_label, input) => {
+      const start = process.hrtime.bigint();
+      redactPII(input);
+      const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
+      expect(elapsedMs).toBeLessThan(1000);
+    });
+
+    it('still redacts ordinary addresses', () => {
+      const result = redactPII('Mail john.doe+tag@mail.example.co.uk or a%b@x.io');
+      expect(result.redactedText).toBe('Mail [EMAIL_1] or [EMAIL_2]');
+      expect(result.map.get('[EMAIL_1]')).toBe('john.doe+tag@mail.example.co.uk');
     });
   });
 });

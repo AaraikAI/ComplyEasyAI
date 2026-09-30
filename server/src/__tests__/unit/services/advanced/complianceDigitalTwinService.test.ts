@@ -391,6 +391,19 @@ describe('ComplianceDigitalTwinService', () => {
   });
 
   // ===================== error handling =====================
+  describe('parameter variation', () => {
+    it('should only vary own, safe numeric parameters', () => {
+      const params = JSON.parse('{"budget": 100, "__proto__": 5, "constructor": 7, "label": "x"}');
+      const varied = (complianceDigitalTwinService as any).addRandomVariation(params, () => 1, true);
+
+      expect(varied.budget).not.toBe(100);
+      expect(varied.label).toBe('x');
+      // Unsafe keys are copied through untouched, never recomputed.
+      expect(Object.getOwnPropertyDescriptor(varied, 'constructor')?.value).toBe(7);
+      expect(Object.getPrototypeOf(varied)).toBe(Object.prototype);
+    });
+  });
+
   describe('error handling', () => {
     it('should handle framework findMany error', async () => {
       (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockRejectedValueOnce(new Error('DB error'));

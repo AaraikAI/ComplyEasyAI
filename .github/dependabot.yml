@@ -21,7 +21,23 @@ updates:
     # blocking every patch in the group. Excluding majors here does NOT ignore
     # them - Dependabot opens an individual PR per major, which is what a
     # breaking change deserves.
+    #
+    # The one exception is the vitest family. vitest, @vitest/ui and
+    # @vitest/coverage-v8 pin each other to the exact same version through
+    # peerDependencies, so none of them can be installed on its own: the 5.0.0
+    # majors arrived as three separate PRs (#516, #517, #519) and each one
+    # failed Lint & Type Check. The `vitest` group takes every update type,
+    # majors included, so the family always lands in a single PR. It must stay
+    # FIRST: Dependabot assigns a dependency to the first group it matches.
     groups:
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
       production-dependencies:
         patterns:
           - "*"
@@ -59,6 +75,17 @@ updates:
         versions: [">=6.0.0"]
       - dependency-name: "eslint"
         versions: [">=10.0.0"]
+      # ioredis 6.0.0 (#532) switches String.prototype to V8 dictionary mode
+      # as soon as it is loaded (its RESP3 decoder declares
+      # `class VerbatimString extends String`), which slows string code in the
+      # whole process: escape-html ran 117k -> 37k ops/s and a charCodeAt loop
+      # about 10x slower on Node 22 here. Fixed upstream by redis/ioredis#2206
+      # (merged 2026-09-28), not released yet. Only 6.0.0 is ignored, so the
+      # next 6.x is proposed as usual. Taking it: tsc and a real-Redis smoke
+      # of the cache and BullMQ paths already pass on 6.0.0; RESP3 becomes the
+      # default protocol (`protocol: 2` keeps the v5 wire format).
+      - dependency-name: "ioredis"
+        versions: ["6.0.0"]
     # Majors are deliberately kept OUT of the groups. A grouped PR is
     # all-or-nothing, so one breaking major makes the whole batch unmergeable:
     # #420 bundled 47 routine AWS SDK patches with stripe 21->22 and
@@ -98,6 +125,18 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    # The node base image stays on an LTS line (see the Dockerfile base stage,
+    # NODE_VERSION in ci.yml and "engines"). Under the release model that ends
+    # with Node 26, odd majors never enter LTS and are dropped once the next
+    # even major ships, so Dependabot must not propose them (#535 proposed
+    # node:25-alpine). From Node 27 every major is promoted to LTS in the
+    # October after its April release (nodejs.org, "Evolving the Node.js
+    # Release Schedule"), so 27+ is deliberately not ignored; merge such a
+    # proposal only after that promotion. Docker ignore ranges use Bundler
+    # requirement syntax: "~> 23.0" matches every 23.x tag, including "23-alpine".
+    ignore:
+      - dependency-name: "node"
+        versions: ["~> 23.0", "~> 25.0"]
     labels:
       - "dependencies"
       - "docker"
@@ -160,9 +199,41 @@ updates:
       # together with the Expo SDK 57 migration below, not on its own.
       - dependency-name: "react-native"
         versions: [">=0.86.0"]
+      # react, react-test-renderer and their @types move together with
+      # react-native, never on their own. react-native 0.85.3 ships its own
+      # React renderer built from React 19.2.3 (Libraries/Renderer/
+      # implementations/*: version "19.2.3"; the legacy ReactNativeRenderer
+      # also throws "Incompatible React versions" unless react is exactly
+      # 19.2.3, while the Fabric renderer the app runs on has no such check),
+      # and Expo SDK 56's bundledNativeModules.json pins "react": "19.2.3".
+      # React 19.3.0 is a new minor whose reconciler changes (ViewTransition,
+      # Fragment refs, independent transitions) live in that renderer, so
+      # react 19.3 on RN 0.85 pairs a 19.3 `react` with the 19.2.3 reconciler.
+      # The mobile jest suite cannot catch this: react-test-renderer 19.3
+      # carries its own 19.3 reconciler, so #511 went green. Dependabot also
+      # proposed react (#512) and react-test-renderer (#511) separately, but
+      # the two must be the same exact version. 19.2.x patches stay allowed.
+      # Lift this hold in the same PR as the react-native / Expo SDK upgrade
+      # whose bundled renderer is built from React 19.3.
+      - dependency-name: "react"
+        versions: [">=19.3.0"]
+      - dependency-name: "react-test-renderer"
+        versions: [">=19.3.0"]
+      - dependency-name: "@types/react"
+        versions: [">=19.3.0"]
+      - dependency-name: "@types/react-test-renderer"
+        versions: [">=19.3.0"]
+      # Native modules that the Expo SDK pins move with the SDK, not on their
+      # own: Expo SDK 56's bundledNativeModules.json expects
+      # react-native-screens ~4.26.0, and a newer minor ships native code the
+      # SDK was not built and tested against (#576 proposed 4.28.0). Patch
+      # releases stay allowed; take minors and majors with `npx expo install
+      # --fix` during the SDK migration.
+      - dependency-name: "react-native-screens"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
       # Expo SDK 57 is a coordinated SDK migration, not a dependency bump. The
       # tree is coherently on SDK 56 - expo, expo-secure-store, expo-status-bar
-      # and jest-expo all 56.x against react-native 0.85.2 with a matching
+      # and jest-expo all 56.x against react-native 0.85.3 with a matching
       # @react-native/jest-preset. Dependabot proposes the family piecemeal
       # (#436 expo, #431 jest-expo, #433 expo-status-bar -> 57, while
       # expo-secure-store stays on 56), and expo's peerDependencies are all "*",

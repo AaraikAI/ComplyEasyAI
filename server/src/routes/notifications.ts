@@ -7,7 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { validateBody } from '../middleware/validate';
 import { updateNotificationPreferencesSchema } from '../validators/notificationSchemas';
@@ -51,8 +51,8 @@ router.get(
   '/unread-count',
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
-    const orgId = (req as any).user.organizationId;
-    const userId = (req as any).user.id;
+    const orgId = user.organizationId;
+    const userId = user.id;
 
     try {
       const count = await prisma.notification.count({

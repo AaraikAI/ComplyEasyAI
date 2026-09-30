@@ -9,7 +9,6 @@ export const ROUTES = {
   LANDING: '/',
   SIGNUP: '/signup',
   LEARN: '/learn',
-  COMMUNITY: '/community',
   STATUS: '/status',
   DOCS: '/docs',
 

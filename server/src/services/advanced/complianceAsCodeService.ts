@@ -294,9 +294,14 @@ class ComplianceAsCodeService {
     if (!this.startsWithWord(line, 'default')) {
       return false;
     }
-    // Collapse runs of whitespace to single spaces, then compare tokens.
-    const compact = line.replace(/\s+/g, ' ').replace(':=', '=').replace(/\s*=\s*/, ' = ');
-    return compact === 'default allow = false';
+    // Split on the first `=` (or `:=`) and compare each side after collapsing
+    // whitespace. indexOf/trim keep this linear in the line length.
+    const compact = line.replace(/\s+/g, ' ').replace(':=', '=');
+    const eq = compact.indexOf('=');
+    if (eq < 0) {
+      return false;
+    }
+    return compact.slice(0, eq).trimEnd() === 'default allow' && compact.slice(eq + 1).trimStart() === 'false';
   }
 
   /**

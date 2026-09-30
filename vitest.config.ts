@@ -18,10 +18,12 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
+      // Vitest 5 matches these globs against the project-relative path with no
+      // substring ("contains") matching, so directories need an explicit `/**`.
       exclude: [
-        'node_modules/',
-        'dist/',
-        'server/',
+        'node_modules/**',
+        'dist/**',
+        'server/**',
         '**/*.test.{ts,tsx}',
         '**/*.spec.{ts,tsx}',
         '**/*.config.{ts,js}',

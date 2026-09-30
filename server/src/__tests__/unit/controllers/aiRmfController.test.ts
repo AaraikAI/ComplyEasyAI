@@ -7,7 +7,6 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { Request, Response } from 'express';
 
 // Mock service functions
 const mockCreateAISystem = jest.fn<any>();

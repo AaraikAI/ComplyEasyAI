@@ -10,8 +10,6 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 import {
   PaginationParams,
   PaginatedResponse,
-  validatePaginationParams,
-  getPaginationFromQuery,
   buildPaginatedResponse,
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
@@ -116,11 +114,9 @@ function validateSortField(
   // permitted to reach Prisma's orderBy. Routes that support sorting must
   // opt in by passing allowedSortFields.
   if (!allowedFields || allowedFields.length === 0) {
-    if (sortBy) {
-      logger.debug(
-        `[PaginationMiddleware] Ignoring sortBy "${sortBy}": no allowedSortFields configured for this route`
-      );
-    }
+    logger.debug(
+      `[PaginationMiddleware] Ignoring sortBy "${sortBy}": no allowedSortFields configured for this route`
+    );
     return undefined;
   }
 

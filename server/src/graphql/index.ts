@@ -25,7 +25,7 @@ import {
   GraphQLObjectType,
   GraphQLList,
 } from 'graphql';
-import depthLimit from 'graphql-depth-limit';
+import { depthLimit } from './depthLimit';
 import jwt from 'jsonwebtoken';
 import config from '../config';
 import logger from '../config/logger';
@@ -54,16 +54,6 @@ const schema = buildSchema(typeDefs);
 function buildRootValue(context: GraphQLContext) {
   const wrapResolver = (fn: Function) => {
     return (args: any) => fn(null, args, context);
-  };
-
-  const wrapFieldResolver = (typeName: string) => {
-    const typeResolvers = (resolvers as any)[typeName];
-    if (!typeResolvers) return {};
-    const wrapped: Record<string, Function> = {};
-    for (const [field, fn] of Object.entries(typeResolvers)) {
-      wrapped[field] = (parent: any) => (fn as Function)(parent);
-    }
-    return wrapped;
   };
 
   return {

@@ -27,6 +27,12 @@ import {
   PRIVATE_TEMP_FILE_OPTIONS,
 } from '../../utils/privateTempDir';
 
+// Largest evidence payload analysed in-process. Matches the upload limit on the
+// evidence routes (routes/acos.ts multer `limits.fileSize`).
+const MAX_EVIDENCE_BYTES = 100 * 1024 * 1024;
+// Upper bound on the number of files one bulk-analysis request may carry.
+const MAX_BULK_EVIDENCE_FILES = 50;
+
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
 
@@ -86,6 +92,16 @@ class EvidenceTruthLayerService {
       size?: number;
     }
   ): Promise<EvidenceAnalysis> {
+    // The analysers below walk the payload byte by byte, so accept only real
+    // binary data of bounded size. JSON callers (the bulk path) could otherwise
+    // pass an array-like object whose `length` drives those loops.
+    if (fileBuffer !== undefined && !Buffer.isBuffer(fileBuffer)) {
+      throw new AppError('Evidence file content must be binary data', 400);
+    }
+    if ((fileBuffer?.length ?? 0) > MAX_EVIDENCE_BYTES) {
+      throw new AppError('Evidence file exceeds the 100 MB limit', 413);
+    }
+
     try {
       // 1. Deepfake Detection (enhanced)
       const deepfakeResult = await this.detectDeepfake(fileBuffer, metadata);
@@ -278,7 +294,7 @@ class EvidenceTruthLayerService {
       // 1. Byte frequency distribution analysis
       const byteFrequency = new Uint32Array(256);
       for (let i = 0; i < fileBuffer.length; i++) {
-        byteFrequency[fileBuffer[i]]++;
+        byteFrequency[fileBuffer[i] & 0xff]++;
       }
 
       // 2. Shannon entropy calculation - artificially generated content often has abnormal entropy
@@ -1522,7 +1538,7 @@ class EvidenceTruthLayerService {
     // Signal 4: Low entropy regions (screen moiré patterns produce regular patterns)
     const sample = fileBuffer.slice(0, Math.min(4096, fileBuffer.length));
     const byteFreq = new Array(256).fill(0);
-    for (let i = 0; i < sample.length; i++) byteFreq[sample[i]]++;
+    for (let i = 0; i < sample.length; i++) byteFreq[sample[i] & 0xff]++;
     const entropy = byteFreq.reduce((e, f) => {
       if (f === 0) return e;
       const p = f / sample.length;
@@ -2146,6 +2162,10 @@ class EvidenceTruthLayerService {
       };
     }>
   ): Promise<Array<EvidenceAnalysis & { success: boolean; error?: string }>> {
+    if (!Array.isArray(evidenceFiles) || evidenceFiles.length > MAX_BULK_EVIDENCE_FILES) {
+      throw new AppError(`evidenceFiles must be an array of at most ${MAX_BULK_EVIDENCE_FILES} items`, 400);
+    }
+
     try {
       const results: Array<EvidenceAnalysis & { success: boolean; error?: string }> = [];
 

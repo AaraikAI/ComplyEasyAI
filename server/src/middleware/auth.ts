@@ -5,7 +5,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import monitoring from '../config/monitoring';
 import tokenBlacklist from '../services/tokenBlacklistService';
-import { User, Organization } from '../generated/prisma/client';
+import { Organization } from '../generated/prisma/client';
 import crypto from 'crypto';
 import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
 import { runWithOrg } from '../config/orgContext';

@@ -4,7 +4,6 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { prismaMock } from '../../mocks/prisma';
 
 // Mock Google Generative AI
 const mockGenerateContent = jest.fn() as jest.Mock<any>;

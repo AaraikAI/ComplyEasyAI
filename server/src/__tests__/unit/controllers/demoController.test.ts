@@ -3,7 +3,6 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { Request, Response, NextFunction } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 // Mock webhook service
@@ -406,6 +405,35 @@ describe('DemoController', () => {
             pages: 10,
           },
         })
+      );
+    });
+
+    it.each([['__proto__'], ['constructor'], ['ipAddress'], ['metadata.path'], ['toString']])(
+      'should fall back to createdAt for a sortBy outside the allowlist (%s)',
+      async (sortBy) => {
+        mockReq.query = { sortBy, sortOrder: 'sideways' };
+
+        mockDemoRequest.findMany.mockResolvedValue([]);
+        mockDemoRequest.count.mockResolvedValue(0);
+
+        await demoController.getAllDemoRequests(mockReq, mockRes, mockNext);
+
+        const args = mockDemoRequest.findMany.mock.calls[0][0] as any;
+        expect(args.orderBy).toEqual({ createdAt: 'desc' });
+        expect(Object.getPrototypeOf(args.orderBy)).toBe(Object.prototype);
+      }
+    );
+
+    it('should ignore non-string status and tier filters', async () => {
+      mockReq.query = { status: { not: 'pending' }, tier: ['a', 'b'] };
+
+      mockDemoRequest.findMany.mockResolvedValue([]);
+      mockDemoRequest.count.mockResolvedValue(0);
+
+      await demoController.getAllDemoRequests(mockReq, mockRes, mockNext);
+
+      expect(mockDemoRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: {} })
       );
     });
 

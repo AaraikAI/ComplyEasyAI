@@ -261,7 +261,7 @@ describe('Team Routes Integration', () => {
       prismaMock.magicLink.create.mockResolvedValue({} as any);
       prismaMock.auditLog.create.mockResolvedValue({} as any);
 
-      const response = await request(app)
+      await request(app)
         .post('/api/team/invite')
         .send({
           email: 'new@example.com',

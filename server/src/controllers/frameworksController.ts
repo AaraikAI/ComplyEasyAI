@@ -7,6 +7,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { ComplianceStatus } from '../generated/prisma/client';
 import controlTemplatesService from '../services/euRegulations/controlTemplatesService';
 import DOMPurify from 'isomorphic-dompurify';
+import config from '../config';
+import { resolveOrgEvidenceKey } from '../utils/evidenceKey';
 
 // FrameworkType enum values - matching frontend types.ts
 enum FrameworkType {
@@ -895,30 +897,12 @@ class FrameworksController {
         throw new AppError('Evidence not found', 404);
       }
 
-      // Extract S3 key from URL or use the URL as-is
-      let s3Key = control.evidence;
-      
-      // If it's already a full URL, extract the key
-      if (control.evidence.includes('amazonaws.com/') || control.evidence.includes('s3.')) {
-        // Extract key from S3 URL (format: https://bucket.s3.region.amazonaws.com/key or https://s3.region.amazonaws.com/bucket/key)
-        try {
-          const url = new URL(control.evidence);
-          // Remove leading slash from pathname
-          s3Key = url.pathname.startsWith('/') ? url.pathname.substring(1) : url.pathname;
-        } catch {
-          // If URL parsing fails, try manual extraction
-          const urlParts = control.evidence.split('/');
-          const bucketIndex = urlParts.findIndex(part => part.includes('.s3.') || part.includes('amazonaws.com'));
-          if (bucketIndex >= 0 && bucketIndex < urlParts.length - 1) {
-            s3Key = urlParts.slice(bucketIndex + 1).join('/');
-          }
-        }
-      }
-      
-      // If s3Key is still a full URL, it might be stored as just the key path
-      // Remove any query parameters
-      if (s3Key.includes('?')) {
-        s3Key = s3Key.split('?')[0];
+      // Resolve the object key and require it to sit under this organization's
+      // prefix. The evidence field is writable through the control update API,
+      // so an unchecked value could otherwise sign another tenant's object.
+      const s3Key = resolveOrgEvidenceKey(control.evidence, organizationId, config.aws.s3Bucket);
+      if (!s3Key) {
+        throw new AppError('Evidence not found', 404);
       }
 
       // Generate signed URL

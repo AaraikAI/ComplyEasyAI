@@ -3,7 +3,6 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { Response } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 jest.mock('../../../config/logger', () => ({
@@ -171,6 +170,24 @@ describe('OnboardingController', () => {
       const call = (prismaMock.onboardingProgress.upsert as jest.Mock<any>).mock.calls[0][0];
       expect(call.update.maliciousField).toBeUndefined();
       expect(mockRes.json).toHaveBeenCalledWith({ progress });
+    });
+
+    it('should not let inherited object members pass the field allowlist', async () => {
+      // JSON.parse creates own `__proto__`/`constructor` keys; a plain-object
+      // allowlist lookup (`allowedFields[key]`) used to accept both.
+      mockReq.body = JSON.parse(
+        '{"currentStep": 2, "constructor": {"x": 1}, "__proto__": {"polluted": true}, "toString": "x"}'
+      );
+      (prismaMock.onboardingProgress.upsert as jest.Mock<any>).mockResolvedValue({
+        welcomeCompleted: false,
+      });
+
+      await onboardingController.updateProgress(mockReq, mockRes);
+
+      const call = (prismaMock.onboardingProgress.upsert as jest.Mock<any>).mock.calls[0][0];
+      expect(Object.keys(call.update)).toEqual(['currentStep']);
+      expect(Object.getPrototypeOf(call.update)).toBe(Object.prototype);
+      expect(Object.keys(call.create)).toEqual(['userId', 'organizationId', 'currentStep']);
     });
 
     it('should update org onboarding status when major milestones completed', async () => {
@@ -729,6 +746,17 @@ describe('OnboardingController', () => {
   // ============================================================================
 
   describe('updateChecklist', () => {
+    it('should not let inherited object members pass the checklist allowlist', async () => {
+      mockReq.body = JSON.parse('{"teamInvited": true, "constructor": true, "__proto__": {"polluted": true}}');
+      (prismaMock.onboardingChecklist.upsert as jest.Mock<any>).mockResolvedValue({ organizationId: 'org-1' });
+
+      await onboardingController.updateChecklist(mockReq, mockRes);
+
+      const call = (prismaMock.onboardingChecklist.upsert as jest.Mock<any>).mock.calls[0][0];
+      expect(Object.keys(call.update)).toEqual(['teamInvited']);
+      expect(Object.getPrototypeOf(call.update)).toBe(Object.prototype);
+    });
+
     it('should update checklist with whitelisted fields only', async () => {
       mockReq.body = {
         profileCompleted: true,

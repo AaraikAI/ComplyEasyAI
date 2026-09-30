@@ -148,20 +148,20 @@ describe('FrameworkTemplateService', () => {
   // ======================================================================
   // AIUC-1 and India DPDPA (real control modules — not mocked above)
   // ======================================================================
-  describe('AIUC-1 and India DPDPA templates', () => {
-    const requireComplete = (controls: any[]) => {
-      const ids = controls.map(c => c.controlId);
-      expect(new Set(ids).size).toBe(ids.length);
-      for (const c of controls) {
-        expect(c.name).toBeTruthy();
-        expect(c.description.length).toBeGreaterThan(40);
-        expect(c.category).toBeTruthy();
-        expect(c.implementationGuidance.length).toBeGreaterThan(40);
-        expect(c.evidenceRequirements.length).toBeGreaterThanOrEqual(3);
-        expect(c.testProcedures.length).toBeGreaterThanOrEqual(3);
-      }
-    };
+  const requireComplete = (controls: any[]) => {
+    const ids = controls.map(c => c.controlId);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const c of controls) {
+      expect(c.name).toBeTruthy();
+      expect(c.description.length).toBeGreaterThan(40);
+      expect(c.category).toBeTruthy();
+      expect(c.implementationGuidance.length).toBeGreaterThan(40);
+      expect(c.evidenceRequirements.length).toBeGreaterThanOrEqual(3);
+      expect(c.testProcedures.length).toBeGreaterThanOrEqual(3);
+    }
+  };
 
+  describe('AIUC-1 and India DPDPA templates', () => {
     it('registers AIUC-1 with complete controls across all six pillars', () => {
       const controls = frameworkTemplateService.getTemplatesForFramework('AIUC-1');
       expect(controls.length).toBeGreaterThanOrEqual(40);
@@ -229,6 +229,84 @@ describe('FrameworkTemplateService', () => {
     });
   });
 
+  // ======================================================================
+  // ISO 27017:2026 (real control module — not mocked above)
+  // ======================================================================
+  describe('ISO 27017:2026 template', () => {
+    const range = (theme: number, count: number) =>
+      Array.from({ length: count }, (_, i) => `ISO27017-2026-${theme}.${i + 1}`);
+    const CLOUD_SPECIFIC = ['ISO27017-2026-5.38', 'ISO27017-2026-5.39', 'ISO27017-2026-8.35', 'ISO27017-2026-8.36'];
+    const controls = () => frameworkTemplateService.getTemplatesForFramework('ISO 27017:2026');
+
+    it('has one control per ISO/IEC 27002:2022 control plus the four cloud-specific controls, in standard order', () => {
+      // 5.1-5.37 + 5.38/5.39, 6.1-6.8, 7.1-7.14, 8.1-8.34 + 8.35/8.36 (IEC webstore table of contents, 2026-09-27)
+      expect(controls().map(c => c.controlId)).toEqual([...range(5, 39), ...range(6, 8), ...range(7, 14), ...range(8, 36)]);
+      expect(controls()).toHaveLength(97);
+    });
+
+    it('has unique, colon-free ids and complete content for every control', () => {
+      requireComplete(controls());
+      for (const c of controls()) {
+        // Stored names are "<controlId>: <name>"; the id is read back up to the first colon.
+        expect(c.controlId).toMatch(/^[A-Za-z0-9.-]+$/);
+        expect(c.status).toBe('Not Started');
+        expect(c.evidenceRequirements.every(e => e.trim().length > 0)).toBe(true);
+        expect(c.testProcedures.every(t => t.trim().length > 0)).toBe(true);
+      }
+    });
+
+    it('gives guidance for both the cloud service customer and the cloud service provider', () => {
+      for (const c of controls()) {
+        expect(c.implementationGuidance.startsWith('Cloud service customer: ')).toBe(true);
+        const [customer, provider] = c.implementationGuidance.slice('Cloud service customer: '.length).split(' Cloud service provider: ');
+        expect(customer.length).toBeGreaterThan(20);
+        expect(provider?.length).toBeGreaterThan(20);
+      }
+    });
+
+    it('marks exactly the four cloud-specific controls', () => {
+      const marked = controls().filter(c => c.description.startsWith('Cloud-specific control (ISO/IEC 27017:2026 addition).'));
+      expect(marked.map(c => c.controlId)).toEqual(CLOUD_SPECIFIC);
+    });
+
+    it('groups controls under the four ISO/IEC 27002:2022 themes', () => {
+      const categories = frameworkTemplateService.getTemplateCategories('ISO 27017:2026');
+      expect(categories.map(c => [c.category, c.controlCount])).toEqual([
+        ['Organizational Controls', 39],
+        ['People Controls', 8],
+        ['Physical Controls', 14],
+        ['Technological Controls', 36],
+      ]);
+    });
+
+    it('resolves the 2026 spellings to the 2026 template', () => {
+      for (const alias of ['ISO 27017:2026', 'ISO/IEC 27017:2026', 'ISO27017:2026', 'ISO 27017 2026', 'iso 27017 2026', 'ISO 27017 (2026)', 'iso-27017-2026', 'ISO/IEC 27017 Edition 2']) {
+        expect(frameworkTemplateService.getTemplatesForFramework(alias)[0]?.controlId).toBe('ISO27017-2026-5.1');
+      }
+    });
+
+    it('keeps bare "ISO 27017" and the 2015 spellings on the withdrawn 2015 template (existing customer frameworks depend on it)', () => {
+      for (const alias of ['ISO 27017', 'iso 27017', 'ISO27017', 'ISO 27017:2015', 'iso-27017', 'ISO/IEC 27017', 'ISO/IEC 27017:2015', 'ISO 27017:2015 (withdrawn)']) {
+        const resolved = frameworkTemplateService.getTemplatesForFramework(alias);
+        expect(resolved[0]?.controlId).toBe('ISO27017-5.1.1');
+        expect(resolved.some(c => c.controlId.startsWith('ISO27017-2026-'))).toBe(false);
+      }
+    });
+
+    it('lists both editions, with the 2015 edition labelled withdrawn', () => {
+      const templates = frameworkTemplateService.getAvailableTemplates();
+      const legacy = templates.find(t => t.frameworkType === 'ISO 27017');
+      const current = templates.find(t => t.frameworkType === 'ISO 27017:2026');
+      expect(legacy?.displayName).toBe('ISO 27017:2015 (withdrawn)');
+      expect(legacy?.controlCount).toBe(44);
+      expect(current?.displayName).toBe('ISO 27017:2026');
+      expect(current?.controlCount).toBe(97);
+      expect(current?.aliases).toContain('ISO/IEC 27017:2026');
+      expect(legacy?.aliases).toContain('ISO/IEC 27017');
+      expect(legacy?.aliases.some(a => a.includes('2026'))).toBe(false);
+    });
+  });
+
   describe('getAvailableTemplates()', () => {
     it('should return all available templates with metadata', () => {
       const result = frameworkTemplateService.getAvailableTemplates();
@@ -253,6 +331,14 @@ describe('FrameworkTemplateService', () => {
 
       const soc2 = result.find(t => t.frameworkType === 'SOC 2 Type II');
       expect(soc2?.categories).toEqual(['Common Criteria']);
+    });
+
+    it('should include each template\'s aliases so clients can match names the way the server does', () => {
+      const result = frameworkTemplateService.getAvailableTemplates();
+
+      const soc2 = result.find(t => t.frameworkType === 'SOC 2 Type II');
+      expect(soc2?.aliases).toEqual(expect.arrayContaining(['SOC2', 'SOC 2', 'soc2']));
+      expect(result.every(t => Array.isArray(t.aliases))).toBe(true);
     });
   });
 

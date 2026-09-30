@@ -674,7 +674,7 @@ export const api = {
 
     // Framework Templates
     getTemplates: async () => {
-      return fetchAPI<{ templates: Array<{ frameworkType: string; displayName: string; description: string; controlCount: number; categories: string[] }> }>('/frameworks/templates');
+      return fetchAPI<{ templates: Array<{ frameworkType: string; displayName: string; description: string; controlCount: number; categories: string[]; aliases?: string[] }> }>('/frameworks/templates');
     },
     getTemplateControls: async (frameworkType: string) => {
       return fetchAPI<{ frameworkType: string; controlCount: number; categories: any[]; controls: any[] }>(`/frameworks/templates/${encodeURIComponent(frameworkType)}`);

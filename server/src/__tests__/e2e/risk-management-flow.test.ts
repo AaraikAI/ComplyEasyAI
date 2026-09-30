@@ -3,7 +3,7 @@
  * Tests the complete risk management workflow
  */
 
-import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import { prismaMock, createMockRiskItem } from '../mocks/prisma';
