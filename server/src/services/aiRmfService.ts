@@ -9,23 +9,25 @@ import { isSafeObjectKey } from '../utils/safeObjectKey';
  * Field-level before/after pairs for the audit log. Keys come from the request's
  * update payload, so names that would shadow built-in object members
  * (`__proto__`, `constructor`, ...) are skipped, and old values are read only
- * from the snapshot's own properties.
+ * from the snapshot's own properties. The pairs are collected in a Map and
+ * turned into an object with Object.fromEntries, which defines own properties
+ * and never assigns through a request-supplied key.
  */
 function diffAuditChanges(
   oldValues: Record<string, any>,
   updates: Record<string, any>
 ): Record<string, any> {
-  const changes: Record<string, any> = {};
+  const changes = new Map<string, { old: any; new: any }>();
   for (const key of Object.keys(updates)) {
     if (!isSafeObjectKey(key)) {
       continue;
     }
     const previous = Object.prototype.hasOwnProperty.call(oldValues, key) ? oldValues[key] : undefined;
     if (previous !== updates[key]) {
-      changes[key] = { old: previous, new: updates[key] };
+      changes.set(key, { old: previous, new: updates[key] });
     }
   }
-  return changes;
+  return Object.fromEntries(changes);
 }
 
 /**
