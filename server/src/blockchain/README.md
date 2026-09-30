@@ -29,12 +29,13 @@ The `ComplianceAuditLog.sol` contract provides:
 ## Prerequisites
 
 ```bash
-# Install Hardhat (Solidity development environment)
-npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox
-
-# Initialize Hardhat (if not already done)
-npx hardhat init
+# Install the pinned Hardhat 3 toolchain (hardhat + @nomicfoundation/hardhat-ethers)
+cd server/src/blockchain
+npm ci
 ```
+
+Do not install `@nomicfoundation/hardhat-toolbox`: 6.x targets Hardhat 2, and
+7.0.0 (its `latest` tag) exits the process when imported.
 
 ## Compilation
 
@@ -95,14 +96,19 @@ npx hardhat run scripts/deploy.js --network localhost
 2. Configure `hardhat.config.js`:
 
 ```javascript
-module.exports = {
+// hardhat.config.js (ES module, Hardhat 3: network entries need a `type`)
+import { configVariable, defineConfig } from "hardhat/config";
+
+export default defineConfig({
+  // ...existing plugins / solidity / paths...
   networks: {
     mumbai: {
+      type: "http",
       url: "https://rpc-mumbai.maticvigil.com",
-      accounts: [process.env.BLOCKCHAIN_PRIVATE_KEY]
+      accounts: [configVariable("BLOCKCHAIN_PRIVATE_KEY")]
     }
   }
-};
+});
 ```
 
 3. Deploy:
@@ -143,15 +149,16 @@ npx hardhat run scripts/deploy.js --network polygon
 
 ## Deployment Script
 
-Create `scripts/deploy.js`:
+`scripts/deploy.js` (committed) uses the Hardhat 3 API:
 
 ```javascript
-const hre = require("hardhat");
+import { network } from "hardhat";
 
 async function main() {
   console.log("Deploying ComplianceAuditLog contract...");
 
-  const ComplianceAuditLog = await hre.ethers.getContractFactory("ComplianceAuditLog");
+  const { ethers } = await network.create();
+  const ComplianceAuditLog = await ethers.getContractFactory("ComplianceAuditLog");
   const contract = await ComplianceAuditLog.deploy();
 
   await contract.waitForDeployment();
