@@ -3,9 +3,8 @@
  * Runs comprehensive performance tests and generates reports
  */
 
-import { QueryProfiler, createQueryProfilingMiddleware } from '../__tests__/performance/query-profiler';
+import { QueryProfiler } from '../__tests__/performance/query-profiler';
 import { LoadTester } from '../__tests__/performance/load-test';
-import prisma from '../config/database';
 import logger from '../config/logger';
 import * as fs from 'fs';
 import * as path from 'path';

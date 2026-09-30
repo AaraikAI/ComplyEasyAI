@@ -69,10 +69,6 @@ interface TicketingConfig {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getProviderForOrg(config: TicketingConfig): TicketingProvider {
-  return config.provider;
-}
-
 function sanitizeConfigForResponse(config: any): any {
   if (!config) return null;
   const sanitized = { ...config };
@@ -553,6 +549,7 @@ router.post(
             severity: severity || 'Medium',
             framework,
             controlId,
+            issueType: issueType || undefined,
           });
           break;
         }

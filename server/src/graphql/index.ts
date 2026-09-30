@@ -56,16 +56,6 @@ function buildRootValue(context: GraphQLContext) {
     return (args: any) => fn(null, args, context);
   };
 
-  const wrapFieldResolver = (typeName: string) => {
-    const typeResolvers = (resolvers as any)[typeName];
-    if (!typeResolvers) return {};
-    const wrapped: Record<string, Function> = {};
-    for (const [field, fn] of Object.entries(typeResolvers)) {
-      wrapped[field] = (parent: any) => (fn as Function)(parent);
-    }
-    return wrapped;
-  };
-
   return {
     // Query resolvers
     vendors: wrapResolver(resolvers.Query.vendors),

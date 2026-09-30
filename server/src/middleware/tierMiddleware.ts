@@ -11,7 +11,7 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { AuthRequest } from './auth';
 import tierService from '../services/tierService';
-import { TierName, TierFeatures, TierLimits, isTierAtLeast, getNextTier } from '../config/tiers';
+import { TierName, TierFeatures, TierLimits, isTierAtLeast } from '../config/tiers';
 import { AppError } from './errorHandler';
 import logger from '../config/logger';
 

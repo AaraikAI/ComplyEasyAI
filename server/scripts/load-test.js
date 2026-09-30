@@ -7,7 +7,6 @@
  */
 
 const { spawn } = require('child_process');
-const path = require('path');
 
 const API_URL = process.env.API_URL || 'http://localhost:3001';
 const DURATION = process.env.DURATION || 30; // seconds

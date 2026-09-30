@@ -283,6 +283,22 @@ describe('Ticketing API — Contract Tests', () => {
       );
     });
 
+    it('should forward the requested Jira issue type', async () => {
+      prismaMock.auditLog.create.mockResolvedValue({ id: 'al-2' } as any);
+
+      const res = await request(app)
+        .post('/api/ticketing/create-ticket')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ provider: 'jira', title: 'Fix issue', issueType: 'Bug' });
+
+      expect(res.status).toBe(200);
+      expect(jiraServiceMock.createComplianceTicket).toHaveBeenCalledWith(
+        'org-123',
+        'COMP',
+        expect.objectContaining({ title: 'Fix issue', issueType: 'Bug' }),
+      );
+    });
+
     it('should return 400 when title missing', async () => {
       const res = await request(app)
         .post('/api/ticketing/create-ticket')

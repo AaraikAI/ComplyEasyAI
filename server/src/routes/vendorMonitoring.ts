@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { validateBody } from '../middleware/validate';
 import { createMonitoringCheckSchema, triggerVendorCheckSchema } from '../validators/vendorMonitoringSchemas';
@@ -26,17 +26,6 @@ function paginate(query: any): { skip: number; take: number; page: number; limit
   const limit = Math.min(100, Math.max(1, parseInt(query.limit as string, 10) || 20));
   return { skip: (page - 1) * limit, take: limit, page, limit };
 }
-
-const VALID_CHECK_TYPES = [
-  'domain_reputation',
-  'ssl_check',
-  'breach_check',
-  'soc2_expiry',
-  'iso27001_expiry',
-  'privacy_policy_review',
-  'data_processing_review',
-  'incident_history',
-];
 
 const VALID_CHECK_STATUSES = ['PASS', 'WARN', 'FAIL'];
 

@@ -52,7 +52,7 @@ import {
 } from '../validators/acosSchemas';
 import acosController from '../controllers/acosController';
 import multer from 'multer';
-import { requireAcosFeature, requireVisionaryFeature, requireFeature } from '../middleware/tierMiddleware';
+import { requireAcosFeature, requireVisionaryFeature } from '../middleware/tierMiddleware';
 
 const router = Router();
 // Allowlist for aCOS evidence uploads — covers documents, images, audio, and

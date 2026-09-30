@@ -143,5 +143,41 @@ describe('JiraService', () => {
       expect(result).toHaveProperty('key');
     });
   });
+
+  describe('createComplianceTicket()', () => {
+    const connectedIntegration = {
+      id: 'integration-123',
+      provider: 'jira',
+      connected: true,
+      accessToken: 'test-token',
+      refreshToken: 'test-refresh',
+      expiresAt: new Date(Date.now() + 3600 * 1000),
+      config: { cloudId: 'cloud-123' },
+    };
+
+    const sentIssueType = (): unknown =>
+      (mockAxiosPost.mock.calls[0][0] as any).data.fields.issuetype;
+
+    beforeEach(() => {
+      prismaMock.integration.findUnique.mockResolvedValue(connectedIntegration as any);
+      mockAxiosPost.mockResolvedValue({ data: { id: 'issue-1', key: 'COMP-1' } });
+    });
+
+    it('defaults the Jira issue type to Task', async () => {
+      await jiraService.createComplianceTicket('org-123', 'COMP', {
+        title: 'Gap', description: 'Details', severity: 'High',
+      });
+
+      expect(sentIssueType()).toEqual({ name: 'Task' });
+    });
+
+    it('uses the requested Jira issue type when one is given', async () => {
+      await jiraService.createComplianceTicket('org-123', 'COMP', {
+        title: 'Gap', description: 'Details', severity: 'High', issueType: 'Bug',
+      });
+
+      expect(sentIssueType()).toEqual({ name: 'Bug' });
+    });
+  });
 });
 

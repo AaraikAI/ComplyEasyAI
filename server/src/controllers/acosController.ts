@@ -419,7 +419,6 @@ class ACOSController {
 
   verifyFileHash: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       // Multipart request body may be absent when no file/fields are sent; default safely.
       const { storedHash } = (req.body ?? {}) as { storedHash?: string };
       const file = req.file;
@@ -3115,7 +3114,6 @@ class ACOSController {
   // Homomorphic AI
   generateHomomorphicKeys: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       const { scheme = 'CKKS', securityLevel = 128 } = req.body;
       
       if (!['BFV', 'CKKS'].includes(scheme)) {
@@ -3188,7 +3186,6 @@ class ACOSController {
 
   performEncryptedLinearRegression: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       const { encryptedFeatures, weights, publicKey, relinKeys } = req.body;
       
       if (!encryptedFeatures || !encryptedFeatures.ciphertext) {

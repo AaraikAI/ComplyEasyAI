@@ -24,6 +24,13 @@ export const createMonitoringCheckSchema = Joi.object({
   details: Joi.object().allow(null).optional(),
 }).unknown(false);
 
+// Each entry creates one monitoring row, so only known check types are accepted
+// and the list is bounded by the number of distinct types.
 export const triggerVendorCheckSchema = Joi.object({
-  checkTypes: Joi.array().items(Joi.string().max(100)).allow(null).optional(),
+  checkTypes: Joi.array()
+    .items(Joi.string().valid(...validCheckTypes))
+    .unique()
+    .max(validCheckTypes.length)
+    .allow(null)
+    .optional(),
 }).unknown(false);

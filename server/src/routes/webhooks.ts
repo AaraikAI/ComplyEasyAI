@@ -11,7 +11,7 @@
 
 import express, { Router, Request, Response, NextFunction } from 'express';
 import webhookController from '../controllers/webhookController';
-import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { decryptField } from '../utils/credentialEncryption';
 import { validateBody } from '../middleware/validate';

@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import {
   createEvidenceCollectionRuleSchema, updateEvidenceCollectionRuleSchema,

@@ -959,7 +959,7 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
           clientId,
           tenantId,
           // clientSecret is the credential — encrypt at rest with AES-256-GCM
-          clientSecret: clientSecret ? encryptField(clientSecret) : null,
+          clientSecret: encryptField(clientSecret),
         },
         lastSync: new Date(),
       },
@@ -969,7 +969,7 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
           subscriptionId,
           clientId,
           tenantId,
-          clientSecret: clientSecret ? encryptField(clientSecret) : null,
+          clientSecret: encryptField(clientSecret),
         },
         lastSync: new Date(),
       },
@@ -1395,8 +1395,8 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
 
     const displayName = providerNames[provider] || provider;
 
-    // Validate credentials based on type
-    let config: any = { ...credentials };
+    // Validate credentials based on type; every branch below sets config or throws.
+    let config: any;
     
     if (type === 'api-key') {
       if (!credentials.apiKey) {
