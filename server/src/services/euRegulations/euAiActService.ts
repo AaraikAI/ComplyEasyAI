@@ -456,11 +456,6 @@ class EUAIActService {
       complianceStatus: sys.complianceStatus,
     }));
 
-    // Count actual systems for the report
-    const totalGenerativeSystems = generativeSystems.length;
-    const totalHighRiskSystems = highRiskSystems.length;
-    const totalAssessments = highRiskSystems.reduce((sum, sys) => sum + (sys.riskAssessments?.length || 0), 0);
-    
     // Generate report data with actual system counts
     const report = await prisma.eUAIActTransparencyReport.create({
       data: {

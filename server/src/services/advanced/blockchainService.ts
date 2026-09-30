@@ -43,7 +43,7 @@ import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { connect, Gateway, Network, Contract, signers } from '@hyperledger/fabric-gateway';
-import { Wallets } from 'fabric-network';
+import { Wallets, type X509Identity } from 'fabric-network';
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -411,7 +411,7 @@ class BlockchainService {
       const peerTlsCertPath = process.env.HYPERLEDGER_PEER_TLS_CERT_PATH;
       const peerTlsKeyPath = process.env.HYPERLEDGER_PEER_TLS_KEY_PATH;
       const peerTlsCaCertPath = process.env.HYPERLEDGER_PEER_TLS_CA_CERT_PATH;
-      const mspId = process.env.HYPERLEDGER_MSP_ID || 'Org1MSP';
+      const mspIdOverride = process.env.HYPERLEDGER_MSP_ID;
       const channelName = process.env.HYPERLEDGER_CHANNEL_NAME || 'mychannel';
       const chaincodeName = process.env.HYPERLEDGER_CHAINCODE_NAME || 'compliance';
       const walletPath = process.env.HYPERLEDGER_WALLET_PATH || path.join(__dirname, '../../../wallet');
@@ -430,9 +430,32 @@ class BlockchainService {
         return;
       }
 
-      // Create gRPC connection
+      // fabric-gateway expects { mspId, credentials: <certificate PEM bytes> },
+      // while the fabric-network wallet stores an X.509 identity whose
+      // credentials hold the certificate and key as PEM strings.
+      const walletIdentity = identity as X509Identity;
+      if (!walletIdentity.credentials?.certificate) {
+        logger.warn('[Blockchain] Hyperledger wallet identity has no X.509 certificate');
+        return;
+      }
+      if (mspIdOverride && walletIdentity.mspId && mspIdOverride !== walletIdentity.mspId) {
+        logger.warn('[Blockchain] HYPERLEDGER_MSP_ID differs from the MSP id of the wallet identity; using HYPERLEDGER_MSP_ID');
+      }
+      const gatewayIdentity = {
+        mspId: mspIdOverride || walletIdentity.mspId || 'Org1MSP',
+        credentials: Buffer.from(walletIdentity.credentials.certificate),
+      };
+
+      // Create gRPC connection. Mutual TLS is used when both the client
+      // certificate and key paths are configured.
+      if (Boolean(peerTlsCertPath) !== Boolean(peerTlsKeyPath)) {
+        logger.warn('[Blockchain] Set both HYPERLEDGER_PEER_TLS_CERT_PATH and HYPERLEDGER_PEER_TLS_KEY_PATH for mutual TLS; using server-authenticated TLS only');
+      }
+      const useMutualTls = Boolean(peerTlsCertPath && peerTlsKeyPath);
       const tlsCredentials = grpc.credentials.createSsl(
-        peerTlsCaCertPath ? fs.readFileSync(peerTlsCaCertPath) : undefined
+        peerTlsCaCertPath ? fs.readFileSync(peerTlsCaCertPath) : undefined,
+        useMutualTls ? fs.readFileSync(peerTlsKeyPath as string) : undefined,
+        useMutualTls ? fs.readFileSync(peerTlsCertPath as string) : undefined
       );
       const peer = new grpc.Client(peerEndpoint, tlsCredentials);
 
@@ -440,7 +463,7 @@ class BlockchainService {
       // The fabric-gateway v1.x API uses connect() to create a Gateway instance
       const gateway = await connect({
         client: peer,
-        identity: identity as any,
+        identity: gatewayIdentity,
         signer: async (digest: Uint8Array) => {
           // Load the private key from env var or PEM file for ECDSA signing
           let privateKeyPem: string | undefined;

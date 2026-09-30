@@ -356,9 +356,6 @@ class DeepfakeDetectionService {
   private async extractFrameFeatures(frameBuffer: Buffer): Promise<FrameFeatures> {
     try {
       const image = sharp(frameBuffer);
-      const metadata = await image.metadata();
-      const width = metadata.width || 256;
-      const height = metadata.height || 256;
 
       // Get raw pixel data (grayscale for frequency analysis, RGB for spatial)
       const grayBuf = await image.grayscale().resize(256, 256).raw().toBuffer();

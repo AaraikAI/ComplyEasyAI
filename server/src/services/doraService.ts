@@ -420,7 +420,6 @@ export async function scoreICTRiskAssessment(
 
   const threats = (assessment.threats as unknown as ThreatJson[]) || [];
   const vulnerabilities = (assessment.vulnerabilities as unknown as VulnerabilityJson[]) || [];
-  const ictAssets = (assessment.ictAssets as unknown as ICTAssetJson[]) || [];
 
   // Threat score: average of threat likelihoods (1-5 scale)
   const threatScore =
@@ -444,7 +443,7 @@ export async function scoreICTRiskAssessment(
         }, 0) / vulnerabilities.length
       : 2;
 
-  // Control effectiveness: derived from treatment plan and asset controls
+  // Control effectiveness: derived from the treatment plan controls
   const treatmentPlan = (assessment.riskTreatmentPlan as unknown as RiskTreatmentPlanJson) || {};
   const controlEffectiveness =
     treatmentPlan.controls && treatmentPlan.controls.length > 0
@@ -2280,11 +2279,8 @@ export async function calculateDORAComplianceScore(organizationId: string) {
     // Critical assets with metadata mappings (0-25 pts)
     const criticalAssets = assets.filter((a) => a.businessImpact === 'Critical');
     if (criticalAssets.length > 0) {
-      const critWithProvider = criticalAssets.filter((a) => {
-        const meta = a.metadata as unknown as AssetMetadataJson;
-        return meta && meta.thirdPartyProvider;
-      }).length;
-      // Having provider mapping documented = good (even if self-managed)
+      // Registering critical assets earns the full points (self-managed assets
+      // included); the provider mapping in the asset metadata is not evaluated.
       pillarScores.informationRegister.score += 25;
     } else {
       pillarScores.informationRegister.score += 15;

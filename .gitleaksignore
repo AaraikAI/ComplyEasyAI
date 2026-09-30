@@ -1,0 +1,9 @@
+# Vetted gitleaks false positives, one fingerprint per line
+# (<commit>:<file>:<rule>:<line>). Add an entry only after confirming the match
+# is not a credential, and say why above it.
+#
+# Stand-in test fixtures in an intermediate commit of the server-services quality PR:
+# base64 of the words "wrapped-dek" and a PEM header around the word "stored".
+# The next commit on that branch replaced them with plain stand-ins.
+7a0dc4f42b7819526a8c26638a2e9a74c45fb93e:server/src/__tests__/unit/services/advanced/evidenceTruthLayerService.signingKey.test.ts:generic-api-key:72
+7a0dc4f42b7819526a8c26638a2e9a74c45fb93e:server/src/__tests__/unit/services/advanced/evidenceTruthLayerService.signingKey.test.ts:private-key:116

@@ -1173,7 +1173,6 @@ describe('MDMService', () => {
         (prisma.managedDevice.count as jest.Mock)
           .mockResolvedValueOnce(100) // total
           .mockResolvedValueOnce(5)   // enrolled
-          .mockResolvedValueOnce(80)  // active
           .mockResolvedValueOnce(10)  // nonCompliant status
           .mockResolvedValueOnce(2)   // lost
           .mockResolvedValueOnce(8)   // retired
@@ -1213,6 +1212,10 @@ describe('MDMService', () => {
 
         expect(result.deviceStats).toBeDefined();
         expect(result.deviceStats.total).toBe(100);
+        // active = total - retired - wiped
+        expect(result.deviceStats.active).toBe(87);
+        expect(result.deviceStats.lost).toBe(2);
+        expect(result.securityPosture.jailbrokenDevices).toBe(3);
         expect(result.complianceOverview).toBeDefined();
         expect(result.platformDistribution).toBeDefined();
         expect(result.deviceTypeDistribution).toBeDefined();
@@ -1223,13 +1226,12 @@ describe('MDMService', () => {
 
       it('should calculate compliance rate correctly', async () => {
         (prisma.managedDevice.count as jest.Mock)
-          .mockResolvedValueOnce(100)
-          .mockResolvedValueOnce(0)
-          .mockResolvedValueOnce(90)
-          .mockResolvedValueOnce(0)
-          .mockResolvedValueOnce(0)
-          .mockResolvedValueOnce(10)
-          .mockResolvedValueOnce(0)
+          .mockResolvedValueOnce(100) // total
+          .mockResolvedValueOnce(0)   // enrolled
+          .mockResolvedValueOnce(0)   // nonCompliant status
+          .mockResolvedValueOnce(0)   // lost
+          .mockResolvedValueOnce(10)  // retired
+          .mockResolvedValueOnce(0)   // wiped
           .mockResolvedValueOnce(80)  // compliant
           .mockResolvedValueOnce(10)  // nonCompliant
           .mockResolvedValueOnce(0)

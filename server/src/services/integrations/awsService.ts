@@ -6,7 +6,6 @@
 
 import AWS from 'aws-sdk';
 import { Prisma } from '../../generated/prisma/client';
-import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';

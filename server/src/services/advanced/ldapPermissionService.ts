@@ -1165,7 +1165,7 @@ class LDAPPermissionService {
 
       for (const user of users) {
         try {
-          const { roles, permissions } = await this.resolveUserRoles(user.sAMAccountName);
+          const { permissions } = await this.resolveUserRoles(user.sAMAccountName);
 
           // Get existing grants
           const cacheKey = `${user.sAMAccountName}:${organizationId}`;

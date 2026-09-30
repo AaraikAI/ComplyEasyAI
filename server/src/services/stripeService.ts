@@ -1227,8 +1227,6 @@ class StripeService {
     const organizationId = subscription.metadata?.organizationId;
     if (!organizationId) return;
 
-    const tierName = subscription.metadata?.tierName as TierName || 'Foundation';
-
     await prisma.organization.update({
       where: { id: organizationId },
       data: {

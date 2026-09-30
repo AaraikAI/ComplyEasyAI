@@ -2,7 +2,7 @@
  * Blockchain Service Unit Tests
  */
 
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
 // Mock dependencies
@@ -290,6 +290,86 @@ describe('BlockchainService', () => {
       if (result.valid) {
         expect(result).toHaveProperty('framework');
       }
+    });
+  });
+
+  describe('initializeHyperledger()', () => {
+    const hyperledgerEnv = [
+      'HYPERLEDGER_PEER_ENDPOINT',
+      'HYPERLEDGER_PEER_TLS_CERT_PATH',
+      'HYPERLEDGER_PEER_TLS_KEY_PATH',
+      'HYPERLEDGER_PEER_TLS_CA_CERT_PATH',
+      'HYPERLEDGER_MSP_ID',
+    ];
+
+    afterEach(() => {
+      for (const key of hyperledgerEnv) delete process.env[key];
+    });
+
+    function stubFabric(walletIdentity: unknown) {
+      const fabricNetwork = require('fabric-network');
+      fabricNetwork.Wallets.newFileSystemWallet.mockResolvedValue({
+        get: jest.fn<any>().mockResolvedValue(walletIdentity),
+      });
+      const fabricGateway = require('@hyperledger/fabric-gateway');
+      fabricGateway.connect.mockResolvedValue({
+        getNetwork: jest.fn().mockReturnValue({ getContract: jest.fn() }),
+      });
+      return {
+        connect: fabricGateway.connect,
+        createSsl: require('@grpc/grpc-js').credentials.createSsl,
+      };
+    }
+
+    it('connects with the wallet certificate, the configured MSP id and mutual TLS', async () => {
+      process.env.HYPERLEDGER_PEER_ENDPOINT = 'peer0.example.test:7051';
+      process.env.HYPERLEDGER_PEER_TLS_CA_CERT_PATH = '/tls/ca.pem';
+      process.env.HYPERLEDGER_PEER_TLS_CERT_PATH = '/tls/client.pem';
+      process.env.HYPERLEDGER_PEER_TLS_KEY_PATH = '/tls/client.key';
+      process.env.HYPERLEDGER_MSP_ID = 'RegulatorMSP';
+      const { connect, createSsl } = stubFabric({
+        type: 'X.509',
+        mspId: 'Org1MSP',
+        credentials: { certificate: 'CERT-PEM', privateKey: 'KEY-PEM' },
+      });
+      require('fs').readFileSync.mockImplementation((p: string) => Buffer.from(`contents:${p}`));
+
+      await (blockchainService as any).initializeHyperledger();
+
+      expect(createSsl).toHaveBeenCalledWith(
+        Buffer.from('contents:/tls/ca.pem'),
+        Buffer.from('contents:/tls/client.key'),
+        Buffer.from('contents:/tls/client.pem'),
+      );
+      expect(connect).toHaveBeenCalledTimes(1);
+      const { identity } = (connect as jest.Mock<any>).mock.calls[0][0];
+      expect(identity.mspId).toBe('RegulatorMSP');
+      expect(Buffer.from(identity.credentials).toString()).toBe('CERT-PEM');
+    });
+
+    it('uses the wallet MSP id and server-authenticated TLS when the client key is missing', async () => {
+      process.env.HYPERLEDGER_PEER_ENDPOINT = 'peer0.example.test:7051';
+      process.env.HYPERLEDGER_PEER_TLS_CERT_PATH = '/tls/client.pem';
+      const { connect, createSsl } = stubFabric({
+        type: 'X.509',
+        mspId: 'Org2MSP',
+        credentials: { certificate: 'CERT-PEM', privateKey: 'KEY-PEM' },
+      });
+
+      await (blockchainService as any).initializeHyperledger();
+
+      expect(createSsl).toHaveBeenCalledWith(undefined, undefined, undefined);
+      const { identity } = (connect as jest.Mock<any>).mock.calls[0][0];
+      expect(identity.mspId).toBe('Org2MSP');
+    });
+
+    it('does not connect when the wallet identity has no certificate', async () => {
+      process.env.HYPERLEDGER_PEER_ENDPOINT = 'peer0.example.test:7051';
+      const { connect } = stubFabric({ type: 'X.509', mspId: 'Org1MSP' });
+
+      await (blockchainService as any).initializeHyperledger();
+
+      expect(connect).not.toHaveBeenCalled();
     });
   });
 });

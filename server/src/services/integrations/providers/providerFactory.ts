@@ -8,7 +8,6 @@
  */
 
 import BaseIntegrationProvider, {
-  IntegrationCredentials,
   IntegrationCapabilities,
   ConnectionTestResult,
   SyncResult,

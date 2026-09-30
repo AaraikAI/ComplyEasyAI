@@ -1323,7 +1323,7 @@ class SwarmTaskAllocationService extends EventEmitter {
 
       if (!task) {
         // Check queues
-        for (const [priority, queue] of this.taskQueue) {
+        for (const queue of this.taskQueue.values()) {
           const index = queue.findIndex(t => t.id === taskId);
           if (index !== -1) {
             task = queue[index];
@@ -1502,7 +1502,6 @@ class SwarmTaskAllocationService extends EventEmitter {
    * Check for metric alerts
    */
   private checkMetricAlerts(organizationId: string, metrics: SwarmMetrics): void {
-    const alerts = this.metricAlerts.get(organizationId) || [];
     const thresholds = {
       agentUtilization: 0.9, // 90%
       queueDepth: 100,
@@ -1838,7 +1837,6 @@ class SwarmTaskAllocationService extends EventEmitter {
         
         // Calculate exponential backoff delay
         const backoffDelay = this.calculateExponentialBackoff(task.retryCount);
-        const retryAt = new Date(Date.now() + backoffDelay);
         
         task.status = 'queued';
         task.startedAt = undefined;

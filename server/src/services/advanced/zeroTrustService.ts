@@ -13,7 +13,7 @@ import RE2 from 're2';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
-import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment, Prisma } from '../../generated/prisma/client';
+import { DeviceTrust as PrismaDeviceTrust, Prisma } from '../../generated/prisma/client';
 import ldapPermissionService, { ADUser, PermissionEvaluationResult, RoleMapping } from './ldapPermissionService';
 import { isUrlSafe, safeAxiosGet } from '../../utils/urlValidator';
 
@@ -401,15 +401,6 @@ class ZeroTrustService {
    */
   private async isKnownLocation(location: string, organizationId: string): Promise<boolean> {
     try {
-      // Get organization's allowed locations from metadata or ZeroTrustPolicy
-      const organization = await prisma.organization.findUnique({
-        where: { id: organizationId },
-        select: {
-          id: true,
-          // Check if there's location data in metadata or related policies
-        },
-      });
-
       // Check ZeroTrustPolicy for location restrictions
       const locationPolicy = await prisma.zeroTrustPolicy.findFirst({
         where: {
@@ -558,7 +549,7 @@ class ZeroTrustService {
             const usageType = data.usageType || '';
 
             // Calculate reputation score (0-1)
-            let reputation = 1.0;
+            let reputation: number;
             if (isWhitelisted) {
               reputation = 1.0;
             } else if (abuseConfidence > 75) {

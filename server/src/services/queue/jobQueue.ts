@@ -834,7 +834,7 @@ class JobQueueService extends EventEmitter {
     }
 
     // Close BullMQ workers and queues
-    for (const [name, worker] of this.bullWorkers.entries()) {
+    for (const worker of this.bullWorkers.values()) {
       try {
         await worker.close();
       } catch {
@@ -843,7 +843,7 @@ class JobQueueService extends EventEmitter {
     }
     this.bullWorkers.clear();
 
-    for (const [name, queue] of this.bullQueues.entries()) {
+    for (const queue of this.bullQueues.values()) {
       try {
         await queue.close();
       } catch {

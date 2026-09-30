@@ -1105,7 +1105,6 @@ class TemporalGraphNetworkService {
         // Escalation logic: escalate if unacknowledged for >24 hours (Critical) or >72 hours (High)
         let escalated = false;
         if (!acknowledged && warning.predictedDate) {
-          const hoursUntilPredicted = (warning.predictedDate.getTime() - Date.now()) / (1000 * 60 * 60);
           const escalationThreshold = warning.severity === 'Critical' ? 24 : 72;
           
           // Check if warning was generated more than threshold hours ago
@@ -1425,20 +1424,9 @@ class TemporalGraphNetworkService {
    */
   private async getHistoricalScores(frameworkId: string, organizationId: string): Promise<Array<{ date: Date; score: number }>> {
     try {
-      // Get framework update history from audit logs
-      const auditLogs = await prisma.auditLog.findMany({
-        where: {
-          organizationId,
-          action: { contains: 'framework' },
-        },
-        orderBy: { timestamp: 'desc' },
-        take: 50,
-      });
-
-      // Extract scores from audit logs (if available)
       const scores: Array<{ date: Date; score: number }> = [];
-      
-      // Also get current score (org-scoped for tenant isolation)
+
+      // Current score (org-scoped for tenant isolation)
       const framework = await prisma.complianceFramework.findFirst({
         where: { id: frameworkId, organizationId },
       });

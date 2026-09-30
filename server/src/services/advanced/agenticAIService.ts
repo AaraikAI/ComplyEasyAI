@@ -85,9 +85,9 @@ class AgenticAIService {
       let affectedFrameworks = 0;
       let affectedRisks = 0;
       let estimatedUsers = 0;
-      let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
-      let canRollback = true;
-      let rollbackComplexity: 'simple' | 'moderate' | 'complex' = 'simple';
+      let riskLevel: 'low' | 'medium' | 'high' | 'critical';
+      let canRollback: boolean;
+      let rollbackComplexity: 'simple' | 'moderate' | 'complex';
       const directImpacts: string[] = [];
       const indirectImpacts: string[] = [];
       let hasCircularReferences = false;
@@ -273,7 +273,7 @@ class AgenticAIService {
     }
 
     // Determine risk level
-    let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
+    let riskLevel: 'low' | 'medium' | 'high' | 'critical';
     if (control.status === 'Implemented' || control.status === 'Compliant') {
       riskLevel = affectedControls > 5 ? 'critical' :
                   affectedControls > 2 ? 'high' : 'medium';

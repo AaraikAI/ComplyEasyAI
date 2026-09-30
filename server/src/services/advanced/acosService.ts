@@ -14,7 +14,6 @@
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
-import { ComplianceStatus } from '../../generated/prisma/client';
 import { AppError } from '../../middleware/errorHandler';
 
 export interface ComplianceGoal {
@@ -1015,7 +1014,7 @@ class ACOSService {
     const riskIncrease = Math.min(50, 5 + (downstreamDependencies.length * 2));
 
     // Determine severity
-    let severity: 'critical' | 'high' | 'medium' | 'low' = 'medium';
+    let severity: 'critical' | 'high' | 'medium' | 'low';
     if (impactScore >= 70 || downstreamDependencies.length > 5) {
       severity = 'critical';
     } else if (impactScore >= 50 || downstreamDependencies.length > 2) {
