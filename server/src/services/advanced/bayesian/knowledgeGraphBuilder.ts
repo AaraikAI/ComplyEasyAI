@@ -1,8 +1,8 @@
 /**
  * Knowledge-graph builder for Bayesian causal reasoning.
  *
- * Reads frameworks, controls, risks, issues, and historical audit events
- * for an organization, persists them as KnowledgeGraphEntity rows, and
+ * Reads frameworks, controls, risks and issues for an organization,
+ * persists them as KnowledgeGraphEntity rows, and
  * builds typed directed edges with empirically-learned conditional
  * probability tables. The resulting structure is then materialized into
  * a BayesianNetwork for inference.
@@ -21,9 +21,9 @@
  * An entity is considered "active" when any of these conditions holds:
  *   - For a risk: status is open/in-progress AND severity in {Medium, High, Critical}
  *   - For a control: status is Non-Compliant or Partially-Compliant
- *   - For an issue: status is open AND priority in {Medium, High, Critical}
+ *   - For an issue (an "incident" node): status is open/in-progress/reopened
+ *     AND priority in {Medium, High, Critical}
  *   - For a framework: complianceScore < 0.7
- *   - For an incident: recorded within the lookback window
  */
 
 import prisma from '../../../config/database';
@@ -50,12 +50,8 @@ export interface GraphEdgeSpec {
  * inference. Idempotent — safe to call repeatedly.
  */
 export async function buildKnowledgeGraph(
-  organizationId: string,
-  options: { lookbackDays?: number } = {}
+  organizationId: string
 ): Promise<BayesianNetwork> {
-  const lookbackDays = options.lookbackDays ?? 90;
-  const since = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000);
-
   // 1. Load entities from Prisma
   const [frameworks, risks, issues, controls] = await Promise.all([
     prisma.complianceFramework.findMany({

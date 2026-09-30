@@ -680,7 +680,7 @@ Format your response as JSON:
     if (format === 'docx') {
       try {
         // Use docx library for DOCX generation
-        const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = require('docx');
+        const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = require('docx');
 
         // Map answers to their question via questionId (same join the PDF branch relies on).
         const responsesByQuestion = new Map<string, string>();

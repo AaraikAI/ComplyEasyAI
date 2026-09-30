@@ -15,7 +15,6 @@ import {
   SecretsManagerClient,
   GetSecretValueCommand,
   CreateSecretCommand,
-  UpdateSecretCommand,
   RotateSecretCommand,
   DescribeSecretCommand,
   ListSecretsCommand,

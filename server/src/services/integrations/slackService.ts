@@ -479,12 +479,6 @@ class SlackService {
     }
   ): Promise<void> {
     try {
-      const colors = {
-        info: '#36a64f',
-        warning: '#ff9900',
-        critical: '#ff0000',
-      };
-
       const blocks = [
         {
           type: 'header',

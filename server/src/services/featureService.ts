@@ -12,17 +12,13 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
-import { TierName, getTierIndex, TIER_ORDER } from '../config/tiers';
+import { TierName, getTierIndex } from '../config/tiers';
 import {
-  FEATURES,
-  FEATURE_BUNDLES,
   Feature,
-  FeatureBundle,
   calculateFeaturePrice,
   getFeature,
   getBundle,
   getAvailableFeatures,
-  getAvailableBundles,
 } from '../config/features';
 import { getTier } from '../config/tiers';
 import Stripe from 'stripe';
@@ -194,8 +190,8 @@ class FeatureService {
     let stripePriceId: string | null = null;
 
     try {
-      // Get the base subscription
-      const subscription = await stripe.subscriptions.retrieve(org.stripeSubscriptionId);
+      // Confirm the base subscription exists before attaching an add-on item to it
+      await stripe.subscriptions.retrieve(org.stripeSubscriptionId);
 
       const unitAmount = billingCycle === 'annual'
         ? Math.round(price * 100) // Convert to cents

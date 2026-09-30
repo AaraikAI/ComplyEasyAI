@@ -506,7 +506,7 @@ class WebRTCSignalingService {
   // -----------------------------------------------------------------------
 
   private handleConnection(socket: AuthenticatedSocket): void {
-    const { userId, organizationId, userEmail } = socket;
+    const { userId, organizationId } = socket;
 
     if (!userId || !organizationId) {
       socket.disconnect(true);

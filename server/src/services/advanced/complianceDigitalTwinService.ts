@@ -57,7 +57,7 @@ class ComplianceDigitalTwinService {
       const baselineScore = await this.calculateBaselineScore(organizationId);
 
       // Run simulation based on scenario type
-      let simulatedScore = baselineScore;
+      let simulatedScore: number;
       let affectedControls = 0;
       let affectedFrameworks = 0;
       const riskChanges: SimulationResult['riskChanges'] = [];
@@ -412,7 +412,7 @@ class ComplianceDigitalTwinService {
     newScore: number;
     riskChanges: SimulationResult['riskChanges'];
   }> {
-    const { riskType, severity } = parameters;
+    const { severity } = parameters;
 
     const baselineScore = await this.calculateBaselineScore(organizationId);
     
@@ -452,7 +452,7 @@ class ComplianceDigitalTwinService {
     newScore: number;
     affectedFrameworks: number;
   }> {
-    const { frameworkName, estimatedControls } = parameters;
+    const { estimatedControls } = parameters;
 
     const baselineScore = await this.calculateBaselineScore(organizationId);
     
@@ -525,7 +525,7 @@ class ComplianceDigitalTwinService {
     riskChanges: SimulationResult['riskChanges'];
     affectedControls: number;
   }> {
-    const { breachType, dataAffected, responseTime } = parameters;
+    const { breachType, responseTime } = parameters;
 
     const baselineScore = await this.calculateBaselineScore(organizationId);
     
@@ -584,7 +584,7 @@ class ComplianceDigitalTwinService {
     affectedFrameworks: number;
     gaps: string[];
   }> {
-    const { auditType, frameworkId, sampleSize } = parameters;
+    const { frameworkId, sampleSize } = parameters;
 
     const baselineScore = await this.calculateBaselineScore(organizationId);
 
@@ -733,7 +733,7 @@ class ComplianceDigitalTwinService {
     affectedControls: number;
     affectedFrameworks: number;
   }> {
-    const { controlId, modificationType, oldStatus, newStatus } = parameters;
+    const { controlId, oldStatus, newStatus } = parameters;
     const baselineScore = await this.calculateBaselineScore(organizationId);
     
     let scoreImpact = 0;
@@ -813,7 +813,7 @@ class ComplianceDigitalTwinService {
     newScore: number;
     affectedFrameworks: number;
   }> {
-    const { frameworkId, newAuditDate, daysUntilAudit } = parameters;
+    const { frameworkId, daysUntilAudit } = parameters;
     const baselineScore = await this.calculateBaselineScore(organizationId);
     
     // Earlier audits may reveal gaps, later audits give more time
@@ -855,7 +855,7 @@ class ComplianceDigitalTwinService {
     affectedControls: number;
     affectedFrameworks: number;
   }> {
-    const { debtAmount, debtType, frameworkId } = parameters;
+    const { debtAmount, frameworkId } = parameters;
     const baselineScore = await this.calculateBaselineScore(organizationId);
     
     // Compliance debt reduces score
@@ -895,7 +895,7 @@ class ComplianceDigitalTwinService {
     newScore: number;
     affectedControls: number;
   }> {
-    const { integrationType, action, integrationId } = parameters;
+    const { action } = parameters;
     const baselineScore = await this.calculateBaselineScore(organizationId);
     
     let scoreImpact = 0;

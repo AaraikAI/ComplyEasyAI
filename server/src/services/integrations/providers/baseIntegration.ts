@@ -8,7 +8,7 @@
  *   - collectEvidence(): Auto-collects evidence artifacts for audit trails
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import logger from '../../../config/logger';
 import { assertUrlSafe } from '../../../utils/urlValidator';
 import { AppError } from '../../../middleware/errorHandler';

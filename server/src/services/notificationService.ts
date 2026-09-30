@@ -17,7 +17,6 @@ import sgMail from '@sendgrid/mail';
 import websocketService from './websocketService';
 import slackService from './integrations/slackService';
 import crypto from 'crypto';
-import { Prisma } from '../generated/prisma/client';
 
 /** JSON structure for Slack integration config */
 interface SlackIntegrationConfig {

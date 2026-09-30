@@ -18,7 +18,6 @@ import { EventEmitter } from 'events';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
-import { AuditLogger } from '../utils/auditLogger';
 import websocketService from './websocketService';
 import monitoringService from './monitoringService';
 import type { MonitorResult, MonitorStatus } from '../generated/prisma/client';

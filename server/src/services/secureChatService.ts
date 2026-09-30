@@ -14,11 +14,7 @@
 
 import prisma from '../config/database';
 import logger from '../config/logger';
-import homomorphicAIService from './advanced/homomorphicAIService';
 import { TIERS, hasFeature, TierName, TierFeatures } from '../config/tiers';
-
-// Cache for homomorphic keys per organization
-const keyCache = new Map<string, any>();
 
 interface UserContext {
   frameworks: any[];

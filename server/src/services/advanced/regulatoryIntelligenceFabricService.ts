@@ -981,7 +981,6 @@ Only include controls with confidence > 0.5.`;
 
       // Fallback to enhanced keyword matching
       const affectedControls: Array<{ id: string; name: string; matchConfidence: number; reason: string }> = [];
-      const lowerText = regulationText.toLowerCase();
       
       // Extract meaningful keywords (longer words, exclude common words)
       const commonWords = new Set(['the', 'and', 'or', 'but', 'for', 'with', 'from', 'that', 'this', 'are', 'was', 'were']);
