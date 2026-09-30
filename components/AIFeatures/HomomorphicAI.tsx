@@ -4,9 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import { ArrowLeft, Loader2, Key, Lock, Unlock, TrendingUp, BarChart3, Brain, AlertCircle, CheckCircle, Copy, Download } from 'lucide-react';
+import { ArrowLeft, Loader2, Key, Lock, Unlock, TrendingUp, BarChart3, Brain, AlertCircle, CheckCircle, Copy } from 'lucide-react';
 import { api } from '../../services/api';
-import ReactMarkdown from 'react-markdown';
 
 interface HomomorphicKeys {
   publicKey: string;

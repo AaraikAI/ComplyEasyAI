@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, CheckCircle, AlertCircle, Loader, Key, User, Lock, FileText, Globe } from 'lucide-react';
+import { X, ExternalLink, CheckCircle, AlertCircle, Loader, Key, User, FileText, Globe } from 'lucide-react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 

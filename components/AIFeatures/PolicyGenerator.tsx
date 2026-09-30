@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generatePolicy } from '../../services/geminiService';
-import { FileText, Loader2, Save, ArrowLeft } from 'lucide-react';
+import { FileText, Loader2, ArrowLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useOnboardingTrigger } from '../../hooks/useOnboarding';
 

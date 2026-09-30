@@ -3,8 +3,8 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { 
-  ArrowLeft, FileText, Plus, Search, Filter, Calendar, 
-  TrendingUp, BarChart3, Download, Eye, Edit, Trash2, X
+  ArrowLeft, FileText, Plus, Search,
+  Eye, Trash2, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '../utils/logger';

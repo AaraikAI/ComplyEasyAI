@@ -39,7 +39,6 @@ import {
   Eye,
   Download,
   Edit3,
-  Trash2,
   Target,
   Zap,
   AlertCircle,

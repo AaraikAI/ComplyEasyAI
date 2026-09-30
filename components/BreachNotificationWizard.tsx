@@ -2,13 +2,13 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import {
-  ArrowLeft, ArrowRight, AlertTriangle, Shield, ShieldAlert, ShieldCheck,
+  ArrowLeft, ArrowRight, AlertTriangle, Shield, ShieldAlert,
   Clock, Globe, FileText, Send, CheckCircle, XCircle, Mail, Phone,
-  Building2, Calendar, Search, Plus, Download, Eye, Edit3, Trash2,
+  Building2, Calendar, Search, Plus, Download, Eye, Edit3,
   ChevronDown, ChevronUp, Copy, Loader2, Users, MapPin, Database,
-  Lock, Unlock, AlertOctagon, Bell, BookOpen, Archive, ExternalLink,
-  BarChart3, Activity, Zap, Timer, ClipboardList, MessageSquare, X,
-  Sparkles, Brain, Scale, Landmark, Flag, Hash, Info,
+  Unlock, AlertOctagon, Bell, Archive, ExternalLink,
+  BarChart3, Zap, Timer, X,
+  Sparkles, Brain, Scale, Landmark,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------

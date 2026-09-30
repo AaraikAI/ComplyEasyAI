@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
-  ArrowLeft, ArrowRight, Plus, Trash2, Download, Search, Filter, Eye,
-  AlertTriangle, CheckCircle, XCircle, X, ChevronDown, ChevronRight,
-  Shield, Layers, Link2, BarChart3, Brain, Zap, RefreshCw, Check,
-  FileText, Settings, HelpCircle, ThumbsUp, ThumbsDown, Minus,
-  GitCompare, Target, TrendingUp, Loader2, Copy, Hash, Info
+  ArrowLeft, ArrowRight, Plus, Download, Search,
+  AlertTriangle, CheckCircle, X, ChevronDown,
+  Link2, Brain, Zap, RefreshCw,
+  FileText, ThumbsUp, ThumbsDown,
+  GitCompare, Target, Loader2, Info
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { logger } from '../../utils/logger';

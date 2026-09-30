@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { generateBCP } from '../../services/geminiService';
 import { LifeBuoy, Loader2, ArrowLeft, Users, Clock, Target } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../../services/api';

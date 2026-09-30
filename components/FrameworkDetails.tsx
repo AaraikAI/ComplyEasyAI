@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ComplianceFramework, ComplianceStatus, ViewState } from '../types';
+import { ComplianceFramework, ComplianceStatus } from '../types';
 import { ArrowLeft, CheckCircle, Circle, FileText, Upload, AlertTriangle, Loader2, Download, Plus, X, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';

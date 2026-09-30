@@ -3,7 +3,7 @@ import { AuditLog } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
-import { ShieldCheck, Search, Filter, Download, Loader2, ArrowUpDown, AlertTriangle, X, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Search, Download, Loader2, ArrowUpDown, AlertTriangle, ExternalLink } from 'lucide-react';
 import { getBlockchainExplorerUrl } from '../utils/blockchain';
 import { logger } from '../utils/logger';
 

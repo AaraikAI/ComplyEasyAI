@@ -11,17 +11,17 @@
  * - API calls to /api/control-testing
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
-  ArrowLeft, Plus, Loader2, Search, X, Filter, Trash2, Edit3, Eye,
+  ArrowLeft, Plus, Loader2, Search, X, Trash2, Edit3,
   CheckCircle, Clock, AlertTriangle, Play, RefreshCw, Settings,
-  XCircle, BarChart3, Activity, Calendar, Shield, Target, Zap,
-  ChevronDown, ChevronUp, ChevronRight, FileText, Download,
-  TrendingUp, TrendingDown, AlertCircle, Timer, Monitor,
-  Lock, Globe, Server, Database, Key,
+  XCircle, Activity, Shield, Target, Zap,
+  ChevronRight, FileText,
+  AlertCircle,
+  Lock, Server, Database, Key,
 } from 'lucide-react';
 import { toast } from 'sonner';
 

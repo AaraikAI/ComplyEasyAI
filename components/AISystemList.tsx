@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { 
-  Brain, Plus, Search, Filter, ArrowRight, Shield, 
+  Brain, Plus, Search, ArrowRight,
   AlertTriangle, CheckCircle, Clock, Trash2 
 } from 'lucide-react';
 import { toast } from 'sonner';

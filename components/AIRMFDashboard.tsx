@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { 
-  Brain, Plus, TrendingUp, AlertTriangle, CheckCircle, 
+  Brain, Plus, CheckCircle,
   Clock, BarChart3, Shield, Activity, ArrowRight 
 } from 'lucide-react';
 

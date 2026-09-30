@@ -18,9 +18,9 @@ import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   Leaf, BarChart3, Users, Building2, FileText, CheckCircle, AlertTriangle,
-  X, Plus, Search, Download, Clock, Shield, TrendingUp, Droplets,
-  Trash2, TreePine, Globe, Heart, Scale, Eye, Edit, ChevronRight,
-  AlertCircle, ArrowUpRight, Zap, Factory, Recycle, Wind
+  X, Plus, Search, Download, Clock, Shield, Droplets,
+  TreePine, Scale, Eye, Edit, ChevronRight,
+  Zap, Factory, Recycle
 } from 'lucide-react';
 
 // ── Data Models ──────────────────────────────────────────────────────────

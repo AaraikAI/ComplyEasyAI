@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Loader2, ArrowLeft, Shield, Globe, Clock, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Shield, Globe, Clock } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../../services/api';
 import { logger } from '../../utils/logger';

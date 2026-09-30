@@ -13,20 +13,17 @@
  * - Reset to defaults
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { csrfFetch } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
   Save,
-  RefreshCw,
   Loader2,
   AlertTriangle,
   CheckCircle,
-  XCircle,
   X,
-  Upload,
   Image,
   Palette,
   Globe,
@@ -34,12 +31,10 @@ import {
   Mail,
   Eye,
   Code,
-  Type,
   RotateCcw,
   Monitor,
   Smartphone,
   Shield,
-  ExternalLink,
   Copy,
   Check,
   FileText,

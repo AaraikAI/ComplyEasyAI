@@ -10,7 +10,6 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import {
-  Shield,
   AlertTriangle,
   CheckCircle,
   TrendingUp,
@@ -27,7 +26,6 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { ComplianceFramework, ViewState, RiskItem } from '../types';
-import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { useI18n } from '../contexts/I18nContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { toast } from 'sonner';

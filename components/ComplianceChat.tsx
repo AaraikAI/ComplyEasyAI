@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, User, Bot, Lock, AlertCircle, Trash2, Paperclip, FileText, GripVertical } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, Lock, Trash2, Paperclip, FileText, GripVertical } from 'lucide-react';
 import { chatWithComplianceBot } from '../services/geminiService';
 import { ChatMessage } from '../types';
 import ReactMarkdown from 'react-markdown';

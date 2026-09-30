@@ -13,16 +13,16 @@
  * - API calls to /api/audit-prep
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
-  ArrowLeft, ArrowRight, Loader2, Search, X, CheckCircle, AlertTriangle,
-  Shield, FileText, Brain, Eye, BarChart3, Download, Calendar, Clock,
+  ArrowLeft, ArrowRight, Loader2, CheckCircle, AlertTriangle,
+  Shield, FileText, Brain, BarChart3, Download, Calendar, Clock,
   Target, Zap, XCircle, ChevronDown, ChevronUp, Package, RefreshCw,
-  MessageSquare, Award, TrendingUp, AlertCircle, ListChecks, Play,
-  ClipboardList, HelpCircle, ChevronRight, FolderOpen, Star,
+  MessageSquare, Award, AlertCircle, ListChecks,
+  ChevronRight, Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 

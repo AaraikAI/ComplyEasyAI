@@ -22,8 +22,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  Eye,
-  Edit,
   BarChart3,
   Users,
   Filter,
@@ -35,7 +33,6 @@ import {
   Target,
   Timer,
   MessageSquare,
-  UserPlus,
   ArrowRight,
   Loader2,
 } from 'lucide-react';

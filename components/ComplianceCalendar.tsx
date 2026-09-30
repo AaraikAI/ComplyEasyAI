@@ -27,8 +27,6 @@ import {
   Bell,
   Edit,
   Trash2,
-  Shield,
-  FileText,
   AlertCircle,
 } from 'lucide-react';
 

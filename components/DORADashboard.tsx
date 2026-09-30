@@ -13,9 +13,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Shield, CheckCircle, AlertTriangle, XCircle, Search, Plus, X,
-  FileText, Clock, BarChart3, ChevronRight, Edit3, Trash2, Eye, Download,
-  AlertCircle, Filter, Calendar, Activity, TrendingUp, Lock, Server,
-  Globe, Wifi, Database, Bug, RefreshCw, Users, Building2, Zap, Loader2
+  FileText, BarChart3, Edit3, Trash2, Eye, Download,
+  AlertCircle, Activity,
+  Bug, Building2, Zap
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';

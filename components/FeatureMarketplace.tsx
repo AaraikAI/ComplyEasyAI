@@ -8,7 +8,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Check,
-  X,
   ShoppingCart,
   Sparkles,
   Shield,
@@ -17,7 +16,6 @@ import {
   TrendingUp,
   Brain,
   Lock,
-  Unlock,
   Loader2,
   AlertCircle,
 } from 'lucide-react';

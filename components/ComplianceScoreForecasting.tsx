@@ -4,10 +4,10 @@ import {
   ArrowLeft, TrendingUp, TrendingDown, Minus, Target, Shield,
   AlertTriangle, CheckCircle, Clock, Calendar, Download, RefreshCw,
   ChevronRight, ChevronDown, ChevronUp, BarChart3, Lightbulb,
-  Zap, Eye, FileText, Settings, Bell, ArrowUpRight, ArrowDownRight,
+  Eye, FileText, Settings, Bell, ArrowUpRight, ArrowDownRight,
   Activity, Layers, Lock, Server, Users, Building2, Search,
-  PieChart as PieChartIcon, Info, Star, ExternalLink, Play,
-  BookOpen, Filter, X, Sliders, Sparkles, Award, Gauge,
+  Info, Star, Play,
+  X, Sliders, Sparkles, Award, Gauge,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';

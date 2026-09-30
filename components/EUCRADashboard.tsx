@@ -16,10 +16,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
-  Shield, AlertTriangle, CheckCircle, X, Plus, FileText, Clock,
-  Search, Filter, Bug, RefreshCw, Lock, Cpu, ChevronRight,
-  BarChart3, Calendar, Bell, Download, Edit, Trash2, Eye,
-  AlertCircle, ArrowUpRight, Package, Zap, Timer
+  Shield, AlertTriangle, CheckCircle, X, Plus, Clock,
+  Search, Bug, RefreshCw, Cpu,
+  BarChart3, Calendar, Bell, Download, Eye,
+  ArrowUpRight, Package, Timer
 } from 'lucide-react';
 
 // ── Data Models ──────────────────────────────────────────────────────────

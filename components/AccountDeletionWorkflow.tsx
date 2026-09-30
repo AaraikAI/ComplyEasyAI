@@ -18,9 +18,7 @@ import {
   ChevronRight,
   RefreshCw,
   Download,
-  Eye,
   RotateCcw,
-  User,
   Mail,
   BarChart3,
   Server,
@@ -29,8 +27,6 @@ import {
   X,
   Filter,
   Calendar,
-  Lock,
-  Unlock,
   Activity,
   Info,
 } from 'lucide-react';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Integration } from '../types';
-import { CheckCircle, Power, Search, X, RefreshCw } from 'lucide-react';
+import { CheckCircle, Search, X, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import { IntegrationModal } from './IntegrationModal';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
