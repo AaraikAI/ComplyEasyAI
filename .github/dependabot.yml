@@ -199,26 +199,38 @@ updates:
       # together with the Expo SDK 57 migration below, not on its own.
       - dependency-name: "react-native"
         versions: [">=0.86.0"]
-      # react, react-test-renderer and their @types move together with
-      # react-native, never on their own. react-native 0.85.3 ships its own
-      # React renderer built from React 19.2.3 (Libraries/Renderer/
-      # implementations/*: version "19.2.3"; the legacy ReactNativeRenderer
-      # also throws "Incompatible React versions" unless react is exactly
-      # 19.2.3, while the Fabric renderer the app runs on has no such check),
-      # and Expo SDK 56's bundledNativeModules.json pins "react": "19.2.3".
-      # React 19.3.0 is a new minor whose reconciler changes (ViewTransition,
-      # Fragment refs, independent transitions) live in that renderer, so
-      # react 19.3 on RN 0.85 pairs a 19.3 `react` with the 19.2.3 reconciler.
-      # The mobile jest suite cannot catch this: react-test-renderer 19.3
-      # carries its own 19.3 reconciler, so #511 went green. Dependabot also
-      # proposed react (#512) and react-test-renderer (#511) separately, but
-      # the two must be the same exact version. 19.2.x patches stay allowed.
-      # Lift this hold in the same PR as the react-native / Expo SDK upgrade
-      # whose bundled renderer is built from React 19.3.
+      # react and react-test-renderer are pinned to the exact React version
+      # that react-native's bundled renderer is built from, and move only
+      # together with react-native / the Expo SDK. react-native 0.85.3 ships
+      # renderers built from React 19.2.3 (Libraries/Renderer/implementations/*:
+      # version "19.2.3"), Expo SDK 56's bundledNativeModules.json pins
+      # "react": "19.2.3", and jest-expo 56 depends on react-test-renderer
+      # 19.2.3 exactly.
+      #
+      # This is an exact-version requirement, not a range: the legacy
+      # ReactNativeRenderer throws "Incompatible React versions" at module
+      # load unless React.version === "19.2.3", and react-native still loads
+      # it lazily in a Fabric/bridgeless app - RendererImplementation.js
+      # routes findNodeHandle, unstable_batchedUpdates and
+      # sendAccessibilityEvent through it, and a native-driver animation
+      # reaches findNodeHandle via AnimatedProps#connectAnimatedView (e.g. the
+      # first press on a bottom-tab item on iOS: react-navigation's
+      # PlatformPressable animates opacity with useNativeDriver). So a react
+      # patch (19.2.8) breaks the app exactly like a minor (19.3.0, #512). The jest
+      # suite cannot catch it: react-test-renderer has no such check and
+      # @react-native/jest-preset replaces RendererProxy with a jest mock
+      # (jest/setup.js), so #511 went green.
+      #
+      # Ignore every react / react-test-renderer update above the renderer's
+      # version. When react-native or the Expo SDK moves, set both packages
+      # to the React version of its Libraries/Renderer/implementations/* and
+      # update these two ranges in the same PR.
       - dependency-name: "react"
-        versions: [">=19.3.0"]
+        versions: [">19.2.3"]
       - dependency-name: "react-test-renderer"
-        versions: [">=19.3.0"]
+        versions: [">19.2.3"]
+      # Type packages carry no runtime check; only the 19.3 minor (types for
+      # APIs the 19.2.3 renderer does not implement) is held.
       - dependency-name: "@types/react"
         versions: [">=19.3.0"]
       - dependency-name: "@types/react-test-renderer"
