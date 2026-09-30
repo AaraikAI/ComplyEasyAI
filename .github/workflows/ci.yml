@@ -504,7 +504,7 @@ jobs:
       # cache-from only: PR runs may read the main branch's layer cache but must
       # not write to it, so a PR cannot evict the layers the release build needs.
       - name: Build frontend-build stage
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           target: frontend-build
@@ -512,7 +512,7 @@ jobs:
           cache-from: type=gha
 
       - name: Build backend-build stage
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           target: backend-build
@@ -612,7 +612,7 @@ jobs:
             type=sha,prefix=,format=long
 
       - name: Build & push API
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           target: backend-production
@@ -633,7 +633,7 @@ jobs:
             type=sha,prefix=,format=long
 
       - name: Build & push Web
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           target: frontend-production
