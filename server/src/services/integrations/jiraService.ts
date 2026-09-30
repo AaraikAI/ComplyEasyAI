@@ -569,13 +569,14 @@ class JiraService {
       severity: string;
       framework?: string;
       controlId?: string;
+      issueType?: string;
     }
   ): Promise<any> {
     try {
       const issue = await this.createIssue(organizationId, projectKey, {
         summary: `[Compliance] ${ticket.title}`,
         description: `${ticket.description}\n\nFramework: ${ticket.framework || 'General'}\nSeverity: ${ticket.severity}`,
-        issueType: 'Task',
+        issueType: ticket.issueType || 'Task',
         priority: ticket.severity,
       });
 

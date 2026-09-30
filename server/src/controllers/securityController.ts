@@ -707,7 +707,6 @@ class SecurityController {
 
   importBYOKKey: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       const { provider, keyId, region, vaultUrl, credentials, keyMaterial, keyType, label, format } = req.body;
 
       // Schema-aligned imports use keyMaterial + keyType + label.
@@ -874,7 +873,6 @@ class SecurityController {
   rotateBYOKKey: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { keyId } = req.params;
       const { oldConfig, newConfig, encryptedData } = req.body;
 
       if (!oldConfig || !newConfig) {
@@ -897,7 +895,6 @@ class SecurityController {
 
   deleteBYOKKey: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       const { keyId } = req.params;
       const { provider, region, vaultUrl, credentials, pendingWindowInDays } = req.body;
 

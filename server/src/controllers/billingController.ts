@@ -22,15 +22,13 @@ import logger from '../config/logger';
 import config from '../config';
 import {
   TierName,
-  TIERS,
   TIER_ORDER,
-  getTier,
   getTierIndex,
   tierAddOns,
   getAvailableAddOns,
 } from '../config/tiers';
 import featureService from '../services/featureService';
-import { FEATURES, FEATURE_BUNDLES, getFeature, getBundle } from '../config/features';
+import { FEATURE_BUNDLES, getFeature } from '../config/features';
 
 class BillingController {
   /**

@@ -98,7 +98,7 @@ export function encryptField(plaintext: string): string {
   const salt = crypto.randomBytes(SALT_LENGTH);
   const key = deriveKeyV2(salt);
   const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
 
   let encrypted = cipher.update(plaintext, 'utf8', 'base64');
   encrypted += cipher.final('base64');
@@ -139,7 +139,9 @@ export function decryptField(encryptedValue: string): string {
     const iv = Buffer.from(ivB64, 'base64');
     const authTag = Buffer.from(authTagB64, 'base64');
 
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    // Pinning the tag length makes setAuthTag reject a truncated tag; without it
+    // GCM accepts any tag of 4 to 16 bytes, which weakens the integrity check.
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
     decipher.setAuthTag(authTag);
 
     let decrypted = decipher.update(ciphertextB64, 'base64', 'utf8');

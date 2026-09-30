@@ -285,6 +285,45 @@ describe('Vendor Monitoring API — Contract Tests', () => {
       expect(prismaMock.vendorMonitoringCheck.create).toHaveBeenCalled();
     });
 
+    it('should run only the requested known check types', async () => {
+      prismaMock.vendor.findFirst.mockResolvedValue({
+        id: 'v-1', name: 'Vendor A', website: 'https://vendor.com',
+        soc2Report: true, iso27001Certified: true, contractEnd: null, organizationId: 'org-123',
+      });
+      prismaMock.vendorMonitoringCheck.create.mockResolvedValue({
+        id: 'chk-1', vendorId: 'v-1', checkType: 'ssl_check', status: 'PASS',
+        organizationId: 'org-123', checkedAt: new Date(), details: {},
+      });
+
+      const res = await request(app)
+        .post('/api/vendor-monitoring/vendor/v-1/check')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ checkTypes: ['ssl_check', 'iso27001_expiry'] });
+
+      expect(res.status).toBe(201);
+      expect(prismaMock.vendorMonitoringCheck.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('should return 400 for an unknown check type', async () => {
+      const res = await request(app)
+        .post('/api/vendor-monitoring/vendor/v-1/check')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ checkTypes: ['ssl_check', 'not_a_check'] });
+
+      expect(res.status).toBe(400);
+      expect(prismaMock.vendorMonitoringCheck.create).not.toHaveBeenCalled();
+    });
+
+    it('should return 400 when a check type is repeated', async () => {
+      const res = await request(app)
+        .post('/api/vendor-monitoring/vendor/v-1/check')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ checkTypes: ['ssl_check', 'ssl_check'] });
+
+      expect(res.status).toBe(400);
+      expect(prismaMock.vendorMonitoringCheck.create).not.toHaveBeenCalled();
+    });
+
     it('should return 404 when vendor not found', async () => {
       prismaMock.vendor.findFirst.mockResolvedValue(null);
 

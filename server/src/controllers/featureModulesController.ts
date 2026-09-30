@@ -14,7 +14,7 @@
  * - Process Mapper (maps)
  */
 
-import { Request, Response, RequestHandler } from 'express';
+import { Request, RequestHandler } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/database';

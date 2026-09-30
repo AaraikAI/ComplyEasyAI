@@ -15,7 +15,6 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import config from '../config';
-import crypto from 'crypto';
 import { SignedXml } from 'xml-crypto';
 import { XMLParser } from 'fast-xml-parser';
 import { encryptField, decryptField } from '../utils/credentialEncryption';

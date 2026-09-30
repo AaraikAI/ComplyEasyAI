@@ -14,7 +14,7 @@ import { authenticate } from './middleware/auth';
 import websocketService from './services/websocketService';
 import realTimeComplianceService from './services/realTimeComplianceService';
 import swaggerSpec from './config/swagger';
-import monitoring, { initializeSentry, initializeAPM } from './config/monitoring';
+import { initializeSentry, initializeAPM } from './config/monitoring';
 import { monitoringMiddleware, errorTrackingMiddleware } from './middleware/monitoring';
 import { responseEnvelope } from './middleware/standardResponse';
 

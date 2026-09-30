@@ -39,6 +39,14 @@ describe('credentialEncryption', () => {
     expect(decryptField(v1)).toBe(secret);
   });
 
+  it('rejects a truncated GCM authentication tag', () => {
+    const enc = encryptField(secret);
+    const parts = enc.split(':'); // enc_v2, salt, iv, authTag, ciphertext
+    const shortTag = Buffer.from(parts[3], 'base64').subarray(0, 4).toString('base64');
+    const truncated = [parts[0], parts[1], parts[2], shortTag, parts[4]].join(':');
+    expect(() => decryptField(truncated)).toThrow('Credential decryption failed');
+  });
+
   it('passes through values that are not encrypted', () => {
     expect(decryptField('plain')).toBe('plain');
     expect(encryptField('')).toBe('');

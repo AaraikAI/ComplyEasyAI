@@ -11,7 +11,6 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import tokenBlacklist from '../services/tokenBlacklistService';
 import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
-import { logControllerAction } from '../services/auditLogService';
 import DOMPurify from 'isomorphic-dompurify';
 
 // Cookie configuration for httpOnly secure token storage
@@ -155,7 +154,7 @@ class AuthController {
       // Check if user exists
       // Select only needed organization fields to avoid schema mismatch issues
       // Excluding plan field to avoid enum mismatch (database may have 'Pro' which isn't in enum)
-      let user = await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { email },
         select: {
           id: true,
@@ -178,7 +177,7 @@ class AuthController {
       // If user doesn't exist, create a new one (auto-registration)
       // Wrapped in a transaction to ensure org + user are created atomically
       if (!user) {
-        user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
           // Create organization
           const organization = await tx.organization.create({
             data: {

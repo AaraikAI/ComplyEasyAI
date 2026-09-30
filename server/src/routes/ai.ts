@@ -3,7 +3,7 @@ import aiController from '../controllers/aiController';
 import { authenticate } from '../middleware/auth';
 import { aiLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../types/express';
-import { requireFeature, enforceLimit, requireAiFeature } from '../middleware/tierMiddleware';
+import { enforceLimit, requireAiFeature } from '../middleware/tierMiddleware';
 import { validateBody } from '../middleware/validate';
 import {
   aiReportSchema,
