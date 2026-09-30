@@ -9,15 +9,20 @@ export const verifyAndEnableSchema = Joi.object({
   token: Joi.string().required().min(4).max(10).trim(),
 }).unknown(false);
 
+// The subject of a pre-session 2FA check is identified by the signed
+// second-factor-pending token issued after the first factor. A client-supplied
+// `userId` is deliberately not accepted (unknown(false) rejects it).
+const twoFactorPendingToken = Joi.string().required().min(1).max(2048);
+
 // POST /verify — Verify TOTP token during login
 export const verifyTokenSchema = Joi.object({
-  userId: Joi.string().required().min(1).max(200).trim(),
+  twoFactorToken: twoFactorPendingToken,
   token: Joi.string().required().min(4).max(10).trim(),
 }).unknown(false);
 
 // POST /verify-backup — Verify backup code during login
 export const verifyBackupCodeSchema = Joi.object({
-  userId: Joi.string().required().min(1).max(200).trim(),
+  twoFactorToken: twoFactorPendingToken,
   code: Joi.string().required().min(1).max(50).trim(),
 }).unknown(false);
 

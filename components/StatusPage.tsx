@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { Seo } from './seo/Seo';
 import {
   Shield, CheckCircle, AlertTriangle, XCircle, Clock, Activity,
   RefreshCw, Bell,
@@ -327,6 +328,11 @@ export const StatusPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <Seo
+        title="ComplyEasyAI System Status"
+        description="Live availability of the ComplyEasyAI web app, API, database and background jobs, derived from the production health check."
+        canonicalPath="/status"
+      />
       {/* Header */}
       <header className="border-b border-slate-700 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -336,7 +342,7 @@ export const StatusPage: React.FC = () => {
                 <div className="bg-brand-600 p-2 rounded-xl">
                   <Shield className="text-white w-5 h-5" />
                 </div>
-                <span className="font-bold text-xl text-white">ComplyEasy AI</span>
+                <span className="font-bold text-xl text-white">ComplyEasyAI</span>
               </a>
               <span className="text-slate-400 text-sm hidden sm:block">| System Status</span>
             </div>
@@ -755,17 +761,16 @@ export const StatusPage: React.FC = () => {
               <div className="bg-brand-600 p-1.5 rounded-lg">
                 <Shield className="text-white w-4 h-4" />
               </div>
-              <span className="font-bold text-white">ComplyEasy AI</span>
+              <span className="font-bold text-white">ComplyEasyAI</span>
               <span className="text-slate-500 text-sm">System Status</span>
             </div>
             <div className="flex space-x-6 text-sm text-slate-400">
               <a href="/" className="hover:text-white transition-colors">Home</a>
               <a href="/learn" className="hover:text-white transition-colors">Learn</a>
               <a href="/docs" className="hover:text-white transition-colors">Docs</a>
-              <a href="/community" className="hover:text-white transition-colors">Community</a>
             </div>
             <div className="text-sm text-slate-500">
-              © 2026 ComplyEasy AI Inc.
+              © 2026 ComplyEasyAI
             </div>
           </div>
         </div>

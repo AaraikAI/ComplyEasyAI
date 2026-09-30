@@ -299,7 +299,7 @@ describe('E2E: GraphQL Flow', () => {
         }
       `;
 
-      // graphql-depth-limit counts actual field nesting
+      // the depthLimit rule (graphql/depthLimit.ts) counts actual field nesting
       // The depth limit is 10, so build at depth >10 manually won't work via
       // Query type nesting since our schema doesn't have deeply nested types.
       // Instead, test that the depth limiting is active by checking header.

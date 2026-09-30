@@ -13,6 +13,7 @@ import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
 import { EventEmitter } from 'events';
 import { Queue as BullQueue, Worker as BullWorker, Job as BullJob } from 'bullmq';
+import type { JobsOptions, JobSchedulerTemplateOptions } from 'bullmq';
 
 // ============================================================================
 // TYPES
@@ -44,7 +45,10 @@ export interface JobOptions {
   timeout?: number;
   /** Unique job ID to prevent duplicates */
   jobId?: string;
-  /** Cron schedule for repeatable jobs */
+  /**
+   * Cron schedule for repeatable jobs. With Redis this registers a BullMQ Job
+   * Scheduler keyed by `jobId`, or by `${name}:${cron}` when no jobId is given.
+   */
   repeat?: {
     cron: string;
     limit?: number;
@@ -296,30 +300,40 @@ class JobQueueService extends EventEmitter {
       const bullQueue = this.bullQueues.get(queueName);
       if (bullQueue) {
         try {
-          const bullJobOpts: any = {
+          const baseJobOpts: JobSchedulerTemplateOptions = {
             priority: opts.priority,
             attempts: opts.attempts,
-            delay: opts.delay,
             backoff: opts.backoff,
             removeOnComplete: opts.removeOnComplete,
             removeOnFail: opts.removeOnFail,
           };
-          if (opts.jobId) bullJobOpts.jobId = opts.jobId;
-          if (opts.repeat && opts.repeat.cron) {
-            bullJobOpts.repeat = {
-              pattern: opts.repeat.cron,
-              limit: opts.repeat.limit || undefined,
-              tz: opts.repeat.tz || undefined,
-            };
+
+          const recurring = Boolean(opts.repeat && opts.repeat.cron);
+          let bullJob: BullJob | undefined;
+          if (recurring) {
+            // BullMQ 6 removed `repeat` from Queue.add (it is ignored, so the
+            // job would run once). Recurring jobs are Job Schedulers; upserting
+            // by id keeps re-registration idempotent, like the in-memory path.
+            bullJob = await bullQueue.upsertJobScheduler(
+              opts.jobId || `${name}:${opts.repeat.cron}`,
+              {
+                pattern: opts.repeat.cron,
+                limit: opts.repeat.limit || undefined,
+                tz: opts.repeat.tz || undefined,
+              },
+              { name, data, opts: baseJobOpts },
+            );
+          } else {
+            const bullJobOpts: JobsOptions = { ...baseJobOpts, delay: opts.delay };
+            if (opts.jobId) bullJobOpts.jobId = opts.jobId;
+            bullJob = await bullQueue.add(name, data, bullJobOpts);
           }
 
-          const bullJob = await bullQueue.add(name, data, bullJobOpts);
-
           const job: Job<T> = {
-            id: bullJob.id || `job_${++this.jobCounter}_${Date.now()}`,
+            id: bullJob?.id || `job_${++this.jobCounter}_${Date.now()}`,
             name,
             data,
-            status: opts.delay > 0 ? 'delayed' : 'waiting',
+            status: recurring || opts.delay > 0 ? 'delayed' : 'waiting',
             progress: 0,
             attemptsMade: 0,
             maxAttempts: opts.attempts,
@@ -614,7 +628,7 @@ class JobQueueService extends EventEmitter {
     if (!options.repeat.cron) return;
 
     // Simple cron-to-interval conversion for common patterns
-    // When Redis is configured, BullMQ handles this natively
+    // When Redis is configured, addJob registers a BullMQ Job Scheduler instead
     const intervalMs = this.cronToInterval(options.repeat.cron);
     if (!intervalMs) {
       logger.warn(`[JobQueue] Unsupported cron pattern: ${options.repeat.cron}`);

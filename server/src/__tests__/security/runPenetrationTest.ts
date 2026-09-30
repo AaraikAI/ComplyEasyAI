@@ -11,6 +11,7 @@
  * Usage:
  *   npx ts-node src/__tests__/security/runPenetrationTest.ts
  *   API_URL=http://localhost:3001 npx ts-node src/__tests__/security/runPenetrationTest.ts
+ *   PENTEST_ALLOW_SELF_SIGNED_TLS=true API_URL=https://localhost:3443 npx ts-node src/__tests__/security/runPenetrationTest.ts
  *
  * Output: docs/PENETRATION_TEST_REPORT.md  (complete markdown report)
  */
@@ -59,6 +60,26 @@ const PRISMA_SCHEMA = path.join(ROOT, 'prisma', 'schema.prisma');
 const RLS_SQL = path.join(ROOT, 'prisma', 'migrations', 'rls_policies_all_tables.sql');
 const INDEX_TS = path.join(SRC, 'index.ts');
 const API_URL = process.env.API_URL || 'http://localhost:3001';
+// TLS certificates of the target are verified. Skipping verification (to probe
+// a local server that presents a self-signed certificate) needs an explicit
+// opt-in, PENTEST_ALLOW_SELF_SIGNED_TLS=true, and applies only to loopback targets.
+function isLoopbackTarget(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return (
+      host === 'localhost' ||
+      host.endsWith('.localhost') ||
+      host === '127.0.0.1' ||
+      host === '[::1]' ||
+      host === '::1'
+    );
+  } catch {
+    return false;
+  }
+}
+const VERIFY_TARGET_TLS = !(
+  process.env.PENTEST_ALLOW_SELF_SIGNED_TLS === 'true' && isLoopbackTarget(API_URL)
+);
 const REPORT_PATH = path.join(PROJECT_ROOT, 'docs', 'PENETRATION_TEST_REPORT.md');
 
 // ============================================================================
@@ -134,7 +155,7 @@ function httpRequest(
 
     const req = transport.request(
       parsedUrl,
-      { method, headers, timeout, rejectUnauthorized: false },
+      { method, headers, timeout, rejectUnauthorized: VERIFY_TARGET_TLS },
       (res) => {
         let data = '';
         res.on('data', (chunk: Buffer) => (data += chunk.toString()));

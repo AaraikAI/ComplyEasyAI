@@ -30,13 +30,12 @@ async function testSendGridConnection() {
   // Check API key format
   if (!SENDGRID_API_KEY.startsWith('SG.')) {
     console.error('❌ ERROR: Invalid SendGrid API key format');
-    console.error(`   API key should start with "SG." but got: ${SENDGRID_API_KEY.substring(0, 10)}...`);
+    console.error('   API key should start with "SG." (the value itself is not printed)');
     console.error('   Please check your SENDGRID_API_KEY in server/.env file');
     process.exit(1);
   }
 
   console.log('✅ SENDGRID_API_KEY is set and format is valid');
-  console.log(`   Key preview: ${SENDGRID_API_KEY.substring(0, 10)}...`);
 
   // Check if FROM_EMAIL is set
   if (!SENDGRID_FROM_EMAIL) {

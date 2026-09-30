@@ -4,9 +4,43 @@ import { HelpCircle, ChevronDown } from 'lucide-react';
 import { MarketingLayout } from '../MarketingLayout';
 import { Seo } from '../../seo/Seo';
 import { JsonLd } from '../../seo/JsonLd';
-import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
+import { breadcrumbSchema, faqSchema, reviewedWebPageSchema } from '../../seo/siteSchema';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
+import { ReviewedByline, TldrList } from '../answerFirst';
+import { FRAMEWORK_PILLAR_COUNT } from '../../../data/frameworkPillarContent';
+import {
+  ACOS_PLANS,
+  BYOK_PLAN,
+  EU_STACK_PLAN,
+  FRAMEWORK_CATALOGUE_LABEL,
+  FRAMEWORK_GUIDE_LIST,
+  HOSTING_REGION,
+  INTEGRATION_COUNT,
+  joinWithAnd,
+  SECURITY_ATTESTATION,
+  TRIAL_CTA,
+  VERIFIED_INTEGRATION_GROUPS,
+} from '../../../data/marketingFacts';
 
-const SITE_ORIGIN = 'https://complyeasyai.com';
+/** Date the answers on this page were last reviewed against the product and the rules. */
+const LAST_REVIEWED = '2026-09-27';
+
+const SEO_TITLE = 'ComplyEasyAI FAQ: Pricing, Frameworks, AI & Security';
+const SEO_DESCRIPTION =
+  'Answers about the ComplyEasyAI compliance automation platform: supported frameworks, AI features, security, integrations, pricing, deployment, and support.';
+
+/** "Cloud and infrastructure: AWS, … and Kubernetes. Identity and HR: …." */
+const INTEGRATION_GROUP_SENTENCES = VERIFIED_INTEGRATION_GROUPS.map(
+  ({ group, names }) => `${group}: ${joinWithAnd(names)}.`,
+).join(' ');
+
+/** Key facts shown as the TL;DR under the hero. */
+const FAQ_TLDR: string[] = [
+  `${FRAMEWORK_PILLAR_COUNT} in-depth framework guides and ${FRAMEWORK_CATALOGUE_LABEL} frameworks in the in-app catalogue.`,
+  `${INTEGRATION_COUNT} verified integrations collect evidence, read-only for evidence collection.`,
+  'Four annual plans, each a tailored quote per framework mix; trials are available on request.',
+  `Our own security: ${SECURITY_ATTESTATION}, hosted in a single US region (us-east-1).`,
+];
 
 interface QaItem {
   q: string;
@@ -15,6 +49,9 @@ interface QaItem {
 
 interface FaqTopic {
   id: string;
+  /** Short name for the topic jump links. */
+  label: string;
+  /** Section heading, phrased as the question the topic answers. */
   title: string;
   blurb: string;
   items: QaItem[];
@@ -22,45 +59,48 @@ interface FaqTopic {
 
 /**
  * Topic-grouped Q&A set adapted from the published FAQ. Answers describe
- * platform capabilities and supported frameworks factually; figures that are
- * not independently verifiable here are intentionally omitted.
+ * platform capabilities and supported frameworks factually. Services that are
+ * arranged per contract are labelled "available on request", and developer
+ * tooling that does not exist yet is labelled "on the roadmap".
  */
 const FAQ_TOPICS: FaqTopic[] = [
   {
     id: 'getting-started',
-    title: 'Getting started',
+    label: 'Getting started',
+    title: 'How do I get started?',
     blurb: 'What the platform is, who it serves, and how onboarding works.',
     items: [
       {
-        q: 'What is ComplyEasy AI?',
-        a: 'ComplyEasy AI is an AI-powered compliance automation platform that helps organizations achieve and maintain continuous readiness across global regulatory standards. It automates evidence collection, control monitoring, risk assessment, and audit preparation using autonomous AI agents and machine learning.',
+        q: 'What is ComplyEasyAI?',
+        a: 'ComplyEasyAI is an AI-powered compliance automation platform that helps organizations achieve and maintain continuous readiness across global regulatory standards. It automates evidence collection, control monitoring, risk assessment, and audit preparation using autonomous AI agents and machine learning.',
       },
       {
-        q: 'Who is ComplyEasy AI for?',
-        a: 'It is built for startups preparing for a first certification such as SOC 2 or ISO 27001, scale-ups managing several frameworks at once, and enterprises that need advanced automation, custom frameworks, or on-premise deployment. It is a strong fit for regulated industries including FinTech, HealthTech, SaaS, and AI companies, as well as organizations subject to the EU AI Act, DMA, or DSA.',
+        q: 'Who is ComplyEasyAI for?',
+        a: 'It is built for startups preparing for a first audit such as SOC 2 or ISO 27001, scale-ups managing several frameworks at once, and enterprises that need advanced automation and custom frameworks. It is a strong fit for regulated industries including FinTech, HealthTech, SaaS, and AI companies, as well as organizations subject to the EU AI Act, DMA, or DSA.',
       },
       {
         q: 'How quickly can I get started?',
         a: 'Signing up takes a couple of minutes, and AI-assisted framework setup typically takes 15 to 30 minutes. Automated evidence collection can begin within the first day, an initial compliance dashboard comes together within a few days, and audit-ready status generally follows over 30 to 90 days depending on the framework and your current maturity.',
       },
       {
-        q: 'Do you offer a free trial?',
-        a: 'Yes. A 3-day free trial is available with no credit card required. It includes Foundation-tier capabilities such as three compliance frameworks, up to 10 users, automated evidence collection, the AI Risk Analyzer, and basic reporting.',
+        q: 'Can I try ComplyEasyAI before buying?',
+        a: `Yes, on request. ${TRIAL_CTA.label} through the demo form and we agree the trial's scope and length with you. You can also create an account yourself; a new workspace starts with the Foundation plan's limits of three frameworks and up to 10 users.`,
       },
       {
         q: 'What happens after my trial ends?',
-        a: 'The trial ends automatically after three days. You can upgrade to a paid tier to continue with all of your data preserved, or contact the sales team to request an extension for evaluation purposes.',
+        a: 'Before a trial ends we agree the next step with you: move to a paid plan with all of your data preserved, extend the evaluation, or close the workspace.',
       },
     ],
   },
   {
     id: 'pricing-billing',
-    title: 'Pricing and billing',
+    label: 'Pricing and billing',
+    title: 'How does pricing work?',
     blurb: 'Tiers, tier changes, payment methods, and refunds.',
     items: [
       {
         q: 'How does your pricing work?',
-        a: 'Pricing is tier-based with flat annual rates. Foundation is $8,500/year for up to 10 users and three frameworks. Essentials is $17,000/year for up to 100 users and 10 frameworks. Growth ranges from $42,500 to $51,000/year for 100 to 1,000 users and up to 50 frameworks. Visionary ranges from $68,000 to $170,000/year with unlimited users and frameworks. Growth and Visionary are quoted by the sales team.',
+        a: 'Pricing is tier-based with flat annual rates: Foundation (3 frameworks, 10 users), Essentials (10 frameworks, 100 users), Growth (50 frameworks, 1,000 users) and Visionary (unlimited). Each plan is one platform price; your exact figure is a tailored quote based on your framework mix and team size, shared on a 30-minute call.',
       },
       {
         q: 'Can I switch tiers?',
@@ -72,26 +112,27 @@ const FAQ_TOPICS: FaqTopic[] = [
       },
       {
         q: 'What is your refund policy?',
-        a: 'You can cancel during the trial period with no charges. On annual plans, a prorated refund for unused months is available after the first 30 days. Enterprise contracts follow their negotiated terms.',
+        a: 'Trials carry no charges. On annual plans, a prorated refund for unused months is available after the first 30 days. Enterprise contracts follow their negotiated terms.',
       },
     ],
   },
   {
     id: 'platform-features',
-    title: 'Platform and features',
+    label: 'Platform and features',
+    title: 'What does the platform do?',
     blurb: 'Core capabilities, autonomous operations, and evidence automation.',
     items: [
       {
         q: 'What compliance frameworks does the platform support?',
-        a: 'The platform includes more than 50 built-in frameworks spanning security (SOC 2 Type I and II, ISO 27001, ISO 27701, NIST CSF, CIS Controls), privacy (GDPR, CCPA, HIPAA, PIPEDA, LGPD), cloud (FedRAMP, StateRAMP, TISAX), AI/ML (EU AI Act, NIST AI RMF, ISO 42001), and industry standards (PCI DSS, HITRUST, 21 CFR Part 11, ITAR), plus the EU Digital Markets Act and Digital Services Act. Custom frameworks are available as an add-on with the Growth tier and above.',
+        a: `ComplyEasyAI has ${FRAMEWORK_PILLAR_COUNT} in-depth framework guides: ${FRAMEWORK_GUIDE_LIST}. Its in-app catalogue covers ${FRAMEWORK_CATALOGUE_LABEL} frameworks and standards, including ISO 27701, NIST 800-53, CIS Controls, FedRAMP, HITRUST, PIPEDA, LGPD, TISAX, FDA 21 CFR Part 11 and ITAR. Growth and Visionary plans can build custom frameworks.`,
       },
       {
         q: 'What is aCOS (Autonomous Compliance Operations System)?',
-        a: 'aCOS is the autonomous compliance engine. It monitors your infrastructure continuously with AI agents, detects compliance drift in real time, remediates issues automatically when it is safe to do so, learns from your environment to adapt policies, predicts emerging risks, and orchestrates remediation workflows. It is available in the Essentials tier and above, or as a separately billed add-on.',
+        a: `aCOS is the autonomous compliance engine. It monitors your infrastructure continuously with AI agents, detects compliance drift in real time, remediates issues automatically when it is safe to do so, learns from your environment to adapt policies, predicts emerging risks, and orchestrates remediation workflows. The full aCOS loop is included in ${ACOS_PLANS}; continuous control monitoring is in every tier.`,
       },
       {
         q: 'How does automated evidence collection work?',
-        a: 'AI agents collect evidence from cloud infrastructure (AWS, Azure, GCP), SaaS tools (GitHub, Slack, Jira, Okta, Google Workspace), security tools, monitoring systems, and HR systems. You connect integrations through OAuth, API keys, personal access tokens, or read-only access; the AI maps evidence to controls automatically; evidence is collected on a daily, weekly, or monthly schedule; and a versioned, immutable audit trail is maintained for every item.',
+        a: `Evidence is collected through ${INTEGRATION_COUNT} verified integrations across cloud (AWS, Microsoft Azure), code (GitHub, GitLab), identity and HR (Okta, Google Workspace, BambooHR), security (CrowdStrike, Qualys) and ticketing (Jira, ServiceNow). You connect each one through OAuth, an API key or a personal access token, and the credential is checked with the provider before it is saved. Evidence is mapped to controls, collected on a schedule, and kept in a versioned audit trail.`,
       },
       {
         q: 'Can I customize frameworks and controls?',
@@ -105,7 +146,8 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'ai-features',
-    title: 'AI and automation',
+    label: 'AI and automation',
+    title: 'How does the AI work?',
     blurb: 'How the AI works, what it automates, and where humans stay in the loop.',
     items: [
       {
@@ -132,12 +174,13 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'frameworks',
-    title: 'Compliance frameworks',
+    label: 'Compliance frameworks',
+    title: 'Which frameworks are covered?',
     blurb: 'Timelines, running multiple frameworks, and staying current with updates.',
     items: [
       {
-        q: 'How long does SOC 2 certification take?',
-        a: 'With ComplyEasy AI, setup and gap assessment usually take a few weeks, remediation runs roughly 4 to 12 weeks depending on the gaps found, and SOC 2 Type II requires a 3 to 6 month observation period before the audit itself. End to end this commonly lands in the 4 to 9 month range, compared with the longer timelines typical of fully manual programs.',
+        q: 'How long does it take to get a SOC 2 report?',
+        a: 'With ComplyEasyAI, setup and gap assessment usually take a few weeks, remediation runs roughly 4 to 12 weeks depending on the gaps found, and SOC 2 Type II requires a 3 to 6 month observation period before the audit itself. End to end this commonly lands in the 4 to 9 month range, compared with the longer timelines typical of fully manual programs.',
       },
       {
         q: 'Can I pursue multiple frameworks simultaneously?',
@@ -149,26 +192,27 @@ const FAQ_TOPICS: FaqTopic[] = [
       },
       {
         q: 'How do you handle framework updates?',
-        a: 'Framework changes are tracked centrally. When a standard is revised, new controls are added to your instance, you receive advance notice, and AI assists the transition while preserving and remapping existing evidence. This has covered updates such as the ISO 27001:2022 revision, NIST CSF 2.0, and the EU AI Act, so you stay current without manual framework maintenance.',
+        a: 'Framework changes are tracked centrally. When a standard is revised, new controls are added to your instance, you receive advance notice, and AI assists the transition while preserving and remapping existing evidence. This has covered updates such as the ISO 27001:2022 revision and NIST CSF 2.0.',
       },
     ],
   },
   {
     id: 'eu-regulations',
-    title: 'EU regulations',
+    label: 'EU regulations',
+    title: 'Which EU regulations are covered?',
     blurb: 'EU AI Act, DMA, DSA, and GDPR coverage.',
     items: [
       {
         q: 'Do you support the EU AI Act?',
-        a: 'Yes. The platform helps you classify AI system risk, generate technical documentation for high-risk systems, run conformity assessments, manage required transparency disclosures and labeling, operate human-oversight governance workflows, and monitor data quality and accuracy. It is included with the Visionary tier and available as an add-on for lower tiers.',
+        a: `Yes. The platform helps you classify AI system risk, generate technical documentation for high-risk systems, run conformity assessments, manage required transparency disclosures and labeling, operate human-oversight governance workflows, and monitor data quality and accuracy. It is included in the ${EU_STACK_PLAN} plan's full EU stack (AI Act, DORA, DMA and DSA). After the 2026 Digital Omnibus amendments, most high-risk obligations apply from 2 December 2027 (Annex III systems) or 2 August 2028 (AI in products covered by Annex I).`,
       },
       {
         q: 'What about the Digital Markets Act (DMA)?',
-        a: 'The platform supports DMA obligations for digital gatekeepers, including gatekeeper assessment, mapping of the DMA obligations, documenting interoperability and data portability, monitoring self-preferencing and data-combination practices, and generating compliance reports. It is available in the Visionary tier or as a Growth-tier add-on.',
+        a: `The platform supports DMA obligations for digital gatekeepers, including gatekeeper assessment, mapping of the DMA obligations, documenting interoperability and data portability, monitoring self-preferencing and data-combination practices, and generating compliance reports. It is included in the ${EU_STACK_PLAN} plan.`,
       },
       {
         q: 'And the Digital Services Act (DSA)?',
-        a: 'The platform provides a DSA toolkit covering content-moderation tracking, notice-and-action workflows, automated transparency reporting, systemic-risk analysis for very large platforms, recommender-system documentation, advertising transparency, and user-rights request handling. It is available in the Visionary tier or as a Growth-tier add-on.',
+        a: `The platform provides a DSA toolkit covering content-moderation tracking, notice-and-action workflows, automated transparency reporting, systemic-risk analysis for very large platforms, recommender-system documentation, advertising transparency, and user-rights request handling. It is included in the ${EU_STACK_PLAN} plan.`,
       },
       {
         q: 'How does the platform help with GDPR?',
@@ -178,35 +222,37 @@ const FAQ_TOPICS: FaqTopic[] = [
   },
   {
     id: 'security',
-    title: 'Security and privacy',
-    blurb: 'Architecture, data residency, access controls, and customer-managed keys.',
+    label: 'Security and privacy',
+    title: 'How is my data protected?',
+    blurb: 'Our own attestations, hosting, access and customer-managed keys.',
     items: [
       {
         q: 'How is the platform secured?',
-        a: 'The platform is built on a zero-trust architecture with device-trust verification, end-to-end encryption (AES-256 at rest and TLS 1.3 in transit), and support for zero-knowledge proofs to verify data without exposing it. Bring Your Own Key lets you control encryption keys, and continuous security monitoring backs the environment.',
+        a: `${SECURITY_ATTESTATION}; ComplyEasyAI does not yet hold a SOC 2 report or an ISO 27001 certificate. The controls in place today are encryption at rest (Supabase and AWS), TLS encryption in transit, integration credentials additionally encrypted with AES-256-GCM, multi-factor authentication, role-based access within each workspace, audit logging, and hosting in a single US region (us-east-1).`,
       },
       {
         q: 'Where is my data stored?',
-        a: 'By default, data is stored in multi-region cloud storage with geo-replication for disaster recovery. You can choose regional isolation to keep data in specific regions, deploy on-premise within your own infrastructure (Visionary tier with the on-premise add-on), or run a hybrid of cloud and on-premise to meet residency requirements for regulations such as GDPR and CCPA.',
+        a: `Customer data is hosted in ${HOSTING_REGION}, with the application on AWS and the database on Supabase. Nightly database backups are kept for 30 days. There is no multi-region replication today. On-premises deployment is available on request for Visionary customers.`,
       },
       {
         q: 'Do you have access to my data?',
-        a: 'Access follows a minimal-access principle. Production data has zero standing access and requires breakglass approval, support access requires explicit customer permission and is logged and audited, and customer data is never used for AI training without opt-in. With zero-knowledge techniques, compliance can be verified without the platform seeing your underlying data.',
+        a: 'Your data is scoped to your organization and is never shown to other customers, and actions in the platform are written to an audit log. We do not use customer data to train AI models without your opt-in.',
       },
       {
         q: 'Can I use my own encryption keys?',
-        a: 'Yes. Bring Your Own Key is available in the Growth tier and above, with support for AWS KMS, Azure Key Vault, Google Cloud KMS, and HashiCorp Vault. Keys can be rotated automatically or manually, and revoking a key renders the associated data unreadable. BYOK can be combined with client-side encryption for a zero-knowledge posture.',
+        a: `Yes. Bring Your Own Key is available on the ${BYOK_PLAN} plan, with support for AWS KMS, Azure Key Vault, Google Cloud KMS, and HashiCorp Vault. Keys can be rotated automatically or manually, and revoking a key renders the associated data unreadable. BYOK can be combined with client-side encryption for a zero-knowledge posture.`,
       },
     ],
   },
   {
     id: 'integrations',
-    title: 'Integrations',
+    label: 'Integrations',
+    title: 'Which tools does it connect to?',
     blurb: 'Supported tools, connection methods, and building your own.',
     items: [
       {
         q: 'What integrations do you support?',
-        a: 'The platform offers more than 80 pre-built integrations across cloud providers (AWS, Azure, GCP, Oracle Cloud, IBM Cloud), security and compliance tools (Wiz, Vanta, Snyk, Crowdstrike, Qualys, Tenable), DevOps (GitHub, GitLab, Bitbucket, Jenkins, CircleCI, Terraform), communication (Slack, Microsoft Teams, PagerDuty, Opsgenie), HR and identity (Okta, Azure AD, Google Workspace, BambooHR, Workday), ticketing (Jira, ServiceNow, Linear, Asana), and monitoring (Datadog, Splunk, Elasticsearch, Prometheus, Grafana).',
+        a: `ComplyEasyAI has ${INTEGRATION_COUNT} verified integrations: connectors that check your credentials with the provider when you connect and collect evidence when they sync. ${INTEGRATION_GROUP_SENTENCES} The in-app catalogue lists further connectors that are not yet verified end to end.`,
       },
       {
         q: 'How do integrations work?',
@@ -214,53 +260,55 @@ const FAQ_TOPICS: FaqTopic[] = [
       },
       {
         q: 'Can I build custom integrations?',
-        a: 'Yes. A Webhook API is available on every tier for sending evidence, triggering workflows, and querying compliance data. The no-code Integration Builder (Growth tier and above) connects any REST API with visual field mapping, and full programmatic access via REST and GraphQL is available on the Visionary tier. Professional services can also build integrations for you.',
+        a: 'Yes. The Webhook API and the REST and GraphQL APIs let you send evidence, trigger workflows, and query compliance data. A no-code Integration Builder is on the roadmap, and integration work by our team is available on request.',
       },
       {
         q: 'What if you don’t support my tool?',
-        a: 'You can use generic options such as the Webhook API, CSV import, or email forwarding, request the integration on the public roadmap, build it yourself with the Integration Builder or SDK, or have the professional services team build it. New integrations are added regularly based on customer demand.',
+        a: 'You can send evidence through the Webhook API, import it from CSV, or upload it manually, and ask us to add the integration. A public roadmap for integration requests is on the roadmap, and integration work by our team is available on request.',
       },
     ],
   },
   {
     id: 'technical',
-    title: 'Technical questions',
+    label: 'Technical questions',
+    title: 'What are the technical details?',
     blurb: 'Uptime, deployment, rate limits, and developer interfaces.',
     items: [
       {
         q: 'What is your uptime SLA?',
-        a: 'Uptime commitments scale by tier: 99.5% for Foundation and Essentials, 99.9% with SLA credits for Growth, and 99.95% with SLA credits for Visionary. When an uptime target is missed, monthly service credits apply, and a public status page is available.',
+        a: 'Uptime SLAs with service credits are available on request and are agreed in your contract; without one, no SLA applies. Live availability is published on the status page.',
       },
       {
         q: 'Can I deploy on-premise?',
-        a: 'Yes. On-premise deployment is available on the Visionary tier with an on-premise add-on. It runs on a Kubernetes cluster with PostgreSQL, Redis, and S3-compatible storage, ships as Docker containers with Helm charts, and is supported by a dedicated on-premise team. A hybrid mode keeps sensitive data on-premise while using the cloud for AI processing.',
+        a: 'On-premises deployment is available on request for Visionary customers. It runs on your Kubernetes cluster with PostgreSQL, Redis and S3-compatible storage; packaging (including Helm) and support are agreed per contract. The standard service runs in a single US region (us-east-1).',
       },
       {
         q: 'What are your API rate limits?',
-        a: 'Hourly API rate limits scale by tier, from 1,000 requests per hour on Foundation up to custom limits on Visionary, with a short-burst allowance above the base rate. The limit is a soft limit returning HTTP 429 responses rather than a hard cut-off, and there are no overage fees.',
+        a: 'API use is subject to plan quotas, from 1,000 requests a day on Foundation to 10,000 on Essentials, 100,000 on Growth and unlimited under fair use on Visionary, and to rate limiting. Requests over a limit receive an HTTP 429 response.',
       },
       {
-        q: 'Do you have a CLI or SDK?',
-        a: 'Yes. The platform provides a documented REST API, a GraphQL API on Growth and above with real-time subscriptions, a command-line interface, and SDKs for JavaScript/TypeScript, Python, Go, and Java. A Terraform provider lets you manage compliance as infrastructure-as-code.',
+        q: 'Do you have an API, CLI or SDKs?',
+        a: 'The API is available today: a documented REST API and a GraphQL API. SDKs for JavaScript/TypeScript, Python, Go, and Java, a command-line interface, and a Terraform provider are on the roadmap.',
       },
     ],
   },
   {
     id: 'support-services',
-    title: 'Support and services',
+    label: 'Support and services',
+    title: 'What support is included?',
     blurb: 'Support tiers, professional services, training, and migration help.',
     items: [
       {
         q: 'What support do you provide?',
-        a: 'Support scales by tier. Foundation includes email support, a knowledge base, and a community forum. Essentials adds business-hours chat and monthly office-hours webinars. Growth adds priority support, quarterly business reviews, and a dedicated Slack channel. Visionary adds 24/7 phone support, a critical-response SLA, a dedicated Customer Success Manager, and a private Slack channel with engineering.',
+        a: 'Every plan includes email support, the documentation, and the learning center. Growth and Visionary add priority support. For Visionary customers, 24/7 phone support, a critical-response SLA, and a dedicated Customer Success Manager are available on request.',
       },
       {
         q: 'Do you offer professional services?',
-        a: 'Yes. The services team provides compliance consulting (gap assessments, remediation planning, policy development, audit preparation, framework selection), implementation services (onboarding, integration setup, custom framework building, workflow design, team training), and managed services such as Compliance-as-a-Service, a virtual CISO, and continuous monitoring.',
+        a: 'Yes, on request. Compliance consulting (gap assessments, remediation planning, policy development, audit preparation, framework selection), implementation services (onboarding, integration setup, custom framework building, workflow design, team training), and managed services such as Compliance-as-a-Service and a virtual CISO are available on request and quoted separately.',
       },
       {
         q: 'How do I get training?',
-        a: 'Self-paced video tutorials, interactive walkthroughs, documentation, and webinar recordings are available to all tiers. Essentials and above add live webinars and office hours, and Growth and above add custom on-site or virtual sessions, team workshops, and an admin certification program.',
+        a: 'Documentation, the learning center, and in-app guidance are available on every plan. Live training sessions and workshops for your team are available on request.',
       },
       {
         q: 'Can you help me prepare for an audit?',
@@ -268,18 +316,19 @@ const FAQ_TOPICS: FaqTopic[] = [
       },
       {
         q: 'What if I need help migrating from another tool?',
-        a: 'Migration support is included for all tiers and typically takes a week or two. The team imports your data from tools such as Vanta, Drata, or Secureframe, handles data mapping and validation, and runs the platform in parallel during the transition for no downtime. Growth and above add a dedicated migration engineer and custom data transformation.',
+        a: "Migration help is available on request. Our team can import your controls, evidence and policies from spreadsheets or your current compliance tool's exports, handle data mapping and validation, and run both systems in parallel during the switch.",
       },
     ],
   },
   {
     id: 'additional',
-    title: 'Additional questions',
+    label: 'Additional questions',
+    title: 'What about white-labeling and multi-tenancy?',
     blurb: 'White-labeling, multi-tenancy, and enterprise add-ons.',
     items: [
       {
-        q: 'Can I white-label ComplyEasy AI?',
-        a: 'Yes. White-labeling is available on the Visionary tier and includes custom branding (logo, colors, and domain), removal of ComplyEasy AI branding, custom email templates, and custom report headers and footers. It is a common fit for managed service providers, compliance consultants, and resellers.',
+        q: 'Can I white-label ComplyEasyAI?',
+        a: 'Yes. White-labeling is available on the Visionary tier and includes custom branding (logo, colors, and domain), removal of ComplyEasyAI branding, custom email templates, and custom report headers and footers. It is a common fit for managed service providers, compliance consultants, and resellers.',
       },
       {
         q: 'Do you support multi-tenancy?',
@@ -287,7 +336,7 @@ const FAQ_TOPICS: FaqTopic[] = [
       },
       {
         q: 'What enterprise add-ons are available?',
-        a: 'Add-ons include custom frameworks at $2,997/year per framework (Growth and Visionary), on-premise deployment at $3,200/year (Visionary), custom fine-tuned AI models at $1,920/year (Visionary), and a dedicated vCISO service at $9,997/year for 10 consulting hours per month (all tiers). An audit-bundling option provides pre-negotiated rates with a partner network of certified audit firms.',
+        a: 'Custom frameworks are included in the Growth and Visionary plans. The following are available on request and quoted with your plan: on-premises deployment (Visionary), custom fine-tuned AI models (Visionary), a dedicated virtual CISO service, and audit bundling with a partner network of audit firms.',
       },
     ],
   },
@@ -309,13 +358,22 @@ const FaqHubPage: React.FC = () => {
   return (
     <MarketingLayout>
       <Seo
-        title="Frequently Asked Questions — ComplyEasy AI"
-        description="Answers about the ComplyEasy AI compliance automation platform: supported frameworks, AI features, security architecture, integrations, pricing, deployment, and support."
+        title={SEO_TITLE}
+        description={SEO_DESCRIPTION}
         canonicalPath="/faq"
-        keywords="ComplyEasy AI FAQ, compliance automation questions, SOC 2 platform, ISO 27001, GDPR, EU AI Act, BYOK, audit preparation"
+        keywords="ComplyEasyAI FAQ, compliance automation questions, SOC 2 platform, ISO 27001, GDPR, EU AI Act, BYOK, audit preparation"
       />
       <JsonLd data={faqLd} />
       <JsonLd data={breadcrumbs} />
+      <JsonLd
+        data={reviewedWebPageSchema({
+          name: SEO_TITLE,
+          description: SEO_DESCRIPTION,
+          path: '/faq',
+          lastReviewed: LAST_REVIEWED,
+          about: 'ComplyEasyAI',
+        })}
+      />
 
       {/* ============================== Hero ============================== */}
       <section className="relative overflow-hidden mesh-gradient">
@@ -339,13 +397,23 @@ const FaqHubPage: React.FC = () => {
           </span>
 
           <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-surface-900 sm:text-5xl dark:text-white">
-            ComplyEasy AI <span className="text-gradient">FAQ</span>
+            ComplyEasyAI <span className="text-gradient">FAQ</span>: frameworks, AI, security and
+            pricing
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-surface-600 dark:text-surface-300">
-            Clear answers about the platform, its AI capabilities, supported compliance frameworks,
-            security architecture, integrations, pricing, and support. Browse by topic below, or
-            jump straight to the area you care about.
+            Straight answers on what the platform does, what it costs and how it protects your data.
           </p>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-surface-600 dark:text-surface-300">
+            ComplyEasyAI is an AI compliance automation platform for SOC 2, ISO 27001, GDPR, HIPAA,
+            the EU AI Act and {FRAMEWORK_PILLAR_COUNT - 5} more frameworks with dedicated guides. It
+            collects evidence through read-only integrations, monitors controls continuously and maps
+            shared controls once across frameworks. The answers below cover setup, pricing, AI,
+            security, integrations and support.
+          </p>
+          <div className="mt-8 max-w-2xl">
+            <TldrList items={FAQ_TLDR} />
+          </div>
+          <ReviewedByline lastReviewed={LAST_REVIEWED} className="mt-5" />
 
           {/* Topic jump links */}
           <nav aria-label="FAQ topics" className="mt-10">
@@ -356,7 +424,7 @@ const FaqHubPage: React.FC = () => {
                     href={`#${topic.id}`}
                     className="inline-flex rounded-full border border-surface-200 bg-white/70 px-4 py-1.5 text-sm font-medium text-surface-700 transition-colors hover:border-brand-300 hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-surface-700 dark:bg-surface-900/70 dark:text-surface-200 dark:hover:border-brand-700 dark:hover:text-brand-300"
                   >
-                    {topic.title}
+                    {topic.label}
                   </a>
                 </li>
               ))}
@@ -413,15 +481,15 @@ const FaqHubPage: React.FC = () => {
               Still have questions?
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-surface-600 dark:text-surface-300">
-              Explore the platform on a free trial, or dig deeper into a specific framework,
-              integration, or capability across our resources.
+              Request a trial for your team, or dig deeper into a specific framework, integration,
+              or capability across our resources.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link
-                to="/signup"
+                to={TRIAL_CTA.to}
                 className="rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
-                Start free
+                {TRIAL_CTA.label}
               </Link>
               <Link
                 to="/glossary"
