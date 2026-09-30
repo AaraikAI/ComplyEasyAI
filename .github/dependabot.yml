@@ -199,9 +199,41 @@ updates:
       # together with the Expo SDK 57 migration below, not on its own.
       - dependency-name: "react-native"
         versions: [">=0.86.0"]
+      # react, react-test-renderer and their @types move together with
+      # react-native, never on their own. react-native 0.85.3 ships its own
+      # React renderer built from React 19.2.3 (Libraries/Renderer/
+      # implementations/*: version "19.2.3"; the legacy ReactNativeRenderer
+      # also throws "Incompatible React versions" unless react is exactly
+      # 19.2.3, while the Fabric renderer the app runs on has no such check),
+      # and Expo SDK 56's bundledNativeModules.json pins "react": "19.2.3".
+      # React 19.3.0 is a new minor whose reconciler changes (ViewTransition,
+      # Fragment refs, independent transitions) live in that renderer, so
+      # react 19.3 on RN 0.85 pairs a 19.3 `react` with the 19.2.3 reconciler.
+      # The mobile jest suite cannot catch this: react-test-renderer 19.3
+      # carries its own 19.3 reconciler, so #511 went green. Dependabot also
+      # proposed react (#512) and react-test-renderer (#511) separately, but
+      # the two must be the same exact version. 19.2.x patches stay allowed.
+      # Lift this hold in the same PR as the react-native / Expo SDK upgrade
+      # whose bundled renderer is built from React 19.3.
+      - dependency-name: "react"
+        versions: [">=19.3.0"]
+      - dependency-name: "react-test-renderer"
+        versions: [">=19.3.0"]
+      - dependency-name: "@types/react"
+        versions: [">=19.3.0"]
+      - dependency-name: "@types/react-test-renderer"
+        versions: [">=19.3.0"]
+      # Native modules that the Expo SDK pins move with the SDK, not on their
+      # own: Expo SDK 56's bundledNativeModules.json expects
+      # react-native-screens ~4.26.0, and a newer minor ships native code the
+      # SDK was not built and tested against (#576 proposed 4.28.0). Patch
+      # releases stay allowed; take minors and majors with `npx expo install
+      # --fix` during the SDK migration.
+      - dependency-name: "react-native-screens"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
       # Expo SDK 57 is a coordinated SDK migration, not a dependency bump. The
       # tree is coherently on SDK 56 - expo, expo-secure-store, expo-status-bar
-      # and jest-expo all 56.x against react-native 0.85.2 with a matching
+      # and jest-expo all 56.x against react-native 0.85.3 with a matching
       # @react-native/jest-preset. Dependabot proposes the family piecemeal
       # (#436 expo, #431 jest-expo, #433 expo-status-bar -> 57, while
       # expo-secure-store stays on 56), and expo's peerDependencies are all "*",
