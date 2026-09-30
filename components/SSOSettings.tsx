@@ -14,7 +14,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ArrowLeft,
   Save,
-  RefreshCw,
   Loader2,
   AlertTriangle,
   CheckCircle,
@@ -26,9 +25,6 @@ import {
   Download,
   Upload,
   Shield,
-  Key,
-  Globe,
-  Users,
   Settings,
   FileText,
   Link,
@@ -37,8 +33,6 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
-  Info,
-  ExternalLink,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 
@@ -156,7 +150,6 @@ const DEFAULT_MAPPINGS: AttributeMapping[] = [
 const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'config' | 'mapping' | 'metadata' | 'advanced'>('config');
-  const [config, setConfig] = useState<SSOConfig | null>(null);
   const [spMetadata, setSpMetadata] = useState<SPMetadata | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -169,8 +162,6 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const certFileInputRef = useRef<HTMLInputElement>(null);
-  // serverReachable mirrors API load success; when false DEFAULT_MAPPINGS stays as the editable starting point
-  const [serverReachable, setServerReachable] = useState<boolean>(true);
 
   // ── Form state ────────────────────────────────────────────────────────
   const [formProvider, setFormProvider] = useState<SSOProvider>('saml');
@@ -200,12 +191,8 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
         apiFetch<SPMetadata>(`${API_BASE}/sp-metadata`),
       ]);
       const allFailed = results.every(r => r.status === 'rejected');
-      setServerReachable(!allFailed);
       if (results[0].status === 'fulfilled') {
-        setConfig(results[0].value);
         populateForm(results[0].value);
-      } else {
-        setConfig(null);
       }
       if (results[1].status === 'fulfilled') {
         setSpMetadata(results[1].value);
@@ -214,9 +201,7 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
         setError('Failed to load SSO configuration.');
       }
     } catch {
-      setServerReachable(false);
       setError('Failed to load SSO configuration.');
-      setConfig(null);
     } finally {
       setIsLoading(false);
     }
@@ -272,7 +257,6 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
-      setConfig(updated);
       populateForm(updated);
       setSuccessMsg('SSO configuration saved successfully.');
       setTimeout(() => setSuccessMsg(null), 3000);

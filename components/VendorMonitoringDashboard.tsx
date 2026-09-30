@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, AlertTriangle, CheckCircle, XCircle, Clock, RefreshCw, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronRight, Activity, Globe, Lock, FileText, Search, Filter, Plus, Eye, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, AlertTriangle, CheckCircle, XCircle, Clock, RefreshCw, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronRight, Activity, Globe, Lock, FileText, Search, Plus, Eye, Zap } from 'lucide-react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 
@@ -64,7 +64,6 @@ const VendorMonitoringDashboard: React.FC = () => {
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
   const [vendorHistory, setVendorHistory] = useState<Record<string, MonitoringCheck[]>>({});
   const [filterStatus, setFilterStatus] = useState<string>('');
-  const [filterCheckType, setFilterCheckType] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [triggeringVendor, setTriggeringVendor] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);

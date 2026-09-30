@@ -37,4 +37,32 @@ describe('TierCard', () => {
       fireEvent.click(buttons[0]);
     }
   });
+
+  it('should leave the secondary button enabled and selectable by default', () => {
+    const mockSelect = vi.fn();
+    render(<TierCard tier={mockTier} onSelect={mockSelect} />);
+    // Button order: "Book a Demo" first, the select action second.
+    const selectButton = screen.getAllByRole('button')[1];
+    expect(selectButton).not.toBeDisabled();
+    fireEvent.click(selectButton);
+    expect(mockSelect).toHaveBeenCalledWith('Growth');
+  });
+
+  it('should disable the secondary button when the disabled prop is set', () => {
+    const mockSelect = vi.fn();
+    render(<TierCard tier={mockTier} onSelect={mockSelect} disabled />);
+    const selectButton = screen.getByRole('button', { name: 'Contact Sales' });
+    expect(selectButton).toBeDisabled();
+    fireEvent.click(selectButton);
+    expect(mockSelect).not.toHaveBeenCalled();
+  });
+
+  it('should disable the secondary button for a downgrade that is not allowed', () => {
+    const mockSelect = vi.fn();
+    render(<TierCard tier={mockTier} onSelect={mockSelect} isDowngrade canDowngrade={false} />);
+    const selectButton = screen.getByRole('button', { name: 'Cannot Downgrade' });
+    expect(selectButton).toBeDisabled();
+    fireEvent.click(selectButton);
+    expect(mockSelect).not.toHaveBeenCalled();
+  });
 });

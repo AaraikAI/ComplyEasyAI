@@ -14,13 +14,10 @@ import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   Target,
-  Plus,
   X,
   ChevronRight,
   ChevronLeft,
   BarChart3,
-  TrendingUp,
-  Award,
   Users,
   Shield,
   Cpu,
@@ -197,8 +194,6 @@ const MaturityAssessment: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingRecs, setLoadingRecs] = useState(false);
-  // serverReachable mirrors API load success; when false DEFAULT_QUESTIONS stays active
-  const [serverReachable, setServerReachable] = useState<boolean>(true);
   const [targetScores, setTargetScores] = useState<Record<Domain, MaturityLevel>>({
     Governance: 4, Risk: 4, Compliance: 5, Technology: 4, People: 4,
   });
@@ -212,7 +207,6 @@ const MaturityAssessment: React.FC = () => {
       const data = await api.maturity.listAssessments();
       const list = Array.isArray(data) ? data : (data && (data as any).assessments) || [];
       setAssessments(list);
-      setServerReachable(true);
       // Load latest assessment answers if available so the wizard resumes from saved state.
       if (list.length > 0) {
         const latest = list[list.length - 1];
@@ -224,7 +218,6 @@ const MaturityAssessment: React.FC = () => {
         }
       }
     } catch (err) {
-      setServerReachable(false);
       setError(err instanceof Error ? err.message : 'Failed to fetch assessments');
     } finally {
       setLoading(false);
@@ -645,7 +638,6 @@ const MaturityAssessment: React.FC = () => {
                 <div className="space-y-4">
                   {domainScores.map(ds => {
                     const gap = ds.targetScore - ds.currentScore;
-                    const gapPct = ds.currentScore > 0 ? Math.round((ds.currentScore / ds.targetScore) * 100) : 0;
                     return (
                       <div key={ds.domain} className="flex items-center gap-4">
                         <div className="w-28 flex items-center gap-2">

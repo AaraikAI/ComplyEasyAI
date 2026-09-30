@@ -3,11 +3,11 @@ import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';
 import {
-  ArrowLeft, Plus, Trash2, Edit3, Save, Download, ChevronDown, ChevronRight,
-  AlertTriangle, CheckCircle, XCircle, Play, Square, Diamond, Circle,
-  FileText, Database, GitBranch, Users, Shield, Link2, Layers,
-  ArrowRight, ArrowDown, Search, Filter, BarChart3, ClipboardList,
-  Workflow, Settings, Eye, Copy, Move, Lock, Unlock, Info, X, Brain, Loader2
+  ArrowLeft, Plus, Trash2, Save, Download,
+  AlertTriangle, CheckCircle, Play, Square, Diamond, Circle,
+  FileText, Database, GitBranch, Users, Shield, Layers,
+  ArrowRight, Search,
+  Workflow, Settings, Eye, X, Brain, Loader2
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -244,7 +244,6 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showNodeEditor, setShowNodeEditor] = useState(false);
   const [showAddProcess, setShowAddProcess] = useState(false);
-  const [addingNodeKind, setAddingNodeKind] = useState<NodeKind | null>(null);
   const [showEdgeCreator, setShowEdgeCreator] = useState(false);
   const [edgeFrom, setEdgeFrom] = useState<string>('');
   const [edgeTo, setEdgeTo] = useState<string>('');
@@ -321,7 +320,6 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     updateProcess(p => ({ ...p, nodes: [...p.nodes, newNode], lastModified: new Date().toISOString().split('T')[0] }));
     setSelectedNodeId(id);
     setShowNodeEditor(true);
-    setAddingNodeKind(null);
   }, [selectedProcess, updateProcess]);
 
   const deleteNode = useCallback((nodeId: string) => {

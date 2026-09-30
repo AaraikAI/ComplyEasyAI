@@ -12,8 +12,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeft,
-  Shield,
-  FileText,
   Plus,
   X,
   Search,
@@ -32,9 +30,6 @@ import {
   Calendar,
   Play,
   Target,
-  UserCheck,
-  Filter,
-  ChevronRight,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -307,17 +302,6 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
   }, [loadData]);
 
   // ── Computed Values ───────────────────────────────────────────────────────
-
-  const moduleStats = useMemo(() => {
-    const total = modules.length;
-    const published = modules.filter(m => m.status === 'Published').length;
-    const draft = modules.filter(m => m.status === 'Draft').length;
-    const avgCompletion =
-      modules.length > 0
-        ? modules.reduce((sum, m) => sum + m.completionRate, 0) / modules.length
-        : 0;
-    return { total, published, draft, avgCompletion };
-  }, [modules]);
 
   const assignmentStats = useMemo(() => {
     const total = assignments.length;

@@ -9,8 +9,8 @@ import { api } from '../services/api';
 import { logger } from '../utils/logger';
 import {
   ArrowLeft, Shield, AlertTriangle, CheckCircle, Search, Plus, X,
-  Eye, Filter, BarChart3, Grid3X3, ShieldCheck, ShieldAlert, Users,
-  Calendar, TrendingUp, XCircle, Edit3, Download, Lock, Activity, RefreshCw
+  Eye, BarChart3, Grid3X3, ShieldCheck, ShieldAlert, Users,
+  Calendar, XCircle, Edit3, Download, Lock, Activity, RefreshCw
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -79,7 +79,6 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
   const [rules, setRules] = useState<SoDRule[]>([]);
   const [violations, setViolations] = useState<SoDViolation[]>([]);
   const [compensatingControls, setCompensatingControls] = useState<CompensatingControl[]>([]);
-  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Rule form state
@@ -89,7 +88,6 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
   });
 
   const loadData = useCallback(async () => {
-    setLoading(true);
     setLoadError(null);
     try {
       const [rulesRes, violationsRes, dashboardRes, matrixRes] = await Promise.allSettled([
@@ -132,15 +130,12 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
       logger.error('SoDAnalysisDashboard data load error:', err);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   // Derived metrics
-  const activeRules = rules.filter(r => r.status === 'Active').length;
   const openViolations = violations.filter(v => v.status === 'Open').length;
   const mitigatedViolations = violations.filter(v => v.status === 'Mitigated').length;
   const highRiskOpen = violations.filter(v => v.status === 'Open' && v.riskLevel === 'High').length;

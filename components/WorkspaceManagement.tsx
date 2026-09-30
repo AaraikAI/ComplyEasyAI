@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
 import {
-  ArrowLeft, Plus, Loader2, Search, X, Building2, Users, Shield,
-  Brain, TrendingUp, BarChart3, GitBranch, Copy, UserPlus, ChevronRight,
+  ArrowLeft, Plus, Loader2, X, Building2, Users, Shield,
+  Brain, TrendingUp, GitBranch, Copy, ChevronRight,
   CheckCircle, AlertTriangle, XCircle, Layers, Globe, Zap, Target,
   ArrowRightLeft, Award, Lightbulb,
 } from 'lucide-react';
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  Tooltip, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
+  Tooltip, Legend,
 } from 'recharts';
 import { toast } from 'sonner';
 
@@ -81,8 +81,6 @@ interface PredictiveRisk {
 }
 
 type ViewMode = 'dashboard' | 'ai-insights' | 'ai-benchmark' | 'ai-predict-risks' | 'create-child' | 'clone-framework' | 'move-user';
-
-const CHART_COLORS = ['#3b82f6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444', '#0d9488', '#ec4899'];
 
 // ---------------------------------------------------------------------------
 // Component

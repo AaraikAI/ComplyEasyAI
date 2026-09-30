@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { Send, Sparkles, ArrowRight, X } from 'lucide-react';
+import { Send, ArrowRight, X } from 'lucide-react';
 import { useRisks } from '../hooks/queries/useRisks';
 import { useExecutiveDashboard } from '../hooks/queries/useDashboard';
 import { RisingSignals } from './RisingSignals';

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useOnboarding } from '../../hooks/useOnboarding';
 import { OnboardingTooltip } from './OnboardingTooltip';
 import { OnboardingModal } from './OnboardingModal';
@@ -34,7 +34,6 @@ export const OnboardingOverlay: React.FC = () => {
     nextStep,
     prevStep,
     skipFlow,
-    completeFlow,
     updatePreferences,
     showCelebration,
     celebrationMessage,

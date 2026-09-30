@@ -3,12 +3,12 @@ import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, Package, Shield, CheckCircle, Clock, AlertTriangle,
-  ChevronRight, ChevronDown, ChevronUp, FileText, Search, Filter,
-  Plus, X, Eye, Edit3, Download, Upload, Trash2, Calendar,
-  Layers, Tag, GitBranch, ExternalLink, Archive, Settings,
-  BarChart3, Leaf, Bell, Users, Link, Box, Cpu, Workflow,
-  CircleDot, MapPin, BookOpen, ClipboardList, FolderOpen,
-  CheckSquare, XCircle, ArrowUpRight, RefreshCw, Star, Info, Minus,
+  ChevronRight, ChevronDown, ChevronUp, FileText, Search,
+  Plus, X, Eye, Edit3, Download, Upload,
+  Layers, GitBranch, ExternalLink, Archive,
+  Leaf, Users, Workflow,
+  CircleDot, MapPin, ClipboardList, FolderOpen,
+  XCircle, Minus,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -479,8 +479,6 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [docStageFilter, setDocStageFilter] = useState<LifecycleStage | 'all'>('all');
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
-  const [showEolModal, setShowEolModal] = useState(false);
-  const [selectedEol, setSelectedEol] = useState<EOLPolicy | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [extraDocs, setExtraDocs] = useState<ProductDocument[]>([]);
@@ -547,13 +545,6 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
     [extraDocs, usingApiData, apiDocuments],
   );
 
-  const selectedProductDocs = useMemo(() => {
-    if (!selectedProduct) return allDocuments;
-    let docs = allDocuments.filter(d => d.productId === selectedProduct.id);
-    if (docStageFilter !== 'all') docs = docs.filter(d => d.stage === docStageFilter);
-    return docs;
-  }, [selectedProduct, docStageFilter, allDocuments]);
-
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -618,12 +609,6 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
       setLoadError('Failed to persist document metadata to the server. The entry is retained for this session only.');
     }
   }, [selectedProduct, activeProducts, usingApiData, apiDocuments, loadProducts]);
-
-  const selectedProductMilestones = useMemo(() => {
-    if (usingApiData) return MILESTONES.filter(m => m.productId === (selectedProduct?.id ?? ''));
-    if (!selectedProduct) return MILESTONES;
-    return MILESTONES.filter(m => m.productId === selectedProduct.id);
-  }, [selectedProduct, usingApiData]);
 
   const selectedProductReqs = useMemo(() => {
     // For real (API-backed) products, never substitute the demo regulatory catalog:
@@ -1189,7 +1174,6 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
             {STAGE_ORDER.map((stage, idx) => {
               const isCompleted = idx < currentStageIdx;
               const isCurrent = idx === currentStageIdx;
-              const isFuture = idx > currentStageIdx;
               return (
                 <React.Fragment key={stage}>
                   <div className={`flex flex-col items-center min-w-[90px] ${isCurrent ? 'scale-110' : ''}`}>
@@ -1216,7 +1200,6 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
           {STAGE_ORDER.map((stage, idx) => {
             const reqs = stageReqs(stage);
             if (reqs.length === 0) return null;
-            const isCompleted = idx < currentStageIdx;
             const isCurrent = idx === currentStageIdx;
             const completedCount = reqs.filter(r => r.completed).length;
 

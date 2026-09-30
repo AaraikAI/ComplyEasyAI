@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
 import { ComplianceFramework } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
-import { getLimit, isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
+import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
 import {
-  FileText, Loader2, Download, Calendar, CheckSquare, AlertTriangle, X, Settings,
-  Brain, Zap, BarChart3, ArrowLeft, RefreshCw, TrendingUp, TrendingDown, AlertCircle,
-  ShieldCheck, Target, Users, Building2, ChevronDown, ChevronUp, ClipboardList,
-  Play, Minus, Check, Clock, FileWarning, CheckCircle, XCircle, Eye,
+  FileText, Loader2, Download, Calendar, AlertTriangle, X, Settings,
+  Brain, Zap, ArrowLeft, TrendingUp, TrendingDown, AlertCircle,
+  ShieldCheck, Target, Building2, ChevronDown, ChevronUp, ClipboardList,
+  Play, Minus, Clock, CheckCircle, Eye,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateComplianceReport } from '../services/geminiService';
@@ -17,8 +17,7 @@ import DOMPurify from 'dompurify';
 import { logger } from '../utils/logger';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  Tooltip, Legend, LineChart, Line, CartesianGrid, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis,
+  Tooltip, Legend, LineChart, Line, CartesianGrid,
 } from 'recharts';
 
 type ReportFormat = 'PDF' | 'JSON';

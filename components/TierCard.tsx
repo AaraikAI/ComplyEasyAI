@@ -1,12 +1,9 @@
 import React from 'react';
-import { Check, X, Crown, Rocket, TrendingUp, Building2, Sparkles, Zap, Calendar } from 'lucide-react';
+import { Check, X, Crown, Rocket, TrendingUp, Building2, Sparkles, Calendar } from 'lucide-react';
 import {
   TierName,
   Tier,
-  TierFeatures,
   TIER_COLORS,
-  formatLimit,
-  formatPrice,
 } from '../types';
 import { useI18n } from '../contexts/I18nContext';
 
@@ -39,7 +36,6 @@ const TierCard: React.FC<TierCardProps> = ({
   isPopular = false,
   onSelect,
   onBookDemo,
-  billingCycle = 'annual',
   disabled = false,
   isUpgrade = false,
   isDowngrade = false,
@@ -47,20 +43,6 @@ const TierCard: React.FC<TierCardProps> = ({
 }) => {
   const { t } = useI18n();
   const colors = TIER_COLORS[tier.name];
-
-  const calculatePrice = () => {
-    if (billingCycle === 'monthly') {
-      // Use the monthly price if available, otherwise calculate from annual
-      const monthlyPrice = tier.pricing.monthlyMin || (tier.pricing.annualMin / 12);
-      return Math.round(monthlyPrice);
-    }
-    return tier.pricing.annualMin;
-  };
-
-  const price = calculatePrice();
-  const priceDisplay = tier.name === 'Visionary' && billingCycle === 'annual'
-    ? 'Custom'
-    : formatPrice(price);
 
   const handleSelect = () => {
     if (!disabled && onSelect && !isCurrentTier) {
@@ -81,19 +63,6 @@ const TierCard: React.FC<TierCardProps> = ({
     if (isUpgrade) return t('subscription.upgrade');
     if (isDowngrade) return canDowngrade ? t('subscription.downgrade') : 'Cannot Downgrade';
     return t('onboarding.getStarted');
-  };
-
-  const getButtonStyle = () => {
-    if (isCurrentTier) {
-      return 'bg-gray-100 text-gray-500 cursor-default';
-    }
-    if (disabled || (isDowngrade && !canDowngrade)) {
-      return 'bg-gray-200 text-gray-500 cursor-not-allowed';
-    }
-    if (isPopular) {
-      return `bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700`;
-    }
-    return `bg-white text-gray-900 border-2 hover:bg-gray-50`;
   };
 
   // Key features to highlight per tier
@@ -204,7 +173,7 @@ const TierCard: React.FC<TierCardProps> = ({
         {!isCurrentTier && (
           <button
             onClick={handleSelect}
-            disabled={isCurrentTier || (isDowngrade && !canDowngrade)}
+            disabled={disabled || (isDowngrade && !canDowngrade)}
             className={`w-full py-2.5 px-4 rounded-xl font-medium transition-all text-sm ${
               disabled || (isDowngrade && !canDowngrade)
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
