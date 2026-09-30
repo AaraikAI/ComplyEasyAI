@@ -46,7 +46,7 @@ Top-level layout:
 
 ## Local development
 
-**Prerequisites:** Node.js 22 LTS, PostgreSQL 17 (or use Supabase), Redis (optional, for queue).
+**Prerequisites:** Node.js 24 LTS, PostgreSQL 17 (or use Supabase), Redis (optional, for queue).
 
 ### 1. Install
 
