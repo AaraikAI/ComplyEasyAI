@@ -371,7 +371,6 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
   const [expandedCapa, setExpandedCapa] = useState<string | null>(null);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [selectedReport, setSelectedReport] = useState<SurveillanceReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -539,7 +538,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-signal-ink mb-4">Recent Incidents</h3>
           <div className="space-y-3">
             {incidents.slice(0, 5).map(inc => (
-              <div key={inc.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 dark:border-white/[0.06] hover:bg-gray-50 dark:bg-transparent dark:hover:bg-white/[0.04] cursor-pointer" onClick={() => { setSelectedIncident(inc); setActiveTab('incidents'); }}>
+              <div key={inc.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 dark:border-white/[0.06] hover:bg-gray-50 dark:bg-transparent dark:hover:bg-white/[0.04] cursor-pointer" onClick={() => setActiveTab('incidents')}>
                 <div className={`p-1.5 rounded-full flex-shrink-0 mt-0.5 ${inc.severity === 'critical' ? 'bg-red-100 dark:bg-signal-bad/10' : inc.severity === 'serious' ? 'bg-orange-100 dark:bg-signal-amber/10' : inc.severity === 'moderate' ? 'bg-yellow-100 dark:bg-signal-warn/10' : 'bg-green-100 dark:bg-signal-good/10'}`}>
                   <AlertTriangle size={14} className={inc.severity === 'critical' ? 'text-red-600' : inc.severity === 'serious' ? 'text-orange-600' : inc.severity === 'moderate' ? 'text-yellow-600' : 'text-green-600'} />
                 </div>

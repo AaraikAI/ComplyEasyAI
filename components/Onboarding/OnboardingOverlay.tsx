@@ -34,7 +34,6 @@ export const OnboardingOverlay: React.FC = () => {
     nextStep,
     prevStep,
     skipFlow,
-    completeFlow,
     updatePreferences,
     showCelebration,
     celebrationMessage,

@@ -24,7 +24,7 @@ export const OnboardingHint: React.FC<OnboardingHintProps> = ({
     <div
       className={`fixed z-[45] ${
         reducedMotion ? '' : 'transition-all duration-300'
-      } ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
+      } opacity-100 translate-y-0`}
       style={{
         top: position.top,
         left: Math.max(16, Math.min(position.left - 140, window.innerWidth - 296)),

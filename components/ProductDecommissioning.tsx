@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, Search, Plus,
@@ -271,7 +270,6 @@ interface ProductDecommissioningProps {
 }
 
 export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ onBack }) => {
-  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [productSearch, setProductSearch] = useState('');
   const [productStatusFilter, setProductStatusFilter] = useState<string>('All');
@@ -353,47 +351,6 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  const handleDeleteProduct = useCallback(async (id: string) => {
-    // Optimistic removal so the UI stays responsive.
-    setProducts(prev => prev.filter(p => p.id !== id));
-    if (!serverReachable) return;
-    try {
-      await api.modules.decommission.deleteProduct(id);
-    } catch {
-      setLoadError('Failed to delete product on server. It may reappear on reload.');
-    }
-  }, [serverReachable]);
-
-  const handleUpdateProduct = useCallback(async (id: string, data: Partial<Product>) => {
-    // Optimistic merge first so editing feels instant.
-    setProducts(prev => prev.map(p => (p.id === id ? { ...p, ...data } : p)));
-    if (!serverReachable) return;
-    try {
-      const updated = await api.modules.decommission.updateProduct(id, data);
-      if (updated) setProducts(prev => prev.map(p => (p.id === id ? { ...p, ...data, ...updated } : p)));
-    } catch {
-      setLoadError('Failed to update product on server. Local edit retained.');
-    }
-  }, [serverReachable]);
-
-  const handleCreateProduct = useCallback(async (data: Omit<Product, 'id'>) => {
-    // Optimistic insert with a local id; the id is upgraded to the server-generated one
-    // once the create call resolves.
-    const localId = `prod-local-${Date.now()}`;
-    const optimistic = { ...data, id: localId } as Product;
-    setProducts(prev => [...prev, optimistic]);
-    if (!serverReachable) return;
-    try {
-      const created = await api.modules.decommission.createProduct(data);
-      if (created && (created as any).id) {
-        const realId = (created as any).id;
-        setProducts(prev => prev.map(p => (p.id === localId ? { ...p, ...created, id: realId } : p)));
-      }
-    } catch {
-      setLoadError('Failed to create product on server. Local entry retained.');
-    }
-  }, [serverReachable]);
 
   const handleCreateNotification = useCallback(async () => {
     if (!notifForm.productId || !notifForm.subject.trim()) return;

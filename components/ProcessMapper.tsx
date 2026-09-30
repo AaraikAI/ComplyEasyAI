@@ -244,7 +244,6 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showNodeEditor, setShowNodeEditor] = useState(false);
   const [showAddProcess, setShowAddProcess] = useState(false);
-  const [addingNodeKind, setAddingNodeKind] = useState<NodeKind | null>(null);
   const [showEdgeCreator, setShowEdgeCreator] = useState(false);
   const [edgeFrom, setEdgeFrom] = useState<string>('');
   const [edgeTo, setEdgeTo] = useState<string>('');
@@ -321,7 +320,6 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     updateProcess(p => ({ ...p, nodes: [...p.nodes, newNode], lastModified: new Date().toISOString().split('T')[0] }));
     setSelectedNodeId(id);
     setShowNodeEditor(true);
-    setAddingNodeKind(null);
   }, [selectedProcess, updateProcess]);
 
   const deleteNode = useCallback((nodeId: string) => {

@@ -18,7 +18,6 @@ import {
   TierAddOn,
   TIER_ORDER,
   formatPrice,
-  formatLimit,
 } from '../types';
 
 // ============================================================================
@@ -639,21 +638,6 @@ const FeatureRow: React.FC<{
         ) : (
           <X className="w-5 h-5 text-gray-300 mx-auto" />
         )}
-      </td>
-    ))}
-  </tr>
-);
-
-const LimitRow: React.FC<{
-  label: string;
-  tiers: Record<TierName, Tier>;
-  limitKey: keyof Tier['limits'];
-}> = ({ label, tiers, limitKey }) => (
-  <tr>
-    <td className="px-6 py-3 text-sm text-gray-700">{label}</td>
-    {TIER_ORDER.map((tierName) => (
-      <td key={tierName} className="px-4 py-3 text-center text-sm font-medium text-gray-900">
-        {formatLimit(tiers[tierName].limits[limitKey])}
       </td>
     ))}
   </tr>
