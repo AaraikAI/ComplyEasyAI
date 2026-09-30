@@ -17,7 +17,6 @@ interface AISystemDetailsProps {
 }
 
 export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBack }) => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [system, setSystem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +91,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
 
   const calculateTrustworthinessScore = async () => {
     try {
-      const result = await api.aiRmf.calculateTrustworthinessScore(systemId);
+      await api.aiRmf.calculateTrustworthinessScore(systemId);
       loadSystemDetails();
     } catch (error: any) {
       logger.error('Failed to calculate score:', error);

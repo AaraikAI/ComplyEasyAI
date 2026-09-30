@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { 
   Brain, Plus, CheckCircle,
@@ -20,7 +19,6 @@ interface AIRMFDashboardProps {
 }
 
 export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);

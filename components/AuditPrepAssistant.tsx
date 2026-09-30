@@ -15,7 +15,6 @@
 
 import React, { useState, useMemo } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, ArrowRight, Loader2, CheckCircle, AlertTriangle,
@@ -139,7 +138,6 @@ const WIZARD_STEPS: { key: WizardStep; label: string; icon: React.ReactNode }[] 
 // ── Main Component ──────────────────────────────────────────────────────────
 
 const AuditPrepAssistant: React.FC = () => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [step, setStep] = useState<WizardStep>('framework');
   const [selectedFramework, setSelectedFramework] = useState<string>('');

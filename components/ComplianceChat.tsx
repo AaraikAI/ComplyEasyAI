@@ -8,7 +8,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { canAccessView, normalizePlan, VIEW_TO_FEATURE } from '../constants/tierFeatures';
 import { toast } from 'sonner';
 import { useDraggable } from '../hooks/useDraggable';
-import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';
 
 interface ComplianceChatProps {
@@ -72,10 +71,9 @@ const VIEW_DISPLAY_NAMES: Record<string, string> = {
 
 export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, currentView }) => {
   const { user } = useAuth();
-  const { t } = useI18n();
   const userPlan = normalizePlan(user?.organization?.plan);
   const [isOpen, setIsOpen] = useState(false);
-  const { position, isDragging, hasDragged, handleMouseDown, style: dragStyle } = useDraggable({
+  const { isDragging, hasDragged, handleMouseDown, style: dragStyle } = useDraggable({
     storageKey: 'chatbot-position',
     defaultPosition: { x: 24, y: 24 },
   });
@@ -161,8 +159,6 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
     action?: string;
     params?: Record<string, any>;
   } => {
-    const lowerText = text.toLowerCase().trim();
-
     // Navigation commands - including aCOS tabs
     const navPatterns = [
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(dashboard|home)/i, view: 'dashboard' },

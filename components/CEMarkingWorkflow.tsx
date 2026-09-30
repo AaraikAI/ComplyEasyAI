@@ -450,7 +450,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
   const [documents, setDocuments] = useState<TechnicalDocument[]>([]);
   const [riskItems, setRiskItems] = useState<RiskAssessmentItem[]>([]);
   const [surveillanceChecks, setSurveillanceChecks] = useState<SurveillanceCheck[]>([]);
-  const [serverReachable, setServerReachable] = useState<boolean>(true);
+  const [, setServerReachable] = useState<boolean>(true);
   const [selectedProduct, setSelectedProduct] = useState<CEProduct | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddProductModal, setShowAddProductModal] = useState(false);
@@ -642,35 +642,6 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
       setLoadError('Product saved locally but failed to sync to server.');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleDeleteProduct = async (productId: string) => {
-    const previousProducts = products;
-    // Optimistic removal
-    setProducts(prev => prev.filter(p => p.id !== productId));
-    if (selectedProduct?.id === productId) {
-      setSelectedProduct(null);
-    }
-
-    try {
-      await api.modules.ceMarking.deleteProduct(productId);
-    } catch (err: any) {
-      // Restore on failure
-      setProducts(previousProducts);
-      setLoadError('Failed to delete product on server. Change reverted.');
-    }
-  };
-
-  const handleUpdateProductStatus = async (productId: string, status: CEProduct['status']) => {
-    const previousProducts = products;
-    setProducts(prev => prev.map(p => p.id === productId ? { ...p, status, updatedAt: new Date().toISOString().split('T')[0] } : p));
-
-    try {
-      await api.modules.ceMarking.updateProduct(productId, { status });
-    } catch (err: any) {
-      setProducts(previousProducts);
-      setLoadError('Failed to update product on server. Change reverted.');
     }
   };
 
