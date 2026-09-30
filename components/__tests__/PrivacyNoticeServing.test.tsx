@@ -132,6 +132,8 @@ describe('PrivacyNoticeServing', () => {
 
   it('renders search functionality', () => {
     render(<PrivacyNoticeServing onBack={mockOnBack} />);
+    const inputs = document.querySelectorAll('input[type="text"]');
+    expect(inputs.length).toBeGreaterThan(0);
     expect(document.body.innerHTML.length).toBeGreaterThan(0);
   });
 
