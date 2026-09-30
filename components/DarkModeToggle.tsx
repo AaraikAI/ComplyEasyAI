@@ -9,7 +9,7 @@ import { useDarkMode } from '../hooks/useDarkMode';
 import { useI18n } from '../contexts/I18nContext';
 
 export const DarkModeToggle: React.FC<{ className?: string }> = ({ className = '' }) => {
-  const { theme, setTheme, isDark } = useDarkMode();
+  const { theme, setTheme } = useDarkMode();
   const { t } = useI18n();
 
   return (

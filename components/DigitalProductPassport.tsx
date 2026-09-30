@@ -145,16 +145,6 @@ const PRODUCT_CATEGORIES = [
   'Chemicals',
 ];
 
-const LIFECYCLE_STAGES = [
-  'Raw Material Extraction',
-  'Material Processing',
-  'Manufacturing',
-  'Packaging',
-  'Distribution',
-  'Use Phase',
-  'End of Life',
-];
-
 // ---------------------------------------------------------------------------
 // Demo Data
 // ---------------------------------------------------------------------------
@@ -381,15 +371,6 @@ const ScoreCircle: React.FC<{ score: number; label: string; size?: 'sm' | 'lg' }
   );
 };
 
-const ProgressBar: React.FC<{ value: number; color?: string; showLabel?: boolean }> = ({ value, color = 'bg-blue-500', showLabel = false }) => (
-  <div className="flex items-center gap-2">
-    <div className="flex-1 bg-gray-200 rounded-full h-2">
-      <div className={`${color} h-2 rounded-full transition-all duration-500`} style={{ width: `${Math.min(100, value)}%` }} />
-    </div>
-    {showLabel && <span className="text-xs font-medium text-gray-600 w-10 text-right">{value}%</span>}
-  </div>
-);
-
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; subLabel?: string; color: string }> = ({ icon, label, value, subLabel, color }) => (
   <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
     <div className="flex items-center justify-between mb-3">
@@ -422,7 +403,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
   const [versions, setVersions] = useState<PassportVersion[]>([]);
   const [sharingRecords, setSharingRecords] = useState<DataSharingRecord[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<DPPProduct>(EMPTY_DPP_PRODUCT);
-  const [serverReachable, setServerReachable] = useState<boolean>(true);
+  const [, setServerReachable] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -626,28 +607,6 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
       setIsCreating(false);
     }
   }, [createForm]);
-
-  // ----- handleDeletePassport -----
-  const handleDeletePassport = useCallback(async (id: string) => {
-    const previous = products;
-    // Optimistic removal
-    setProducts(prev => prev.filter(p => p.id !== id));
-    if (selectedProduct?.id === id) {
-      const remaining = previous.filter(p => p.id !== id);
-      setSelectedProduct(remaining[0] || EMPTY_DPP_PRODUCT);
-    }
-
-    // If this was an optimistic-only id (never reached the server), don't call the API.
-    if (id.startsWith('dpp-local-')) return;
-
-    try {
-      await api.modules.dpp.deletePassport(id);
-    } catch (_err: any) {
-      // Restore on failure
-      setProducts(previous);
-      setLoadError('Failed to delete passport on server. Change reverted.');
-    }
-  }, [products, selectedProduct]);
 
   // ----- handleGrantAccess (share modal) -----
   const handleGrantAccess = useCallback(async () => {

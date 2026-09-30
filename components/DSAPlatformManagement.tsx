@@ -72,8 +72,8 @@ export const DSAPlatformManagement: React.FC = () => {
   const [feedConfig, setFeedConfig] = useState<any | null>(null);
   const [latestAssessment, setLatestAssessment] = useState<any | null>(null);
   const [adHistory, setAdHistory] = useState<any[]>([]);
-  const [showDSAReportModal, setShowDSAReportModal] = useState(false);
-  const [selectedDSAReport, setSelectedDSAReport] = useState<any | null>(null);
+  const [, setShowDSAReportModal] = useState(false);
+  const [, setSelectedDSAReport] = useState<any | null>(null);
 
   const [registrationForm, setRegistrationForm] = useState({
     platformName: '',

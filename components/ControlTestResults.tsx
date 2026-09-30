@@ -13,7 +13,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Loader2, Search, X, Trash2, Edit3,
@@ -128,7 +127,6 @@ const generateId = () => `ct_${Date.now()}_${Math.random().toString(36).substr(2
 // ── Main Component ──────────────────────────────────────────────────────────
 
 const ControlTestResults: React.FC = () => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [tests, setTests] = useState<ControlTest[]>([]);
@@ -223,7 +221,7 @@ const ControlTestResults: React.FC = () => {
   const runTest = async (testId: string) => {
     setRunning(testId);
     try {
-      const res = await api.post(`/control-testing/tests/${testId}/run`);
+      await api.post(`/control-testing/tests/${testId}/run`);
       toast.success('Test execution started');
       setTimeout(() => {
         loadTests();

@@ -189,7 +189,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [incidents, setIncidents] = useState<ICTIncident[]>([]);
   const [providers, setProviders] = useState<ThirdPartyProvider[]>([]);
   const [tests, setTests] = useState<ResilienceTest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
 
@@ -315,18 +315,6 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setError(e?.message || 'Failed to delete provider');
     }
   }, [providers]);
-
-  const handleDeleteTest = useCallback(async (id: string) => {
-    setError(null);
-    const previous = tests;
-    setTests(prev => prev.filter(tst => tst.id !== id));
-    try {
-      await api.delete(`/dora/resilience-tests/${id}`);
-    } catch (e: any) {
-      setTests(previous);
-      setError(e?.message || 'Failed to delete resilience test');
-    }
-  }, [tests]);
 
   // Export the resilience-testing programme as a downloadable CSV (client-side).
   const handleExportTests = useCallback(() => {
