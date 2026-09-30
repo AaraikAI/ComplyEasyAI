@@ -24,11 +24,18 @@ describe('LandingPage', () => {
       expect(screen.getByText('Autonomous Compliance OS')).toBeInTheDocument();
     });
 
-    it('renders the split headline', () => {
+    it('renders a headline that names the category', () => {
       renderPage();
       const h1 = screen.getByRole('heading', { level: 1 });
-      expect(h1).toHaveTextContent('Compliance that');
-      expect(h1).toHaveTextContent('runs itself.');
+      expect(h1).toHaveTextContent('AI compliance automation');
+      expect(h1).toHaveTextContent('that runs itself.');
+    });
+
+    it('answers "what is it" directly under the headline', () => {
+      renderPage();
+      const lede = screen.getByText(/identity and vendors, collects audit evidence continuously/);
+      expect(lede.textContent).toMatch(/^ComplyEasyAI is an AI compliance automation platform\./);
+      expect(lede.textContent).toContain('across 16 frameworks');
     });
 
     it('renders the aCOS status card', () => {
@@ -64,7 +71,7 @@ describe('LandingPage', () => {
 
   it('renders the "three jobs" section', () => {
     renderPage();
-    expect(screen.getByText('Three jobs it takes off your plate')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'What does ComplyEasyAI do?' })).toBeInTheDocument();
     expect(screen.getByText('Audit-ready, continuously')).toBeInTheDocument();
     expect(screen.getByText('It runs itself')).toBeInTheDocument();
   });
@@ -74,7 +81,7 @@ describe('LandingPage', () => {
   describe('ROI calculator', () => {
     it('renders the three sliders and the reclaimed-hours output', () => {
       renderPage();
-      expect(screen.getByText('What could you reclaim?')).toBeInTheDocument();
+      expect(screen.getByText('How much time could you reclaim?')).toBeInTheDocument();
       expect(screen.getAllByRole('slider')).toHaveLength(3);
       expect(screen.getByLabelText('Team size')).toBeInTheDocument();
       expect(screen.getByLabelText('Frameworks pursued')).toBeInTheDocument();
@@ -110,9 +117,11 @@ describe('LandingPage', () => {
   // ---- Pricing teaser (no numbers) ----
 
   describe('pricing teaser', () => {
-    it('renders the outcomes-based headline with no dollar figures', () => {
+    it('renders the outcomes-based pricing answer with no dollar figures', () => {
       renderPage();
-      expect(screen.getByText('Priced for outcomes, not seats.')).toBeInTheDocument();
+      const heading = screen.getByRole('heading', { name: 'How is ComplyEasyAI priced?' });
+      expect(screen.getByText(/Priced for outcomes, not seats/)).toBeInTheDocument();
+      expect(heading.closest('section')?.textContent).not.toMatch(/\$\d/);
     });
 
     it('links "Talk to us about pricing" at /pricing', () => {
@@ -122,17 +131,72 @@ describe('LandingPage', () => {
     });
   });
 
+  // ---- Common questions ----
+
+  describe('common questions', () => {
+    it('renders each question and emits the same pairs as FAQPage structured data', () => {
+      renderPage();
+      const faqPage = Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
+        .map((node) => JSON.parse(node.textContent ?? '{}'))
+        .find((block) => block['@type'] === 'FAQPage');
+      expect(faqPage).toBeDefined();
+      expect(faqPage.mainEntity.length).toBe(4);
+      for (const entry of faqPage.mainEntity) {
+        expect(screen.getByText(entry.name)).toBeInTheDocument();
+        expect(screen.getByText(entry.acceptedAnswer.text)).toBeInTheDocument();
+      }
+    });
+
+    it('lists every framework guide in the frameworks answer', () => {
+      renderPage();
+      const answer = screen.getByText(/frameworks have in-depth guides:/);
+      for (const name of ['SOC 2', 'India DPDPA', 'AIUC-1', 'CSRD']) {
+        expect(answer.textContent).toContain(name);
+      }
+    });
+  });
+
+  it('caps the frameworks slider at the number of framework guides', () => {
+    renderPage();
+    expect(screen.getByLabelText('Frameworks pursued')).toHaveAttribute('max', '16');
+  });
+
+  it('emits no page-level duplicates of the site-wide Organization or SoftwareApplication data', () => {
+    renderPage();
+    const types = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map(
+      (node) => JSON.parse(node.textContent ?? '{}')['@type']
+    );
+    expect(types).not.toContain('Organization');
+    expect(types).not.toContain('SoftwareApplication');
+  });
+
   // ---- Closing CTA ----
 
   describe('closing CTA', () => {
     it('renders the closing headline and CTAs', () => {
       renderPage();
       expect(screen.getByRole('heading', { name: /See compliance/i })).toBeInTheDocument();
-      expect(screen.getByText('Talk to sales').closest('a')).toHaveAttribute('href', '/demo');
+      expect(screen.getByText('Request a trial').closest('a')).toHaveAttribute('href', '/demo');
     });
   });
 
   // ---- Legacy UI intentionally removed ----
+
+  it('opens with TL;DR bullets that use the verified counts and the security posture', () => {
+    renderPage();
+    const tldr = screen.getByRole('region', { name: 'TL;DR' });
+    expect(tldr).toHaveTextContent('26 verified integrations');
+    expect(tldr).toHaveTextContent('16 in-depth framework guides and 150+ frameworks in the catalogue');
+    expect(tldr).toHaveTextContent('SOC 2 Type I audit in progress');
+    expect(tldr).toHaveTextContent('trials are available on request');
+  });
+
+  it('describes what sets it apart without comparing itself to other tools', () => {
+    renderPage();
+    expect(screen.getByRole('heading', { name: 'What makes ComplyEasyAI different?' })).toBeInTheDocument();
+    expect(document.body.innerHTML).not.toMatch(/mid-market tools|Coverage others|at a fraction of/i);
+    expect(screen.getByText(/26 integrations/)).toBeInTheDocument();
+  });
 
   it('no longer renders the auth modal, embedded pricing, or embedded demo form', () => {
     // The redesign made this a pure marketing page wrapped in MarketingLayout:

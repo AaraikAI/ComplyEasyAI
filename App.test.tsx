@@ -34,7 +34,6 @@ vi.mock('./components/QuestionnaireManagement', () => ({ default: () => <div>Que
 vi.mock('./components/IssueManagement', () => ({ default: () => <div>IssueManagement</div> }));
 vi.mock('./components/SignupPage', () => ({ default: () => <div>SignupPage</div> }));
 vi.mock('./components/LearnPage', () => ({ default: () => <div>LearnPage</div> }));
-vi.mock('./components/CommunityPage', () => ({ default: () => <div>CommunityPage</div> }));
 vi.mock('./components/StatusPage', () => ({ default: () => <div>StatusPage</div> }));
 vi.mock('./components/DocsPage', () => ({ default: () => <div>DocsPage</div> }));
 vi.mock('./components/AIFeatures/PolicyGenerator', () => ({ PolicyGenerator: () => <div>PolicyGenerator</div> }));

@@ -1,0 +1,182 @@
+import React from 'react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+
+import { PlatformPage } from '../marketing/pages/PlatformPage';
+import { FrameworksIndexPage } from '../marketing/pages/FrameworksIndexPage';
+import { DemoPage } from '../marketing/pages/DemoPage';
+import { FaqHubPage } from '../marketing/pages/FaqHubPage';
+import { softwareApplicationSchema } from '../seo/siteSchema';
+
+// react-router, lucide-react and the marketing contexts are stubbed globally in
+// setupTests.ts (Link -> <a href>). MemoryRouter is a passthrough there.
+const renderPage = (page: React.ReactElement) => render(<MemoryRouter>{page}</MemoryRouter>);
+
+const COMPETITOR_NAMES = /vanta|drata|secureframe|sprinto|onetrust/i;
+
+/** Parses every JSON-LD block the page emitted. */
+const readJsonLd = (): Array<Record<string, any>> =>
+  Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map((node) =>
+    JSON.parse(node.textContent ?? '{}')
+  );
+
+/** Asserts every FAQPage pair is also rendered visibly on the page. */
+const expectFaqRendered = () => {
+  const faqPage = readJsonLd().find((block) => block['@type'] === 'FAQPage');
+  expect(faqPage).toBeDefined();
+  for (const entry of faqPage!.mainEntity) {
+    expect(screen.getByText(entry.name)).toBeInTheDocument();
+    expect(screen.getByText(entry.acceptedAnswer.text)).toBeInTheDocument();
+  }
+  return faqPage!;
+};
+
+describe('PlatformPage', () => {
+  it('names the category in the H1 and answers what aCOS is under it', () => {
+    renderPage(<PlatformPage />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'The compliance automation platform'
+    );
+    expect(screen.getByText(/runs a five-stage loop/)).toBeInTheDocument();
+  });
+
+  it('keeps all five loop stages in the markup so crawlers see the whole loop', () => {
+    renderPage(<PlatformPage />);
+    for (const stage of ['Observe', 'Predict', 'Act', 'Verify', 'Learn']) {
+      expect(screen.getByRole('heading', { level: 3, name: stage, hidden: true })).toBeInTheDocument();
+    }
+    expect(screen.getByText(/Feeds every outcome back into the loop/)).toBeInTheDocument();
+  });
+
+  it('emits its FAQ, with aCOS on the Growth and Visionary plans, and no duplicate app schema', () => {
+    renderPage(<PlatformPage />);
+    const faqPage = expectFaqRendered();
+    const plans = faqPage.mainEntity.find((q: any) => q.name === 'Which plans include aCOS?');
+    expect(plans.acceptedAnswer.text).toContain('Growth and Visionary');
+    expect(readJsonLd().map((block) => block['@type'])).not.toContain('SoftwareApplication');
+  });
+});
+
+describe('FrameworksIndexPage', () => {
+  it('states the framework count in the H1 and lists every guide in the lede', () => {
+    renderPage(<FrameworksIndexPage />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('16 compliance frameworks');
+    const lede = screen.getByText(/in-depth framework guides:/);
+    for (const name of ['SOC 2', 'NIST CSF', 'India DPDPA', 'AIUC-1', 'CSRD']) {
+      expect(lede.textContent).toContain(name);
+    }
+  });
+
+  it('uses the ISO 27001:2022 control numbering in the mapping example', () => {
+    renderPage(<FrameworksIndexPage />);
+    expect(screen.getByText('ISO 27001 · A.5.15')).toBeInTheDocument();
+    expect(screen.queryByText('ISO 27001 · A.9')).not.toBeInTheDocument();
+  });
+
+  it('shows a guide count per category and emits its FAQ', () => {
+    renderPage(<FrameworksIndexPage />);
+    for (const category of ['Security', 'Privacy', 'AI Governance', 'EU Digital']) {
+      expect(screen.getByText(`${category} · 4`)).toBeInTheDocument();
+    }
+    expectFaqRendered();
+  });
+});
+
+describe('DemoPage', () => {
+  it('names the action in the H1 and emits its FAQ', () => {
+    renderPage(<DemoPage />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ComplyEasyAI demo.');
+    expectFaqRendered();
+  });
+});
+
+describe('FaqHubPage', () => {
+  it('phrases every topic heading as a question and keeps short jump links', () => {
+    renderPage(<FaqHubPage />);
+    const topicHeadings = screen.getAllByRole('heading', { level: 2 }).slice(0, 11);
+    for (const heading of topicHeadings) expect(heading.textContent).toMatch(/\?$/);
+    expect(screen.getByRole('link', { name: 'Getting started' })).toHaveAttribute(
+      'href',
+      '#getting-started'
+    );
+  });
+
+  it('names no competitor on the page or in its structured data', () => {
+    renderPage(<FaqHubPage />);
+    expect(document.documentElement.innerHTML).not.toMatch(COMPETITOR_NAMES);
+  });
+
+  it('publishes no list prices, matching the quote-based pricing page', () => {
+    renderPage(<FaqHubPage />);
+    expect(document.documentElement.innerHTML).not.toMatch(/\$\d/);
+  });
+
+  it('matches the plan gating: aCOS on Growth and Visionary, the EU stack on Visionary', () => {
+    renderPage(<FaqHubPage />);
+    expect(screen.getByText(/The full aCOS loop is included in Growth and Visionary/)).toBeInTheDocument();
+    expect(screen.queryByText(/Essentials tier and above, or as a separately billed add-on/)).toBeNull();
+    expect(screen.queryByText(/Growth-tier add-on/)).toBeNull();
+    expect(screen.getByText(/2 December 2027 \(Annex III systems\)/)).toBeInTheDocument();
+  });
+});
+
+describe('user decisions on claims (trial, counts, security, services)', () => {
+  it('FAQ: trial on request, verified counts, own security posture, relabelled services', () => {
+    renderPage(<FaqHubPage />);
+    const html = document.documentElement.innerHTML;
+    expect(screen.getByText('Can I try ComplyEasyAI before buying?')).toBeInTheDocument();
+    expect(html).not.toMatch(/free trial|3-day|no credit card|more than 80|more than 50/i);
+    expect(screen.getByText(/ComplyEasyAI has 26 verified integrations/)).toBeInTheDocument();
+    expect(screen.getByText(/in-app catalogue covers 150\+ frameworks and standards/)).toBeInTheDocument();
+    expect(screen.getByText(/^SOC 2 Type I audit in progress; ComplyEasyAI does not yet hold/)).toBeInTheDocument();
+    expect(html).not.toMatch(/multi-region cloud storage|geo-replication|regional isolation|zero standing access/i);
+    expect(screen.getByText(/SDKs for JavaScript\/TypeScript, Python, Go, and Java, a command-line interface, and a Terraform provider are on the roadmap/)).toBeInTheDocument();
+    expect(screen.getByText(/Uptime SLAs with service credits are available on request/)).toBeInTheDocument();
+    expect(screen.getByText(/24\/7 phone support, a critical-response SLA, and a dedicated Customer Success Manager are available on request/)).toBeInTheDocument();
+    expect(screen.getByText('Request a trial').closest('a')).toHaveAttribute('href', '/demo');
+  });
+
+  it('FAQ and frameworks hub carry a review byline and matching WebPage JSON-LD', () => {
+    for (const page of [<FaqHubPage key="faq" />, <FrameworksIndexPage key="fw" />]) {
+      const { unmount } = renderPage(page);
+      expect(screen.getByText('Reviewed by the ComplyEasyAI compliance team')).toBeInTheDocument();
+      const webPage = readJsonLd().find((block) => block['@type'] === 'WebPage');
+      expect(webPage?.dateModified).toBe('2026-09-27');
+      expect(webPage?.publisher?.name).toBe('ComplyEasyAI');
+      expect(screen.getByRole('region', { name: 'TL;DR' })).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('Platform: lists only verifiable controls of its own and derives the integration tile', () => {
+    renderPage(<PlatformPage />);
+    for (const label of [
+      'Encryption at rest (Supabase and AWS)',
+      'TLS encryption in transit',
+      'Single US region: us-east-1',
+      'Multi-factor authentication',
+      'Audit logging',
+    ]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+    expect(screen.getByText(/SOC 2 Type I audit in progress/)).toBeInTheDocument();
+    expect(screen.getByText('+21 more')).toBeInTheDocument();
+    expect(document.documentElement.innerHTML).not.toMatch(/Just-in-time admin access|immutable/i);
+  });
+
+  it('Demo: answers the trial question and keeps its TL;DR', () => {
+    renderPage(<DemoPage />);
+    expect(screen.getByText('Can I try ComplyEasyAI myself?')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'TL;DR' })).toBeInTheDocument();
+  });
+});
+
+describe('site-wide SoftwareApplication data', () => {
+  it('carries one price-less offer that points at /pricing', () => {
+    const schema = softwareApplicationSchema() as { offers: Record<string, unknown> };
+    expect(Array.isArray(schema.offers)).toBe(false);
+    expect(schema.offers).not.toHaveProperty('price');
+    expect(schema.offers.url).toBe('https://www.complyeasyai.com/pricing');
+  });
+});
