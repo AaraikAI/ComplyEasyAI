@@ -1,11 +1,9 @@
 import React from 'react';
-import { Check, X, Crown, Rocket, TrendingUp, Building2, Sparkles, Zap, Calendar } from 'lucide-react';
+import { Check, X, Crown, Rocket, TrendingUp, Building2, Sparkles, Calendar } from 'lucide-react';
 import {
   TierName,
   Tier,
-  TierFeatures,
   TIER_COLORS,
-  formatLimit,
   formatPrice,
 } from '../types';
 import { useI18n } from '../contexts/I18nContext';

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { AlertTriangle, ShieldAlert, TrendingUp, CheckCircle, ChevronDown, Sparkles } from 'lucide-react';
+import { AlertTriangle, ShieldAlert, CheckCircle, ChevronDown, Sparkles } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 
 type SignalSeverity = 'critical' | 'ai-flagged' | 'high' | 'on-track';

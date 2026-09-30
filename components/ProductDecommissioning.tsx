@@ -2,17 +2,16 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
-  ArrowLeft, Search, Plus, Download, Eye, Edit3, Trash2,
-  AlertTriangle, ShieldCheck, Shield, CheckCircle, XCircle,
-  Clock, Globe, FileText, Package, Loader2, RefreshCw,
-  ChevronDown, ChevronUp, ExternalLink, Filter, Copy,
-  BarChart3, Activity, Zap, Bell, Archive, Server,
-  Users, Calendar, Mail, Phone, Building2, X, Settings,
-  TrendingDown, Minus, Database, Cpu, Box, Layers,
-  ClipboardList, MessageSquare, CheckSquare, CircleDot,
-  ArrowRight, Workflow, HardDrive, Recycle, Leaf,
-  UserCheck, FileCheck, AlertOctagon, Info, Tag, Lock,
-  Power, PowerOff, Timer, Play, Pause, SkipForward,
+  ArrowLeft, Search, Plus,
+  AlertTriangle, Shield, CheckCircle, XCircle,
+  Package, RefreshCw,
+  ChevronDown, ChevronUp,
+  BarChart3, Bell, Archive,
+  Users, Calendar, Mail, X,
+  Database,
+  ClipboardList, CircleDot,
+  ArrowRight, Workflow, Recycle,
+  Power, PowerOff, Play, Pause,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------

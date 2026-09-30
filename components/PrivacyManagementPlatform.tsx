@@ -33,17 +33,14 @@ import {
   Mail,
   Phone,
   Calendar,
-  Lock,
   Trash2,
   UserCheck,
   Send,
   Filter,
   Database,
   Settings,
-  ArrowRightLeft,
   Ban,
   Activity,
-  ChevronRight,
   MessageSquare,
 } from 'lucide-react';
 

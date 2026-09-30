@@ -2,14 +2,13 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
-  ArrowLeft, Search, Plus, Download, Upload, Eye, Edit3, Trash2,
+  ArrowLeft, Search, Plus, Download, Eye, Trash2,
   AlertTriangle, ShieldAlert, ShieldCheck, Shield, CheckCircle, XCircle,
-  Clock, Globe, FileText, Package, GitBranch, Loader2, RefreshCw,
-  ChevronDown, ChevronUp, ExternalLink, Filter, Copy, BarChart3,
-  Activity, Zap, Lock, Unlock, AlertOctagon, Bell, BookOpen, Archive,
-  Server, Code, Box, Layers, Link, Tag, Hash, Info, Settings,
-  TrendingUp, TrendingDown, Minus, GitMerge, FolderTree, Bug,
-  Scale, Database, Cpu, X, Sparkles, Brain, UploadCloud,
+  Clock, FileText, Package, GitBranch, Loader2, RefreshCw,
+  ExternalLink, BarChart3,
+  Zap, AlertOctagon,
+  TrendingUp, GitMerge, Bug,
+  Scale, X, UploadCloud,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------

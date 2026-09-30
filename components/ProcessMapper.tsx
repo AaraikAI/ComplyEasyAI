@@ -3,11 +3,11 @@ import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';
 import {
-  ArrowLeft, Plus, Trash2, Edit3, Save, Download, ChevronDown, ChevronRight,
-  AlertTriangle, CheckCircle, XCircle, Play, Square, Diamond, Circle,
-  FileText, Database, GitBranch, Users, Shield, Link2, Layers,
-  ArrowRight, ArrowDown, Search, Filter, BarChart3, ClipboardList,
-  Workflow, Settings, Eye, Copy, Move, Lock, Unlock, Info, X, Brain, Loader2
+  ArrowLeft, Plus, Trash2, Save, Download,
+  AlertTriangle, CheckCircle, Play, Square, Diamond, Circle,
+  FileText, Database, GitBranch, Users, Shield, Layers,
+  ArrowRight, Search,
+  Workflow, Settings, Eye, X, Brain, Loader2
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */

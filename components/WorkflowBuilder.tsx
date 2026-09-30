@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import {
-  ArrowLeft, Plus, Search, Filter, X, Play, Pause, Copy, Trash2, Edit3,
-  Eye, Clock, CheckCircle, XCircle, AlertTriangle, Zap, GitBranch, Bell,
-  Calendar, ChevronDown, ChevronRight, BarChart3, Settings, Workflow,
-  ArrowDown, Shield, Users, Star, Download, RefreshCw, Activity,
-  Timer, FileText, Lock, UserCheck, LayoutGrid, List, Loader2
+  ArrowLeft, Plus, Search, X, Play, Copy, Trash2, Edit3,
+  Eye, Clock, CheckCircle, XCircle, Zap, GitBranch, Bell,
+  Workflow,
+  ArrowDown, Star, Download, RefreshCw, Activity,
+  Timer, UserCheck, LayoutGrid, List, Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
 

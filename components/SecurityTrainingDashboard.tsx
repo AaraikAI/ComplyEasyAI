@@ -12,8 +12,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeft,
-  Shield,
-  FileText,
   Plus,
   X,
   Search,
@@ -32,9 +30,6 @@ import {
   Calendar,
   Play,
   Target,
-  UserCheck,
-  Filter,
-  ChevronRight,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { useAuth } from '../contexts/AuthContext';

@@ -6,10 +6,10 @@ import { TierLimitBanner } from './TierLimitBanner';
 import { useSubmitGuard } from '../hooks/useSubmitGuard';
 import ReactMarkdown from 'react-markdown';
 import {
-  ArrowLeft, Plus, Loader2, Search, Filter, X, ChevronDown, ChevronUp,
-  ShieldAlert, ShieldCheck, AlertTriangle, FileText, Brain, Eye,
+  ArrowLeft, Plus, Loader2, Search, X, ChevronDown, ChevronUp,
+  ShieldAlert, AlertTriangle, FileText, Brain, Eye,
   Building2, Trash2, Edit3, BarChart3, CheckCircle, Clock, XCircle,
-  Globe, Mail, Phone, DollarSign, Calendar, Upload, ListChecks,
+  Globe, Mail, Phone, DollarSign, Calendar, ListChecks,
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,

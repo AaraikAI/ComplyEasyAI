@@ -15,7 +15,6 @@ import { useI18n } from '../contexts/I18nContext';
 import {
   Workflow,
   Play,
-  Pause,
   Trash2,
   Plus,
   Settings,
@@ -41,7 +40,6 @@ import {
   ArrowUpRight,
   Users,
   FileText,
-  Shield,
   History,
   Layers,
 } from 'lucide-react';

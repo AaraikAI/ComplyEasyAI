@@ -14,13 +14,10 @@ import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   Target,
-  Plus,
   X,
   ChevronRight,
   ChevronLeft,
   BarChart3,
-  TrendingUp,
-  Award,
   Users,
   Shield,
   Cpu,

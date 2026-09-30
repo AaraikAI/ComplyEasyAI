@@ -7,9 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
 import { 
-  ArrowLeft, Filter, CheckSquare, Loader2, Play, CheckCircle, X, SortAsc, SortDesc, BrainCircuit, ListFilter, Plus
+  ArrowLeft, CheckSquare, Loader2, Play, X, SortAsc, SortDesc, BrainCircuit, Plus
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';

@@ -3,17 +3,16 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
-import ReactMarkdown from 'react-markdown';
 import {
-  ArrowLeft, Plus, Loader2, Search, Filter, X, ChevronDown, ChevronUp,
-  ShieldAlert, ShieldCheck, AlertTriangle, Brain, Eye, Trash2, Edit3,
-  BarChart3, CheckCircle, Clock, XCircle, Play, Power, PowerOff,
-  Activity, Zap, TrendingUp, TrendingDown, Minus, RefreshCw, Lightbulb,
+  ArrowLeft, Plus, Loader2, Search, X,
+  ShieldAlert, ShieldCheck, AlertTriangle, Brain, Trash2, Edit3,
+  CheckCircle, Clock, XCircle, Play, Power, PowerOff,
+  Activity, Zap, TrendingUp, TrendingDown, Minus, Lightbulb,
   ListChecks, Server, Cloud, Fingerprint, Monitor, Code,
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  Tooltip, Legend, LineChart, Line, CartesianGrid,
+  Tooltip, Legend, CartesianGrid,
 } from 'recharts';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';

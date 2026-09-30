@@ -9,8 +9,8 @@ import { api } from '../services/api';
 import { logger } from '../utils/logger';
 import {
   ArrowLeft, Shield, AlertTriangle, CheckCircle, Search, Plus, X,
-  Eye, Filter, BarChart3, Grid3X3, ShieldCheck, ShieldAlert, Users,
-  Calendar, TrendingUp, XCircle, Edit3, Download, Lock, Activity, RefreshCw
+  Eye, BarChart3, Grid3X3, ShieldCheck, ShieldAlert, Users,
+  Calendar, XCircle, Edit3, Download, Lock, Activity, RefreshCw
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────

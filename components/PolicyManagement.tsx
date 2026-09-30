@@ -6,9 +6,9 @@ import { TierLimitBanner } from './TierLimitBanner';
 import ReactMarkdown from 'react-markdown';
 import {
   ArrowLeft, Plus, Loader2, Search, X, ChevronDown, ChevronUp,
-  FileText, Brain, Eye, Edit3, Trash2, CheckCircle, Clock, XCircle,
-  Send, Copy, Download, BookOpen, Sparkles, Shield, AlertTriangle,
-  BarChart3, Filter, MessageSquare,
+  FileText, Brain, Eye, Edit3, Trash2, CheckCircle,
+  Send, Copy, BookOpen, Sparkles, Shield, AlertTriangle,
+  MessageSquare,
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,

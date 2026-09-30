@@ -1,16 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Check,
   X,
   ChevronDown,
   ChevronUp,
-  Sparkles,
   Shield,
   Zap,
-  Users,
-  ArrowRight,
   Loader2,
-  AlertTriangle,
   Calendar,
 } from 'lucide-react';
 import TierCard from './TierCard';
@@ -20,9 +16,6 @@ import {
   TierName,
   Tier,
   TierAddOn,
-  SubscriptionDetails,
-  TierComparison,
-  UpgradePreview,
   TIER_ORDER,
   formatPrice,
   formatLimit,

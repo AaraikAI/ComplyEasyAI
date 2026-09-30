@@ -15,16 +15,7 @@ import {
   Loader2,
   Plus,
   Trash2,
-  Edit,
-  RotateCw,
-  Eye,
-  EyeOff,
-  Copy,
-  Download,
-  Upload,
-  Activity,
-  Network,
-  FileCode
+  RotateCw
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';

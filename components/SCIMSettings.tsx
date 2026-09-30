@@ -23,7 +23,6 @@ import {
   Plus,
   Trash2,
   Copy,
-  Shield,
   Key,
   Users,
   Clock,
@@ -31,7 +30,6 @@ import {
   EyeOff,
   Link,
   Check,
-  Play,
   UserPlus,
   UserMinus,
   UserCheck,
@@ -39,8 +37,6 @@ import {
   RotateCw,
   Activity,
   Search,
-  ChevronDown,
-  Info,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 

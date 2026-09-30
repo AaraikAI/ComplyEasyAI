@@ -10,7 +10,7 @@
  * - Audit log of permission changes
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
@@ -23,19 +23,13 @@ import {
   Edit,
   Trash2,
   Loader2,
-  Clock,
   AlertTriangle,
   Users,
-  Eye,
   Lock,
-  Copy,
-  Save,
   ChevronDown,
   ChevronRight,
   UserPlus,
   Check,
-  FileText,
-  Settings,
   History,
 } from 'lucide-react';
 

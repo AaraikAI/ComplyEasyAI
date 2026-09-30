@@ -6,15 +6,15 @@ import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
 import ReactMarkdown from 'react-markdown';
 import {
-  ArrowLeft, Plus, Loader2, Search, X, ChevronDown, ChevronUp,
-  FileText, Brain, Edit3, Trash2, CheckCircle, Clock, XCircle,
-  Send, Download, ListChecks, HelpCircle, MessageSquare, Zap,
-  ClipboardList, Eye, AlertTriangle, Lightbulb, Copy, BarChart3,
-  Filter, Check, BookOpen,
+  ArrowLeft, Plus, Loader2, Search, X,
+  FileText, Brain, Edit3, Trash2, CheckCircle, Clock,
+  Send, ListChecks,
+  ClipboardList, AlertTriangle, Lightbulb, Copy, BarChart3,
+  Check, BookOpen,
 } from 'lucide-react';
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  Tooltip, Legend,
+  PieChart, Pie, Cell, ResponsiveContainer,
+  Tooltip,
 } from 'recharts';
 import { toast } from 'sonner';
 

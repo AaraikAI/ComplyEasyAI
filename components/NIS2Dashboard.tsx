@@ -20,10 +20,9 @@ import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import {
   Shield, AlertTriangle, CheckCircle, X, Plus, FileText, Clock,
-  Search, Download, Lock, Cpu, ChevronRight, BarChart3, Calendar,
-  Bell, Eye, Edit, AlertCircle, ArrowUpRight, Users, Network,
-  Server, Key, Activity, Truck, Building2, Zap, Heart,
-  Globe, Wifi, Database, HardDrive, MonitorSmartphone, Factory
+  Search, Download, ChevronRight, BarChart3,
+  Bell, Eye, AlertCircle, ArrowUpRight,
+  Truck, Building2
 } from 'lucide-react';
 
 // ── Data Models ──────────────────────────────────────────────────────────

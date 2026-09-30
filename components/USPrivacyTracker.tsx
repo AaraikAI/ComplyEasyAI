@@ -18,10 +18,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import {
-  MapPin, Shield, CheckCircle, AlertTriangle, X, Plus, FileText,
-  Clock, Search, Download, Eye, ChevronRight, BarChart3,
-  Calendar, AlertCircle, Users, Scale, Filter, ArrowLeftRight,
-  Building2, Gavel, Flag, Globe, Lock, ChevronDown, ChevronUp
+  MapPin, Shield, CheckCircle, AlertTriangle, X,
+  Clock, Search, Download, BarChart3,
+  Calendar, AlertCircle, ArrowLeftRight,
+  Gavel, Flag, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 // ── Data Models ──────────────────────────────────────────────────────────

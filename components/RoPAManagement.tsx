@@ -13,7 +13,6 @@ import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';
 import {
   ArrowLeft,
-  Shield,
   FileText,
   Plus,
   X,
@@ -24,10 +23,7 @@ import {
   Eye,
   Edit,
   Download,
-  BarChart3,
   Database,
-  Filter,
-  Trash2,
   Globe,
   Lock,
   Users,

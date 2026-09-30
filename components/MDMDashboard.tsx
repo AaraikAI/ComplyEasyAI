@@ -18,11 +18,11 @@ import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';
 import {
   ArrowLeft, Smartphone, Shield, CheckCircle, XCircle, AlertTriangle,
-  Search, Plus, X, Lock, Trash2, Eye, Download, Settings, Filter,
-  Clock, BarChart3, Monitor, Tablet, Wifi, WifiOff, RefreshCw,
-  AlertCircle, Bell, FileText, Activity, ChevronRight, Users,
-  MapPin, MessageSquare, ShieldCheck, ShieldAlert, HardDrive,
-  Key, Fingerprint, Globe, Cpu, ToggleLeft, ToggleRight, Edit3
+  Search, Plus, X, Lock, Trash2, Eye, Download,
+  Clock, BarChart3, Monitor, WifiOff, RefreshCw,
+  AlertCircle, Bell, Activity, ChevronRight, Users,
+  MapPin, MessageSquare, ShieldCheck, ShieldAlert,
+  Key, Globe, Cpu, ToggleLeft, ToggleRight, Edit3
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────

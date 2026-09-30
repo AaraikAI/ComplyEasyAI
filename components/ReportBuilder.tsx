@@ -12,17 +12,17 @@
  * - API calls to /api/reports
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
-  ArrowLeft, Plus, Loader2, Search, X, ChevronDown, ChevronUp, Trash2,
-  Edit3, FileText, BarChart3, Table, Type, GripVertical, Download, Calendar,
-  Clock, Play, Copy, Eye, Settings, Filter, RefreshCw, CheckCircle,
-  AlertTriangle, PieChart as PieChartIcon, TrendingUp, Layout, Save,
+  ArrowLeft, Plus, Loader2, Search, X, Trash2,
+  Edit3, FileText, BarChart3, Table, Type, GripVertical, Download,
+  Clock, Play, Eye, Filter, CheckCircle,
+  AlertTriangle, TrendingUp, Layout, Save,
   Layers, FolderOpen, Shield, AlertCircle, Building2, DollarSign,
-  Users, Zap, FileDown, Mail,
+  FileDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '../utils/logger';

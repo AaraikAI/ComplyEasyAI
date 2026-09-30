@@ -14,12 +14,8 @@ import {
   CheckCircle,
   Clock,
   BarChart3,
-  PieChart as PieChartIcon,
-  LineChart as LineChartIcon,
   RefreshCw,
-  Download,
-  Filter,
-  Calendar
+  Download
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';

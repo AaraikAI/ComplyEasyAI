@@ -3,12 +3,12 @@ import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, Package, Shield, CheckCircle, Clock, AlertTriangle,
-  ChevronRight, ChevronDown, ChevronUp, FileText, Search, Filter,
-  Plus, X, Eye, Edit3, Download, Upload, Trash2, Calendar,
-  Layers, Tag, GitBranch, ExternalLink, Archive, Settings,
-  BarChart3, Leaf, Bell, Users, Link, Box, Cpu, Workflow,
-  CircleDot, MapPin, BookOpen, ClipboardList, FolderOpen,
-  CheckSquare, XCircle, ArrowUpRight, RefreshCw, Star, Info, Minus,
+  ChevronRight, ChevronDown, ChevronUp, FileText, Search,
+  Plus, X, Eye, Edit3, Download, Upload,
+  Layers, GitBranch, ExternalLink, Archive,
+  Leaf, Users, Workflow,
+  CircleDot, MapPin, ClipboardList, FolderOpen,
+  XCircle, Minus,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------

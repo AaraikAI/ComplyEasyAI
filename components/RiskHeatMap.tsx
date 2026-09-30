@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AlertTriangle, TrendingUp, TrendingDown, Minus, Filter, Download, BarChart3, Target, RefreshCw } from 'lucide-react';
+import { AlertTriangle, TrendingUp, TrendingDown, Minus, Download, BarChart3, Target, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 
