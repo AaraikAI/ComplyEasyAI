@@ -15,9 +15,15 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Base — shared Node.js layer
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS base
+# Node 24 is the Active LTS line. Keep this major in step with NODE_VERSION in
+# .github/workflows/ci.yml and "engines" in package.json / server/package.json.
+# `apk upgrade` applies Alpine security fixes published after the node image
+# was built, so an OS-package CVE fixed upstream does not wait for the next
+# node image refresh.
+FROM node:24-alpine AS base
 WORKDIR /app
-RUN apk add --no-cache libc6-compat openssl
+RUN apk upgrade --no-cache \
+ && apk add --no-cache libc6-compat openssl
 
 # ---------------------------------------------------------------------------
 # Stage 2: Install frontend dependencies
@@ -93,13 +99,11 @@ RUN set -o pipefail; npm run build 2>&1 | tee /tmp/tsc-build.log; ec=$?; \
     exit $ec
 
 # ---------------------------------------------------------------------------
-# Stage 6 (default): Production backend image
+# Stage 6: Production backend dependencies
 # ---------------------------------------------------------------------------
-FROM base AS backend-production
-
-RUN addgroup --system --gid 1001 nodejs \
- && adduser  --system --uid 1001 complyeasy
-
+# Resolved in a stage of its own so the runtime image receives node_modules
+# without the npm CLI that installed them (see backend-production below).
+FROM base AS backend-prod-deps
 WORKDIR /app/server
 
 # Install only production dependencies
@@ -111,7 +115,7 @@ RUN npm ci --omit=dev --ignore-scripts
 # imports re2 at module load — so without this the container throws
 # "Cannot find module .../re2.node" before the server ever listens. Rebuild only
 # this one vetted package, with the toolchain added and removed in the same
-# layer so it never reaches the final image.
+# layer.
 #
 # `npm rebuild re2` has TWO paths and both must work. re2's npm tarball carries
 # no binding (its `files` list has no build/), so the install script first tries
@@ -128,16 +132,36 @@ RUN apk add --no-cache --virtual .native-build-deps python3 make g++ linux-heade
  && node -e "new (require('re2'))('^ok')" \
  && apk del .native-build-deps
 
+# The Prisma CLI is in the production tree as the peer dependency of
+# @prisma/client, so the locked local binary is called directly. `npx` would
+# silently download an unpinned CLI from the registry if it were ever missing.
 COPY server/prisma ./prisma
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate
 
-# Security: patch npm's bundled tar (CVE-2026-59873 — node-tar gzip-bomb DoS).
-# node:22-alpine ships npm 10.9.8 whose bundled tar is 7.5.11 (vulnerable);
-# npm 12.0.1 bundles tar 7.5.19, which fixes it. Runs after `npm ci` so the
-# dependency install keeps using the base npm, and this global npm is never
-# invoked at runtime (the app runs `node dist/index.js`) — it solely clears the
-# Trivy container image scan. Pinned for reproducible builds.
-RUN npm install -g npm@12.0.1
+# ---------------------------------------------------------------------------
+# Stage 7 (default): Production backend image
+# ---------------------------------------------------------------------------
+FROM base AS backend-production
+
+# The container runs `node dist/index.js` (via entrypoint.sh) and never calls a
+# package manager, so npm, npx, corepack and yarn are removed. Each carries its
+# own bundled dependency tree (tar, undici, brace-expansion, ip-address, ...)
+# that the image scan reports as CVEs while serving no purpose at runtime. The
+# loop fails the build if any of them is still on PATH.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+      /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+      /usr/local/bin/yarn /usr/local/bin/yarnpkg /opt/yarn-v* \
+ && for tool in npm npx corepack yarn yarnpkg; do \
+      if command -v "$tool" >/dev/null 2>&1; then echo "$tool is still present" >&2; exit 1; fi; \
+    done \
+ && addgroup --system --gid 1001 nodejs \
+ && adduser  --system --uid 1001 complyeasy
+
+WORKDIR /app/server
+
+# package.json, package-lock.json, node_modules (with the rebuilt re2 binding)
+# and the generated Prisma client from the stage above.
+COPY --from=backend-prod-deps /app/server ./
 
 # Copy compiled backend code
 COPY --from=backend-build /app/server/dist ./dist
@@ -156,8 +180,10 @@ COPY --from=backend-build /app/server/src/data ./dist/data
 # runtime can generate/verify real Groth16 proofs. Paths match
 # zeroKnowledgeService.ts (dist/zkp/{compiled,keys}). These are COPY'd from the
 # build context, not a build stage: the CI "Generate ZK proving keys" step writes
-# them into server/src/zkp/ before `docker build`. A local `docker build` must
-# first run `server/src/zkp/setup-circuits.sh`, or these COPYs will fail.
+# them into server/src/zkp/ before `docker build`. The wasm and verification keys
+# are committed, so the COPYs also succeed without that step (the PR build relies
+# on this), but the image then has no proving keys: run
+# `server/src/zkp/setup-circuits.sh` first for an image that can generate proofs.
 COPY server/src/zkp/compiled ./dist/zkp/compiled
 COPY server/src/zkp/keys ./dist/zkp/keys
 
@@ -197,11 +223,16 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 CMD ["/app/server/entrypoint.sh"]
 
 # ---------------------------------------------------------------------------
-# Stage 7: Production frontend via Nginx
+# Stage 8: Production frontend via Nginx
 # ---------------------------------------------------------------------------
 FROM nginx:1.31-alpine AS frontend-production
 
-RUN rm /etc/nginx/conf.d/default.conf
+# `apk upgrade` applies Alpine security fixes published after the nginx image
+# was built (the image scan reported util-linux/libuuid 2.42.1-r0; Alpine 3.24
+# ships the fixed 2.42.3-r1). nginx and its modules come from nginx.org and are
+# version-pinned in the image's apk world file, so the upgrade leaves them as is.
+RUN apk upgrade --no-cache \
+ && rm /etc/nginx/conf.d/default.conf
 
 COPY nginx/nginx.conf  /etc/nginx/nginx.conf
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
@@ -225,7 +256,7 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]
 
 # ---------------------------------------------------------------------------
-# Stage 8: Development (hot-reload for both frontend & backend)
+# Stage 9: Development (hot-reload for both frontend & backend)
 # ---------------------------------------------------------------------------
 FROM base AS development
 

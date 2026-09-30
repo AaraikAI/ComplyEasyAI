@@ -125,6 +125,18 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    # The node base image stays on an LTS line (see the Dockerfile base stage,
+    # NODE_VERSION in ci.yml and "engines"). Under the release model that ends
+    # with Node 26, odd majors never enter LTS and are dropped once the next
+    # even major ships, so Dependabot must not propose them (#535 proposed
+    # node:25-alpine). From Node 27 every major is promoted to LTS in the
+    # October after its April release (nodejs.org, "Evolving the Node.js
+    # Release Schedule"), so 27+ is deliberately not ignored; merge such a
+    # proposal only after that promotion. Docker ignore ranges use Bundler
+    # requirement syntax: "~> 23.0" matches every 23.x tag, including "23-alpine".
+    ignore:
+      - dependency-name: "node"
+        versions: ["~> 23.0", "~> 25.0"]
     labels:
       - "dependencies"
       - "docker"
