@@ -59,6 +59,17 @@ updates:
         versions: [">=6.0.0"]
       - dependency-name: "eslint"
         versions: [">=10.0.0"]
+      # ioredis 6.0.0 (#532) switches String.prototype to V8 dictionary mode
+      # as soon as it is loaded (its RESP3 decoder declares
+      # `class VerbatimString extends String`), which slows string code in the
+      # whole process: escape-html ran 117k -> 37k ops/s and a charCodeAt loop
+      # about 10x slower on Node 22 here. Fixed upstream by redis/ioredis#2206
+      # (merged 2026-09-28), not released yet. Only 6.0.0 is ignored, so the
+      # next 6.x is proposed as usual. Taking it: tsc and a real-Redis smoke
+      # of the cache and BullMQ paths already pass on 6.0.0; RESP3 becomes the
+      # default protocol (`protocol: 2` keeps the v5 wire format).
+      - dependency-name: "ioredis"
+        versions: ["6.0.0"]
     # Majors are deliberately kept OUT of the groups. A grouped PR is
     # all-or-nothing, so one breaking major makes the whole batch unmergeable:
     # #420 bundled 47 routine AWS SDK patches with stripe 21->22 and
