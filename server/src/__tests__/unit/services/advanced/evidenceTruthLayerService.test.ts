@@ -62,7 +62,9 @@ jest.mock('fs', () => ({
   createReadStream: jest.fn(),
 }));
 
-import evidenceTruthLayerService from '../../../../services/advanced/evidenceTruthLayerService';
+import evidenceTruthLayerService, {
+  MAX_SEGMENT_ANALYSIS_SECONDS,
+} from '../../../../services/advanced/evidenceTruthLayerService';
 
 describe('EvidenceTruthLayerService', () => {
   const orgId = 'org-123';
@@ -327,6 +329,50 @@ describe('EvidenceTruthLayerService', () => {
       await expect(
         evidenceTruthLayerService.exportAnalysisReport('nonexistent', orgId, 'json')
       ).rejects.toThrow();
+    });
+  });
+
+  describe('detectVideoSegments', () => {
+    it('samples at most MAX_SEGMENT_ANALYSIS_SECONDS of a video whose container declares any length', async () => {
+      const privateTempDir = require('../../../../utils/privateTempDir');
+      jest.spyOn(privateTempDir, 'createPrivateTempDir').mockResolvedValue('/tmp/complyeasy-evidence-video-test');
+      const removeDir = jest.spyOn(privateTempDir, 'removePrivateTempDir').mockResolvedValue(undefined);
+
+      const fs = require('fs');
+      // promisify(fs.writeFile) passes the callback last, after the options.
+      fs.writeFile.mockImplementation((...args: any[]) => args[args.length - 1](null));
+
+      const ffmpeg = require('fluent-ffmpeg').default;
+      // The uploaded container claims roughly 31 years of footage.
+      ffmpeg.ffprobe = jest.fn((_path: string, cb: any) => cb(null, { format: { duration: 1e9 } }));
+      ffmpeg.mockImplementation(() => {
+        const instance: Record<string, any> = {};
+        let onEnd: () => void = () => {};
+        instance.seekInput = () => instance;
+        instance.frames = () => instance;
+        instance.output = () => instance;
+        instance.on = (event: string, cb: () => void) => {
+          if (event === 'end') onEnd = cb;
+          return instance;
+        };
+        instance.run = () => onEnd();
+        return instance;
+      });
+
+      const mlModelsService = require('../../../../services/advanced/mlModelsService').default;
+      mlModelsService.detectDeepfake.mockResolvedValue({ isDeepfake: true, confidence: 0.9 });
+
+      let segments: unknown;
+      try {
+        segments = await (evidenceTruthLayerService as any).detectVideoSegments(Buffer.alloc(64), 0.9);
+      } finally {
+        delete ffmpeg.ffprobe;
+      }
+
+      // One frame per 2 s step of the capped duration, not of the declared one.
+      expect(ffmpeg).toHaveBeenCalledTimes(MAX_SEGMENT_ANALYSIS_SECONDS / 2);
+      expect(segments).toEqual([{ start: 0, end: MAX_SEGMENT_ANALYSIS_SECONDS, score: expect.any(Number) }]);
+      expect(removeDir).toHaveBeenCalledWith('/tmp/complyeasy-evidence-video-test');
     });
   });
 });

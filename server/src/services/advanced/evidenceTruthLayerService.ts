@@ -32,6 +32,10 @@ import {
 const MAX_EVIDENCE_BYTES = 100 * 1024 * 1024;
 // Upper bound on the number of files one bulk-analysis request may carry.
 const MAX_BULK_EVIDENCE_FILES = 50;
+// Longest stretch of video (seconds) sampled for deepfake segments. The
+// duration is read from the uploaded container's own metadata, which the
+// uploader controls, and one frame is extracted per 2 s step of it.
+export const MAX_SEGMENT_ANALYSIS_SECONDS = 4 * 60 * 60;
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -414,16 +418,19 @@ class EvidenceTruthLayerService {
       const tempVideoPath = path.join(tempDir, 'input.mp4');
       await writeFile(tempVideoPath, fileBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
-      // Get video duration
-      const duration = await new Promise<number>((resolve, reject) => {
+      // Get video duration, bounded: a crafted container can declare any length.
+      const probedDuration = await new Promise<number>((resolve, reject) => {
         ffmpeg.ffprobe(tempVideoPath, (err, metadata) => {
           if (err) {
             reject(err);
           } else {
-            resolve(metadata.format.duration || 0);
+            resolve(Number(metadata.format.duration) || 0);
           }
         });
       });
+      const duration = Number.isFinite(probedDuration)
+        ? Math.min(probedDuration, MAX_SEGMENT_ANALYSIS_SECONDS)
+        : 0;
 
       // Sample frames every 2 seconds for deepfake analysis
       const frameInterval = 2;

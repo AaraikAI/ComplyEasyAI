@@ -30,6 +30,7 @@ jest.mock('../../../../services/advanced/whisperService', () => ({
     transcribe: mockTranscribe,
     transcribeFile: mockTranscribe,
     transcribeAudio: mockTranscribe,
+    transcribeVideo: mockTranscribe,
     isAvailable: jest.fn<any>().mockReturnValue(true),
   },
 }));
@@ -189,7 +190,10 @@ jest.mock('pdf-parse', () => ({
   }),
 }));
 
-import multimodalIntakeService from '../../../../services/advanced/multimodalIntakeService';
+import multimodalIntakeService, {
+  MAX_ANALYZED_VIDEO_SECONDS,
+  videoTempFileName,
+} from '../../../../services/advanced/multimodalIntakeService';
 
 describe('MultimodalIntakeService', () => {
   const orgId = 'org-123';
@@ -313,6 +317,74 @@ describe('MultimodalIntakeService', () => {
         expect(error).toBeDefined();
       }
     });
+
+    // The sampling passes run one FFmpeg extraction per step of the duration,
+    // so they are stubbed here and only the planned duration is checked.
+    const stubSamplingPasses = () => {
+      const service = multimodalIntakeService as any;
+      jest.spyOn(service, 'extractAudioTrack').mockResolvedValue(null);
+      jest.spyOn(service, 'detectComplianceRelevantContent').mockResolvedValue([]);
+      return ['extractKeyFrames', 'detectObjects', 'detectFaces', 'classifyScenes', 'performVideoOCR'].map(
+        (name) => jest.spyOn(service, name).mockResolvedValue(name === 'performVideoOCR' ? '' : [])
+      );
+    };
+
+    it('caps a request-supplied duration before any sampling pass uses it', async () => {
+      const passes = stubSamplingPasses();
+      const videoBuffer = Buffer.from('fake-video-data');
+
+      // Multipart form fields arrive as strings.
+      const result = await multimodalIntakeService.analyzeVideo(videoBuffer, {
+        format: 'video/mp4',
+        duration: '1e12' as unknown as number,
+      });
+
+      expect(result.duration).toBe(MAX_ANALYZED_VIDEO_SECONDS);
+      for (const pass of passes) {
+        expect(pass).toHaveBeenCalledWith(videoBuffer, 'video/mp4', MAX_ANALYZED_VIDEO_SECONDS);
+      }
+    });
+
+    it('keeps a reasonable duration hint and falls back to the size estimate otherwise', async () => {
+      const service = multimodalIntakeService as any;
+      const fourMegabytes = Buffer.alloc(4_000_000);
+
+      expect(service.resolveVideoDuration(30, fourMegabytes, 'video/mp4')).toBe(30);
+      expect(service.resolveVideoDuration('90', fourMegabytes, 'video/mp4')).toBe(90);
+      for (const hint of [undefined, null, '', 'abc', -5, 0, 'Infinity', {}, ['30']]) {
+        expect(service.resolveVideoDuration(hint, fourMegabytes, 'video/mp4')).toBe(2);
+      }
+    });
+
+    it('ignores a non-string format field and detects the container instead', async () => {
+      const passes = stubSamplingPasses();
+
+      const result = await multimodalIntakeService.analyzeVideo(Buffer.from('fake-video-data'), {
+        format: ['video/mp4', 'video/m3u8'] as unknown as string,
+      });
+
+      expect(result.format).toBe('video/mp4');
+      expect(passes[0]).toHaveBeenCalledWith(expect.any(Buffer), 'video/mp4', expect.any(Number));
+    });
+  });
+
+  describe('videoTempFileName', () => {
+    it.each([
+      ['video/mp4', 'input.mp4'],
+      ['video/quicktime', 'input.mov'],
+      ['video/x-matroska', 'input.mkv'],
+      ['video/avi', 'input.avi'],
+      ['video/webm; codecs=vp9', 'input.webm'],
+    ])('names %s input as %s', (format, name) => {
+      expect(videoTempFileName(format)).toBe(name);
+    });
+
+    it.each([undefined, null, '', 'mp4', 'video/m3u8', 'video/concat', 'video/constructor', 'video/../../x'])(
+      'falls back to input.mp4 for %p',
+      (format) => {
+        expect(videoTempFileName(format as string | undefined | null)).toBe('input.mp4');
+      }
+    );
   });
 
   // ===================== processMultimodalEvidence =====================

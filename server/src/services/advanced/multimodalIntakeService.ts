@@ -31,6 +31,35 @@ import {
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
 
+/**
+ * Longest video (in seconds) the frame-sampling passes of analyzeVideo walk.
+ * Each pass runs one FFmpeg extraction per sampling step of the duration, and
+ * the duration can come from the request, so it is bounded before any loop.
+ */
+export const MAX_ANALYZED_VIDEO_SECONDS = 4 * 60 * 60;
+
+/**
+ * Extension of the FFmpeg input file, keyed by the MIME subtype of the video.
+ * The format string can come from the request, so the extension is always one
+ * of these known container names (anything else is written as .mp4). FFmpeg
+ * identifies the container from the file contents; the name is only a hint.
+ */
+const VIDEO_TEMP_EXTENSIONS: ReadonlyMap<string, string> = new Map([
+  ['mp4', 'mp4'],
+  ['quicktime', 'mov'],
+  ['mov', 'mov'],
+  ['x-matroska', 'mkv'],
+  ['mkv', 'mkv'],
+  ['avi', 'avi'],
+  ['x-msvideo', 'avi'],
+  ['webm', 'webm'],
+]);
+
+/** File name for an uploaded video inside a private temp dir: `input.<known ext>`. */
+export function videoTempFileName(format: string | undefined | null): string {
+  return `input.${VIDEO_TEMP_EXTENSIONS.get(safeMediaExtension(format, 'mp4')) ?? 'mp4'}`;
+}
+
 export interface TranscriptionResult {
   text: string;
   confidence: number;
@@ -542,16 +571,21 @@ class MultimodalIntakeService {
       const startTime = Date.now();
       logger.info('[Multimodal] Analyzing video...');
 
-      // Detect video format
-      const format = metadata?.format || this.detectVideoFormat(videoBuffer);
-      
+      // Detect video format. The metadata can be request fields, so only a
+      // non-empty string is taken as the format.
+      const format =
+        typeof metadata?.format === 'string' && metadata.format
+          ? metadata.format
+          : this.detectVideoFormat(videoBuffer);
+
       // Validate format support
       if (!this.isSupportedVideoFormat(format)) {
         throw new AppError(`Unsupported video format: ${format}`, 400);
       }
 
-      // Estimate duration
-      const duration = metadata?.duration || this.estimateVideoDuration(videoBuffer, format);
+      // Duration that plans frame sampling: the caller's hint or the size-based
+      // estimate, capped at MAX_ANALYZED_VIDEO_SECONDS.
+      const duration = this.resolveVideoDuration(metadata?.duration, videoBuffer, format);
 
       // Check for long video (>1 hour)
       if (duration > 3600) {
@@ -662,6 +696,20 @@ class MultimodalIntakeService {
   }
 
   /**
+   * Duration in seconds used to plan frame sampling. A positive, finite hint
+   * (a number, or a numeric string from a multipart form) is used when given,
+   * otherwise the size-based estimate. The result never exceeds
+   * MAX_ANALYZED_VIDEO_SECONDS, so a hint such as `1e12` cannot turn the
+   * per-step FFmpeg loops into an unbounded amount of work.
+   */
+  private resolveVideoDuration(hint: unknown, buffer: Buffer, format: string): number {
+    const requested = typeof hint === 'number' || typeof hint === 'string' ? Number(hint) : Number.NaN;
+    const duration =
+      Number.isFinite(requested) && requested > 0 ? requested : this.estimateVideoDuration(buffer, format);
+    return Math.min(duration, MAX_ANALYZED_VIDEO_SECONDS);
+  }
+
+  /**
    * Extract audio track from video using FFmpeg
    */
   private async extractAudioTrack(
@@ -675,7 +723,7 @@ class MultimodalIntakeService {
       // Private per-call directory (0700, unpredictable name): the extracted
       // audio cannot collide with, or be read by, another request.
       tempDir = await createPrivateTempDir('multimodal-audio');
-      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      const tempVideoPath = path.join(tempDir, videoTempFileName(format));
       const tempAudioPath = path.join(tempDir, 'audio.wav');
 
       await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
@@ -725,7 +773,7 @@ class MultimodalIntakeService {
       // Private per-call directory (0700, unpredictable name): frames extracted
       // below cannot collide with, or be read by, another request.
       tempDir = await createPrivateTempDir('multimodal-keyframes');
-      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      const tempVideoPath = path.join(tempDir, videoTempFileName(format));
       await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       const keyFrames: VideoAnalysisResult['keyFrames'] = [];
@@ -816,7 +864,7 @@ class MultimodalIntakeService {
       // Private per-call directory (0700, unpredictable name): frames extracted
       // below cannot collide with, or be read by, another request.
       tempDir = await createPrivateTempDir('multimodal-objects');
-      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      const tempVideoPath = path.join(tempDir, videoTempFileName(format));
       await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // Sample frames every 5 seconds
@@ -959,7 +1007,7 @@ class MultimodalIntakeService {
       // Private per-call directory (0700, unpredictable name): frames extracted
       // below cannot collide with, or be read by, another request.
       tempDir = await createPrivateTempDir('multimodal-faces');
-      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      const tempVideoPath = path.join(tempDir, videoTempFileName(format));
       await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // Sample frames every 10 seconds for face detection
@@ -1072,7 +1120,7 @@ class MultimodalIntakeService {
       // Private per-call directory (0700, unpredictable name): frames extracted
       // below cannot collide with, or be read by, another request.
       tempDir = await createPrivateTempDir('multimodal-scenes');
-      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      const tempVideoPath = path.join(tempDir, videoTempFileName(format));
       await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // ML-based scene categories
@@ -1373,7 +1421,7 @@ class MultimodalIntakeService {
       // Private per-call directory (0700, unpredictable name): frames extracted
       // below cannot collide with, or be read by, another request.
       tempDir = await createPrivateTempDir('multimodal-ocr');
-      const tempVideoPath = path.join(tempDir, `input.${safeMediaExtension(format, 'mp4')}`);
+      const tempVideoPath = path.join(tempDir, videoTempFileName(format));
       await writeFile(tempVideoPath, videoBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
       // FRAME-BY-FRAME OCR for long videos (enhanced)
