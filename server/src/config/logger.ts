@@ -3,43 +3,13 @@ import path from 'path';
 import winston from 'winston';
 import config from './index';
 import elasticsearch from './elasticsearch';
-import { sanitizeForLogging } from '../utils/logSanitizer';
+import { jsonFormat, sanitizationFormat, textFormat } from './logFormats';
 
-const { combine, timestamp, printf, colorize, errors, json } = winston.format;
+const { combine, timestamp, colorize, errors } = winston.format;
 
-// Custom log format for console
-const logFormat = printf(({ level, message, timestamp, stack, ...meta }) => {
-  const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
-  return `${timestamp} [${level}]: ${stack || message} ${metaStr}`;
-});
-
-// Sanitization format - removes sensitive data before logging
-const sanitizationFormat = winston.format((info) => {
-  // Sanitize all metadata
-  if (info.metadata) {
-    info.metadata = sanitizeForLogging(info.metadata);
-  }
-
-  // Sanitize message if it's an object
-  if (typeof info.message === 'object') {
-    info.message = sanitizeForLogging(info.message);
-  }
-
-  // Sanitize any additional fields
-  if (info.error) {
-    info.error = sanitizeForLogging(info.error);
-  }
-
-  return info;
-})();
-
-// JSON format for structured logging (file/Elasticsearch)
-const jsonFormat = combine(
-  sanitizationFormat, // Apply sanitization first
-  errors({ stack: true }),
-  timestamp(),
-  json()
-);
+// The formats live in ./logFormats. Both the readable text format and jsonFormat
+// escape CR, LF and other control characters, so a request-derived value in a
+// log statement cannot start a forged entry in any transport.
 
 /**
  * Resolve the directory for file-based logs, or null to log to stdout only.
@@ -79,14 +49,21 @@ const logDir = resolveLogDir();
 // Build transports array
 const transports: winston.transport[] = [];
 
-// Console transport (always enabled in development)
-if (process.env.NODE_ENV !== 'production' || process.env.LOG_CONSOLE !== 'false') {
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Console transport (always enabled outside production)
+if (!isProduction || process.env.LOG_CONSOLE !== 'false') {
   transports.push(
     new winston.transports.Console({
-      format: combine(
-        colorize(),
-        logFormat
-      ),
+      // Production stdout is forwarded to CloudWatch one line per event, so it
+      // carries one structured JSON document per entry. Elsewhere the console
+      // stays a readable, colorized single line.
+      format: isProduction
+        ? jsonFormat
+        : combine(
+          colorize(),
+          textFormat
+        ),
     })
   );
 }
@@ -150,10 +127,10 @@ const logger = winston.createLogger({
   // when one is writable, otherwise stdout so crashes still reach the platform's
   // log driver instead of vanishing.
   exceptionHandlers: logDir
-    ? [new winston.transports.File({ filename: path.join(logDir, 'exceptions.log') })]
+    ? [new winston.transports.File({ filename: path.join(logDir, 'exceptions.log'), format: jsonFormat })]
     : [new winston.transports.Console({ format: jsonFormat })],
   rejectionHandlers: logDir
-    ? [new winston.transports.File({ filename: path.join(logDir, 'rejections.log') })]
+    ? [new winston.transports.File({ filename: path.join(logDir, 'rejections.log'), format: jsonFormat })]
     : [new winston.transports.Console({ format: jsonFormat })],
 });
 

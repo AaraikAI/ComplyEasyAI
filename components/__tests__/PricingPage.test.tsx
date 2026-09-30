@@ -19,6 +19,14 @@ const readJsonLd = (): Array<Record<string, unknown>> =>
   );
 
 describe('PricingPage', () => {
+  it('names the brand and the plan structure in the H1 and answers it in the lede', () => {
+    renderPage();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ComplyEasyAI pricing:');
+    expect(
+      screen.getByText(/ComplyEasyAI has four annual plans: Foundation \(3 frameworks, 10 users\)/)
+    ).toBeInTheDocument();
+  });
+
   it('states the price positioning without naming another vendor', () => {
     renderPage();
     expect(
@@ -57,11 +65,26 @@ describe('PricingPage', () => {
     };
 
     expect(noteRows('Foundation')).toHaveLength(0);
-    expect(screen.getByText('Trust Center & VRM included — often paid extras elsewhere')).toBeInTheDocument();
+    expect(screen.getByText('Trust Center & VRM included at no extra cost')).toBeInTheDocument();
+    expect(screen.getByText('Includes the Compliance Digital Twin')).toBeInTheDocument();
+    expect(screen.queryByText(/often paid extras elsewhere|The only platform/)).toBeNull();
     for (const tierName of ['Essentials', 'Growth', 'Visionary']) {
       const rows = noteRows(tierName);
       expect(rows).toHaveLength(1);
       expect(rows[0].textContent?.trim()).not.toBe('');
     }
+  });
+
+  it('offers a trial on request instead of promising a self-serve free trial', () => {
+    renderPage();
+    expect(screen.getByText('Can we try ComplyEasyAI before buying?')).toBeInTheDocument();
+    expect(screen.getByText('Request a trial').closest('a')).toHaveAttribute('href', '/demo');
+    expect(document.documentElement.innerHTML).not.toMatch(/free trial|no credit card/i);
+  });
+
+  it('opens with TL;DR bullets under the lede', () => {
+    renderPage();
+    const tldr = screen.getByRole('region', { name: 'TL;DR' });
+    expect(tldr.querySelectorAll('li').length).toBeGreaterThanOrEqual(3);
   });
 });

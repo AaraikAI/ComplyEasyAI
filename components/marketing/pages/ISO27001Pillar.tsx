@@ -1,10 +1,9 @@
 import React from 'react';
 import SignalFrameworkPillar from './SignalFrameworkPillar';
 
-const SEO_TITLE =
-  'ISO 27001 Software: Automate ISMS Certification & Annex A Controls | ComplyEasy AI';
+const SEO_TITLE = 'ISO 27001 Certification Software | ComplyEasyAI';
 const SEO_DESCRIPTION =
-  'ISO 27001 software that automates your ISMS — Annex A control mapping, Statement of Applicability, risk treatment, and continuous evidence collection. Get certification-ready faster with ComplyEasy AI.';
+  'ISO 27001 software for the 2022 standard: ISMS scoping, Annex A control mapping, the Statement of Applicability and continuous evidence between surveillance audits.';
 const SEO_KEYWORDS =
   'ISO 27001 software, ISO 27001 compliance, ISMS software, ISO 27001 certification, Annex A controls, Statement of Applicability, ISO 27001:2022, risk treatment plan, ISO 27001 automation';
 

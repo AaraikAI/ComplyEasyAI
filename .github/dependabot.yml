@@ -21,7 +21,23 @@ updates:
     # blocking every patch in the group. Excluding majors here does NOT ignore
     # them - Dependabot opens an individual PR per major, which is what a
     # breaking change deserves.
+    #
+    # The one exception is the vitest family. vitest, @vitest/ui and
+    # @vitest/coverage-v8 pin each other to the exact same version through
+    # peerDependencies, so none of them can be installed on its own: the 5.0.0
+    # majors arrived as three separate PRs (#516, #517, #519) and each one
+    # failed Lint & Type Check. The `vitest` group takes every update type,
+    # majors included, so the family always lands in a single PR. It must stay
+    # FIRST: Dependabot assigns a dependency to the first group it matches.
     groups:
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
       production-dependencies:
         patterns:
           - "*"
@@ -59,6 +75,17 @@ updates:
         versions: [">=6.0.0"]
       - dependency-name: "eslint"
         versions: [">=10.0.0"]
+      # ioredis 6.0.0 (#532) switches String.prototype to V8 dictionary mode
+      # as soon as it is loaded (its RESP3 decoder declares
+      # `class VerbatimString extends String`), which slows string code in the
+      # whole process: escape-html ran 117k -> 37k ops/s and a charCodeAt loop
+      # about 10x slower on Node 22 here. Fixed upstream by redis/ioredis#2206
+      # (merged 2026-09-28), not released yet. Only 6.0.0 is ignored, so the
+      # next 6.x is proposed as usual. Taking it: tsc and a real-Redis smoke
+      # of the cache and BullMQ paths already pass on 6.0.0; RESP3 becomes the
+      # default protocol (`protocol: 2` keeps the v5 wire format).
+      - dependency-name: "ioredis"
+        versions: ["6.0.0"]
     # Majors are deliberately kept OUT of the groups. A grouped PR is
     # all-or-nothing, so one breaking major makes the whole batch unmergeable:
     # #420 bundled 47 routine AWS SDK patches with stripe 21->22 and

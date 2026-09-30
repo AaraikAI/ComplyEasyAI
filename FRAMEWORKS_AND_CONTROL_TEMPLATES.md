@@ -51,7 +51,7 @@ All 146 frameworks available in the app’s “Add framework” list, with regio
 | 23 | PSD2 | EU | Payment Services Directive 2 | Yes |
 | 24 | ENISA | EU | European Union Agency for Cybersecurity Guidelines | Yes |
 | 25 | Adequacy Decision | EU | EU Adequacy Decision for data transfers | Yes |
-| 26 | ISO 27017 | Global | Cloud security controls and guidelines | Yes |
+| 26 | ISO 27017 | Global | ISO/IEC 27017:2015 cloud security controls (withdrawn edition, replaced by ISO 27017:2026) | Yes |
 | 27 | ISO 27018 | Global | Protection of PII in public clouds | Yes |
 | 28 | ISO 27701 | Global | Privacy Information Management System (PIMS) | Yes |
 | 29 | ISO 22301 | Global | Business Continuity Management System | Yes |
@@ -196,7 +196,8 @@ Control arrays are imported at the top of `frameworkTemplateService.ts` from `se
 | CMMC | CMMC 2.0 | CMMC_CONTROLS | cmmcControls.ts |
 | HITRUST CSF | HITRUST CSF | HITRUST_CONTROLS | hitrustControls.ts |
 | CIS Controls | CIS Controls v8 | CIS_CONTROLS | cisControls.ts |
-| ISO 27017 | ISO 27017:2015 | ISO27017_CONTROLS | iso27017Controls.ts |
+| ISO 27017 | ISO 27017:2015 (withdrawn) | ISO27017_CONTROLS | iso27017Controls.ts |
+| ISO 27017:2026 | ISO 27017:2026 | ISO27017_2026_CONTROLS | iso27017_2026Controls.ts |
 | EU AI Act | EU AI Act (2024/1689) | EU_AI_ACT_CONTROLS | euAiActControls.ts |
 | NIS2 | NIS2 Directive (2022/2555) | NIS2_CONTROLS | nis2Controls.ts |
 | DORA | DORA (2022/2554) | DORA_CONTROLS | doraControls.ts |
@@ -352,6 +353,7 @@ Control templates are defined in **`server/src/data/frameworks/`**. Each file ex
 | hitrustControls.ts | HITRUST_CONTROLS |
 | cisControls.ts | CIS_CONTROLS |
 | iso27017Controls.ts | ISO27017_CONTROLS |
+| iso27017_2026Controls.ts | ISO27017_2026_CONTROLS |
 | euAiActControls.ts | EU_AI_ACT_CONTROLS |
 | nis2Controls.ts | NIS2_CONTROLS |
 | doraControls.ts | DORA_CONTROLS |

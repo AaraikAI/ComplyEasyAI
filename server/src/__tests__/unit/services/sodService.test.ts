@@ -30,7 +30,7 @@ jest.mock('../../../utils/auditLogger', () => ({
 }));
 
 // Import after mocking
-import { SoDService, sodService } from '../../../services/sodService';
+import { sodService } from '../../../services/sodService';
 import { AuditLogger } from '../../../utils/auditLogger';
 
 // =============================================================================

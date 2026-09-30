@@ -138,8 +138,17 @@ async function prerenderRoute(browser, route) {
         'meta[property="og:description"]',
         'meta[property="og:url"]',
         'meta[property="og:type"]',
+        'meta[property="og:image"]',
+        'meta[property="og:image:type"]',
+        'meta[property="og:image:width"]',
+        'meta[property="og:image:height"]',
+        'meta[property="og:image:alt"]',
+        'meta[property="og:site_name"]',
+        'meta[name="twitter:card"]',
         'meta[name="twitter:title"]',
         'meta[name="twitter:description"]',
+        'meta[name="twitter:image"]',
+        'meta[name="twitter:image:alt"]',
         'meta[name="robots"]',
       ].forEach(keepLast);
 

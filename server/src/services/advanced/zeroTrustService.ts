@@ -214,9 +214,20 @@ class ZeroTrustService {
     organizationId: string
   ): Promise<DeviceTrust> {
     try {
-      // Check cache first (Redis + in-memory)
-      const cached = await this.cacheGet('device', deviceId, this.deviceTrustCache);
-      if (cached && cached.isTrusted && this.isRecentVerification(cached.lastVerified)) {
+      // Check cache first (Redis + in-memory). The key is scoped by organization
+      // and a hit must match both the organization and the presented
+      // fingerprint: deviceId is caller-supplied, so a key on deviceId alone
+      // returned another organization's trusted record, and any fingerprint
+      // for a known deviceId skipped the scoring below.
+      const cacheKey = this.deviceCacheKey(organizationId, deviceId);
+      const cached = await this.cacheGet('device', cacheKey, this.deviceTrustCache);
+      if (
+        cached &&
+        cached.organizationId === organizationId &&
+        cached.fingerprint === fingerprint &&
+        cached.isTrusted &&
+        this.isRecentVerification(cached.lastVerified)
+      ) {
         return cached;
       }
 
@@ -265,7 +276,7 @@ class ZeroTrustService {
       } as DeviceTrust;
 
       // Cache the result (Redis + in-memory, 5min TTL)
-      await this.cacheSet('device', deviceId, deviceTrust, this.deviceTrustCache, 300);
+      await this.cacheSet('device', cacheKey, deviceTrust, this.deviceTrustCache, 300);
 
       // Store in database (don't fail verification if storage fails)
       try {
@@ -1211,6 +1222,14 @@ class ZeroTrustService {
   }
 
   /**
+   * Device-trust cache key. Device ids are only unique within an organization
+   * (DeviceTrust is keyed by deviceId + organizationId), so the cache is too.
+   */
+  private deviceCacheKey(organizationId: string, deviceId: string): string {
+    return `${organizationId}:${deviceId}`;
+  }
+
+  /**
    * Check if verification is recent (within 1 hour)
    */
   private isRecentVerification(lastVerified: Date): boolean {
@@ -1230,8 +1249,8 @@ class ZeroTrustService {
    * Get device trust status
    */
   async getDeviceTrust(deviceId: string, organizationId: string): Promise<DeviceTrust | null> {
-    const cached = this.deviceTrustCache.get(deviceId);
-    if (cached) return cached;
+    const cached = this.deviceTrustCache.get(this.deviceCacheKey(organizationId, deviceId));
+    if (cached && cached.organizationId === organizationId) return cached;
 
     const stored = await prisma.deviceTrust.findUnique({
       where: {

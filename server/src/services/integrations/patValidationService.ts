@@ -26,6 +26,21 @@ interface ValidationResult {
   note?: string;
 }
 
+/**
+ * Reduce a URL to `protocol//host[:port]` for log output. Outbound validation
+ * URLs can carry credentials in the userinfo, path or query string (a
+ * user-supplied base URL, an account identifier, a provider redirect), so the
+ * full URL is never written to the logs.
+ */
+export function redactUrlForLog(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return '[unparseable URL]';
+  }
+}
+
 class PATValidationService {
   /**
    * Verify baseUrl is safe before use in HTTP requests (SSRF protection).
@@ -45,7 +60,9 @@ class PATValidationService {
    */
   private assertSafeOutbound(url: string, context: string): void {
     if (!isUrlSafe(url)) {
-      logger.error(`PAT validation outbound URL rejected by isUrlSafe (${context})`, { url });
+      logger.error(`PAT validation outbound URL rejected by isUrlSafe (${context})`, {
+        target: redactUrlForLog(url),
+      });
       throw new AppError(`Unsafe outbound URL in ${context}`, 400);
     }
   }
@@ -150,7 +167,9 @@ class PATValidationService {
 
       const resolvedUrl = new URL(location, currentUrl).href;
       if (!isUrlSafe(resolvedUrl)) {
-        logger.error(`PAT validation blocked redirect to unsafe URL (${context})`, { resolvedUrl });
+        logger.error(`PAT validation blocked redirect to unsafe URL (${context})`, {
+          target: redactUrlForLog(resolvedUrl),
+        });
         throw new AppError(`Unsafe redirect target in ${context} (SSRF protection)`, 400);
       }
 

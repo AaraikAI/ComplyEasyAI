@@ -152,10 +152,23 @@ describe('Enterprise Routes', () => {
   });
 
   it('should mount sub-routers for all enterprise modules', () => {
-    const mountedPaths = router.stack
-      .filter((layer: any) => layer.name === 'router')
-      .map((layer: any) => layer.regexp?.source || '');
-    // Should have multiple sub-routers mounted
-    expect(router.stack.length).toBeGreaterThan(0);
+    const subRouters = router.stack.filter((layer: any) => layer.name === 'router');
+    const expectedMounts = [
+      '/risk-management',
+      '/questionnaires',
+      '/policies',
+      '/trust-center',
+      '/workspace',
+      '/reports',
+      '/monitoring',
+      '/issues',
+      '/visionary-ai',
+    ];
+    const unmounted = expectedMounts.filter(
+      (mountPath) => !subRouters.some((layer: any) => layer.match(mountPath)),
+    );
+    expect(unmounted).toEqual([]);
+    // Guard against a catch-all mount making the check above vacuous
+    expect(subRouters.some((layer: any) => layer.match('/not-an-enterprise-module'))).toBe(false);
   });
 });

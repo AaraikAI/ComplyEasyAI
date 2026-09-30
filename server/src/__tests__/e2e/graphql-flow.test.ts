@@ -8,7 +8,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { prismaMock, createMockUser, createMockVendor, createMockRiskItem, createMockFramework } from '../mocks/prisma';
+import { prismaMock, createMockUser, createMockVendor, createMockRiskItem } from '../mocks/prisma';
 
 jest.mock('../../config/database', () => ({
   __esModule: true,
@@ -299,9 +299,7 @@ describe('E2E: GraphQL Flow', () => {
         }
       `;
 
-      // Create a query with extreme nesting using aliases
-      // graphql-depth-limit counts actual field nesting
-      let nestedFragment = '{ me { id } }';
+      // the depthLimit rule (graphql/depthLimit.ts) counts actual field nesting
       // The depth limit is 10, so build at depth >10 manually won't work via
       // Query type nesting since our schema doesn't have deeply nested types.
       // Instead, test that the depth limiting is active by checking header.

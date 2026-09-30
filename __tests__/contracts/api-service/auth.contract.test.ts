@@ -11,7 +11,7 @@ const localStorageMock = {
   removeItem: vi.fn(),
   clear: vi.fn(),
 };
-(globalThis as any).localStorage = localStorageMock;
+vi.stubGlobal('localStorage', localStorageMock);
 
 // Mock import.meta.env
 vi.stubGlobal('importMeta', { env: { VITE_API_URL: 'http://localhost:3001/api', DEV: false } });

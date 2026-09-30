@@ -3,8 +3,6 @@
  * Extracts the auth mocking pattern used across all integration tests
  */
 
-import { jest } from '@jest/globals';
-
 /**
  * Creates standard auth middleware mocks
  * Use with: jest.mock('../../../middleware/auth', () => createMockAuthMiddleware())

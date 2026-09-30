@@ -31,13 +31,22 @@ else
     echo "   ✅ PASSED: All document.write calls are sanitized"
 fi
 
-# 3. Check Sensitive Data Logging
+# 3. Check Sensitive Data Logging and log-entry escaping
+# The shared formats live in config/logFormats.ts; logger.ts must wire them in.
 echo "3. Checking Sensitive Data Logging..."
-if ! grep -q "sanitizeForLogging" server/src/config/logger.ts 2>/dev/null; then
+if ! grep -q "sanitizeForLogging" server/src/config/logFormats.ts 2>/dev/null \
+    || ! grep -q "sanitizationFormat" server/src/config/logger.ts 2>/dev/null; then
     echo "   ❌ FAILED: Logger sanitization not enabled"
     ERRORS=$((ERRORS + 1))
 else
     echo "   ✅ PASSED: Logger sanitization enabled"
+fi
+if ! grep -q "escapeLogControlChars" server/src/config/logFormats.ts 2>/dev/null \
+    || ! grep -q "jsonFormat" server/src/config/logger.ts 2>/dev/null; then
+    echo "   ❌ FAILED: Log formats do not escape CR/LF (log injection)"
+    ERRORS=$((ERRORS + 1))
+else
+    echo "   ✅ PASSED: Log formats escape CR/LF and control characters"
 fi
 
 # 4. Check SSRF Protection

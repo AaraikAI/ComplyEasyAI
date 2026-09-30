@@ -4,7 +4,7 @@
  * Tests for subscription management, checkout, and portal routes.
  */
 
-import { jest, describe, it, expect, beforeEach, afterAll } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express, { Express } from 'express';
 import { prismaMock } from '../../mocks/prisma';

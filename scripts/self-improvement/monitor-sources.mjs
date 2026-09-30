@@ -41,6 +41,7 @@ const ALLOWED_HOSTS = new Set([
   'www.hhs.gov',
   'www.pcisecuritystandards.org',
   'www.iso.org',
+  'webstore.iec.ch',
   'www.aicpa-cima.com',
 ]);
 

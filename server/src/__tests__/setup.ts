@@ -25,9 +25,6 @@ process.env.LOG_LEVEL = 'error'; // Reduce logging in tests
 // Increase timeout for async operations
 jest.setTimeout(30000);
 
-// Memory optimization: Clear module cache between test suites
-let moduleCache: NodeJS.Module[] = [];
-
 // Global beforeAll - Optimized setup
 beforeAll(async () => {
   // Clear any existing timers

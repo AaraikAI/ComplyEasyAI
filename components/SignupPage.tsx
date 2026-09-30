@@ -8,6 +8,7 @@ import {
 import { api } from '../services/api';
 import { SignalPage, SignalLogo, OutlineCta } from './marketing/signal';
 import { FRAMEWORK_PILLAR_COUNT } from '../data/frameworkPillarContent';
+import { TRIAL_CTA } from '../data/marketingFacts';
 
 // ---------------------------------------------------------------------------
 // Signal signup: split screen — value panel left, guided registration right.
@@ -62,10 +63,15 @@ const primaryGoals = [
   { value: 'explore', label: 'Just Exploring', frameworks: [] },
 ];
 
-// Left value panel — copy from the Signal design handoff.
-const benefits = [
-  { title: 'Free trial, no credit card', desc: 'Connect a system and see controls populate in minutes.' },
-  { title: `${FRAMEWORK_PILLAR_COUNT} frameworks, one platform`, desc: 'SOC 2, ISO 27001, GDPR, EU AI Act and more.' },
+// Left value panel — copy from the Signal design handoff. An entry with `to`
+// renders its title as a link.
+const benefits: { title: string; desc: string; to?: string }[] = [
+  {
+    title: TRIAL_CTA.label,
+    desc: 'Want a guided trial for your team? We agree its scope and length with you.',
+    to: TRIAL_CTA.to,
+  },
+  { title: `${FRAMEWORK_PILLAR_COUNT} framework guides, one platform`, desc: 'SOC 2, ISO 27001, GDPR, EU AI Act and more.' },
   { title: 'Audit-ready from day one', desc: 'Continuous evidence, not a final-quarter scramble.' },
 ];
 
@@ -243,7 +249,16 @@ export const SignupPage: React.FC = () => {
                 <div key={b.title} className="flex items-start gap-3">
                   <Check size={16} className="mt-0.5 flex-none text-signal-green" aria-hidden="true" />
                   <div>
-                    <div className="text-[15px] font-semibold text-signal-ink">{b.title}</div>
+                    {b.to ? (
+                      <Link
+                        to={b.to}
+                        className="text-[15px] font-semibold text-signal-green hover:opacity-85"
+                      >
+                        {b.title} <span aria-hidden="true">→</span>
+                      </Link>
+                    ) : (
+                      <div className="text-[15px] font-semibold text-signal-ink">{b.title}</div>
+                    )}
                     <div className="text-[13.5px] text-signal-sub">{b.desc}</div>
                   </div>
                 </div>
@@ -311,7 +326,7 @@ export const SignupPage: React.FC = () => {
             ) : (
               <div>
                 <h1 className="font-display text-[30px] font-bold tracking-[-0.02em] text-signal-ink">
-                  Start free
+                  Create your account
                 </h1>
                 <p className="mt-2.5 text-[15px] text-signal-sub">
                   Enter your work email and we&rsquo;ll send a magic link to get you in.
@@ -599,13 +614,12 @@ export const SignupPage: React.FC = () => {
                       </div>
 
                       <div className="mt-4 rounded-2xl border border-signal-green/30 bg-signal-green/[0.06] p-4">
-                        <div className="text-sm font-semibold text-signal-ink">3-day free trial</div>
+                        <div className="text-sm font-semibold text-signal-ink">Your workspace</div>
                         <ul className="mt-2 space-y-1.5 text-[13px] text-signal-body">
                           {[
-                            'Full access to Foundation tier features',
+                            'Starts with the Foundation plan features',
                             'Up to 3 compliance frameworks',
                             'Up to 10 team members',
-                            'No credit card required',
                           ].map((line) => (
                             <li key={line} className="flex items-center gap-2">
                               <Check size={14} className="flex-none text-signal-green" aria-hidden="true" />
@@ -613,6 +627,12 @@ export const SignupPage: React.FC = () => {
                             </li>
                           ))}
                         </ul>
+                        <p className="mt-3 text-[13px] text-signal-sub">
+                          Want a guided trial of the plan you are considering?{' '}
+                          <Link to={TRIAL_CTA.to} className="font-semibold text-signal-green hover:opacity-85">
+                            {TRIAL_CTA.label}
+                          </Link>
+                        </p>
                       </div>
 
                       <div className="mt-5 space-y-3">
@@ -624,15 +644,8 @@ export const SignupPage: React.FC = () => {
                             className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/[0.04] accent-[#38E8A6]"
                           />
                           <span className="text-[13px] text-signal-body">
-                            I agree to the{' '}
-                            <a href="/terms" className="text-signal-green hover:opacity-85">
-                              Terms of Service
-                            </a>{' '}
-                            and{' '}
-                            <a href="/privacy" className="text-signal-green hover:opacity-85">
-                              Privacy Policy
-                            </a>{' '}
-                            *
+                            I agree to the <span className="text-signal-ink">Terms of Service</span> and{' '}
+                            <span className="text-signal-ink">Privacy Policy</span> *
                           </span>
                         </label>
                         <label className="flex cursor-pointer items-start gap-3">

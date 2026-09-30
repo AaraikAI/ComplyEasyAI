@@ -145,18 +145,21 @@ export const swaggerPaths = {
   '/v1/2fa/verify': {
     post: {
       summary: 'Verify 2FA code',
-      description: 'Verify the TOTP code during login or setup',
+      description:
+        'Verify the TOTP code during login. The account is identified by the twoFactorToken ' +
+        'returned by the password or magic-link login step; a user id is not accepted.',
       tags: ['2FA'],
-      security: [{ bearerAuth: [] }],
+      security: [],
       requestBody: {
         required: true,
         content: {
           'application/json': {
             schema: {
               type: 'object',
-              required: ['code'],
+              required: ['twoFactorToken', 'token'],
               properties: {
-                code: { type: 'string', pattern: '^[0-9]{6}$' },
+                twoFactorToken: { type: 'string', description: 'Second-factor-pending token from login' },
+                token: { type: 'string', pattern: '^[0-9]{6}$' },
               },
             },
           },

@@ -298,7 +298,7 @@ curl -X POST http://localhost:3001/api/2fa/enable \
 Use Google Authenticator or similar app to scan QR code, then:
 
 ```bash
-curl -X POST http://localhost:3001/api/2fa/verify \
+curl -X POST http://localhost:3001/api/2fa/verify-enable \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -319,17 +319,19 @@ curl -X POST http://localhost:3001/api/auth/login \
     "password": "SecurePass123!"
   }'
 
-# Response: { "twoFactorRequired": true, "userId": "..." }
+# Response: { "requires2FA": true, "twoFactorToken": "..." }
+# twoFactorToken is a signed, 5-minute token; the 2FA endpoints identify the
+# account from it and do not accept a user id.
 
 # Step 2: Complete 2FA
 curl -X POST http://localhost:3001/api/auth/2fa/complete \
   -H "Content-Type: application/json" \
   -d '{
-    "userId": "user-id-from-step-1",
+    "twoFactorToken": "twoFactorToken-from-step-1",
     "token": "123456"
   }'
 
-# Expected: Full JWT token
+# Expected: 200 OK with the user; session tokens are set as httpOnly cookies
 ```
 
 ### 3. WebSocket Real-Time Testing

@@ -9,6 +9,7 @@ import twoFactorService from '../services/twoFactorService';
 import { logControllerAction } from '../services/auditLogService';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
+import { resolvePendingTwoFactorUserId } from '../utils/twoFactorPendingToken';
 
 /**
  * Setup 2FA - Generate secret and QR code
@@ -74,16 +75,22 @@ export const verifyAndEnable: RequestHandler = async (req: Request, res: Respons
 };
 
 /**
- * Verify 2FA token during login
+ * Verify 2FA token during login.
+ *
+ * Public (pre-session) route: the user whose second factor is checked is the
+ * one named by the signed `twoFactorToken` issued after the first factor, not
+ * a user id supplied in the request body. Accepting a body `userId` let any
+ * unauthenticated caller run TOTP checks against an arbitrary account.
  */
 export const verifyToken: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, token } = req.body;
+    const { twoFactorToken, token } = req.body;
 
-    if (!userId || !token) {
-      throw new AppError('User ID and token are required', 400);
+    if (!twoFactorToken || !token) {
+      throw new AppError('Two-factor token and verification code are required', 400);
     }
 
+    const userId = resolvePendingTwoFactorUserId(twoFactorToken);
     const verified = await twoFactorService.verifyTwoFactorToken(userId, token);
 
     if (!verified) {
@@ -102,16 +109,21 @@ export const verifyToken: RequestHandler = async (req: Request, res: Response): 
 };
 
 /**
- * Verify backup code
+ * Verify backup code during login.
+ *
+ * Public (pre-session) route; see verifyToken. A successful check consumes the
+ * backup code, so binding the subject to the signed `twoFactorToken` also stops
+ * an unauthenticated caller from burning another account's backup codes.
  */
 export const verifyBackupCode: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, code } = req.body;
+    const { twoFactorToken, code } = req.body;
 
-    if (!userId || !code) {
-      throw new AppError('User ID and backup code are required', 400);
+    if (!twoFactorToken || !code) {
+      throw new AppError('Two-factor token and backup code are required', 400);
     }
 
+    const userId = resolvePendingTwoFactorUserId(twoFactorToken);
     const verified = await twoFactorService.verifyBackupCode(userId, code);
 
     if (!verified) {

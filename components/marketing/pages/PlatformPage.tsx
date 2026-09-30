@@ -1,27 +1,34 @@
 import React, { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowRight, Check, FileCheck, KeyRound, Lock, Timer, Users } from 'lucide-react';
+import { ArrowRight, Check, FileCheck, KeyRound, Lock, MapPin, ShieldCheck } from 'lucide-react';
 import MarketingLayout from '../MarketingLayout';
 import Seo from '../../seo/Seo';
 import JsonLd from '../../seo/JsonLd';
-import { breadcrumbSchema, softwareApplicationSchema } from '../../seo/siteSchema';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
+import { breadcrumbSchema, faqSchema } from '../../seo/siteSchema';
 import {
   Eyebrow,
   OutlineCta,
   PrimaryCta,
   SectionTitle,
   SignalCard,
+  SignalFaq,
   SignalPage,
   SignalSection,
 } from '../signal';
+import { TldrList } from '../answerFirst';
+import {
+  ACOS_PLANS,
+  INTEGRATION_COUNT,
+  SECURITY_ATTESTATION,
+} from '../../../data/marketingFacts';
 
 // ---------------------------------------------------------------------------
 // SEO copy
 // ---------------------------------------------------------------------------
-const SEO_TITLE =
-  'Compliance Automation Platform: The Autonomous Compliance OS | ComplyEasy AI';
+const SEO_TITLE = 'Autonomous Compliance Platform (aCOS) | ComplyEasyAI';
 const SEO_DESCRIPTION =
-  'ComplyEasyAI runs a closed compliance loop — observing your cloud, code, identity and vendors, predicting the control most likely to fail, remediating safely with rollback, verifying every fix, and learning from each cycle.';
+  "ComplyEasyAI's autonomous compliance OS observes your cloud, code, identity and vendors, predicts the next control failure, fixes safe gaps with rollback and verifies every fix.";
 const SEO_KEYWORDS =
   'compliance automation platform, autonomous compliance, continuous compliance monitoring, compliance digital twin, automated evidence collection, autonomous remediation, continuous evidence, compliance OS';
 
@@ -47,7 +54,7 @@ const ACOS_STAGES: { name: string; num: string; desc: string }[] = [
   {
     name: 'Verify',
     num: '04',
-    desc: 'Confirms the fix held, captures the evidence, and writes it to an immutable, auditor-ready trail.',
+    desc: 'Confirms the fix held, captures the evidence, and writes it to an auditor-ready audit trail.',
   },
   {
     name: 'Learn',
@@ -73,12 +80,42 @@ const REMEDIATION_STEPS = [
   'Auto-remediated · rollback armed',
 ];
 
+/** ComplyEasyAI's own controls — only those verifiable in the code or hosting setup. */
 const TRUST_ITEMS: { label: string; icon: LucideIcon }[] = [
-  { label: 'Encryption at rest & in transit', icon: Lock },
-  { label: 'Role-based access control', icon: Users },
-  { label: 'Immutable audit trail', icon: FileCheck },
-  { label: 'Bring-your-own-key', icon: KeyRound },
-  { label: 'Just-in-time admin access', icon: Timer },
+  { label: 'Encryption at rest (Supabase and AWS)', icon: Lock },
+  { label: 'TLS encryption in transit', icon: KeyRound },
+  { label: 'Single US region: us-east-1', icon: MapPin },
+  { label: 'Multi-factor authentication', icon: ShieldCheck },
+  { label: 'Audit logging', icon: FileCheck },
+];
+
+/** Key facts shown as the TL;DR under the hero. */
+const PLATFORM_TLDR: string[] = [
+  'Five stages run continuously: observe, predict, act, verify and learn.',
+  `Evidence flows from ${INTEGRATION_COUNT} verified integrations, read-only for evidence collection.`,
+  'The Compliance Digital Twin shows the readiness impact of a change before you make it.',
+  'Remediation checks blast radius, rolls back on failure and waits for approval on high-impact changes.',
+  `The full loop is included in ${ACOS_PLANS}; continuous control monitoring is in every plan.`,
+];
+
+/** Platform questions (rendered and emitted as FAQPage structured data). */
+const PLATFORM_FAQ: { q: string; a: string }[] = [
+  {
+    q: 'What is aCOS?',
+    a: "aCOS, the autonomous compliance operating system, is ComplyEasyAI's engine. It runs a continuous observe, predict, act, verify and learn loop over your controls, so drift is caught and fixed between audits instead of discovered during fieldwork.",
+  },
+  {
+    q: 'Will ComplyEasyAI change my systems without asking?',
+    a: 'Integrations are read-only for evidence collection. Before a remediation runs, its blast radius is estimated, anything high-impact waits for human approval, a failed change rolls back automatically, and every action is written to the audit trail.',
+  },
+  {
+    q: 'What is a compliance digital twin?',
+    a: 'A compliance digital twin is a virtual model of your controls and evidence. It lets you ask "what if we add ISO 27001?" or "what if this control fails?" and see the readiness impact before you spend time or money.',
+  },
+  {
+    q: 'Which plans include aCOS?',
+    a: `Continuous control monitoring is in every plan. The full aCOS loop, with the Digital Twin and auto-remediation, is included in ${ACOS_PLANS}.`,
+  },
 ];
 
 /**
@@ -88,7 +125,6 @@ const TRUST_ITEMS: { label: string; icon: LucideIcon }[] = [
  */
 const PlatformPage: React.FC = () => {
   const [stage, setStage] = useState(0);
-  const activeStage = ACOS_STAGES[stage];
 
   return (
     <MarketingLayout>
@@ -98,11 +134,11 @@ const PlatformPage: React.FC = () => {
         canonicalPath="/platform"
         keywords={SEO_KEYWORDS}
       />
-      <JsonLd data={softwareApplicationSchema()} />
+      <JsonLd data={faqSchema(PLATFORM_FAQ)} />
       <JsonLd
         data={breadcrumbSchema([
-          { name: 'Home', url: 'https://complyeasyai.com/' },
-          { name: 'Platform', url: 'https://complyeasyai.com/platform' },
+          { name: 'Home', url: `${SITE_ORIGIN}/` },
+          { name: 'Platform', url: `${SITE_ORIGIN}/platform` },
         ])}
       />
 
@@ -113,23 +149,35 @@ const PlatformPage: React.FC = () => {
             The Autonomous Compliance OS
           </Eyebrow>
           <SectionTitle as="h1" className="mt-6">
-            Compliance that
+            The compliance automation platform
             <br />
-            operates itself.
+            that runs as a closed loop.
           </SectionTitle>
           <p className="mx-auto mt-5 max-w-[640px] text-lg leading-relaxed text-signal-sub">
-            Most tools help you <em className="text-signal-body">manage</em> compliance. ComplyEasyAI
-            runs a closed loop that <em className="text-signal-body">operates</em> it — observing,
-            predicting, acting, verifying and learning around the clock.
+            Most tools help you <em className="text-signal-body">manage</em> compliance. ComplyEasyAI{' '}
+            <em className="text-signal-body">operates</em> it: observing, predicting, acting,
+            verifying and learning around the clock.
           </p>
+          <p className="mx-auto mt-4 max-w-[640px] text-[15px] leading-relaxed text-signal-body">
+            ComplyEasyAI&rsquo;s autonomous compliance OS (aCOS) runs a five-stage loop. It observes
+            your cloud, code, identity and vendors; predicts which control is most likely to fail;
+            fixes safe gaps with blast-radius checks, rollback and human approval; verifies each fix
+            and logs the evidence; and learns from every cycle to sharpen the next one.
+          </p>
+          <div className="mx-auto mt-8 max-w-[760px]">
+            <TldrList items={PLATFORM_TLDR} />
+          </div>
         </section>
 
         {/* ========================= The aCOS loop ========================= */}
         <section className="bg-signal-canvas px-6 pb-16 pt-9 md:px-10 md:pb-20">
           <div className="mx-auto max-w-[1000px]">
-            <p className="mb-6 text-center font-mono text-xs uppercase tracking-[0.2em] text-signal-green">
-              The aCOS loop — tap a stage
-            </p>
+            <div className="mb-6 text-center">
+              <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-signal-green">
+                The aCOS loop — tap a stage
+              </p>
+              <SectionTitle>How does the aCOS loop work?</SectionTitle>
+            </div>
             <div className="mb-6 flex flex-wrap justify-center gap-2.5">
               {ACOS_STAGES.map((s, index) => {
                 const isActive = index === stage;
@@ -153,14 +201,22 @@ const PlatformPage: React.FC = () => {
                 );
               })}
             </div>
-            <div className="flex min-h-[150px] flex-col items-center justify-center rounded-[20px] border border-signal-green/20 bg-white/[0.03] p-8 text-center md:p-10">
-              <h2 className="mb-3.5 font-display text-[26px] font-bold text-signal-green md:text-[28px]">
-                {activeStage.name}
-              </h2>
-              <p className="max-w-[640px] text-[17px] leading-relaxed text-signal-body md:text-lg">
-                {activeStage.desc}
-              </p>
-            </div>
+            {/* Every stage stays in the markup (inactive ones hidden) so the prerendered
+                page carries the whole loop, not just the first stage. */}
+            {ACOS_STAGES.map((s, index) => (
+              <div
+                key={s.name}
+                hidden={index !== stage}
+                className="flex min-h-[150px] flex-col items-center justify-center rounded-[20px] border border-signal-green/20 bg-white/[0.03] p-8 text-center md:p-10"
+              >
+                <h3 className="mb-3.5 font-display text-[26px] font-bold text-signal-green md:text-[28px]">
+                  {s.name}
+                </h3>
+                <p className="max-w-[640px] text-[17px] leading-relaxed text-signal-body md:text-lg">
+                  {s.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -169,11 +225,12 @@ const PlatformPage: React.FC = () => {
           <div className="grid items-center gap-11 lg:grid-cols-[1.05fr_0.95fr]">
             <div>
               <Eyebrow className="mb-3.5">Continuous evidence</Eyebrow>
-              <SectionTitle>Connect once. Evidence flows on its own.</SectionTitle>
+              <SectionTitle>How does continuous evidence collection work?</SectionTitle>
               <p className="mt-4 text-base leading-relaxed text-signal-sub">
-                Read-only integrations across cloud, code, identity and vendors feed evidence
-                continuously — mapped to the right controls the moment it lands. No screenshots, no
-                spreadsheets, no final-quarter scramble.
+                Connect once, and evidence flows on its own. {INTEGRATION_COUNT} verified
+                integrations across cloud, code, identity, ticketing and HR systems feed evidence
+                continuously, read-only, mapped to the right controls the moment it lands. No
+                screenshots, no spreadsheets, no final-quarter scramble.
               </p>
             </div>
             <SignalCard padding="lg">
@@ -187,7 +244,7 @@ const PlatformPage: React.FC = () => {
                   </div>
                 ))}
                 <div className="rounded-xl border border-signal-green/[0.28] bg-signal-green/10 px-3 py-4 text-center text-[13px] font-semibold text-signal-green">
-                  +25 more
+                  +{INTEGRATION_COUNT - INTEGRATION_TILES.length} more
                 </div>
               </div>
             </SignalCard>
@@ -220,9 +277,9 @@ const PlatformPage: React.FC = () => {
             </SignalCard>
             <div className="order-1 lg:order-2">
               <Eyebrow className="mb-3.5">Predict & simulate</Eyebrow>
-              <SectionTitle>See your compliance future before you invest.</SectionTitle>
+              <SectionTitle>What is the Compliance Digital Twin?</SectionTitle>
               <p className="mt-4 text-base leading-relaxed text-signal-sub">
-                The Compliance Digital Twin models “what if we add a framework?” or “what if this
+                See your compliance future before you invest. The Compliance Digital Twin models “what if we add a framework?” or “what if this
                 control fails?” against a virtual replica of your environment — and predictive signals
                 flag the gap likely to become your next finding.
               </p>
@@ -235,9 +292,9 @@ const PlatformPage: React.FC = () => {
           <div className="grid items-center gap-11 lg:grid-cols-[1.05fr_0.95fr]">
             <div>
               <Eyebrow className="mb-3.5">Act — safely</Eyebrow>
-              <SectionTitle>Autonomous remediation, with a seatbelt.</SectionTitle>
+              <SectionTitle>How does autonomous remediation stay safe?</SectionTitle>
               <p className="mt-4 text-base leading-relaxed text-signal-sub">
-                Agents close the gaps they safely can — with blast-radius estimation, automatic
+                Autonomous remediation, with a seatbelt: agents close the gaps they safely can — with blast-radius estimation, automatic
                 rollback on failure, and human approval on anything high-impact. It’s action, not just
                 another alert.
               </p>
@@ -268,9 +325,11 @@ const PlatformPage: React.FC = () => {
         <SignalSection variant="plain" width={1100}>
           <div className="mb-10 text-center">
             <Eyebrow className="mb-3">Built to be trusted</Eyebrow>
-            <SectionTitle className="mx-auto max-w-3xl">
-              The system that proves your compliance is built to be trusted itself
-            </SectionTitle>
+            <SectionTitle className="mx-auto max-w-3xl">How is ComplyEasyAI itself secured?</SectionTitle>
+            <p className="mx-auto mt-4 max-w-[640px] text-base leading-relaxed text-signal-sub">
+              {SECURITY_ATTESTATION}. ComplyEasyAI holds no SOC 2 report or ISO 27001 certificate
+              yet; these are the controls in place today.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
             {TRUST_ITEMS.map(({ label, icon: Icon }) => (
@@ -282,6 +341,21 @@ const PlatformPage: React.FC = () => {
                 <div className="text-[13.5px] font-semibold leading-snug text-signal-ink">{label}</div>
               </div>
             ))}
+          </div>
+        </SignalSection>
+
+        {/* ============================== FAQ =============================== */}
+        <SignalSection variant="glow" width={1000}>
+          <div className="mx-auto max-w-[820px]">
+            <div className="mb-8 text-center">
+              <Eyebrow className="mb-3">Questions</Eyebrow>
+              <SectionTitle>Platform FAQ</SectionTitle>
+            </div>
+            <div className="flex flex-col gap-3">
+              {PLATFORM_FAQ.map((item) => (
+                <SignalFaq key={item.q} q={item.q} a={item.a} />
+              ))}
+            </div>
           </div>
         </SignalSection>
 

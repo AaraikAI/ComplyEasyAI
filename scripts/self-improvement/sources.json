@@ -59,6 +59,22 @@
       "note": "ISO 27001 standard page; watch for amendments/new editions."
     },
     {
+      "id": "iso-27017",
+      "name": "ISO/IEC 27017:2026 (IEC webstore)",
+      "framework": "ISO 27017:2026",
+      "type": "framework",
+      "url": "https://webstore.iec.ch/en/publication/115400",
+      "note": "IEC webstore page for the current edition (iso.org blocks automated fetches). The visible text gains 'Revised', a withdrawal date and 'A more recent version of this publication exists' when a new edition replaces it."
+    },
+    {
+      "id": "iso-27018",
+      "name": "ISO/IEC 27018:2025 (IEC webstore)",
+      "framework": "ISO 27018",
+      "type": "framework",
+      "url": "https://webstore.iec.ch/en/publication/109374",
+      "note": "IEC webstore page for the current edition (third edition, 2025-08-26). The product template is still ISO 27018:2019, so a change here and the edition gap both need review."
+    },
+    {
       "id": "soc2-aicpa",
       "name": "AICPA SOC 2",
       "framework": "SOC 2",

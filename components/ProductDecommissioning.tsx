@@ -239,6 +239,18 @@ const dataActionColor = (a: string) => {
   }
 };
 
+// Summary-card classes for each data action: the action's background tint with a
+// matching border. Written out in full so Tailwind's class scanner sees them.
+const dataActionCardColor = (a: string) => {
+  switch (a) {
+    case 'migrate': return 'bg-blue-100 border-blue-800';
+    case 'archive': return 'bg-purple-100 border-purple-800';
+    case 'delete': return 'bg-red-100 border-red-800';
+    case 'retain': return 'bg-green-100 border-green-800';
+    default: return 'bg-gray-100 border-gray-600';
+  }
+};
+
 const notifTypeColor = (nType: string) => {
   switch (nType) {
     case 'end_of_sale': return 'bg-blue-100 text-blue-800';
@@ -769,7 +781,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
       {/* Action Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {(['migrate', 'archive', 'delete', 'retain'] as const).map(action => (
-          <div key={action} className={`p-4 rounded-lg border ${dataActionColor(action).replace('text-', 'border-').replace('bg-', 'bg-')}`}>
+          <div key={action} className={`p-4 rounded-lg border ${dataActionCardColor(action)}`}>
             <div className="text-xl font-bold">{filteredDataPlans.filter(d => d.action === action).length}</div>
             <div className="text-xs capitalize">{action}</div>
             <div className="text-xs text-gray-500 mt-0.5">

@@ -8,8 +8,7 @@
  * - Multi-language support
  */
 
-import OpenAI from 'openai';
-import type { Uploadable } from 'openai/uploads';
+import OpenAI, { toFile } from 'openai';
 import type { TranscriptionVerbose, TranscriptionSegment } from 'openai/resources/audio/transcriptions';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
@@ -24,6 +23,19 @@ import { safeAxios } from '../../utils/urlValidator';
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
 const execFileAsync = promisify(execFile);
+
+/**
+ * Reads an audio file on disk into a `File` for the transcription API.
+ *
+ * Since openai 6.47 a raw `fs.ReadStream` is sent as a streaming (chunked)
+ * multipart body, and the SDK never retries a streaming body, so a single 429,
+ * 5xx or timeout fails the transcription. A `File` is sent with a
+ * Content-Length and keeps the SDK's automatic retries. The filename (and its
+ * extension, which the API uses to detect the audio format) is unchanged.
+ */
+function audioFileForUpload(filePath: string): Promise<File> {
+  return toFile(fs.createReadStream(filePath), path.basename(filePath));
+}
 
 export interface TranscriptionOptions {
   language?: string;
@@ -121,7 +133,7 @@ class WhisperService {
       try {
         // Create transcription using Whisper API
         const transcription = await this.openai.audio.transcriptions.create({
-          file: fs.createReadStream(tempFilePath) as unknown as Uploadable,
+          file: await audioFileForUpload(tempFilePath),
           model: 'whisper-1',
           language: options.language,
           prompt: options.prompt,
@@ -266,7 +278,7 @@ class WhisperService {
 
       // Transcribe the extracted audio using Whisper API
       const transcription = await this.openai.audio.transcriptions.create({
-        file: fs.createReadStream(audioPath) as unknown as Uploadable,
+        file: await audioFileForUpload(audioPath),
         model: 'whisper-1',
         language: options.language,
         prompt: options.prompt,
@@ -453,7 +465,7 @@ class WhisperService {
 
       try {
         const transcription = await this.openai.audio.transcriptions.create({
-          file: fs.createReadStream(tempFilePath) as unknown as Uploadable,
+          file: await audioFileForUpload(tempFilePath),
           model: 'whisper-1',
           response_format: 'verbose_json',
           temperature: 0,

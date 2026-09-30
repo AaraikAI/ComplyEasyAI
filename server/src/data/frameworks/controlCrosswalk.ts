@@ -19,7 +19,10 @@
  * - CMMC: CMMC-AC-L1-001, etc.
  * - HITRUST: HITRUST-01.a, etc.
  * - CIS Controls: CIS-1, CIS-2, etc.
- * - ISO 27017: ISO27017-5.1.1, ISO27017-9.1.1, ISO27017-12.4.1, etc. (ISO/IEC 27002:2013 clause numbers)
+ * - ISO 27017 (2015 edition, withdrawn): ISO27017-5.1.1, ISO27017-9.1.1, ISO27017-12.4.1, etc.
+ *   (ISO/IEC 27002:2013 clause numbers)
+ * - ISO 27017:2026: ISO27017-2026-5.1 ... ISO27017-2026-8.36 (ISO/IEC 27002:2022 numbering;
+ *   5.38, 5.39, 8.35 and 8.36 are the cloud-specific controls)
  */
 
 export interface ControlCrosswalkMapping {
@@ -409,6 +412,10 @@ export const CONTROL_CROSSWALK: ControlCrosswalkMapping[] = [
   // ISO 27017 <-> ISO 27001 Mappings (ISO 27017 extends ISO 27001 for cloud)
   // =============================================================================
   //
+  // These rows cover the 2015 edition (registry key 'ISO 27017'), which ISO withdrew when
+  // ISO/IEC 27017:2026 was published; they stay for organizations still assessed against it.
+  // The 2026 edition has its own section below ("ISO 27017:2026 (second edition) Mappings").
+  //
   // ISO 27017 ids follow iso27017Controls.ts: "ISO27017-" + the ISO/IEC 27002:2013 clause
   // number the cloud guidance extends (9.1.1, 12.4.1, ...). Earlier revisions labelled these
   // rows "ISO27017-CLD.x.y", ids no template defines, so every ISO 27017 row produced a dead
@@ -417,7 +424,7 @@ export const CONTROL_CROSSWALK: ControlCrosswalkMapping[] = [
   // 10.1.1 cryptography policy, 12.1.2 change management, 12.4.1 event logging, 16.1.1
   // incident responsibilities, 17.1.1 continuity planning. The Annex A cloud-only controls
   // (CLD.6.3.1, CLD.8.1.5, CLD.9.5.1, CLD.9.5.2, CLD.12.1.5, CLD.12.4.5, CLD.13.1.4) are not
-  // in the template and have no rows here.
+  // in the 2015 template and have no rows here; their subjects are covered by the 2026 template.
 
   // Cloud-specific access control -> ISO 27001 Access Control
   { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-9.1.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.15', mappingType: 'equivalent', confidence: 0.95 },
@@ -495,6 +502,238 @@ export const CONTROL_CROSSWALK: ControlCrosswalkMapping[] = [
 
   // Incident response
   { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-16.1.1', targetFramework: 'FedRAMP', targetControlId: 'FR-IR-1', mappingType: 'equivalent', confidence: 0.9 },
+
+  // =============================================================================
+  // ISO 27017:2026 (second edition) Mappings
+  // =============================================================================
+  //
+  // Source ids follow iso27017_2026Controls.ts: "ISO27017-2026-" + the ISO/IEC 27002:2022
+  // control number (5.1 ... 8.34), plus the four cloud-specific controls 5.38, 5.39, 8.35 and
+  // 8.36. NIST 800-53 and FedRAMP targets are base control ids (no enhancements such as
+  // SC-7(21)), because stored control ids are matched up to the first colon with no parentheses.
+
+  // ISO 27017:2026 <-> ISO 27001: each of the 93 sections adds cloud guidance to the ISO/IEC
+  // 27002:2022 control with the same number, which is ISO 27001:2022 Annex A control A.<n>.
+  // Organizational controls
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.1', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.2', targetFramework: 'ISO 27001', targetControlId: 'A.5.2', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.3', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.4', targetFramework: 'ISO 27001', targetControlId: 'A.5.4', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.5', targetFramework: 'ISO 27001', targetControlId: 'A.5.5', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.6', targetFramework: 'ISO 27001', targetControlId: 'A.5.6', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.7', targetFramework: 'ISO 27001', targetControlId: 'A.5.7', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.8', targetFramework: 'ISO 27001', targetControlId: 'A.5.8', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.9', targetFramework: 'ISO 27001', targetControlId: 'A.5.9', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.10', targetFramework: 'ISO 27001', targetControlId: 'A.5.10', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.11', targetFramework: 'ISO 27001', targetControlId: 'A.5.11', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.12', targetFramework: 'ISO 27001', targetControlId: 'A.5.12', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.13', targetFramework: 'ISO 27001', targetControlId: 'A.5.13', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.14', targetFramework: 'ISO 27001', targetControlId: 'A.5.14', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.15', targetFramework: 'ISO 27001', targetControlId: 'A.5.15', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.16', targetFramework: 'ISO 27001', targetControlId: 'A.5.16', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.17', targetFramework: 'ISO 27001', targetControlId: 'A.5.17', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.18', targetFramework: 'ISO 27001', targetControlId: 'A.5.18', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.19', targetFramework: 'ISO 27001', targetControlId: 'A.5.19', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.20', targetFramework: 'ISO 27001', targetControlId: 'A.5.20', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.21', targetFramework: 'ISO 27001', targetControlId: 'A.5.21', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.22', targetFramework: 'ISO 27001', targetControlId: 'A.5.22', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.23', targetFramework: 'ISO 27001', targetControlId: 'A.5.23', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.24', targetFramework: 'ISO 27001', targetControlId: 'A.5.24', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.25', targetFramework: 'ISO 27001', targetControlId: 'A.5.25', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.26', targetFramework: 'ISO 27001', targetControlId: 'A.5.26', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.27', targetFramework: 'ISO 27001', targetControlId: 'A.5.27', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.28', targetFramework: 'ISO 27001', targetControlId: 'A.5.28', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.29', targetFramework: 'ISO 27001', targetControlId: 'A.5.29', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.30', targetFramework: 'ISO 27001', targetControlId: 'A.5.30', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.31', targetFramework: 'ISO 27001', targetControlId: 'A.5.31', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.32', targetFramework: 'ISO 27001', targetControlId: 'A.5.32', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.33', targetFramework: 'ISO 27001', targetControlId: 'A.5.33', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.34', targetFramework: 'ISO 27001', targetControlId: 'A.5.34', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.35', targetFramework: 'ISO 27001', targetControlId: 'A.5.35', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.36', targetFramework: 'ISO 27001', targetControlId: 'A.5.36', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.37', targetFramework: 'ISO 27001', targetControlId: 'A.5.37', mappingType: 'equivalent', confidence: 0.95 },
+  // People controls
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-6.1', targetFramework: 'ISO 27001', targetControlId: 'A.6.1', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-6.2', targetFramework: 'ISO 27001', targetControlId: 'A.6.2', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-6.3', targetFramework: 'ISO 27001', targetControlId: 'A.6.3', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-6.4', targetFramework: 'ISO 27001', targetControlId: 'A.6.4', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-6.5', targetFramework: 'ISO 27001', targetControlId: 'A.6.5', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-6.6', targetFramework: 'ISO 27001', targetControlId: 'A.6.6', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-6.7', targetFramework: 'ISO 27001', targetControlId: 'A.6.7', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-6.8', targetFramework: 'ISO 27001', targetControlId: 'A.6.8', mappingType: 'equivalent', confidence: 0.95 },
+  // Physical controls
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.1', targetFramework: 'ISO 27001', targetControlId: 'A.7.1', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.2', targetFramework: 'ISO 27001', targetControlId: 'A.7.2', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.3', targetFramework: 'ISO 27001', targetControlId: 'A.7.3', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.4', targetFramework: 'ISO 27001', targetControlId: 'A.7.4', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.5', targetFramework: 'ISO 27001', targetControlId: 'A.7.5', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.6', targetFramework: 'ISO 27001', targetControlId: 'A.7.6', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.7', targetFramework: 'ISO 27001', targetControlId: 'A.7.7', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.8', targetFramework: 'ISO 27001', targetControlId: 'A.7.8', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.9', targetFramework: 'ISO 27001', targetControlId: 'A.7.9', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.10', targetFramework: 'ISO 27001', targetControlId: 'A.7.10', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.11', targetFramework: 'ISO 27001', targetControlId: 'A.7.11', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.12', targetFramework: 'ISO 27001', targetControlId: 'A.7.12', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.13', targetFramework: 'ISO 27001', targetControlId: 'A.7.13', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-7.14', targetFramework: 'ISO 27001', targetControlId: 'A.7.14', mappingType: 'equivalent', confidence: 0.95 },
+  // Technological controls
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.1', targetFramework: 'ISO 27001', targetControlId: 'A.8.1', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.2', targetFramework: 'ISO 27001', targetControlId: 'A.8.2', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.3', targetFramework: 'ISO 27001', targetControlId: 'A.8.3', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.4', targetFramework: 'ISO 27001', targetControlId: 'A.8.4', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.5', targetFramework: 'ISO 27001', targetControlId: 'A.8.5', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.6', targetFramework: 'ISO 27001', targetControlId: 'A.8.6', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.7', targetFramework: 'ISO 27001', targetControlId: 'A.8.7', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.8', targetFramework: 'ISO 27001', targetControlId: 'A.8.8', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.9', targetFramework: 'ISO 27001', targetControlId: 'A.8.9', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.10', targetFramework: 'ISO 27001', targetControlId: 'A.8.10', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.11', targetFramework: 'ISO 27001', targetControlId: 'A.8.11', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.12', targetFramework: 'ISO 27001', targetControlId: 'A.8.12', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.13', targetFramework: 'ISO 27001', targetControlId: 'A.8.13', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.14', targetFramework: 'ISO 27001', targetControlId: 'A.8.14', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.15', targetFramework: 'ISO 27001', targetControlId: 'A.8.15', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.16', targetFramework: 'ISO 27001', targetControlId: 'A.8.16', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.17', targetFramework: 'ISO 27001', targetControlId: 'A.8.17', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.18', targetFramework: 'ISO 27001', targetControlId: 'A.8.18', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.19', targetFramework: 'ISO 27001', targetControlId: 'A.8.19', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.20', targetFramework: 'ISO 27001', targetControlId: 'A.8.20', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.21', targetFramework: 'ISO 27001', targetControlId: 'A.8.21', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.22', targetFramework: 'ISO 27001', targetControlId: 'A.8.22', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.23', targetFramework: 'ISO 27001', targetControlId: 'A.8.23', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.24', targetFramework: 'ISO 27001', targetControlId: 'A.8.24', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.25', targetFramework: 'ISO 27001', targetControlId: 'A.8.25', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.26', targetFramework: 'ISO 27001', targetControlId: 'A.8.26', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.27', targetFramework: 'ISO 27001', targetControlId: 'A.8.27', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.28', targetFramework: 'ISO 27001', targetControlId: 'A.8.28', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.29', targetFramework: 'ISO 27001', targetControlId: 'A.8.29', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.30', targetFramework: 'ISO 27001', targetControlId: 'A.8.30', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.31', targetFramework: 'ISO 27001', targetControlId: 'A.8.31', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.32', targetFramework: 'ISO 27001', targetControlId: 'A.8.32', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.33', targetFramework: 'ISO 27001', targetControlId: 'A.8.33', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.34', targetFramework: 'ISO 27001', targetControlId: 'A.8.34', mappingType: 'equivalent', confidence: 0.95 },
+
+  // ISO 27017:2026 <-> SOC 2 / NIST 800-53 / FedRAMP: the subjects the 2015-edition rows above
+  // cover (access control, identity, cryptography, logging, change, incidents, continuity).
+  // SOC 2 Type II
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.15', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.16', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.2', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.24', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.7', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.15', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.2', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.32', targetFramework: 'SOC 2 Type II', targetControlId: 'CC8.1', mappingType: 'equivalent', confidence: 0.9 },
+  // CC7.3 (evaluating events to decide whether they are incidents) is the subject of 5.25; the
+  // incident-planning control 5.24 matches the response-programme part of CC7.4.
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.25', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.3', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.24', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.4', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.30', targetFramework: 'SOC 2 Type II', targetControlId: 'CC9.1', mappingType: 'partial', confidence: 0.8 },
+  // NIST 800-53
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.15', targetFramework: 'NIST 800-53', targetControlId: 'AC-1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.16', targetFramework: 'NIST 800-53', targetControlId: 'AC-2', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.24', targetFramework: 'NIST 800-53', targetControlId: 'SC-13', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.32', targetFramework: 'NIST 800-53', targetControlId: 'CM-3', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.15', targetFramework: 'NIST 800-53', targetControlId: 'AU-2', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.24', targetFramework: 'NIST 800-53', targetControlId: 'IR-1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.30', targetFramework: 'NIST 800-53', targetControlId: 'CP-2', mappingType: 'partial', confidence: 0.8 },
+  // FedRAMP
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.15', targetFramework: 'FedRAMP', targetControlId: 'FR-AC-1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.16', targetFramework: 'FedRAMP', targetControlId: 'FR-AC-2', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.24', targetFramework: 'FedRAMP', targetControlId: 'FR-SC-13', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.24', targetFramework: 'FedRAMP', targetControlId: 'FR-IR-1', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Cloud-specific controls. None has a one-to-one counterpart elsewhere, so rows are partial or
+  // related only.
+  // 5.38 Shared roles and responsibilities within a cloud computing environment
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.38', targetFramework: 'ISO 27001', targetControlId: 'A.5.23', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.38', targetFramework: 'ISO 27001', targetControlId: 'A.5.2', mappingType: 'related', confidence: 0.7 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.38', targetFramework: 'SOC 2 Type II', targetControlId: 'CC9.2', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.38', targetFramework: 'SOC 2 Type II', targetControlId: 'CC2.3', mappingType: 'related', confidence: 0.65 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.38', targetFramework: 'NIST 800-53', targetControlId: 'SA-9', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.38', targetFramework: 'FedRAMP', targetControlId: 'FR-SA-9', mappingType: 'partial', confidence: 0.8 },
+  // 5.39 Cloud service partner roles and responsibilities
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.39', targetFramework: 'ISO 27001', targetControlId: 'A.5.20', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.39', targetFramework: 'ISO 27001', targetControlId: 'A.5.19', mappingType: 'related', confidence: 0.7 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.39', targetFramework: 'SOC 2 Type II', targetControlId: 'CC9.2', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.39', targetFramework: 'NIST 800-53', targetControlId: 'SA-9', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.39', targetFramework: 'NIST 800-53', targetControlId: 'PS-7', mappingType: 'related', confidence: 0.7 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.39', targetFramework: 'NIST 800-53', targetControlId: 'SA-4', mappingType: 'related', confidence: 0.65 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.39', targetFramework: 'FedRAMP', targetControlId: 'FR-SA-9', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-5.39', targetFramework: 'FedRAMP', targetControlId: 'FR-PS-7', mappingType: 'related', confidence: 0.7 },
+  // 8.35 Segregation in virtual computing environments
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'ISO 27001', targetControlId: 'A.8.22', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.1', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.6', mappingType: 'related', confidence: 0.7 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'NIST 800-53', targetControlId: 'SC-4', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'NIST 800-53', targetControlId: 'SC-39', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'NIST 800-53', targetControlId: 'SC-32', mappingType: 'related', confidence: 0.7 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'NIST 800-53', targetControlId: 'SC-7', mappingType: 'related', confidence: 0.65 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'FedRAMP', targetControlId: 'FR-SC-4', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'FedRAMP', targetControlId: 'FR-SC-39', mappingType: 'partial', confidence: 0.8 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.35', targetFramework: 'FedRAMP', targetControlId: 'FR-SC-32', mappingType: 'related', confidence: 0.7 },
+  // 8.36 Detection and prevention of unauthorized use of cloud services
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'ISO 27001', targetControlId: 'A.5.23', mappingType: 'partial', confidence: 0.7 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'ISO 27001', targetControlId: 'A.8.16', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'ISO 27001', targetControlId: 'A.5.9', mappingType: 'related', confidence: 0.65 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.2', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.8', mappingType: 'related', confidence: 0.65 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'NIST 800-53', targetControlId: 'CM-8', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'NIST 800-53', targetControlId: 'SI-4', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'NIST 800-53', targetControlId: 'CM-10', mappingType: 'related', confidence: 0.65 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'NIST 800-53', targetControlId: 'SA-9', mappingType: 'related', confidence: 0.6 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'NIST 800-53', targetControlId: 'AC-20', mappingType: 'related', confidence: 0.6 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'FedRAMP', targetControlId: 'FR-CM-8', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'FedRAMP', targetControlId: 'FR-SI-4', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017:2026', sourceControlId: 'ISO27017-2026-8.36', targetFramework: 'FedRAMP', targetControlId: 'FR-CM-10', mappingType: 'related', confidence: 0.65 },
+
+  // ISO 27017 (2015) -> ISO 27017:2026 edition transition. Each 2015 control is linked to the 2026
+  // control covering the same subject, so an organization holding both editions sees "Also
+  // Satisfies" between them. Derived from the public ISO/IEC 27002:2013 -> 2022 control
+  // correspondence and each control's subject; this is not Annex A of ISO/IEC 27017:2026. Where
+  // the 2015 name and clause number disagree, the name wins (ISO27017-9.4.1 "Cloud Service
+  // Authentication" -> 8.5 Secure Authentication).
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-5.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.1', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-5.1.2', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.1', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-6.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.2', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-6.1.2', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.3', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-6.1.3', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.5', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-7.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-6.1', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-7.2.2', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-6.3', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-8.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.9', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-8.2.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.12', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-8.2.2', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.13', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-9.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.15', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-9.2.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.16', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-9.2.3', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.2', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-9.4.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.5', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-9.4.4', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.18', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-10.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.24', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-10.1.2', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.24', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-11.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-7.1', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-11.2.7', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-7.14', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-12.1.2', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.32', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-12.1.3', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.6', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-12.2.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.7', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-12.3.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.13', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-12.4.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.15', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-12.4.3', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.15', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-12.6.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.8', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-13.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.20', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-13.1.3', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.22', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-13.2.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.14', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-14.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.26', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-14.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.8', mappingType: 'partial', confidence: 0.75 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-14.2.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.25', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-14.2.5', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.27', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-15.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.19', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-15.2.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.22', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-16.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.24', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-16.1.2', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-6.8', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-16.1.5', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.26', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-17.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.29', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-17.1.2', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.29', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-17.2.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-8.14', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-18.1.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.31', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-18.1.3', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.33', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-18.1.5', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.31', mappingType: 'equivalent', confidence: 0.85 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-18.2.1', targetFramework: 'ISO 27017:2026', targetControlId: 'ISO27017-2026-5.35', mappingType: 'equivalent', confidence: 0.85 },
 
   // =============================================================================
   // SOC 3 <-> SOC 2 Mappings (IDENTICAL Trust Services Criteria — 1:1 equivalent)
@@ -1049,6 +1288,16 @@ function normalizeFrameworkName(name: string): string {
     'iso27017': 'iso 27017',
     'iso 27017:2015': 'iso 27017',
     'iso-27017': 'iso 27017',
+    'iso/iec 27017': 'iso 27017',
+    'iso/iec 27017:2015': 'iso 27017',
+    'iso 27017:2015 (withdrawn)': 'iso 27017',
+    // ISO 27017:2026 normalizations — never collapse a 2026 spelling onto the 2015 'iso 27017'
+    'iso/iec 27017:2026': 'iso 27017:2026',
+    'iso27017:2026': 'iso 27017:2026',
+    'iso 27017 2026': 'iso 27017:2026',
+    'iso 27017 (2026)': 'iso 27017:2026',
+    'iso-27017-2026': 'iso 27017:2026',
+    'iso/iec 27017 edition 2': 'iso 27017:2026',
     // SOC 3 normalizations
     'aicpa soc 3': 'soc 3',
     'aicpa soc3': 'soc 3',
