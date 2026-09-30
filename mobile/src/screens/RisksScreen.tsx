@@ -28,7 +28,6 @@ import {
   colors,
   spacing,
   fontSize,
-  borderRadius,
 } from '../components/shared';
 
 // ============================================================================

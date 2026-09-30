@@ -16,7 +16,6 @@ import {
   ScrollView,
   RefreshControl,
   ViewStyle,
-  TextStyle,
 } from 'react-native';
 
 // ============================================================================

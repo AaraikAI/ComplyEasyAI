@@ -5,12 +5,11 @@
  * risk overview, recent activity, and quick actions.
  */
 
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';

@@ -11,7 +11,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Switch,
   Alert,
   Platform,
@@ -34,7 +33,6 @@ import {
   colors,
   spacing,
   fontSize,
-  borderRadius,
 } from '../components/shared';
 
 const SUPPORT_EMAIL = 'support@complyeasy.ai';

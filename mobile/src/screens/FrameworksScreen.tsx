@@ -27,7 +27,6 @@ import {
   colors,
   spacing,
   fontSize,
-  borderRadius,
 } from '../components/shared';
 
 // ============================================================================
@@ -128,7 +127,6 @@ export default function FrameworksScreen({ navigation }: any) {
 
   // Summary
   const totalControls = (frameworks || []).reduce((sum, f) => sum + (f.controlCount || 0), 0);
-  const implementedControls = (frameworks || []).reduce((sum, f) => sum + (f.implementedControls || 0), 0);
   const avgCompletion =
     (frameworks || []).length > 0
       ? Math.round(
