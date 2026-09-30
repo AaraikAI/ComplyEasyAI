@@ -2,18 +2,18 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import {
-  ArrowLeft, Search, Plus, Download, Eye, Edit3, Trash2,
-  AlertTriangle, ShieldCheck, Shield, CheckCircle, XCircle,
-  Clock, Globe, FileText, Loader2, RefreshCw,
-  ChevronDown, ChevronUp, ExternalLink, Filter,
-  BarChart3, Activity, Zap, Bell, Archive,
-  TrendingUp, TrendingDown, Minus, X, Sparkles, Brain,
-  Leaf, Recycle, Droplets, Wind, Sun, Flame,
-  Factory, Truck, Home, Package, Trash, TreePine,
-  Gauge, Target, Award, Info, Settings, Lightbulb,
-  PieChart as PieChartIcon, ArrowRight, CircleDot, Scale,
-  Thermometer, Cloud, Waves, Mountain, Gem, Hammer,
-  Wrench, RotateCcw, Battery, Cpu, Layers,
+  ArrowLeft, Plus, Download, Eye, Edit3, Trash2,
+  AlertTriangle, CheckCircle,
+  FileText, Loader2, RefreshCw,
+  ChevronDown, ChevronUp,
+  BarChart3, Activity, Zap,
+  TrendingUp, TrendingDown, X,
+  Leaf, Recycle, Droplets, Sun, Flame,
+  Factory, Truck, Home, Trash,
+  Award, Info, Lightbulb,
+  ArrowRight,
+  Thermometer, Waves, Mountain, Gem,
+  RotateCcw,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -325,7 +325,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
   const [improvements, setImprovements] = useState<Improvement[]>([]);
   const [reports, setReports] = useState<LCAReport[]>([]);
   const [circularMetrics, setCircularMetrics] = useState<CircularMetrics>(DEMO_CIRCULAR);
-  const [serverReachable, setServerReachable] = useState<boolean>(true);
+  const [, setServerReachable] = useState<boolean>(true);
 
   // Comparative-LCA selectors (compare two real products / versions)
   const [compareA, setCompareA] = useState<string>('');

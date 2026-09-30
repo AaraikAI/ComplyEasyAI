@@ -13,7 +13,7 @@
 import React, { useState, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
-import { AlertTriangle, CheckCircle, Clock, X, Plus, FileText, Shield, TrendingUp, AlertCircle, Database, Eye, Download } from 'lucide-react';
+import { AlertTriangle, CheckCircle, X, Plus, FileText, Shield, TrendingUp, Database, Eye, Download } from 'lucide-react';
 
 interface AISystem {
   id: string;
@@ -337,21 +337,6 @@ export const EUAIActDashboard: React.FC = () => {
         return 'text-orange-600 dark:text-signal-warn';
       default:
         return 'text-gray-600 dark:text-signal-sub';
-    }
-  };
-
-  const getRiskLevelIcon = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'unacceptable':
-        return <X className="w-5 h-5 text-red-600 dark:text-signal-bad" />;
-      case 'high':
-        return <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-signal-amber" />;
-      case 'limited':
-        return <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-signal-warn" />;
-      case 'minimal':
-        return <CheckCircle className="w-5 h-5 text-green-600 dark:text-signal-good" />;
-      default:
-        return <Clock className="w-5 h-5 text-gray-600 dark:text-signal-sub" />;
     }
   };
 

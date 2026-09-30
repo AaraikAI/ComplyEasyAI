@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Target, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, Calendar, AlertCircle } from 'lucide-react';
 import { AVAILABLE_FRAMEWORKS } from '../constants';
 import { api } from '../services/api';
 import { toast } from 'sonner';

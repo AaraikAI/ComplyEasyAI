@@ -26,10 +26,7 @@ import {
   BarChart3,
   ClipboardList,
   UserCheck,
-  Filter,
-  ChevronRight,
   Edit,
-  Trash2,
 } from 'lucide-react';
 
 // ── Type Definitions ────────────────────────────────────────────────────────

@@ -4,10 +4,10 @@ import {
   ArrowLeft, TrendingUp, TrendingDown, Minus, Target, Shield,
   AlertTriangle, CheckCircle, Clock, Calendar, Download, RefreshCw,
   ChevronRight, ChevronDown, ChevronUp, BarChart3, Lightbulb,
-  Zap, Eye, FileText, Settings, Bell, ArrowUpRight, ArrowDownRight,
+  Eye, FileText, Settings, Bell, ArrowUpRight, ArrowDownRight,
   Activity, Layers, Lock, Server, Users, Building2, Search,
-  PieChart as PieChartIcon, Info, Star, ExternalLink, Play,
-  BookOpen, Filter, X, Sliders, Sparkles, Award, Gauge,
+  Info, Star, Play,
+  X, Sliders, Sparkles, Award, Gauge,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';
@@ -222,13 +222,6 @@ const getScoreBg = (score: number): string => {
   return 'bg-red-500';
 };
 
-const getScoreBgLight = (score: number): string => {
-  if (score >= 90) return 'bg-green-100';
-  if (score >= 75) return 'bg-blue-100';
-  if (score >= 60) return 'bg-yellow-100';
-  return 'bg-red-100';
-};
-
 const getSeverityStyles = (severity: string): string => {
   switch (severity) {
     case 'critical': return 'bg-red-100 text-red-800 border-red-200';
@@ -292,10 +285,10 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
   const [historicalData, setHistoricalData] = useState<HistoricalEntry[]>([]);
   const [riskFactors, setRiskFactors] = useState<RiskFactor[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [loadingForecast, setLoadingForecast] = useState(true);
+  const [, setLoadingForecast] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const [forecastError, setForecastError] = useState<string | null>(null);
-  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [, setForecastError] = useState<string | null>(null);
+  const [, setHistoryError] = useState<string | null>(null);
 
   // Fetch live forecasting data (projections + risk factors + recommendations)
   // and historical compliance scores from the backend.
@@ -448,8 +441,8 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
   }, []);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [aiInsights, setAiInsights] = useState<{ keyInsights: string[]; recommendedActions: any[]; summary: string } | null>(null);
-  const [aiError, setAiError] = useState<string | null>(null);
+  const [, setAiInsights] = useState<{ keyInsights: string[]; recommendedActions: any[]; summary: string } | null>(null);
+  const [, setAiError] = useState<string | null>(null);
 
   const handleRefreshForecast = useCallback(async () => {
     setIsRefreshing(true);

@@ -3,9 +3,8 @@ import {
   Search, LayoutDashboard, ShieldCheck, FileText, Activity, Settings,
   AlertTriangle, Users, Layers, Brain, Monitor, Building2, ClipboardList,
   CheckSquare, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database,
-  LifeBuoy, Lock, ArrowRight, Command, Hash, Zap
+  LifeBuoy, Lock, ArrowRight, Command
 } from 'lucide-react';
-import { ViewState } from '../types';
 import { useI18n } from '../contexts/I18nContext';
 
 interface CommandPaletteProps {

@@ -10,7 +10,7 @@ import { RisingSignals } from './RisingSignals';
 const HomeOS: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: dashboard, isLoading } = useExecutiveDashboard();
+  const { data: dashboard } = useExecutiveDashboard();
   const { data: risks = [] } = useRisks();
 
   const greeting = () => {

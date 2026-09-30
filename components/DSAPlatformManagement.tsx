@@ -14,7 +14,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
-import { Globe, CheckCircle, AlertTriangle, X, Plus, FileText, Shield, Users, Eye, Megaphone, Ban } from 'lucide-react';
+import { Globe, CheckCircle, AlertTriangle, X, Plus, Shield, Users, Eye, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '../utils/logger';
 
@@ -72,8 +72,8 @@ export const DSAPlatformManagement: React.FC = () => {
   const [feedConfig, setFeedConfig] = useState<any | null>(null);
   const [latestAssessment, setLatestAssessment] = useState<any | null>(null);
   const [adHistory, setAdHistory] = useState<any[]>([]);
-  const [showDSAReportModal, setShowDSAReportModal] = useState(false);
-  const [selectedDSAReport, setSelectedDSAReport] = useState<any | null>(null);
+  const [, setShowDSAReportModal] = useState(false);
+  const [, setSelectedDSAReport] = useState<any | null>(null);
 
   const [registrationForm, setRegistrationForm] = useState({
     platformName: '',

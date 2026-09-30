@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { Search, Pin, PinOff, Lock, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { normalizePlan, canAccessView } from '../constants/tierFeatures';
+import { normalizePlan } from '../constants/tierFeatures';
 import { FEATURE_CATALOG, FEATURE_CATEGORIES, type CatalogFeature, type FeatureCategory } from '../constants/featureCatalog';
 
 const PINNED_KEY = 'complyeasy_pinned_features';

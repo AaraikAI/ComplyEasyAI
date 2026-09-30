@@ -193,7 +193,6 @@ const ConfidenceMeter: React.FC<{ score: number }> = ({ score }) => {
 
 const AuditReadinessGauge: React.FC<{ score: number }> = ({ score }) => {
   const color = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600';
-  const bgColor = score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500';
   const ringColor = score >= 80 ? 'stroke-green-500' : score >= 60 ? 'stroke-yellow-500' : 'stroke-red-500';
   const circumference = 2 * Math.PI * 36;
   const offset = circumference - (score / 100) * circumference;

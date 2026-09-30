@@ -1,13 +1,12 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
-  ArrowLeft, ArrowDown, ArrowRight, Plus, Trash2, Edit3, Save, Download, ChevronDown, ChevronRight,
-  AlertTriangle, CheckCircle, XCircle, X, Search, Filter, Eye, Copy,
-  Users, Shield, UserCheck, Bell, Clock, ArrowUpRight, Calendar,
-  FileText, Mail, Phone, Building2, Award, Briefcase, ClipboardList,
-  GitBranch, Layers, Settings, BarChart3, Vote, BookOpen, MessageSquare,
-  Timer, Zap, AlertCircle, ArrowUp, ChevronUp, Link2, User, Hash
+  ArrowLeft, ArrowDown, ArrowRight, Plus, Trash2,
+  AlertTriangle, CheckCircle, XCircle, X,
+  Users, Shield, UserCheck, Clock, ArrowUpRight, Calendar,
+  Mail, Phone, ClipboardList,
+  Layers, Vote, BookOpen, MessageSquare,
+  Zap, ArrowUp
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -217,7 +216,6 @@ const formatMinutes = (m: number) => {
 /* ------------------------------------------------------------------ */
 
 export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'dpo' | 'committees' | 'escalation'>('dpo');
 
   /* ---- DPO state ---- */

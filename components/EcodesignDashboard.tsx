@@ -17,11 +17,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
-  Recycle, Leaf, Package, FileText, CheckCircle, AlertTriangle,
-  X, Plus, Search, Download, Clock, Shield, TrendingUp, Zap,
-  Eye, Edit, QrCode, Wrench, Droplets, Flame, ChevronRight,
-  BarChart3, Calendar, AlertCircle, Factory, Cpu, Trash2,
-  ArrowUpRight, Settings, Battery, ThermometerSun
+  Recycle, Leaf, Package, CheckCircle, AlertTriangle,
+  X, Plus, Search, Download, Clock, Shield,
+  Eye, QrCode, Wrench,
+  BarChart3, Factory
 } from 'lucide-react';
 
 // ── Data Models ──────────────────────────────────────────────────────────
@@ -302,9 +301,7 @@ export const EcodesignDashboard: React.FC = () => {
   const [showPassportModal, setShowPassportModal] = useState(false);
   const [selectedPassport, setSelectedPassport] = useState<DigitalProductPassport | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showLCAModal, setShowLCAModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<EcoProduct | null>(null);
-  const [selectedLCA, setSelectedLCA] = useState<LifecycleAssessment | null>(null);
 
   const [productForm, setProductForm] = useState({
     name: '', category: 'Electronics', manufacturer: '', model: '',

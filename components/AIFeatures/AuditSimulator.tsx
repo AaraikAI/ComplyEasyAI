@@ -8,15 +8,10 @@ import {
   Clock,
   ChevronRight,
   Shield,
-  FileText,
   TrendingUp,
   AlertCircle,
   Target,
-  BarChart3,
-  Calendar,
-  ExternalLink,
   Download,
-  RefreshCw,
   Loader2,
   Search,
   Filter,
@@ -24,18 +19,13 @@ import {
   ChevronUp,
   Zap,
   Eye,
-  Info,
   Play,
   Pause,
   CheckSquare,
-  X,
   Sparkles,
   Star,
-  Users,
   MessageSquare,
   BookOpen,
-  Award,
-  Hash,
   ArrowRight,
   ClipboardList,
   Lightbulb,
@@ -43,8 +33,6 @@ import {
   StopCircle,
   RotateCcw,
   FileCheck,
-  CircleDot,
-  Minus,
 } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -198,7 +186,6 @@ const ReadinessGauge: React.FC<{ score: number; size?: 'sm' | 'lg' }> = ({ score
 };
 
 const FindingsChart: React.FC<{ findings: SimulationRun['findingsCount'] }> = ({ findings }) => {
-  const total = findings.critical + findings.major + findings.minor + findings.observation;
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1">
@@ -227,7 +214,6 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   const [activeTab, setActiveTab] = useState<'new' | 'active' | 'results' | 'questions'>('new');
   const [selectedAuditType, setSelectedAuditType] = useState<string | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [expandedSim, setExpandedSim] = useState<string | null>(null);
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,7 +223,6 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   const [auditTypeFilter, setAuditTypeFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [selectedSimForResults, setSelectedSimForResults] = useState<string | null>(null);
-  const [simulationAnswer, setSimulationAnswer] = useState('');
 
   // Persisted simulation runs + findings for this organization (loaded from backend).
   const [simulationRuns, setSimulationRuns] = useState<SimulationRun[]>([]);
@@ -328,8 +313,8 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
   const findingCategories = [...new Set(auditFindings.map(f => f.category))];
 
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiQuestions, setAiQuestions] = useState<any[]>([]);
+  const [, setAiError] = useState<string | null>(null);
+  const [, setAiQuestions] = useState<any[]>([]);
 
   // ── Interview Questions: AI-fetched with mock fallback ──
   const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>(MOCK_INTERVIEW_QUESTIONS);

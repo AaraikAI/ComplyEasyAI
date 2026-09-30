@@ -6,15 +6,12 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  ChevronRight,
   Shield,
   FileText,
   TrendingUp,
   AlertCircle,
   Target,
-  BarChart3,
   Calendar,
-  ExternalLink,
   Download,
   RefreshCw,
   Loader2,
@@ -26,21 +23,16 @@ import {
   GitBranch,
   Layers,
   Activity,
-  ArrowRight,
   Zap,
   Users,
   Play,
-  Pause,
   CheckSquare,
   XCircle,
   Info,
-  Eye,
   Edit3,
-  MoreVertical,
   History,
   Sparkles,
   BookOpen,
-  Link2,
   Hash,
   ArrowUpRight,
   ArrowDownRight,
@@ -390,7 +382,6 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
 
   // Summary stats
   const pendingCount = regulatoryChanges.filter(c => c.status === 'pending').length;
-  const remediationCount = regulatoryChanges.filter(c => c.status === 'remediation' || c.status === 'in-review').length;
   const completedCount = regulatoryChanges.filter(c => c.status === 'completed').length;
   const totalTasks = remediationTasks.length;
   const completedTasks = remediationTasks.filter(t => t.status === 'completed').length;
@@ -430,8 +421,8 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
     return true;
   });
 
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiInsights, setAiInsights] = useState<{ summary: string; quickWins: string[]; timeline: string } | null>(null);
+  const [, setAiError] = useState<string | null>(null);
+  const [, setAiInsights] = useState<{ summary: string; quickWins: string[]; timeline: string } | null>(null);
 
   const handleRunAnalysis = useCallback(async () => {
     setIsAnalyzing(true);

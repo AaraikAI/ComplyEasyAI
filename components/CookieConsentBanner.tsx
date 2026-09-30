@@ -16,7 +16,6 @@ import { getCsrfToken } from '../services/api';
 import {
   Shield,
   X,
-  Cookie,
   Settings,
   CheckCircle,
   ChevronDown,

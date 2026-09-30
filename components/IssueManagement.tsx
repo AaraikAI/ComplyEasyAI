@@ -5,14 +5,14 @@ import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
 import ReactMarkdown from 'react-markdown';
 import {
-  ArrowLeft, Plus, Loader2, Search, Filter, X, ChevronDown, ChevronUp,
-  AlertTriangle, Brain, Eye, Trash2, Edit3, MessageSquare, Clock, User,
-  CheckCircle, XCircle, AlertCircle, BarChart3, Target, Zap, Link2,
-  Calendar, Tag, FileText, Play, RefreshCw, Users, TrendingUp, Shield,
+  ArrowLeft, Plus, Loader2, Search, X,
+  AlertTriangle, Brain, Trash2, Edit3, MessageSquare, Clock, User,
+  CheckCircle, XCircle, AlertCircle, Target, Zap, Link2,
+  FileText, Play, RefreshCw, TrendingUp,
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  Tooltip, Legend,
+  Tooltip,
 } from 'recharts';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';

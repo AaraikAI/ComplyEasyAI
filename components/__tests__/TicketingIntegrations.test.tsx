@@ -55,8 +55,6 @@ const mockTickets = [
   { id: 't1', provider: 'jira', action: 'create', direction: 'outbound', externalId: 'PROJ-123', externalSysId: null, status: 'open', title: 'Fix encryption gap', createdAt: '2025-12-01', updatedAt: '2025-12-01' },
 ];
 
-const mockStats = { totalTickets: 10, openTickets: 3, closedTickets: 7, synced: 10, failed: 0 };
-
 import TicketingIntegrations from '../TicketingIntegrations';
 
 describe('TicketingIntegrations', () => {

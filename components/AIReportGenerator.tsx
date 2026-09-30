@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateComplianceReport } from '../services/geminiService';
 import { FileText, Loader2, Download, RefreshCw, Send } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import { api } from '../services/api';
 import { ComplianceFramework } from '../types';
 import { useI18n } from '../contexts/I18nContext';

@@ -15,21 +15,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   BarChart3,
-  Shield,
   AlertTriangle,
-  CheckCircle,
-  TrendingUp,
-  TrendingDown,
   ArrowUp,
   ArrowDown,
   Minus,
-  Activity,
   Target,
-  Users,
-  Clock,
-  Calendar,
-  Eye,
-  FileText,
   Loader2,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';

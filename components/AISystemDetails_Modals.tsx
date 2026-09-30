@@ -1,14 +1,12 @@
 // Create Risk Activity Modal
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '../utils/logger';
 
 export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, onClose }) => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [formData, setFormData] = useState({
     activityType: 'Risk_Identification',
@@ -178,7 +176,6 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
 // Create Actor Modal
 // Edit Risk Activity Modal
 export const EditRiskActivityModal: React.FC<any> = ({ activity, teamMembers, onClose }) => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [formData, setFormData] = useState({
     status: activity.status || 'Open',
@@ -326,7 +323,6 @@ export const EditRiskActivityModal: React.FC<any> = ({ activity, teamMembers, on
 };
 
 export const CreateActorModal: React.FC<any> = ({ systemId, teamMembers, onClose }) => {
-  const { user } = useAuth();
   const [formData, setFormData] = useState({
     actorType: 'Developer',
     userId: '',

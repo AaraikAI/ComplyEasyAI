@@ -11,16 +11,15 @@
  * - API calls to /api/evidence-collection
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
-  ArrowLeft, Plus, Loader2, Search, X, Filter, Trash2, Edit3, Eye,
-  CheckCircle, Clock, AlertTriangle, Play, Pause, RefreshCw, Settings,
-  Zap, Database, Cloud, GitBranch, MessageSquare, FolderOpen, Shield,
-  Activity, BarChart3, ChevronRight, Power, Calendar, Download,
-  Check, XCircle, FileText, Link, Server, HardDrive, AlertCircle,
+  ArrowLeft, Plus, Loader2, Search, X, Trash2, Edit3, Eye,
+  CheckCircle, Clock, AlertTriangle, Play, Settings,
+  Database, Cloud, GitBranch, MessageSquare, FolderOpen, Shield,
+  Activity, Power, Download,
+  XCircle, FileText, Server, HardDrive,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -144,7 +143,6 @@ const getFreshnessColor = (dateStr?: string): { color: string; label: string; bg
 // ── Main Component ──────────────────────────────────────────────────────────
 
 const EvidenceCollectionRules: React.FC = () => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [rules, setRules] = useState<EvidenceRule[]>([]);

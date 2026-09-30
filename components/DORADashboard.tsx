@@ -13,9 +13,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Shield, CheckCircle, AlertTriangle, XCircle, Search, Plus, X,
-  FileText, Clock, BarChart3, ChevronRight, Edit3, Trash2, Eye, Download,
-  AlertCircle, Filter, Calendar, Activity, TrendingUp, Lock, Server,
-  Globe, Wifi, Database, Bug, RefreshCw, Users, Building2, Zap, Loader2
+  FileText, BarChart3, Edit3, Trash2, Eye, Download,
+  AlertCircle, Activity,
+  Bug, Building2, Zap
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
@@ -189,7 +189,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [incidents, setIncidents] = useState<ICTIncident[]>([]);
   const [providers, setProviders] = useState<ThirdPartyProvider[]>([]);
   const [tests, setTests] = useState<ResilienceTest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
 
@@ -315,18 +315,6 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setError(e?.message || 'Failed to delete provider');
     }
   }, [providers]);
-
-  const handleDeleteTest = useCallback(async (id: string) => {
-    setError(null);
-    const previous = tests;
-    setTests(prev => prev.filter(tst => tst.id !== id));
-    try {
-      await api.delete(`/dora/resilience-tests/${id}`);
-    } catch (e: any) {
-      setTests(previous);
-      setError(e?.message || 'Failed to delete resilience test');
-    }
-  }, [tests]);
 
   // Export the resilience-testing programme as a downloadable CSV (client-side).
   const handleExportTests = useCallback(() => {

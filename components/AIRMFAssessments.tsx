@@ -3,8 +3,8 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { 
-  ArrowLeft, FileText, Plus, Search, Filter, Calendar, 
-  TrendingUp, BarChart3, Download, Eye, Edit, Trash2, X
+  ArrowLeft, FileText, Plus, Search,
+  Eye, Trash2, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '../utils/logger';
@@ -25,7 +25,7 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedAssessment, setSelectedAssessment] = useState<any | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedSystemId, setSelectedSystemId] = useState<string | null>(null);
+  const [, setSelectedSystemId] = useState<string | null>(null);
   const [deletingAssessment, setDeletingAssessment] = useState<string | null>(null);
 
   useEffect(() => {
@@ -541,7 +541,7 @@ const AssessmentDetailModal: React.FC<any> = ({ assessment, onClose }) => {
 const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect }) => {
   const { user } = useAuth();
   const { t } = useI18n();
-  const [selectedSystemData, setSelectedSystemData] = useState<any>(null);
+  const [, setSelectedSystemData] = useState<any>(null);
   const [formData, setFormData] = useState({
     systemId: '',
     assessmentType: 'Pre_Deployment',

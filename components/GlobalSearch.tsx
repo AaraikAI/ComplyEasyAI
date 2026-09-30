@@ -13,15 +13,14 @@
  * - API calls to /api/search
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
-  Search, X, Loader2, FileText, Shield, AlertTriangle, CheckCircle,
-  Building2, AlertCircle, Monitor, Clock, ArrowRight, Hash,
+  Search, Loader2, FileText, AlertTriangle, CheckCircle,
+  Building2, AlertCircle, Monitor, Clock, ArrowRight,
   ChevronRight, Command, CornerDownLeft, ArrowUp, ArrowDown,
-  Bookmark, FolderOpen, Eye, Trash2, Filter, LayoutGrid,
+  FolderOpen, Trash2, Filter, LayoutGrid,
 } from 'lucide-react';
 import { FEATURE_CATALOG } from '../constants/featureCatalog';
 import { logger } from '../utils/logger';
@@ -90,7 +89,6 @@ interface GlobalSearchProps {
 }
 
 const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onClose, onNavigate }) => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(controlledOpen ?? false);
   const [query, setQuery] = useState('');

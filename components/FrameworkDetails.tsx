@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ComplianceFramework, ComplianceStatus, ViewState } from '../types';
+import { ComplianceFramework, ComplianceStatus } from '../types';
 import { ArrowLeft, CheckCircle, Circle, FileText, Upload, AlertTriangle, Loader2, Download, Plus, X, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -300,7 +300,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       const formData = new FormData();
       formData.append('file', file);
 
-      const result = await api.frameworks.uploadEvidence(framework.id, controlId, formData);
+      await api.frameworks.uploadEvidence(framework.id, controlId, formData);
 
       // Evidence uploaded successfully
 

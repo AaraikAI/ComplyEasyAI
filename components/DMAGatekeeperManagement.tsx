@@ -13,7 +13,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
-import { Building2, CheckCircle, AlertTriangle, X, Plus, FileText, Shield, TrendingUp, Clock, BarChart3 } from 'lucide-react';
+import { Building2, CheckCircle, AlertTriangle, X, Plus, Shield, BarChart3 } from 'lucide-react';
 
 interface Gatekeeper {
   id: string;

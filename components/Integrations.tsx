@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Integration } from '../types';
-import { CheckCircle, Power, Search, X, RefreshCw } from 'lucide-react';
+import { CheckCircle, Search, X, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import { IntegrationModal } from './IntegrationModal';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
@@ -535,7 +535,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>(ALL_INTEGRATIONS);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   const connectedCount = integrations.filter(i => i.connected).length;
   const integrationLimitReached = isAtLimit(user?.organization?.plan, 'maxIntegrations', connectedCount);

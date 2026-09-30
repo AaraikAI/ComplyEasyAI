@@ -10,13 +10,10 @@ import {
   Shield, 
   TrendingUp, 
   Zap, 
-  Eye, 
-  FileText, 
   Network, 
   Cpu, 
   AlertTriangle,
   CheckCircle,
-  Clock,
   BarChart3,
   Target,
   Pause,
@@ -67,7 +64,6 @@ interface EarlyWarning {
 }
 
 const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) => void }> = ({ onBack, onNavigate }) => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot' | 'neuroSymbolic' | 'vr' | 'jit' | 'homomorphic'>('overview');
   const [goals, setGoals] = useState<ComplianceGoal[]>([]);
@@ -1377,7 +1373,7 @@ const PredictionsTab: React.FC = () => {
 
 const SimulationsTab: React.FC = () => {
   const [scenarioType, setScenarioType] = useState<string>('control_change');
-  const [parameters, setParameters] = useState<any>({});
+  const [parameters] = useState<any>({});
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -1796,7 +1792,7 @@ const IoTTab: React.FC = () => {
     mqttTopic: '',
   });
 
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   const loadDevices = async () => {
     setLoading(true);
@@ -2324,7 +2320,6 @@ const NeuroSymbolicTab: React.FC = () => {
 
 // VR Collaborations Tab
 const VRCollaborationsTab: React.FC = () => {
-  const { user } = useAuth();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);

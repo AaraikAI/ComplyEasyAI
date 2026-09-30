@@ -13,20 +13,16 @@
  * - Reset to defaults
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { csrfFetch } from '../services/api';
-import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
   Save,
-  RefreshCw,
   Loader2,
   AlertTriangle,
   CheckCircle,
-  XCircle,
   X,
-  Upload,
   Image,
   Palette,
   Globe,
@@ -34,12 +30,10 @@ import {
   Mail,
   Eye,
   Code,
-  Type,
   RotateCcw,
   Monitor,
   Smartphone,
   Shield,
-  ExternalLink,
   Copy,
   Check,
   FileText,
@@ -102,7 +96,6 @@ const DEFAULTS: Omit<BrandingConfig, 'id' | 'updatedAt'> = {
 // ── Component ───────────────────────────────────────────────────────────────
 
 const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) => {
-  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'general' | 'domain' | 'email' | 'login' | 'advanced'>('general');
   const [config, setConfig] = useState<BrandingConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -111,7 +104,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   // serverReachable mirrors API load success — controls whether DEFAULTS fallback is used in preview
-  const [serverReachable, setServerReachable] = useState<boolean>(true);
+  const [, setServerReachable] = useState<boolean>(true);
 
   // Form state
   const [companyName, setCompanyName] = useState('');

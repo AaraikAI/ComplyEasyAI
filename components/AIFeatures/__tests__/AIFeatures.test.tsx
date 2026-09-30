@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PolicyGenerator } from '../PolicyGenerator';
 import { ContractAnalyzer } from '../ContractAnalyzer';
 import { BCPGenerator } from '../BCPGenerator';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock the API service which BCPGenerator uses
 vi.mock('../../../services/api', () => ({

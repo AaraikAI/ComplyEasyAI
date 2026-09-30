@@ -5,15 +5,15 @@ import { normalizePlan, canAccessView } from '../constants/tierFeatures';
 import { pathToView, viewToPath, getBreadcrumbs, ROUTES } from '../routes/routeConfig';
 import {
   LayoutDashboard, FileText, ShieldCheck, Settings, LogOut, Menu, X,
-  Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare, Layers, Brain,
+  Activity, Search, Lock, Sparkles, Briefcase, ShieldAlert, Layers, Brain,
   Users, FileCheck, Monitor, Building2, ClipboardList, AlertTriangle,
-  ChevronDown, ChevronRight, Command, Home,
-  Shield, Globe, Leaf, Network, MapPin, Workflow, UserCheck, Award, Package,
-  Recycle, AlertOctagon, FileCode, Trash2, TreePine, TrendingUp, Target,
-  ScanSearch, Bot, MessageSquare, Crosshair,
-  Smartphone, Scale, Landmark, BookOpen, Eye, UserX, Fingerprint,
-  Calendar, BarChart3, PieChart, Boxes, Key, FileWarning, BadgeCheck,
-  DollarSign, Gauge, Radar, TestTube, Satellite, GitBranch, LayoutGrid
+  ChevronDown, ChevronRight, Command,
+  Shield, Globe, Leaf, Network, MapPin, UserCheck, Package,
+  Recycle,
+  ScanSearch, Bot,
+  Landmark, Eye, UserX, Fingerprint,
+  Calendar, PieChart,
+  Gauge, LayoutGrid
 } from 'lucide-react';
 import { ComplianceChat } from './ComplianceChat';
 import { OnboardingOverlay, OnboardingChecklistWidget } from './Onboarding';

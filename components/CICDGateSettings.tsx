@@ -28,13 +28,9 @@ import {
   Loader2,
   Clock,
   AlertTriangle,
-  Settings,
   BookOpen,
   Link,
   Key,
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
   Check,
   LayoutTemplate,
   Webhook,
@@ -225,7 +221,7 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
   const [showTokenValue, setShowTokenValue] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   // serverReachable mirrors API load success; when false the DEFAULT_CHECKS fallback is shown
-  const [serverReachable, setServerReachable] = useState<boolean>(true);
+  const [, setServerReachable] = useState<boolean>(true);
 
   // ── Data Loading ──────────────────────────────────────────────────────
 

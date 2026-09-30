@@ -79,12 +79,7 @@ export const GapAnalysis: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setPrioritized([]);
 
     try {
-      // Set timeout for analysis (60 seconds for enhanced analysis)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Analysis timeout. The gap analysis is taking too long. Please try with fewer frameworks.')), 60000);
-      });
-
-      // Call backend API directly for enhanced response
+      // Call backend API directly for enhanced response; fetchAPI bounds the request with its own abort timeout
       const response = await api.ai.performGapAnalysis(currentFrameworks, targetFrameworks);
 
       setResult((response as any).analysis || '');
