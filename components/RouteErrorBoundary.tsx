@@ -19,7 +19,6 @@ interface RouteErrorBoundaryProps {
 
 interface RouteErrorBoundaryState {
   hasError: boolean;
-  error: Error | null;
 }
 
 class RouteErrorBoundary extends React.Component<
@@ -28,18 +27,18 @@ class RouteErrorBoundary extends React.Component<
 > {
   constructor(props: RouteErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): RouteErrorBoundaryState {
-    return { hasError: true, error };
+  static getDerivedStateFromError(): RouteErrorBoundaryState {
+    return { hasError: true };
   }
 
   override componentDidUpdate(prevProps: RouteErrorBoundaryProps): void {
     // Clear the error when the route changes so navigating away recovers without
     // a full page reload.
     if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
-      this.setState({ hasError: false, error: null });
+      this.setState({ hasError: false });
     }
   }
 

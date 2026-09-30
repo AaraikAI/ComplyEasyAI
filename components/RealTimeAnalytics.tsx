@@ -18,7 +18,6 @@ import {
   Download
 } from 'lucide-react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import {
   LineChart,
   Line,
@@ -76,7 +75,6 @@ function fitSeriesToBuckets(series: number[], count: number, fallbackValue: numb
 }
 
 const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState<Metric[]>([]);
@@ -138,14 +136,6 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       });
       const complianceScore = totalControls > 0 ? ((passedControls / totalControls) * 100).toFixed(1) : '0.0';
       
-      // Calculate risk distribution
-      const riskDistribution = {
-        critical: risks.filter((r: any) => r.severity === 'Critical' || r.severity === 'critical').length,
-        high: risks.filter((r: any) => r.severity === 'High' || r.severity === 'high').length,
-        medium: risks.filter((r: any) => r.severity === 'Medium' || r.severity === 'medium').length,
-        low: risks.filter((r: any) => r.severity === 'Low' || r.severity === 'low').length,
-      };
-
       // Fetch additional data for complete metrics
       let activeUsersCount = 0;
       let avgResponseTime = 'N/A';

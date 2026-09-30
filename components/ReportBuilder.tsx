@@ -14,7 +14,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Loader2, Search, X, Trash2,
@@ -196,7 +195,6 @@ const generateId = () => `sec_${Date.now()}_${Math.random().toString(36).substr(
 // ── Main Component ──────────────────────────────────────────────────────────
 
 const ReportBuilder: React.FC = () => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('library');
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
@@ -205,7 +203,6 @@ const ReportBuilder: React.FC = () => {
   const [generating, setGenerating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
-  const [error, setError] = useState<string | null>(null);
 
   // Builder state
   const [currentTemplate, setCurrentTemplate] = useState<ReportTemplate | null>(null);
@@ -230,7 +227,6 @@ const ReportBuilder: React.FC = () => {
 
   const loadTemplates = async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await api.get('/reports/templates');
       const serverTemplates: ReportTemplate[] = Array.isArray(res.data) ? res.data : [];

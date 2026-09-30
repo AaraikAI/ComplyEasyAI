@@ -12,7 +12,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Loader2, Search, X, Filter,
@@ -110,7 +109,6 @@ const REGULATIONS = ['GDPR', 'CCPA/CPRA', 'SOC 2', 'HIPAA', 'PCI DSS', 'ISO 2700
 // ── Main Component ──────────────────────────────────────────────────────────
 
 const RegulatoryChangeTracker: React.FC = () => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [changes, setChanges] = useState<RegulatoryChange[]>([]);
@@ -452,7 +450,6 @@ const RegulatoryChangeTracker: React.FC = () => {
     if (!selectedChange) return null;
     const typeConfig = CHANGE_TYPE_CONFIG[selectedChange.changeType];
     const sevConfig = SEVERITY_CONFIG[selectedChange.severity];
-    const statusConfig = STATUS_CONFIG[selectedChange.status];
     const currentStatusIdx = STATUS_FLOW.indexOf(selectedChange.status);
 
     return (

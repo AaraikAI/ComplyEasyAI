@@ -155,7 +155,6 @@ export default function QuestionnaireManagement() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestedQuestions, setAiSuggestedQuestions] = useState<any[]>([]);
   const [aiCompletenessResult, setAiCompletenessResult] = useState<string | null>(null);
-  const [aiRfpQuestion, setAiRfpQuestion] = useState<string | null>(null);
   const [aiRfpResult, setAiRfpResult] = useState<any>(null);
   const [aiAnsweringQuestionId, setAiAnsweringQuestionId] = useState<string | null>(null);
 

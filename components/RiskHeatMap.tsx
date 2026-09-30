@@ -85,8 +85,6 @@ const RiskHeatMap: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedCell, setSelectedCell] = useState<HeatMapCell | null>(null);
   const [showTarget, setShowTarget] = useState(false);
-  const [filterFramework, setFilterFramework] = useState('');
-  const [filterDepartment, setFilterDepartment] = useState('');
 
   useEffect(() => {
     fetchRisks();

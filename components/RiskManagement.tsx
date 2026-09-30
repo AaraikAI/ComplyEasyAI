@@ -27,11 +27,11 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   
-  const [filterSeverity, setFilterSeverity] = useState<string>('All');
-  const [filterStatus, setFilterStatus] = useState<string>('All');
-  const [filterCategory, setFilterCategory] = useState<string>('All');
-  const [filterAssignee, setFilterAssignee] = useState<string>('All');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filterSeverity] = useState<string>('All');
+  const [filterStatus] = useState<string>('All');
+  const [filterCategory] = useState<string>('All');
+  const [filterAssignee] = useState<string>('All');
+  const [searchQuery] = useState<string>('');
   const [sortField, setSortField] = useState<SortField>('severity');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   
@@ -231,9 +231,6 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
   const saveRiskChanges = async () => {
     if (selectedRisk) {
       try {
-        // Find the user by ID if assigneeId is provided
-        const assignee = assigneeId ? teamMembers.find(u => u.id === assigneeId) : null;
-        
         // Prepare update data
         const updateData: any = {
           status: newStatus,
@@ -300,7 +297,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         toast.warning(getUpgradeMessage(user?.organization?.plan, 'maxIssues', risks.length) || 'Issue limit reached. Upgrade in Settings → Billing.');
         return;
       }
-      const createdRisk = await api.risks.create(riskData);
+      await api.risks.create(riskData);
       
       // Note: Audit logging is handled by the backend to prevent duplicate entries
       setNewRisk({ 
