@@ -741,6 +741,95 @@ describe('GraphNeuralNetworkService', () => {
       expect(result).toHaveProperty('validationMetrics');
     });
 
+    it('validates each cross-validation fold on its own disjoint slice of nodes', async () => {
+      const svc = graphNeuralNetworkService as any;
+      const foldResult = {
+        modelId: 'cv',
+        epochs: 1,
+        finalLoss: 0,
+        finalAccuracy: 0,
+        f1Score: 0,
+        aucScore: 0,
+        trainingTimeMs: 0,
+        validationMetrics: { loss: 0, accuracy: 0, f1Score: 0 },
+      };
+      const splitSpy = jest.spyOn(svc, 'trainSingleSplit').mockResolvedValue(foldResult as never);
+      jest.spyOn(svc, 'initGCNWeights').mockImplementation(() => undefined);
+      jest.spyOn(svc, 'initClassifierWeights').mockImplementation(() => undefined);
+
+      const nodeIds = ['n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6'];
+      const results = await svc.crossValidate({}, nodeIds, mockGraph, 3, 1, 0.01, 1, 'cv');
+
+      expect(results).toHaveLength(3);
+      const foldValIndices = splitSpy.mock.calls.map((call: unknown[]) => call[8] as number[]);
+      expect(foldValIndices).toHaveLength(3);
+      for (const fold of foldValIndices) {
+        expect(Array.isArray(fold)).toBe(true);
+        expect(fold.length).toBeGreaterThan(0);
+      }
+      // Every node is validated exactly once across the folds.
+      expect(foldValIndices.flat().sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    });
+
+    it('trains on the nodes outside a supplied validation fold and validates on the fold', async () => {
+      const svc = graphNeuralNetworkService as any;
+      const trainSpy = jest.spyOn(svc, 'trainStep').mockReturnValue({
+        loss: 0.5,
+        accuracy: 1,
+        predictions: [0, 0, 0, 0],
+        probMatrix: [[1, 0, 0, 0], [1, 0, 0, 0]],
+      } as never);
+      const evalSpy = jest.spyOn(svc, 'evaluateStep').mockReturnValue({
+        loss: 0.1,
+        accuracy: 1,
+        predictions: [0, 0],
+        probMatrix: [],
+        labels: [0, 0],
+      } as never);
+      jest.spyOn(svc, 'checkpoint').mockResolvedValue(undefined as never);
+
+      const result = await svc.trainSingleSplit(
+        { labels: null },
+        ['n0', 'n1', 'n2', 'n3'],
+        0,
+        1,
+        0.01,
+        1,
+        'fold-model',
+        false,
+        [1, 3],
+      );
+
+      // Nodes 1 and 3 are held out; only nodes 0 and 2 are trained on.
+      expect(trainSpy.mock.calls[0][2]).toEqual([true, false, true, false]);
+      expect(evalSpy.mock.calls[0][1]).toEqual([1, 3]);
+      expect(result.validationMetrics.loss).toBe(0.1);
+    });
+
+    it('never uses more cross-validation folds than there are nodes', async () => {
+      const svc = graphNeuralNetworkService as any;
+      const foldResult = {
+        modelId: 'cv',
+        epochs: 1,
+        finalLoss: 0,
+        finalAccuracy: 0,
+        f1Score: 0,
+        aucScore: 0,
+        trainingTimeMs: 0,
+        validationMetrics: { loss: 0, accuracy: 0, f1Score: 0 },
+      };
+      const splitSpy = jest.spyOn(svc, 'trainSingleSplit').mockResolvedValue(foldResult as never);
+      jest.spyOn(svc, 'initGCNWeights').mockImplementation(() => undefined);
+      jest.spyOn(svc, 'initClassifierWeights').mockImplementation(() => undefined);
+
+      const results = await svc.crossValidate({}, ['n0', 'n1'], mockGraph, 5, 1, 0.01, 1, 'cv');
+
+      expect(results).toHaveLength(2);
+      const foldValIndices = splitSpy.mock.calls.map((call: unknown[]) => call[8] as number[]);
+      expect(foldValIndices.map((fold: number[]) => fold.length)).toEqual([1, 1]);
+      expect(foldValIndices.flat().sort((a: number, b: number) => a - b)).toEqual([0, 1]);
+    });
+
     it('should handle early stopping', async () => {
       const result = await graphNeuralNetworkService.train(orgId, {
         epochs: 100,

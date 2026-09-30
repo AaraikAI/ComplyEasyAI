@@ -1125,7 +1125,6 @@ class GraphNeuralNetworkService {
    * 3. Run GCN / GAT forward pass to produce embeddings
    * 4. Classify nodes for risk severity
    * 5. Predict links for risk propagation
-   * 6. Detect anomalies via autoencoder
    *
    * Tenancy: the GCN/GAT/classifier weights are a single globally-trained
    * model. Inference here is organization-scoped because the graph and all
@@ -1164,10 +1163,7 @@ class GraphNeuralNetworkService {
       const gcnData = await gcnEmbeddings.array() as number[][];
       gcnEmbeddings.dispose();
 
-      // 4. Anomaly detection via autoencoder on GCN embeddings
-      const anomalyScores = this.computeAnomalyScores(gcnData);
-
-      // 5. Classify each node and build predictions
+      // 4. Classify each node and build predictions
       const predictions: GNNPrediction[] = [];
 
       for (let idx = 0; idx < nodeIds.length; idx++) {
@@ -1408,7 +1404,7 @@ class GraphNeuralNetworkService {
 
     try {
       // Build graph and features from database
-      const { graph, nodeFeatureMap, nodeTypeMap, labels } = await this.buildGraphFromDatabase(organizationId);
+      const { graph, nodeFeatureMap, labels } = await this.buildGraphFromDatabase(organizationId);
       const nodeIds = graph.nodes();
 
       if (nodeIds.length === 0) {
@@ -1499,6 +1495,11 @@ class GraphNeuralNetworkService {
 
   /**
    * Single train/validation split training loop.
+   *
+   * When `fixedValIndices` is supplied (k-fold cross-validation), those node
+   * indices form the validation set and every other node is used for
+   * training; `valSplit` is ignored. Otherwise a random split of `valSplit`
+   * is drawn.
    */
   private async trainSingleSplit(
     featureSet: NodeFeatureSet,
@@ -1509,19 +1510,29 @@ class GraphNeuralNetworkService {
     patience: number,
     modelId: string,
     semiSupervised: boolean,
+    fixedValIndices?: number[],
   ): Promise<GNNTrainingResult> {
     const n = nodeIds.length;
-    const valSize = Math.max(1, Math.floor(n * valSplit));
-    const trainSize = n - valSize;
+    let trainIndices: number[];
+    let valIndices: number[];
 
-    // Graph-aware split: shuffle indices
-    const indices = Array.from({ length: n }, (_, i) => i);
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
+    if (fixedValIndices) {
+      const valSet = new Set(fixedValIndices);
+      valIndices = [...valSet];
+      trainIndices = Array.from({ length: n }, (_, i) => i).filter(i => !valSet.has(i));
+    } else {
+      const valSize = Math.max(1, Math.floor(n * valSplit));
+      const trainSize = n - valSize;
+
+      // Graph-aware split: shuffle indices
+      const indices = Array.from({ length: n }, (_, i) => i);
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+      trainIndices = indices.slice(0, trainSize);
+      valIndices = indices.slice(trainSize);
     }
-    const trainIndices = indices.slice(0, trainSize);
-    const valIndices = indices.slice(trainSize);
 
     // Build training mask for semi-supervised learning
     const trainMask = new Array(n).fill(false);
@@ -1547,7 +1558,7 @@ class GraphNeuralNetworkService {
         this.trainStep(optimizer, featureSet, trainMask, semiSupervised);
 
       // Validation
-      const { loss: valLoss, accuracy: valAcc, predictions: valPreds, probMatrix: valProbMatrix, labels: valLabels } =
+      const { loss: valLoss, accuracy: valAcc, predictions: valPreds, labels: valLabels } =
         this.evaluateStep(featureSet, valIndices);
 
       // Compute metrics
@@ -1753,7 +1764,9 @@ class GraphNeuralNetworkService {
     modelId: string,
   ): Promise<GNNTrainingResult[]> {
     const n = nodeIds.length;
-    const foldSize = Math.floor(n / kFolds);
+    // Never use more folds than nodes, so every fold validates on at least one node.
+    const folds = Math.max(1, Math.min(kFolds, n));
+    const foldSize = Math.floor(n / folds);
     const indices = Array.from({ length: n }, (_, i) => i);
 
     // Shuffle
@@ -1764,28 +1777,28 @@ class GraphNeuralNetworkService {
 
     const results: GNNTrainingResult[] = [];
 
-    for (let fold = 0; fold < kFolds; fold++) {
-      logger.info(`[GNN] Cross-validation fold ${fold + 1}/${kFolds}`);
+    for (let fold = 0; fold < folds; fold++) {
+      logger.info(`[GNN] Cross-validation fold ${fold + 1}/${folds}`);
 
       const valStart = fold * foldSize;
-      const valEnd = fold === kFolds - 1 ? n : valStart + foldSize;
-      const valIndicesSet = new Set(indices.slice(valStart, valEnd));
+      const valEnd = fold === folds - 1 ? n : valStart + foldSize;
+      const foldValIndices = indices.slice(valStart, valEnd);
 
       // Re-initialise weights for each fold
       this.initGCNWeights();
       this.initClassifierWeights();
 
-      const trainMask = Array.from({ length: n }, (_, i) => !valIndicesSet.has(i));
-
+      // Train on every node outside this fold and validate on the fold itself.
       const result = await this.trainSingleSplit(
         featureSet,
         nodeIds,
-        0, // valSplit handled manually
+        0, // ignored: the fold supplies the validation indices
         epochs,
         lr,
         patience,
         `${modelId}_fold${fold}`,
         false,
+        foldValIndices,
       );
 
       results.push(result);
