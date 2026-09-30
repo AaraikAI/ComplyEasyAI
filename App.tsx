@@ -1,14 +1,13 @@
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router';
-import { ComplianceFramework, RiskItem, ComplianceStatus } from './types';
+import { ComplianceFramework, RiskItem } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import { I18nProvider } from './contexts/I18nContext';
 import { QueryProvider } from './contexts/QueryProvider';
-import { normalizePlan } from './constants/tierFeatures';
 import { getLimit, isAtLimit, getUpgradeMessage } from './constants/tierLimits';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
@@ -213,8 +212,6 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
-
-  const userPlan = normalizePlan(user?.organization?.plan);
 
   const loadData = async () => {
     try {
