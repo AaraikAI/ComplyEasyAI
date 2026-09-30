@@ -42,11 +42,8 @@ Do not install `@nomicfoundation/hardhat-toolbox`: 6.x targets Hardhat 2, and
 ### Step 1: Compile the Contract
 
 ```bash
-# Copy contract to Hardhat contracts directory
-cp contracts/ComplianceAuditLog.sol ../../hardhat/contracts/
-
-# Compile with Hardhat
-cd ../../hardhat
+# Compile in place with the committed hardhat.config.js
+cd server/src/blockchain
 npx hardhat compile
 ```
 
