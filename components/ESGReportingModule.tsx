@@ -337,7 +337,7 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   // serverReachable mirrors API load success; when false the DEMO_* fallback fixtures stay visible
-  const [serverReachable, setServerReachable] = useState<boolean>(true);
+  const [, setServerReachable] = useState<boolean>(true);
 
   // ----- Centralised data loader (reusable for refresh) -----
   const loadData = useCallback(async () => {
@@ -1177,74 +1177,6 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
       setIsGeneratingReport(false);
     }
   }, [reportFormType, reportFormStart, reportFormEnd]);
-
-  // ---------------------------------------------------------------------------
-  // Metric CRUD handlers
-  // ---------------------------------------------------------------------------
-  const handleCreateMetric = useCallback(async (data: Partial<ESGMetric>) => {
-    try {
-      const created = await api.modules.esg.createMetric(data);
-      if (created && created.id) {
-        setMetrics(prev => [...prev, created as ESGMetric]);
-      }
-    } catch (err: any) {
-      setLoadError('Failed to create metric.');
-    }
-  }, []);
-
-  const handleUpdateMetric = useCallback(async (id: string, data: Partial<ESGMetric>) => {
-    try {
-      const updated = await api.modules.esg.updateMetric(id, data);
-      if (updated) {
-        setMetrics(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
-      }
-    } catch (err: any) {
-      setLoadError('Failed to update metric.');
-    }
-  }, []);
-
-  const handleDeleteMetric = useCallback(async (id: string) => {
-    try {
-      await api.modules.esg.deleteMetric(id);
-      setMetrics(prev => prev.filter(m => m.id !== id));
-    } catch (err: any) {
-      setLoadError('Failed to delete metric.');
-    }
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // Materiality CRUD handlers
-  // ---------------------------------------------------------------------------
-  const handleCreateMateriality = useCallback(async (data: Partial<MaterialityTopic>) => {
-    try {
-      const created = await api.modules.esg.createMateriality(data);
-      if (created && created.id) {
-        setMaterialityTopics(prev => [...prev, created as MaterialityTopic]);
-      }
-    } catch (err: any) {
-      setLoadError('Failed to create materiality topic.');
-    }
-  }, []);
-
-  const handleUpdateMateriality = useCallback(async (id: string, data: Partial<MaterialityTopic>) => {
-    try {
-      const updated = await api.modules.esg.updateMateriality(id, data);
-      if (updated) {
-        setMaterialityTopics(prev => prev.map(mt => mt.id === id ? { ...mt, ...updated } : mt));
-      }
-    } catch (err: any) {
-      setLoadError('Failed to update materiality topic.');
-    }
-  }, []);
-
-  const handleDeleteMateriality = useCallback(async (id: string) => {
-    try {
-      await api.modules.esg.deleteMateriality(id);
-      setMaterialityTopics(prev => prev.filter(mt => mt.id !== id));
-    } catch (err: any) {
-      setLoadError('Failed to delete materiality topic.');
-    }
-  }, []);
 
   // ---------------------------------------------------------------------------
   // Modals

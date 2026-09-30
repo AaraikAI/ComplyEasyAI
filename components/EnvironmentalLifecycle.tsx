@@ -325,7 +325,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
   const [improvements, setImprovements] = useState<Improvement[]>([]);
   const [reports, setReports] = useState<LCAReport[]>([]);
   const [circularMetrics, setCircularMetrics] = useState<CircularMetrics>(DEMO_CIRCULAR);
-  const [serverReachable, setServerReachable] = useState<boolean>(true);
+  const [, setServerReachable] = useState<boolean>(true);
 
   // Comparative-LCA selectors (compare two real products / versions)
   const [compareA, setCompareA] = useState<string>('');

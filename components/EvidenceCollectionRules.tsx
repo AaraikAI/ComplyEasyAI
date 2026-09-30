@@ -13,7 +13,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Loader2, Search, X, Trash2, Edit3, Eye,
@@ -144,7 +143,6 @@ const getFreshnessColor = (dateStr?: string): { color: string; label: string; bg
 // ── Main Component ──────────────────────────────────────────────────────────
 
 const EvidenceCollectionRules: React.FC = () => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [rules, setRules] = useState<EvidenceRule[]>([]);

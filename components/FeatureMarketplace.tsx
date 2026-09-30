@@ -19,7 +19,6 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { useI18n } from '../contexts/I18nContext';
 import { logger } from '../utils/logger';
@@ -72,10 +71,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function FeatureMarketplace() {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [features, setFeatures] = useState<FeatureAvailability[]>([]);
-  const [subscriptions, setSubscriptions] = useState<FeatureSubscription[]>([]);
+  const [, setSubscriptions] = useState<FeatureSubscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -428,7 +428,7 @@ export const EUCRADashboard: React.FC = () => {
 
   const [showProductModal, setShowProductModal] = useState(false);
   const [showVulnModal, setShowVulnModal] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [, setShowUpdateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<CRAProduct | null>(null);
   const [selectedVuln, setSelectedVuln] = useState<Vulnerability | null>(null);

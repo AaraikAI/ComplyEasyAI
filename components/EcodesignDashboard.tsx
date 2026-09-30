@@ -301,9 +301,7 @@ export const EcodesignDashboard: React.FC = () => {
   const [showPassportModal, setShowPassportModal] = useState(false);
   const [selectedPassport, setSelectedPassport] = useState<DigitalProductPassport | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showLCAModal, setShowLCAModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<EcoProduct | null>(null);
-  const [selectedLCA, setSelectedLCA] = useState<LifecycleAssessment | null>(null);
 
   const [productForm, setProductForm] = useState({
     name: '', category: 'Electronics', manufacturer: '', model: '',
