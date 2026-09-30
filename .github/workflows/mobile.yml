@@ -5,10 +5,12 @@ on:
     branches: [main, develop]
     paths:
       - 'mobile/**'
+      - '.github/workflows/mobile.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'mobile/**'
+      - '.github/workflows/mobile.yml'
   workflow_dispatch:
     inputs:
       platform:
@@ -35,7 +37,9 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '22'
+  # Node 24 LTS, the same major as ci.yml and the Dockerfile. react-native
+  # 0.85 declares engines "^20.19.4 || ^22.13.0 || ^24.3.0 || >= 25.0.0".
+  NODE_VERSION: '24'
 
 jobs:
   # ============================================
