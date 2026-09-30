@@ -266,7 +266,7 @@ class EvidenceTruthLayerService {
       let score = 0.0;
       let confidence = 0.4;
 
-      if (!fileBuffer || fileBuffer.length === 0) {
+      if (fileBuffer.length === 0) {
         return { score: 0.5, confidence: 0.3 };
       }
 
@@ -525,7 +525,6 @@ class EvidenceTruthLayerService {
 
       // Check for metadata inconsistencies
       const hasMetadata = pdfContent.includes('/Metadata');
-      const hasXMP = pdfContent.includes('<?xpacket');
       
       // If PDF has scripts but no metadata, might be tampered
       if (suspiciousMarkers.some(marker => pdfContent.includes(marker)) && !hasMetadata) {
@@ -661,41 +660,49 @@ class EvidenceTruthLayerService {
           }
 
           if (existingKeyPolicy.provider !== 'local' && encryptedPayload) {
-            const decryptedData = await byokService.decryptData(
-              {
-                ciphertext: '',
-                encryptedDataKey: existingKeyPolicy.keyId,
-                iv: '',
-                authTag: '',
-                algorithm: 'aes-256-gcm',
-                provider: existingKeyPolicy.provider as any,
-                keyId: existingKeyPolicy.keyId,
-              },
-              {
-                provider: existingKeyPolicy.provider as any,
-                keyId: existingKeyPolicy.keyId,
-                region: process.env.AWS_REGION || 'us-east-1',
-              },
-              organizationId
-            );
-
-            const keyData = JSON.parse(decryptedData.toString());
-            if (keyData.privateKey && keyData.publicKey) {
-              logger.debug(`[Evidence Truth Layer] Retrieved existing signing key for ${organizationId}`);
-
-              // Log key usage
-              await prisma.keyUsage.create({
-                data: {
-                  organizationId,
+            // BYOK-managed key: open the KMS envelope persisted when the key was
+            // generated. Rows written without an envelope hold no key material
+            // and cannot be recovered, so a new key is generated below.
+            const envelope = (encryptedPayload.metadata as any)?.encryptedKeyEnvelope;
+            if (envelope?.ciphertext && envelope.encryptedDataKey && envelope.iv && envelope.authTag) {
+              const decryptedData = await byokService.decryptData(
+                {
+                  ciphertext: envelope.ciphertext,
+                  encryptedDataKey: envelope.encryptedDataKey,
+                  iv: envelope.iv,
+                  authTag: envelope.authTag,
+                  algorithm: envelope.algorithm || 'AES-256-GCM',
+                  provider: existingKeyPolicy.provider as any,
                   keyId: existingKeyPolicy.keyId,
-                  provider: existingKeyPolicy.provider,
-                  operation: 'retrieve',
-                  success: true,
-                  metadata: { purpose: 'evidence_signing' },
                 },
-              });
+                {
+                  provider: existingKeyPolicy.provider as any,
+                  keyId: existingKeyPolicy.keyId,
+                  region: process.env.AWS_REGION || 'us-east-1',
+                },
+                organizationId
+              );
 
-              return keyData;
+              const keyData = JSON.parse(decryptedData.toString());
+              if (keyData.privateKey && keyData.publicKey) {
+                logger.debug(`[Evidence Truth Layer] Retrieved existing signing key for ${organizationId}`);
+
+                // Log key usage
+                await prisma.keyUsage.create({
+                  data: {
+                    organizationId,
+                    keyId: existingKeyPolicy.keyId,
+                    provider: existingKeyPolicy.provider,
+                    operation: 'retrieve',
+                    success: true,
+                    metadata: { purpose: 'evidence_signing' },
+                  },
+                });
+
+                return keyData;
+              }
+            } else {
+              logger.warn(`[Evidence Truth Layer] Stored signing key ${existingKeyPolicy.keyId} for ${organizationId} has no persisted key envelope; generating a new key`);
             }
           }
         } catch (retrieveError) {
@@ -743,7 +750,9 @@ class EvidenceTruthLayerService {
           },
         });
         
-        // Log key creation in KeyUsage for history
+        // Log key creation in KeyUsage for history, together with the KMS
+        // envelope (AES-256-GCM ciphertext + KMS-wrapped data key) so the key
+        // can be recovered later. Only the KMS key can open the envelope.
         await prisma.keyUsage.create({
           data: {
             organizationId,
@@ -754,6 +763,13 @@ class EvidenceTruthLayerService {
             metadata: {
               purpose: 'evidence_signing',
               keyType: 'RSA-2048',
+              encryptedKeyEnvelope: {
+                ciphertext: encryptedKeyData.ciphertext,
+                encryptedDataKey: encryptedKeyData.encryptedDataKey,
+                iv: encryptedKeyData.iv,
+                authTag: encryptedKeyData.authTag,
+                algorithm: encryptedKeyData.algorithm,
+              },
               createdAt: new Date().toISOString(),
             },
           },
@@ -1488,7 +1504,6 @@ class EvidenceTruthLayerService {
     metadata: { mimeType?: string; size?: number }
   ): boolean {
     let spoofSignals = 0;
-    const totalChecks = 4;
 
     // Signal 1: Abnormally small file size for image
     if (metadata.size && metadata.size < 50000) {
@@ -1550,7 +1565,6 @@ class EvidenceTruthLayerService {
     metadata: { mimeType?: string; size?: number }
   ): boolean {
     let replaySignals = 0;
-    const totalChecks = 4;
 
     // Signal 1: Abnormally small video file
     if (metadata.size && metadata.size < 500000) {
