@@ -67,11 +67,12 @@ import evidenceTruthLayerService from '../../../../services/advanced/evidenceTru
 
 const service = evidenceTruthLayerService as any;
 
+// Short stand-in values: the service only passes these fields through.
 const envelope = {
-  ciphertext: 'Y2lwaGVydGV4dA==',
-  encryptedDataKey: 'd3JhcHBlZC1kZWs=',
-  iv: 'aXYtYnl0ZXM=',
-  authTag: 'dGFnLWJ5dGVz',
+  ciphertext: 'ct',
+  encryptedDataKey: 'dek',
+  iv: 'iv',
+  authTag: 'tag',
   provider: 'aws_kms',
   keyId: 'kms-key-1',
   algorithm: 'AES-256-GCM',
@@ -112,9 +113,10 @@ describe('evidenceTruthLayerService signing-key persistence (BYOK)', () => {
   });
 
   it('recovers a stored key by opening the persisted envelope', async () => {
+    // Stand-ins for the PEM strings; retrieval only requires both to be present.
     const stored = {
-      privateKey: '-----BEGIN PRIVATE KEY-----\nstored\n-----END PRIVATE KEY-----',
-      publicKey: '-----BEGIN PUBLIC KEY-----\nstored\n-----END PUBLIC KEY-----',
+      privateKey: 'priv-pem',
+      publicKey: 'pub-pem',
     };
     (prismaMock.keyRotationPolicy.findFirst as jest.Mock<any>).mockResolvedValue({
       keyId: 'kms-key-1',
