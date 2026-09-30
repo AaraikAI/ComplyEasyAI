@@ -496,10 +496,6 @@ class LivenessDetectionService {
       const eyeW = Math.floor(w * 0.08);
       const eyeH = Math.floor(h * 0.04);
 
-      // Compute actual EAR from pixel intensity (open eye = higher gradient, closed = lower)
-      const leftEyePixels = this.getRegionPixels(gray, w, leftEyeX - eyeW, eyeY - eyeH, eyeW * 2, eyeH * 2);
-      const rightEyePixels = this.getRegionPixels(gray, w, rightEyeX - eyeW, eyeY - eyeH, eyeW * 2, eyeH * 2);
-
       // Generate landmark points around each eye region
       const makeEyePoints = (cx: number, cy: number): Array<{ x: number; y: number }> => [
         { x: cx - eyeW, y: cy },
@@ -586,18 +582,6 @@ class LivenessDetectionService {
       gradSum += Math.abs(gray[yNext * w + cx] - gray[y * w + cx]);
     }
     return gradSum / (range * 2 + 1);
-  }
-
-  private getRegionPixels(gray: Buffer, w: number, x: number, y: number, rw: number, rh: number): number[] {
-    const pixels: number[] = [];
-    for (let dy = 0; dy < rh; dy++) {
-      for (let dx = 0; dx < rw; dx++) {
-        const px = Math.max(0, Math.min(x + dx, w - 1));
-        const py = Math.max(0, Math.min(y + dy, 255));
-        pixels.push(gray[py * w + px]);
-      }
-    }
-    return pixels;
   }
 
   // ── Head Pose Estimation ────────────────────────────────────────────────
@@ -886,7 +870,6 @@ class LivenessDetectionService {
     // Natural blink rate: 15-20 per minute, or ~1 every 3-4 seconds
     // For short clips: at least 1 blink per 5 seconds of video (assuming ~10fps sampling)
     const estimatedDurationSec = frames.length / 10;
-    const expectedBlinks = Math.max(1, estimatedDurationSec / 4);
 
     let blinkScore = 0;
     if (blinks >= 1) {
@@ -916,18 +899,15 @@ class LivenessDetectionService {
     // Calculate total head movement
     let totalYawChange = 0;
     let totalPitchChange = 0;
-    let totalRollChange = 0;
 
     for (let i = 1; i < poses.length; i++) {
       totalYawChange += Math.abs(poses[i].yaw - poses[i - 1].yaw);
       totalPitchChange += Math.abs(poses[i].pitch - poses[i - 1].pitch);
-      totalRollChange += Math.abs(poses[i].roll - poses[i - 1].roll);
     }
 
     const n = poses.length - 1;
     const avgYawChange = totalYawChange / n;
     const avgPitchChange = totalPitchChange / n;
-    const avgRollChange = totalRollChange / n;
 
     // Natural micro-movements (0.5-5 degrees per frame)
     let score = 0;

@@ -6,7 +6,6 @@
 
 import {
   KMSClient,
-  EncryptCommand,
   DecryptCommand,
   GenerateDataKeyCommand,
   DescribeKeyCommand,
@@ -282,8 +281,6 @@ class BYOKService {
     if (process.env.NODE_ENV === 'production' && !process.env.AZURE_CLIENT_ID) {
       throw new AppError('Azure credentials required in production', 400);
     }
-
-    const keyClient = this.getAzureKeyClient(config.vaultUrl);
 
     // Generate random DEK
     const dek = crypto.randomBytes(32);

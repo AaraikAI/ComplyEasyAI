@@ -925,7 +925,6 @@ export class MDMService {
     const [
       totalDevices,
       enrolledCount,
-      activeCount,
       nonCompliantStatusCount,
       lostCount,
       retiredCount,
@@ -948,7 +947,6 @@ export class MDMService {
     ] = await Promise.all([
       prisma.managedDevice.count({ where: { organizationId } }),
       prisma.managedDevice.count({ where: { organizationId, status: 'Enrolled' } }),
-      prisma.managedDevice.count({ where: { organizationId, status: 'Active' } }),
       prisma.managedDevice.count({ where: { organizationId, status: 'NonCompliant' } }),
       prisma.managedDevice.count({ where: { organizationId, status: 'Lost' } }),
       prisma.managedDevice.count({ where: { organizationId, status: 'Retired' } }),

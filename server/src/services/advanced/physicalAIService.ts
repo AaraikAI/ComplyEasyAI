@@ -497,7 +497,7 @@ class PhysicalAIService {
   ): Promise<void> {
     try {
       const startTime = Date.now();
-      const { deviceId, payload, topic } = message;
+      const { deviceId, payload } = message;
 
       // REAL MQTT message processing (not simulated)
       // Update device sensor data and last seen
@@ -1080,9 +1080,9 @@ class PhysicalAIService {
     const monitored = physicalConfig.accessMonitored === true;
     const location = physicalConfig.secureLocation === true;
 
-    let status: EdgeComplianceCheck['status'] = 'warning';
-    let details = 'Physical security status unknown';
-    let severity: EdgeComplianceCheck['severity'] = 'medium';
+    let status: EdgeComplianceCheck['status'];
+    let details: string;
+    let severity: EdgeComplianceCheck['severity'];
 
     if (locked && monitored && location) {
       status = 'pass';
@@ -1115,7 +1115,6 @@ class PhysicalAIService {
     const tamperConfig = sensorData.security?.tamperDetection || {};
     const enabled = tamperConfig.enabled === true;
     const alerting = tamperConfig.alerting === true;
-    const lastCheck = tamperConfig.lastCheck ? new Date(tamperConfig.lastCheck) : null;
 
     let status: EdgeComplianceCheck['status'] = 'warning';
     let details = 'Tamper detection not configured';
@@ -1824,7 +1823,7 @@ class PhysicalAIService {
         signalStrength = await this.measureSignalStrength(device.deviceId, organizationId, device.deviceType);
       }
 
-      let connectionQuality: 'excellent' | 'good' | 'fair' | 'poor' = 'good';
+      let connectionQuality: 'excellent' | 'good' | 'fair' | 'poor';
       if (latency < 50 && signalStrength > 80) {
         connectionQuality = 'excellent';
       } else if (latency < 100 && signalStrength > 60) {
@@ -2495,11 +2494,7 @@ class PhysicalAIService {
         }
       }
 
-      // Fallback: Use system ping if device has IP address
-      const { exec } = require('child_process');
-      const { promisify } = require('util');
-      const execAsync = promisify(exec);
-
+      // Fallback: Use system ping if device has IP address.
       // Real network latency measurement using device APIs (org-scoped)
       const device = await prisma.ioTDevice.findFirst({
         where: { deviceId, organizationId },
@@ -2632,7 +2627,7 @@ class PhysicalAIService {
           const execAsync = promisify(exec);
           
           // Real signal strength measurement using system tools
-          let signalStrength = 75; // Default fallback
+          let signalStrength: number;
           
           // Try macOS (airport command)
           try {
@@ -2837,7 +2832,6 @@ class PhysicalAIService {
 
             // Extract latest affected version from CVE data
             if (response.data?.vulnerabilities?.length > 0) {
-              const cve = response.data.vulnerabilities[0].cve;
               // Note: CVE data doesn't directly provide latest firmware, but indicates if current version has vulnerabilities
               logger.debug(`[Physical AI] Found CVE data for ${deviceType}`);
             }
@@ -2961,20 +2955,8 @@ class PhysicalAIService {
     recommendations: string[];
   }> {
     try {
-      const crypto = require('crypto');
-
       // Verify firmware hash
       const hashVerified = firmware.hash.length === 64 && /^[a-f0-9]{64}$/i.test(firmware.hash);
-
-      // Check known firmware versions from device registry
-      const device = await prisma.auditLog.findFirst({
-        where: {
-          organizationId,
-          action: 'physical_ai.device_registered',
-          details: { contains: deviceId },
-        },
-        orderBy: { timestamp: 'desc' },
-      });
 
       let latestVersion: string | null = null;
       const vulnerabilities: Array<{

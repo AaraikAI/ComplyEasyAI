@@ -267,7 +267,6 @@ class MultimodalIntakeService {
         const imag = fftSamples[i + 1] || 0;
         magnitudes.push(Math.sqrt(real * real + imag * imag));
       }
-      const maxMagnitude = Math.max(...magnitudes);
       const spectralCentroid = magnitudes.reduce((sum, mag, idx) => sum + (idx * mag), 0) / 
                                magnitudes.reduce((sum, mag) => sum + mag, 0);
       
@@ -1229,7 +1228,6 @@ class MultimodalIntakeService {
   }> {
     try {
       const image = await sharp(frameBuffer);
-      const metadata = await image.metadata();
       const stats = await image.stats();
 
       // Calculate brightness

@@ -804,9 +804,6 @@ class FederatedSwarmService {
         return null;
       }
 
-      // Get current round number
-      const round = Math.floor(contributions.length / 10); // Approximate round from contribution count
-
       // Aggregate model weights using SECURE aggregation (cryptographic)
       const aggregatedWeights = await this.secureAggregation(contributions, modelType);
 
@@ -1221,11 +1218,6 @@ class FederatedSwarmService {
     industry: string
   ): Promise<SwarmInsight[]> {
     try {
-      // Get current organization's industry for comparison
-      const currentOrg = await prisma.organization.findUnique({
-        where: { id: organizationId },
-      }) as any;
-
       // Filter insights by industry metadata
       const allInsights = await this.getSwarmInsights(organizationId, [], {
         industry,
@@ -1820,7 +1812,6 @@ class FederatedSwarmService {
       // Restore model weights into the active federated model
       if (targetWeights) {
         // Update the in-memory model cache with restored weights
-        const modelKey = `federated_model_${modelType}`;
         const currentModel = await this.getFederatedModel(modelType);
         if (currentModel) {
           currentModel.aggregatedWeights = targetWeights;
