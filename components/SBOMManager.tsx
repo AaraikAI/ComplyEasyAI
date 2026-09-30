@@ -577,16 +577,6 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
     setRepositories(prev => [...prev, tempRepo]);
   }, []);
 
-  const deleteEntry = useCallback(async (entryId: string) => {
-    try {
-      await api.modules.sbom.deleteEntry(entryId);
-    } catch {
-      // proceed with optimistic removal
-    }
-    setComponents(prev => prev.filter(c => c.id !== entryId));
-    setVulnerabilities(prev => prev.filter(v => v.componentId !== entryId));
-  }, []);
-
   // EU CRA readiness derived from real state: share of generated reports flagged CRA-compliant,
   // falling back to component health (components free of critical/high vulnerabilities) when no
   // reports exist yet. Countdown is computed from the published September 2026 deadline.

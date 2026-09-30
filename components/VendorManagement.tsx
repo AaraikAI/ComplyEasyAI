@@ -85,13 +85,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 const PIE_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
 
-const DATA_ACCESS_LEVELS = [
-  'No PII Access',
-  'Read-Only Customer PII',
-  'Full Database Access',
-  'Payment/Health Data (PCI/HIPAA)',
-];
-
 const VENDOR_CATEGORIES = [
   'Cloud Infrastructure', 'SaaS Application', 'Data Analytics', 'Payment Processing',
   'Marketing', 'HR / Payroll', 'Security', 'Legal / Compliance', 'IT Support', 'Other',
@@ -1152,11 +1145,6 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
   // Main layout
   // ---------------------------------------------------------------------------
   const isSubView = viewMode !== 'dashboard' && viewMode !== 'list';
-  const backLabel = viewMode === 'detail' ? 'Back to List'
-    : viewMode === 'edit' || viewMode === 'create' ? 'Cancel'
-    : viewMode.startsWith('ai-') ? 'Back to Vendor'
-    : viewMode === 'assessment' ? 'Back to Vendor'
-    : 'Back';
 
   const handleSubBack = () => {
     if (viewMode === 'edit' || viewMode === 'create') {

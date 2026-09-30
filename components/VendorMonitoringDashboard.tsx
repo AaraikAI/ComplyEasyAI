@@ -64,7 +64,6 @@ const VendorMonitoringDashboard: React.FC = () => {
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
   const [vendorHistory, setVendorHistory] = useState<Record<string, MonitoringCheck[]>>({});
   const [filterStatus, setFilterStatus] = useState<string>('');
-  const [filterCheckType, setFilterCheckType] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [triggeringVendor, setTriggeringVendor] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);

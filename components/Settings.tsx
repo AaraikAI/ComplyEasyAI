@@ -79,7 +79,6 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
 
   // --- 2FA State ---
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [twoFactorVerified, setTwoFactorVerified] = useState(false);
   const [isLoading2FA, setIsLoading2FA] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
@@ -206,7 +205,6 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       try {
         const status = await api.twoFactor.getStatus();
         setTwoFactorEnabled(status.enabled);
-        setTwoFactorVerified(status.verified);
       } catch (error) {
         logger.error('Failed to load 2FA status:', error);
       }
@@ -1043,7 +1041,6 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                               setIsLoading2FA(true);
                               await api.twoFactor.verifyAndEnable(verificationToken);
                               setTwoFactorEnabled(true);
-                              setTwoFactorVerified(true);
                               setShow2FASetup(false);
                               setVerificationToken('');
                               toast.success('Two-factor authentication enabled successfully!');
@@ -1110,7 +1107,6 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                           setIsLoading2FA(true);
                           await api.twoFactor.disable();
                           setTwoFactorEnabled(false);
-                          setTwoFactorVerified(false);
                           toast.success('Two-factor authentication has been disabled.');
                         } catch (error: any) {
                           logger.error('Failed to disable 2FA:', error);

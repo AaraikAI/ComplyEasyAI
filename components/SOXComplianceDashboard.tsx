@@ -62,7 +62,6 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   const [showCreateTest, setShowCreateTest] = useState(false);
   const [selectedControl, setSelectedControl] = useState<SOXControl | null>(null);
   const [selectedDeficiency, setSelectedDeficiency] = useState<Deficiency | null>(null);
-  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [controls, setControls] = useState<SOXControl[]>([]);
   const [tests, setTests] = useState<TestRecord[]>([]);
@@ -85,7 +84,6 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
 
   const loadData = useCallback(async () => {
     try {
-      setLoading(true);
       setLoadError(null);
       const failedApis: string[] = [];
       const [dashRes, controlsRes, testsRes, assessmentsRes] = await Promise.allSettled([
@@ -121,8 +119,6 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
     } catch (err) {
       setLoadError('Failed to connect to the server. Please check your connection and try again.');
       logger.error('SOXComplianceDashboard data load error:', err);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -283,7 +279,6 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
     });
   }, [controls, categoryFilter, processFilter, searchQuery]);
 
-  const effectivenessColor = (e: Effectiveness) => e === 'Effective' ? 'text-emerald-400 dark:text-signal-good' : e === 'Ineffective' ? 'text-red-400 dark:text-signal-bad' : 'text-amber-400 dark:text-signal-warn';
   const effectivenessBg = (e: Effectiveness) => e === 'Effective' ? 'bg-emerald-500/20 text-emerald-400 dark:bg-signal-good/10 dark:text-signal-good' : e === 'Ineffective' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad' : 'bg-amber-500/20 text-amber-400 dark:bg-signal-warn/10 dark:text-signal-warn';
   const riskBg = (r: RiskLevel) => r === 'High' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad' : r === 'Medium' ? 'bg-amber-500/20 text-amber-400 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-emerald-500/20 text-emerald-400 dark:bg-signal-good/10 dark:text-signal-good';
   const resultBg = (r: TestResult) => r === 'Pass' ? 'bg-emerald-500/20 text-emerald-400 dark:bg-signal-good/10 dark:text-signal-good' : r === 'Fail' ? 'bg-red-500/20 text-red-400 dark:bg-signal-bad/10 dark:text-signal-bad' : r === 'Exception' ? 'bg-amber-500/20 text-amber-400 dark:bg-signal-warn/10 dark:text-signal-warn' : 'bg-slate-500/20 text-slate-400 dark:bg-white/[0.06] dark:text-signal-muted';

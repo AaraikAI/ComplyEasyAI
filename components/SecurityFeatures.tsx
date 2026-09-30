@@ -11,14 +11,12 @@ import {
   Code, 
   CheckCircle, 
   XCircle, 
-  AlertTriangle,
   Loader2,
   Plus,
   Trash2,
   RotateCw
 } from 'lucide-react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { toast } from 'sonner';
 import { useSubmitGuard } from '../hooks/useSubmitGuard';
@@ -41,12 +39,8 @@ const generateProvingSecret = (): string => {
 };
 
 const SecurityFeatures: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'zero-trust' | 'zkp' | 'byok' | 'compliance-as-code'>('zero-trust');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if there's a tab to navigate to from chatbot
@@ -102,19 +96,6 @@ const SecurityFeatures: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           <p className="text-slate-600 mt-1">Advanced security and compliance management</p>
         </div>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-            <span className="text-red-800">{error}</span>
-          </div>
-        )}
-        {success && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <span className="text-green-800">{success}</span>
-          </div>
-        )}
-
         {/* Tabs */}
         <div className="mb-6 flex gap-2 overflow-x-auto">
           {tabs.map((tab) => {
@@ -150,7 +131,6 @@ const SecurityFeatures: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
 // Zero Trust Tab
 const ZeroTrustTab: React.FC = () => {
-  const { user } = useAuth();
   const { t } = useI18n();
   const [policies, setPolicies] = useState<any[]>([]);
   const [devices, setDevices] = useState<any[]>([]);
@@ -472,7 +452,7 @@ const ZeroTrustTab: React.FC = () => {
 
 // Zero-Knowledge Proofs Tab
 const ZeroKnowledgeProofsTab: React.FC = () => {
-  const [proofs, setProofs] = useState<any[]>([]);
+  const [, setProofs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeOperation, setActiveOperation] = useState<'compliance' | 'credential' | 'ownership'>('compliance');
   const [complianceForm, setComplianceForm] = useState({
@@ -1226,7 +1206,7 @@ const BYOKTab: React.FC = () => {
 const ComplianceAsCodeTab: React.FC = () => {
   const { t } = useI18n();
   const [policies, setPolicies] = useState<any[]>([]);
-  const [reports, setReports] = useState<any[]>([]);
+  const [, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [policyForm, setPolicyForm] = useState({

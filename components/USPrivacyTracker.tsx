@@ -373,7 +373,6 @@ export const USPrivacyTracker: React.FC = () => {
     return () => clearTimeout(timer);
   }, [laws, gaps, tasks, isLoading, serverReachable]);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showCompareModal, setShowCompareModal] = useState(false);
   const [selectedLaw, setSelectedLaw] = useState<StatePrivacyLaw | null>(null);
   const [compareStates, setCompareStates] = useState<string[]>(['CA', 'CO', 'TX']);
   const [expandedState, setExpandedState] = useState<string | null>(null);
