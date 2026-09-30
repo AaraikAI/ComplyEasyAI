@@ -461,7 +461,8 @@ describe('AIRMFService', () => {
       );
 
       const { changes } = (AuditLogger.log as jest.Mock).mock.calls[0][0].metadata;
-      expect(changes).toEqual({ useCase: { old: undefined, new: 'Credit scoring' } });
+      // toStrictEqual, unlike toEqual, fails when the `old` key is absent instead of undefined.
+      expect(changes).toStrictEqual({ useCase: { old: undefined, new: 'Credit scoring' } });
     });
   });
 
