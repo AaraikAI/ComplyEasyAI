@@ -44,8 +44,13 @@ npx hardhat run scripts/deploy.js --network polygon
 ### Prerequisites
 
 ```bash
-npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox
+# Installs the Hardhat 3 toolchain pinned in package-lock.json
+# (hardhat + @nomicfoundation/hardhat-ethers)
+npm ci
 ```
+
+Do not install `@nomicfoundation/hardhat-toolbox`: 6.x targets Hardhat 2, and
+7.0.0 (its `latest` tag) exits the process when imported.
 
 ### Compile
 
@@ -66,18 +71,24 @@ node -e "console.log(require('./artifacts/contracts/ComplianceAuditLog.sol/Compl
 Edit `hardhat.config.js`:
 
 ```javascript
-module.exports = {
+// hardhat.config.js is an ES module; Hardhat 3 network entries need a `type`
+import { configVariable, defineConfig } from "hardhat/config";
+
+export default defineConfig({
+  // ...existing plugins / solidity / paths...
   networks: {
     mumbai: {
+      type: "http",
       url: "https://rpc-mumbai.maticvigil.com",
-      accounts: [process.env.BLOCKCHAIN_PRIVATE_KEY]
+      accounts: [configVariable("BLOCKCHAIN_PRIVATE_KEY")]
     },
     polygon: {
+      type: "http",
       url: "https://polygon-rpc.com",
-      accounts: [process.env.BLOCKCHAIN_PRIVATE_KEY]
+      accounts: [configVariable("BLOCKCHAIN_PRIVATE_KEY")]
     }
   }
-};
+});
 ```
 
 Add to `.env`:

@@ -40,68 +40,31 @@ fi
 echo ""
 echo "Step 1/4: Installing Hardhat and dependencies..."
 
-# Create package.json if it doesn't exist
-if [ ! -f "package.json" ]; then
-    cat > package.json << 'EOF'
-{
-  "name": "complyeasy-blockchain",
-  "version": "1.0.0",
-  "type": "module",
-  "private": true,
-  "description": "Smart contracts for ComplyEasyAI",
-  "scripts": {
-    "compile": "hardhat compile",
-    "test": "hardhat test"
-  }
-}
-EOF
-else
-    # Update existing package.json to include type: module if not present
-    if ! grep -q '"type": "module"' package.json; then
-        # Use node to add type: module to package.json
-        node -e "
-        const fs = require('fs');
-        const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-        pkg.type = 'module';
-        fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-        "
-    fi
+if [ ! -f "package.json" ] || [ ! -f "package-lock.json" ]; then
+    echo -e "${RED}Error: package.json or package-lock.json not found${NC}"
+    exit 1
 fi
 
-# Install Hardhat and dependencies
-npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox @openzeppelin/contracts &> /dev/null
+# Install exactly what package-lock.json pins. An unpinned install here would
+# pull @nomicfoundation/hardhat-toolbox@latest (7.0.0), which exits the process
+# as soon as it is imported.
+npm ci
 echo -e "${GREEN}✓ Dependencies installed${NC}"
 
-# Create Hardhat config
 echo ""
-echo "Step 2/4: Configuring Hardhat..."
+echo "Step 2/4: Checking Hardhat configuration..."
 
-cat > hardhat.config.js << 'EOF'
-import "@nomicfoundation/hardhat-toolbox";
+if [ ! -f "hardhat.config.js" ]; then
+    echo -e "${RED}Error: hardhat.config.js not found${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Using the committed hardhat.config.js${NC}"
 
-export default {
-  solidity: {
-    version: "0.8.20",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200
-      }
-    }
-  },
-  paths: {
-    sources: "./contracts",
-    artifacts: "./artifacts"
-  }
-};
-EOF
-
-echo -e "${GREEN}✓ Hardhat configured${NC}"
-
-# Compile contract
+# Compile contract. A failed compile stops the script (set -e) instead of
+# falling through to extract a previously committed artifact.
 echo ""
 echo "Step 3/4: Compiling smart contract..."
-npx hardhat compile 2>&1 | grep -v "warning" || true
+npx hardhat compile
 echo -e "${GREEN}✓ Contract compiled${NC}"
 
 # Extract bytecode
