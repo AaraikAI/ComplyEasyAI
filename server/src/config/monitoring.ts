@@ -155,7 +155,7 @@ export function initializeAPM(): void {
   // Elastic APM
   if (process.env.ELASTIC_APM_SERVER_URL) {
     try {
-      const apm = require('elastic-apm-node').start({
+      require('elastic-apm-node').start({
         serviceName: config.apm.serviceName,
         serviceVersion: config.apm.serviceVersion,
         serverUrl: process.env.ELASTIC_APM_SERVER_URL,

@@ -7,7 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { validateBody } from '../middleware/validate';
 import {
@@ -29,9 +29,6 @@ router.use(authenticate);
 
 /** Number of days after which evidence is considered stale */
 const EVIDENCE_STALE_DAYS = 90;
-
-/** Average working days to remediate a single gap */
-const DAYS_PER_GAP = 5;
 
 interface GapItem {
   controlId: string;

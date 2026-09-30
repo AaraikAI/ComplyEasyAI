@@ -12,9 +12,6 @@ import {
   validatePaginationParams,
   getPaginationFromQuery,
   buildPaginatedResponse,
-  DEFAULT_PAGE_SIZE,
-  MAX_PAGE_SIZE,
-  MIN_PAGE_SIZE,
 } from './pagination';
 import logger from '../config/logger';
 

@@ -109,6 +109,31 @@ describe('acosController — Evidence Truth additions', () => {
     res = buildRes();
   });
 
+  describe('analyzeEvidence / reanalyzeEvidence', () => {
+    it.each([
+      ['analyzeEvidence' as const, 'analyzeEvidence' as const],
+      ['reanalyzeEvidence' as const, 'reanalyzeEvidence' as const],
+    ])('%s keeps the status of a client error raised by the service', async (handler, serviceMethod) => {
+      req.params = { evidenceId: 'ev-1' };
+      req.file = fakeFile();
+      mockEvidenceTruth[serviceMethod].mockRejectedValue(
+        new AppError('Evidence file exceeds the 100 MB limit', 413) as never
+      );
+      await expect(controller[handler](req as Request, res as Response)).rejects.toMatchObject({
+        statusCode: 413,
+      });
+    });
+
+    it('wraps generic service errors as AppError 500', async () => {
+      req.params = { evidenceId: 'ev-1' };
+      req.file = fakeFile();
+      mockEvidenceTruth.analyzeEvidence.mockRejectedValue(new Error('boom') as never);
+      await expect(controller.analyzeEvidence(req as Request, res as Response)).rejects.toMatchObject({
+        statusCode: 500,
+      });
+    });
+  });
+
   describe('analyzeAndAnchor', () => {
     it('400s when no file is provided', async () => {
       req.params = { evidenceId: 'ev-1' };

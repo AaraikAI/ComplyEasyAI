@@ -1359,11 +1359,6 @@ export const updateChecklistSchema = Joi.object({
 // ROPA (Records of Processing Activities)
 // ============================================================================
 
-const lawfulBases = [
-  'Consent', 'Contract', 'LegalObligation',
-  'VitalInterests', 'PublicTask', 'LegitimateInterests',
-] as const;
-
 export const createProcessingActivitySchema = Joi.object({
   activityName: Joi.string().required().min(1).max(500).trim(),
   activityDescription: Joi.string().max(5000).allow('', null).optional(),

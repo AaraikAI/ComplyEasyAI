@@ -69,10 +69,6 @@ interface TicketingConfig {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getProviderForOrg(config: TicketingConfig): TicketingProvider {
-  return config.provider;
-}
-
 function sanitizeConfigForResponse(config: any): any {
   if (!config) return null;
   const sanitized = { ...config };
@@ -553,6 +549,7 @@ router.post(
             severity: severity || 'Medium',
             framework,
             controlId,
+            issueType: issueType || undefined,
           });
           break;
         }
@@ -1252,9 +1249,10 @@ router.post(
     const results: Record<string, any> = {};
 
     try {
-      const providers = provider
-        ? [provider]
-        : ['jira', 'servicenow', 'azure_devops'] as TicketingProvider[];
+      // Select from the fixed provider list rather than echoing the request
+      // value, so `results` is only ever keyed by a known provider name.
+      const allProviders: TicketingProvider[] = ['jira', 'servicenow', 'azure_devops'];
+      const providers = allProviders.filter((p) => !provider || p === provider);
 
       for (const p of providers) {
         const integration = await prisma.integration.findUnique({

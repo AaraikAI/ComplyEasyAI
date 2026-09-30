@@ -315,6 +315,7 @@ class ACOSController {
       res.json(analysis);
     } catch (error) {
       logger.error('Analyze evidence error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError('Failed to analyze evidence', 500);
     }
   };
@@ -357,6 +358,7 @@ class ACOSController {
       res.json(analysis);
     } catch (error) {
       logger.error('Re-analyze evidence error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError('Failed to re-analyze evidence', 500);
     }
   };
@@ -419,7 +421,6 @@ class ACOSController {
 
   verifyFileHash: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       // Multipart request body may be absent when no file/fields are sent; default safely.
       const { storedHash } = (req.body ?? {}) as { storedHash?: string };
       const file = req.file;
@@ -1252,6 +1253,7 @@ class ACOSController {
       res.json({ success: true });
     } catch (error) {
       logger.error('Mark false positive error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError('Failed to mark false positive', 500);
     }
   };
@@ -3115,7 +3117,6 @@ class ACOSController {
   // Homomorphic AI
   generateHomomorphicKeys: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       const { scheme = 'CKKS', securityLevel = 128 } = req.body;
       
       if (!['BFV', 'CKKS'].includes(scheme)) {
@@ -3188,7 +3189,6 @@ class ACOSController {
 
   performEncryptedLinearRegression: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const authReq = req as AuthRequest;
       const { encryptedFeatures, weights, publicKey, relinKeys } = req.body;
       
       if (!encryptedFeatures || !encryptedFeatures.ciphertext) {

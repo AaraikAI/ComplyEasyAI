@@ -1,7 +1,6 @@
 import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import logger from '../config/logger';
-import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { escapeCsvCell } from './csvExport';
 

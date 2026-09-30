@@ -4,9 +4,11 @@
  */
 
 const PATTERNS = {
-  // Domain part written as labels separated by dots so the trailing `\.[a-zA-Z]{2,}`
-  // does not overlap a preceding `[...]+` that also matches a dot (avoids polynomial backtracking).
-  EMAIL: /[a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/g,
+  // Every repetition is bounded (RFC 5321 limits: 64-char local part, 63-char
+  // labels; at most 10 labels and a 24-letter TLD). An unbounded local part made
+  // each start position rescan the rest of a run such as `%%%...%`, which is
+  // quadratic in the input length; with fixed bounds the scan is linear.
+  EMAIL: /[a-zA-Z0-9._%+-]{1,64}@(?:[a-zA-Z0-9-]{1,63}\.){1,10}[a-zA-Z]{2,24}/g,
   PHONE: /(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g,
   SSN: /\d{3}-\d{2}-\d{4}/g,
   CREDIT_CARD: /\b(?:\d{4}[ -]?){3}\d{4}\b/g,
@@ -77,8 +79,10 @@ export function rehydratePII(text: string, map: Map<string, string>): string {
   let originalText = text;
 
   map.forEach((value, token) => {
-    const escapedToken = token.replace(/[[\]]/g, '\\$&');
-    originalText = originalText.replace(new RegExp(escapedToken, 'g'), value);
+    if (!token) return;
+    // Literal split/join: no regex is built from the token, and `$` sequences
+    // in the restored value are not treated as replacement patterns.
+    originalText = originalText.split(token).join(value);
   });
 
   return originalText;

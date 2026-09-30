@@ -351,6 +351,18 @@ describe('NeuroSymbolicAIService', () => {
   });
 
   // ===================== error handling =====================
+  describe('buildFactsFromContext', () => {
+    it('should skip context keys that shadow built-in object members', () => {
+      const context = JSON.parse('{"tier": "growth", "__proto__": "x", "constructor": "y", "toString": "z"}');
+      const facts = (neuroSymbolicAIService as any).buildFactsFromContext(context);
+
+      expect(facts.tier).toBe('growth');
+      expect(Object.prototype.hasOwnProperty.call(facts, 'constructor')).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(facts, 'toString')).toBe(false);
+      expect(Object.getPrototypeOf(facts)).toBe(Object.prototype);
+    });
+  });
+
   describe('error handling', () => {
     it('should handle database error in performHybridReasoning gracefully', async () => {
       (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockRejectedValue(new Error('DB error'));

@@ -1951,8 +1951,18 @@ class PATValidationService {
         return { valid: false, error: 'PayPal API token must be in format clientId:clientSecret' };
       }
 
-      // Determine environment
-      const isSandbox = baseUrl?.includes('sandbox') || baseUrl?.includes('sandbox.paypal.com');
+      // Determine environment from the base URL's hostname (PayPal sandbox hosts
+      // live under sandbox.paypal.com, e.g. api-m.sandbox.paypal.com).
+      let isSandbox = false;
+      if (baseUrl) {
+        try {
+          const host = new URL(baseUrl).hostname.toLowerCase();
+          isSandbox = host === 'sandbox.paypal.com' || host.endsWith('.sandbox.paypal.com');
+        } catch {
+          logger.warn('PayPal base URL could not be parsed; using the production endpoint');
+          isSandbox = false;
+        }
+      }
       const apiUrl = isSandbox 
         ? 'https://api.sandbox.paypal.com/v1/oauth2/token'
         : 'https://api.paypal.com/v1/oauth2/token';

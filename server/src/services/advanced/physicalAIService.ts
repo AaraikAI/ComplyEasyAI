@@ -2867,12 +2867,14 @@ class PhysicalAIService {
             // Parse version from response (format varies by API)
             if (response.data) {
               let version: string | undefined;
-              
-              if (apiUrl.includes('github.com')) {
+              // Pick the response parser from the endpoint's exact hostname.
+              const apiHost = new URL(apiUrl).hostname;
+
+              if (apiHost === 'api.github.com') {
                 // GitHub API format
                 version = response.data.tag_name || response.data.name;
                 if (version?.startsWith('v')) version = version.substring(1);
-              } else if (apiUrl.includes('particle.io')) {
+              } else if (apiHost === 'api.particle.io') {
                 // Particle API format
                 version = response.data.version;
               } else {

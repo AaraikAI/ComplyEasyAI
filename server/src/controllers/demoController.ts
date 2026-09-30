@@ -14,6 +14,25 @@ import webhookService from '../services/webhookService';
 import emailService from '../services/emailService';
 import { DemoRequestStatus } from '../generated/prisma/client';
 
+/** Columns the admin demo-request list may be sorted by. */
+const DEMO_REQUEST_SORT_FIELDS: ReadonlySet<string> = new Set([
+  'createdAt',
+  'updatedAt',
+  'scheduledAt',
+  'completedAt',
+  'convertedAt',
+  'status',
+  'email',
+  'company',
+  'firstName',
+  'lastName',
+  'interestedTier',
+  'companySize',
+  'industry',
+  'country',
+  'source',
+]);
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -149,13 +168,19 @@ class DemoController {
 
       const where: any = {};
 
-      if (status) {
+      // Query values may arrive as nested objects (`?status[not]=x`); only
+      // plain strings are used as equality filters.
+      if (typeof status === 'string' && status) {
         where.status = status;
       }
 
-      if (tier) {
+      if (typeof tier === 'string' && tier) {
         where.interestedTier = tier;
       }
+
+      const orderField =
+        typeof sortBy === 'string' && DEMO_REQUEST_SORT_FIELDS.has(sortBy) ? sortBy : 'createdAt';
+      const orderDirection: 'asc' | 'desc' = sortOrder === 'asc' ? 'asc' : 'desc';
 
       if (startDate || endDate) {
         where.createdAt = {};
@@ -172,7 +197,7 @@ class DemoController {
           where,
           skip,
           take,
-          orderBy: { [sortBy as string]: sortOrder },
+          orderBy: { [orderField]: orderDirection },
         }),
         prisma.demoRequest.count({ where }),
       ]);

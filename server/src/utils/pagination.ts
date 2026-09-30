@@ -3,6 +3,8 @@
  * Production-ready pagination helpers for database queries and API responses
  */
 
+import { isSafeSortField } from './safeObjectKey';
+
 export interface PaginationParams {
   page?: number;
   pageSize?: number;
@@ -57,11 +59,14 @@ export function validatePaginationParams(params: PaginationParams): {
   const skip = page * pageSize;
   const take = pageSize;
 
-  // Build orderBy if sortBy is provided
+  // Build orderBy only from a plain identifier; anything else (operators,
+  // dotted paths, `__proto__`/`constructor`, ...) is ignored and the query
+  // falls back to its default ordering.
   let orderBy: any = undefined;
-  if (params.sortBy) {
+  const sortBy = params.sortBy;
+  if (isSafeSortField(sortBy)) {
     orderBy = {
-      [params.sortBy]: params.sortOrder || 'desc',
+      [sortBy]: params.sortOrder === 'asc' ? 'asc' : 'desc',
     };
   }
 

@@ -121,6 +121,23 @@ describe('Bulk Operations API — Contract Tests', () => {
       expect(res.body.data).toHaveProperty('data');
     });
 
+    it('should select only scalar columns named in fields', async () => {
+      prismaMock.riskItem.findMany.mockResolvedValue([{ id: 'r-1', title: 'Risk' }]);
+
+      const res = await request(app)
+        .post('/api/bulk/export')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          ...validBulkBody,
+          fields: ['title', 'severity', 'organization', 'assignedTo', '__proto__', 'constructor', 'notAColumn'],
+        });
+
+      expect(res.status).toBe(200);
+      const args = (prismaMock.riskItem.findMany as jest.Mock<any>).mock.calls[0][0];
+      expect(args.select).toEqual({ id: true, title: true, severity: true });
+      expect(Object.getPrototypeOf(args.select)).toBe(Object.prototype);
+    });
+
     it('should return 401 without auth', async () => {
       const res = await request(app).post('/api/bulk/export').send(validBulkBody);
       expect(res.status).toBe(401);

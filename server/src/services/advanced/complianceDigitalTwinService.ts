@@ -11,6 +11,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { isSafeObjectKey } from '../../utils/safeObjectKey';
 
 export interface SimulationScenario {
   id: string;
@@ -1514,23 +1515,24 @@ class ComplianceDigitalTwinService {
     withCorrelations: boolean = false
   ): Record<string, any> {
     const varied = { ...parameters };
+    // Parameter names are caller-supplied: only vary the object's own keys and
+    // never write through names that shadow built-in members (`__proto__`, ...).
+    const numericKeys = Object.keys(varied).filter((key) => typeof varied[key] === 'number');
 
     // Add ±10% random variation to numeric parameters
-    for (const key in varied) {
-      if (typeof varied[key] === 'number') {
-        const variation = varied[key] * 0.1 * (rng() * 2 - 1); // ±10%
-        varied[key] = varied[key] + variation;
-      }
+    for (const key of numericKeys) {
+      if (!isSafeObjectKey(key)) continue;
+      const variation = varied[key] * 0.1 * (rng() * 2 - 1); // ±10%
+      varied[key] = varied[key] + variation;
     }
 
     // If correlations are enabled, maintain relationships between variables
     if (withCorrelations && Object.keys(varied).length > 1) {
       // Apply correlated variation (simplified - can be enhanced with a proper correlation matrix)
       const correlationFactor = rng() * 0.5 - 0.25; // -0.25 to 0.25
-      for (const key in varied) {
-        if (typeof varied[key] === 'number') {
-          varied[key] = varied[key] * (1 + correlationFactor);
-        }
+      for (const key of numericKeys) {
+        if (!isSafeObjectKey(key)) continue;
+        varied[key] = varied[key] * (1 + correlationFactor);
       }
     }
 
@@ -1543,8 +1545,9 @@ class ComplianceDigitalTwinService {
   private addRandomVariationSimple(parameters: Record<string, any>): Record<string, any> {
     const varied = { ...parameters };
 
-    // Add ±10% random variation to numeric parameters
-    for (const key in varied) {
+    // Add ±10% random variation to numeric parameters (own, safe keys only)
+    for (const key of Object.keys(varied)) {
+      if (!isSafeObjectKey(key)) continue;
       if (typeof varied[key] === 'number') {
         const variation = varied[key] * 0.1 * (Math.random() * 2 - 1); // ±10%
         varied[key] = varied[key] + variation;

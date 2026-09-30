@@ -15,10 +15,12 @@ if [ -z "${CLIENT_URL:-}" ] && [ -n "${CLOUDFRONT_DOMAIN:-}" ]; then
   echo "[entrypoint] CLIENT_URL set to ${CLIENT_URL}"
 fi
 
-# Run Prisma migrations (optional — controlled by RUN_MIGRATIONS env var)
+# Run Prisma migrations (optional — controlled by RUN_MIGRATIONS env var).
+# The runtime image ships no npm/npx, so the locked Prisma CLI from
+# node_modules is run with node directly.
 if [ "${RUN_MIGRATIONS:-}" = "true" ]; then
   echo "[entrypoint] Running Prisma migrations against Supabase..."
-  npx prisma migrate deploy
+  node /app/server/node_modules/prisma/build/index.js migrate deploy
   echo "[entrypoint] Migrations complete"
 fi
 
