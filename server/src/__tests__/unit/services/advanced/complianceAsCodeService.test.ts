@@ -172,6 +172,14 @@ describe('ComplianceAsCodeService', () => {
       expect(updateArg.where.id).toBe('policy-1');
       expect(updateArg.data.rego).toContain('package compliance["policy-1"]');
       expect(updateArg.data.rego).not.toContain('package complyeasy.data_protection');
+
+      // The local backup copy lands inside the policies dir, owner-only.
+      const fs = require('fs');
+      const path = require('path');
+      const [backupPath, , backupOptions] = fs.writeFileSync.mock.calls[0];
+      expect(path.dirname(backupPath)).toBe(path.resolve((complianceAsCodeService as any).policiesPath));
+      expect(path.basename(backupPath)).toBe('policy-1.rego');
+      expect(backupOptions).toEqual({ encoding: 'utf-8', mode: 0o600 });
     });
 
     it('should throw on duplicate policy name', async () => {
@@ -461,6 +469,32 @@ describe('ComplianceAsCodeService', () => {
       await expect(
         complianceAsCodeService.deletePolicy('nonexistent', orgId)
       ).rejects.toThrow();
+    });
+
+    it('removes the backup file of the ownership-checked record, inside the policies dir', async () => {
+      const fs = require('fs');
+      const path = require('path');
+
+      await complianceAsCodeService.deletePolicy('policy-1', orgId);
+
+      expect(fs.rmSync).toHaveBeenCalledTimes(1);
+      const [target, options] = fs.rmSync.mock.calls[0];
+      const policiesDir = path.resolve((complianceAsCodeService as any).policiesPath);
+      expect(path.dirname(target)).toBe(policiesDir);
+      expect(path.basename(target)).toBe('policy-1.rego');
+      expect(options).toEqual({ force: true });
+      expect(fs.unlinkSync).not.toHaveBeenCalled();
+    });
+
+    it('never touches the filesystem for an id that is not a safe file name', async () => {
+      const fs = require('fs');
+      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce({
+        ...mockPolicy,
+        id: '../../etc/passwd',
+      });
+
+      await expect(complianceAsCodeService.deletePolicy('policy-1', orgId)).rejects.toThrow();
+      expect(fs.rmSync).not.toHaveBeenCalled();
     });
   });
 

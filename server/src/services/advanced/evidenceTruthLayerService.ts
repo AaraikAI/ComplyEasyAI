@@ -21,12 +21,21 @@ import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
+import {
+  createPrivateTempDir,
+  removePrivateTempDir,
+  PRIVATE_TEMP_FILE_OPTIONS,
+} from '../../utils/privateTempDir';
 
 // Largest evidence payload analysed in-process. Matches the upload limit on the
 // evidence routes (routes/acos.ts multer `limits.fileSize`).
 const MAX_EVIDENCE_BYTES = 100 * 1024 * 1024;
 // Upper bound on the number of files one bulk-analysis request may carry.
 const MAX_BULK_EVIDENCE_FILES = 50;
+// Longest stretch of video (seconds) sampled for deepfake segments. The
+// duration is read from the uploaded container's own metadata, which the
+// uploader controls, and one frame is extracted per 2 s step of it.
+export const MAX_SEGMENT_ANALYSIS_SECONDS = 4 * 60 * 60;
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -394,6 +403,7 @@ class EvidenceTruthLayerService {
     fileBuffer: Buffer,
     anomalyScore: number
   ): Promise<Array<{ start: number; end: number; score: number }>> {
+    let tempDir: string | null = null;
     try {
       const segments: Array<{ start: number; end: number; score: number }> = [];
       
@@ -402,28 +412,25 @@ class EvidenceTruthLayerService {
         return [];
       }
 
-      const tempVideoPath = path.join(
-        __dirname,
-        '../../../temp',
-        `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`
-      );
-      const tempDir = path.dirname(tempVideoPath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
+      // Private per-call directory (0700, unpredictable name): sampled frames
+      // cannot collide with, or be replaced by, another request's frames.
+      tempDir = await createPrivateTempDir('evidence-video');
+      const tempVideoPath = path.join(tempDir, 'input.mp4');
+      await writeFile(tempVideoPath, fileBuffer, PRIVATE_TEMP_FILE_OPTIONS);
 
-      await writeFile(tempVideoPath, fileBuffer);
-
-      // Get video duration
-      const duration = await new Promise<number>((resolve, reject) => {
+      // Get video duration, bounded: a crafted container can declare any length.
+      const probedDuration = await new Promise<number>((resolve, reject) => {
         ffmpeg.ffprobe(tempVideoPath, (err, metadata) => {
           if (err) {
             reject(err);
           } else {
-            resolve(metadata.format.duration || 0);
+            resolve(Number(metadata.format.duration) || 0);
           }
         });
       });
+      const duration = Number.isFinite(probedDuration)
+        ? Math.min(probedDuration, MAX_SEGMENT_ANALYSIS_SECONDS)
+        : 0;
 
       // Sample frames every 2 seconds for deepfake analysis
       const frameInterval = 2;
@@ -498,6 +505,8 @@ class EvidenceTruthLayerService {
         return [{ start: 0, end: 10, score: anomalyScore }];
       }
       return [];
+    } finally {
+      await removePrivateTempDir(tempDir);
     }
   }
 

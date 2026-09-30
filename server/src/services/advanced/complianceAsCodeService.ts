@@ -153,8 +153,8 @@ class ComplianceAsCodeService {
       }
 
       // Also save policy file locally for OPA (backup).
-      const policyFile = path.join(this.policiesPath, `${this.assertSafeFileId(persisted.id)}.rego`);
-      fs.writeFileSync(policyFile, normalizedRego, 'utf-8');
+      const policyFile = this.policyFilePath(persisted.id);
+      fs.writeFileSync(policyFile, normalizedRego, { encoding: 'utf-8', mode: 0o600 });
 
       logger.info(`Created compliance policy: ${this.sanitizeForLog(policy.name)} (${persisted.id})`);
 
@@ -264,6 +264,20 @@ class ComplianceAsCodeService {
       throw new AppError('Invalid policy identifier', 400);
     }
     return id;
+  }
+
+  /**
+   * Absolute path of the local backup file for a policy. The id must pass
+   * assertSafeFileId and the resolved path must stay directly inside
+   * policiesPath, so no id can address a file anywhere else.
+   */
+  private policyFilePath(id: string): string {
+    const base = path.resolve(this.policiesPath);
+    const filePath = path.resolve(base, `${this.assertSafeFileId(id)}.rego`);
+    if (path.dirname(filePath) !== base || !filePath.startsWith(base + path.sep)) {
+      throw new AppError('Invalid policy identifier', 400);
+    }
+    return filePath;
   }
 
   /** Strip CR/LF/tabs from a value before interpolating it into a log line. */
@@ -1373,8 +1387,8 @@ allow {
       await this.uploadPolicyToOPA(persisted.id, normalizedRego);
 
       // Update file
-      const policyFile = path.join(this.policiesPath, `${this.assertSafeFileId(persisted.id)}.rego`);
-      fs.writeFileSync(policyFile, normalizedRego, 'utf-8');
+      const policyFile = this.policyFilePath(persisted.id);
+      fs.writeFileSync(policyFile, normalizedRego, { encoding: 'utf-8', mode: 0o600 });
 
       logger.info(`Updated compliance policy: ${policyId} -> version ${newVersion}`);
 
@@ -1460,10 +1474,10 @@ allow {
         throw new AppError('Compliance policy not found', 404);
       }
 
-      const policyFile = path.join(this.policiesPath, `${this.assertSafeFileId(policyId)}.rego`);
-      if (fs.existsSync(policyFile)) {
-        fs.unlinkSync(policyFile);
-      }
+      // Remove the local backup copy. The path comes from the id of the
+      // ownership-checked record (not the request), and force: true makes this
+      // a no-op when the file is absent, so there is no check-then-delete race.
+      fs.rmSync(this.policyFilePath(existingPolicy.id), { force: true });
 
       // Delete from OPA - Required in production
       const deleteUrl = `${this.opaEndpoint}/v1/policies/${encodeURIComponent(policyId)}`;

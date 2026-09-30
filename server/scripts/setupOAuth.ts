@@ -204,9 +204,16 @@ async function saveToEnv() {
 
   const envPath = path.join(__dirname, '../.env');
 
-  let existingEnv = '';
-  if (fs.existsSync(envPath)) {
-    existingEnv = fs.readFileSync(envPath, 'utf-8');
+  // Read and rewrite .env through a single file descriptor, so the file that is
+  // written is the file that was read (no exists-then-write race on the path).
+  // A newly created .env is owner-only (0600) because it holds client secrets.
+  const fd = fs.openSync(envPath, fs.constants.O_RDWR | fs.constants.O_CREAT, 0o600);
+  let existingEnv: string;
+  try {
+    existingEnv = fs.readFileSync(fd, 'utf-8');
+  } catch (error) {
+    fs.closeSync(fd);
+    throw error;
   }
 
   // Update or append
@@ -252,7 +259,13 @@ async function saveToEnv() {
     }
   }
 
-  fs.writeFileSync(envPath, updatedLines.join('\n'));
+  try {
+    const bytes = Buffer.from(updatedLines.join('\n'), 'utf-8');
+    fs.ftruncateSync(fd, 0);
+    fs.writeSync(fd, bytes, 0, bytes.length, 0);
+  } finally {
+    fs.closeSync(fd);
+  }
 
   printSuccess(`OAuth credentials saved to ${chalk.cyan('.env')}`);
   printInfo(`Updated ${oauthConfigs.length} OAuth configuration(s)`);

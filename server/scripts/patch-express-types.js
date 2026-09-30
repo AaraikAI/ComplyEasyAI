@@ -13,28 +13,52 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 function patchFile(relPath, replacements) {
   const absPath = path.join(__dirname, '..', relPath);
-  if (!fs.existsSync(absPath)) {
-    console.warn(`[patch-express-types] Skipping missing file: ${relPath}`);
-    return;
-  }
-  let content = fs.readFileSync(absPath, 'utf8');
-  let changed = false;
-  for (const [search, replace] of replacements) {
-    if (content.includes(search)) {
-      content = content.replace(search, replace);
-      changed = true;
+  // Read and rewrite through one file descriptor, so the file that is patched
+  // is the file that was read (no exists-then-open race on the path).
+  let fd;
+  try {
+    fd = fs.openSync(absPath, 'r+');
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      console.warn(`[patch-express-types] Skipping missing file: ${relPath}`);
+      return;
     }
+    throw error;
   }
-  if (changed) {
-    fs.writeFileSync(absPath, content);
-    console.log(`[patch-express-types] Patched: ${relPath}`);
-  } else {
-    console.log(`[patch-express-types] Already patched or pattern not found: ${relPath}`);
+  try {
+    let content = fs.readFileSync(fd, 'utf8');
+    let changed = false;
+    for (const [search, replace] of replacements) {
+      if (content.includes(search)) {
+        content = content.replace(search, replace);
+        changed = true;
+      }
+    }
+    if (changed) {
+      const bytes = Buffer.from(content, 'utf8');
+      fs.ftruncateSync(fd, 0);
+      fs.writeSync(fd, bytes, 0, bytes.length, 0);
+      console.log(`[patch-express-types] Patched: ${relPath}`);
+    } else {
+      console.log(`[patch-express-types] Already patched or pattern not found: ${relPath}`);
+    }
+  } finally {
+    fs.closeSync(fd);
   }
+}
+
+// Run npm without a shell. Under `npm run`/postinstall, npm_execpath points at
+// npm's CLI script, which also works on Windows where `npm` is a .cmd shim.
+function runNpm(args, options) {
+  const npmCli = process.env.npm_execpath;
+  if (npmCli && /npm-cli\.c?js$/.test(npmCli)) {
+    return execFileSync(process.execPath, [npmCli, ...args], options);
+  }
+  return execFileSync('npm', args, options);
 }
 
 // 1. Narrow ParamsDictionary from string | string[] to string
@@ -68,19 +92,27 @@ function ensurePrismaRuntimeTypes() {
 
   console.log(`[patch-prisma-types] Restoring missing runtime types: ${missing.join(', ')}`);
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'node_modules/@prisma/client/package.json'), 'utf8'));
+  // The version is interpolated into an npm package spec; accept semver only.
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(String(pkg.version))) {
+    console.warn('[patch-prisma-types] Unexpected @prisma/client version string; skipping restore');
+    return;
+  }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'prisma-restore-'));
   try {
-    execSync(`npm pack @prisma/client@${pkg.version}`, { cwd: tmp, stdio: 'pipe' });
+    // Argument arrays, no shell: nothing in the version or tarball name can be
+    // interpreted as shell syntax.
+    runNpm(['pack', `@prisma/client@${pkg.version}`], { cwd: tmp, stdio: 'pipe' });
     const tgz = fs.readdirSync(tmp).find((f) => f.endsWith('.tgz'));
     if (!tgz) throw new Error('npm pack produced no tarball');
-    execSync(`tar -xzf ${tgz} -C ${tmp}`, { cwd: tmp, stdio: 'pipe' });
+    execFileSync('tar', ['-xzf', `./${tgz}`, '-C', tmp], { cwd: tmp, stdio: 'pipe' });
     for (const f of missing) {
       const src = path.join(tmp, 'package/runtime', f);
       const dst = path.join(runtimeDir, f);
-      if (fs.existsSync(src)) {
+      try {
         fs.copyFileSync(src, dst);
         console.log(`[patch-prisma-types] Restored: runtime/${f}`);
-      } else {
+      } catch (copyError) {
+        if (copyError.code !== 'ENOENT') throw copyError;
         console.warn(`[patch-prisma-types] Tarball did not contain runtime/${f}`);
       }
     }
