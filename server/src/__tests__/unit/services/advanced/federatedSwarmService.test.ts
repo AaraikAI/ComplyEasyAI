@@ -365,6 +365,30 @@ describe('FederatedSwarmService', () => {
     });
   });
 
+  // ===================== untrusted weight keys =====================
+  describe('weight key handling', () => {
+    it('should not copy prototype-shadowing keys when anonymizing weights', () => {
+      const weights = JSON.parse(
+        '{"layer1": [0.1, 0.2], "__proto__": {"polluted": true}, "constructor": 3, "nested": {"__proto__": {"x": 1}, "w": 1}}'
+      );
+      const result = (federatedSwarmService as any).anonymizeContribution(weights);
+
+      expect(Object.keys(result).sort()).toEqual(['layer1', 'nested']);
+      expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+      expect(Object.getPrototypeOf(result.nested)).toBe(Object.prototype);
+      expect(Object.keys(result.nested)).toEqual(['w']);
+      expect(({} as any).polluted).toBeUndefined();
+    });
+
+    it('should not copy prototype-shadowing keys when applying differential privacy', () => {
+      const weights = JSON.parse('{"a": 1, "__proto__": {"polluted": true}, "toString": 2}');
+      const result = (federatedSwarmService as any).applyDifferentialPrivacy(weights, 1.0);
+
+      expect(Object.keys(result)).toEqual(['a']);
+      expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    });
+  });
+
   // ===================== error handling =====================
   describe('error handling', () => {
     it('should handle database error in joinFederation', async () => {

@@ -3,6 +3,32 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import { NIST_AI_RMF_DATA } from '../data/nistAiRmfData';
 import { AuditLogger } from '../utils/auditLogger';
+import { isSafeObjectKey } from '../utils/safeObjectKey';
+
+/**
+ * Field-level before/after pairs for the audit log. Keys come from the request's
+ * update payload, so names that would shadow built-in object members
+ * (`__proto__`, `constructor`, ...) are skipped, and old values are read only
+ * from the snapshot's own properties. The pairs are collected in a Map and
+ * turned into an object with Object.fromEntries, which defines own properties
+ * and never assigns through a request-supplied key.
+ */
+function diffAuditChanges(
+  oldValues: Record<string, any>,
+  updates: Record<string, any>
+): Record<string, any> {
+  const changes = new Map<string, { old: any; new: any }>();
+  for (const key of Object.keys(updates)) {
+    if (!isSafeObjectKey(key)) {
+      continue;
+    }
+    const previous = Object.prototype.hasOwnProperty.call(oldValues, key) ? oldValues[key] : undefined;
+    if (previous !== updates[key]) {
+      changes.set(key, { old: previous, new: updates[key] });
+    }
+  }
+  return Object.fromEntries(changes);
+}
 
 /**
  * NIST AI RMF 1.0 Service
@@ -229,15 +255,7 @@ class AIRMFService {
 
       // Log audit event with detailed changes
       if (userId) {
-        const changes: Record<string, any> = {};
-        Object.keys(updates).forEach(key => {
-          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
-            changes[key] = {
-              old: oldValues[key as keyof typeof oldValues],
-              new: updates[key],
-            };
-          }
-        });
+        const changes = diffAuditChanges(oldValues, updates);
 
         await AuditLogger.log({
           userId,
@@ -435,15 +453,7 @@ class AIRMFService {
 
       // Log audit event
       if (userId) {
-        const changes: Record<string, any> = {};
-        Object.keys(updates).forEach(key => {
-          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
-            changes[key] = {
-              old: oldValues[key as keyof typeof oldValues],
-              new: updates[key],
-            };
-          }
-        });
+        const changes = diffAuditChanges(oldValues, updates);
 
         await AuditLogger.log({
           userId,
@@ -507,15 +517,7 @@ class AIRMFService {
 
       // Log audit event
       if (userId) {
-        const changes: Record<string, any> = {};
-        Object.keys(updates).forEach(key => {
-          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
-            changes[key] = {
-              old: oldValues[key as keyof typeof oldValues],
-              new: updates[key],
-            };
-          }
-        });
+        const changes = diffAuditChanges(oldValues, updates);
 
         await AuditLogger.log({
           userId,
@@ -588,15 +590,7 @@ class AIRMFService {
 
       // Log audit event
       if (userId) {
-        const changes: Record<string, any> = {};
-        Object.keys(updates).forEach(key => {
-          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
-            changes[key] = {
-              old: oldValues[key as keyof typeof oldValues],
-              new: updates[key],
-            };
-          }
-        });
+        const changes = diffAuditChanges(oldValues, updates);
 
         await AuditLogger.log({
           userId,
@@ -802,15 +796,7 @@ class AIRMFService {
 
       // Log audit event
       if (userId) {
-        const changes: Record<string, any> = {};
-        Object.keys(updates).forEach(key => {
-          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
-            changes[key] = {
-              old: oldValues[key as keyof typeof oldValues],
-              new: updates[key],
-            };
-          }
-        });
+        const changes = diffAuditChanges(oldValues, updates);
 
         await AuditLogger.log({
           userId,
@@ -915,15 +901,7 @@ class AIRMFService {
 
       // Log audit event
       if (userId) {
-        const changes: Record<string, any> = {};
-        Object.keys(updates).forEach(key => {
-          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
-            changes[key] = {
-              old: oldValues[key as keyof typeof oldValues],
-              new: updates[key],
-            };
-          }
-        });
+        const changes = diffAuditChanges(oldValues, updates);
 
         await AuditLogger.log({
           userId,
@@ -1408,15 +1386,7 @@ class AIRMFService {
 
       // Log audit event
       if (userId) {
-        const changes: Record<string, any> = {};
-        Object.keys(updates).forEach(key => {
-          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
-            changes[key] = {
-              old: oldValues[key as keyof typeof oldValues],
-              new: updates[key],
-            };
-          }
-        });
+        const changes = diffAuditChanges(oldValues, updates);
 
         await AuditLogger.log({
           userId,

@@ -303,5 +303,27 @@ describe('RedTeamService', () => {
         redTeamService.markFalsePositive(orgId, 'scan-log-1', 0, userId)
       ).resolves.not.toThrow();
     });
+
+    it.each([['__proto__'], ['constructor'], [-1], [1.5], [undefined]])(
+      'should reject a vulnerability index that is not a non-negative integer (%s)',
+      async (index) => {
+        await expect(
+          redTeamService.markFalsePositive(orgId, 'scan-log-1', index as any, userId)
+        ).rejects.toMatchObject({ statusCode: 400 });
+        expect(prismaMock.auditLog.findFirst).not.toHaveBeenCalled();
+        expect((Array.prototype as any).falsePositive).toBeUndefined();
+      }
+    );
+
+    it('should ignore an index past the end of the findings list', async () => {
+      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue({
+        id: 'scan-log-1',
+        details: JSON.stringify({ vulnerabilitiesFound: [{ type: 'x' }] }),
+      });
+
+      await redTeamService.markFalsePositive(orgId, 'scan-log-1', 5, userId);
+
+      expect(prismaMock.auditLog.create).not.toHaveBeenCalled();
+    });
   });
 });

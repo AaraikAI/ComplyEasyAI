@@ -30,6 +30,12 @@ jest.mock('../../../services/euRegulations/controlTemplatesService', () => ({
   },
 }));
 
+const mockGetSignedUrl = jest.fn<any>();
+jest.mock('../../../services/s3Service', () => ({
+  __esModule: true,
+  default: { getSignedUrl: (...args: unknown[]) => mockGetSignedUrl(...args) },
+}));
+
 import frameworksController from '../../../controllers/frameworksController';
 import { AppError } from '../../../middleware/errorHandler';
 
@@ -663,6 +669,38 @@ describe('FrameworksController', () => {
       await expect(
         frameworksController.exportControl(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow('Control not found');
+    });
+  });
+
+  describe('getEvidenceUrl()', () => {
+    beforeEach(() => {
+      mockRequest.params = { frameworkId: 'framework-123', controlId: 'control-123' };
+      (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(createMockFramework() as any);
+      mockGetSignedUrl.mockResolvedValue('https://signed.example/object');
+    });
+
+    it('should sign the key of evidence stored under the caller organization', async () => {
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue({
+        evidence: 'https://bucket.s3.us-east-1.amazonaws.com/org-123/frameworks/f/controls/c/a.pdf',
+      });
+
+      await frameworksController.getEvidenceUrl(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockGetSignedUrl).toHaveBeenCalledWith('org-123/frameworks/f/controls/c/a.pdf', 3600);
+      expect(mockResponse.json).toHaveBeenCalledWith({ url: 'https://signed.example/object' });
+    });
+
+    it.each([
+      ['a bare key in another organization', 'org-999/frameworks/f/controls/c/a.pdf'],
+      ['a look-alike S3 host', 'https://evil.example/amazonaws.com/org-999/a.pdf'],
+      ['a dot-segment escape', 'org-123/../org-999/a.pdf'],
+    ])('should not sign %s', async (_label, evidence) => {
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue({ evidence });
+
+      await expect(
+        frameworksController.getEvidenceUrl(mockRequest as Request, mockResponse as Response, mockNext)
+      ).rejects.toMatchObject({ statusCode: 404 });
+      expect(mockGetSignedUrl).not.toHaveBeenCalled();
     });
   });
 

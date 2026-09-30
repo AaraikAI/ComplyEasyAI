@@ -65,40 +65,42 @@ class OnboardingController {
       const updates = req.body;
 
       // Whitelist allowed fields
-      const allowedFields: Record<string, boolean> = {
-        currentFlow: true,
-        currentStep: true,
-        welcomeCompleted: true,
-        tierTourCompleted: true,
-        firstFrameworkCompleted: true,
-        firstEvidenceCompleted: true,
-        firstControlPassCompleted: true,
-        inviteTeamCompleted: true,
-        integrationSetupCompleted: true,
-        aiFeatureTrialCompleted: true,
-        acosDigitalTwinTourCompleted: true,
-        advancedFeaturesTourCompleted: true,
+      const allowedFields = new Set<string>([
+        'currentFlow',
+        'currentStep',
+        'welcomeCompleted',
+        'tierTourCompleted',
+        'firstFrameworkCompleted',
+        'firstEvidenceCompleted',
+        'firstControlPassCompleted',
+        'inviteTeamCompleted',
+        'integrationSetupCompleted',
+        'aiFeatureTrialCompleted',
+        'acosDigitalTwinTourCompleted',
+        'advancedFeaturesTourCompleted',
         // Enterprise GRC module flows
-        riskHeatmapCompleted: true,
-        regulatoryTrackerCompleted: true,
-        vendorMonitoringCompleted: true,
-        privacyPlatformCompleted: true,
-        incidentManagementCompleted: true,
-        controlTestingCompleted: true,
-        auditPrepCompleted: true,
-        workflowAutomationCompleted: true,
-        tooltipsShown: true,
-        skippedFlows: true,
-        completedAt: true,
-        lastActiveFlow: true,
-        lastActiveStep: true,
-        showHints: true,
-        reducedMotion: true,
-      };
+        'riskHeatmapCompleted',
+        'regulatoryTrackerCompleted',
+        'vendorMonitoringCompleted',
+        'privacyPlatformCompleted',
+        'incidentManagementCompleted',
+        'controlTestingCompleted',
+        'auditPrepCompleted',
+        'workflowAutomationCompleted',
+        'tooltipsShown',
+        'skippedFlows',
+        'completedAt',
+        'lastActiveFlow',
+        'lastActiveStep',
+        'showHints',
+        'reducedMotion',
+      ]);
 
       const sanitizedUpdates: Record<string, any> = {};
       for (const key of Object.keys(updates)) {
-        if (allowedFields[key]) {
+        // Set membership (not a plain-object lookup) so inherited names such
+        // as `constructor` or `__proto__` can never pass the allowlist.
+        if (allowedFields.has(key)) {
           sanitizedUpdates[key] = updates[key];
         }
       }
@@ -438,31 +440,33 @@ class OnboardingController {
       const organizationId = user.organizationId;
       const updates = req.body;
 
-      const allowedFields: Record<string, boolean> = {
-        profileCompleted: true,
-        teamInvited: true,
-        firstFrameworkAdded: true,
-        firstEvidenceUploaded: true,
-        firstControlPassed: true,
-        integrationConnected: true,
-        aiFeatureUsed: true,
-        firstReportGenerated: true,
-        acosConfigured: true,
-        digitalTwinActivated: true,
+      const allowedFields = new Set<string>([
+        'profileCompleted',
+        'teamInvited',
+        'firstFrameworkAdded',
+        'firstEvidenceUploaded',
+        'firstControlPassed',
+        'integrationConnected',
+        'aiFeatureUsed',
+        'firstReportGenerated',
+        'acosConfigured',
+        'digitalTwinActivated',
         // Enterprise GRC modules
-        riskHeatmapViewed: true,
-        regulatoryTrackerViewed: true,
-        vendorMonitoringConfigured: true,
-        privacyPlatformViewed: true,
-        incidentManagementViewed: true,
-        controlTestingConfigured: true,
-        auditPrepStarted: true,
-        workflowAutomationConfigured: true,
-      };
+        'riskHeatmapViewed',
+        'regulatoryTrackerViewed',
+        'vendorMonitoringConfigured',
+        'privacyPlatformViewed',
+        'incidentManagementViewed',
+        'controlTestingConfigured',
+        'auditPrepStarted',
+        'workflowAutomationConfigured',
+      ]);
 
       const sanitizedUpdates: Record<string, any> = {};
       for (const key of Object.keys(updates)) {
-        if (allowedFields[key]) {
+        // Set membership (not a plain-object lookup) so inherited names such
+        // as `constructor` or `__proto__` can never pass the allowlist.
+        if (allowedFields.has(key)) {
           sanitizedUpdates[key] = updates[key];
         }
       }

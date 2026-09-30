@@ -315,6 +315,7 @@ class ACOSController {
       res.json(analysis);
     } catch (error) {
       logger.error('Analyze evidence error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError('Failed to analyze evidence', 500);
     }
   };
@@ -357,6 +358,7 @@ class ACOSController {
       res.json(analysis);
     } catch (error) {
       logger.error('Re-analyze evidence error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError('Failed to re-analyze evidence', 500);
     }
   };
@@ -1251,6 +1253,7 @@ class ACOSController {
       res.json({ success: true });
     } catch (error) {
       logger.error('Mark false positive error', error);
+      if (error instanceof AppError) throw error;
       throw new AppError('Failed to mark false positive', 500);
     }
   };

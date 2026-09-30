@@ -13,6 +13,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { isSafeObjectKey } from '../../utils/safeObjectKey';
 import { DEFAULT_ALPHAS } from './dp/rdpAccountant';
 import {
   checkBudget,
@@ -314,6 +315,11 @@ class FederatedSwarmService {
     const sensitivity = 0.01; // Expected max weight magnitude change per sample
 
     for (const [key, value] of Object.entries(weights)) {
+      // Weight names come from the submitting organization; never copy keys
+      // such as `__proto__` or `constructor` onto the aggregate object.
+      if (!isSafeObjectKey(key)) {
+        continue;
+      }
       if (typeof value === 'number') {
         // Add Laplace noise for differential privacy (CSPRNG-sourced)
         const scale = sensitivity / epsilon;
@@ -454,7 +460,10 @@ class FederatedSwarmService {
 
     if (typeof weights === 'object' && weights !== null) {
       const privatized: any = {};
-      for (const key in weights) {
+      for (const key of Object.keys(weights)) {
+        if (!isSafeObjectKey(key)) {
+          continue;
+        }
         privatized[key] = this.applyDifferentialPrivacy(weights[key], epsilon);
       }
       return privatized;

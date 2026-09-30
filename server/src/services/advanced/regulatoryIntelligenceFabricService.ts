@@ -12,6 +12,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { AppError } from '../../middleware/errorHandler';
+import { feedTextContent } from '../../utils/feedText';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { lookup as dnsLookup } from 'dns/promises';
@@ -2480,26 +2481,8 @@ Return only the resolution text, no JSON or formatting.`;
         const match = parentXml.match(tagPattern);
         if (!match) return null;
 
-        let content = match[1].trim();
-
-        // Handle CDATA sections
-        const cdataMatch = content.match(/^<!\[CDATA\[([\s\S]*?)\]\]>$/);
-        if (cdataMatch) {
-          content = cdataMatch[1];
-        }
-
-        // Decode common XML/HTML entities
-        content = content
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&apos;/g, "'")
-          .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
-          .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)));
-
-        // Strip any remaining HTML/XML tags for text content
-        content = content.replace(/<[^>]*>/g, '').trim();
+        // CDATA unwrap, single-pass entity decode and markup removal.
+        const content = feedTextContent(match[1]);
 
         return content || null;
       };

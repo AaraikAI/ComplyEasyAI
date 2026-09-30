@@ -107,5 +107,15 @@ describe('piiService', () => {
       const restored = rehydratePII(redactedText, map);
       expect(restored).toBe(original);
     });
+
+    it('should restore values literally, without interpreting $ replacement patterns', () => {
+      const map = new Map([['[SECRET_1]', "a$&b$'c$1\\d"]]);
+      expect(rehydratePII('key=[SECRET_1];', map)).toBe("key=a$&b$'c$1\\d;");
+    });
+
+    it('should treat backslashes in a token literally', () => {
+      const map = new Map([['[X\\]', 'value']]);
+      expect(rehydratePII('a [X\\] b', map)).toBe('a value b');
+    });
   });
 });
