@@ -22,6 +22,12 @@ const manifest: string[] = JSON.parse(
 );
 const pillars = Object.values(FRAMEWORK_PILLARS);
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Words as a reader counts them: whitespace-separated tokens holding a letter or digit. */
+const wordCount = (text: string): number =>
+  text.split(/\s+/).filter((token) => /[\p{L}\p{N}]/u.test(token)).length;
+
 describe('framework pillar content', () => {
   it('lists the 16 pillars, including AIUC-1 and India DPDPA', () => {
     expect(FRAMEWORK_PILLAR_COUNT).toBe(16);
@@ -62,6 +68,71 @@ describe('framework pillar content', () => {
         expect(req.desc.length).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('opens every pillar answer-first: a short hook, a 40–60-word answer and a 3–4 item TL;DR', () => {
+    for (const pillar of pillars) {
+      const label = pillar.slug;
+      expect(wordCount(pillar.hook), `${label} hook`).toBeLessThanOrEqual(22);
+      expect(wordCount(pillar.definition), `${label} definition`).toBeGreaterThanOrEqual(40);
+      expect(wordCount(pillar.definition), `${label} definition`).toBeLessThanOrEqual(60);
+      expect(pillar.tldr.length, `${label} TL;DR`).toBeGreaterThanOrEqual(3);
+      expect(pillar.tldr.length, `${label} TL;DR`).toBeLessThanOrEqual(4);
+      for (const item of pillar.tldr) {
+        expect(wordCount(item), `${label} TL;DR item "${item}"`).toBeLessThanOrEqual(20);
+      }
+    }
+  });
+
+  it('keeps FAQs short enough to quote: 4–6 questions, each answer 70 words or fewer', () => {
+    for (const pillar of pillars) {
+      expect(pillar.faqs.length, pillar.slug).toBeGreaterThanOrEqual(4);
+      expect(pillar.faqs.length, pillar.slug).toBeLessThanOrEqual(6);
+      for (const faq of pillar.faqs) {
+        expect(faq.q.endsWith('?'), `${pillar.slug}: "${faq.q}"`).toBe(true);
+        expect(wordCount(faq.a), `${pillar.slug}: "${faq.q}"`).toBeLessThanOrEqual(70);
+      }
+    }
+  });
+
+  it('cites https sources and a review date on every pillar, and orders any timeline by date', () => {
+    for (const pillar of pillars) {
+      expect(pillar.lastReviewed, pillar.slug).toMatch(ISO_DATE);
+      expect(pillar.sources.length, pillar.slug).toBeGreaterThanOrEqual(1);
+      for (const source of pillar.sources) {
+        expect(source.label.length, pillar.slug).toBeGreaterThan(0);
+        expect(source.url, pillar.slug).toMatch(/^https:\/\/[^\s]+$/);
+      }
+      if (pillar.timeline) {
+        const dates = pillar.timeline.map((milestone) => milestone.date);
+        for (const date of dates) expect(date, pillar.slug).toMatch(ISO_DATE);
+        expect(dates, `${pillar.slug} timeline order`).toEqual([...dates].sort());
+      }
+    }
+  });
+
+  it('dates the phased regulations, including the EU AI Act after the 2026 Digital Omnibus', () => {
+    const milestones = (slug: string) =>
+      (FRAMEWORK_PILLARS[slug].timeline ?? []).map((milestone) => milestone.date);
+    expect(milestones('eu-ai-act')).toEqual(
+      expect.arrayContaining(['2025-02-02', '2025-08-02', '2026-08-02', '2027-12-02', '2028-08-02']),
+    );
+    expect(milestones('india-dpdpa')).toEqual(
+      expect.arrayContaining(['2025-11-13', '2026-11-13', '2027-05-13']),
+    );
+    expect(milestones('csrd')).toEqual(expect.arrayContaining(['2026-03-18', '2027-03-19']));
+    expect(milestones('ccpa')).toEqual(expect.arrayContaining(['2026-01-01', '2027-01-01', '2028-04-01']));
+  });
+
+  it('carries no retired claims, app-only links or superseded facts', () => {
+    const text = JSON.stringify(FRAMEWORK_PILLARS);
+    expect(text).not.toContain('/frameworks/');
+    expect(text).not.toContain('ComplyEasy AI');
+    expect(text).not.toMatch(/free trial|no credit card/i);
+    // PCI DSS v4.0 was retired on 31 December 2024; v4.0.1 is the active version.
+    expect(FRAMEWORK_PILLARS['pci-dss'].definition).toContain('v4.0.1');
+    // Omnibus I dropped listed SMEs and the move to reasonable assurance.
+    expect(JSON.stringify(FRAMEWORK_PILLARS.csrd)).not.toMatch(/then reasonable|listed SMEs are phased/i);
   });
 
   it('has a public route, an App.tsx route and a prerender-manifest entry for every pillar', () => {

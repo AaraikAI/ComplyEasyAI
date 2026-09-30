@@ -3,7 +3,7 @@
  * Tests the complete authentication flow from registration to login
  */
 
-import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import { prismaMock, createMockUser, createMockOrganization } from '../mocks/prisma';

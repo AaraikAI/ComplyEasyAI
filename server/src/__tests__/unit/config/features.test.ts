@@ -3,7 +3,7 @@
  * Tests for feature catalog, bundles, pricing, and tier-based availability
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import {
   FEATURES,
   FEATURE_BUNDLES,

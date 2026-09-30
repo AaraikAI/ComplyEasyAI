@@ -401,7 +401,26 @@ self.addEventListener('notificationclick', (event) => {
 
 // ─── Message Handling ───────────────────────────────────────────────────────
 
+/**
+ * Origin of the client that posted a message, derived from its URL. Used when
+ * an engine leaves `origin` empty on the ExtendableMessageEvent.
+ */
+function clientOrigin(client) {
+  try {
+    return client && client.url ? new URL(client.url).origin : '';
+  } catch {
+    return '';
+  }
+}
+
 self.addEventListener('message', (event) => {
+  // Accept commands (cache writes, cache purges, queued requests) only from
+  // same-origin clients of this worker.
+  const origin = event.origin || clientOrigin(event.source);
+  if (origin !== self.location.origin) {
+    return;
+  }
+
   const { type, payload } = event.data || {};
 
   switch (type) {

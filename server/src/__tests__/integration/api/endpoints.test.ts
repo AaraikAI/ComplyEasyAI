@@ -2,7 +2,7 @@
  * Comprehensive API Endpoint Integration Tests
  */
 
-import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import { prismaMock, createMockUser, createMockOrganization, createMockRiskItem } from '../../mocks/prisma';

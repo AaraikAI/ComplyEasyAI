@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import crypto from 'crypto';
 import { prismaMock } from '../../../mocks/prisma';
 
 // Extend prismaMock with Zero Trust specific models
@@ -175,13 +176,14 @@ describe('ZeroTrustService', () => {
         id: 'dt-1',
         organizationId: orgId,
         deviceId,
+        fingerprint: 'fingerprint-abc',
         isTrusted: true,
         trustScore: 85,
         lastVerified: new Date(), // Just now => recent
         metadata: { userAgent: 'Chrome', os: 'Mac' },
       };
 
-      (zeroTrustService as any).deviceTrustCache.set(deviceId, cachedTrust);
+      (zeroTrustService as any).deviceTrustCache.set(`${orgId}:${deviceId}`, cachedTrust);
 
       const result = await zeroTrustService.verifyDeviceTrust(
         deviceId,
@@ -194,6 +196,58 @@ describe('ZeroTrustService', () => {
       expect(result.trustScore).toBe(85);
       // Should not have hit the database
       expect(ztPrismaMock.deviceTrust.findFirst).not.toHaveBeenCalled();
+    });
+
+    // Regression: the cache was keyed by the caller-supplied deviceId alone, so
+    // one organization could read another's trusted record (IP, MAC, user agent)
+    // and be treated as trusted by naming the same deviceId.
+    it("should not return another organization's cached trust for the same deviceId", async () => {
+      const otherOrgTrust = {
+        id: 'dt-other',
+        organizationId: 'org-other',
+        deviceId,
+        fingerprint: 'fingerprint-abc',
+        isTrusted: true,
+        trustScore: 99,
+        lastVerified: new Date(),
+        metadata: { ipAddress: '203.0.113.7' },
+      };
+      (zeroTrustService as any).deviceTrustCache.set(`org-other:${deviceId}`, otherOrgTrust);
+      (zeroTrustService as any).deviceTrustCache.set(deviceId, otherOrgTrust);
+      (ztPrismaMock.deviceTrust.findFirst as jest.Mock).mockResolvedValue(null);
+      (ztPrismaMock.deviceTrust.upsert as jest.Mock).mockResolvedValue({} as any);
+      (prismaMock.organization.findUnique as jest.Mock).mockResolvedValue({ id: orgId } as any);
+      (ztPrismaMock.zeroTrustPolicy.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const result = await zeroTrustService.verifyDeviceTrust(deviceId, 'fingerprint-abc', {}, orgId);
+
+      expect(result.id).not.toBe('dt-other');
+      expect(result.organizationId).toBe(orgId);
+      expect(result.metadata).toEqual({});
+      expect(ztPrismaMock.deviceTrust.findFirst).toHaveBeenCalled();
+    });
+
+    it('should re-score instead of reusing a cached trusted record when the fingerprint differs', async () => {
+      (zeroTrustService as any).deviceTrustCache.set(`${orgId}:${deviceId}`, {
+        id: 'dt-1',
+        organizationId: orgId,
+        deviceId,
+        fingerprint: 'fingerprint-abc',
+        isTrusted: true,
+        trustScore: 99,
+        lastVerified: new Date(),
+        metadata: {},
+      });
+      (ztPrismaMock.deviceTrust.findFirst as jest.Mock).mockResolvedValue(null);
+      (ztPrismaMock.deviceTrust.upsert as jest.Mock).mockResolvedValue({} as any);
+      (prismaMock.organization.findUnique as jest.Mock).mockResolvedValue({ id: orgId } as any);
+      (ztPrismaMock.zeroTrustPolicy.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const result = await zeroTrustService.verifyDeviceTrust(deviceId, 'another-fingerprint', {}, orgId);
+
+      expect(result.id).not.toBe('dt-1');
+      expect(result.fingerprint).toBe('another-fingerprint');
+      expect(ztPrismaMock.deviceTrust.findFirst).toHaveBeenCalled();
     });
 
     it('should verify a new device and calculate trust score', async () => {
@@ -354,12 +408,15 @@ describe('ZeroTrustService', () => {
       const trustedDevice = {
         id: 'dt-1',
         deviceId: 'trusted-dev',
+        organizationId: orgId,
+        // evaluateAccessRequest presents sha256(deviceId) as the fingerprint
+        fingerprint: crypto.createHash('sha256').update('trusted-dev').digest('hex'),
         isTrusted: true,
         trustScore: 90,
         lastVerified: new Date(),
         metadata: {},
       };
-      (zeroTrustService as any).deviceTrustCache.set('trusted-dev', trustedDevice);
+      (zeroTrustService as any).deviceTrustCache.set(`${orgId}:trusted-dev`, trustedDevice);
 
       // No policies loaded
       (zeroTrustService as any).policyCache = new Map();
@@ -386,12 +443,15 @@ describe('ZeroTrustService', () => {
       const trustedDevice = {
         id: 'dt-1',
         deviceId: 'trusted-dev',
+        organizationId: orgId,
+        // evaluateAccessRequest presents sha256(deviceId) as the fingerprint
+        fingerprint: crypto.createHash('sha256').update('trusted-dev').digest('hex'),
         isTrusted: true,
         trustScore: 90,
         lastVerified: new Date(),
         metadata: {},
       };
-      (zeroTrustService as any).deviceTrustCache.set('trusted-dev', trustedDevice);
+      (zeroTrustService as any).deviceTrustCache.set(`${orgId}:trusted-dev`, trustedDevice);
 
       // Set up a policy that allows access for trusted devices
       (zeroTrustService as any).policyCache = new Map([
@@ -514,12 +574,30 @@ describe('ZeroTrustService', () => {
         isTrusted: true,
         trustScore: 80,
       };
-      (zeroTrustService as any).deviceTrustCache.set(deviceId, cached);
+      (zeroTrustService as any).deviceTrustCache.set(`${orgId}:${deviceId}`, cached);
 
       const result = await zeroTrustService.getDeviceTrust(deviceId, orgId);
 
       expect(result).toBe(cached);
       expect(ztPrismaMock.deviceTrust.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("should not return another organization's cached device trust", async () => {
+      (zeroTrustService as any).deviceTrustCache.set(`org-other:${deviceId}`, {
+        id: 'dt-other',
+        deviceId,
+        organizationId: 'org-other',
+        isTrusted: true,
+        trustScore: 99,
+      });
+      (ztPrismaMock.deviceTrust.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const result = await zeroTrustService.getDeviceTrust(deviceId, orgId);
+
+      expect(result).toBeNull();
+      expect(ztPrismaMock.deviceTrust.findUnique).toHaveBeenCalledWith({
+        where: { deviceId_organizationId: { deviceId, organizationId: orgId } },
+      });
     });
 
     it('should fetch from database when not in cache', async () => {
@@ -629,7 +707,7 @@ describe('ZeroTrustService', () => {
         trustScore: 85,
         lastVerified: new Date(), // just now
       };
-      (zeroTrustService as any).deviceTrustCache.set(deviceId, cached);
+      (zeroTrustService as any).deviceTrustCache.set(`${orgId}:${deviceId}`, cached);
 
       const result = await zeroTrustService.continuousVerification(deviceId, orgId);
 

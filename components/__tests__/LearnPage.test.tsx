@@ -97,7 +97,7 @@ describe('LearnPage', () => {
 
   it('displays course listings', () => {
     render(<LearnPage />);
-    expect(screen.getAllByText(/Your first SOC 2 in 30 days/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Your first SOC 2, step by step/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/SOC 2 Type I vs Type II/i).length).toBeGreaterThan(0);
   });
 
@@ -109,5 +109,27 @@ describe('LearnPage', () => {
   it('displays GDPR course', () => {
     render(<LearnPage />);
     expect(screen.getAllByText(/GDPR/i).length).toBeGreaterThan(0);
+  });
+
+  it('opens each card on a published page instead of the docs index', () => {
+    render(<LearnPage />);
+    expect(screen.getByText('Your first SOC 2, step by step').closest('a')).toHaveAttribute(
+      'href',
+      '/blog/how-to-automate-soc-2-compliance-with-ai'
+    );
+    expect(screen.getByText('Writing a DPIA that holds up').closest('a')).toHaveAttribute(
+      'href',
+      '/glossary/dpia'
+    );
+    expect(screen.getByText('DORA for financial entities').closest('a')).toHaveAttribute(
+      'href',
+      '/dora-compliance'
+    );
+  });
+
+  it('does not advertise lesson counts or reading times for courses that do not exist', () => {
+    render(<LearnPage />);
+    expect(screen.queryByText(/\d+ lessons/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^\d+ min$/)).not.toBeInTheDocument();
   });
 });

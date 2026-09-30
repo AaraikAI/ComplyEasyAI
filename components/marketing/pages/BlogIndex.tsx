@@ -4,29 +4,35 @@ import { ArrowRight, CalendarDays, Tag } from 'lucide-react';
 import MarketingLayout from '../MarketingLayout';
 import { Seo } from '../../seo/Seo';
 import { JsonLd } from '../../seo/JsonLd';
-import { breadcrumbSchema } from '../../seo/siteSchema';
-import { blogPosts } from '../../../data/blog';
+import { breadcrumbSchema, reviewedWebPageSchema } from '../../seo/siteSchema';
+import { BRAND_NAME } from '../../seo/brand';
+import { blogPostsNewestFirst } from '../../../data/blog';
+import { SITE_ORIGIN } from '../../seo/siteOrigin';
+import { formatReviewDate, ReviewedByline, TldrList } from '../answerFirst';
 
-const SITE_ORIGIN = 'https://complyeasyai.com';
+const SEO_TITLE = `Compliance Automation Blog | ${BRAND_NAME}`;
+const SEO_DESCRIPTION =
+  'Answer-first guides to compliance automation: SOC 2 with AI, the EU AI Act after the Digital Omnibus, India’s DPDP Rules and CSRD after Omnibus I, each with dates and sources.';
 
-/** Format a 'YYYY-MM-DD' string as a readable date without relying on a runtime clock. */
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+const BLOG_INDEX_HOOK = 'Answer-first guides you can act on this week.';
+
+const BLOG_INDEX_ANSWER = `The ${BRAND_NAME} blog publishes practical, answer-first guides to compliance automation. Each post opens with the short answer, lists key takeaways and dates, and cites its sources. Current guides cover automating SOC 2 with AI, the EU AI Act checklist and timeline after the 2026 Digital Omnibus, India’s DPDP Rules and CSRD after Omnibus I.`;
+
+const BLOG_INDEX_TLDR = [
+  'Every post starts with a direct answer and a TL;DR.',
+  'Regulatory dates are checked against official sources, listed at the end of each post.',
+  'Each post shows when it was last reviewed.',
 ];
 
-function formatDate(iso: string): string {
-  const [year, month, day] = iso.split('-');
-  const monthIndex = Number(month) - 1;
-  const name = MONTHS[monthIndex] ?? month;
-  return `${name} ${Number(day)}, ${year}`;
-}
-
 /**
- * Blog landing page (/blog): a grid of post cards linking into individual
- * articles, with breadcrumb structured data for richer search results.
+ * Blog landing page (/blog): an answer-first introduction, then post cards
+ * (newest review first) linking into individual articles, with breadcrumb and
+ * reviewed-page structured data.
  */
 const BlogIndex: React.FC = () => {
+  const posts = blogPostsNewestFirst();
+  const lastReviewed = posts[0]?.lastReviewed ?? '2026-09-27';
+
   const breadcrumb = breadcrumbSchema([
     { name: 'Home', url: SITE_ORIGIN + '/' },
     { name: 'Blog', url: SITE_ORIGIN + '/blog' },
@@ -35,12 +41,21 @@ const BlogIndex: React.FC = () => {
   return (
     <MarketingLayout>
       <Seo
-        title="Blog — AI Compliance Insights | ComplyEasy AI"
-        description="Practical guides on automating SOC 2, ISO 27001, GDPR, the EU AI Act, and more with AI-native continuous compliance. Insights from the ComplyEasy AI team."
+        title={SEO_TITLE}
+        description={SEO_DESCRIPTION}
         canonicalPath="/blog"
-        keywords="AI compliance blog, SOC 2 automation, EU AI Act, continuous compliance, GRC insights"
+        keywords="compliance automation blog, SOC 2 automation, EU AI Act timeline, DPDP Rules 2025, CSRD Omnibus"
       />
       <JsonLd data={breadcrumb} />
+      <JsonLd
+        data={reviewedWebPageSchema({
+          name: SEO_TITLE,
+          description: SEO_DESCRIPTION,
+          path: '/blog',
+          lastReviewed,
+          about: 'Compliance automation',
+        })}
+      />
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-surface-200/60 dark:border-surface-800/60">
@@ -60,30 +75,40 @@ const BlogIndex: React.FC = () => {
           </nav>
 
           <p className="mb-4 text-sm font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400">
-            Insights
+            Blog
           </p>
           <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-surface-900 sm:text-5xl dark:text-white">
-            <span className="text-gradient">AI compliance</span> insights
+            Compliance automation guides: <span className="text-gradient">SOC 2, the EU AI Act and more</span>
           </h1>
-          <p className="mt-6 max-w-2xl text-lg text-surface-600 dark:text-surface-300">
-            Practical, answer-first guides on automating security, privacy, and AI-governance
-            frameworks with continuous, AI-native compliance.
+          <p className="mt-6 max-w-2xl text-lg text-surface-600 dark:text-surface-300">{BLOG_INDEX_HOOK}</p>
+          <p
+            id="blog-answer"
+            className="mt-4 max-w-2xl text-base leading-relaxed text-surface-700 dark:text-surface-200"
+          >
+            {BLOG_INDEX_ANSWER}
           </p>
+          <TldrList items={BLOG_INDEX_TLDR} className="mt-8 max-w-2xl" />
+          <ReviewedByline lastReviewed={lastReviewed} className="mt-6" />
         </div>
       </section>
 
       {/* Post grid */}
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-        <h2 className="sr-only">All articles</h2>
+        <h2 className="sr-only">Which compliance guides can you read?</h2>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {blogPosts.map((post) => (
+          {posts.map((post) => (
             <article
               key={post.slug}
               className="group flex flex-col rounded-2xl border border-surface-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl dark:border-surface-800 dark:bg-surface-900 dark:hover:border-brand-700"
             >
-              <div className="mb-4 flex items-center gap-2 text-xs font-medium text-surface-500 dark:text-surface-400">
+              <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-medium text-surface-500 dark:text-surface-400">
                 <CalendarDays size={14} aria-hidden="true" />
-                <time dateTime={post.date}>{formatDate(post.date)}</time>
+                <time dateTime={post.date}>{formatReviewDate(post.date)}</time>
+                {post.lastReviewed !== post.date ? (
+                  <span>
+                    · Updated <time dateTime={post.lastReviewed}>{formatReviewDate(post.lastReviewed)}</time>
+                  </span>
+                ) : null}
               </div>
 
               <h3 className="text-xl font-semibold leading-snug text-surface-900 transition-colors group-hover:text-brand-600 dark:text-white dark:group-hover:text-brand-400">

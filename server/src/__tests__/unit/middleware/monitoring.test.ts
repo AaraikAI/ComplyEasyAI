@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { EventEmitter } from 'events';
 
 // ---------------------------------------------------------------------------
@@ -200,7 +200,6 @@ describe('Monitoring Middleware', () => {
       mockStartTransaction.mockReturnValue(transaction);
 
       // We need Date.now() to return different values before and after
-      const realDateNow = Date.now;
       let callCount = 0;
       const startTime = 1000000;
       jest.spyOn(Date, 'now').mockImplementation(() => {

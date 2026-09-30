@@ -3,7 +3,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { prismaMock, createMockUser } from '../../mocks/prisma';
+import { prismaMock } from '../../mocks/prisma';
 
 // Add missing models to prismaMock
 const createMockFn = (): jest.Mock<(...args: any[]) => any> => jest.fn() as jest.Mock<(...args: any[]) => any>;
@@ -180,7 +180,7 @@ describe('NotificationService', () => {
         mockNotificationRecord({ userId: uniqueUserId, status: 'failed' })
       );
 
-      const result = await notificationService.sendNotification(uniqueUserId, 'org-123', {
+      await notificationService.sendNotification(uniqueUserId, 'org-123', {
         type: 'info',
         category: 'compliance',
         title: 'Test',

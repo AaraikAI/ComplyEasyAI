@@ -553,7 +553,8 @@ describe('SecurityController', () => {
           proof: { proof: 'proof-data', publicSignals: [] },
         };
 
-        (mockVerifyComplianceProof as any).mockResolvedValue(true);
+        const timestamp = new Date();
+        (mockVerifyComplianceProof as any).mockResolvedValue({ isValid: true, proofId: 'proof-1', timestamp });
 
         await securityController.verifyComplianceProof(
           mockRequest as Request,
@@ -561,7 +562,25 @@ describe('SecurityController', () => {
           mockNext
         );
 
-        expect(mockResponse.json).toHaveBeenCalledWith({ isValid: true });
+        expect(mockResponse.json).toHaveBeenCalledWith({ isValid: true, proofId: 'proof-1', timestamp });
+      });
+
+      // Regression: the service result object was nested as `{ isValid: result }`,
+      // so a rejected proof still produced a truthy `isValid`.
+      it('should report a rejected proof as isValid: false at the top level', async () => {
+        mockRequest.body = {
+          proof: { proof: 'proof-data', publicSignals: [] },
+        };
+
+        (mockVerifyComplianceProof as any).mockResolvedValue({ isValid: false });
+
+        await securityController.verifyComplianceProof(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockResponse.json).toHaveBeenCalledWith({ isValid: false });
       });
 
       it('should throw error if proof missing', async () => {

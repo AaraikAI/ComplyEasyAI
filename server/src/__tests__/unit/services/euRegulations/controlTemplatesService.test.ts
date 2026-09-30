@@ -2,7 +2,7 @@
  * EU Regulations Control Templates Service Unit Tests
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 
 import controlTemplatesService, {
   EURegulationsControlTemplatesService,

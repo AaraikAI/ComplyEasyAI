@@ -1,20 +1,26 @@
 # SEO / GEO / AEO Runbook — ComplyEasy AI
 
 A practical, repeatable runbook for operating the search, generative-engine (GEO),
-and answer-engine (AEO) presence of **https://complyeasyai.com**.
+and answer-engine (AEO) presence of **https://www.complyeasyai.com**.
 
 Scope: this covers the operational steps that live *outside* the codebase — search-engine
 verification, sitemap submission, AI-crawler access checks, citation tracking, and off-site
 listings. The in-repo machinery it relies on:
 
 - `public/robots.txt` — explicitly allows the major AI crawlers (GPTBot, OAI-SearchBot,
-  ChatGPT-User, PerplexityBot, Perplexity-User, ClaudeBot, Claude-Web, anthropic-ai,
-  Google-Extended, CCBot, Amazonbot, cohere-ai, Applebot-Extended) and references the sitemap.
+  ChatGPT-User, PerplexityBot, Perplexity-User, ClaudeBot, Claude-SearchBot, Claude-User,
+  Claude-Web, anthropic-ai, Google-Extended, CCBot, Amazonbot, cohere-ai, Applebot-Extended) and
+  references the sitemap.
 - `public/sitemap.xml` — generated from `scripts/publicRoutes.mjs` by `npm run sitemap`.
 - `public/llms.txt` / `public/llms-full.txt` — concise and full context maps for ingesting LLMs.
 - `scripts/prerender.mjs` — renders full HTML per public route so crawlers and AI engines get
   complete, content-rich markup (not an empty SPA shell).
 - `scripts/validate-jsonld.mjs` (`npm run validate:seo`) — CI gate on structured-data validity.
+
+Canonical host: every canonical URL, `og:url`, JSON-LD URL, sitemap entry and llms link uses
+`https://www.complyeasyai.com`, set once in `components/seo/siteOrigin.ts` and mirrored in
+`scripts/siteOrigin.mjs` (`__tests__/seo/siteOrigin.test.ts` fails on any apex URL). The apex host
+only forwards `/` to www and answers 404 for every other path, so apex URLs must never be emitted.
 
 ---
 
@@ -31,15 +37,15 @@ Do this once per property, then re-submit the sitemap whenever routes change.
    (Alternative for a URL-prefix property: upload the provided HTML verification file to `public/`
    so it deploys to the site root, or add the `<meta name="google-site-verification">` tag.)
 3. Submit the sitemap: **Indexing → Sitemaps → Add a new sitemap → `sitemap.xml`**
-   (full URL `https://complyeasyai.com/sitemap.xml`).
+   (full URL `https://www.complyeasyai.com/sitemap.xml`).
 4. Use **URL Inspection** on the flagship pillar (`/platform/ai-compliance`) and `/soc2-compliance`
    to confirm Google sees the prerendered HTML and the JSON-LD. Request indexing for new/changed URLs.
 
 ### Bing Webmaster Tools
-1. Go to https://www.bing.com/webmasters and add `https://complyeasyai.com`.
+1. Go to https://www.bing.com/webmasters and add `https://www.complyeasyai.com`.
    You can **import from Google Search Console** to skip re-verification, or verify via DNS TXT /
    the XML file / meta tag.
-2. Submit the sitemap under **Sitemaps → Submit sitemap → `https://complyeasyai.com/sitemap.xml`**.
+2. Submit the sitemap under **Sitemaps → Submit sitemap → `https://www.complyeasyai.com/sitemap.xml`**.
 3. Bing powers ChatGPT Search and Copilot, so Bing indexing directly feeds AEO — keep it healthy.
 
 > Re-run `npm run sitemap` (or a full `npm run build`, which runs it) after editing
@@ -52,18 +58,18 @@ Do this once per property, then re-submit the sitemap whenever routes change.
 IndexNow notifies Bing (and partners) of new or changed URLs instantly instead of waiting for a crawl.
 
 1. Generate a key (a 32+ hex-char string) and host it at the site root as
-   `https://complyeasyai.com/<key>.txt` containing exactly that key (place the file in `public/`).
+   `https://www.complyeasyai.com/<key>.txt` containing exactly that key (place the file in `public/`).
 2. On each production deploy, POST the changed URLs:
    ```bash
    curl -s -X POST "https://api.indexnow.org/IndexNow" \
      -H "Content-Type: application/json" \
      -d '{
-       "host": "complyeasyai.com",
+       "host": "www.complyeasyai.com",
        "key": "<your-indexnow-key>",
-       "keyLocation": "https://complyeasyai.com/<your-indexnow-key>.txt",
+       "keyLocation": "https://www.complyeasyai.com/<your-indexnow-key>.txt",
        "urlList": [
-         "https://complyeasyai.com/platform/ai-compliance",
-         "https://complyeasyai.com/soc2-compliance"
+         "https://www.complyeasyai.com/platform/ai-compliance",
+         "https://www.complyeasyai.com/soc2-compliance"
        ]
      }'
    ```
@@ -85,16 +91,16 @@ for UA in \
   "PerplexityBot/1.0 (+https://perplexity.ai/perplexitybot)" \
   "ClaudeBot/1.0 (+claudebot@anthropic.com)"; do
   echo "===== $UA ====="
-  curl -sA "$UA" https://complyeasyai.com/platform/ai-compliance \
+  curl -sA "$UA" https://www.complyeasyai.com/platform/ai-compliance \
     | grep -ciE "<h1|application/ld\+json|AI compliance is the practice"
 done
 
 # robots.txt should Allow each of these agents:
-curl -s https://complyeasyai.com/robots.txt | grep -iE "GPTBot|PerplexityBot|ClaudeBot"
+curl -s https://www.complyeasyai.com/robots.txt | grep -iE "GPTBot|PerplexityBot|ClaudeBot"
 
 # llms context files should be reachable:
-curl -sI https://complyeasyai.com/llms.txt      | head -1
-curl -sI https://complyeasyai.com/llms-full.txt | head -1
+curl -sI https://www.complyeasyai.com/llms.txt      | head -1
+curl -sI https://www.complyeasyai.com/llms-full.txt | head -1
 ```
 
 A non-zero match count on the first loop confirms the crawler receives the real content.

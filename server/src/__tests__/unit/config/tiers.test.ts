@@ -3,7 +3,7 @@
  * Comprehensive tests for tier system, pricing, limits, features, and utility functions
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import {
   TIERS,
   TIER_ORDER,
@@ -312,7 +312,7 @@ describe('Tiers Configuration', () => {
 
     it('should give Visionary ALL features', () => {
       const vFeatures = TIERS.Visionary.features;
-      for (const [key, value] of Object.entries(vFeatures)) {
+      for (const value of Object.values(vFeatures)) {
         expect(value).toBe(true);
       }
     });
