@@ -146,9 +146,14 @@ jest.mock('../../services/advanced/complianceAsCodeService', () => ({
   },
 }));
 
+import jwt from 'jsonwebtoken';
 import securityRoutes from '../../routes/security';
 import twoFactorRoutes from '../../routes/twoFactor';
 import { errorHandler } from '../../middleware/errorHandler';
+import { signPendingTwoFactorToken } from '../../utils/twoFactorPendingToken';
+
+/** Signs a second-factor-pending token the way login issues it. */
+const pendingTwoFactorToken = (userId: string): string => signPendingTwoFactorToken(userId);
 
 const app = express();
 app.use(express.json());
@@ -229,7 +234,7 @@ describe('E2E: Security Settings Flow', () => {
     it('should verify 2FA token during login', async () => {
       const response = await request(app)
         .post('/api/2fa/verify')
-        .send({ userId: 'user-123', token: '123456' })
+        .send({ twoFactorToken: pendingTwoFactorToken('user-123'), token: '123456' })
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -239,11 +244,38 @@ describe('E2E: Security Settings Flow', () => {
     it('should verify backup code', async () => {
       const response = await request(app)
         .post('/api/2fa/verify-backup')
-        .send({ userId: 'user-123', code: 'backup-code-1' })
+        .send({ twoFactorToken: pendingTwoFactorToken('user-123'), code: 'backup-code-1' })
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(mockTwoFactorService.verifyBackupCode).toHaveBeenCalledWith('user-123', 'backup-code-1');
+    });
+
+    // Regression: both routes are public; a body userId used to select whose
+    // second factor was checked (and whose backup code was consumed).
+    it('should reject a client-supplied userId on the public verify routes', async () => {
+      await request(app)
+        .post('/api/2fa/verify')
+        .send({ userId: 'victim-user', token: '123456' })
+        .expect(400);
+      await request(app)
+        .post('/api/2fa/verify-backup')
+        .send({ userId: 'victim-user', code: 'backup-code-1' })
+        .expect(400);
+
+      expect(mockTwoFactorService.verifyTwoFactorToken).not.toHaveBeenCalled();
+      expect(mockTwoFactorService.verifyBackupCode).not.toHaveBeenCalled();
+    });
+
+    it('should reject a pending token that was not signed by the server', async () => {
+      const forged = jwt.sign({ userId: 'victim-user', purpose: '2fa_pending' }, 'a-different-signing-secret', { expiresIn: '5m' });
+
+      await request(app)
+        .post('/api/2fa/verify-backup')
+        .send({ twoFactorToken: forged, code: 'backup-code-1' })
+        .expect(401);
+
+      expect(mockTwoFactorService.verifyBackupCode).not.toHaveBeenCalled();
     });
 
     it('should disable 2FA', async () => {

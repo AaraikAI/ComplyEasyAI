@@ -389,8 +389,11 @@ class SecurityController {
         throw new AppError('Proof is required', 400);
       }
 
-      const isValid = await zeroKnowledgeService.verifyComplianceProof(proof);
-      res.json({ isValid });
+      // verifyComplianceProof returns { isValid, proofId?, timestamp? }. Wrapping
+      // that object as `{ isValid: result }` made isValid an object, which is
+      // truthy even for a rejected proof; return the boolean at the top level.
+      const result = await zeroKnowledgeService.verifyComplianceProof(proof);
+      res.json({ ...result, isValid: result.isValid === true });
     } catch (error: any) {
       logger.error('Verify compliance proof error', error);
       throw new AppError(error.message || 'Failed to verify compliance proof', 500);
