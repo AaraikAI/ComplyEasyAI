@@ -1197,6 +1197,17 @@ jobs:
             --exclude "*" --include "*.html" \
             --content-type "text/html" \
             --cache-control "no-cache, no-store, must-revalidate"
+          # 3) Remove HTML the build no longer produces. Step 1 excludes *.html,
+          #    and an excluded file is never a --delete candidate, while step 2's
+          #    cp only adds files; without this pass a page removed from the site
+          #    (a deleted blog post, /community) kept being served from S3. Step 2
+          #    has just uploaded every HTML file in ./dist, so this sync only
+          #    deletes; the same headers apply if it ever uploads.
+          aws s3 sync ./dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
+            --delete \
+            --exclude "*" --include "*.html" --exclude "backups/*" \
+            --content-type "text/html" \
+            --cache-control "no-cache, no-store, must-revalidate"
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
@@ -1480,6 +1491,17 @@ jobs:
           aws s3 cp ./dist s3://${{ secrets.STAGING_S3_FRONTEND_BUCKET }} \
             --recursive \
             --exclude "*" --include "*.html" \
+            --content-type "text/html" \
+            --cache-control "no-cache, no-store, must-revalidate"
+          # 3) Remove HTML the build no longer produces. Step 1 excludes *.html,
+          #    and an excluded file is never a --delete candidate, while step 2's
+          #    cp only adds files; without this pass a page removed from the site
+          #    (a deleted blog post, /community) kept being served from S3. Step 2
+          #    has just uploaded every HTML file in ./dist, so this sync only
+          #    deletes; the same headers apply if it ever uploads.
+          aws s3 sync ./dist s3://${{ secrets.STAGING_S3_FRONTEND_BUCKET }} \
+            --delete \
+            --exclude "*" --include "*.html" --exclude "backups/*" \
             --content-type "text/html" \
             --cache-control "no-cache, no-store, must-revalidate"
           aws cloudfront create-invalidation \
