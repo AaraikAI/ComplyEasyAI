@@ -25,7 +25,7 @@
  * - Footer shows "Navigate" + "Select" keyboard hints.
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator, expect } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class CommandPalettePage extends BasePage {

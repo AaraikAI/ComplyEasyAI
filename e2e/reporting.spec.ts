@@ -268,7 +268,7 @@ test.describe('Reporting', () => {
       if (await exportBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
         const downloadPromise = page.waitForEvent('download', { timeout: 10000 }).catch(() => null);
         await exportBtn.click();
-        const download = await downloadPromise;
+        await downloadPromise;
         // Download may or may not trigger depending on data
       }
     });

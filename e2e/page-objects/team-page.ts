@@ -3,7 +3,7 @@
  * Covers team invite, role changes, removal, and bulk invite
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator, expect } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class TeamPage extends BasePage {

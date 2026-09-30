@@ -3,7 +3,7 @@
  * Covers audit readiness, evidence gaps, audit simulation, control testing
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class AuditPage extends BasePage {

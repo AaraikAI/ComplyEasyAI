@@ -3,7 +3,7 @@
  * Covers incident lifecycle: create, assign, investigate, resolve, close
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class IncidentsPage extends BasePage {

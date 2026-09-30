@@ -3,7 +3,7 @@
  * Policy management operations
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Locator, expect } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class PoliciesPage extends BasePage {

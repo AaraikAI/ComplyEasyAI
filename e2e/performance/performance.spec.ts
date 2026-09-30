@@ -158,7 +158,7 @@ test.describe('API Response Time', () => {
   test('Frameworks API responds quickly', async ({ request }) => {
     const startTime = Date.now();
 
-    const response = await request.get(`${API_BASE}/api/frameworks`, {
+    await request.get(`${API_BASE}/api/frameworks`, {
       failOnStatusCode: false,
     });
 
