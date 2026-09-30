@@ -1,74 +1,91 @@
-# ComplyEasy AI — Full Site Map for LLMs
+# ComplyEasyAI — Full Site Map for LLMs
 
-ComplyEasy AI is an AI-powered compliance automation platform that helps organizations
-achieve and maintain readiness across major security, privacy, and AI-governance
-frameworks. It combines AI evidence collection, continuous control monitoring, risk and
-vendor management, policy generation, and audit preparation in a single workspace.
+> ComplyEasyAI is an AI compliance automation platform.
+> Read-only integrations collect audit evidence continuously, agents monitor controls and
+> propose fixes with human approval for high-impact changes, and each control is mapped once
+> across frameworks such as SOC 2, ISO 27001, GDPR, HIPAA and the EU AI Act.
 
-This file is a context-rich map of every public page on https://complyeasyai.com, with a
-one-line description of each, so an ingesting model can understand the site structure and
-cite the most relevant page. For a shorter overview see /llms.txt. The machine-readable
-URL set is at /sitemap.xml.
+This file maps every public, indexable page on https://www.complyeasyai.com with a one-line
+description, so an ingesting model can understand the site structure and cite the most
+relevant page. For a shorter overview see /llms.txt. The machine-readable URL set is at
+/sitemap.xml.
 
-Brand facts (verifiable-only): name "ComplyEasy AI"; site https://complyeasyai.com.
-Frameworks listed below are standards the platform HELPS customers achieve readiness for,
-not certifications held by the company.
+Frameworks listed are standards the platform helps customers prepare for, not certifications
+held by ComplyEasyAI. Pricing is quoted per framework mix (four annual plans; see /pricing).
 
-Last updated: 2026-06-07
+Last updated: 2026-09-27
+
+## Key facts
+
+- Frameworks: 16 in-depth framework guides (listed below) and 150+ frameworks and standards in the in-app catalogue.
+- Integrations: 26 verified integrations, meaning the credential is checked with the provider at connect time and evidence is collected on sync: AWS, Microsoft Azure, DigitalOcean, Heroku, Kubernetes, Okta, Google Workspace, BambooHR, ADP, GitHub, GitLab, Bitbucket, CircleCI, CrowdStrike, Qualys, Jira, ServiceNow, Azure DevOps, Zendesk, Asana, Monday.com, Confluence, Slack, Discord, SendGrid and Twilio.
+- Pricing: four annual plans (Foundation, Essentials, Growth, Visionary); each is a tailored quote per framework mix and team size. No list prices are published.
+- Trials: available on request through the demo form (/demo).
+- ComplyEasyAI's own security: SOC 2 Type I audit in progress; no SOC 2 report or ISO 27001 certificate is held yet. Controls in place: encryption at rest (Supabase and AWS), TLS encryption in transit, multi-factor authentication, audit logging, and hosting in a single US region (AWS and Supabase, us-east-1).
+- Developer access: REST and GraphQL APIs are available. SDKs (JavaScript/TypeScript, Python, Go, Java), a CLI, a Terraform provider and a no-code Integration Builder are on the roadmap.
+- Available on request (agreed per contract): uptime SLAs with service credits, on-premises deployment, 24/7 phone support, a dedicated customer success manager, professional and managed services including a virtual CISO, migration help, and audit bundling with partner audit firms.
 
 ## Core pages
 
-- https://complyeasyai.com/ — Home. Overview of the AI-native, continuous compliance platform and its core capabilities.
-- https://complyeasyai.com/learn — Learn. Educational hub linking the framework guides, glossary, and blog.
-- https://complyeasyai.com/community — Community. Resources and discussion for compliance and GRC practitioners.
-- https://complyeasyai.com/status — Status. Platform availability and operational status information.
-- https://complyeasyai.com/docs — Documentation. Product and integration documentation entry point.
+- https://www.complyeasyai.com/ — Home. What ComplyEasyAI does: continuous evidence collection, control monitoring and cross-framework control mapping, with 16 in-depth framework guides.
+- https://www.complyeasyai.com/platform — Platform. The autonomous compliance OS (aCOS): observe, predict, act, verify and learn, plus the Compliance Digital Twin and safe remediation with rollback.
+- https://www.complyeasyai.com/pricing — Pricing. Four annual plans (Foundation, Essentials, Growth, Visionary) by framework and user count; each is a tailored quote per framework mix. Trials are available on request.
+- https://www.complyeasyai.com/frameworks — Frameworks. Index of the 16 framework guides across security, privacy, AI governance and EU digital regulation.
+- https://www.complyeasyai.com/demo — Book a demo or request a trial. A 30-minute walkthrough tailored to your frameworks and stack.
+- https://www.complyeasyai.com/learn — Learning center. Guides, checklists and definitions, linking the framework guides, glossary and blog.
+- https://www.complyeasyai.com/docs — Documentation. Product documentation: quickstart, integrations, evidence, monitoring, aCOS, reports, roles and the API.
+- https://www.complyeasyai.com/status — System status. Live availability of the web app, API, database and background jobs from the production health check.
 
-## Pillar pages (framework and topic guides)
+## Pillar pages (topic and framework guides)
 
-- https://complyeasyai.com/platform/ai-compliance — What is AI compliance? The flagship 2026 guide covering requirements, frameworks (EU AI Act, NIST AI RMF, ISO 42001), challenges, a step-by-step "how to get AI compliant" procedure, and automation.
-- https://complyeasyai.com/soc2-compliance — SOC 2 compliance software. The Trust Services Criteria, Type I vs Type II, a step-by-step path to a clean report, and how the platform automates SOC 2 readiness.
-- https://complyeasyai.com/iso-27001 — ISO 27001. The international information-security management standard, its Annex A controls, and how the platform supports certification readiness.
-- https://complyeasyai.com/gdpr — GDPR. The EU General Data Protection Regulation, its core obligations, and how the platform supports privacy compliance.
-- https://complyeasyai.com/eu-ai-act — EU AI Act. The risk-tiered EU law for AI providers and deployers and how the platform helps classify systems and meet high-risk obligations.
-- https://complyeasyai.com/hipaa — HIPAA. Administrative, physical, and technical safeguards for protected health information and how the platform supports HIPAA readiness.
-- https://complyeasyai.com/nist-ai-rmf — NIST AI Risk Management Framework. The voluntary GOVERN-MAP-MEASURE-MANAGE structure for AI risk and how the platform operationalizes it.
-- https://complyeasyai.com/grc — GRC platform. Unified governance, risk, and compliance across every framework with one control library and one evidence source.
-
-## Competitor comparison pages
-
-- https://complyeasyai.com/compare/vanta-alternative — ComplyEasy AI as a Vanta alternative — capability comparison for AI-native continuous compliance.
-- https://complyeasyai.com/compare/drata-alternative — ComplyEasy AI as a Drata alternative — capability comparison for automated compliance and evidence collection.
-- https://complyeasyai.com/compare/secureframe-alternative — ComplyEasy AI as a Secureframe alternative — capability comparison for multi-framework compliance automation.
-- https://complyeasyai.com/compare/sprinto-alternative — ComplyEasy AI as a Sprinto alternative — capability comparison for continuous control monitoring.
-- https://complyeasyai.com/compare/onetrust-alternative — ComplyEasy AI as a OneTrust alternative — capability comparison for privacy and GRC programs.
+- https://www.complyeasyai.com/platform/ai-compliance — What is AI compliance? Requirements, frameworks (EU AI Act, NIST AI RMF, ISO 42001, AIUC-1), the EU AI Act dates after the 2026 Digital Omnibus, common challenges and a step-by-step procedure for getting AI compliant.
+- https://www.complyeasyai.com/grc — GRC software. Governance, risk and compliance in one platform with one control library and one evidence source.
+- https://www.complyeasyai.com/soc2-compliance — SOC 2. The Trust Services Criteria, Type I vs Type II, and how evidence is automated for both reports.
+- https://www.complyeasyai.com/iso-27001 — ISO 27001. The ISMS standard, Annex A control mapping, the Statement of Applicability and certification readiness.
+- https://www.complyeasyai.com/nist-csf — NIST CSF 2.0. The six functions (Govern, Identify, Protect, Detect, Respond, Recover) and continuous maturity tracking.
+- https://www.complyeasyai.com/pci-dss — PCI DSS v4.0.1. Scoping the cardholder data environment and monitoring the 12 requirements.
+- https://www.complyeasyai.com/gdpr — GDPR. Records of processing, DPIAs, data-subject requests, consent and breach notification.
+- https://www.complyeasyai.com/hipaa — HIPAA. The Security, Privacy and Breach Notification Rules for covered entities and business associates.
+- https://www.complyeasyai.com/ccpa — CCPA/CPRA. Consumer requests (know, delete, correct, opt out), privacy notices and CPRA obligations.
+- https://www.complyeasyai.com/india-dpdpa — India DPDP Act 2023 and DPDP Rules 2025. Phase dates (Consent Managers from 13 November 2026, most duties from 13 May 2027), notice and consent, Data Fiduciary duties, breach notification, children's data and Data Principal rights.
+- https://www.complyeasyai.com/eu-ai-act — EU AI Act. Risk classification, GPAI and transparency duties, and the high-risk deadlines after the 2026 Digital Omnibus (Regulation (EU) 2026/1744): 2 December 2027 for Annex III, 2 August 2028 for Annex I.
+- https://www.complyeasyai.com/nist-ai-rmf — NIST AI RMF 1.0. The GOVERN, MAP, MEASURE and MANAGE functions for AI risk.
+- https://www.complyeasyai.com/iso-42001 — ISO/IEC 42001. The AI management system standard: AI risk and impact assessment, lifecycle controls and data governance.
+- https://www.complyeasyai.com/aiuc-1 — AIUC-1. The AI agent standard's six pillars: data and privacy, security, safety, reliability, accountability and society.
+- https://www.complyeasyai.com/dora-compliance — DORA. ICT risk management, major-incident reporting, resilience testing and third-party ICT registers for EU financial entities.
+- https://www.complyeasyai.com/dma-compliance — DMA. Digital Markets Act obligations for designated gatekeepers.
+- https://www.complyeasyai.com/dsa-compliance — DSA. Digital Services Act duties: notice and action, transparency reporting and systemic-risk assessments for very large platforms.
+- https://www.complyeasyai.com/csrd-compliance — CSRD after Omnibus I (Directive (EU) 2026/470). Scope (over 1,000 employees and €450 million turnover), double materiality, ESRS disclosures and limited assurance.
 
 ## FAQ and reference
 
-- https://complyeasyai.com/faq — Frequently asked questions about the platform, supported frameworks, and how AI compliance automation works.
-- https://complyeasyai.com/glossary — Glossary index. Plain-language definitions of compliance, privacy, and AI-governance terms.
+- https://www.complyeasyai.com/faq — FAQ. Answers on frameworks, AI features, security, integrations, pricing and support.
+- https://www.complyeasyai.com/glossary — Glossary index. Plain-language definitions of 16 compliance, privacy and AI-governance terms; each entry opens with a quotable definition, key takeaways and short FAQs.
 
 ## Glossary terms
 
-- https://complyeasyai.com/glossary/ai-compliance — AI Compliance — governing AI systems to meet legal, ethical, and security obligations.
-- https://complyeasyai.com/glossary/soc-2 — SOC 2 — AICPA attestation of controls against the Trust Services Criteria.
-- https://complyeasyai.com/glossary/iso-27001 — ISO 27001 — the international standard for information-security management systems.
-- https://complyeasyai.com/glossary/gdpr — GDPR — the EU General Data Protection Regulation for personal-data processing.
-- https://complyeasyai.com/glossary/eu-ai-act — EU AI Act — the risk-tiered EU law regulating AI providers and deployers.
-- https://complyeasyai.com/glossary/hipaa — HIPAA — US safeguards for protected health information.
-- https://complyeasyai.com/glossary/nist-ai-rmf — NIST AI RMF — the voluntary framework for managing AI risk.
-- https://complyeasyai.com/glossary/grc — GRC — governance, risk, and compliance as an integrated discipline.
-- https://complyeasyai.com/glossary/dpia — DPIA — Data Protection Impact Assessment for high-risk processing.
-- https://complyeasyai.com/glossary/ropa — RoPA — Record of Processing Activities required under GDPR.
-- https://complyeasyai.com/glossary/evidence-collection — Evidence Collection — gathering and mapping artifacts that demonstrate controls operate.
-- https://complyeasyai.com/glossary/continuous-compliance — Continuous Compliance — maintaining audit-readiness continuously rather than at a point in time.
-- https://complyeasyai.com/glossary/risk-register — Risk Register — a structured inventory of identified risks and their treatment.
-- https://complyeasyai.com/glossary/vendor-risk-management — Vendor Risk Management — assessing and monitoring third-party and supply-chain risk.
-- https://complyeasyai.com/glossary/audit-readiness — Audit Readiness — the state of having evidence and controls organized for an auditor.
-- https://complyeasyai.com/glossary/control-mapping — Control Mapping — relating one control to the requirements it satisfies across frameworks.
+- https://www.complyeasyai.com/glossary/ai-compliance — AI Compliance: governing AI systems to meet legal, ethical and security obligations.
+- https://www.complyeasyai.com/glossary/soc-2 — SOC 2: AICPA attestation of controls against the Trust Services Criteria.
+- https://www.complyeasyai.com/glossary/iso-27001 — ISO 27001: the international standard for information security management systems.
+- https://www.complyeasyai.com/glossary/gdpr — GDPR: the EU General Data Protection Regulation for personal-data processing.
+- https://www.complyeasyai.com/glossary/eu-ai-act — EU AI Act: the risk-tiered EU law regulating AI providers and deployers; high-risk duties from 2 December 2027 or 2 August 2028 after the 2026 amendments.
+- https://www.complyeasyai.com/glossary/hipaa — HIPAA: US safeguards for protected health information.
+- https://www.complyeasyai.com/glossary/nist-ai-rmf — NIST AI RMF: the voluntary framework for managing AI risk.
+- https://www.complyeasyai.com/glossary/grc — GRC: governance, risk and compliance as an integrated discipline.
+- https://www.complyeasyai.com/glossary/dpia — DPIA: Data Protection Impact Assessment for high-risk processing.
+- https://www.complyeasyai.com/glossary/ropa — RoPA: Record of Processing Activities required under GDPR.
+- https://www.complyeasyai.com/glossary/evidence-collection — Evidence collection: gathering and mapping artifacts that show controls operate.
+- https://www.complyeasyai.com/glossary/continuous-compliance — Continuous compliance: staying audit-ready continuously rather than at a point in time.
+- https://www.complyeasyai.com/glossary/risk-register — Risk register: a structured inventory of identified risks and their treatment.
+- https://www.complyeasyai.com/glossary/vendor-risk-management — Vendor risk management: assessing and monitoring third-party and supply-chain risk.
+- https://www.complyeasyai.com/glossary/audit-readiness — Audit readiness: having evidence and controls organized for an auditor.
+- https://www.complyeasyai.com/glossary/control-mapping — Control mapping: relating one control to every requirement it satisfies across frameworks.
 
 ## Blog
 
-- https://complyeasyai.com/blog — Blog index. Practical guides on automating compliance across SOC 2, ISO 27001, GDPR, and the EU AI Act.
-- https://complyeasyai.com/blog/how-to-automate-soc-2-compliance-with-ai — How to Automate SOC 2 Compliance with AI — connect systems, let agents collect evidence continuously, monitor controls, and stay audit-ready year-round.
-- https://complyeasyai.com/blog/eu-ai-act-compliance-checklist — EU AI Act Compliance Checklist — a step-by-step checklist for classifying AI systems and meeting the obligations the EU AI Act places on providers and deployers.
+- https://www.complyeasyai.com/blog — Blog index. Answer-first guides with dates and sources: SOC 2 automation, the EU AI Act after the Digital Omnibus, India's DPDP Rules 2025 and CSRD after Omnibus I.
+- https://www.complyeasyai.com/blog/eu-ai-act-timeline-digital-omnibus — EU AI Act timeline after the Digital Omnibus (Regulation (EU) 2026/1744): prohibitions since 2 February 2025, GPAI duties since 2 August 2025, transparency since 2 August 2026, new bans and the marking deadline on 2 December 2026, high-risk duties from 2 December 2027 (Annex III) and 2 August 2028 (Annex I).
+- https://www.complyeasyai.com/blog/india-dpdp-rules-2025-timeline — India DPDP Rules 2025: what applies on 13 May 2027. The Rules' phased start (Board provisions from 13 November 2025, Consent Managers from 13 November 2026, most duties from 13 May 2027), notice and consent, security and 72-hour breach reporting, children's data, Significant Data Fiduciaries and a GDPR comparison.
+- https://www.complyeasyai.com/blog/csrd-after-omnibus-i — CSRD after Omnibus I (Directive (EU) 2026/470): who still reports. Scope above 1,000 employees and €450 million turnover, non-EU groups from financial year 2028, limited assurance only, the revised ESRS and the value-chain cap.
+- https://www.complyeasyai.com/blog/eu-ai-act-compliance-checklist — EU AI Act compliance checklist (2026 update): inventory, risk classification, high-risk obligations, transparency and GPAI duties, with the post-Omnibus dates.
+- https://www.complyeasyai.com/blog/how-to-automate-soc-2-compliance-with-ai — How to automate SOC 2 compliance with AI: connect systems, collect evidence continuously, monitor controls and stay audit-ready year-round.

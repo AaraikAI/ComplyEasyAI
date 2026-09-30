@@ -34,7 +34,6 @@ const SignupPage = lazy(() => import('./components/SignupPage'));
 const LoginPage = lazy(() => import('./components/LoginPage'));
 const DemoPage = lazy(() => import('./components/marketing/pages/DemoPage'));
 const LearnPage = lazy(() => import('./components/LearnPage'));
-const CommunityPage = lazy(() => import('./components/CommunityPage'));
 const StatusPage = lazy(() => import('./components/StatusPage'));
 const DocsPage = lazy(() => import('./components/DocsPage'));
 
@@ -503,7 +502,6 @@ const App: React.FC = () => {
             <Route path="/login" element={<PublicPageWrapper><LoginPage /></PublicPageWrapper>} />
             <Route path="/demo" element={<PublicPageWrapper><DemoPage /></PublicPageWrapper>} />
             <Route path="/learn" element={<PublicPageWrapper><LearnPage /></PublicPageWrapper>} />
-            <Route path="/community" element={<PublicPageWrapper><CommunityPage /></PublicPageWrapper>} />
             <Route path="/status" element={<PublicPageWrapper><StatusPage /></PublicPageWrapper>} />
             <Route path="/docs" element={<PublicPageWrapper><DocsPage /></PublicPageWrapper>} />
             <Route path="/docs/*" element={<PublicPageWrapper><DocsPage /></PublicPageWrapper>} />
@@ -535,10 +533,12 @@ const App: React.FC = () => {
             <Route path="/aiuc-1" element={<PublicPageWrapper><AIUC1Pillar /></PublicPageWrapper>} />
             <Route path="/india-dpdpa" element={<PublicPageWrapper><IndiaDPDPAPillar /></PublicPageWrapper>} />
 
-            {/* ── Competitor comparison pages (public) ──────────────── */}
-            {/* The competitor-comparison section was removed; keep indexed links alive. */}
+            {/* ── Retired public pages: keep indexed links alive ─────── */}
+            {/* The competitor-comparison section was removed. */}
             <Route path="/compare/*" element={<Navigate to="/platform" replace />} />
             <Route path="/blog/vanta-vs-drata-vs-complyeasy-ai" element={<Navigate to="/blog" replace />} />
+            {/* The community page was removed; its visitors land on the learning center. */}
+            <Route path="/community" element={<Navigate to="/learn" replace />} />
 
             {/* ── FAQ, Glossary, Blog (public) ──────────────────────── */}
             <Route path="/faq" element={<PublicPageWrapper><FaqHubPage /></PublicPageWrapper>} />

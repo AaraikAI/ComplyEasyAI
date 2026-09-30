@@ -6,8 +6,9 @@ import { SignalPage } from './marketing/signal';
 import { Seo } from './seo/Seo';
 import { JsonLd } from './seo/JsonLd';
 import { breadcrumbSchema } from './seo/siteSchema';
-
-const SITE_ORIGIN = 'https://complyeasyai.com';
+import { SITE_ORIGIN } from './seo/siteOrigin';
+import { BRAND_NAME } from './seo/brand';
+import { INTEGRATION_COUNT, VERIFIED_INTEGRATION_GROUPS } from '../data/marketingFacts';
 
 /** One content block inside a docs section. */
 type DocBlock =
@@ -45,7 +46,7 @@ const DOCS: Record<string, DocArticle> = {
           {
             t: 'ul',
             v: [
-              'Name your workspace and set your primary region.',
+              'Name your workspace.',
               'Choose the frameworks you intend to pursue first.',
               'Invite teammates by email with a role (Admin, Editor or Viewer).',
             ],
@@ -137,12 +138,7 @@ const DOCS: Record<string, DocArticle> = {
           },
           {
             t: 'ul',
-            v: [
-              'Cloud — AWS, Azure, GCP',
-              'Code — GitHub, GitLab',
-              'Identity — Okta, Google Workspace, Entra ID',
-              'Ticketing — Jira, Linear',
-            ],
+            v: VERIFIED_INTEGRATION_GROUPS.map(({ group, names }) => `${group} — ${names.join(', ')}`),
           },
         ],
       },
@@ -155,7 +151,7 @@ const DOCS: Record<string, DocArticle> = {
           },
           {
             t: 'note',
-            v: 'Over 30 integrations are available. Missing one? Evidence can also be uploaded manually or via the API.',
+            v: `${INTEGRATION_COUNT} verified integrations are available. Missing one? Evidence can also be uploaded manually or via the API.`,
           },
         ],
       },
@@ -356,11 +352,11 @@ const DOCS: Record<string, DocArticle> = {
         blocks: [
           {
             t: 'p',
-            v: 'Generate an API key in Settings → Developers. Pass it as a bearer token on every request.',
+            v: 'Send an access token as a bearer header. API clients receive one from POST /api/v2/auth/login; browser sessions use an httpOnly cookie instead. API keys (prefixed cea_) are accepted on the webhook endpoints.',
           },
           {
             t: 'code',
-            v: 'curl https://api.complyeasyai.com/v1/frameworks \\\n  -H "Authorization: Bearer $CEAI_API_KEY"',
+            v: 'curl https://www.complyeasyai.com/api/v1/frameworks \\\n  -H "Authorization: Bearer $CEAI_ACCESS_TOKEN"',
           },
         ],
       },
@@ -369,11 +365,11 @@ const DOCS: Record<string, DocArticle> = {
         blocks: [
           {
             t: 'p',
-            v: 'Subscribe to events to react to compliance changes in your own systems — for example, opening a ticket when a control drifts.',
+            v: 'Subscribe to events to react to compliance changes in your own systems — for example, opening a ticket when a control changes status or a monitor fails. GET /api/v1/webhooks/event-types lists every event; creating a webhook needs an admin.',
           },
           {
             t: 'code',
-            v: 'POST /v1/webhooks\n{\n  "url": "https://example.com/hooks/ceai",\n  "events": ["control.drifted", "evidence.collected"]\n}',
+            v: 'POST /api/v1/webhooks\n{\n  "name": "Ticket on control change",\n  "url": "https://example.com/hooks/ceai",\n  "events": ["control.updated", "monitor.failed"]\n}',
           },
         ],
       },
@@ -490,7 +486,7 @@ export const DocsPage: React.FC = () => {
   return (
     <MarketingLayout>
       <Seo
-        title={`${article.title} — ComplyEasy AI Docs`}
+        title={`${article.title} — ${BRAND_NAME} Docs`}
         description={article.summary}
         canonicalPath={activeId === DEFAULT_DOC ? '/docs' : `/docs/${activeId}`}
         ogType="article"

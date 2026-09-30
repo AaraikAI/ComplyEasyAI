@@ -1,10 +1,9 @@
 import React from 'react';
 import SignalFrameworkPillar from './SignalFrameworkPillar';
 
-const SEO_TITLE =
-  'ISO 42001 Software: Certify Your AI Management System | ComplyEasy AI';
+const SEO_TITLE = 'ISO 42001 AI Management System Software | ComplyEasyAI';
 const SEO_DESCRIPTION =
-  'ISO 42001 software that operationalizes your AI Management System (AIMS) — AI risk and impact assessment, lifecycle controls, and data governance — with evidence kept continuously certification-ready.';
+  'ISO 42001 software for your AI management system (AIMS): AI risk and impact assessment, Annex A controls and lifecycle evidence, kept certification-ready.';
 const SEO_KEYWORDS =
   'ISO 42001 software, ISO 42001 compliance, AI management system, AIMS certification, ISO/IEC 42001, responsible AI governance, AI lifecycle controls, AI risk and impact assessment';
 

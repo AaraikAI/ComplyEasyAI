@@ -9,23 +9,27 @@ import {
   SignalCard,
   PrimaryCta,
   OutlineCta,
+  SignalFaq,
 } from './marketing/signal';
 import Seo from './seo/Seo';
 import JsonLd from './seo/JsonLd';
-import {
-  organizationSchema,
-  softwareApplicationSchema,
-  breadcrumbSchema,
-} from './seo/siteSchema';
+import { faqSchema } from './seo/siteSchema';
+import { TldrList } from './marketing/answerFirst';
 import { FRAMEWORK_PILLAR_COUNT } from '../data/frameworkPillarContent';
+import {
+  FRAMEWORK_CATALOGUE_LABEL,
+  FRAMEWORK_GUIDE_LIST,
+  INTEGRATION_COUNT,
+  SECURITY_ATTESTATION,
+  TRIAL_CTA,
+} from '../data/marketingFacts';
 
 // ---------------------------------------------------------------------------
 // SEO copy
 // ---------------------------------------------------------------------------
-const SEO_TITLE =
-  'AI Compliance Automation for SOC 2, ISO 27001, GDPR & the EU AI Act | ComplyEasy AI';
+const SEO_TITLE = 'AI Compliance Automation Platform | ComplyEasyAI';
 const SEO_DESCRIPTION =
-  'ComplyEasy AI automates evidence collection, control mapping, and audit preparation with autonomous AI agents — helping teams achieve readiness for SOC 2, ISO 27001, GDPR, HIPAA, and the EU AI Act.';
+  'ComplyEasyAI automates evidence collection, control monitoring and audit preparation for SOC 2, ISO 27001, GDPR, HIPAA and the EU AI Act, with AI agents and human approval for high-impact changes.';
 const SEO_KEYWORDS =
   'AI compliance software, compliance automation, SOC 2 automation, ISO 27001 software, GDPR compliance, EU AI Act compliance tool, NIST AI RMF software, GRC software, continuous compliance monitoring';
 
@@ -109,7 +113,7 @@ const HeroStatusCard: React.FC = () => (
       </div>
 
       <div className="mt-[18px] border-t border-white/[0.07] pt-4 font-mono text-[11px] text-signal-muted">
-        {FRAMEWORK_PILLAR_COUNT} frameworks · 30+ integrations · agents on watch 24/7
+        {FRAMEWORK_PILLAR_COUNT} framework guides · {INTEGRATION_COUNT} integrations · watching 24/7
       </div>
     </div>
   </div>
@@ -124,17 +128,17 @@ const JOB_CARDS: { glyph: JobGlyph; title: string; body: string }[] = [
   {
     glyph: 'ring',
     title: 'Audit-ready, continuously',
-    body: 'The evidence package is the same artifacts auditors pull from production. No final-quarter scramble.',
+    body: 'Evidence is pulled on a schedule from the systems auditors actually test, with a versioned trail. No final-quarter scramble.',
   },
   {
     glyph: 'outline',
     title: `One platform, ${FRAMEWORK_PILLAR_COUNT} frameworks`,
-    body: 'Shared controls mapped once and reused across SOC 2, ISO 27001, GDPR, HIPAA and more.',
+    body: 'Map a control once and reuse its evidence across SOC 2, ISO 27001, GDPR, HIPAA, the EU AI Act and more.',
   },
   {
     glyph: 'solid',
     title: 'It runs itself',
-    body: 'Autonomous agents collect, monitor and remediate — with you approving anything that matters.',
+    body: 'Agents collect, monitor and propose fixes with rollback. Anything high-impact waits for your approval.',
   },
 ];
 
@@ -177,7 +181,7 @@ const RoiCalculator: React.FC<RoiCalculatorProps> = ({ automationPct, toolCostK 
       label: 'Frameworks pursued',
       value: frameworksPursued,
       min: 1,
-      max: 14,
+      max: FRAMEWORK_PILLAR_COUNT,
       step: 1,
       onChange: setFrameworksPursued,
     },
@@ -262,6 +266,39 @@ const DEPTH_ITEMS = [
 ];
 
 // ---------------------------------------------------------------------------
+// TL;DR (the page's key facts, directly under the hero)
+// ---------------------------------------------------------------------------
+const HOME_TLDR: string[] = [
+  `Evidence is collected continuously through ${INTEGRATION_COUNT} verified integrations, read-only for evidence collection.`,
+  `Each control is mapped once across ${FRAMEWORK_PILLAR_COUNT} in-depth framework guides and ${FRAMEWORK_CATALOGUE_LABEL} frameworks in the catalogue.`,
+  'Agents flag control drift and propose fixes; anything high-impact waits for your approval.',
+  'Plans are annual and quoted per framework mix; trials are available on request.',
+  `Our own security: ${SECURITY_ATTESTATION}, hosted in a single US region (us-east-1).`,
+];
+
+// ---------------------------------------------------------------------------
+// Common questions (rendered and emitted as FAQPage structured data)
+// ---------------------------------------------------------------------------
+const HOME_FAQ: { q: string; a: string }[] = [
+  {
+    q: 'What is ComplyEasyAI?',
+    a: 'ComplyEasyAI is an AI compliance automation platform. It connects read-only to your cloud, code, identity and vendor systems, collects audit evidence continuously, monitors controls for drift and maps each control once across frameworks such as SOC 2, ISO 27001, GDPR, HIPAA and the EU AI Act.',
+  },
+  {
+    q: 'Which frameworks does ComplyEasyAI support?',
+    a: `${FRAMEWORK_PILLAR_COUNT} frameworks have in-depth guides: ${FRAMEWORK_GUIDE_LIST}. The in-app catalogue covers ${FRAMEWORK_CATALOGUE_LABEL} frameworks and standards, and Growth and Visionary plans can build custom frameworks.`,
+  },
+  {
+    q: 'Does ComplyEasyAI replace my auditor?',
+    a: 'No. SOC 2 reports are issued by an independent CPA firm and ISO certificates by an accredited certification body. ComplyEasyAI prepares and maintains the evidence, so fieldwork reviews a clean, current control environment.',
+  },
+  {
+    q: 'How fast can we get audit-ready?',
+    a: 'Connecting the first systems takes minutes, and evidence starts accruing the same day. Readiness then depends on your starting maturity. A SOC 2 Type II report still needs an observation period, usually three months or more, that no tool can shorten.',
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 export interface LandingPageProps {
@@ -275,9 +312,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
   return (
     <MarketingLayout>
       <Seo title={SEO_TITLE} description={SEO_DESCRIPTION} canonicalPath="/" keywords={SEO_KEYWORDS} />
-      <JsonLd data={organizationSchema()} />
-      <JsonLd data={softwareApplicationSchema()} />
-      <JsonLd data={breadcrumbSchema([{ name: 'Home', url: 'https://complyeasyai.com/' }])} />
+      <JsonLd data={faqSchema(HOME_FAQ)} />
 
       <SignalPage>
         {/* ================================ Hero ================================ */}
@@ -308,14 +343,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
                 Autonomous Compliance OS
               </Eyebrow>
               <h1 className="mt-[26px] font-display text-[44px] font-bold leading-[1.05] tracking-[-0.03em] text-signal-ink sm:text-[56px] lg:text-[66px] lg:leading-[1.01]">
-                Compliance that
+                AI compliance automation
                 <br />
-                runs itself.
+                that runs itself.
               </h1>
               <p className="mt-6 max-w-[500px] text-lg leading-[1.6] text-signal-sub md:text-[19px]">
-                ComplyEasyAI watches your cloud, code and vendors, closes the gaps, and keeps you
-                audit-ready across every major framework — so your team stops chasing evidence and
-                starts shipping.
+                SOC 2, ISO 27001, GDPR, HIPAA and the EU AI Act: evidence collected, drift fixed,
+                audits ready.
+              </p>
+              <p className="mt-4 max-w-[560px] text-[15px] leading-relaxed text-signal-body">
+                ComplyEasyAI is an AI compliance automation platform. It connects read-only to your
+                cloud, code, identity and vendors, collects audit evidence continuously, flags control
+                drift and proposes fixes you approve, and maps each control once across{' '}
+                {FRAMEWORK_PILLAR_COUNT} frameworks, so your team stays audit-ready all year instead of
+                scrambling before each audit.
               </p>
               <div className="mt-[34px] flex flex-wrap gap-3.5">
                 <PrimaryCta to="/demo">
@@ -342,13 +383,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
           </div>
         </section>
 
+        {/* ================================ TL;DR ================================ */}
+        <section className="bg-signal-canvas px-6 pb-4 pt-2 md:px-10">
+          <div className="mx-auto max-w-[1000px]">
+            <TldrList items={HOME_TLDR} />
+          </div>
+        </section>
+
         {/* ====================== Three jobs it takes off your plate ====================== */}
         <SignalSection id="platform" variant="glow">
           <div className="mb-12 text-center">
             <div className="mb-3.5">
               <Eyebrow>What it does — not how</Eyebrow>
             </div>
-            <SectionTitle>Three jobs it takes off your plate</SectionTitle>
+            <SectionTitle>What does ComplyEasyAI do?</SectionTitle>
           </div>
           <div className="grid grid-cols-1 gap-[22px] md:grid-cols-3">
             {JOB_CARDS.map((card) => (
@@ -369,7 +417,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
         <SignalSection id="roi" variant="glow" width={1000}>
           <div className="mb-11 text-center">
             <Eyebrow pill>ROI calculator</Eyebrow>
-            <SectionTitle className="mt-[18px]">What could you reclaim?</SectionTitle>
+            <SectionTitle className="mt-[18px]">How much time could you reclaim?</SectionTitle>
             <p className="mt-3 text-base text-signal-sub">
               Move the sliders to size the opportunity for your team.
             </p>
@@ -377,15 +425,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
           <RoiCalculator automationPct={automationPct} toolCostK={toolCostK} />
         </SignalSection>
 
-        {/* ============================ Depth vs mid-market ============================ */}
+        {/* ============================ What sets it apart ============================ */}
         <SignalSection variant="glow">
           <div className="flex flex-col items-start gap-11 lg:flex-row lg:items-center">
             <div className="min-w-0 flex-1">
               <div className="mb-3.5">
-                <Eyebrow>Coverage others don't have</Eyebrow>
+                <Eyebrow>Built for regulated teams</Eyebrow>
               </div>
               <h2 className="font-display text-[30px] font-bold leading-[1.08] tracking-[-0.02em] text-signal-ink md:text-[36px]">
-                Depth that the mid-market tools can't match
+                What makes ComplyEasyAI different?
               </h2>
             </div>
             <div className="flex w-full flex-col gap-3 lg:w-[540px] lg:flex-none">
@@ -415,10 +463,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
           <div className="mb-3.5">
             <Eyebrow>Pricing</Eyebrow>
           </div>
-          <SectionTitle>Priced for outcomes, not seats.</SectionTitle>
+          <SectionTitle>How is ComplyEasyAI priced?</SectionTitle>
           <p className="mx-auto mt-4 max-w-[600px] text-[17px] leading-[1.6] text-[#8A94A6]">
-            Enterprise-grade coverage at a fraction of a four-to-six tool GRC stack. One platform
-            price — no renewal surprises.
+            Priced for outcomes, not seats: one platform price covers your plan&rsquo;s frameworks
+            and users, with no per-framework add-ons and no renewal surprises.
           </p>
           <div className="mt-[26px] flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
             <Link
@@ -436,6 +484,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
           </div>
         </SignalSection>
 
+        {/* ============================= Common questions ============================= */}
+        <SignalSection variant="plain" width={1000}>
+          <div className="mx-auto max-w-[820px]">
+            <div className="mb-8 text-center">
+              <Eyebrow className="mb-3">Questions</Eyebrow>
+              <SectionTitle>Common questions</SectionTitle>
+            </div>
+            <div className="flex flex-col gap-3">
+              {HOME_FAQ.map((item) => (
+                <SignalFaq key={item.q} q={item.q} a={item.a} />
+              ))}
+            </div>
+          </div>
+        </SignalSection>
+
         {/* ================================ Closing CTA ================================ */}
         <SignalSection id="demo" variant="tight" className="text-center">
           <h2 className="font-display text-[40px] font-bold leading-[1.05] tracking-[-0.03em] text-signal-ink md:text-[52px] md:leading-[1.02]">
@@ -448,7 +511,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ automationPct = 80, to
             <PrimaryCta to="/demo">
               Book a demo <span aria-hidden="true">→</span>
             </PrimaryCta>
-            <OutlineCta to="/demo">Talk to sales</OutlineCta>
+            <OutlineCta to={TRIAL_CTA.to}>{TRIAL_CTA.label}</OutlineCta>
           </div>
         </SignalSection>
       </SignalPage>
