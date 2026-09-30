@@ -95,6 +95,23 @@ describe('ProductDecommissioning', () => {
     });
   });
 
+  it('gives each data-action summary card its tint and a matching border', () => {
+    render(<ProductDecommissioning />);
+    fireEvent.click(screen.getByRole('button', { name: /^Data Management$/ }));
+
+    const expected: Record<string, [string, string]> = {
+      migrate: ['bg-blue-100', 'border-blue-800'],
+      archive: ['bg-purple-100', 'border-purple-800'],
+      delete: ['bg-red-100', 'border-red-800'],
+      retain: ['bg-green-100', 'border-green-800'],
+    };
+    for (const [action, [bg, border]] of Object.entries(expected)) {
+      const card = screen.getByText(action, { selector: 'div.capitalize' }).parentElement as HTMLElement;
+      expect(card).toHaveClass('border', bg, border);
+      expect(card.className).not.toMatch(/\btext-\w+-800\b/);
+    }
+  });
+
   it('shows product detail view', () => {
     render(<ProductDecommissioning />);
     const rows = document.querySelectorAll('tr[class*="cursor-pointer"], div[class*="cursor-pointer"]');

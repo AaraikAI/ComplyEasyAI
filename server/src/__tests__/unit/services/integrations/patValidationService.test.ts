@@ -31,7 +31,8 @@ jest.mock('../../../../config/logger', () => ({
 }));
 
 // ---------- Import after mocks ----------
-import patValidationService from '../../../../services/integrations/patValidationService';
+import patValidationService, { redactUrlForLog } from '../../../../services/integrations/patValidationService';
+import logger from '../../../../config/logger';
 
 describe('PATValidationService', () => {
   beforeEach(() => {
@@ -534,6 +535,35 @@ describe('PATValidationService', () => {
 
       const result = await patValidationService.validateToken('github', 'token');
       expect(result.valid).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------
+  // Log redaction of outbound URLs
+  // -------------------------------------------------------------------
+  describe('log redaction', () => {
+    it('reduces a URL to scheme and host, dropping userinfo, path and query', () => {
+      expect(redactUrlForLog('https://user:s3cret@api.example.com:8443/v1/Accounts/AC123.json?token=abc#frag')).toBe(
+        'https://api.example.com:8443'
+      );
+      expect(redactUrlForLog('http://169.254.169.254/latest/meta-data')).toBe('http://169.254.169.254');
+      expect(redactUrlForLog('not a url')).toBe('[unparseable URL]');
+    });
+
+    it('does not write the query string of a blocked redirect target to the logs', async () => {
+      mockAxiosGet.mockResolvedValue({
+        status: 302,
+        headers: { location: 'http://169.254.169.254/latest/meta-data?key=REDIRECT_SECRET_VALUE' },
+        data: {},
+      });
+
+      const result = await patValidationService.validateToken('github', 'ghp_testtoken123');
+
+      expect(result.valid).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('blocked redirect'), {
+        target: 'http://169.254.169.254',
+      });
+      expect(JSON.stringify((logger.error as jest.Mock).mock.calls)).not.toContain('REDIRECT_SECRET_VALUE');
     });
   });
 });
