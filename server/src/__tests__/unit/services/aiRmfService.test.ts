@@ -440,7 +440,7 @@ describe('AIRMFService', () => {
 
       await aiRmfService.updateAISystem('org-123', 'ai-system-1', updates, 'user-123');
 
-      const { changes } = (AuditLogger.log as jest.Mock).mock.calls[0][0].metadata;
+      const { changes } = (AuditLogger.log as jest.Mock<(...args: any[]) => any>).mock.calls[0][0].metadata;
       expect(Object.keys(changes)).toEqual(['name']);
       expect(changes.name).toEqual({ old: 'Old Name', new: 'New Name' });
       expect(Object.getPrototypeOf(changes)).toBe(Object.prototype);
@@ -460,7 +460,7 @@ describe('AIRMFService', () => {
         'user-123'
       );
 
-      const { changes } = (AuditLogger.log as jest.Mock).mock.calls[0][0].metadata;
+      const { changes } = (AuditLogger.log as jest.Mock<(...args: any[]) => any>).mock.calls[0][0].metadata;
       // toStrictEqual, unlike toEqual, fails when the `old` key is absent instead of undefined.
       expect(changes).toStrictEqual({ useCase: { old: undefined, new: 'Credit scoring' } });
     });
