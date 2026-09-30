@@ -427,6 +427,42 @@ describe('AIRMFService', () => {
         })
       );
     });
+
+    it('should leave out keys that shadow Object.prototype members from the audit diff', async () => {
+      const system = mockAISystem({ name: 'Old Name' });
+      (prismaMock as any).aISystem.findFirst.mockResolvedValue(system);
+      (prismaMock as any).aISystem.update.mockResolvedValue({ ...system, name: 'New Name' });
+      // JSON.parse keeps "__proto__" as an own key, the same shape a parsed request body has.
+      const updates = JSON.parse(
+        '{"__proto__":{"polluted":"yes"},"constructor":{"prototype":{"polluted":"yes"}},' +
+          '"toString":"x","prototype":"x","name":"New Name"}'
+      );
+
+      await aiRmfService.updateAISystem('org-123', 'ai-system-1', updates, 'user-123');
+
+      const { changes } = (AuditLogger.log as jest.Mock).mock.calls[0][0].metadata;
+      expect(Object.keys(changes)).toEqual(['name']);
+      expect(changes.name).toEqual({ old: 'Old Name', new: 'New Name' });
+      expect(Object.getPrototypeOf(changes)).toBe(Object.prototype);
+      expect(Object.prototype.hasOwnProperty.call(changes, '__proto__')).toBe(false);
+      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    });
+
+    it('should report fields missing from the old-value snapshot with an undefined old value', async () => {
+      const system = mockAISystem({ name: 'Same Name' });
+      (prismaMock as any).aISystem.findFirst.mockResolvedValue(system);
+      (prismaMock as any).aISystem.update.mockResolvedValue({ ...system, useCase: 'Credit scoring' });
+
+      await aiRmfService.updateAISystem(
+        'org-123',
+        'ai-system-1',
+        { name: 'Same Name', useCase: 'Credit scoring' },
+        'user-123'
+      );
+
+      const { changes } = (AuditLogger.log as jest.Mock).mock.calls[0][0].metadata;
+      expect(changes).toEqual({ useCase: { old: undefined, new: 'Credit scoring' } });
+    });
   });
 
   // ======================================================================
