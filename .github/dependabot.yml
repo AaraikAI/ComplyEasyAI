@@ -191,7 +191,8 @@ updates:
       # react-native, never on their own. react-native 0.85.3 ships its own
       # React renderer built from React 19.2.3 (Libraries/Renderer/
       # implementations/*: version "19.2.3"; the legacy ReactNativeRenderer
-      # throws "Incompatible React versions" unless react is exactly 19.2.3),
+      # also throws "Incompatible React versions" unless react is exactly
+      # 19.2.3, while the Fabric renderer the app runs on has no such check),
       # and Expo SDK 56's bundledNativeModules.json pins "react": "19.2.3".
       # React 19.3.0 is a new minor whose reconciler changes (ViewTransition,
       # Fragment refs, independent transitions) live in that renderer, so
@@ -210,6 +211,14 @@ updates:
         versions: [">=19.3.0"]
       - dependency-name: "@types/react-test-renderer"
         versions: [">=19.3.0"]
+      # Native modules that the Expo SDK pins move with the SDK, not on their
+      # own: Expo SDK 56's bundledNativeModules.json expects
+      # react-native-screens ~4.26.0, and a newer minor ships native code the
+      # SDK was not built and tested against (#576 proposed 4.28.0). Patch
+      # releases stay allowed; take minors and majors with `npx expo install
+      # --fix` during the SDK migration.
+      - dependency-name: "react-native-screens"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
       # Expo SDK 57 is a coordinated SDK migration, not a dependency bump. The
       # tree is coherently on SDK 56 - expo, expo-secure-store, expo-status-bar
       # and jest-expo all 56.x against react-native 0.85.3 with a matching
