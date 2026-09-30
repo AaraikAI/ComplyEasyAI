@@ -291,7 +291,7 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
   }, [activeSession, sourceControls, targetControls]);
 
   /* callbacks */
-  const [aiError, setAiError] = useState<string | null>(null);
+  const [, setAiError] = useState<string | null>(null);
 
   const runMapping = useCallback(async () => {
     if (!sourceFrameworkId || !targetFrameworkId || sourceFrameworkId === targetFrameworkId) return;

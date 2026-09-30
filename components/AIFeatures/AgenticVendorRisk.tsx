@@ -296,7 +296,6 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
-  const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [isRunningAgent, setIsRunningAgent] = useState(false);
   const [vendorAssessmentRunning, setVendorAssessmentRunning] = useState<Record<string, boolean>>({});
   const [vendorAssessmentComplete, setVendorAssessmentComplete] = useState<Record<string, boolean>>({});
@@ -348,7 +347,6 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
   // Stats (derived from live state)
   const criticalVendors = vendors.filter(v => v.tier === 'critical').length;
-  const underReviewCount = vendors.filter(v => v.status === 'under-review').length;
   const avgRiskScore = vendors.length > 0
     ? Math.round(vendors.reduce((sum, v) => sum + v.overallRiskScore, 0) / vendors.length)
     : 0;
@@ -363,8 +361,8 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
     return true;
   });
 
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiAssessmentResult, setAiAssessmentResult] = useState<any | null>(null);
+  const [, setAiError] = useState<string | null>(null);
+  const [, setAiAssessmentResult] = useState<any | null>(null);
 
   const handleRunAgent = useCallback(async () => {
     setIsRunningAgent(true);
@@ -1030,7 +1028,6 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 {/* Stage Indicators */}
                 <div className="flex items-center gap-0 mt-3">
                   {['Queued', 'Collecting', 'Analyzing', 'Review', 'Complete'].map((stage, idx) => {
-                    const stageKey = stage.toLowerCase().replace('complete', 'completed');
                     const stageOrder = ['queued', 'collecting', 'analyzing', 'review', 'completed'];
                     const currentIdx = stageOrder.indexOf(assessment.status);
                     const isActive = idx <= currentIdx;

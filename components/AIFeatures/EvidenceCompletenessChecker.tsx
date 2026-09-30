@@ -176,7 +176,7 @@ const EvidenceBar: React.FC<{ label: string; value: number; total: number; color
 export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'frameworks' | 'gaps' | 'recommendations'>('overview');
   const [isScanning, setIsScanning] = useState(false);
-  const [scanComplete, setScanComplete] = useState(true);
+  const [, setScanComplete] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [gapTypeFilter, setGapTypeFilter] = useState<string>('all');
@@ -261,8 +261,8 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
     return true;
   });
 
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [, setAiError] = useState<string | null>(null);
+  const [, setAiSummary] = useState<string | null>(null);
 
   // State for evidence upload, task creation, remediation, and scheduling
   const fileInputRef = useRef<HTMLInputElement>(null);
