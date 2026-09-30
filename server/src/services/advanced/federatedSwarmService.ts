@@ -310,7 +310,9 @@ class FederatedSwarmService {
       return weights;
     }
 
-    const anonymized: any = {};
+    // Collected in a Map and converted with Object.fromEntries, which defines
+    // own properties, so no value is ever assigned through a submitted key.
+    const anonymized = new Map<string, any>();
     const epsilon = 1.0; // Differential privacy budget
     const sensitivity = 0.01; // Expected max weight magnitude change per sample
 
@@ -323,35 +325,32 @@ class FederatedSwarmService {
       if (typeof value === 'number') {
         // Add Laplace noise for differential privacy (CSPRNG-sourced)
         const scale = sensitivity / epsilon;
-        anonymized[key] = value + this.secureLaplaceNoise(scale);
+        anonymized.set(key, value + this.secureLaplaceNoise(scale));
       } else if (Array.isArray(value)) {
         // Apply noise to numeric arrays (e.g., weight vectors)
-        anonymized[key] = value.map((v: any) => {
+        anonymized.set(key, value.map((v: any) => {
           if (typeof v === 'number') {
             const scale = sensitivity / epsilon;
             return v + this.secureLaplaceNoise(scale);
           }
           return v;
-        });
+        }));
       } else if (typeof value === 'object' && value !== null) {
         // Recursively anonymize nested weight objects
-        anonymized[key] = this.anonymizeContribution(value);
+        anonymized.set(key, this.anonymizeContribution(value));
       } else {
         // Strip non-numeric metadata (org names, timestamps, etc.)
         // Only preserve structural keys needed for aggregation
-        anonymized[key] = value;
+        anonymized.set(key, value);
       }
     }
 
     // Remove any identifying metadata fields
-    delete anonymized.organizationId;
-    delete anonymized.orgName;
-    delete anonymized.contributor;
-    delete anonymized.submittedBy;
-    delete anonymized.sourceIp;
-    delete anonymized.timestamp;
+    for (const field of ['organizationId', 'orgName', 'contributor', 'submittedBy', 'sourceIp', 'timestamp']) {
+      anonymized.delete(field);
+    }
 
-    return anonymized;
+    return Object.fromEntries(anonymized);
   }
 
   /**
@@ -459,14 +458,14 @@ class FederatedSwarmService {
     }
 
     if (typeof weights === 'object' && weights !== null) {
-      const privatized: any = {};
+      const privatized = new Map<string, any>();
       for (const key of Object.keys(weights)) {
         if (!isSafeObjectKey(key)) {
           continue;
         }
-        privatized[key] = this.applyDifferentialPrivacy(weights[key], epsilon);
+        privatized.set(key, this.applyDifferentialPrivacy(weights[key], epsilon));
       }
-      return privatized;
+      return Object.fromEntries(privatized);
     }
 
     if (typeof weights === 'number') {

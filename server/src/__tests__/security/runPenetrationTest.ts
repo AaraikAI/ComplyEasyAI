@@ -826,7 +826,6 @@ async function authenticationTests(): Promise<Finding[]> {
 async function authorizationTests(): Promise<Finding[]> {
   const findings: Finding[] = [];
   const authMiddleware = readFileSync(path.join(MIDDLEWARE_DIR, 'auth.ts'));
-  const indexTs = readFileSync(INDEX_TS);
   const allRouteFiles = globRecursive(ROUTES_DIR, '.ts');
   const prismaSchema = readFileSync(PRISMA_SCHEMA);
   const rlsSql = readFileSync(RLS_SQL);

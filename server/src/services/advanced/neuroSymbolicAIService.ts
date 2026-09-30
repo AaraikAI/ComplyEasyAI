@@ -523,18 +523,20 @@ Format as JSON with: {prediction, confidence, factors}`;
       }
     }
 
+    // Context keys are caller-supplied; skip names such as `__proto__` or
+    // `constructor`, and add the rest through object spread, which defines own
+    // properties instead of assigning through the key. Later keys still win.
+    const contextFacts = new Map<string, any>();
     Object.keys(context).forEach(key => {
-      // Context keys are caller-supplied; skip names such as `__proto__` or
-      // `constructor` that would shadow built-in members of the facts object.
       if (!isSafeObjectKey(key)) {
         return;
       }
       if (key !== 'controls' && key !== 'risks' && typeof context[key] !== 'object') {
-        facts[key] = context[key];
+        contextFacts.set(key, context[key]);
       }
     });
 
-    return facts;
+    return { ...facts, ...Object.fromEntries(contextFacts) };
   }
 
   /**
