@@ -14,7 +14,7 @@
 
 Before testing, ensure you have:
 
-- **Node.js** 22+ and npm installed
+- **Node.js** 24+ and npm installed
 - **PostgreSQL** database (local or cloud)
 - **Git** installed
 - **API Keys** for testing:
