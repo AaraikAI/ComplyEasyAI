@@ -4,7 +4,7 @@
  * This module is not imported by any production component.
  */
 
-import { User, RiskItem, ComplianceFramework, AuditLog, Organization, Integration, ComplianceStatus, FrameworkType } from '../types';
+import { User, RiskItem, ComplianceFramework, AuditLog, Organization } from '../types';
 import { MOCK_USERS, MOCK_RISKS, INITIAL_FRAMEWORKS, MOCK_AUDIT_LOGS, MOCK_INTEGRATIONS } from '../constants';
 
 // Prefer the build-time mode flag (Vite sets import.meta.env.PROD) so staging,

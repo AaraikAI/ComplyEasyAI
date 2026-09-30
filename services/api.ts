@@ -1,4 +1,4 @@
-import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, SubscriptionDetails, UsageMetrics, Tier, TierComparison, UpgradePreview, Webhook, WebhookEvent, ApiKey, BillingCycle, OnboardingProgress, OnboardingChecklist } from '../types';
+import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, SubscriptionDetails, UsageMetrics, Tier, TierComparison, Webhook, WebhookEvent, ApiKey, BillingCycle, OnboardingProgress, OnboardingChecklist } from '../types';
 import { logger } from '../utils/logger';
 
 // Backend API Configuration — ensure base always ends with /api so /auth/register etc. resolve correctly

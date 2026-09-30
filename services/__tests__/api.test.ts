@@ -53,17 +53,6 @@ function parseBodyFromCall(call: [string, RequestInit] | undefined): Record<stri
   }
 }
 
-/**
- * Find the fetch call for a given endpoint path and parse its body.
- * This is preferred over the raw mockFetch.mock.calls.find pattern because
- * getCsrfToken() may add extra fetch calls (GET /csrf-token) that have no body
- * but match `body !== null` (since body is undefined, not null).
- */
-function getBodyForEndpoint(mock: ReturnType<typeof vi.fn>, pathPart: string): Record<string, unknown> {
-  const call = getCallForEndpoint(mock, pathPart);
-  return parseBodyFromCall(call);
-}
-
 describe('api service', () => {
   let mockFetch: ReturnType<typeof vi.fn>;
 
@@ -1739,7 +1728,7 @@ describe('api service', () => {
     describe('reports', () => {
       it('list fetches reports', async () => {
         mockFetch.mockResolvedValueOnce(ok([]));
-        const result = await api.enterprise.reports.list();
+        await api.enterprise.reports.list();
         expect(mockFetch).toHaveBeenCalledWith(`${API}/enterprise/reports`, expect.any(Object));
       });
 
