@@ -757,16 +757,13 @@ describe('GraphNeuralNetworkService', () => {
   // ===========================================================================
   describe('Utility Functions', () => {
     it('should compute cosine similarity correctly', () => {
-      const cosineSim = (graphNeuralNetworkService as any).constructor
-        ? require('../../../../services/advanced/graphNeuralNetworkService')
-        : null;
-
       // Test via prediction results which use cosine similarity internally
       const embA = new Array(64).fill(0.5);
       const embB = new Array(64).fill(0.5);
 
       const result = graphNeuralNetworkService.predictLink(embA, embB);
-      expect(result.confidence).toBeGreaterThan(0);
+      // Identical embeddings have cosine similarity 1
+      expect(result.confidence).toBeCloseTo(1, 10);
     });
 
     it('should normalize features', () => {

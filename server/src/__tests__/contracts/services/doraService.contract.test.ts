@@ -27,9 +27,7 @@ import {
   createICTRiskAssessment,
   listICTRiskAssessments,
   createICTIncident,
-  listICTIncidents,
   createThirdPartyProvider,
-  listThirdPartyProviders,
   createResilienceTest,
   createInformationRegisterEntry,
 } from '../../../services/doraService';

@@ -131,7 +131,6 @@ jest.mock('../../../config/tiers', () => ({
 
 // Import after mocking
 import featureService from '../../../services/featureService';
-import { getFeature } from '../../../config/features';
 
 // Helpers
 const mockFeatureSubscription = (overrides: Record<string, unknown> = {}) => ({

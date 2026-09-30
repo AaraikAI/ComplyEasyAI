@@ -14,7 +14,7 @@
  *   npm run test:chaos -- --scenario=full
  */
 
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { EventEmitter } from 'events';
 
 // ============================================================================

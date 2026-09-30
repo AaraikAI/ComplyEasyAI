@@ -18,7 +18,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as crypto from 'crypto';
 import * as https from 'https';
 import * as http from 'http';
 
@@ -58,7 +57,6 @@ function readServedNginxConf(): string {
 }
 const DOCKERFILE = path.join(PROJECT_ROOT, 'Dockerfile');
 const PRISMA_SCHEMA = path.join(ROOT, 'prisma', 'schema.prisma');
-const ENV_EXAMPLE = path.join(ROOT, '.env.example');
 const RLS_SQL = path.join(ROOT, 'prisma', 'migrations', 'rls_policies_all_tables.sql');
 const INDEX_TS = path.join(SRC, 'index.ts');
 const API_URL = process.env.API_URL || 'http://localhost:3001';
@@ -583,14 +581,15 @@ async function authenticationTests(): Promise<Finding[]> {
       'Verify JWT library rejects alg:none and enforces expected algorithm',
       'critical', 'A07:2021 — Identification & Auth Failures', 'CWE-327',
       async () => {
-        const hasAlgCheck = authMiddleware.includes('algorithms') || authMiddleware.includes('algorithm');
+        // jwt.verify() must pin the accepted algorithms, e.g. { algorithms: ['HS256'] }
+        const hasAlgCheck = /algorithms\s*:\s*\[/.test(authMiddleware);
         const usesJsonwebtoken = authMiddleware.includes('jsonwebtoken') || authMiddleware.includes('jwt.verify');
-        if (usesJsonwebtoken) {
-          // jsonwebtoken >=9 rejects alg:none by default
+        if (usesJsonwebtoken && hasAlgCheck) {
+          // jsonwebtoken >=9 rejects alg:none by default; the allow-list also blocks algorithm switching
           return {
             status: 'pass',
-            details: 'Application uses jsonwebtoken library for JWT verification. Library version ≥9 rejects alg:none by default. JWT verification uses server-side secret, preventing algorithm confusion attacks.',
-            evidence: 'jwt.verify() called with explicit secret key',
+            details: 'Application uses jsonwebtoken library for JWT verification with an explicit algorithms allow-list. Library version ≥9 rejects alg:none by default. JWT verification uses server-side secret, preventing algorithm confusion attacks.',
+            evidence: 'jwt.verify() called with explicit secret key and algorithms option',
           };
         }
         return {
@@ -957,7 +956,6 @@ async function authorizationTests(): Promise<Finding[]> {
       'Verify sensitive operations require elevated authorization',
       'high', 'A01:2021 — Broken Access Control', 'CWE-285',
       async () => {
-        const sensitiveOps = ['delete', 'DELETE', 'destroy', 'remove', 'admin'];
         const unprotected: string[] = [];
 
         for (const file of allRouteFiles) {
@@ -1033,7 +1031,6 @@ async function authorizationTests(): Promise<Finding[]> {
       async () => {
         const tierMiddleware = readFileSync(path.join(MIDDLEWARE_DIR, 'tierMiddleware.ts'));
         const hasTierCheck = tierMiddleware.includes('requireTier') || tierMiddleware.includes('checkFeatureAccess');
-        const indexUseTier = indexTs.includes('tierMiddleware') || indexTs.includes('requireTier');
 
         if (hasTierCheck) {
           return {
@@ -1265,7 +1262,7 @@ async function rateLimitingTests(): Promise<Finding[]> {
         if (!xffBypass) {
           return {
             status: 'pass',
-            details: 'Rate limiter uses default IP-based identification. No X-Forwarded-For key generator that could be spoofed. Trust proxy configured for ALB/nginx reverse proxy.',
+            details: `Rate limiter uses default IP-based identification. No X-Forwarded-For key generator that could be spoofed.${trustProxy ? ' Trust proxy configured for ALB/nginx reverse proxy.' : ''}`,
           };
         }
         return {
@@ -1479,13 +1476,16 @@ async function ssrfTests(): Promise<Finding[]> {
       'medium', 'A10:2021 — SSRF', 'CWE-918',
       async () => {
         const webhookRoute = readFileSync(path.join(ROUTES_DIR, 'webhooks.ts'));
-        const hasUrlValidation = webhookRoute.includes('URL') || webhookRoute.includes('url');
+        const webhookService = readFileSync(path.join(SERVICES_DIR, 'webhookService.ts'));
+        // Delivery must check the destination and send through safeFetch, which
+        // re-validates DNS resolution and every redirect hop.
+        const hasUrlValidation = webhookService.includes('isWebhookUrlSafe') && webhookService.includes('safeFetch');
         const hasSignatureVerify = webhookRoute.includes('signature') || webhookRoute.includes('Signature');
 
-        if (hasSignatureVerify) {
+        if (hasUrlValidation) {
           return {
             status: 'pass',
-            details: 'Webhook system validates signatures. Outbound webhook delivery uses registered URLs with HMAC-SHA256 signature verification.',
+            details: `Outbound webhook delivery validates destinations with isWebhookUrlSafe() and sends through safeFetch().${hasSignatureVerify ? ' Payloads carry HMAC-SHA256 signatures.' : ''}`,
           };
         }
         return {
@@ -1779,13 +1779,15 @@ async function cryptoComplianceTests(): Promise<Finding[]> {
         const hasCHACHA = /CHACHA20/i.test(cipherLine);
         const hasAESGCM = /AES.*GCM/i.test(cipherLine);
         const hasTLS12Plus = /TLSv1\.2/i.test(nginx) && /TLSv1\.3/i.test(nginx);
-        const noTLS10 = !/TLSv1\.0/i.test(nginx) && !/TLSv1[^.]/.test(nginx);
+        const noLegacyTLS = !/TLSv1\.[01]/i.test(nginx) && !/TLSv1[^.]/.test(nginx);
         const noSSLv3 = !/SSLv3/i.test(nginx);
 
         const issues: string[] = [];
         if (hasCHACHA) issues.push('CHACHA20-POLY1305 present (not FIPS-approved)');
         if (!hasAESGCM) issues.push('AES-GCM not detected');
         if (!hasTLS12Plus) issues.push('TLS 1.2+ not confirmed');
+        if (!noLegacyTLS) issues.push('TLSv1.0/TLSv1.1 enabled (deprecated protocols)');
+        if (!noSSLv3) issues.push('SSLv3 enabled (insecure protocol)');
 
         if (issues.length === 0) {
           return {
@@ -1797,7 +1799,7 @@ async function cryptoComplianceTests(): Promise<Finding[]> {
           status: 'fail',
           details: issues.join('; '),
           evidence: nginx.match(/ssl_ciphers\s+[^;]+;/)?.[0] || '',
-          remediation: 'Remove CHACHA20-POLY1305 and keep only AES-GCM with ECDHE/DHE key exchange.',
+          remediation: 'Restrict ssl_protocols to TLSv1.2 TLSv1.3, remove CHACHA20-POLY1305, and keep only AES-GCM with ECDHE/DHE key exchange.',
         };
       },
     ),
@@ -1810,13 +1812,23 @@ async function cryptoComplianceTests(): Promise<Finding[]> {
       'Verify Docker container enforces OpenSSL FIPS mode',
       'critical', 'FIPS 140-2 §4', 'CWE-327',
       async () => {
-        const hasFipsFlag = dockerfile.includes('--force-fips');
-        const hasNodeOptions = dockerfile.includes('NODE_OPTIONS');
+        const nodeOptionsLine = dockerfile.match(/^ENV\s+NODE_OPTIONS=.*$/m)?.[0] || '';
+        const hasFipsFlag = nodeOptionsLine.includes('--force-fips');
+        // `${VAR:+--force-fips}` adds the flag only when VAR is set at build time.
+        const fipsIsConditional = /\$\{\w+:\+--force-fips\}/.test(nodeOptionsLine);
 
-        if (hasFipsFlag) {
+        if (hasFipsFlag && !fipsIsConditional) {
           return {
             status: 'pass',
             details: 'Dockerfile sets NODE_OPTIONS="--force-fips". Node.js will use only FIPS-approved algorithms at runtime. crypto.getFips() returns 1. Non-FIPS calls throw at runtime.',
+          };
+        }
+        if (fipsIsConditional) {
+          return {
+            status: 'warning',
+            details: 'NODE_OPTIONS adds --force-fips only when a build-time variable is set, so FIPS mode is opt-in rather than enforced by the image.',
+            evidence: nodeOptionsLine,
+            remediation: 'Build the production image from a FIPS-capable base with the variable declared and set, or set NODE_OPTIONS="--force-fips" unconditionally on that image.',
           };
         }
         return {
@@ -1922,7 +1934,6 @@ async function infrastructureTests(): Promise<Finding[]> {
   const dockerfile = readFileSync(DOCKERFILE);
   const nginx = readServedNginxConf();
   const indexTs = readFileSync(INDEX_TS);
-  const envExample = readFileSync(ENV_EXAMPLE);
 
   // ---- Docker Security ----
   findings.push(
@@ -1956,9 +1967,15 @@ async function infrastructureTests(): Promise<Finding[]> {
       'low', 'A05:2021 — Security Misconfiguration', 'CWE-200',
       async () => {
         const healthAvailableHTTP = nginx.includes('/health') && nginx.includes('proxy_pass');
+        if (healthAvailableHTTP) {
+          return {
+            status: 'pass',
+            details: 'Health check at /health proxied to backend. Available over HTTP for ALB probes. Does not expose database/Redis connection details or internal state.',
+          };
+        }
         return {
-          status: 'pass',
-          details: 'Health check at /health proxied to backend. Available over HTTP for ALB probes. Does not expose database/Redis connection details or internal state.',
+          status: 'info',
+          details: 'No nginx route for /health detected; health probes must reach the API directly.',
         };
       },
     ),
@@ -1979,7 +1996,7 @@ async function infrastructureTests(): Promise<Finding[]> {
         if (hasSigterm && hasSigint && hasCleanup) {
           return {
             status: 'pass',
-            details: 'Graceful shutdown handlers for SIGTERM/SIGINT. Cleans up: WebSocket connections, database pool, Redis connections, job queues, session stores. 30-second forced shutdown timeout.',
+            details: `Graceful shutdown handlers for SIGTERM/SIGINT. Cleans up: WebSocket connections, database pool, Redis connections, job queues, session stores.${hasForcedTimeout ? ' 30-second forced shutdown timeout.' : ''}`,
           };
         }
         return {

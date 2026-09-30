@@ -71,36 +71,6 @@ jest.mock('../../../services/vendorRiskService', () => ({
   default: mockVendorRiskService,
 }));
 
-// Mock data factories
-const createMockVendor = (overrides: Record<string, unknown> = {}) => ({
-  id: 'vendor-123',
-  organizationId: 'org-123',
-  name: 'Test Vendor',
-  category: 'Technology',
-  contactName: 'John Doe',
-  contactEmail: 'john@vendor.com',
-  website: 'https://vendor.com',
-  riskLevel: 'Medium',
-  status: 'Active',
-  contractStart: new Date(),
-  contractEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  ...overrides,
-});
-
-const createMockAssessment = (overrides: Record<string, unknown> = {}) => ({
-  id: 'assessment-123',
-  vendorId: 'vendor-123',
-  assessmentType: 'Annual Review',
-  status: 'In Progress',
-  assessor: 'user-123',
-  dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  ...overrides,
-});
-
 // Setup app
 let app: Express;
 

@@ -20,7 +20,7 @@
  *   API_URL - Base URL of the API (default: http://localhost:3001)
  */
 
-import axios, { AxiosError, AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 // ============================================================================
 // TYPES
@@ -765,7 +765,6 @@ export class SecurityTestEngine {
       owasp: 'A01:2021 - Broken Access Control',
       fn: async () => {
         // Try accessing resources with fabricated UUIDs
-        const fakeOrgId = '00000000-0000-0000-0000-000000000001';
         const fakeResourceId = '00000000-0000-0000-0000-000000000099';
 
         const endpoints = [
@@ -885,8 +884,6 @@ export class SecurityTestEngine {
       severity: 'high',
       owasp: 'A01:2021 - Broken Access Control',
       fn: async () => {
-        const otherUserId = '00000000-0000-0000-0000-000000000002';
-
         const endpoints = [
           `/api/v1/team`,
           `/api/v1/organization`,
@@ -2038,7 +2035,6 @@ export class SecurityTestEngine {
 
         if (csp) {
           const hasDefaultSrc = csp.includes("default-src");
-          const hasScriptSrc = csp.includes("script-src");
           const hasUnsafeInline = csp.includes("'unsafe-inline'");
 
           if (hasDefaultSrc && !hasUnsafeInline) {

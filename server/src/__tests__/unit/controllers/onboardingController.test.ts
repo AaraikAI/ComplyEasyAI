@@ -3,7 +3,6 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { Response } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 jest.mock('../../../config/logger', () => ({
